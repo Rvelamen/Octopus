@@ -1,0 +1,8 @@
+export { default as ConfigPanel } from './ConfigPanel';
+export { default as ChatPanel } from './ChatPanel';
+export { default as MCPPanel } from './MCPPanel';
+export { default as ExtensionsPanel } from './ExtensionsPanel';
+export { default as HistoryPanel } from './HistoryPanel';
+export { default as WorkspacePanel } from './WorkspacePanel';
+export { default as CronPanel } from './CronPanel';
+export { default as AgentsPanel } from './AgentsPanel';

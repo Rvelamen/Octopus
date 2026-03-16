@@ -1,0 +1,6 @@
+name: cron
+description: Schedule tasks to be executed at specific times.
+version: 1.0.0
+author: octopus
+type: skill
+capabilities: []
