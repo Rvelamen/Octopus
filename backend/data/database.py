@@ -23,7 +23,7 @@ class Database:
         """Initialize database.
         
         Args:
-            db_path: Path to database file. Defaults to ~/.tracebot/app.db
+            db_path: Path to database file. Defaults to ~/.octopus/app.db
         """
         if db_path is None:
             from backend.utils.helpers import get_data_path

@@ -565,10 +565,18 @@ class AgentDefaultsHandler:
 
     async def _update(self, websocket, data: dict, request_id: str = None):
         """Update agent defaults."""
+        from backend.services.workspace_service import setup_workspace_from_template
+        from backend.utils.helpers import init_workspace_path
+        from pathlib import Path
+
+        new_workspace_path = data.get("workspacePath")
+        current_defaults = self.agent_defaults_repo.get_or_create_defaults()
+        old_workspace_path = current_defaults.workspace_path
+
         success = self.agent_defaults_repo.update_agent_defaults(
             default_provider_id=data.get("defaultProviderId"),
             default_model_id=data.get("defaultModelId"),
-            workspace_path=data.get("workspacePath"),
+            workspace_path=new_workspace_path,
             max_tokens=data.get("maxTokens"),
             temperature=data.get("temperature"),
             max_iterations=data.get("maxIterations"),
@@ -578,6 +586,11 @@ class AgentDefaultsHandler:
         )
 
         if success:
+            if new_workspace_path and new_workspace_path != old_workspace_path:
+                logger.info(f"Workspace changed from {old_workspace_path} to {new_workspace_path}, copying template files...")
+                setup_workspace_from_template(Path(new_workspace_path))
+                init_workspace_path(new_workspace_path)
+
             await websocket.send_json({
                 "type": MessageType.AGENT_DEFAULTS_UPDATED.value,
                 "request_id": request_id,

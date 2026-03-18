@@ -14,7 +14,6 @@ from loguru import logger
 
 from backend.core.events.bus import MessageBus
 from backend.core.events.types import InboundMessage, OutboundMessage, AgentEvent
-from backend.core.config.loader import load_config
 from backend.utils import init_workspace_path, get_workspace_path
 
 
@@ -34,32 +33,49 @@ async def lifespan(app: FastAPI):
     logger.info("=== STARTING LIFESPAN ===")
     
     logger.info("Starting Octopus Desktop Service...")
-    
-    # 1. Load Configuration
-    config = load_config()
-    logger.info(f"Loaded configuration: {config}")
-    
-    # 2. Initialize Message Bus
-    bus = MessageBus()
-    
-    # 3. Initialize Agent Loop (Lazy import to avoid circular deps)
-    from backend.agent.loop import AgentLoop
-    from backend.channels.manager import ChannelManager
-    
-    # Use workspace from config if provided, otherwise use current directory's workspace
-    workspace_path = config.agents.defaults.workspace
-    if not workspace_path:
-        # Default to workspace in current project directory
-        workspace_path = Path(__file__).parent.parent.parent / "workspace"
-    workspace = init_workspace_path(str(workspace_path))
-    print(f"Workspace: {workspace}")
-    print(f"Workspace Path: {get_workspace_path()}")
-    
-    from backend.data import Database, SessionManager
-    from backend.data import init_system_providers
+
+    # 1. Initialize Database first
+    from backend.data import Database, init_system_providers
     db = Database()
     init_system_providers(db)
-    session_manager = SessionManager(workspace, db=db)
+
+    # 2. Initialize Message Bus
+    bus = MessageBus()
+
+    # 3. Initialize workspace path from database
+    from backend.data.provider_store import AgentDefaultsRepository
+    from backend.services.workspace_service import init_workspace_template, setup_workspace_from_template
+    from backend.utils.helpers import get_data_path
+
+    # Initialize template directory first
+    init_workspace_template()
+
+    agent_defaults_repo = AgentDefaultsRepository(db)
+    agent_defaults = agent_defaults_repo.get_or_create_defaults()
+    workspace_path = agent_defaults.workspace_path
+
+    # Determine actual workspace path
+    if not workspace_path:
+        workspace_path = get_data_path() / "workspace"
+
+    workspace = Path(workspace_path)
+
+    # Copy template files to workspace if workspace is empty or doesn't exist
+    if not workspace.exists() or not any(workspace.iterdir()):
+        logger.info(f"Workspace {workspace} is empty or doesn't exist, copying template files...")
+        setup_workspace_from_template(workspace)
+
+    # Update database with the actual workspace path if it was empty
+    if not agent_defaults.workspace_path:
+        agent_defaults_repo.update_agent_defaults(workspace_path=str(workspace))
+
+    workspace = init_workspace_path(str(workspace))
+    print(f"Workspace: {workspace}")
+    print(f"Workspace Path: {get_workspace_path()}")
+
+    # 4. Initialize Agent Loop (Lazy import to avoid circular deps)
+    from backend.agent.loop import AgentLoop
+    from backend.channels.manager import ChannelManager
     
     from backend.mcp.manager import MCPManager
     from backend.mcp.llm_bridge import MCPBridgeIntegration
@@ -116,7 +132,7 @@ async def lifespan(app: FastAPI):
     
     # 5. Initialize Channel Manager with Desktop Channel
     logger.info(f"Creating ChannelManager with desktop channel: {desktop_channel}")
-    channel_manager = ChannelManager(config=config, bus=bus, workspace=workspace, custom_channels={"desktop": desktop_channel})
+    channel_manager = ChannelManager(bus=bus, workspace=workspace, custom_channels={"desktop": desktop_channel})
     
     # 6. Subscribe Desktop Channel to Events
     logger.info(f"Event subscribers before: {bus._event_subscribers}")

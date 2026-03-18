@@ -126,3 +126,7 @@ tmp/
 frontend/node_modules/
 **/__pycache__/
 *.pyc
+
+.trae/
+.cursor/
+.claude/

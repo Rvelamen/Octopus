@@ -9,45 +9,69 @@ from loguru import logger
 from backend.core.events.types import OutboundMessage
 from backend.core.events.bus import MessageBus
 from backend.channels.base import BaseChannel
-from backend.core.config.schema import Config
 
 
 class ChannelManager:
     """
     Manages chat channels and coordinates message routing.
-    
+
     Responsibilities:
     - Initialize enabled channels
     - Start/stop channels
     - Route outbound messages
     """
-    
-    def __init__(self, config: Config, bus: MessageBus, workspace: Path | None = None, custom_channels: dict[str, BaseChannel] | None = None):
-        self.config = config
+
+    def __init__(self, bus: MessageBus, workspace: Path | None = None, custom_channels: dict[str, BaseChannel] | None = None):
         self.bus = bus
         self.workspace = workspace
         self.channels: dict[str, BaseChannel] = {}
         self._dispatch_task: asyncio.Task | None = None
-        
-        # Initialize channels from config
+
+        # Initialize channels from database
         self._init_channels()
-        
+
         # Add any custom channels (e.g., DesktopChannel)
         if custom_channels:
             self.channels.update(custom_channels)
             logger.info(f"Added {len(custom_channels)} custom channels")
     
     def _init_channels(self) -> None:
-        """Initialize channels based on config."""
-        
-        # Feishu channel
-        if self.config.channels.feishu.enabled:
+        """Initialize channels based on database config."""
+
+        db_channel_configs = {}
+        try:
+            from backend.data import Database
+            from backend.data.provider_store import ChannelConfigRepository
+
+            db = Database()
+            repo = ChannelConfigRepository(db)
+            all_configs = repo.get_all_channel_configs()
+            for cfg in all_configs:
+                db_channel_configs[cfg.channel_name] = cfg
+            logger.info(f"Loaded {len(db_channel_configs)} channel configs from database")
+        except Exception as e:
+            logger.warning(f"Failed to load channel configs from database: {e}")
+            return
+
+        feishu_config = db_channel_configs.get("feishu")
+        if feishu_config and feishu_config.enabled:
             try:
                 from backend.channels.feishu.channel import FeishuChannel
-                self.channels["feishu"] = FeishuChannel(
-                    self.config.channels.feishu, self.bus, self.workspace
+                from backend.core.config.schema import FeishuConfig, FeishuInnerConfig
+
+                inner = FeishuInnerConfig(
+                    app_id=feishu_config.app_id,
+                    app_secret=feishu_config.app_secret,
+                    encrypt_key=feishu_config.encrypt_key,
+                    verification_token=feishu_config.verification_token,
+                    allow_from=feishu_config.allow_from,
                 )
-                logger.info("Feishu channel enabled")
+                channel_config = FeishuConfig(enabled=True, config=inner)
+
+                self.channels["feishu"] = FeishuChannel(
+                    channel_config, self.bus, self.workspace
+                )
+                logger.info("Feishu channel initialized")
             except ImportError as e:
                 logger.warning(f"Feishu channel not available: {e}")
     

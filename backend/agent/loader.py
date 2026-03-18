@@ -60,17 +60,6 @@ class SubAgentLoader:
                         seen_names.add(config.name)
                         logger.debug(f"Loaded subagent config: {config.name}")
 
-        # Fall back to old location for backward compatibility (workspace/agents/)
-        old_agents_dir = self.workspace / "agents"
-        if old_agents_dir.exists() and old_agents_dir != self.agents_dir:
-            for agent_dir in sorted(old_agents_dir.iterdir()):
-                if agent_dir.is_dir() and not agent_dir.name.startswith("."):
-                    config = self._load_from_directory(agent_dir)
-                    if config and config.name not in seen_names:
-                        configs.append(config)
-                        seen_names.add(config.name)
-                        logger.debug(f"Loaded subagent config from legacy location: {config.name}")
-
         logger.info(f"Loaded {len(configs)} subagent configurations")
         return configs
     

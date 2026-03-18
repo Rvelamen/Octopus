@@ -4730,7 +4730,7 @@ hr {
   display: flex;
   align-items: center;
   gap: var(--s-2);
-  /* padding: var(--s-2) var(--s-3); */
+  padding: var(--s-2) var(--s-3);
   border-radius: var(--r-sm);
   cursor: pointer;
   transition: all 0.15s ease;

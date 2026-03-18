@@ -17,10 +17,13 @@ from backend.channels.desktop.provider_handlers import (
 )
 from backend.core.events.types import InboundMessage, AgentEvent, MessageContentItem
 from backend.core.events.bus import MessageBus
-from backend.core.config.loader import get_config_path
 from backend.mcp.manager import MCPManager, get_mcp_manager
 from backend.mcp.config import MCPServerConfig
 from backend.data import Database, SessionRepository
+from backend.data.provider_store import (
+    ProviderRepository, ModelRepository, AgentDefaultsRepository,
+    SettingsRepository, ChannelConfigRepository, ToolConfigRepository
+)
 
 # Import handlers from extensions (unified extension system)
 from backend.extensions.desktop_handlers import (
@@ -131,25 +134,17 @@ class ChatHandler(MessageHandler):
 
 class GetConfigHandler(MessageHandler):
     """Handle configuration retrieval requests."""
-    
+
+    def __init__(self, bus: MessageBus, db: Database = None):
+        super().__init__(bus)
+        self.db = db or Database()
+
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        """Return current configuration."""
-        path = get_config_path()
-        config_data = {}
-        
-        if path.exists():
-            try:
-                with open(path) as f:
-                    config_data = json.load(f)
-            except Exception as e:
-                logger.error(f"Failed to load config: {e}")
-                await self._send_error(websocket, message.request_id, f"Failed to load config: {e}")
-                return
-        
+        """Return current configuration (now stored in database)."""
         await self.send_response(websocket, WSMessage(
             type=MessageType.CONFIG,
             request_id=message.request_id,
-            data=config_data
+            data={}
         ))
     
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
@@ -163,31 +158,14 @@ class GetConfigHandler(MessageHandler):
 
 class SaveConfigHandler(MessageHandler):
     """Handle configuration save requests."""
-    
+
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        """Save configuration to file."""
-        config_data = message.data.get("config")
-        if config_data is None:
-            await self._send_error(websocket, message.request_id, "Config data is required")
-            return
-        
-        path = get_config_path()
-        try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            
-            with open(path, "w") as f:
-                json.dump(config_data, f, indent=2)
-            
-            logger.info("Config saved successfully")
-            
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.ACK,
-                request_id=message.request_id,
-                data={"status": "saved"}
-            ))
-        except Exception as e:
-            logger.error(f"Failed to save config: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to save config: {e}")
+        """Configuration is now stored in database, not in config file."""
+        await self.send_response(websocket, WSMessage(
+            type=MessageType.ACK,
+            request_id=message.request_id,
+            data={"status": "deprecated", "message": "Config is now stored in database"}
+        ))
     
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
         """Send error response."""
@@ -213,9 +191,10 @@ class PingHandler(MessageHandler):
 class GetModelsHandler(MessageHandler):
     """Handle get models requests."""
 
-    def __init__(self, bus: MessageBus, config_loader=None):
+    def __init__(self, bus: MessageBus, db: Database = None):
         super().__init__(bus)
-        self.config_loader = config_loader
+        self.db = db or Database()
+        self.provider_repo = ProviderRepository(self.db)
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Return available models for a provider."""
@@ -241,23 +220,15 @@ class GetModelsHandler(MessageHandler):
         ))
 
     async def _fetch_models_from_provider(self, provider_name: str) -> list[dict]:
-        """Fetch models from provider's API."""
-        import httpx
-        
-        config_data = {}
-        path = get_config_path()
-        if path.exists():
-            try:
-                with open(path) as f:
-                    config_data = json.load(f)
-            except Exception as e:
-                logger.error(f"Failed to load config: {e}")
+        """Fetch models from provider's API using database config."""
+        provider_record = self.provider_repo.get_provider_by_name(provider_name)
+        if not provider_record:
+            logger.warning(f"Provider not found: {provider_name}")
+            return []
 
-        providers_config = config_data.get("providers", {})
-        provider_config = providers_config.get(provider_name, {})
-        provider_type = provider_config.get("type", "openai")
-        api_key = provider_config.get("apiKey") or provider_config.get("api_key", "")
-        api_base = provider_config.get("apiBase") or provider_config.get("api_base", "")
+        api_key = provider_record.api_key
+        api_base = provider_record.api_host
+        provider_type = provider_record.provider_type
 
         if not api_key:
             logger.warning(f"No API key found for provider: {provider_name}")
@@ -2861,10 +2832,10 @@ class HandlerRegistry:
 
         self.handlers: dict[MessageType, MessageHandler] = {
             MessageType.CHAT: ChatHandler(bus, pending_responses),
-            MessageType.GET_CONFIG: GetConfigHandler(bus),
+            MessageType.GET_CONFIG: GetConfigHandler(bus, self.db),
             MessageType.SAVE_CONFIG: SaveConfigHandler(bus),
             MessageType.PING: PingHandler(bus),
-            MessageType.GET_MODELS: GetModelsHandler(bus),
+            MessageType.GET_MODELS: GetModelsHandler(bus, self.db),
         }
 
         # Register MCP handlers if manager is available

@@ -37,7 +37,6 @@ class ContextBuilder:
     """
 
     BOOTSTRAP_FILES = ["AGENTS.md", "SOUL.md", "USER.md", "IDENTITY.md", "BOOTSTRAP.md"]
-    SYSTEM_DIR = "system"  # Directory for system prompt files
 
     def __init__(self, workspace: Path):
         self.workspace = workspace
@@ -67,9 +66,6 @@ class ContextBuilder:
         from datetime import datetime
         
         parts = []
-        
-        # Core identity
-        parts.append(self._get_identity())
 
         # Real-time context - refreshed on every request
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S (%A)")
@@ -129,35 +125,15 @@ Example: Spawn a code-reviewer subagent to review a file.
         
         return "\n\n---\n\n".join(parts)
     
-    def _get_identity(self) -> str:
-        """Get the core identity section."""
-        workspace_path = str(self.workspace.expanduser().resolve())
-
-        return f"""
-## Workspace
-Your workspace is at: {workspace_path}
-
-"""
-    
     def _load_bootstrap_files(self) -> str:
-        """Load all bootstrap files from agents/system directory."""
+        """Load all bootstrap files from workspace/system directory."""
         parts = []
-        agents_dir = self._get_agents_dir()
-        system_dir = agents_dir / self.SYSTEM_DIR
 
-        # Try loading from agents/system directory first, then fall back to workspace/system for backward compatibility
         for filename in self.BOOTSTRAP_FILES:
-            # First try agents/system directory (new location)
-            file_path = system_dir / filename
+            file_path = self.workspace / filename
             if file_path.exists():
                 content = file_path.read_text(encoding="utf-8")
                 parts.append(f"## {filename}\n\n{content}")
-            else:
-                # Fall back to workspace/system directory for backward compatibility
-                file_path = self.workspace / self.SYSTEM_DIR / filename
-                if file_path.exists():
-                    content = file_path.read_text(encoding="utf-8")
-                    parts.append(f"## {filename} Source Path: {file_path}\n\n{content}")
 
         return "\n\n".join(parts) if parts else ""
     
