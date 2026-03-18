@@ -2271,21 +2271,21 @@ class CronRunJobHandler(MessageHandler):
 
 
 def _get_agents_root_dir() -> Path:
-    """Get the root agents directory (sibling to workspace).
+    """Get the root agents directory within workspace.
 
     Returns:
-        Path to agents directory.
+        Path to workspace/agents directory.
     """
     from backend.utils.helpers import get_workspace_path
     workspace = get_workspace_path()
-    return workspace.parent / "agents"
+    return workspace / "agents"
 
 
 def _get_workspace_system_dir() -> Path:
-    """Get the workspace system directory.
+    """Get the workspace root directory (system files are stored at workspace root).
 
     Returns:
-        Path to workspace/system directory.
+        Path to workspace directory.
     """
     from backend.utils.helpers import get_workspace_path
     workspace = get_workspace_path()

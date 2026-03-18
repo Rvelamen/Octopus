@@ -32,15 +32,14 @@ class SubAgentLoader:
     """Loader for discovering and loading SubAgent roles from SOUL.md files.
 
     Similar to SkillsLoader, but for SubAgent configurations.
-    SubAgents are defined in agents/<name>/SOUL.md files (sibling to workspace).
+    SubAgents are defined in workspace/agents/<name>/SOUL.md files.
     """
 
     def __init__(self, workspace: Path):
         self.workspace = workspace
-        # Agents directory is at the same level as workspace (sibling)
-        self.agents_dir = workspace.parent / "agents"
+        self.agents_dir = workspace / "agents"
         self._cache: dict[str, SubAgentConfig] = {}
-    
+
     def load_all(self) -> list[SubAgentConfig]:
         """Load all available subagent configurations.
 
@@ -50,10 +49,9 @@ class SubAgentLoader:
         configs = []
         seen_names = set()
 
-        # Try new location first (agents/ sibling to workspace)
         if self.agents_dir.exists():
             for agent_dir in sorted(self.agents_dir.iterdir()):
-                if agent_dir.is_dir() and not agent_dir.name.startswith(".") and agent_dir.name != "system":
+                if agent_dir.is_dir() and not agent_dir.name.startswith("."):
                     config = self._load_from_directory(agent_dir)
                     if config and config.name not in seen_names:
                         configs.append(config)

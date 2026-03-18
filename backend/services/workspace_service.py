@@ -24,9 +24,9 @@ class WorkspaceTemplateService:
     ]
 
     TEMPLATE_DIRS = [
+        "agents",
         "avatars",
         "extensions",
-        "images",
         "memory",
     ]
 
@@ -34,40 +34,15 @@ class WorkspaceTemplateService:
         """Initialize the workspace template service.
 
         Args:
-            template_base_path: Base path for template files. Defaults to ~/.octopus/workspace_template
+            template_base_path: Base path for template files. Defaults to backend/templates/workspace
         """
         if template_base_path is None:
-            template_base_path = Path.home() / ".octopus" / "workspace_template"
+            template_base_path = Path(__file__).parent.parent / "templates" / "workspace"
         self.template_base_path = Path(template_base_path)
 
     def get_template_path(self) -> Path:
         """Get the template base path."""
         return self.template_base_path
-
-    def init_template_directory(self) -> bool:
-        """Initialize the template directory with default template files.
-
-        Creates the template directory structure if it doesn't exist.
-
-        Returns:
-            True if successful, False otherwise.
-        """
-        try:
-            self.template_base_path.mkdir(parents=True, exist_ok=True)
-
-            for dirname in self.TEMPLATE_DIRS:
-                (self.template_base_path / dirname).mkdir(parents=True, exist_ok=True)
-
-            for filename in self.TEMPLATE_FILES:
-                filepath = self.template_base_path / filename
-                if not filepath.exists():
-                    filepath.write_text(f"# {filename.replace('.md', '')}\n\n", encoding="utf-8")
-
-            logger.info(f"Template directory initialized at: {self.template_base_path}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to initialize template directory: {e}")
-            return False
 
     def copy_to_workspace(self, workspace_path: Path, skip_existing: bool = True) -> bool:
         """Copy template files to a workspace directory.
@@ -98,6 +73,18 @@ class WorkspaceTemplateService:
                     shutil.copy2(source_file, target_file)
                     logger.info(f"Copied template file: {filename} -> {target_file}")
 
+            agent_dirs = ["code-worker", "researcher"]
+            for agent_name in agent_dirs:
+                agent_dir = workspace / "agents" / agent_name
+                agent_dir.mkdir(parents=True, exist_ok=True)
+                soul_file = agent_dir / "SOUL.md"
+                if skip_existing and soul_file.exists():
+                    continue
+                source_file = self.template_base_path / "agents" / agent_name / "SOUL.md"
+                if source_file.exists():
+                    shutil.copy2(source_file, soul_file)
+                    logger.info(f"Copied agent SOUL.md: {agent_name}/SOUL.md")
+
             logger.info(f"Template files copied to workspace: {workspace}")
             return True
         except Exception as e:
@@ -122,7 +109,8 @@ class WorkspaceTemplateService:
             workspace = Path(workspace_path)
             workspace.mkdir(parents=True, exist_ok=True)
 
-            total_steps = len(self.TEMPLATE_FILES) + len(self.TEMPLATE_DIRS)
+            all_items = list(self.TEMPLATE_DIRS) + list(self.TEMPLATE_FILES) + ["agents/code-worker", "agents/researcher"]
+            total_steps = len(all_items)
             current_step = 0
 
             for dirname in self.TEMPLATE_DIRS:
@@ -143,39 +131,33 @@ class WorkspaceTemplateService:
                 source_file = self.template_base_path / filename
                 if source_file.exists():
                     shutil.copy2(source_file, target_file)
-                else:
-                    target_file.write_text(f"# {filename.replace('.md', '')}\n\n", encoding="utf-8")
-
                 current_step += 1
                 if on_progress:
                     on_progress(f"Creating file: {filename}", int(current_step / total_steps * 100))
+
+            agent_dirs = ["code-worker", "researcher"]
+            for agent_name in agent_dirs:
+                agent_dir = workspace / "agents" / agent_name
+                agent_dir.mkdir(parents=True, exist_ok=True)
+                soul_file = agent_dir / "SOUL.md"
+                if soul_file.exists():
+                    current_step += 1
+                    if on_progress:
+                        on_progress(f"Skipping existing agent: {agent_name}", int(current_step / total_steps * 100))
+                    continue
+
+                source_file = self.template_base_path / "agents" / agent_name / "SOUL.md"
+                if source_file.exists():
+                    shutil.copy2(source_file, soul_file)
+                current_step += 1
+                if on_progress:
+                    on_progress(f"Creating agent: {agent_name}", int(current_step / total_steps * 100))
 
             logger.info(f"Workspace setup completed: {workspace}")
             return True
         except Exception as e:
             logger.error(f"Failed to setup workspace: {e}")
             return False
-
-    def is_template_initialized(self) -> bool:
-        """Check if template directory is properly initialized."""
-        if not self.template_base_path.exists():
-            return False
-
-        for dirname in self.TEMPLATE_DIRS:
-            if not (self.template_base_path / dirname).exists():
-                return False
-
-        for filename in self.TEMPLATE_FILES:
-            if not (self.template_base_path / filename).exists():
-                return False
-
-        return True
-
-    def ensure_template_initialized(self) -> bool:
-        """Ensure template directory is initialized, create if needed."""
-        if not self.is_template_initialized():
-            return self.init_template_directory()
-        return True
 
 
 _workspace_template_service: WorkspaceTemplateService | None = None
@@ -187,12 +169,6 @@ def get_workspace_template_service() -> WorkspaceTemplateService:
     if _workspace_template_service is None:
         _workspace_template_service = WorkspaceTemplateService()
     return _workspace_template_service
-
-
-def init_workspace_template() -> bool:
-    """Initialize the global workspace template service."""
-    service = get_workspace_template_service()
-    return service.ensure_template_initialized()
 
 
 def setup_workspace_from_template(workspace_path: Path) -> bool:

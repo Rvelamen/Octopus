@@ -44,11 +44,8 @@ async def lifespan(app: FastAPI):
 
     # 3. Initialize workspace path from database
     from backend.data.provider_store import AgentDefaultsRepository
-    from backend.services.workspace_service import init_workspace_template, setup_workspace_from_template
+    from backend.services.workspace_service import setup_workspace_from_template
     from backend.utils.helpers import get_data_path
-
-    # Initialize template directory first
-    init_workspace_template()
 
     agent_defaults_repo = AgentDefaultsRepository(db)
     agent_defaults = agent_defaults_repo.get_or_create_defaults()
