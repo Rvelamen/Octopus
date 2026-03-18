@@ -17,7 +17,7 @@ function HistoryPanel({ sendWSMessage }) {
   const [error, setError] = useState(null);
   const [expandedChannels, setExpandedChannels] = useState(new Set());
   const [expandedSessions, setExpandedSessions] = useState(new Set());
-  const [filterType, setFilterType] = useState('all'); // "all", "normal", "heartbeat"
+  const [filterType, setFilterType] = useState('all'); // "all", "normal"
   const [expandedTools, setExpandedTools] = useState(new Set()); // 展开的工具消息
   const messagesEndRef = useRef(null);
   const isComponentMounted = useRef(true);
@@ -512,7 +512,6 @@ function HistoryPanel({ sendWSMessage }) {
             >
               <option value="all">All Messages</option>
               <option value="normal">Normal Only</option>
-              <option value="heartbeat">Heartbeat Only</option>
             </select>
           )}
         </div>

@@ -11,6 +11,7 @@ from backend.data.session_db import SessionDatabase
 from backend.data.commands import SessionCommandHandler, CommandResult, handle_session_command
 from backend.data.provider_store import ProviderRepository, ModelRepository, SettingsRepository, ProviderRecord, ModelRecord
 from backend.data.system_providers import SYSTEM_PROVIDERS, SYSTEM_MODELS, get_default_models
+from backend.data.token_store import TokenUsageRepository, TokenUsageRecord, TokenUsageSummary
 
 def init_system_providers(db: Database):
     """Initialize system providers if not exist."""
@@ -79,4 +80,8 @@ __all__ = [
     "SYSTEM_MODELS",
     "get_default_models",
     "init_system_providers",
+    # Token Usage
+    "TokenUsageRepository",
+    "TokenUsageRecord",
+    "TokenUsageSummary",
 ]

@@ -42,9 +42,6 @@ class AgentDefaults(BaseModel):
     max_iterations: int = Field(default=20, alias="maxIterations")
     context_compression_enabled: bool = Field(default=False, alias="contextCompressionEnabled")
     context_compression_turns: int = Field(default=10, alias="contextCompressionTurns")
-    heartbeat_enabled: bool = Field(default=True, alias="heartbeatEnabled")
-    heartbeat_interval: int = Field(default=1800, alias="heartbeatInterval")
-    heartbeat_channel: str = Field(default="cli", alias="heartbeatChannel")
 
 
 class AgentsConfig(BaseModel):

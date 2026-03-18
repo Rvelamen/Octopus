@@ -155,9 +155,6 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
           maxIterations: agentDefaults.maxIterations,
           contextCompressionEnabled: agentDefaults.contextCompressionEnabled,
           contextCompressionTurns: agentDefaults.contextCompressionTurns,
-          heartbeatEnabled: agentDefaults.heartbeatEnabled,
-          heartbeatInterval: agentDefaults.heartbeatInterval,
-          heartbeatChannel: agentDefaults.heartbeatChannel,
         }, 5000);
       }
 
@@ -341,34 +338,6 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
             onChange={(v) => updateAgentDefaultField('contextCompressionTurns', parseInt(v) || 10)}
             placeholder="10"
           />
-        )}
-
-        <SwitchField
-          label="Heartbeat Enabled"
-          checked={agentDefaults.heartbeatEnabled !== false}
-          onChange={(v) => updateAgentDefaultField('heartbeatEnabled', v)}
-        />
-
-        {agentDefaults.heartbeatEnabled !== false && (
-          <>
-            <InputField
-              label="Heartbeat Interval (seconds)"
-              type="number"
-              value={agentDefaults.heartbeatInterval || 1800}
-              onChange={(v) => updateAgentDefaultField('heartbeatInterval', parseInt(v) || 1800)}
-              placeholder="1800"
-            />
-            <SelectField
-              label="Heartbeat Channel"
-              value={agentDefaults.heartbeatChannel || 'cli'}
-              onChange={(v) => updateAgentDefaultField('heartbeatChannel', v)}
-              options={[
-                { value: 'cli', label: 'CLI' },
-                { value: 'feishu', label: 'Feishu' },
-                { value: 'desktop', label: 'Desktop' },
-              ]}
-            />
-          </>
         )}
       </ConfigCard>
     );

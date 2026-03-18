@@ -179,7 +179,7 @@ const CronPanel = ({ sendWSMessage }) => {
       {/* Toolbar */}
       <div className="cron-toolbar">
         <div className="toolbar-left">
-          <div className="toolbar-icon"><Clock size={18} /></div>
+          <WindowDots />
           <span className="toolbar-title">CRON_JOBS</span>
           <span className="job-count">({jobs.length})</span>
         </div>

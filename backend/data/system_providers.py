@@ -525,7 +525,6 @@ SYSTEM_MODELS = {
         {"model_id": "glm-4.6v", "display_name": "GLM-4.6V", "model_types": ["chat"], "group_name": "GLM-4.6V", "context_window": 32768, "enabled": False},
         {"model_id": "glm-4.6v-flash", "display_name": "GLM-4.6V-Flash", "model_types": ["chat"], "group_name": "GLM-4.6V", "context_window": 32768, "enabled": False},
         {"model_id": "glm-4.6v-flashx", "display_name": "GLM-4.6V-FlashX", "model_types": ["chat"], "group_name": "GLM-4.6V", "context_window": 32768, "enabled": False},
-        {"model_id": "glm-4.7", "display_name": "GLM-4.7", "model_types": ["chat"], "group_name": "GLM-4.7", "context_window": 32768, "enabled": False},
         {"model_id": "glm-4.5", "display_name": "GLM-4.5", "model_types": ["chat"], "group_name": "GLM-4.5", "context_window": 32768, "enabled": False},
         {"model_id": "glm-4.5-air", "display_name": "GLM-4.5-Air", "model_types": ["chat"], "group_name": "GLM-4.5", "context_window": 32768, "enabled": False},
         {"model_id": "glm-4.5-airx", "display_name": "GLM-4.5-AirX", "model_types": ["chat"], "group_name": "GLM-4.5", "context_window": 32768, "enabled": False},

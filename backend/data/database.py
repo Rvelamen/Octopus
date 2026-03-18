@@ -395,9 +395,6 @@ class Database:
                     max_iterations INTEGER DEFAULT 20,
                     context_compression_enabled BOOLEAN DEFAULT 0,
                     context_compression_turns INTEGER DEFAULT 10,
-                    heartbeat_enabled BOOLEAN DEFAULT 1,
-                    heartbeat_interval INTEGER DEFAULT 1800,
-                    heartbeat_channel TEXT DEFAULT 'cli',
                     config_json TEXT DEFAULT '{}',
                     created_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
                     updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
@@ -460,6 +457,60 @@ class Database:
 
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_tool_configs_name ON tool_configs(tool_name)
+            """)
+
+            # ========== Token Usage Tables ==========
+
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS token_usage (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_instance_id INTEGER,
+                    provider_name TEXT NOT NULL,
+                    model_id TEXT NOT NULL,
+                    prompt_tokens INTEGER DEFAULT 0,
+                    completion_tokens INTEGER DEFAULT 0,
+                    total_tokens INTEGER DEFAULT 0,
+                    request_type TEXT DEFAULT 'chat',
+                    created_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
+                    FOREIGN KEY (session_instance_id) REFERENCES session_instances(id) ON DELETE CASCADE
+                )
+            """)
+
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS token_usage_summary (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    scope_type TEXT NOT NULL,
+                    scope_id TEXT,
+                    provider_name TEXT,
+                    model_id TEXT,
+                    total_prompt_tokens INTEGER DEFAULT 0,
+                    total_completion_tokens INTEGER DEFAULT 0,
+                    total_tokens INTEGER DEFAULT 0,
+                    request_count INTEGER DEFAULT 0,
+                    date_date TEXT,
+                    updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
+                    UNIQUE(scope_type, scope_id, provider_name, model_id, date_date)
+                )
+            """)
+
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_token_usage_instance ON token_usage(session_instance_id)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_token_usage_provider ON token_usage(provider_name)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_token_usage_model ON token_usage(model_id)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_token_usage_created ON token_usage(created_at)
+            """)
+
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_token_summary_scope ON token_usage_summary(scope_type, scope_id)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_token_summary_date ON token_usage_summary(date_date)
             """)
 
             # ========== Default Data ==========

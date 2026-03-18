@@ -1066,7 +1066,7 @@ const WorkspacePanel = ({ sendWSMessage }) => {
       {/* Toolbar */}
       <div className="workspace-toolbar">
         <div className="toolbar-left">
-          <div className="toolbar-icon">[]</div>
+          <WindowDots />
           <span className="toolbar-title">WORKSPACE_EXPLORER</span>
         </div>
         <div className="toolbar-right">

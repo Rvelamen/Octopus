@@ -26,7 +26,7 @@ class InboundMessage:
     timestamp: datetime = field(default_factory=datetime.now)
     media: list[str] = field(default_factory=list)  # Media URLs (deprecated, use content instead)
     metadata: dict[str, Any] = field(default_factory=dict)  # Channel-specific data
-    message_type: str = "normal"  # "normal" or "heartbeat" - marks if this is a heartbeat-triggered message
+    message_type: str = "normal"  # Message type for routing/filtering
 
     @property
     def session_key(self) -> str:

@@ -1,74 +1,104 @@
 <div align="center">
-  <img src="./agents/system/avatars/octopus.png" alt="Octopus Logo" width="200" " />
-  
+  <img src="./agents/system/avatars/octopus.png" alt="Octopus Logo" width="200" />
+
   <h1>
-    <img src="https://img.shields.io/badge/🐙Octopus·章鱼哥-FF6B35?style=for-the-badge&labelColor=1a1a2e" alt="Octopus·章鱼哥" />
+    <img src="https://img.shields.io/badge/🐙Octopus-FF6B35?style=for-the-badge&labelColor=1a1a2e" alt="Octopus" />
   </h1>
-  
+
   <p>
-    <strong style="font-size: 1.2em; color: #FF6B35;">你的智能助手 · 多触手高效协作</strong>
+    <strong style="font-size: 1.2em; color: #FF6B35;">Desktop AI Agent Framework · Multi-tentacle Collaboration</strong>
   </p>
-  
+
   <p>
     <img src="https://img.shields.io/badge/version-1.0.0-FF6B35?style=flat-square&logo=github" alt="Version" />
     <img src="https://img.shields.io/badge/license-MIT-4ECDC4?style=flat-square" alt="License" />
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-45B7D1?style=flat-square" alt="Platform" />
   </p>
-  
+
   <p>
     <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React" />
     <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
     <img src="https://img.shields.io/badge/Electron-28-47848F?style=flat-square&logo=electron&logoColor=white" alt="Electron" />
+    <img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" />
   </p>
 </div>
 
 ---
 
 <div align="center">
-  <h3>🌟 像章鱼一样，同时处理多件事 🌟</h3>
+  <h3>🌟 Like an octopus, handle multiple things at once 🌟</h3>
 </div>
 
-## ✨ 为什么选择章鱼哥？
+## ✨ Core Features
 
-<table>
+<table align="center">
 <tr>
-<td width="50%">
+<td align="center" width="260px">
 
-### 🤖 **多模型大脑**
-- OpenAI GPT 系列
-- Claude 系列
-- Gemini / DeepSeek
-- 通义千问 / 文心一言
-- **50+ 模型随心切换**
+**🚀 One-Click Deploy**
+*No server, no YAML*
+
+⚡ Double-click to install
+🐍 Embedded Python env
+💾 Portable USB mode
+🔒 Data stays local
 
 </td>
-<td width="50%">
+<td align="center" width="260px">
 
-### 🔌 **无限扩展触手**
-- MCP 协议支持
-- 插件系统
-- 自定义工具
-- 外部服务接入
+**💰 Cost Transparency**
+*Know what you spend*
+
+📊 Real-time token counter
+📈 Visual cost charts
+⚠️ Budget alerts
+🔄 Model cost compare
+
+</td>
+<td align="center" width="260px">
+
+**🧩 Markdown Skills**
+*Extend without coding*
+
+📝 Write `SKILL.md`
+🔗 MCP protocol support
+📦 Git install extensions
+♻️ Hot-reload enabled
 
 </td>
 </tr>
 <tr>
-<td width="50%">
+<td align="center" width="260px">
 
-### 💻 **桌面级体验**
-- React + Vite 极速 UI
-- Monaco 代码编辑器
-- ECharts 数据可视化
-- 本地数据优先
+**🤖 Visual SubAgent**
+*Create AI workers*
+
+🎨 GUI agent creator
+📁 Isolated workspaces
+🎯 Auto task dispatch
+🧠 Own config & memory
 
 </td>
-<td width="50%">
+<td align="center" width="260px">
 
-### 🔄 **多通道协作**
-- 桌面客户端
-- 飞书集成
-- 定时任务 (Cron)
-- 智能会话管理
+**⏰ Smart Tasks**
+*Actually run tasks*
+
+▶️ SubAgent execution
+📅 Cron/interval/once
+💪 Survive restarts
+💬 Access context
+
+</td>
+<td align="center" width="260px">
+
+**🗂️ Project Isolation**
+*Separate workspaces*
+
+⚙️ Per-project config
+🔄 Switch instantly
+👥 Export for team
+💬 Never lose history
 
 </td>
 </tr>
@@ -76,112 +106,331 @@
 
 ---
 
-## 🚀 快速开始
+## 🔌 Extension Ecosystem
 
-### 环境准备
+### Skill Extensions (Just Markdown)
 
-```bash
-# 你需要
-Node.js >= 18
-Python >= 3.10
+Write a `SKILL.md` file to teach AI new capabilities:
+
+```markdown
+---
+name: "Code Review"
+emoji: "🔍"
+---
+
+When reviewing code, check for:
+1. Security issues (SQL injection, XSS)
+2. Performance bottlenecks
+3. Naming conventions
 ```
 
-### 一键启动
+Drop it into `workspace/extensions/my-skill/SKILL.md` and restart to activate.
+
+### MCP Protocol Support
+
+- Connect to any MCP server (stdio / WebSocket / SSE)
+- Auto-discover tools, no manual configuration needed
+- Visual permission management
+
+---
+
+## ⚙️ Visual Configuration
+
+All configuration has a graphical interface, no YAML required:
+
+| Config Item | Description |
+|:--|:--|
+| **Model Providers** | Add OpenAI/Anthropic/DeepSeek, support multi-provider switching |
+| **Tool Toggles** | Enable/disable tools with one click, set timeout |
+| **Workspace** | Isolated workspaces with separate config and memory |
+| **Budget Limit** | Set monthly token limit with over-budget alerts |
+
+---
+
+## 💰 Token Usage Visualization
+
+Monitor the cost of every conversation in real-time:
+
+- 📊 **Real-time Stats**: Input/output tokens, cost breakdown
+- 📈 **Historical Trends**: View consumption by day/week/month
+- ⚠️ **Budget Alerts**: Set limits with automatic warnings
+- 🔄 **Model Comparison**: Cost efficiency across models at a glance
+
+---
+
+## ⏰ Smart Scheduled Tasks
+
+Not just notifications, but actual work:
+
+- **SubAgent Execution**: Tasks run in isolated agents, performing real operations
+- **Flexible Scheduling**: Support ISO time, interval seconds, Cron expressions
+- **Context Inheritance**: Tasks can access session memory from creation time
+- **Persistent Storage**: Tasks saved in SQLite, survive restarts
+
+---
+
+## 🗂️ Workspace Management
+
+Each project has its own isolated workspace:
+
+```
+workspace/
+├── project-a/          # Project A
+│   ├── extensions/     # Exclusive extensions
+│   ├── memory/         # Long-term memory
+│   └── history/        # Chat history
+├── project-b/          # Project B
+│   └── ...
+```
+
+- Switch workspace = switch complete config and memory
+- Export/import workspaces supported
+- Team sharing: export workspace, colleagues import to use
+
+---
+
+## 💬 Chat History
+
+- All conversations saved in local SQLite
+- Organized by session with search support
+- Return to any historical session anytime
+- Support parallel multi-sessions
+
+---
+
+## 🤖 Visual SubAgent
+
+Create and manage specialized agents through the UI:
+
+- **Visual Editing**: Modify `SOUL.md` to configure role, tools, model
+- **One-click Creation**: Fill in name to auto-generate template config
+- **Isolated Workspace**: Each SubAgent has its own config and memory
+- **Master-Slave Dispatch**: Main agent automatically calls appropriate SubAgent
+
+---
+
+## 🛠️ Built-in Tools
+
+| Category | Tools | Description |
+|:--|:--|:--|
+| 📁 Filesystem | `read`, `write`, `edit`, `list` | File read/write operations |
+| 🖥️ System | `shell`, `spawn` | Command execution |
+| 🌐 Network | `web_fetch` | Web content fetching |
+| 🖼️ Image | `image_understand`, `image_generate` | AI image processing |
+| ⏰ Schedule | `cron_add`, `cron_list`, `cron_remove` | Task scheduling |
+| 💬 Message | `send_message` | Multi-channel messaging |
+| ⚡ Action | `action` | Execute extension actions |
+
+---
+
+## 🚀 Quick Start
+
+### Requirements
+- **Node.js** >= 18
+- **Python** >= 3.10
+
+### Install & Run
 
 ```bash
-# 1. 克隆项目
+# 1. Clone repository
 git clone <repository-url>
 cd octopus
 
-# 2. 安装依赖
+# 2. Install dependencies
 npm install
 
-# 3. 配置 Python
+# 3. Setup Python environment
 python setup_portable_python.py
 
-# 4. 启动开发模式
+# 4. Start development mode
 npm run dev
 ```
 
-> 💡 `npm run dev` 会同时启动前端开发服务器和 Electron 桌面应用
+> 💡 `npm run dev` starts both:
+> - Frontend dev server (http://localhost:3000)
+> - Electron desktop window
 
 ---
 
-## 📦 构建发布
+## 📦 Build & Release
 
-```bash
-# 🔨 构建前端
-npm run build:frontend
+### Development Commands
 
-# 🐍 构建 Python 后端
-npm run build:python
+| Command | Description |
+|:--|:--|
+| `npm run dev` | Dev mode (frontend + Electron) |
+| `npm run dev:frontend` | Frontend dev server only |
+| `npm run dev:electron` | Electron only |
 
-# 📀 完整打包
-npm run dist        # 所有平台
-npm run dist:mac    # 仅 macOS
-npm run dist:win    # 仅 Windows
-```
+### Build Commands
 
-输出目录：`dist-electron/`
+| Command | Description |
+|:--|:--|
+| `npm run build:frontend` | Build React frontend |
+| `npm run build:python` | Package Python backend |
+| `npm run build` | Full build (frontend + Electron) |
 
----
+### Package & Release
 
-## 🏗️ 项目架构
+| Command | Description | Output |
+|:--|:--|:--|
+| `npm run dist` | Package current platform | Auto-select by platform |
+| `npm run dist:mac` | macOS package | DMG + ZIP (x64/arm64) |
+| `npm run dist:win` | Windows package | NSIS installer + portable |
 
-```
-🐙 octopus/
-├── 🧠 agents/          # AI Agent 配置
-├── ⚡ backend/         # Python 后端服务
-├── 🖥️  electron/        # Electron 主进程
-├── 🎨 frontend/        # React 前端应用
-└── 📂 workspace/       # 工作区数据
-```
-
-| 模块 | 技术栈 | 说明 |
-|------|--------|------|
-| 前端 | React 18 + Vite + Ant Design | 现代化响应式界面 |
-| 后端 | Python + FastAPI + SQLite | 高性能本地服务 |
-| 桌面 | Electron 28 | 跨平台桌面应用 |
+> 📂 Output: `dist-electron/`
+> 📖 Detailed guide: [README_BUILD.md](./README_BUILD.md)
 
 ---
 
-## 🔧 模型配置
+## 🏗️ Project Architecture
 
-章鱼哥支持 **50+** 种 AI 模型，在设置中添加你的 API 密钥即可：
+```
+octopus/
+├── agents/                 🧠 AI Agent workspace
+│   ├── code-reviewer/      Code review agent
+│   ├── common/             Common agent templates
+│   └── system/             System agent config
+│       └── avatars/        Agent avatar assets
+├── backend/                ⚡ Python backend
+│   ├── agent/              Agent core logic
+│   ├── api/                FastAPI service interface
+│   ├── channels/           Multi-channel support (desktop/feishu)
+│   ├── core/               Core modules (config/events/models)
+│   ├── data/               Data storage (SQLite)
+│   ├── extensions/         Plugin system
+│   ├── mcp/                MCP protocol integration
+│   ├── services/           Service layer (cron/image)
+│   ├── tools/              Built-in tools
+│   │   ├── filesystem.py   Filesystem tools
+│   │   ├── shell.py        Shell tools
+│   │   ├── web_fetch.py    Web fetch tools
+│   │   ├── image.py        Image processing tools
+│   │   ├── cron.py         Cron task tools
+│   │   └── message.py      Message tools
+│   └── utils/              Utility functions
+├── electron/               🖥️ Electron main process
+│   ├── main.js             Main entry
+│   └── preload.js          Preload script
+├── frontend/               🎨 React frontend
+│   ├── src/
+│   │   ├── components/     UI components
+│   │   │   ├── config/     Config components
+│   │   │   ├── forms/      Form components
+│   │   │   ├── modals/     Modal components
+│   │   │   └── panels/     Feature panels
+│   │   ├── utils/          Utilities
+│   │   ├── App.jsx         App entry
+│   │   └── pixel-theme.css Pixel theme styles
+│   └── package.json
+├── workspace/              📂 Workspace data
+│   └── memory/             Agent memory storage
+├── package.json            Project config & scripts
+├── setup_portable_python.py Python environment setup
+└── README.md               Project documentation
+```
+
+### Tech Stack
+
+| Layer | Technology | Description |
+|:--|:--|:--|
+| **Frontend** | React 18 + Vite | Modern UI framework |
+| | Ant Design | Component library |
+| | Monaco Editor | Code editor |
+| | ECharts | Data visualization |
+| **Backend** | Python 3.10+ + FastAPI | High-performance async web service |
+| | SQLite | Local lightweight database |
+| **Desktop** | Electron 28 | Cross-platform desktop framework |
+| | electron-builder | App packaging tool |
+
+---
+
+## 🔧 Model Configuration
+
+Add API keys in the app settings panel:
+
+### Supported Providers
+
+| Provider | Representative Models |
+|:--|:--|
+| OpenAI | GPT-4o, GPT-4 Turbo, GPT-3.5 Turbo |
+| Anthropic | Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku |
+| Google | Gemini Pro, Gemini Ultra |
+| DeepSeek | DeepSeek Chat, DeepSeek Coder |
+| Alibaba | Tongyi Qianwen series |
+| Baidu | Wenxin Yiyan series |
+
+### Configuration Steps
+
+1. Open app → Settings → Model Providers
+2. Add provider (select or custom)
+3. Enter API Key
+4. Select model to use
+5. Save and start
+
+---
+
+## 🔌 MCP Protocol
+
+Octopus fully supports **Model Context Protocol (MCP)**:
+
+- 🔗 Connect to any MCP server
+- 🛠️ Use tools provided by MCP
+- 🔐 Secure permission management
+- 🔄 Real-time connection monitoring
+
+### Supported Transports
+
+- **stdio**: Local process communication
+- **WebSocket**: Remote real-time connection
+- **SSE**: Server-Sent Events
+
+---
+
+## 🤖 Agent Workspace
+
+Agent system supports continuous memory and personalization:
+
+### Configuration Files
+
+| File | Purpose |
+|:--|:--|
+| `SOUL.md` | Agent soul - core principles and personality |
+| `IDENTITY.md` | Agent identity - self-introduction |
+| `AGENTS.md` | Workspace guide - usage instructions |
+| `MEMORY.md` | Long-term memory - important info persistence |
+| `memory/YYYY-MM-DD.md` | Daily notes - daily event records |
+
+### Creating Custom Agents
+
+Create new folder in `agents/` directory, add config files to create custom agent.
+
+---
+
+## 📖 Documentation
+
+- 📘 [Build Guide](./README_BUILD.md) - Packaging & release details
+- 📗 [Agent Guide](./agents/system/AGENTS.md) - Agent workspace usage
+- 📕 [Identity](./agents/system/IDENTITY.md) - Learn who Octopus is
+- 🧠 [Soul Core](./agents/system/SOUL.md) - Agent core principles
+- 🔌 [MCP Docs](./backend/mcp/README.md) - MCP protocol integration
+
+---
+
+## 🤝 Contributing
+
+Issues and Pull Requests welcome:
+
+- 🐛 Bug reports
+- ✨ New features
+- 📝 Documentation improvements
+- 🎨 UI/UX optimizations
+
+---
 
 <div align="center">
 
-| 提供商 | 状态 |
-|--------|------|
-| OpenAI | ✅ GPT-4 / GPT-3.5 |
-| Anthropic | ✅ Claude 系列 |
-| Google | ✅ Gemini |
-| DeepSeek | ✅ 全系列 |
-| 阿里云 | ✅ 通义千问 |
-| 百度 | ✅ 文心一言 |
-| ... | ✅ 更多 |
-
-</div>
-
----
-
-## 📖 文档导航
-
-- 📘 [构建指南](./README_BUILD.md) - 打包发布详细说明
-- 📗 [Agent 指南](./agents/system/AGENTS.md) - Agent 工作区使用
-- 📕 [身份设定](./agents/system/IDENTITY.md) - 了解章鱼哥是谁
-
----
-
-## 🤝 参与贡献
-
-欢迎提交 Issue 和 Pull Request！
-
----
-
-<div align="center">
-
-### 🐙 章鱼哥，让你的工作更高效 🐙
+### 🐙 Octopus makes your work more efficient 🐙
 
 <img src="./agents/system/avatars/octopus.png" width="80" style="border-radius: 10px;" />
 

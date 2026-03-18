@@ -571,9 +571,6 @@ class AgentDefaultsRecord:
     max_iterations: int
     context_compression_enabled: bool
     context_compression_turns: int
-    heartbeat_enabled: bool
-    heartbeat_interval: int
-    heartbeat_channel: str
     config_json: dict[str, Any]
     created_at: datetime
     updated_at: datetime
@@ -597,10 +594,9 @@ class AgentDefaultsRepository:
                 """INSERT INTO agent_defaults
                    (workspace_path, max_tokens, temperature, max_iterations,
                     context_compression_enabled, context_compression_turns,
-                    heartbeat_enabled, heartbeat_interval, heartbeat_channel,
                     config_json, created_at, updated_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
-                ("", 8192, 0.7, 20, False, 10, True, 1800, "cli", "{}")
+                   VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
+                ("", 8192, 0.7, 20, False, 10, "{}")
             )
 
             row = conn.execute(
@@ -625,9 +621,6 @@ class AgentDefaultsRepository:
         max_iterations: int | None = None,
         context_compression_enabled: bool | None = None,
         context_compression_turns: int | None = None,
-        heartbeat_enabled: bool | None = None,
-        heartbeat_interval: int | None = None,
-        heartbeat_channel: str | None = None,
         config_json: dict[str, Any] | None = None,
     ) -> bool:
         """Update agent defaults."""
@@ -658,15 +651,6 @@ class AgentDefaultsRepository:
         if context_compression_turns is not None:
             updates.append("context_compression_turns = ?")
             params.append(context_compression_turns)
-        if heartbeat_enabled is not None:
-            updates.append("heartbeat_enabled = ?")
-            params.append(heartbeat_enabled)
-        if heartbeat_interval is not None:
-            updates.append("heartbeat_interval = ?")
-            params.append(heartbeat_interval)
-        if heartbeat_channel is not None:
-            updates.append("heartbeat_channel = ?")
-            params.append(heartbeat_channel)
         if config_json is not None:
             updates.append("config_json = ?")
             params.append(json.dumps(config_json))
@@ -729,9 +713,6 @@ class AgentDefaultsRepository:
             max_iterations=row["max_iterations"] or 20,
             context_compression_enabled=bool(row["context_compression_enabled"]),
             context_compression_turns=row["context_compression_turns"] or 10,
-            heartbeat_enabled=bool(row["heartbeat_enabled"]),
-            heartbeat_interval=row["heartbeat_interval"] or 1800,
-            heartbeat_channel=row["heartbeat_channel"] or "cli",
             config_json=json.loads(row["config_json"] or "{}"),
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),

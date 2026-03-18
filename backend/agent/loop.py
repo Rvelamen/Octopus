@@ -28,6 +28,7 @@ from backend.agent.subagent import SubagentManager
 from backend.agent.aggregator import SubagentAggregator
 from backend.data.session_manager import SessionManager
 from backend.data.commands import handle_session_command
+from backend.data.token_store import TokenUsageRepository
 from backend.extensions.loader import ExtensionLoader
 
 
@@ -67,6 +68,7 @@ class AgentLoop:
         self.context = ContextBuilder(workspace)
         self.sessions = SessionManager(workspace, db=self.db)
         self.tools = ToolRegistry(mcp_bridge=mcp_bridge)
+        self.token_usage = TokenUsageRepository(self.db)
 
         # Initialize aggregator for multi-subagent support
         self.aggregator = SubagentAggregator(bus)
@@ -195,6 +197,18 @@ class AgentLoop:
                 tools=[],
                 model=model
             )
+            
+            # Record token usage for compression
+            if response.usage:
+                session_instance_id = session.active_instance.id if session.active_instance else None
+                self._record_token_usage(
+                    session_instance_id=session_instance_id,
+                    provider_name=provider_type,
+                    model_id=model,
+                    usage=response.usage,
+                    request_type="compression"
+                )
+            
             summary = response.content or ""
             logger.info(f"Context compressed to {len(summary)} characters")
             return summary
@@ -455,6 +469,16 @@ class AgentLoop:
                 model=model
             )
             logger.info(f"LLM Response: {response}")
+            
+            # Record token usage
+            if response.usage:
+                self._record_token_usage(
+                    session_instance_id=session_instance_id,
+                    provider_name=provider_type,
+                    model_id=model,
+                    usage=response.usage
+                )
+            
             # Handle tool calls
             if response.has_tool_calls:
                 # Build tool_calls data
@@ -687,6 +711,15 @@ class AgentLoop:
                 model=model
             )
 
+            # Record token usage
+            if response.usage:
+                self._record_token_usage(
+                    session_instance_id=session_instance_id,
+                    provider_name=provider_type,
+                    model_id=model,
+                    usage=response.usage
+                )
+
             if response.has_tool_calls:
                 # Build tool_calls data
                 tool_calls_data = [
@@ -838,7 +871,7 @@ class AgentLoop:
             session_key: Session identifier.
             channel: Source channel (for context).
             chat_id: Source chat ID (for context).
-            message_type: "normal" or "heartbeat" - marks if this is a heartbeat-triggered message.
+            message_type: Message type for routing/filtering.
 
         Returns:
             The agent's response.
@@ -908,5 +941,40 @@ class AgentLoop:
 
         logger.info(f"[_build_multimodal_content] Built {len(result)} content items")
         return result
+
+    def _record_token_usage(
+        self,
+        session_instance_id: int | None,
+        provider_name: str,
+        model_id: str,
+        usage: dict,
+        request_type: str = "chat"
+    ) -> None:
+        """Record token usage to database.
+        
+        Args:
+            session_instance_id: The session instance ID
+            provider_name: Provider name (e.g., openai, anthropic)
+            model_id: Model ID (e.g., gpt-4, claude-3-opus)
+            usage: Usage dict with prompt_tokens, completion_tokens, total_tokens
+            request_type: Type of request (chat, compression, etc.)
+        """
+        try:
+            prompt_tokens = usage.get("prompt_tokens", 0)
+            completion_tokens = usage.get("completion_tokens", 0)
+            
+            self.token_usage.record_usage(
+                session_instance_id=session_instance_id,
+                provider_name=provider_name,
+                model_id=model_id,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                request_type=request_type
+            )
+            
+            logger.debug(f"Token usage recorded: {provider_name}/{model_id} - "
+                        f"prompt={prompt_tokens}, completion={completion_tokens}")
+        except Exception as e:
+            logger.error(f"Failed to record token usage: {e}")
 
 

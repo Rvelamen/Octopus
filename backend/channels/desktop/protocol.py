@@ -242,9 +242,16 @@ class MessageType(Enum):
     IMAGE_GET_PROVIDERS = "image_get_providers"             # Get image providers
     IMAGE_SET_DEFAULT_PROVIDER = "image_set_default_provider"  # Set default image provider
 
+    # Token Usage - Client -> Server
+    TOKEN_GET_USAGE = "token_get_usage"                     # Get token usage statistics
+
     # Image Provider - Server -> Client
     IMAGE_PROVIDERS = "image_providers"                     # Image providers list
     IMAGE_DEFAULT_PROVIDER_UPDATED = "image_default_provider_updated"  # Default provider updated
+
+    # Token Usage - Server -> Client
+    TOKEN_USAGE = "token_usage"                             # Token usage statistics
+    TOKEN_USAGE_UPDATE = "token_usage_update"               # Real-time token usage update
 
 
 @dataclass
@@ -374,6 +381,8 @@ CLIENT_MESSAGE_TYPES = {
     # Image Provider
     MessageType.IMAGE_GET_PROVIDERS,
     MessageType.IMAGE_SET_DEFAULT_PROVIDER,
+    # Token Usage
+    MessageType.TOKEN_GET_USAGE,
 }
 
 SERVER_MESSAGE_TYPES = {
@@ -458,4 +467,7 @@ SERVER_MESSAGE_TYPES = {
     # Image Provider
     MessageType.IMAGE_PROVIDERS,
     MessageType.IMAGE_DEFAULT_PROVIDER_UPDATED,
+    # Token Usage
+    MessageType.TOKEN_USAGE,
+    MessageType.TOKEN_USAGE_UPDATE,
 }

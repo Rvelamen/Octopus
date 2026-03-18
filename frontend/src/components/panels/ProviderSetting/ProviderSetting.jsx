@@ -234,7 +234,7 @@ const ProviderSetting = ({ sendWSMessage }) => {
           {notification.message}
         </div>
       )}
-      <div className="provider-setting-list">
+      <div className="provider-setting-list pixel-border">
         <ProviderList
           providers={filteredProviders}
           selectedProvider={selectedProvider}
@@ -247,7 +247,7 @@ const ProviderSetting = ({ sendWSMessage }) => {
           togglingProviders={togglingProviders}
         />
       </div>
-      <div className="provider-setting-detail">
+      <div className="provider-setting-detail pixel-border">
         <ProviderDetail
           provider={selectedProvider}
           models={models}

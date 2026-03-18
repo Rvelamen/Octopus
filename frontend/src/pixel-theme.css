@@ -376,7 +376,7 @@ hr {
 .window-header {
   background: var(--surface);
   color: var(--text);
-  padding: var(--s-3) var(--s-5);
+  padding: var(--s-2) var(--s-5);
   font-weight: 600;
   font-size: 13px;
   border-bottom: 1px solid var(--board);
@@ -590,7 +590,6 @@ hr {
   font-weight: 600;
   border-radius: var(--r-md) !important;
   box-shadow: var(--shadow-1) !important;
-  padding: var(--s-4) var(--s-6) !important;
   margin-left: var(--s-6);
   cursor: pointer;
   transition: all 0.2s;
@@ -788,7 +787,7 @@ hr {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--s-4) var(--s-6);
+  padding: var(--s-2) var(--s-6);
   background: var(--surface);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   border: 1px solid var(--board);
@@ -1101,7 +1100,6 @@ hr {
 .config-tab-content {
   flex: 1;
   overflow-y: auto;
-  padding: var(--s-6);
   background: var(--surface);
   border: 1px solid var(--board);
   border-radius: 0 0 var(--r-lg) var(--r-lg);
@@ -1316,7 +1314,7 @@ hr {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--s-4) var(--s-6);
+  padding: var(--s-2) var(--s-6);
   background: var(--surface);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   border: 1px solid var(--board);
@@ -2230,7 +2228,7 @@ hr {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--s-4) var(--s-6);
+  padding: var(--s-2) var(--s-6);
   background: var(--surface);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   border: 1px solid var(--board);
@@ -3802,7 +3800,7 @@ hr {
   display: flex;
   align-items: center;
   gap: var(--s-3);
-  padding: var(--s-3) var(--s-4);
+  padding: var(--s-2) var(--s-4);
   background: var(--surface-2);
   border-bottom: 1px solid var(--board);
 }
@@ -4619,7 +4617,7 @@ hr {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--s-4) var(--s-6);
+  padding: var(--s-2) var(--s-6);
   background: var(--surface);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   border: 1px solid var(--board);
@@ -4732,7 +4730,7 @@ hr {
   display: flex;
   align-items: center;
   gap: var(--s-2);
-  padding: var(--s-2) var(--s-3);
+  /* padding: var(--s-2) var(--s-3); */
   border-radius: var(--r-sm);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -5454,7 +5452,7 @@ hr {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--s-4) var(--s-6);
+  padding: var(--s-2) var(--s-6);
   background: var(--surface);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   border: 1px solid var(--board);
@@ -5874,7 +5872,7 @@ hr {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--s-4) var(--s-6);
+  padding: var(--s-2) var(--s-6);
   background: var(--surface);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   border: 1px solid var(--board);
@@ -6484,7 +6482,7 @@ hr {
   display: flex;
   align-items: center;
   gap: var(--s-3);
-  padding: var(--s-3) var(--s-4);
+  padding: var(--s-2) var(--s-4);
   background: var(--surface-2);
   border-bottom: 1px solid var(--board);
 }

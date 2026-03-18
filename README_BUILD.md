@@ -3,7 +3,7 @@
 ## 项目结构
 
 ```
-nanobot/
+octopus/
 ├── electron/           # Electron 主进程代码
 │   ├── main.js        # 主进程入口
 │   └── preload.js     # 预加载脚本

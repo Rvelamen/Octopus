@@ -835,7 +835,7 @@ const ExtensionsPanel = ({ sendWSMessage, ws }) => {
       {/* Toolbar */}
       <div className="skills-toolbar">
         <div className="toolbar-left">
-          <div className="toolbar-icon">[]</div>
+          <WindowDots />
           <span className="toolbar-title">EXTENSIONS_MARKETPLACE</span>
         </div>
         <div className="toolbar-right">

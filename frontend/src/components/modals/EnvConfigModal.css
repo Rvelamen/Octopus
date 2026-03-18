@@ -466,7 +466,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--s-2);
-  padding: var(--s-3) var(--s-5);
+  padding: var(--s-2) var(--s-5);
   font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 600;

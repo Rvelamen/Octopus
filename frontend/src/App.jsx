@@ -10,6 +10,7 @@ import {
   Clock,
   Users,
   RotateCcw,
+  Zap,
 } from "lucide-react";
 import octopusLogo from "./assets/octopus-logo.png";
 import WindowDots from "./components/WindowDots";
@@ -22,6 +23,7 @@ import {
   WorkspacePanel,
   CronPanel,
   AgentsPanel,
+  TokenUsagePanel,
 } from "./components/panels";
 
 const WS_BASE = "ws://127.0.0.1:18791";
@@ -52,6 +54,10 @@ function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [toolCalls, setToolCalls] = useState([]); // 实时工具调用状态
   const [isRestarting, setIsRestarting] = useState(false); // 重启状态
+  const [tokenUsage, setTokenUsage] = useState({
+    global: { total_prompt_tokens: 0, total_completion_tokens: 0, total_tokens: 0, request_count: 0 },
+    currentSession: { total_prompt_tokens: 0, total_completion_tokens: 0, total_tokens: 0, request_count: 0 },
+  });
 
   // ===== Refs =====
   const ws = useRef(null);
@@ -172,6 +178,24 @@ function App() {
           case "mcp_state_change":
             // MCP state change event - can be used to update UI in real-time
             console.log("MCP state change:", data);
+            break;
+          case "token_usage":
+            // Token usage response
+            if (data.scope === "global") {
+              setTokenUsage(prev => ({
+                ...prev,
+                global: data.summary || prev.global,
+              }));
+            } else if (data.scope === "instance") {
+              setTokenUsage(prev => ({
+                ...prev,
+                currentSession: data.summary || prev.currentSession,
+              }));
+            }
+            break;
+          case "token_usage_update":
+            // Real-time token usage update
+            console.log("Token usage update:", data);
             break;
         }
       };
@@ -331,6 +355,13 @@ function App() {
             <History size={18} />
             <span>HISTORY</span>
           </button>
+          <button
+            className={`nav-item ${activeTab === "tokens" ? "active" : ""}`}
+            onClick={() => setActiveTab("tokens")}
+          >
+            <Zap size={18} />
+            <span>TOKENS</span>
+          </button>
         </nav>
         <div className="status-panel">
           <div className="status-line">VER: 1.0.0</div>
@@ -401,6 +432,7 @@ function App() {
           )}
           {activeTab === "cron" && <CronPanel sendWSMessage={sendWSMessage} />}
           {activeTab === "agents" && <AgentsPanel sendWSMessage={sendWSMessage} />}
+          {activeTab === "tokens" && <TokenUsagePanel sendWSMessage={sendWSMessage} />}
         </div>
       </main>
     </div>
