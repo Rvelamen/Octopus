@@ -88,6 +88,7 @@ import IdeogramModelLogo from '../assets/images/models/ideogram.svg'
 import BytedanceModelLogo from '../assets/images/models/byte_dance.svg'
 import LingModelLogo from '../assets/images/models/ling.png'
 
+
 // Model logo map - uses regex patterns as keys for flexible matching
 const MODEL_LOGO_MAP = [
   { pattern: /gpt-5\.1-codex-mini/i, logo: GPT51CodexMiniModelLogo },
@@ -117,6 +118,7 @@ const MODEL_LOGO_MAP = [
   { pattern: /glm|chatglm|zhipu|cogview/i, logo: ChatGLMModelLogo },
   { pattern: /yi-/i, logo: YiModelLogo },
   { pattern: /moonshot|kimi/i, logo: MoonshotModelLogo },
+
   { pattern: /baichuan/i, logo: BaichuanModelLogo },
   { pattern: /llama/i, logo: LlamaModelLogo },
   { pattern: /mixtral|mistral|codestral|ministral|magistral/i, logo: MistralModelLogo },

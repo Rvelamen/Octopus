@@ -1,6 +1,8 @@
 """System pre-defined providers and models (compatible with Cherry Studio)."""
 
 SYSTEM_PROVIDERS = [
+    {"name": "minimax-coding-plan", "display_name": "MINIMAX-CODING-PLAN", "provider_type": "anthropic", "api_host": "https://api.minimaxi.com/anthropic"},
+    {"name": "kimi-coding-plan", "display_name": "KIMI-CODING-PLAN", "provider_type": "anthropic", "api_host": "https://api.kimi.com/coding"},
     {"name": "cherryin", "display_name": "CherryIN", "provider_type": "openai", "api_host": "https://open.cherryin.net"},
     {"name": "silicon", "display_name": "Silicon", "provider_type": "openai", "api_host": "https://api.siliconflow.cn"},
     {"name": "aihubmix", "display_name": "AiHubMix", "provider_type": "openai", "api_host": "https://aihubmix.com"},
@@ -67,6 +69,12 @@ SYSTEM_PROVIDERS = [
 ]
 
 SYSTEM_MODELS = {
+    "minimax-coding-plan": [
+        {"model_id": "minimax-2.7", "display_name": "MINIMAX-2.7", "model_types": ["chat", "vision"], "group_name": "MINIMAX", "context_window": 32768, "enabled": True},
+    ],
+    "kimi-coding-plan": [
+        {"model_id": "kimi-for-coding", "display_name": "kimi-for-coding", "model_types": ["chat", "vision"], "group_name": "KIMI_CODING_PLAN", "context_window": 32768, "enabled": True},
+    ],
     "302ai": [
         {"model_id": "deepseek-chat", "display_name": "deepseek-chat", "model_types": ["chat"], "group_name": "DeepSeek", "context_window": 32768, "enabled": True},
         {"model_id": "deepseek-reasoner", "display_name": "deepseek-reasoner", "model_types": ["chat"], "group_name": "DeepSeek", "context_window": 32768, "enabled": True},

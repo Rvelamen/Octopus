@@ -65,6 +65,9 @@ import GPUStackProviderLogo from '../assets/images/providers/gpustack.svg'
 import IntelOvmsProviderLogo from '../assets/images/providers/intel.png'
 import CherryInProviderLogo from '../assets/images/providers/cherryin.png'
 import AiOnlyProviderLogo from '../assets/images/providers/aiOnly.webp'
+import KimiProviderLogo from '../assets/images/providers/kimi.webp'
+
+
 
 // Provider logo map - maps provider ID/name to logo
 export const PROVIDER_LOGO_MAP = {
@@ -157,6 +160,8 @@ export const PROVIDER_LOGO_MAP = {
   cherryin: CherryInProviderLogo,
   aionly: AiOnlyProviderLogo,
   'ai-only': AiOnlyProviderLogo,
+  'minimax-coding-plan': MinimaxProviderLogo,
+  'kimi-coding-plan': KimiProviderLogo,
 }
 
 /**

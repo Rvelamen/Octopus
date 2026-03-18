@@ -965,7 +965,7 @@ function ChatPanel({
                               {isUser ? (
                                 <div className="avatar-user">U</div>
                               ) : (
-                                <div className="avatar-assistant">O</div>
+                                <img src="/src/assets/images/octopus.png" className="avatar-assistant-img" alt="Octopus" />
                               )}
                             </div>
                             <div className="message-bubble-meta">
@@ -1050,7 +1050,7 @@ function ChatPanel({
                   <div className="message-bubble message-bubble-assistant">
                     <div className="message-bubble-header">
                       <div className="message-bubble-avatar">
-                        <div className="avatar-assistant">T</div>
+                        <img src="/src/assets/images/octopus.png" className="avatar-assistant-img" alt="Octopus" />
                       </div>
                       <div className="message-bubble-meta">
                         <span className="message-bubble-author">Octopus</span>

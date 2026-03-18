@@ -2281,6 +2281,17 @@ def _get_agents_root_dir() -> Path:
     return workspace.parent / "agents"
 
 
+def _get_workspace_system_dir() -> Path:
+    """Get the workspace system directory.
+
+    Returns:
+        Path to workspace/system directory.
+    """
+    from backend.utils.helpers import get_workspace_path
+    workspace = get_workspace_path()
+    return workspace
+
+
 class AgentGetListHandler(MessageHandler):
     """Handle get agent list requests."""
 
@@ -2573,10 +2584,9 @@ class AgentGetSystemFilesHandler(MessageHandler):
     """Handle get system agent file list requests."""
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        """Return list of all files in agents/system directory."""
+        """Return list of all files in workspace/system directory."""
         try:
-            agents_root = _get_agents_root_dir()
-            system_dir = agents_root / "system"
+            system_dir = _get_workspace_system_dir()
 
             files = []
             if system_dir.exists():
@@ -2610,23 +2620,20 @@ class AgentGetSystemFileHandler(MessageHandler):
     """Handle get system agent file content requests."""
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        """Return content of a specific system agent file."""
+        """Return content of a specific system agent file from workspace/system."""
         try:
             filename = message.data.get("filename")
             if not filename:
                 await self._send_error(websocket, message.request_id, "Filename is required")
                 return
 
-            # Security check: only allow .md files
             if not filename.endswith(".md"):
                 await self._send_error(websocket, message.request_id, "Only .md files are allowed")
                 return
 
-            agents_root = _get_agents_root_dir()
-            system_dir = agents_root / "system"
+            system_dir = _get_workspace_system_dir()
             file_path = system_dir / filename
 
-            # Security check: ensure file is within system directory
             try:
                 file_path = file_path.resolve()
                 system_dir = system_dir.resolve()
@@ -2664,7 +2671,7 @@ class AgentSaveSystemFileHandler(MessageHandler):
     """Handle save system agent file content requests."""
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        """Save content to a specific system agent file."""
+        """Save content to a specific system agent file in workspace/system."""
         try:
             filename = message.data.get("filename")
             content = message.data.get("content")
@@ -2677,16 +2684,13 @@ class AgentSaveSystemFileHandler(MessageHandler):
                 await self._send_error(websocket, message.request_id, "Content is required")
                 return
 
-            # Security check: only allow .md files
             if not filename.endswith(".md"):
                 await self._send_error(websocket, message.request_id, "Only .md files are allowed")
                 return
 
-            agents_root = _get_agents_root_dir()
-            system_dir = agents_root / "system"
+            system_dir = _get_workspace_system_dir()
             file_path = system_dir / filename
 
-            # Security check: ensure file is within system directory
             try:
                 file_path = file_path.resolve()
                 system_dir = system_dir.resolve()
@@ -2697,10 +2701,8 @@ class AgentSaveSystemFileHandler(MessageHandler):
                 await self._send_error(websocket, message.request_id, "Invalid path")
                 return
 
-            # Ensure system directory exists
             system_dir.mkdir(parents=True, exist_ok=True)
 
-            # Write content to file
             file_path.write_text(content, encoding="utf-8")
 
             logger.info(f"Saved system file: {filename}")

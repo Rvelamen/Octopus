@@ -229,7 +229,10 @@ const ProviderDetail = ({
       headers: {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'http-referer': 'https://cherry-ai.com',
+        'x-title': 'Octopus',
+        'priority': 'u=1, i'
       },
       body: JSON.stringify({
         model: modelId,

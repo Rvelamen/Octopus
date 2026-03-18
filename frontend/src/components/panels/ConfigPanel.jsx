@@ -191,6 +191,12 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
     const channel = channelConfigs.find(c => c.channelName === channelName);
     if (!channel) return;
 
+    setChannelConfigs(prev => prev.map(c =>
+      c.channelName === channelName
+        ? { ...c, ...updates }
+        : c
+    ));
+
     try {
       await sendWSMessage('channel_update', {
         channelName: channelName,
@@ -202,11 +208,11 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         verificationToken: updates.verificationToken !== undefined ? updates.verificationToken : channel.verificationToken,
         allowFrom: updates.allowFrom !== undefined ? updates.allowFrom : channel.allowFrom,
       }, 5000);
-
-      // Reload channel configs
-      await loadChannelConfigs();
     } catch (err) {
       console.error("Failed to update channel config", err);
+      setChannelConfigs(prev => prev.map(c =>
+        c.channelName === channelName ? channel : c
+      ));
       alert("Failed to update channel: " + err.message);
     }
   };
