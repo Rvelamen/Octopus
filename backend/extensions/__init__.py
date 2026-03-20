@@ -1,4 +1,4 @@
-"""Unified Extension System for Tracebot.
+"""Unified Extension System for Octopus.
 
 This module provides a unified way to manage skills and plugins
 through a common Extension interface.

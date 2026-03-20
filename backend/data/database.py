@@ -11,7 +11,7 @@ from loguru import logger
 
 
 class Database:
-    """Unified SQLite database manager for all tracebot data.
+    """Unified SQLite database manager for all octopus data.
     
     Manages:
     - MCP servers and tools configuration

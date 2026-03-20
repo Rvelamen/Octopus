@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./agents/system/avatars/octopus.png" alt="Octopus Logo" width="200" />
+  <img src="./backend/templates/workspace/avatars/octopus.png" alt="Octopus Logo" width="200" />
 
   <h1>
     <img src="https://img.shields.io/badge/🐙Octopus-FF6B35?style=for-the-badge&labelColor=1a1a2e" alt="Octopus" />
@@ -432,7 +432,7 @@ Issues and Pull Requests welcome:
 
 ### 🐙 Octopus makes your work more efficient 🐙
 
-<img src="./agents/system/avatars/octopus.png" width="80" style="border-radius: 10px;" />
+<img src="./backend/templates/workspace/avatars/octopus.png" width="80" style="border-radius: 10px;" />
 
 <sub>Built with ❤️ and 🐙 tentacles</sub>
 

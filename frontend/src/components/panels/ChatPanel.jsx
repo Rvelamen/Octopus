@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageSquare, RefreshCw, Trash2, Wrench, ChevronUp, ChevronDown, Plus, Image, X, Upload, Check, Loader2, Copy } from 'lucide-react';
 import WindowDots from '../WindowDots';
 import { parseLinks } from '../../utils/linkUtils';
+import octopusAvatar from '../../assets/images/octopus.png';
 
 const API_BASE = 'http://localhost:18791';
 
@@ -965,7 +966,7 @@ function ChatPanel({
                               {isUser ? (
                                 <div className="avatar-user">U</div>
                               ) : (
-                                <img src="/src/assets/images/octopus.png" className="avatar-assistant-img" alt="Octopus" />
+                                <img src={octopusAvatar} className="avatar-assistant-img" alt="Octopus" />
                               )}
                             </div>
                             <div className="message-bubble-meta">
@@ -1050,7 +1051,7 @@ function ChatPanel({
                   <div className="message-bubble message-bubble-assistant">
                     <div className="message-bubble-header">
                       <div className="message-bubble-avatar">
-                        <img src="/src/assets/images/octopus.png" className="avatar-assistant-img" alt="Octopus" />
+                        <img src={octopusAvatar} className="avatar-assistant-img" alt="Octopus" />
                       </div>
                       <div className="message-bubble-meta">
                         <span className="message-bubble-author">Octopus</span>

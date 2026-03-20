@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./agents/system/avatars/octopus.png" alt="Octopus Logo" width="200" />
+  <img src="./backend/templates/workspace/avatars/octopus.png" alt="Octopus Logo" width="200" />
 
   <h1>
     <img src="https://img.shields.io/badge/🐙Octopus·章鱼哥-FF6B35?style=for-the-badge&labelColor=1a1a2e" alt="Octopus·章鱼哥" />
@@ -432,7 +432,7 @@ Agent 系统支持持续记忆和个性化配置：
 
 ### 🐙 章鱼哥，让你的工作更高效 🐙
 
-<img src="./agents/system/avatars/octopus.png" width="80" style="border-radius: 10px;" />
+<img src="./backend/templates/workspace/avatars/octopus.png" width="80" style="border-radius: 10px;" />
 
 <sub>Built with ❤️ and 🐙 tentacles</sub>
 
