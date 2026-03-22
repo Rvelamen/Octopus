@@ -290,15 +290,50 @@ const MCP_TABS = [
         // 编辑模式：先删除旧服务器，再添加新配置
         await sendWSMessage('mcp_delete_server', { name: editingServerName }, 5000);
       }
-      await sendWSMessage('mcp_add_server', serverData, 5000);
-
+      const response = await sendWSMessage('mcp_add_server', serverData, 30000);
+      const result = response.data || {};
+      
+      // 更新服务器列表和状态
       await loadServers();
       await loadMCPStatus();
-
+      
+      // 如果有工具返回，自动加载工具列表并切换到工具标签页
+      if (result.tools && result.tools.length > 0) {
+        setSelectedServer({
+          ...result.server,
+          connected: result.connected || false,
+          protocol: serverData.protocol || 'stdio'
+        });
+        setServerTools(result.tools);
+        setMcpTab('tools'); // 切换到工具标签页
+        addToast(`Successfully discovered ${result.discovered_count || result.tools.length} tool(s)`, 'success', 3000);
+      } else if (result.connected) {
+        // 连接成功但没有工具，尝试加载工具列表
+        await loadServerTools(serverData.name, true);
+        setMcpTab('tools');
+      }
+      
       // 关闭对话框
       setShowAddDialog(false);
     } catch (err) {
       setError('Failed to add server: ' + err.message);
+    }
+  };
+
+  // Reconnect to server
+  const reconnectServer = async (serverName) => {
+    addToast(`Reconnecting to "${serverName}"...`, 'info', 2000);
+    try {
+      const response = await sendWSMessage('mcp_reconnect_server', { name: serverName }, 30000);
+      if (response.data?.success) {
+        addToast(`Successfully reconnected to "${serverName}"`, 'success', 3000);
+        await loadServers();
+        await loadMCPStatus();
+      } else {
+        addToast(`Failed to reconnect to "${serverName}": ${response.data?.error || 'Unknown error'}`, 'error', 5000);
+      }
+    } catch (err) {
+      addToast(`Failed to reconnect to "${serverName}": ${err.message}`, 'error', 5000);
     }
   };
 
@@ -545,6 +580,13 @@ const MCP_TABS = [
                       title="Discover Tools"
                     >
                       {discoveringServer === server.name ? '...' : <Search size={14} />}
+                    </button>
+                    <button
+                      className="pixel-button small"
+                      onClick={() => reconnectServer(server.name)}
+                      title="Reconnect"
+                    >
+                      <RefreshCw size={14} />
                     </button>
                     <button
                       className="pixel-button small secondary"

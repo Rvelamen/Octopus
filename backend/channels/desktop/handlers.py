@@ -621,7 +621,7 @@ class MCPGetServersHandler(MessageHandler):
 
                 # 从 config 中提取标准 MCP 格式字段
                 config = server.config or {}
-                env = config.get("env", {})
+                env = config.get("env_vars", {})
 
                 # 检查连接状态
                 connected = server.name in self.mcp_manager.connections
@@ -792,9 +792,9 @@ class MCPAddServerHandler(MessageHandler):
 
             # Prepare config based on server type
             if protocol == "stdio":
-                server_config_dict = {"command": command, "args": args, "env": env}
+                server_config_dict = {"command": command, "args": args, "env_vars": env}
             else:
-                server_config_dict = {"url": url, "headers": headers, "env": env}
+                server_config_dict = {"url": url, "headers": headers, "env_vars": env}
 
             # Create server in database
             server = self.mcp_manager.db.get_or_create_server(
@@ -834,16 +834,27 @@ class MCPAddServerHandler(MessageHandler):
 
             self.mcp_manager.config.servers[name] = server_config
 
-            # Auto connect the server
+            # Auto connect the server and discover tools
+            connection = None
+            discovered_tools = []
             try:
-                await self.mcp_manager.create_connection(server_config)
+                connection = await self.mcp_manager.create_connection(server_config)
+                if connection and connection.is_available:
+                    # Discover tools after successful connection
+                    discovered_tools = await self.mcp_manager.discover_tools(name)
             except Exception as e:
                 logger.warning(f"Failed to auto-connect server '{name}': {e}")
 
             await self.send_response(websocket, WSMessage(
                 type=MessageType.MCP_SERVER_ADDED,
                 request_id=message.request_id,
-                data={"success": True, "server": response_data}
+                data={
+                    "success": True,
+                    "server": response_data,
+                    "connected": connection is not None and connection.is_available,
+                    "tools": discovered_tools,
+                    "discovered_count": len(discovered_tools)
+                }
             ))
         except Exception as e:
             logger.error(f"Failed to add MCP server: {e}")
@@ -1034,7 +1045,11 @@ class MCPDiscoverToolsHandler(MessageHandler):
             await self.send_response(websocket, WSMessage(
                 type=MessageType.MCP_TOOLS_DISCOVERED,
                 request_id=message.request_id,
-                data={"server_name": server_name, "tools": tools}
+                data={
+                    "server_name": server_name,
+                    "tools": tools,
+                    "discovered_count": len(tools) if tools else 0
+                }
             ))
         except Exception as e:
             logger.error(f"Failed to discover MCP tools: {e}")
@@ -1069,16 +1084,24 @@ class MCPConnectServerHandler(MessageHandler):
                 return
 
             # Create server config from database record
+            # Handle backward compatibility: convert "env" to "env_vars" if needed
+            server_config_dict = server.config.copy() if server.config else {}
+            if "env" in server_config_dict and "env_vars" not in server_config_dict:
+                server_config_dict["env_vars"] = server_config_dict.pop("env")
+
             server_config = MCPServerConfig(
                 name=server.name,
                 url=server.url,
                 protocol=server.protocol,
                 enabled=server.enabled,
                 auto_connect=server.auto_connect,
-                **server.config
+                **server_config_dict
             )
 
             connection = await self.mcp_manager.create_connection(server_config)
+            if connection and connection.is_available:
+                await self.mcp_manager.discover_tools(server_name)
+
             await self.send_response(websocket, WSMessage(
                 type=MessageType.MCP_SERVER_CONNECTED,
                 request_id=message.request_id,
@@ -1123,6 +1146,66 @@ class MCPDisconnectServerHandler(MessageHandler):
         except Exception as e:
             logger.error(f"Failed to disconnect MCP server: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to disconnect MCP server: {e}")
+
+    async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
+        await self.send_response(websocket, WSMessage(
+            type=MessageType.ERROR,
+            request_id=request_id,
+            data={"error": error}
+        ))
+
+
+class MCPReconnectServerHandler(MessageHandler):
+    """Handle MCP reconnect server requests."""
+
+    def __init__(self, bus: MessageBus, mcp_manager: MCPManager):
+        super().__init__(bus)
+        self.mcp_manager = mcp_manager
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Reconnect to an MCP server."""
+        try:
+            server_name = message.data.get("name")
+            if not server_name:
+                await self._send_error(websocket, message.request_id, "Server name required")
+                return
+
+            server = self.mcp_manager.db.get_server(server_name)
+            if not server:
+                await self._send_error(websocket, message.request_id, f"Server '{server_name}' not found")
+                return
+
+            await self.mcp_manager.remove_connection(server_name)
+
+            # Handle backward compatibility: convert "env" to "env_vars" if needed
+            server_config_dict = server.config.copy() if server.config else {}
+            if "env" in server_config_dict and "env_vars" not in server_config_dict:
+                server_config_dict["env_vars"] = server_config_dict.pop("env")
+
+            server_config = MCPServerConfig(
+                name=server.name,
+                url=server.url,
+                protocol=server.protocol,
+                enabled=server.enabled,
+                auto_connect=server.auto_connect,
+                **server_config_dict
+            )
+
+            connection = await self.mcp_manager.create_connection(server_config)
+            if connection and connection.is_available:
+                await self.mcp_manager.discover_tools(server_name)
+
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.MCP_SERVER_CONNECTED,
+                request_id=message.request_id,
+                data={
+                    "success": connection is not None,
+                    "connection": connection.get_info() if connection else None,
+                }
+            ))
+        except Exception as e:
+            logger.error(f"Failed to reconnect MCP server: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to reconnect MCP server: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
         await self.send_response(websocket, WSMessage(
@@ -2852,6 +2935,7 @@ class HandlerRegistry:
                 MessageType.MCP_UPDATE_TOOL: MCPUpdateToolHandler(bus, mcp_manager),
                 MessageType.MCP_DISCOVER_TOOLS: MCPDiscoverToolsHandler(bus, mcp_manager),
                 MessageType.MCP_CONNECT_SERVER: MCPConnectServerHandler(bus, mcp_manager),
+                MessageType.MCP_RECONNECT_SERVER: MCPReconnectServerHandler(bus, mcp_manager),
                 MessageType.MCP_DISCONNECT_SERVER: MCPDisconnectServerHandler(bus, mcp_manager),
                 MessageType.MCP_CALL_TOOL: MCPCallToolHandler(bus, mcp_manager),
                 MessageType.MCP_GET_CONFIG: MCPGetConfigHandler(bus, mcp_manager),

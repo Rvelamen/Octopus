@@ -146,10 +146,12 @@ class MCPConnection:
                     self.stats.connect_time = datetime.now()
                     self.stats.reconnect_attempts = self._reconnect_count
                     self._reconnect_count = 0
-                    
+
+                    await self._send_initialize()
+
                     # Start heartbeat
                     self._start_heartbeat()
-                    
+
                     logger.info(f"MCP connection established: {self.name}")
                     return True
                 else:
@@ -279,7 +281,29 @@ class MCPConnection:
         except Exception as e:
             logger.error(f"WebSocket connection error: {e}")
             return False
-    
+
+    async def _send_initialize(self) -> None:
+        """Send MCP protocol initialization request."""
+        try:
+            response = await self.request(
+                method="initialize",
+                params={
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {},
+                    "clientInfo": {
+                        "name": "octopus-mcp-client",
+                        "version": "1.0.0"
+                    }
+                },
+                timeout=10,
+            )
+            if response and "result" in response:
+                logger.info(f"MCP server '{self.name}' initialized successfully")
+            else:
+                logger.warning(f"MCP initialize response unexpected: {response}")
+        except Exception as e:
+            logger.warning(f"MCP initialize request failed for '{self.name}': {e}")
+
     async def _read_stdio(self) -> None:
         """Read from stdio process using asyncio to avoid blocking."""
         import sys

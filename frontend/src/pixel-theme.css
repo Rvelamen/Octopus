@@ -89,13 +89,14 @@ html, body {
   height: 100%;
 }
 
-body {
+html, body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
 }
 
 a {
@@ -171,6 +172,11 @@ hr {
   flex-direction: column;
   padding: var(--s-6);
   flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+
+.sidebar nav {
+  -webkit-app-region: no-drag;
 }
 
 .main-content {
@@ -254,6 +260,7 @@ hr {
   justify-content: space-between;
   padding: 0 var(--s-8);
   background: var(--surface);
+  -webkit-app-region: drag;
 }
 
 .tab-title {

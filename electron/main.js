@@ -1,8 +1,23 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, nativeImage } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const log = require('electron-log');
+
+const isDev = !app.isPackaged;
+const ICON_PATH = isDev
+  ? path.join(__dirname, '..', 'build', 'icon.png')
+  : path.join(process.resourcesPath, 'build', 'icon.png');
+const DOCK_ICON_PATH = isDev
+  ? path.join(__dirname, '..', 'build', 'icon_1024x1024.png')
+  : path.join(process.resourcesPath, 'build', 'icon_1024x1024.png');
+
+if (isDev && fs.existsSync(ICON_PATH)) {
+  app.setAboutPanelOptions({
+    applicationName: 'Octopus',
+    applicationIconPath: ICON_PATH,
+  });
+}
 
 // 配置日志
 log.transports.file.level = 'info';
@@ -172,11 +187,22 @@ async function createWindow() {
     const port = await startPythonService();
     log.info(`Python service running on port ${port}`);
     
+    // 设置 macOS Dock 图标
+    if (process.platform === 'darwin') {
+      log.info('Setting dock icon from:', DOCK_ICON_PATH);
+      log.info('Icon exists:', fs.existsSync(DOCK_ICON_PATH));
+      if (fs.existsSync(DOCK_ICON_PATH)) {
+        app.dock.setIcon(DOCK_ICON_PATH);
+        log.info('Dock icon set successfully');
+      }
+    }
+
     mainWindow = new BrowserWindow({
       width: 1400,
       height: 900,
       minWidth: 1000,
       minHeight: 700,
+      icon: ICON_PATH,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,

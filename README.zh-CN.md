@@ -239,10 +239,7 @@ cd octopus
 # 2. 安装依赖
 npm install
 
-# 3. 配置 Python 环境
-python setup_portable_python.py
-
-# 4. 启动开发模式
+# 3. 启动开发模式
 npm run dev
 ```
 
@@ -326,7 +323,6 @@ octopus/
 ├── workspace/              📂 工作区数据
 │   └── memory/             Agent 记忆存储
 ├── package.json            项目配置和脚本
-├── setup_portable_python.py Python 环境配置脚本
 └── README.md               项目说明
 ```
 

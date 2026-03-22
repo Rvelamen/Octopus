@@ -130,3 +130,7 @@ frontend/node_modules/
 .trae/
 .cursor/
 .claude/
+
+python-dist/
+workspace/extensions/
+workspace

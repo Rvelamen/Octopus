@@ -379,18 +379,19 @@ function App() {
                 : "CONFIG_EDITOR"}
             </span>
           </div>
-          <div className="top-actions">
+          <div className="top-actions" style={{ WebkitAppRegion: 'no-drag' }}>
             <button
               className="restart-btn"
               onClick={handleRestart}
               disabled={isRestarting || connectionStatus !== "connected"}
               title="重启后端服务"
+              style={{ WebkitAppRegion: 'no-drag' }}
             >
               <RotateCcw size={14} className={isRestarting ? "spinning" : ""} />
               <span>{isRestarting ? "RESTARTING..." : "RESTART"}</span>
             </button>
-            <div className={`status-indicator ${connectionStatus}`}></div>
-            <span className={`status-text ${connectionStatus}`}>
+            <div className={`status-indicator ${connectionStatus}`} style={{ WebkitAppRegion: 'no-drag' }}></div>
+            <span className={`status-text ${connectionStatus}`} style={{ WebkitAppRegion: 'no-drag' }}>
               {connectionStatus === "connected"
                 ? "ONLINE"
                 : connectionStatus === "connecting"

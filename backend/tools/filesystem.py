@@ -31,8 +31,11 @@ class ReadFileTool(Tool):
         }
     
     async def execute(self, path: str, **kwargs: Any) -> str:
+        from backend.utils.helpers import get_workspace_path
+        file_path = Path(path).expanduser()
+        if not file_path.is_absolute():
+            file_path = get_workspace_path() / file_path
         try:
-            file_path = Path(path).expanduser()
             if not file_path.exists():
                 return f"Error: File not found: {path}"
             if not file_path.is_file():
@@ -75,8 +78,11 @@ class WriteFileTool(Tool):
         }
     
     async def execute(self, path: str, content: str, **kwargs: Any) -> str:
+        from backend.utils.helpers import get_workspace_path
+        file_path = Path(path).expanduser()
+        if not file_path.is_absolute():
+            file_path = get_workspace_path() / file_path
         try:
-            file_path = Path(path).expanduser()
             file_path.parent.mkdir(parents=True, exist_ok=True)
             file_path.write_text(content, encoding="utf-8")
             return f"Successfully wrote {len(content)} bytes to {path}"
@@ -119,8 +125,11 @@ class EditFileTool(Tool):
         }
     
     async def execute(self, path: str, old_text: str, new_text: str, **kwargs: Any) -> str:
+        from backend.utils.helpers import get_workspace_path
+        file_path = Path(path).expanduser()
+        if not file_path.is_absolute():
+            file_path = get_workspace_path() / file_path
         try:
-            file_path = Path(path).expanduser()
             if not file_path.exists():
                 return f"Error: File not found: {path}"
             
@@ -162,15 +171,21 @@ class ListDirTool(Tool):
             "properties": {
                 "path": {
                     "type": "string",
-                    "description": "The directory path to list"
+                    "description": "The directory path to list (defaults to workspace root)"
                 }
             },
-            "required": ["path"]
+            "required": []
         }
     
-    async def execute(self, path: str, **kwargs: Any) -> str:
-        try:
+    async def execute(self, path: str = ".", **kwargs: Any) -> str:
+        from backend.utils.helpers import get_workspace_path
+        if not path:
+            dir_path = get_workspace_path()
+        else:
             dir_path = Path(path).expanduser()
+            if not dir_path.is_absolute():
+                dir_path = get_workspace_path() / dir_path
+        try:
             if not dir_path.exists():
                 return f"Error: Directory not found: {path}"
             if not dir_path.is_dir():

@@ -5,16 +5,15 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:electron\"",
-    "dev:frontend": "cd frontend && vite",
+    "dev:frontend": "cd frontend && npx vite",
     "dev:electron": "wait-on http://localhost:3000 && electron .",
     "build": "npm run build:frontend && npm run build:electron",
     "build:frontend": "cd frontend && npm run build",
     "build:python": "python build_python.py",
     "build:electron": "electron-builder",
-    "setup:python": "python setup_portable_python.py",
-    "dist": "npm run build:frontend && npm run build:python && npm run setup:python && electron-builder",
-    "dist:mac": "npm run build:frontend && npm run build:python && npm run setup:python && electron-builder --mac",
-    "dist:win": "npm run build:frontend && npm run build:python && npm run setup:python && electron-builder --win",
+    "dist": "npm run build:frontend && npm run build:python && electron-builder",
+    "dist:mac": "npm run build:frontend && npm run build:python && electron-builder --mac",
+    "dist:win": "npm run build:frontend && npm run build:python && electron-builder --win",
     "postinstall": "cd frontend && npm install"
   },
   "build": {
@@ -30,15 +29,11 @@
       "python-dist/**/*",
       "node_modules/**/*"
     ],
+    "icon": "build/icon.png",
     "extraResources": [
       {
         "from": "python-dist",
         "to": "python-dist",
-        "filter": ["**/*"]
-      },
-      {
-        "from": "resources/python-portable",
-        "to": "python-portable",
         "filter": ["**/*"]
       }
     ],

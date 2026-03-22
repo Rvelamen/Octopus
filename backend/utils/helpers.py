@@ -62,25 +62,39 @@ def _find_project_workspace() -> Path | None:
 def get_workspace_path() -> Path:
     """
     Get the current workspace path.
-    Must call init_workspace_path() first during application startup.
+    Priority: explicitly set path > database path > project workspace > default path.
 
     Returns:
         The configured workspace path.
-
-    Raises:
-        RuntimeError: If workspace has not been initialized.
     """
     with _workspace_config["lock"]:
         if _workspace_config["path"] is None:
-            # Try to find project workspace first
-            project_workspace = _find_project_workspace()
-            if project_workspace:
-                _workspace_config["path"] = ensure_dir(project_workspace)
+            db_path = _get_workspace_path_from_db()
+            if db_path:
+                _workspace_config["path"] = ensure_dir(Path(db_path))
             else:
-                # Fall back to default user directory
-                path = Path.home() / ".octopus" / "workspace"
-                _workspace_config["path"] = ensure_dir(path)
+                project_workspace = _find_project_workspace()
+                if project_workspace:
+                    _workspace_config["path"] = ensure_dir(project_workspace)
+                else:
+                    path = Path.home() / ".octopus" / "workspace"
+                    _workspace_config["path"] = ensure_dir(path)
         return _workspace_config["path"]
+
+
+def _get_workspace_path_from_db() -> str | None:
+    """Get workspace path from database if available."""
+    try:
+        from backend.data.database import Database
+        from backend.data.provider_store import AgentDefaultsRepository
+        db = Database()
+        repo = AgentDefaultsRepository(db)
+        defaults = repo.get_or_create_defaults()
+        if defaults.workspace_path:
+            return defaults.workspace_path
+    except Exception:
+        pass
+    return None
 
 
 def get_data_path() -> Path:

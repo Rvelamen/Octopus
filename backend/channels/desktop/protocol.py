@@ -25,6 +25,7 @@ class MessageType(Enum):
     MCP_UPDATE_TOOL = "mcp_update_tool"            # Update tool config
     MCP_DISCOVER_TOOLS = "mcp_discover_tools"      # Discover tools from server
     MCP_CONNECT_SERVER = "mcp_connect_server"      # Connect to a server
+    MCP_RECONNECT_SERVER = "mcp_reconnect_server"  # Reconnect to a server
     MCP_DISCONNECT_SERVER = "mcp_disconnect_server"  # Disconnect from server
     MCP_CALL_TOOL = "mcp_call_tool"                # Call a tool
     MCP_GET_CONFIG = "mcp_get_config"              # Get MCP configuration
@@ -303,6 +304,7 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.MCP_UPDATE_TOOL,
     MessageType.MCP_DISCOVER_TOOLS,
     MessageType.MCP_CONNECT_SERVER,
+    MessageType.MCP_RECONNECT_SERVER,
     MessageType.MCP_DISCONNECT_SERVER,
     MessageType.MCP_CALL_TOOL,
     MessageType.MCP_GET_CONFIG,

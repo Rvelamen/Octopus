@@ -283,9 +283,13 @@ class UnifiedProvider(LLMProvider):
                     content_blocks.append({"type": "text", "text": msg["content"]})
                 if msg.get("tool_use"):
                     for tool in msg["tool_use"]:
+                        tool_id = tool.get("id")
+                        if not tool_id:
+                            logger.warning(f"[Anthropic] Skipping tool_use with missing id: {tool}")
+                            continue
                         content_blocks.append({
                             "type": "tool_use",
-                            "id": tool.get("id"),
+                            "id": tool_id,
                             "name": tool.get("name"),
                             "input": tool.get("input", {}),
                         })
@@ -298,9 +302,13 @@ class UnifiedProvider(LLMProvider):
                                 args = json.loads(args)
                             except json.JSONDecodeError:
                                 args = {}
+                        tc_id = tc.get("id")
+                        if not tc_id:
+                            logger.warning(f"[Anthropic] Skipping tool_call with missing id: {tc}")
+                            continue
                         content_blocks.append({
                             "type": "tool_use",
-                            "id": tc.get("id"),
+                            "id": tc_id,
                             "name": func.get("name"),
                             "input": args,
                         })
@@ -310,6 +318,9 @@ class UnifiedProvider(LLMProvider):
                 })
             elif msg["role"] == "tool":
                 tool_use_id = msg.get("tool_use_id") or msg.get("tool_call_id")
+                if not tool_use_id:
+                    logger.warning(f"[Anthropic] Tool message missing tool_use_id, generating fallback ID: {msg}")
+                    tool_use_id = f"tool_call_fallback_{hash(str(msg))}"
                 anthropic_messages.append({
                     "role": "user",
                     "content": [{

@@ -407,8 +407,11 @@ class MCPManager:
 
         try:
             response = await connection.request(
-                method=f"tools/{tool_name}",
-                params=params,
+                method="tools/call",
+                params={
+                    "name": tool_name,
+                    "arguments": params,
+                },
                 timeout=timeout,
             )
 
@@ -430,7 +433,10 @@ class MCPManager:
     async def discover_tools(self, connection_name: str | None = None) -> list[dict[str, Any]]:
         """Discover available tools from MCP server and save to database."""
         if not self.config.enabled:
+            logger.info("MCP discover_tools: MCP is disabled")
             return []
+
+        logger.info(f"MCP discover_tools called, connection_name={connection_name}")
 
         # Get connection
         if connection_name:
@@ -442,7 +448,10 @@ class MCPManager:
             )
 
         if not connection or not connection.is_available:
+            logger.info(f"MCP discover_tools: connection not available, connection={connection}")
             return []
+
+        logger.info(f"MCP discover_tools: sending tools/list request")
 
         try:
             response = await connection.request(
@@ -450,6 +459,12 @@ class MCPManager:
                 params={},
                 timeout=30,
             )
+
+            logger.info(f"tools/list raw response: {response}")
+
+            if response is None:
+                logger.info("tools/list response is None - request likely timed out or failed")
+                return []
 
             if response:
                 tools = response.get("result", {}).get("tools", [])

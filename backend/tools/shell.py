@@ -61,7 +61,8 @@ class ExecTool(Tool):
         }
     
     async def execute(self, command: str, working_dir: str | None = None, **kwargs: Any) -> str:
-        cwd = working_dir or self.working_dir or os.getcwd()
+        from backend.utils.helpers import get_workspace_path
+        cwd = working_dir or self.working_dir or str(get_workspace_path())
         guard_error = self._guard_command(command, cwd)
         if guard_error:
             return guard_error

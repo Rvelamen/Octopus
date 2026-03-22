@@ -239,10 +239,7 @@ cd octopus
 # 2. Install dependencies
 npm install
 
-# 3. Setup Python environment
-python setup_portable_python.py
-
-# 4. Start development mode
+# 3. Start development mode
 npm run dev
 ```
 
@@ -326,7 +323,6 @@ octopus/
 ├── workspace/              📂 Workspace data
 │   └── memory/             Agent memory storage
 ├── package.json            Project config & scripts
-├── setup_portable_python.py Python environment setup
 └── README.md               Project documentation
 ```
 
