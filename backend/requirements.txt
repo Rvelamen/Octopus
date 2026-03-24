@@ -28,3 +28,4 @@ pyyaml>=6.0.1
 
 # Logging
 loguru>=0.7.0
+qrcode>=7.4.2

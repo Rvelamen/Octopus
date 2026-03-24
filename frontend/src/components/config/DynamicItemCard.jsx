@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import WindowDots from '../WindowDots';
 
 /**
@@ -6,6 +6,12 @@ import WindowDots from '../WindowDots';
  */
 function DynamicItemCard({ title, children, onDelete, itemKey, defaultExpanded = false, showDots = true }) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+
+  useEffect(() => {
+    if (defaultExpanded && !isExpanded) {
+      setIsExpanded(true);
+    }
+  }, [defaultExpanded]);
 
   const handleHeaderClick = (e) => {
     // 如果点击的是按钮，不触发折叠/展开

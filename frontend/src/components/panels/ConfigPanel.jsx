@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Brain, Bot, Radio, Plus, Save, Image, Search, Settings, Trash2, Edit, Check, X, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
+import { Brain, Bot, Radio, Plus, Save, Image, Search, Settings, Trash2, Edit, Check, X, ChevronDown, ChevronRight, RefreshCw, QrCode, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { InputField, PasswordField, SelectField, SwitchField } from '../forms';
 import { ConfigCard, DynamicItemCard, AddItemDialog } from '../config';
 import WindowDots from '../WindowDots';
@@ -36,6 +36,19 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
   // Tool Configs State (from database)
   const [toolConfigs, setToolConfigs] = useState([]);
   const [isLoadingTools, setIsLoadingTools] = useState(false);
+
+  // WeChat QR Code State
+  const [wechatQrCodeUrl, setWechatQrCodeUrl] = useState(null);
+  const [wechatQrToken, setWechatQrToken] = useState(null);
+  const [wechatStatus, setWechatStatus] = useState(null);
+  const [isWechatPolling, setIsWechatPolling] = useState(false);
+  const [qrCountdown, setQrCountdown] = useState(300);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successUserInfo, setSuccessUserInfo] = useState(null);
+  const [expandedChannels, setExpandedChannels] = useState({});
+  const wechatPollingRef = useRef(null);
+  const wechatPollingActiveRef = useRef(false);
+  const qrCountdownRef = useRef(null);
 
   const loadConfig = useCallback(async (force = false) => {
     if (hasLoadedAgentDefaults.current && !force) return;
@@ -401,6 +414,339 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
     );
   };
 
+  const startQrCountdown = () => {
+    stopQrCountdown();
+    setQrCountdown(300);
+    qrCountdownRef.current = setInterval(() => {
+      setQrCountdown(prev => {
+        if (prev <= 1) {
+          stopQrCountdown();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const stopQrCountdown = () => {
+    if (qrCountdownRef.current) {
+      clearInterval(qrCountdownRef.current);
+      qrCountdownRef.current = null;
+    }
+  };
+
+  const formatCountdown = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const reconnectWechat = async (channelName) => {
+    if (!window.confirm('确定要断开当前微信连接并重新扫描吗？')) {
+      return;
+    }
+    
+    setExpandedChannels(prev => ({ ...prev, [channelName]: true }));
+    
+    try {
+      const response = await sendWSMessage('wechat_clear_token', { channelName }, 10000);
+      if (response.data?.success) {
+        setWechatQrCodeUrl(null);
+        setWechatQrToken(null);
+        setWechatStatus(null);
+        setQrCountdown(300);
+        stopQrCountdown();
+        await loadChannelConfigs();
+      }
+    } catch (err) {
+      console.error('Reconnect WeChat error:', err);
+      alert('重新连接失败: ' + err.message);
+    }
+  };
+
+  const getWechatQrCode = async (channelName) => {
+    try {
+      const response = await sendWSMessage('wechat_get_qrcode', { channelName }, 30000);
+      if (response.data?.success) {
+        setWechatQrCodeUrl(response.data.qrcode_img_content);
+        setWechatQrToken(response.data.qrcode_token);
+        setWechatStatus('waiting');
+        startQrCountdown();
+        startWechatPolling(response.data.qrcode_token, channelName);
+      } else {
+        alert('获取二维码失败: ' + (response.data?.error || '未知错误'));
+      }
+    } catch (err) {
+      console.error('Get QR code error:', err);
+      alert('获取二维码失败: ' + err.message);
+    }
+  };
+
+  const startWechatPolling = (qrcodeToken, channelName) => {
+    setIsWechatPolling(true);
+    wechatPollingActiveRef.current = true;
+    console.log('WeChat polling started, token:', qrcodeToken);
+    
+    const poll = async () => {
+      if (!wechatPollingActiveRef.current) {
+        console.log('WeChat polling stopped');
+        return;
+      }
+      
+      try {
+        console.log('WeChat polling for status...');
+        const response = await sendWSMessage('wechat_check_status', { 
+          qrcode_token: qrcodeToken, 
+          channelName 
+        }, 10000);
+        
+        console.log('WeChat poll response:', response);
+        
+        if (response.data?.success) {
+          const status = response.data.status;
+          setWechatStatus(status);
+          console.log('WeChat status:', status);
+          
+          if (status === 'confirmed') {
+            setIsWechatPolling(false);
+            wechatPollingActiveRef.current = false;
+            stopQrCountdown();
+            setSuccessUserInfo({
+              botId: response.data.ilink_bot_id,
+              userId: response.data.ilink_user_id,
+              channelName: channelName
+            });
+            setShowSuccessModal(true);
+            return;
+          } else if (status === 'expired' || status === 'cancelled') {
+            setIsWechatPolling(false);
+            wechatPollingActiveRef.current = false;
+            stopQrCountdown();
+            setWechatQrCodeUrl(null);
+            setWechatQrToken(null);
+            return;
+          }
+        }
+        
+        if (wechatPollingActiveRef.current) {
+          wechatPollingRef.current = setTimeout(poll, 1000);
+        }
+      } catch (err) {
+        console.error('WeChat polling error:', err);
+        if (wechatPollingActiveRef.current) {
+          wechatPollingRef.current = setTimeout(poll, 2000);
+        }
+      }
+    };
+    
+    wechatPollingRef.current = setTimeout(poll, 1000);
+  };
+
+  const stopWechatPolling = () => {
+    setIsWechatPolling(false);
+    wechatPollingActiveRef.current = false;
+    if (wechatPollingRef.current) {
+      clearTimeout(wechatPollingRef.current);
+      wechatPollingRef.current = null;
+    }
+    stopQrCountdown();
+  };
+
+  const handleConfirmSuccess = async () => {
+    setShowSuccessModal(false);
+    setWechatQrCodeUrl(null);
+    setWechatQrToken(null);
+    setSuccessUserInfo(null);
+    await loadChannelConfigs();
+  };
+
+  useEffect(() => {
+    return () => {
+      stopWechatPolling();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (qrCountdown <= 0 && wechatStatus === 'waiting') {
+      setWechatStatus('expired');
+      stopWechatPolling();
+    }
+  }, [qrCountdown, wechatStatus]);
+
+  const renderWechatConfig = (channel) => {
+    const isEnabled = channel.enabled === true;
+    const isConnected = !!channel.appSecret;
+    
+    return (
+      <>
+        <SwitchField
+          label="Enabled"
+          checked={isEnabled}
+          onChange={(v) => updateChannelConfig(channel.channelName, { enabled: v })}
+        />
+        
+        {isConnected ? (
+          <div className="form-field">
+            <div style={{
+              padding: '12px',
+              background: 'rgba(34, 197, 94, 0.1)',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              borderRadius: 'var(--r-md)',
+              color: '#22c55e',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '14px'
+            }}>
+              <Check size={16} />
+              <span>已连接微信</span>
+            </div>
+            <button
+              className="pixel-button"
+              onClick={() => reconnectWechat(channel.channelName)}
+              style={{
+                marginTop: '10px',
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <RefreshCw size={14} />
+              重新连接
+            </button>
+          </div>
+        ) : (
+          <>
+            {!wechatQrCodeUrl ? (
+              <div className="form-field">
+                <button
+                  className="pixel-button"
+                  onClick={() => getWechatQrCode(channel.channelName)}
+                  style={{ 
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <QrCode size={16} />
+                  获取二维码
+                </button>
+              </div>
+            ) : (
+              <div className="form-field">
+                <div style={{ 
+                  textAlign: 'center',
+                  padding: '16px',
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--r-lg)'
+                }}>
+                  <img 
+                    src={wechatQrCodeUrl} 
+                    alt="WeChat QR Code" 
+                    style={{ 
+                      width: '200px', 
+                      height: '200px',
+                      imageRendering: 'pixelated',
+                      borderRadius: 'var(--r-md)'
+                    }}
+                  />
+                  
+                  <div style={{
+                    marginTop: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    color: qrCountdown <= 60 ? 'var(--danger)' : 'var(--text-2)',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    fontFamily: 'var(--font-mono)'
+                  }}>
+                    <Clock size={16} />
+                    <span>{formatCountdown(qrCountdown)}</span>
+                  </div>
+                  
+                  <p style={{ 
+                    marginTop: '10px', 
+                    color: 'var(--text-2)',
+                    fontSize: '13px',
+                    fontFamily: 'var(--font-sans)'
+                  }}>
+                    {wechatStatus === 'waiting' && '请使用微信扫描二维码...'}
+                    {wechatStatus === 'scaned' && (
+                      <span style={{ 
+                        color: 'var(--warn)', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        gap: '6px' 
+                      }}>
+                        <CheckCircle size={14} />
+                        已扫描，请在手机上确认...
+                      </span>
+                    )}
+                    {wechatStatus === 'expired' && (
+                      <span style={{ 
+                        color: 'var(--danger)', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        gap: '6px' 
+                      }}>
+                        <AlertCircle size={14} />
+                        二维码已过期，请重新获取
+                      </span>
+                    )}
+                    {wechatStatus === 'cancelled' && '已取消，请重新扫描'}
+                  </p>
+                  {(wechatStatus === 'expired' || wechatStatus === 'cancelled') && (
+                    <button
+                      className="pixel-button"
+                      onClick={() => getWechatQrCode(channel.channelName)}
+                      style={{ 
+                        marginTop: '10px',
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <RefreshCw size={14} />
+                      重新获取二维码
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+        
+        <div className="form-field">
+          <label className="form-label">Allow From (JSON Array)</label>
+          <textarea
+            value={JSON.stringify(channel.allowFrom || [], null, 2)}
+            onChange={(e) => {
+              try {
+                const parsed = JSON.parse(e.target.value);
+                updateChannelConfig(channel.channelName, { allowFrom: parsed });
+              } catch (err) {}
+            }}
+            className="pixel-input form-input json-textarea"
+            rows={3}
+            spellCheck={false}
+          />
+        </div>
+      </>
+    );
+  };
+
   const renderGenericChannelConfig = (channel) => (
     <>
       <SwitchField
@@ -441,15 +787,10 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
       <ConfigCard
         title="CHANNELS"
         icon="[CHNL]"
-        actions={
-          <button className="add-btn" onClick={() => openAddDialog('channel')} title="添加 Channel">
-            <Plus size={14} />
-          </button>
-        }
       >
         {channelConfigs.length === 0 ? (
           <div className="empty-config">
-            <span>暂无 Channel，点击 [+] 添加</span>
+            <span>暂无 Channel</span>
           </div>
         ) : (
           <div className="dynamic-items-list">
@@ -458,24 +799,118 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
                 key={channel.channelName}
                 title={channel.channelName}
                 itemKey={channel.channelName}
-                onDelete={async (name) => {
-                  if (confirm(`确定要删除 Channel "${name}" 吗？`)) {
-                    try {
-                      await sendWSMessage('channel_delete', { channelName: name }, 5000);
-                      await loadChannelConfigs();
-                    } catch (err) {
-                      console.error("Failed to delete channel", err);
-                      alert("删除失败: " + err.message);
-                    }
-                  }
-                }}
+                defaultExpanded={expandedChannels[channel.channelName] || false}
               >
                 {channel.channelName === 'feishu'
                   ? renderFeishuConfig(channel)
-                  : renderGenericChannelConfig(channel)
+                  : channel.channelName === 'wechat'
+                    ? renderWechatConfig(channel)
+                    : renderGenericChannelConfig(channel)
                 }
               </DynamicItemCard>
             ))}
+          </div>
+        )}
+        
+        {showSuccessModal && (
+          <div className="modal-overlay" style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(4px)'
+          }}>
+            <div className="modal-content" style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--r-xl)',
+              padding: '32px',
+              maxWidth: '420px',
+              width: '90%',
+              textAlign: 'center',
+              boxShadow: 'var(--shadow-3)',
+              animation: 'modalFadeIn 0.3s ease-out'
+            }}>
+              <div style={{
+                width: '72px',
+                height: '72px',
+                margin: '0 auto 24px',
+                borderRadius: '50%',
+                background: 'rgba(34, 197, 94, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                animation: 'successPulse 1.5s ease-in-out infinite'
+              }}>
+                <CheckCircle size={40} style={{ color: '#22c55e' }} />
+              </div>
+              
+              <h3 style={{ 
+                color: 'var(--text)', 
+                marginBottom: '16px', 
+                fontSize: '20px',
+                fontWeight: '600',
+                fontFamily: 'var(--font-sans)'
+              }}>
+                微信连接成功
+              </h3>
+              
+              {successUserInfo && (
+                <div style={{
+                  background: 'var(--surface-2)',
+                  padding: '16px',
+                  borderRadius: 'var(--r-md)',
+                  marginBottom: '24px',
+                  textAlign: 'left',
+                  border: '1px solid var(--border)'
+                }}>
+                  <p style={{ 
+                    color: 'var(--text-2)', 
+                    fontSize: '13px', 
+                    marginBottom: '8px',
+                    fontFamily: 'var(--font-mono)'
+                  }}>
+                    <strong style={{ color: 'var(--text-3)', fontFamily: 'var(--font-sans)' }}>Bot ID:</strong> {successUserInfo.botId}
+                  </p>
+                  <p style={{ 
+                    color: 'var(--text-2)', 
+                    fontSize: '13px',
+                    fontFamily: 'var(--font-mono)'
+                  }}>
+                    <strong style={{ color: 'var(--text-3)', fontFamily: 'var(--font-sans)' }}>User ID:</strong> {successUserInfo.userId}
+                  </p>
+                </div>
+              )}
+              
+              <p style={{ 
+                color: 'var(--text-3)', 
+                fontSize: '14px', 
+                marginBottom: '24px',
+                fontFamily: 'var(--font-sans)'
+              }}>
+                您现在可以通过微信与助手进行对话了
+              </p>
+              
+              <button
+                className="pixel-button"
+                onClick={handleConfirmSuccess}
+                style={{
+                  width: '100%',
+                  padding: '12px 24px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  margin: 0
+                }}
+              >
+                确认
+              </button>
+            </div>
           </div>
         )}
       </ConfigCard>

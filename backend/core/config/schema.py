@@ -25,9 +25,27 @@ class FeishuConfig(BaseModel):
     config: FeishuInnerConfig = Field(default_factory=FeishuInnerConfig)
 
 
+class WechatInnerConfig(BaseModel):
+    """Inner config for WeChat ClawBot channel (camelCase for JSON config)."""
+    appid: str = ""
+    bot_token: str = Field(default="", alias="botToken")
+    allow_from: list[str] = Field(default_factory=list, alias="allowFrom")
+    context_tokens: dict[str, str] = Field(default_factory=dict, alias="contextTokens")
+
+    class Config:
+        populate_by_name = True
+
+
+class WechatConfig(BaseModel):
+    """WeChat ClawBot channel configuration using HTTP long polling."""
+    enabled: bool = False
+    config: WechatInnerConfig = Field(default_factory=WechatInnerConfig)
+
+
 class ChannelsConfig(BaseModel):
     """Configuration for chat channels."""
     feishu: FeishuConfig = Field(default_factory=FeishuConfig)
+    wechat: WechatConfig = Field(default_factory=WechatConfig)
 
 
 class AgentDefaults(BaseModel):

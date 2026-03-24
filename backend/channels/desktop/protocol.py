@@ -231,6 +231,16 @@ class MessageType(Enum):
     CHANNEL_UPDATED = "channel_updated"                     # Channel config updated confirmation
     CHANNEL_DELETED = "channel_deleted"                     # Channel config deleted confirmation
 
+    # WeChat QR Code - Client -> Server
+    WECHAT_GET_QRCODE = "wechat_get_qrcode"                 # Get WeChat QR code
+    WECHAT_CHECK_STATUS = "wechat_check_status"             # Check QR code scan status
+    WECHAT_CLEAR_TOKEN = "wechat_clear_token"               # Clear expired token
+
+    # WeChat QR Code - Server -> Client
+    WECHAT_QRCODE_RESULT = "wechat_qrcode_result"           # QR code result
+    WECHAT_STATUS_RESULT = "wechat_status_result"           # Status check result
+    WECHAT_TOKEN_EXPIRED = "wechat_token_expired"           # Token expired notification
+
     # Tool - Client -> Server
     TOOL_GET_CONFIG = "tool_get_config"                     # Get tool configs
     TOOL_UPDATE_CONFIG = "tool_update_config"               # Update tool config
@@ -377,6 +387,9 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.CHANNEL_GET_LIST,
     MessageType.CHANNEL_UPDATE,
     MessageType.CHANNEL_DELETE,
+    # WeChat
+    MessageType.WECHAT_GET_QRCODE,
+    MessageType.WECHAT_CHECK_STATUS,
     # Tool
     MessageType.TOOL_GET_CONFIG,
     MessageType.TOOL_UPDATE_CONFIG,
@@ -463,6 +476,9 @@ SERVER_MESSAGE_TYPES = {
     MessageType.CHANNEL_LIST,
     MessageType.CHANNEL_UPDATED,
     MessageType.CHANNEL_DELETED,
+    # WeChat
+    MessageType.WECHAT_QRCODE_RESULT,
+    MessageType.WECHAT_STATUS_RESULT,
     # Tool
     MessageType.TOOL_CONFIG,
     MessageType.TOOL_UPDATED,

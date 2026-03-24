@@ -15,6 +15,7 @@ from backend.channels.desktop.provider_handlers import (
     ProviderHandler, ModelHandler, SettingsHandler, AgentDefaultsHandler,
     ChannelConfigHandler, ToolConfigHandler, ImageProviderConfigHandler
 )
+from backend.channels.desktop.wechat_handler import WechatConfigHandler
 from backend.core.events.types import InboundMessage, AgentEvent, MessageContentItem
 from backend.core.events.bus import MessageBus
 from backend.mcp.manager import MCPManager, get_mcp_manager
@@ -2959,6 +2960,9 @@ class HandlerRegistry:
                 MessageType.CHANNEL_GET_LIST: ChannelConfigHandler(bus, self.db),
                 MessageType.CHANNEL_UPDATE: ChannelConfigHandler(bus, self.db),
                 MessageType.CHANNEL_DELETE: ChannelConfigHandler(bus, self.db),
+                MessageType.WECHAT_GET_QRCODE: WechatConfigHandler(bus, self.db),
+                MessageType.WECHAT_CHECK_STATUS: WechatConfigHandler(bus, self.db),
+                MessageType.WECHAT_CLEAR_TOKEN: WechatConfigHandler(bus, self.db),
                 MessageType.TOOL_GET_CONFIG: ToolConfigHandler(bus, self.db),
                 MessageType.TOOL_UPDATE_CONFIG: ToolConfigHandler(bus, self.db),
                 MessageType.IMAGE_GET_PROVIDERS: ImageProviderConfigHandler(bus, self.db),

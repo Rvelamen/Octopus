@@ -112,7 +112,7 @@ class DesktopChannel(BaseChannel):
         
         # Only handle events from desktop channel
         if event.channel != "desktop":
-            logger.info(f"[DesktopChannel] Ignoring event from channel: {event.channel}")
+            # logger.info(f"[DesktopChannel] Ignoring event from channel: {event.channel}")
             return
         
         # Map event types to message types

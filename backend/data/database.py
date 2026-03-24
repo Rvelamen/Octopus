@@ -522,6 +522,13 @@ class Database:
                 VALUES ('feishu', 'feishu', 0, '', '', '', '', '[]', '{}')
             """)
 
+            # Insert default wechat channel config
+            conn.execute("""
+                INSERT OR IGNORE INTO channel_configs 
+                (channel_name, channel_type, enabled, app_id, app_secret, encrypt_key, verification_token, allow_from, config_json)
+                VALUES ('wechat', 'wechat', 0, '', '', '', '', '[]', '{}')
+            """)
+
             # Run migrations after all tables are created
             self._run_migrations(conn)
 

@@ -134,3 +134,5 @@ frontend/node_modules/
 python-dist/
 workspace/extensions/
 workspace
+
+.temp/

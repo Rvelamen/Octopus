@@ -12,6 +12,10 @@ export default defineConfig({
         target: 'http://localhost:18791',
         changeOrigin: true,
       },
+      '/wechat_qrcodes': {
+        target: 'http://localhost:18791',
+        changeOrigin: true,
+      },
     },
   },
 })

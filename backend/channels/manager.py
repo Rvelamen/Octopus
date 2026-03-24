@@ -21,19 +21,26 @@ class ChannelManager:
     - Route outbound messages
     """
 
+    _global_instance = None
+
     def __init__(self, bus: MessageBus, workspace: Path | None = None, custom_channels: dict[str, BaseChannel] | None = None):
         self.bus = bus
         self.workspace = workspace
         self.channels: dict[str, BaseChannel] = {}
         self._dispatch_task: asyncio.Task | None = None
 
-        # Initialize channels from database
         self._init_channels()
 
-        # Add any custom channels (e.g., DesktopChannel)
         if custom_channels:
             self.channels.update(custom_channels)
             logger.info(f"Added {len(custom_channels)} custom channels")
+        
+        ChannelManager._global_instance = self
+    
+    @classmethod
+    def _get_global_instance(cls):
+        """Get the global ChannelManager instance."""
+        return cls._global_instance
     
     def _init_channels(self) -> None:
         """Initialize channels based on database config."""
@@ -74,7 +81,87 @@ class ChannelManager:
                 logger.info("Feishu channel initialized")
             except ImportError as e:
                 logger.warning(f"Feishu channel not available: {e}")
-    
+        
+        wechat_config = db_channel_configs.get("wechat")
+        if wechat_config and wechat_config.enabled:
+            try:
+                from backend.channels.wechat.channel import WechatChannel
+                from backend.core.config.schema import WechatConfig, WechatInnerConfig
+
+                inner = WechatInnerConfig(
+                    appid=wechat_config.app_id,
+                    bot_token=wechat_config.app_secret,
+                    allow_from=wechat_config.allow_from,
+                )
+                channel_config = WechatConfig(enabled=True, config=inner)
+
+                self.channels["wechat"] = WechatChannel(channel_config, self.bus)
+                logger.info("WeChat channel initialized")
+            except ImportError as e:
+                logger.warning(f"WeChat channel not available: {e}")
+
+    def ensure_channel(self, channel_name: str) -> bool:
+        """Ensure a channel is initialized and ready to start."""
+        if channel_name in self.channels:
+            return True
+
+        try:
+            from backend.data import Database
+            from backend.data.provider_store import ChannelConfigRepository
+
+            db = Database()
+            repo = ChannelConfigRepository(db)
+            config = repo.get_channel_config(channel_name)
+
+            if not config or not config.enabled:
+                logger.warning(f"Channel {channel_name} is not enabled")
+                return False
+
+            if channel_name == "wechat":
+                from backend.channels.wechat.channel import WechatChannel
+                from backend.core.config.schema import WechatConfig, WechatInnerConfig
+
+                inner = WechatInnerConfig(
+                    appid=config.app_id,
+                    bot_token=config.app_secret,
+                    allow_from=config.allow_from,
+                )
+                channel_config = WechatConfig(enabled=True, config=inner)
+                self.channels[channel_name] = WechatChannel(channel_config, self.bus)
+                logger.info(f"Channel {channel_name} dynamically added")
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to ensure channel {channel_name}: {e}")
+        return False
+
+    async def start_channel(self, channel_name: str) -> bool:
+        """Start a specific channel if not already running."""
+        logger.info(f"start_channel called for {channel_name}")
+        if channel_name not in self.channels:
+            logger.info(f"Channel {channel_name} not found, calling ensure_channel")
+            if not self.ensure_channel(channel_name):
+                return False
+
+        channel = self.channels[channel_name]
+        logger.info(f"Found channel {channel_name}: {channel}")
+        if hasattr(channel, '_running') and channel._running:
+            logger.info(f"Channel {channel_name} already running")
+            return True
+
+        try:
+            logger.info(f"Creating task to start channel {channel_name}")
+            task = asyncio.create_task(channel.start())
+            if hasattr(channel, '_poll_task'):
+                channel._poll_task = task
+            logger.info(f"Started channel {channel_name}, task: {task}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to start channel {channel_name}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+        return False
+
     async def start_all(self) -> None:
         """Start all channels and the outbound dispatcher."""
         if not self.channels:

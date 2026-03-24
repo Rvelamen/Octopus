@@ -5,17 +5,55 @@ const fs = require('fs');
 const log = require('electron-log');
 
 const isDev = !app.isPackaged;
-const ICON_PATH = isDev
-  ? path.join(__dirname, '..', 'build', 'icon.png')
-  : path.join(process.resourcesPath, 'build', 'icon.png');
-const DOCK_ICON_PATH = isDev
-  ? path.join(__dirname, '..', 'build', 'icon_1024x1024.png')
-  : path.join(process.resourcesPath, 'build', 'icon_1024x1024.png');
 
-if (isDev && fs.existsSync(ICON_PATH)) {
+function getIconPath(size) {
+  const sizeMap = {
+    16: 'icon_16x16.png',
+    32: 'icon_32x32.png',
+    64: 'icon_64x64.png',
+    128: 'icon_128x128.png',
+    256: 'icon_256x256.png',
+    512: 'icon_512x512.png',
+    1024: 'icon_1024x1024.png',
+  };
+  
+  const filename = sizeMap[size] || 'icon.png';
+  return isDev
+    ? path.join(__dirname, '..', 'build', filename)
+    : path.join(process.resourcesPath, 'build', filename);
+}
+
+function createAppIcon() {
+  const icon = nativeImage.createEmpty();
+  
+  const sizes = [16, 32, 64, 128, 256, 512, 1024];
+  
+  sizes.forEach(size => {
+    const iconPath = getIconPath(size);
+    if (fs.existsSync(iconPath)) {
+      const sizeIcon = nativeImage.createFromPath(iconPath);
+      if (process.platform === 'darwin') {
+        icon.addRepresentation({
+          scaleFactor: size / 128,
+          width: size,
+          height: size,
+          buffer: sizeIcon.toBitmap()
+        });
+      }
+    }
+  });
+  
+  if (process.platform === 'darwin') {
+    return icon;
+  } else {
+    return nativeImage.createFromPath(getIconPath(256));
+  }
+}
+
+if (isDev && fs.existsSync(getIconPath(512))) {
   app.setAboutPanelOptions({
     applicationName: 'Octopus',
-    applicationIconPath: ICON_PATH,
+    applicationIconPath: getIconPath(512),
   });
 }
 
@@ -26,6 +64,20 @@ log.transports.console.level = 'debug';
 let mainWindow = null;
 let pythonProcess = null;
 let pythonPort = null;
+
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  log.info('Another instance is already running, quitting...');
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
 
 // 获取Python可执行文件路径
 function getPythonExecutablePath() {
@@ -187,22 +239,30 @@ async function createWindow() {
     const port = await startPythonService();
     log.info(`Python service running on port ${port}`);
     
-    // 设置 macOS Dock 图标
+    // 设置 macOS Dock 图标 (1024x1024 - App Store、Finder 详情)
     if (process.platform === 'darwin') {
-      log.info('Setting dock icon from:', DOCK_ICON_PATH);
-      log.info('Icon exists:', fs.existsSync(DOCK_ICON_PATH));
-      if (fs.existsSync(DOCK_ICON_PATH)) {
-        app.dock.setIcon(DOCK_ICON_PATH);
+      const dockIconPath = getIconPath(1024);
+      log.info('Setting dock icon from:', dockIconPath);
+      log.info('Icon exists:', fs.existsSync(dockIconPath));
+      if (fs.existsSync(dockIconPath)) {
+        app.dock.setIcon(dockIconPath);
         log.info('Dock icon set successfully');
       }
     }
+
+    // 创建应用图标
+    const appIcon = createAppIcon();
 
     mainWindow = new BrowserWindow({
       width: 1400,
       height: 900,
       minWidth: 1000,
       minHeight: 700,
-      icon: ICON_PATH,
+      icon: appIcon,
+      transparent: true,
+      vibrancy: 'under-window',
+      visualEffectState: 'active',
+      frame: process.platform === 'darwin' ? true : false,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,

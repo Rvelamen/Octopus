@@ -23,6 +23,11 @@ agent_task = None
 channel_manager = None
 
 
+def get_channel_manager():
+    """Get the global channel manager instance."""
+    return channel_manager
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -151,6 +156,7 @@ async def lifespan(app: FastAPI):
     # 10. Mount workspace directory for static file serving (images)
     # This must be done after init_workspace_path() is called
     from fastapi.staticfiles import StaticFiles
+    from backend.utils.helpers import get_data_path
     workspace_path = get_workspace_path()
     app.mount("/workspace", StaticFiles(directory=str(workspace_path)), name="workspace")
     logger.info(f"Mounted /workspace to {workspace_path}")
@@ -192,6 +198,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount wechat qrcodes directory upfront
+from fastapi.staticfiles import StaticFiles
+from backend.utils.helpers import get_data_path
+wechat_qrcodes_dir = get_data_path() / "wechat_qrcodes"
+wechat_qrcodes_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/wechat_qrcodes", StaticFiles(directory=str(wechat_qrcodes_dir)), name="wechat_qrcodes")
 
 
 @app.post("/hooks/longtask/{plugin_name}")
