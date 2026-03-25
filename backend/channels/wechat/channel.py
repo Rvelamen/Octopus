@@ -191,6 +191,7 @@ class WechatChannel(BaseChannel):
 
         if self._client:
             await self._client.aclose()
+            self._client = None
 
         logger.info("WeChat channel stopped")
 
@@ -560,7 +561,19 @@ class WechatChannel(BaseChannel):
 
             data = response.json()
 
-            status = data.get("status", "wait")
+            raw_status = data.get("status", "wait")
+            
+            status_map = {
+                "wait": "waiting",
+                "scaned": "scaned",
+                "scanned": "scaned",
+                "confirmed": "confirmed",
+                "expired": "expired",
+                "cancelled": "cancelled",
+                "cancel": "cancelled",
+            }
+            status = status_map.get(raw_status, raw_status)
+            
             bot_token = data.get("bot_token")
 
             return {

@@ -7,7 +7,7 @@ from backend.tools.base import Tool
 
 
 class ReadFileTool(Tool):
-    """Tool to read file contents."""
+    """Tool to read file contents. Supports txt, pdf, docx, xlsx, xls files."""
     
     @property
     def name(self) -> str:
@@ -15,7 +15,7 @@ class ReadFileTool(Tool):
     
     @property
     def description(self) -> str:
-        return "Read the contents of a file at the given path."
+        return "Read the contents of a file at the given path. Supports txt, pdf, docx, xlsx, xls formats."
     
     @property
     def parameters(self) -> dict[str, Any]:
@@ -30,6 +30,57 @@ class ReadFileTool(Tool):
             "required": ["path"]
         }
     
+    def _read_pdf(self, file_path: Path) -> str:
+        try:
+            import pypdf
+            reader = pypdf.PdfReader(str(file_path))
+            text_parts = []
+            for page in reader.pages:
+                text = page.extract_text()
+                if text:
+                    text_parts.append(text)
+            return "\n\n".join(text_parts)
+        except ImportError:
+            return "Error: pypdf is not installed. Install it with: pip install pypdf"
+    
+    def _read_docx(self, file_path: Path) -> str:
+        try:
+            from docx import Document
+            doc = Document(str(file_path))
+            text_parts = []
+            for para in doc.paragraphs:
+                if para.text.strip():
+                    text_parts.append(para.text)
+            for table in doc.tables:
+                table_text = []
+                for row in table.rows:
+                    row_text = [cell.text for cell in row.cells]
+                    table_text.append(" | ".join(row_text))
+                if table_text:
+                    text_parts.append("\n".join(table_text))
+            return "\n\n".join(text_parts)
+        except ImportError:
+            return "Error: python-docx is not installed. Install it with: pip install python-docx"
+    
+    def _read_excel(self, file_path: Path) -> str:
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(str(file_path), read_only=True, data_only=True)
+            all_sheets = []
+            for sheet_name in wb.sheetnames:
+                sheet = wb[sheet_name]
+                rows = []
+                for row in sheet.iter_rows(values_only=True):
+                    if any(cell is not None for cell in row):
+                        row_str = " | ".join(str(cell) if cell is not None else "" for cell in row)
+                        rows.append(row_str)
+                if rows:
+                    all_sheets.append(f"=== Sheet: {sheet_name} ===\n" + "\n".join(rows))
+            wb.close()
+            return "\n\n".join(all_sheets)
+        except ImportError:
+            return "Error: openpyxl is not installed. Install it with: pip install openpyxl"
+    
     async def execute(self, path: str, **kwargs: Any) -> str:
         from backend.utils.helpers import get_workspace_path
         file_path = Path(path).expanduser()
@@ -41,8 +92,17 @@ class ReadFileTool(Tool):
             if not file_path.is_file():
                 return f"Error: Not a file: {path}"
             
-            content = file_path.read_text(encoding="utf-8")
-            return content
+            suffix = file_path.suffix.lower()
+            
+            if suffix == ".pdf":
+                return self._read_pdf(file_path)
+            elif suffix == ".docx":
+                return self._read_docx(file_path)
+            elif suffix in (".xlsx", ".xls"):
+                return self._read_excel(file_path)
+            else:
+                content = file_path.read_text(encoding="utf-8")
+                return content
         except PermissionError:
             return f"Error: Permission denied: {path}"
         except Exception as e:

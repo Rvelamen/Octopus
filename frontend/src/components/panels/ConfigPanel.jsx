@@ -727,22 +727,6 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
             )}
           </>
         )}
-        
-        <div className="form-field">
-          <label className="form-label">Allow From (JSON Array)</label>
-          <textarea
-            value={JSON.stringify(channel.allowFrom || [], null, 2)}
-            onChange={(e) => {
-              try {
-                const parsed = JSON.parse(e.target.value);
-                updateChannelConfig(channel.channelName, { allowFrom: parsed });
-              } catch (err) {}
-            }}
-            className="pixel-input form-input json-textarea"
-            rows={3}
-            spellCheck={false}
-          />
-        </div>
       </>
     );
   };

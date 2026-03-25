@@ -65,7 +65,7 @@ class ProviderHandler:
         """Get all providers."""
         try:
             providers = self.provider_repo.get_all_providers()
-            logger.debug(f"Got {len(providers)} providers from database")
+            # logger.debug(f"Got {len(providers)} providers from database")
             
             provider_list = []
             for p in providers:
@@ -94,7 +94,7 @@ class ProviderHandler:
                 "request_id": request_id,
                 "data": {"providers": provider_list}
             }
-            logger.debug(f"Sending response with {len(provider_list)} providers")
+            # logger.debug(f"Sending response with {len(provider_list)} providers")
             await websocket.send_json(response)
         except Exception as e:
             logger.error(f"Error in _get_all: {e}")

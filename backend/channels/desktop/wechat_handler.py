@@ -177,9 +177,23 @@ class WechatConfigHandler:
             response = await client.get(url, timeout=QR_STATUS_TIMEOUT)
 
             result = response.json()
+            raw_status = result.get("status", "wait")
+            
             logger.info(f"WeChat QR status response: {result}")
-
-            status = result.get("status", "wait")
+            logger.info(f"Raw status from WeChat API: '{raw_status}'")
+            
+            status_map = {
+                "wait": "waiting",
+                "scaned": "scaned",
+                "scanned": "scaned",
+                "confirmed": "confirmed",
+                "expired": "expired",
+                "cancelled": "cancelled",
+                "cancel": "cancelled",
+            }
+            status = status_map.get(raw_status, raw_status)
+            logger.info(f"Mapped status: '{status}' (from '{raw_status}')")
+            
             bot_token = result.get("bot_token", "")
             ilink_bot_id = result.get("ilink_bot_id", "")
             ilink_user_id = result.get("ilink_user_id", "")
