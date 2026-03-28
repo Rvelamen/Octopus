@@ -7375,3 +7375,61 @@ hr {
     right: -3px;
   }
 }
+
+/* ========== Compression Summary Styles ========== */
+
+.compression-summary-wrapper {
+  margin-bottom: var(--s-4);
+}
+
+.compression-summary-card {
+  background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface) 100%);
+  border: 1px solid var(--board);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.compression-summary-header {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-3);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.compression-summary-header svg {
+  color: var(--accent);
+}
+
+.compression-badge {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(180, 106, 87, 0.2);
+}
+
+.compression-summary-content {
+  padding: var(--s-4);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-2);
+  white-space: pre-wrap;
+}
+
+.compression-summary-footer {
+  padding: var(--s-2) var(--s-4);
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}

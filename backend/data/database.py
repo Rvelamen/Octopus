@@ -131,6 +131,10 @@ class Database:
                     session_id INTEGER NOT NULL,
                     instance_name TEXT NOT NULL,
                     is_active BOOLEAN DEFAULT 0,
+                    compressed_context TEXT DEFAULT '',
+                    compressed_message_count INTEGER DEFAULT 0,
+                    last_compressed_turn INTEGER DEFAULT 0,
+                    compressed_at TIMESTAMP,
                     created_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
                     updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
                     FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
@@ -146,6 +150,7 @@ class Database:
                     content TEXT NOT NULL,
                     timestamp TIMESTAMP DEFAULT (datetime('now', 'localtime')),
                     metadata TEXT DEFAULT '{}',
+                    is_compressed BOOLEAN DEFAULT 0,
                     FOREIGN KEY (session_instance_id) REFERENCES session_instances(id) ON DELETE CASCADE
                 )
             """)
@@ -395,6 +400,7 @@ class Database:
                     max_iterations INTEGER DEFAULT 20,
                     context_compression_enabled BOOLEAN DEFAULT 0,
                     context_compression_turns INTEGER DEFAULT 10,
+                    context_compression_token_threshold INTEGER DEFAULT 200000,
                     config_json TEXT DEFAULT '{}',
                     created_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
                     updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
@@ -547,9 +553,58 @@ class Database:
             columns = [row[1] for row in cursor.fetchall()]
             
             if columns and 'model_types' not in columns:
-                # Add model_types column
                 conn.execute("ALTER TABLE models ADD COLUMN model_types TEXT DEFAULT '[\"chat\"]'")
                 logger.info("Migration: Added model_types column to models table")
+            
+            # Migration for session_instances table - compression fields
+            cursor = conn.execute("PRAGMA table_info(session_instances)")
+            instance_columns = [row[1] for row in cursor.fetchall()]
+            
+            if instance_columns:
+                if 'compressed_context' not in instance_columns:
+                    conn.execute("ALTER TABLE session_instances ADD COLUMN compressed_context TEXT DEFAULT ''")
+                    logger.info("Migration: Added compressed_context column to session_instances table")
+                
+                if 'compressed_message_count' not in instance_columns:
+                    conn.execute("ALTER TABLE session_instances ADD COLUMN compressed_message_count INTEGER DEFAULT 0")
+                    logger.info("Migration: Added compressed_message_count column to session_instances table")
+                
+                if 'last_compressed_turn' not in instance_columns:
+                    conn.execute("ALTER TABLE session_instances ADD COLUMN last_compressed_turn INTEGER DEFAULT 0")
+                    logger.info("Migration: Added last_compressed_turn column to session_instances table")
+                
+                if 'compressed_at' not in instance_columns:
+                    conn.execute("ALTER TABLE session_instances ADD COLUMN compressed_at TIMESTAMP")
+                    logger.info("Migration: Added compressed_at column to session_instances table")
+            
+            # Migration for messages table - is_compressed field
+            cursor = conn.execute("PRAGMA table_info(messages)")
+            message_columns = [row[1] for row in cursor.fetchall()]
+            
+            if message_columns and 'is_compressed' not in message_columns:
+                conn.execute("ALTER TABLE messages ADD COLUMN is_compressed BOOLEAN DEFAULT 0")
+                logger.info("Migration: Added is_compressed column to messages table")
+            
+            # Migration for agent_defaults table - token threshold field
+            cursor = conn.execute("PRAGMA table_info(agent_defaults)")
+            agent_columns = [row[1] for row in cursor.fetchall()]
+            
+            if agent_columns and 'context_compression_token_threshold' not in agent_columns:
+                conn.execute("ALTER TABLE agent_defaults ADD COLUMN context_compression_token_threshold INTEGER DEFAULT 200000")
+                logger.info("Migration: Added context_compression_token_threshold column to agent_defaults table")
+            
+            if agent_columns and 'llm_max_retries' not in agent_columns:
+                conn.execute("ALTER TABLE agent_defaults ADD COLUMN llm_max_retries INTEGER DEFAULT 3")
+                logger.info("Migration: Added llm_max_retries column to agent_defaults table")
+            
+            if agent_columns and 'llm_retry_base_delay' not in agent_columns:
+                conn.execute("ALTER TABLE agent_defaults ADD COLUMN llm_retry_base_delay REAL DEFAULT 1.0")
+                logger.info("Migration: Added llm_retry_base_delay column to agent_defaults table")
+            
+            if agent_columns and 'llm_retry_max_delay' not in agent_columns:
+                conn.execute("ALTER TABLE agent_defaults ADD COLUMN llm_retry_max_delay REAL DEFAULT 30.0")
+                logger.info("Migration: Added llm_retry_max_delay column to agent_defaults table")
+                
         except Exception as e:
             logger.warning(f"Migration failed (may be expected): {e}")
     

@@ -337,6 +337,133 @@ class SessionRepository:
             logger.info(f"Cleared {deleted_count} messages from instance {session_instance_id}")
             return deleted_count
     
+    # ========== Context Compression Methods ==========
+    
+    def update_compressed_context(
+        self,
+        instance_id: int,
+        summary: str,
+        compressed_count: int,
+        last_compressed_turn: int
+    ) -> bool:
+        """Update compressed context for a session instance.
+        
+        Args:
+            instance_id: The session instance ID
+            summary: The compressed context summary
+            compressed_count: Total number of compressed messages
+            last_compressed_turn: The turn number when last compressed
+            
+        Returns:
+            True if updated successfully
+        """
+        with self.db._get_connection() as conn:
+            cursor = conn.execute(
+                """UPDATE session_instances 
+                   SET compressed_context = ?,
+                       compressed_message_count = ?,
+                       last_compressed_turn = ?,
+                       compressed_at = datetime('now', 'localtime'),
+                       updated_at = datetime('now', 'localtime')
+                   WHERE id = ?""",
+                (summary, compressed_count, last_compressed_turn, instance_id)
+            )
+            logger.info(f"Updated compressed context for instance {instance_id}: {compressed_count} messages, turn {last_compressed_turn}")
+            return cursor.rowcount > 0
+    
+    def get_compressed_context(self, instance_id: int) -> dict | None:
+        """Get compressed context for a session instance.
+        
+        Args:
+            instance_id: The session instance ID
+            
+        Returns:
+            Dict with summary, compressed_count, last_compressed_turn, compressed_at or None
+        """
+        with self.db._get_connection() as conn:
+            row = conn.execute(
+                """SELECT compressed_context, compressed_message_count, 
+                          last_compressed_turn, compressed_at
+                   FROM session_instances 
+                   WHERE id = ?""",
+                (instance_id,)
+            ).fetchone()
+            
+            if row and row["compressed_context"]:
+                return {
+                    "summary": row["compressed_context"],
+                    "compressed_count": row["compressed_message_count"] or 0,
+                    "last_compressed_turn": row["last_compressed_turn"] or 0,
+                    "compressed_at": row["compressed_at"]
+                }
+            return None
+    
+    def get_uncompressed_messages(self, instance_id: int, limit: int = 100, offset: int = 0) -> list:
+        """Get uncompressed messages for a session instance.
+        
+        Args:
+            instance_id: The session instance ID
+            limit: Maximum number of messages to return
+            offset: Number of messages to skip
+            
+        Returns:
+            List of MessageRecord that are not compressed
+        """
+        with self.db._get_connection() as conn:
+            rows = conn.execute(
+                """SELECT * FROM messages 
+                   WHERE session_instance_id = ? AND (is_compressed = 0 OR is_compressed IS NULL)
+                   ORDER BY timestamp ASC
+                   LIMIT ? OFFSET ?""",
+                (instance_id, limit, offset)
+            ).fetchall()
+            
+            return [self._row_to_message(row) for row in rows]
+    
+    def mark_messages_compressed(self, instance_id: int, message_ids: list[int]) -> int:
+        """Mark messages as compressed.
+        
+        Args:
+            instance_id: The session instance ID
+            message_ids: List of message IDs to mark as compressed
+            
+        Returns:
+            Number of messages marked
+        """
+        if not message_ids:
+            return 0
+            
+        with self.db._get_connection() as conn:
+            placeholders = ",".join("?" * len(message_ids))
+            cursor = conn.execute(
+                f"""UPDATE messages 
+                   SET is_compressed = 1
+                   WHERE session_instance_id = ? AND id IN ({placeholders})""",
+                [instance_id] + list(message_ids)
+            )
+            marked_count = cursor.rowcount
+            logger.info(f"Marked {marked_count} messages as compressed for instance {instance_id}")
+            return marked_count
+    
+    def get_message_count_by_compression(self, instance_id: int, is_compressed: bool = False) -> int:
+        """Get message count by compression status.
+        
+        Args:
+            instance_id: The session instance ID
+            is_compressed: Whether to count compressed or uncompressed messages
+            
+        Returns:
+            Number of messages
+        """
+        with self.db._get_connection() as conn:
+            row = conn.execute(
+                """SELECT COUNT(*) as count FROM messages 
+                   WHERE session_instance_id = ? AND (is_compressed = ? OR (is_compressed IS NULL AND ? = 0))""",
+                (instance_id, 1 if is_compressed else 0, 1 if is_compressed else 0)
+            ).fetchone()
+            
+            return row["count"] if row else 0
+    
     # ========== Helper Methods ==========
     
     def _row_to_session(self, row) -> SessionRecord:

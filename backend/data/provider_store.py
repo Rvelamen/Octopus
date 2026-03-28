@@ -571,6 +571,10 @@ class AgentDefaultsRecord:
     max_iterations: int
     context_compression_enabled: bool
     context_compression_turns: int
+    context_compression_token_threshold: int
+    llm_max_retries: int
+    llm_retry_base_delay: float
+    llm_retry_max_delay: float
     config_json: dict[str, Any]
     created_at: datetime
     updated_at: datetime
@@ -621,6 +625,7 @@ class AgentDefaultsRepository:
         max_iterations: int | None = None,
         context_compression_enabled: bool | None = None,
         context_compression_turns: int | None = None,
+        context_compression_token_threshold: int | None = None,
         config_json: dict[str, Any] | None = None,
     ) -> bool:
         """Update agent defaults."""
@@ -651,6 +656,9 @@ class AgentDefaultsRepository:
         if context_compression_turns is not None:
             updates.append("context_compression_turns = ?")
             params.append(context_compression_turns)
+        if context_compression_token_threshold is not None:
+            updates.append("context_compression_token_threshold = ?")
+            params.append(context_compression_token_threshold)
         if config_json is not None:
             updates.append("config_json = ?")
             params.append(json.dumps(config_json))
@@ -713,6 +721,10 @@ class AgentDefaultsRepository:
             max_iterations=row["max_iterations"] or 20,
             context_compression_enabled=bool(row["context_compression_enabled"]),
             context_compression_turns=row["context_compression_turns"] or 10,
+            context_compression_token_threshold=row["context_compression_token_threshold"] or 8000,
+            llm_max_retries=row["llm_max_retries"] if "llm_max_retries" in row.keys() and row["llm_max_retries"] is not None else 3,
+            llm_retry_base_delay=row["llm_retry_base_delay"] if "llm_retry_base_delay" in row.keys() and row["llm_retry_base_delay"] is not None else 1.0,
+            llm_retry_max_delay=row["llm_retry_max_delay"] if "llm_retry_max_delay" in row.keys() and row["llm_retry_max_delay"] is not None else 30.0,
             config_json=json.loads(row["config_json"] or "{}"),
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),

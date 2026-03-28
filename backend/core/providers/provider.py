@@ -1,5 +1,6 @@
 """Unified LLM provider supporting OpenAI, Azure, and Anthropic."""
 
+import asyncio
 import json
 from typing import Any, AsyncGenerator
 
@@ -11,6 +12,16 @@ from loguru import logger
 
 from backend.core.providers.base import LLMProvider, LLMResponse, ToolCallRequest
 from backend.core.providers.message_adapter import MessageAdapter
+
+RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+RETRYABLE_EXCEPTIONS = (
+    httpx.TimeoutException,
+    httpx.ConnectError,
+    httpx.ReadError,
+    httpx.WriteError,
+    ConnectionError,
+    TimeoutError,
+)
 
 
 def convert_tools_to_anthropic_format(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -51,11 +62,17 @@ class UnifiedProvider(LLMProvider):
         default_model: str = "gpt-4",
         provider_type: str = "openai",  # "openai", "azure", "anthropic", "kimi"
         api_version: str = "2024-02-01",  # For Azure
+        max_retries: int = 3,
+        retry_base_delay: float = 1.0,
+        retry_max_delay: float = 30.0,
     ):
         super().__init__(api_key, api_base)
         self.default_model = default_model
         self.provider_type = provider_type
         self.api_version = api_version
+        self.max_retries = max_retries
+        self.retry_base_delay = retry_base_delay
+        self.retry_max_delay = retry_max_delay
 
         if provider_type in ["anthropic", "kimi", "minimax"]:
             # Kimi uses Anthropic-compatible API
@@ -101,6 +118,62 @@ class UnifiedProvider(LLMProvider):
         if "anthropic" in api_base_lower:
             return "anthropic"
         return "openai"
+
+    def _is_retryable_error(self, error: Exception) -> bool:
+        """Check if an error is retryable."""
+        if isinstance(error, RETRYABLE_EXCEPTIONS):
+            return True
+        
+        error_str = str(error).lower()
+        retryable_keywords = [
+            "timeout", "timed out", "connection", "network",
+            "502", "503", "504", "429", "rate limit",
+            "gateway", "service unavailable", "bad gateway"
+        ]
+        return any(kw in error_str for kw in retryable_keywords)
+
+    def _calculate_retry_delay(self, attempt: int) -> float:
+        """Calculate delay for retry with exponential backoff and jitter."""
+        import random
+        delay = min(
+            self.retry_base_delay * (2 ** attempt),
+            self.retry_max_delay
+        )
+        jitter = random.uniform(0, 0.1 * delay)
+        return delay + jitter
+
+    async def _execute_with_retry(
+        self,
+        func,
+        operation_name: str = "LLM call",
+    ) -> Any:
+        """Execute a function with retry logic."""
+        last_error = None
+        
+        for attempt in range(self.max_retries + 1):
+            try:
+                return await func()
+            except Exception as e:
+                last_error = e
+                
+                if not self._is_retryable_error(e):
+                    logger.error(f"[Provider] {operation_name} failed with non-retryable error: {e}")
+                    raise
+                
+                if attempt < self.max_retries:
+                    delay = self._calculate_retry_delay(attempt)
+                    logger.warning(
+                        f"[Provider] {operation_name} failed (attempt {attempt + 1}/{self.max_retries + 1}): {e}. "
+                        f"Retrying in {delay:.1f}s..."
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(
+                        f"[Provider] {operation_name} failed after {self.max_retries + 1} attempts: {e}"
+                    )
+                    raise
+        
+        raise last_error
 
     async def chat(
         self,
@@ -151,32 +224,33 @@ class UnifiedProvider(LLMProvider):
 
         actual_model = model
 
-        # Adapt messages for OpenAI-compatible providers (DeepSeek, etc. require strict format)
         adapted_messages = MessageAdapter.adapt_messages(messages, provider)
 
         if stream:
             return self._stream_openai(adapted_messages, tools, actual_model, max_tokens, temperature, provider)
         
-        try:
-            kwargs = dict(
-                model=actual_model,
-                messages=adapted_messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
-            
-            if tools:
-                kwargs["tools"] = tools
-                kwargs["tool_choice"] = "auto"
-            
+        kwargs = dict(
+            model=actual_model,
+            messages=adapted_messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+        
+        if tools:
+            kwargs["tools"] = tools
+            kwargs["tool_choice"] = "auto"
+        
+        async def _call_api():
             logger.debug(f"[Provider] Sending request to {provider} with model {model}, tools count: {len(tools) if tools else 0}")
             response = await self._client.chat.completions.create(**kwargs)
             logger.info(f"[Provider] Response received from {provider}: id={response.id}, finish_reason={response.choices[0].finish_reason if response.choices else 'N/A'}")
             return self._parse_response(response)
-            
+        
+        try:
+            return await self._execute_with_retry(_call_api, f"{provider} chat")
         except Exception as e:
             import traceback
-            logger.error(f"[Provider] {provider.upper()} API call failed: {e}")
+            logger.error(f"[Provider] {provider.upper()} API call failed after retries: {e}")
             logger.error(f"[Provider] Traceback: {traceback.format_exc()}")
             return LLMResponse(
                 content=f"Error calling LLM: {str(e)}",
@@ -348,37 +422,39 @@ class UnifiedProvider(LLMProvider):
                 anthropic_tools = convert_tools_to_anthropic_format(tools)
                 kwargs["tools"] = anthropic_tools
                 logger.info(f"[Anthropic] Tools converted and passed to API: {len(anthropic_tools)} tools")
-                # logger.info(f"[Anthropic] Tools content: {anthropic_tools}")
             
-            response = await self._client.messages.create(**kwargs)
+            async def _call_anthropic():
+                response = await self._client.messages.create(**kwargs)
+                
+                tool_calls = []
+                content = None
+                
+                if response.content:
+                    for block in response.content:
+                        if block.type == "text":
+                            content = block.text
+                        elif block.type == "tool_use":
+                            tool_calls.append(ToolCallRequest(
+                                id=block.id,
+                                name=block.name,
+                                arguments=block.input,
+                            ))
+                
+                return LLMResponse(
+                    content=content,
+                    tool_calls=tool_calls,
+                    finish_reason=response.stop_reason or "stop",
+                    usage={
+                        "prompt_tokens": response.usage.input_tokens,
+                        "completion_tokens": response.usage.output_tokens,
+                        "total_tokens": response.usage.input_tokens + response.usage.output_tokens,
+                    },
+                )
             
-            tool_calls = []
-            content = None
-            
-            if response.content:
-                for block in response.content:
-                    if block.type == "text":
-                        content = block.text
-                    elif block.type == "tool_use":
-                        tool_calls.append(ToolCallRequest(
-                            id=block.id,
-                            name=block.name,
-                            arguments=block.input,
-                        ))
-            
-            return LLMResponse(
-                content=content,
-                tool_calls=tool_calls,
-                finish_reason=response.stop_reason or "stop",
-                usage={
-                    "prompt_tokens": response.usage.input_tokens,
-                    "completion_tokens": response.usage.output_tokens,
-                    "total_tokens": response.usage.input_tokens + response.usage.output_tokens,
-                },
-            )
+            return await self._execute_with_retry(_call_anthropic, "Anthropic chat")
             
         except Exception as e:
-            logger.error(f"Anthropic API call failed: {e}")
+            logger.error(f"Anthropic API call failed after retries: {e}")
             return LLMResponse(
                 content=f"Error calling LLM: {str(e)}",
                 finish_reason="error",

@@ -22,8 +22,9 @@ class Session:
     updated_at: datetime = field(default_factory=datetime.now)
     metadata: dict[str, Any] = field(default_factory=dict)
     
-    # Context compression fields
+    # Context compression fields (persisted to database)
     compressed_context: str = ""
+    compressed_message_count: int = 0
     last_compressed_turn: int = 0
     
     # New fields for multi-session support
@@ -151,9 +152,9 @@ class SessionManager:
         # Get or create active instance
         instance = self.db.get_or_create_active_instance(session_record.id, "default")
         
-        # Load messages from database
+        # Load messages from database (only uncompressed messages)
         messages = []
-        message_records = self.db.get_messages(instance.id, limit=1000)
+        message_records = self.db.get_uncompressed_messages(instance.id, limit=1000)
         for msg in message_records:
             msg_dict = {
                 "role": msg.role,
@@ -163,6 +164,12 @@ class SessionManager:
             }
             messages.append(msg_dict)
         
+        # Load compressed context from database
+        compressed_info = self.db.get_compressed_context(instance.id)
+        compressed_context = compressed_info["summary"] if compressed_info else ""
+        compressed_message_count = compressed_info["compressed_count"] if compressed_info else 0
+        last_compressed_turn = compressed_info["last_compressed_turn"] if compressed_info else 0
+        
         # Create session object
         session = Session(
             key=key,
@@ -170,6 +177,9 @@ class SessionManager:
             created_at=session_record.created_at,
             updated_at=instance.updated_at,
             metadata=session_record.metadata,
+            compressed_context=compressed_context,
+            compressed_message_count=compressed_message_count,
+            last_compressed_turn=last_compressed_turn,
             session_record=session_record,
             active_instance=instance
         )
@@ -190,6 +200,15 @@ class SessionManager:
 
         instance_id = session.active_instance.id
         self._save_messages_to_instance(session, instance_id)
+        
+        # Save compressed context to database
+        if session.compressed_context:
+            self.db.update_compressed_context(
+                instance_id=instance_id,
+                summary=session.compressed_context,
+                compressed_count=session.compressed_message_count,
+                last_compressed_turn=session.last_compressed_turn
+            )
 
     def _save_messages_to_instance(self, session: Session, instance_id: int) -> None:
         """Save session messages to a specific instance.

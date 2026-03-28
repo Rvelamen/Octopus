@@ -1469,32 +1469,56 @@ class SessionGetMessagesHandler(MessageHandler):
             db = Database()
             repo = SessionRepository(db)
 
-            # Verify instance exists
             instance = repo.get_instance_by_id(instance_id)
             if not instance:
                 await self._send_error(websocket, message.request_id, "Session instance not found")
                 return
 
-            messages = repo.get_messages(instance_id, limit=limit, offset=offset)
-            total = repo.get_message_count(instance_id)
+            compressed = repo.get_compressed_context(instance_id)
+            messages = repo.get_uncompressed_messages(instance_id, limit=limit, offset=offset)
+            total = repo.get_message_count_by_compression(instance_id, is_compressed=False)
+            compressed_total = repo.get_message_count_by_compression(instance_id, is_compressed=True)
+
+            result_messages = []
+
+            if compressed and compressed["summary"]:
+                result_messages.append({
+                    "id": "context-summary",
+                    "session_instance_id": instance_id,
+                    "role": "system",
+                    "content": compressed["summary"],
+                    "timestamp": compressed.get("compressed_at") or "",
+                    "metadata": {
+                        "message_type": "context_summary",
+                        "is_summary": True,
+                        "compression_info": {
+                            "compressed_count": compressed["compressed_count"],
+                            "compressed_at": compressed.get("compressed_at"),
+                        }
+                    }
+                })
+
+            result_messages.extend([
+                {
+                    "id": msg.id,
+                    "session_instance_id": msg.session_instance_id,
+                    "role": msg.role,
+                    "content": msg.content,
+                    "timestamp": msg.timestamp.isoformat(),
+                    "metadata": msg.metadata
+                }
+                for msg in messages
+            ])
 
             await self.send_response(websocket, WSMessage(
                 type=MessageType.SESSION_MESSAGES,
                 request_id=message.request_id,
                 data={
                     "session_instance_id": instance_id,
-                    "messages": [
-                        {
-                            "id": msg.id,
-                            "session_instance_id": msg.session_instance_id,
-                            "role": msg.role,
-                            "content": msg.content,
-                            "timestamp": msg.timestamp.isoformat(),
-                            "metadata": msg.metadata
-                        }
-                        for msg in messages
-                    ],
-                    "total": total
+                    "messages": result_messages,
+                    "total": total,
+                    "compressed_total": compressed_total,
+                    "has_compression": compressed is not None
                 }
             ))
         except Exception as e:

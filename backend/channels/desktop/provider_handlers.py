@@ -559,6 +559,7 @@ class AgentDefaultsHandler:
                 "maxIterations": defaults.max_iterations,
                 "contextCompressionEnabled": defaults.context_compression_enabled,
                 "contextCompressionTurns": defaults.context_compression_turns,
+                "contextCompressionTokenThreshold": getattr(defaults, 'context_compression_token_threshold', 8000) or 8000,
                 "config": defaults.config_json,
             }
         })
@@ -582,6 +583,7 @@ class AgentDefaultsHandler:
             max_iterations=data.get("maxIterations"),
             context_compression_enabled=data.get("contextCompressionEnabled"),
             context_compression_turns=data.get("contextCompressionTurns"),
+            context_compression_token_threshold=data.get("contextCompressionTokenThreshold"),
             config_json=data.get("config"),
         )
 

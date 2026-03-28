@@ -22,6 +22,7 @@ from backend.tools.message import MessageTool
 from backend.extensions.loader import SkillsLoader
 from backend.agent.loader import SubAgentLoader, SubAgentConfig
 from backend.agent.aggregator import SubagentAggregator
+from backend.data import Database, TokenUsageRepository
 
 
 class SubagentManager:
@@ -53,40 +54,39 @@ class SubagentManager:
         self._skills = SkillsLoader(workspace)
         self._agent_loader = SubAgentLoader(workspace)
         self._aggregator = aggregator
+        self._token_usage = TokenUsageRepository(Database())
         
         # Set bus on aggregator if provided
         if self._aggregator:
             self._aggregator.set_bus(bus)
     
-    def _get_provider_for_config(self, config: SubAgentConfig) -> tuple[LLMProvider, str]:
-        """Get provider and model for a subagent configuration."""
-        # Use AgentConfigService to get provider from database
+    def _get_provider_for_config(self, config: SubAgentConfig) -> tuple[LLMProvider, str, str]:
+        """Get provider, model, and provider_type for a subagent configuration."""
         config_service = AgentConfigService()
         
-        # Get provider and model for this subagent
         provider, model = config_service.get_provider_for_subagent(
             provider_name=config.provider,
             model_name=config.model
         )
         
-        # Load compression settings from database
+        provider_record = config_service.get_provider_by_name(config.provider)
+        provider_type = provider_record.provider_type if provider_record else "openai"
+        
         self._subagent_compression_enabled = config_service.get_context_compression_enabled()
         self._subagent_compression_turns = config_service.get_context_compression_turns()
         
-        return provider, model
+        return provider, model, provider_type
     
-    def _get_default_provider_and_model(self) -> tuple[LLMProvider, str]:
-        """Get default provider and model from database."""
+    def _get_default_provider_and_model(self) -> tuple[LLMProvider, str, str]:
+        """Get default provider, model, and provider_type from database."""
         config_service = AgentConfigService()
         
-        # Get default provider and model from database
-        provider, model, _ = config_service.get_default_provider_and_model()
+        provider, model, provider_type = config_service.get_default_provider_and_model()
         
-        # Load compression settings from database
         self._subagent_compression_enabled = config_service.get_context_compression_enabled()
         self._subagent_compression_turns = config_service.get_context_compression_turns()
         
-        return provider, model
+        return provider, model, provider_type
     
     def _build_tools_for_config(self, config: SubAgentConfig, origin: dict[str, str]) -> ToolRegistry:
         """Build tool registry based on subagent configuration."""
@@ -309,20 +309,22 @@ When you have completed the task, provide a clear summary of your findings or ac
         try:
             # Get configuration
             if agent_config:
-                provider, model = self._get_provider_for_config(agent_config)
+                provider, model, provider_type = self._get_provider_for_config(agent_config)
                 tools = self._build_tools_for_config(agent_config, origin)
                 system_prompt = self._build_subagent_prompt(agent_config, task)
                 max_iterations = agent_config.max_iterations
                 temperature = agent_config.temperature
             else:
                 # Fallback to default behavior
-                provider, model = self._get_default_provider_and_model()
+                provider, model, provider_type = self._get_default_provider_and_model()
                 tools = self._build_default_tools(origin)
                 system_prompt = self._build_default_subagent_prompt(task)
                 max_iterations = 50
                 temperature = 0.7
             
-            logger.info(f"[Subagent:{task_id}] Using role={role_name}, model={model}")
+            session_instance_id = origin.get("session_instance_id")
+            
+            logger.info(f"[Subagent:{task_id}] Using role={role_name}, model={model}, provider_type={provider_type}")
             logger.info(f"[Subagent:{task_id}] Tools: {list(tools._tools.keys())}")
             
             # Build messages
@@ -365,6 +367,16 @@ When you have completed the task, provide a clear summary of your findings or ac
                         temperature=temperature,
                     )
                     logger.info(f"[Subagent:{task_id}] LLM response received, has_tool_calls={response.has_tool_calls}")
+                    
+                    # Record token usage
+                    if response.usage:
+                        self._record_token_usage(
+                            session_instance_id=session_instance_id,
+                            provider_name=provider_type,
+                            model_id=model,
+                            usage=response.usage,
+                            request_type="subagent"
+                        )
                 except Exception as e:
                     logger.error(f"[Subagent:{task_id}] LLM call failed: {e}")
                     raise
@@ -521,7 +533,7 @@ Summarize this naturally for the user. Keep it brief (1-2 sentences). Do not men
 2. 已经完成的工作
 3. 重要的上下文信息"""
 
-        provider, model = self._get_default_provider_and_model()
+        provider, model, provider_type = self._get_default_provider_and_model()
         compression_messages = [
             {"role": "system", "content": "你是一个对话摘要助手。请简洁地总结对话要点。"},
             {"role": "user", "content": compression_prompt}
@@ -533,11 +545,57 @@ Summarize this naturally for the user. Keep it brief (1-2 sentences). Do not men
                 tools=[],
                 model=model
             )
+            
+            # Record token usage for compression
+            if response.usage:
+                self._record_token_usage(
+                    session_instance_id=None,
+                    provider_name=provider_type,
+                    model_id=model,
+                    usage=response.usage,
+                    request_type="subagent_compression"
+                )
+            
             summary = response.content or ""
             return summary
         except Exception as e:
             logger.error(f"[Subagent] Context compression failed: {e}")
             return ""
+    
+    def _record_token_usage(
+        self,
+        session_instance_id: int | None,
+        provider_name: str,
+        model_id: str,
+        usage: dict,
+        request_type: str = "subagent"
+    ) -> None:
+        """Record token usage to database.
+        
+        Args:
+            session_instance_id: The session instance ID
+            provider_name: Provider name (e.g., openai, anthropic)
+            model_id: Model ID (e.g., gpt-4, claude-3-opus)
+            usage: Usage dict with prompt_tokens, completion_tokens, total_tokens
+            request_type: Type of request (subagent, compression, etc.)
+        """
+        try:
+            prompt_tokens = usage.get("prompt_tokens", 0)
+            completion_tokens = usage.get("completion_tokens", 0)
+            
+            self._token_usage.record_usage(
+                session_instance_id=session_instance_id,
+                provider_name=provider_name,
+                model_id=model_id,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                request_type=request_type
+            )
+            
+            logger.debug(f"[Subagent] Token usage recorded: {provider_name}/{model_id} - "
+                        f"prompt={prompt_tokens}, completion={completion_tokens}")
+        except Exception as e:
+            logger.error(f"[Subagent] Failed to record token usage: {e}")
     
     def get_running_count(self) -> int:
         """Return the number of currently running subagents."""

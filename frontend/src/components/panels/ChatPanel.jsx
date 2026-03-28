@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, RefreshCw, Trash2, Wrench, ChevronUp, ChevronDown, Plus, Image, X, Upload, Check, Loader2, Copy } from 'lucide-react';
+import { MessageSquare, RefreshCw, Trash2, Wrench, ChevronUp, ChevronDown, Plus, Image, X, Upload, Check, Loader2, Copy, FileText } from 'lucide-react';
 import WindowDots from '../WindowDots';
 import { parseLinks } from '../../utils/linkUtils';
 import octopusAvatar from '../../assets/images/octopus.png';
@@ -616,9 +616,8 @@ function ChatPanel({
   const pairToolMessages = (messages) => {
     const pairs = [];
     const toolResults = new Map();
-    const seenMessages = new Set(); // 用于去重
+    const seenMessages = new Set();
 
-    // 先收集所有 tool result
     messages.forEach(msg => {
       const toolCallId = msg.metadata?.tool_call_id || msg.tool_call_id;
       if (toolCallId && (msg.role === 'tool' || msg.message_type === 'tool_result')) {
@@ -626,18 +625,25 @@ function ChatPanel({
       }
     });
 
-    // 然后配对
     messages.forEach(msg => {
-      // 使用 role+content+timestamp 作为唯一标识
       const msgKey = `${msg.role}:${msg.content}:${msg.timestamp}`;
       if (seenMessages.has(msgKey)) {
-        return; // 跳过重复消息
+        return;
       }
       seenMessages.add(msgKey);
 
+      // Check for compression summary message
+      if (msg.metadata?.is_summary || msg.metadata?.message_type === 'context_summary') {
+        pairs.push({
+          type: 'compression_summary',
+          message: msg,
+          compressionInfo: msg.metadata?.compression_info || {}
+        });
+        return;
+      }
+
       const toolCalls = msg.metadata?.tool_calls || msg.tool_calls;
       if (toolCalls && toolCalls.length > 0) {
-        // 这是一个 tool call 消息，找到对应的 result
         const callId = toolCalls[0]?.id;
         const result = toolResults.get(callId);
         pairs.push({
@@ -648,10 +654,8 @@ function ChatPanel({
           toolName: toolCalls[0]?.function?.name
         });
       } else if (!msg.metadata?.tool_call_id && !msg.tool_call_id) {
-        // 普通消息
         pairs.push({ type: 'normal', message: msg });
       }
-      // tool result 已经被配对，跳过
     });
 
     return pairs;
@@ -940,8 +944,33 @@ function ChatPanel({
             <div className="messages-list">
               {pairToolMessages(messages)
                 .map((pair, idx) => {
-                  if (pair.type === 'tool_pair') {
-                    // Tool call + result 配对显示 - 直接使用tool组件，不加外层message div
+                  if (pair.type === 'compression_summary') {
+                    const msg = pair.message;
+                    const compressionInfo = pair.compressionInfo;
+                    return (
+                      <div key={msg.id || idx} className="compression-summary-wrapper">
+                        <div className="compression-summary-card">
+                          <div className="compression-summary-header">
+                            <FileText size={16} />
+                            <span>对话摘要</span>
+                            {compressionInfo.compressed_count && (
+                              <span className="compression-badge">
+                                已压缩 {compressionInfo.compressed_count} 条消息
+                              </span>
+                            )}
+                          </div>
+                          <div className="compression-summary-content">
+                            {renderMessageContent(msg.content)}
+                          </div>
+                          {compressionInfo.compressed_at && (
+                            <div className="compression-summary-footer">
+                              <span>压缩时间: {formatTime(compressionInfo.compressed_at)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  } else if (pair.type === 'tool_pair') {
                     const { toolCallId } = pair;
                     return (
                       <div
@@ -952,7 +981,6 @@ function ChatPanel({
                       </div>
                     );
                   } else {
-                    // 普通消息 - Cherry Studio 风格，User 右对齐，Assistant 左对齐
                     const msg = pair.message;
                     const isUser = msg.role === 'user';
                     return (

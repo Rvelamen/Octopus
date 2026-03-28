@@ -71,6 +71,14 @@ class AgentConfigService:
         except Exception:
             return 10  # Default fallback
     
+    def get_context_compression_token_threshold(self) -> int:
+        """Get context compression token threshold from database."""
+        try:
+            defaults = self._get_agent_defaults_repo().get_or_create_defaults()
+            return getattr(defaults, 'context_compression_token_threshold', 8000) or 8000
+        except Exception:
+            return 8000  # Default fallback
+    
     def get_workspace_path(self) -> str:
         """Get workspace path from database."""
         try:
@@ -136,7 +144,10 @@ class AgentConfigService:
         # Create AgentDefaults for factory
         agent_defaults = AgentDefaults(
             provider=provider_record.name,
-            model=model_id
+            model=model_id,
+            llm_max_retries=getattr(defaults, 'llm_max_retries', 3) or 3,
+            llm_retry_base_delay=getattr(defaults, 'llm_retry_base_delay', 1.0) or 1.0,
+            llm_retry_max_delay=getattr(defaults, 'llm_retry_max_delay', 30.0) or 30.0,
         )
         
         # Create provider using factory
@@ -168,6 +179,9 @@ class AgentConfigService:
         """
         from backend.core.providers.factory import create_provider
         from backend.core.config.schema import AgentDefaults, ProviderConfig
+        
+        # Get agent defaults for retry config
+        defaults = self._get_agent_defaults_repo().get_or_create_defaults()
         
         # Get provider from database
         provider_record = self._get_provider_repo().get_provider_by_name(provider_name)
@@ -215,7 +229,10 @@ class AgentConfigService:
         # Create AgentDefaults for factory
         agent_defaults = AgentDefaults(
             provider=provider_record.name,
-            model=model_id
+            model=model_id,
+            llm_max_retries=getattr(defaults, 'llm_max_retries', 3) if defaults else 3,
+            llm_retry_base_delay=getattr(defaults, 'llm_retry_base_delay', 1.0) if defaults else 1.0,
+            llm_retry_max_delay=getattr(defaults, 'llm_retry_max_delay', 30.0) if defaults else 30.0,
         )
         
         # Create provider using factory

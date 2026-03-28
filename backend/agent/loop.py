@@ -117,6 +117,15 @@ class AgentLoop:
             return config_service.get_context_compression_turns()
         except Exception:
             return 10
+    
+    @property
+    def context_compression_token_threshold(self) -> int:
+        """Get context_compression_token_threshold from database dynamically."""
+        try:
+            config_service = AgentConfigService(self.db)
+            return config_service.get_context_compression_token_threshold()
+        except Exception:
+            return 200000
 
     def _get_current_provider_and_model(self) -> tuple[LLMProvider, str, str]:
         """Get current provider, model, and provider_type from database."""
@@ -125,7 +134,6 @@ class AgentLoop:
 
     async def _emit(self, event_type: str, data: dict, channel: str = ""):
         """Helper to emit events to the bus."""
-        print(f"[EMIT] {event_type} channel={channel} {data}")
         if hasattr(self.bus, 'publish_event'):
             session = data.get("session", "unknown")
             await self.bus.publish_event(AgentEvent(
@@ -154,22 +162,20 @@ class AgentLoop:
         messages: list[dict[str, Any]],
     ) -> str:
         """
-        Compress conversation history using LLM.
+        Compress conversation history using LLM (first-time compression).
         
         Args:
             session: The current session.
-            messages: Current message list.
+            messages: Messages to compress.
         
         Returns:
             Compressed context summary.
         """
-        # Get messages to compress (excluding compressed ones if any)
-        to_compress = session.messages[:-6] if len(session.messages) > 6 else session.messages
+        to_compress = messages or session.messages[:-6] if len(session.messages) > 6 else session.messages
         
         if len(to_compress) < 4:
             return ""
         
-        # Build prompt for summarization
         conversation_text = "\n".join([
             f"{m.get('role', 'user')}: {m.get('content', '')[:500]}"
             for m in to_compress
@@ -184,7 +190,6 @@ class AgentLoop:
 2. 已经完成的工作
 3. 重要的上下文信息"""
 
-        # Call LLM to compress
         provider, model, provider_type = self._get_current_provider_and_model()
         compression_messages = [
             {"role": "system", "content": "你是一个对话摘要助手。请简洁地总结对话要点。"},
@@ -198,7 +203,6 @@ class AgentLoop:
                 model=model
             )
             
-            # Record token usage for compression
             if response.usage:
                 session_instance_id = session.active_instance.id if session.active_instance else None
                 self._record_token_usage(
@@ -216,33 +220,151 @@ class AgentLoop:
             logger.error(f"Context compression failed: {e}")
             return ""
 
-    async def _maybe_compress_context(self, session) -> None:
+    async def _compress_incremental(self, last_summary: str, new_messages: list) -> str:
         """
-        Check if context compression is needed and perform it.
+        Incremental compression: last_summary + new_messages -> new_summary.
+        
+        Args:
+            last_summary: The previous compressed summary.
+            new_messages: New messages to compress.
+        
+        Returns:
+            New complete summary.
+        """
+        if len(new_messages) < 4:
+            return last_summary
+        
+        new_conversation = "\n".join([
+            f"{m.get('role', 'user')}: {m.get('content', '')[:500]}"
+            for m in new_messages
+        ])
+        
+        prompt = f"""基于之前的对话摘要，整合新的对话内容，生成完整的对话摘要。
+
+## 之前的摘要
+{last_summary}
+
+## 新的对话内容
+{new_conversation}
+
+请生成一个完整的对话摘要（不超过 300 字），整合之前和新的内容，包括：
+1. 用户的主要请求和目标
+2. 已经完成的工作和进展
+3. 重要的上下文信息和决策
+
+注意：要确保摘要连贯完整，不要分段显示。"""
+
+        provider, model, provider_type = self._get_current_provider_and_model()
+        compression_messages = [
+            {"role": "system", "content": "你是一个对话摘要助手。请整合之前的摘要和新的对话内容，生成连贯完整的摘要。"},
+            {"role": "user", "content": prompt}
+        ]
+        
+        try:
+            response = await provider.chat(
+                messages=compression_messages,
+                tools=[],
+                model=model
+            )
+            
+            if response.usage:
+                self._record_token_usage(
+                    session_instance_id=None,
+                    provider_name=provider_type,
+                    model_id=model,
+                    usage=response.usage,
+                    request_type="compression"
+                )
+            
+            summary = response.content or last_summary
+            logger.info(f"Incremental compression: {len(last_summary)} -> {len(summary)} characters")
+            return summary
+        except Exception as e:
+            logger.error(f"Incremental compression failed: {e}")
+            return last_summary
+
+    async def _do_compress(self, session, current_turns: int) -> None:
+        """
+        Perform context compression.
         
         Args:
             session: The current session.
+            current_turns: Current turn count.
+        """
+        instance_id = session.active_instance.id if session.active_instance else None
+        keep_count = 6
+        
+        to_compress = session.messages[:-keep_count] if len(session.messages) > keep_count else []
+        
+        if len(to_compress) < 4:
+            logger.info(f"Not enough messages to compress: {len(to_compress)}")
+            return
+        
+        last_summary = session.compressed_context
+        
+        if last_summary:
+            logger.info(f"Performing incremental compression at turn {current_turns}")
+            summary = await self._compress_incremental(last_summary, to_compress)
+        else:
+            logger.info(f"Performing first-time compression at turn {current_turns}")
+            summary = await self._compress_context(session, to_compress)
+        
+        if not summary:
+            logger.warning("Compression returned empty summary")
+            return
+        
+        session.compressed_context = summary
+        session.compressed_message_count += len(to_compress)
+        session.last_compressed_turn = current_turns
+        
+        message_ids = [m.get('id') for m in to_compress if m.get('id')]
+        if instance_id and message_ids:
+            self.sessions.db.mark_messages_compressed(instance_id, message_ids)
+        
+        session.messages = session.messages[-keep_count:]
+        
+        self.sessions.save(session)
+        logger.info(f"Context compressed: {len(to_compress)} messages, total compressed: {session.compressed_message_count}")
+
+    async def _maybe_compress_context(self, session, prompt_tokens: int = 0) -> None:
+        """
+        Check if context compression is needed and perform it.
+        
+        Hybrid trigger strategy:
+        1. Token threshold (primary): trigger when prompt_tokens >= token_threshold
+        2. Turn threshold (fallback): trigger when turn % turn_threshold == 0
+        
+        Args:
+            session: The current session.
+            prompt_tokens: The prompt tokens from last LLM call (0 if unknown).
         """
         if not self.context_compression_enabled:
             return
         
         current_turns = session.get_turn_count()
-        threshold = self.context_compression_turns
         
-        # Check if we need to compress
-        if current_turns >= threshold and session.last_compressed_turn < threshold:
-            logger.info(f"Compressing context at turn {current_turns}")
-            
-            # Compress older messages
-            summary = await self._compress_context(session, None)
-            if summary:
-                session.set_compressed_context(summary)
-                # Keep only recent messages in session
-                keep_count = 6
-                if len(session.messages) > keep_count:
-                    session.messages = session.messages[-keep_count:]
-                self.sessions.save(session)
-                logger.info(f"Context compressed, kept last {keep_count} messages")
+        # Avoid compressing right after a compression
+        if session.last_compressed_turn >= current_turns:
+            return
+        
+        should_compress = False
+        trigger_reason = ""
+        
+        # Strategy 1: Token threshold (primary)
+        token_threshold = self.context_compression_token_threshold
+        if token_threshold and prompt_tokens >= token_threshold:
+            should_compress = True
+            trigger_reason = f"token threshold ({prompt_tokens} >= {token_threshold})"
+        
+        # Strategy 2: Turn threshold (fallback)
+        turn_threshold = self.context_compression_turns
+        if not should_compress and current_turns >= turn_threshold and current_turns % turn_threshold == 0:
+            should_compress = True
+            trigger_reason = f"turn threshold (turn {current_turns})"
+        
+        if should_compress:
+            logger.info(f"Compressing context triggered by {trigger_reason}")
+            await self._do_compress(session, current_turns)
     
     def _register_default_tools(self) -> None:
         """Register the default set of tools."""
@@ -451,6 +573,7 @@ class AgentLoop:
         # Agent loop
         iteration = 0
         final_content = None
+        last_prompt_tokens = 0  # Track prompt tokens for compression trigger
 
         should_stop = False  # Flag to stop the outer loop
 
@@ -470,8 +593,9 @@ class AgentLoop:
             )
             logger.info(f"LLM Response: {response}")
             
-            # Record token usage
+            # Record token usage and track prompt_tokens for compression
             if response.usage:
+                last_prompt_tokens = response.usage.get("prompt_tokens", 0)
                 self._record_token_usage(
                     session_instance_id=session_instance_id,
                     provider_name=provider_type,
@@ -517,7 +641,7 @@ class AgentLoop:
                     messages, response.content, tool_call_dicts, provider_type
                 )
 
-                # Execute tools
+                # Execute tools with error handling
                 for tool_call in response.tool_calls:
                     args_str = json.dumps(tool_call.arguments, ensure_ascii=False)
                     logger.debug(f"Executing tool: {tool_call.name} with arguments: {args_str}")
@@ -536,8 +660,14 @@ class AgentLoop:
                         tool_args["_chat_id"] = msg.chat_id
                         tool_args["_session_instance_id"] = session.active_instance.id
 
-                    # Execute tool
-                    result = await self.tools.execute(tool_call.name, tool_args)
+                    # Execute tool with error handling
+                    try:
+                        result = await self.tools.execute(tool_call.name, tool_args)
+                    except Exception as e:
+                        import traceback
+                        traceback.print_exc()
+                        logger.error(f"Tool execution error: {tool_call.name} - {e}")
+                        result = f"Error executing tool {tool_call.name}: {str(e)}"
 
                     # Check if this is a longtask auth action - if so, return simple confirmation
                     is_longtask_auth = (
@@ -567,11 +697,14 @@ class AgentLoop:
                         break  # Exit tool execution loop
 
                     # Emit tool call result (truncated for log)
-                    result_preview = result[:500] + "..." if len(result) > 500 else result
-                    await self._emit("agent_tool_result", {
-                        "tool": tool_call.name,
-                        "result": result_preview
-                    }, channel=msg.channel)
+                    try:
+                        result_preview = result[:500] + "..." if len(result) > 500 else result
+                        await self._emit("agent_tool_result", {
+                            "tool": tool_call.name,
+                            "result": result_preview
+                        }, channel=msg.channel)
+                    except Exception as e:
+                        logger.warning(f"Failed to emit tool result event: {e}")
 
                     # Save tool result immediately
                     session.add_message("tool", result,
@@ -597,7 +730,7 @@ class AgentLoop:
         if final_content is None:
             final_content = "I've completed processing but have no response to give."
 
-        await self._maybe_compress_context(session)
+        await self._maybe_compress_context(session, prompt_tokens=last_prompt_tokens)
 
         logger.info(f"[AgentLoop] Sending final response with {len(final_content)} chars")
         await self._send_stream_chunks(final_content, current_session, msg.channel)
@@ -761,19 +894,32 @@ class AgentLoop:
                     logger.debug(f"Executing tool: {tool_call.name} with arguments: {args_str}")
 
                     # Emit tool call start
-                    await self._emit("agent_tool_call", {
-                        "tool": tool_call.name,
-                        "args": tool_call.arguments
-                    }, channel=origin_channel)
+                    try:
+                        await self._emit("agent_tool_call", {
+                            "tool": tool_call.name,
+                            "args": tool_call.arguments
+                        }, channel=origin_channel)
+                    except Exception as e:
+                        logger.warning(f"Failed to emit tool call event: {e}")
 
-                    result = await self.tools.execute(tool_call.name, tool_call.arguments)
+                    # Execute tool with error handling
+                    try:
+                        result = await self.tools.execute(tool_call.name, tool_call.arguments)
+                    except Exception as e:
+                        import traceback
+                        traceback.print_exc()
+                        logger.error(f"Tool execution error: {tool_call.name} - {e}")
+                        result = f"Error executing tool {tool_call.name}: {str(e)}"
 
                     # Emit tool call result
-                    result_preview = result[:500] + "..." if len(result) > 500 else result
-                    await self._emit("agent_tool_result", {
-                        "tool": tool_call.name,
-                        "result": result_preview
-                    }, channel=origin_channel)
+                    try:
+                        result_preview = result[:500] + "..." if len(result) > 500 else result
+                        await self._emit("agent_tool_result", {
+                            "tool": tool_call.name,
+                            "result": result_preview
+                        }, channel=origin_channel)
+                    except Exception as e:
+                        logger.warning(f"Failed to emit tool result event: {e}")
 
                     # Save tool result immediately
                     session.add_message("tool", result,

@@ -168,6 +168,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
           maxIterations: agentDefaults.maxIterations,
           contextCompressionEnabled: agentDefaults.contextCompressionEnabled,
           contextCompressionTurns: agentDefaults.contextCompressionTurns,
+          contextCompressionTokenThreshold: agentDefaults.contextCompressionTokenThreshold,
         }, 5000);
       }
 
@@ -350,13 +351,22 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         />
 
         {agentDefaults.contextCompressionEnabled && (
-          <InputField
-            label="Compression Turns"
-            type="number"
-            value={agentDefaults.contextCompressionTurns || 10}
-            onChange={(v) => updateAgentDefaultField('contextCompressionTurns', parseInt(v) || 10)}
-            placeholder="10"
-          />
+          <>
+            <InputField
+              label="Compression Turns (Fallback)"
+              type="number"
+              value={agentDefaults.contextCompressionTurns || 10}
+              onChange={(v) => updateAgentDefaultField('contextCompressionTurns', parseInt(v) || 10)}
+              placeholder="10"
+            />
+            <InputField
+              label="Token Threshold"
+              type="number"
+              value={agentDefaults.contextCompressionTokenThreshold || 8000}
+              onChange={(v) => updateAgentDefaultField('contextCompressionTokenThreshold', parseInt(v) || 8000)}
+              placeholder="8000"
+            />
+          </>
         )}
       </ConfigCard>
     );

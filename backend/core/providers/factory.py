@@ -111,4 +111,7 @@ def create_provider(
         api_key=provider_config.api_key,
         api_base=provider_config.api_base,
         provider_type=internal_type,
+        max_retries=agent_defaults.llm_max_retries,
+        retry_base_delay=agent_defaults.llm_retry_base_delay,
+        retry_max_delay=agent_defaults.llm_retry_max_delay,
     )

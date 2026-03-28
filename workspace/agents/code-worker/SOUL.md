@@ -10,8 +10,8 @@ tools:
   - action
   - message
 extensions: []
-provider: deepseek
-model: deepseek-chat
+provider: KIMI-FOR-CODING
+model: kimi-for-coding
 max_iterations: 30
 temperature: 0.7
 ---

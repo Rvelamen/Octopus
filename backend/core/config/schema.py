@@ -60,6 +60,9 @@ class AgentDefaults(BaseModel):
     max_iterations: int = Field(default=20, alias="maxIterations")
     context_compression_enabled: bool = Field(default=False, alias="contextCompressionEnabled")
     context_compression_turns: int = Field(default=10, alias="contextCompressionTurns")
+    llm_max_retries: int = Field(default=3, alias="llmMaxRetries")
+    llm_retry_base_delay: float = Field(default=1.0, alias="llmRetryBaseDelay")
+    llm_retry_max_delay: float = Field(default=30.0, alias="llmRetryMaxDelay")
 
 
 class AgentsConfig(BaseModel):
