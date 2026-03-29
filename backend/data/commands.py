@@ -20,15 +20,34 @@ class CommandResult:
 class SessionCommandHandler:
     """Handler for session management commands."""
     
-    # Command patterns
     CMD_NEW = r'^/new\s*(?:session)?\s*(\w+)?$'
     CMD_SWITCH = r'^/switch\s+(?:session\s+)?(\d+)$'
     CMD_DELETE = r'^/delete\s+(?:session\s+)?(\d+)$'
     CMD_LIST = r'^/list\s*(?:sessions?)?$'
     CMD_HELP = r'^/help\s*(?:session)?$'
+    CMD_TTS = r'^/tts(?:\s+(on|off))?$'
     
-    def __init__(self, session_manager: SessionManager):
+    def __init__(self, session_manager: SessionManager, tts_service=None):
         self.session_manager = session_manager
+        self._tts_service = tts_service
+    
+    @property
+    def tts_service(self):
+        """Lazy load TTS service using SessionManager's database."""
+        if self._tts_service is None:
+            from backend.services.tts_service import TTSService
+            from backend.data.provider_store import ProviderRepository, SettingsRepository
+            from backend.data import Database
+            
+            db = Database()
+            provider_repo = ProviderRepository(db)
+            settings_repo = SettingsRepository(db)
+            self._tts_service = TTSService(
+                self.session_manager.db, 
+                provider_repo, 
+                settings_repo
+            )
+        return self._tts_service
     
     async def handle(self, content: str | list, session_key: str) -> CommandResult | None:
         """
@@ -87,6 +106,12 @@ class SessionCommandHandler:
         match = re.match(self.CMD_HELP, content, re.IGNORECASE)
         if match:
             return await self._handle_help()
+        
+        # Check for /tts command
+        match = re.match(self.CMD_TTS, content, re.IGNORECASE)
+        if match:
+            sub_cmd = match.group(1)
+            return await self._handle_tts(session_key, sub_cmd)
         
         return None
     
@@ -270,6 +295,10 @@ Available commands:
 
 /list            - List all your sessions with details
 
+/tts [on|off]    - Enable/disable voice reply for current session
+                   /tts or /tts on - Enable voice reply
+                   /tts off - Disable voice reply
+
 /help            - Show this help message
 
 What are sessions?
@@ -281,6 +310,7 @@ with the same contact. Each session has its own message history.
 • Use /switch to return to a previous conversation  
 • Use /delete to remove a session you no longer need
 • Use /list to see all your conversations
+• Use /tts to enable/disable voice reply
 """
         
         return CommandResult(
@@ -295,13 +325,71 @@ with the same contact. Each session has its own message history.
             return False
         if len(name) > 50:
             return False
-        # Allow letters, numbers, underscores, hyphens
         return bool(re.match(r'^[\w\-]+$', name))
     
-    def is_command(self, content: str) -> bool:
-        """Check if content is a session command."""
+    async def _handle_tts(self, session_key: str, sub_cmd: str | None) -> CommandResult:
+        """Handle /tts command to enable/disable TTS for current session instance."""
+        try:
+            session = self.session_manager.get_or_create(session_key)
+            instance = session.active_instance
+            
+            if not instance:
+                return CommandResult(
+                    success=False,
+                    message="❌ 无法获取当前会话实例"
+                )
+            
+            instance_id = instance.id
+            
+            if sub_cmd is None or sub_cmd.lower() == "on":
+                self.tts_service.update_instance_tts_config(instance_id, enabled=True)
+                return CommandResult(
+                    success=True,
+                    message="✅ 已启用当前会话的语音回复"
+                )
+            elif sub_cmd.lower() == "off":
+                self.tts_service.update_instance_tts_config(instance_id, enabled=False)
+                return CommandResult(
+                    success=True,
+                    message="✅ 已禁用当前会话的语音回复。你可以随时使用 /tts 重新启用。"
+                )
+            else:
+                return CommandResult(
+                    success=False,
+                    message="""❓ 未知的 TTS 命令。可用命令：
+- /tts - 启用语音回复
+- /tts off - 禁用语音回复
+
+💡 更详细的配置请在设置页面中进行。"""
+                )
+                
+        except Exception as e:
+            logger.error(f"Error handling TTS command: {e}")
+            return CommandResult(
+                success=False,
+                message=f"❌ 处理 TTS 命令时出错：{str(e)}"
+            )
+    
+    def is_command(self, content: str | list) -> bool:
+        # Handle multi-modal content - extract text for command checking
+        if isinstance(content, list):
+            # Multi-modal message, check if any text item is a command
+            for item in content:
+                if isinstance(item, dict):
+                    if item.get("type") == "text":
+                        text = item.get("text", "")
+                        if self.is_command(text):
+                            return True
+                else:
+                    # MessageContentItem object
+                    if hasattr(item, 'type') and item.type == "text":
+                        text = getattr(item, 'text', "")
+                        if self.is_command(text):
+                            return True
+            return False
+        
         content = content.strip()
-        patterns = [self.CMD_NEW, self.CMD_SWITCH, self.CMD_DELETE, self.CMD_LIST, self.CMD_HELP]
+        patterns = [self.CMD_NEW, self.CMD_SWITCH, self.CMD_DELETE, self.CMD_LIST, self.CMD_HELP, self.CMD_TTS]
         for pattern in patterns:
             if re.match(pattern, content, re.IGNORECASE):
                 return True

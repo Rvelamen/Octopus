@@ -176,14 +176,17 @@ class FeishuChannel(BaseChannel):
             return
         
         try:
-            # Determine receive_id_type based on chat_id format
-            # open_id starts with "ou_", chat_id starts with "oc_"
             if msg.chat_id.startswith("oc_"):
                 receive_id_type = "chat_id"
             else:
                 receive_id_type = "open_id"
             
-            # Build text message content
+            if msg.metadata and msg.metadata.get("tts_enabled"):
+                tts_config = msg.metadata.get("tts_config", {})
+                if tts_config:
+                    await self._send_tts(msg.content, msg.chat_id, tts_config)
+                    return
+            
             content = json.dumps({"text": msg.content}, ensure_ascii=False)
             
             request = CreateMessageRequest.builder() \
@@ -205,9 +208,248 @@ class FeishuChannel(BaseChannel):
                 )
             else:
                 logger.debug(f"Feishu message sent to {msg.chat_id}")
-                
+                    
         except Exception as e:
             logger.error(f"Error sending Feishu message: {e}")
+    
+    def _upload_file_sync(self, file_path: Path, file_name: str, file_type: str = "opus") -> tuple[bool, str]:
+        """Upload file to Feishu and get file_key.
+        
+        Args:
+            file_path: Path to the audio file path
+            file_name: Name of the file
+            file_type: File type for Feishu API (opus, mp4, pdf, stream, etc.)
+            
+        Returns:
+            Tuple of (success, file_key or error_message)
+        """
+        try:
+            import requests
+            
+            token_url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
+            token_resp = requests.post(
+                token_url,
+                json={
+                    "app_id": self.config.config.app_id,
+                    "app_secret": self.config.config.app_secret
+                },
+                timeout=30
+            )
+            token_data = token_resp.json()
+            
+            if token_data.get("code") != 0:
+                return False, f"Failed to get access token: {token_data.get('msg')}"
+            
+            access_token = token_data.get("tenant_access_token")
+            
+            upload_url = "https://open.feishu.cn/open-apis/im/v1/files"
+            headers = {"Authorization": f"Bearer {access_token}"}
+            
+            with open(file_path, "rb") as f:
+                files = {
+                    "file": (file_name, f, "application/octet-stream"),
+                    "file_type": (None, file_type),
+                    "file_name": (None, file_name)
+                }
+                response = requests.post(
+                    upload_url,
+                    headers=headers,
+                    files=files,
+                    timeout=120
+                )
+            
+            if response.status_code != 200:
+                return False, f"Upload failed: HTTP {response.status_code}, {response.text}"
+            
+            result = response.json()
+            
+            if result.get("code") != 0:
+                return False, f"Upload failed: {result.get('msg')} (code: {result.get('code')})"
+            
+            file_key = result.get("data", {}).get("file_key")
+            
+            if not file_key:
+                return False, "No file_key in response"
+            
+            logger.info(f"Uploaded audio file to Feishu: {file_key}")
+            return True, file_key
+            
+        except Exception as e:
+            logger.error(f"Error uploading file to Feishu: {e}")
+            return False, str(e)
+    
+    async def _upload_file(self, file_path: Path, file_name: str, file_type: str = "stream") -> tuple[bool, str]:
+        """Upload file to Feishu (async wrapper)."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            None, 
+            self._upload_file_sync, 
+            file_path, 
+            file_name, 
+            file_type
+        )
+    
+    async def _send_audio_message(self, chat_id: str, file_key: str, duration_ms: int = 0) -> bool:
+        """Send audio message through Feishu (requires opus format).
+        
+        Args:
+            chat_id: Target chat ID
+            file_key: The file key from upload
+            duration_ms: Audio duration in milliseconds
+            
+        Returns:
+            True if successful
+        """
+        try:
+            if chat_id.startswith("oc_"):
+                receive_id_type = "chat_id"
+            else:
+                receive_id_type = "open_id"
+            
+            content = json.dumps({
+                "file_key": file_key,
+                "duration": duration_ms
+            }, ensure_ascii=False)
+            
+            request = CreateMessageRequest.builder() \
+                .receive_id_type(receive_id_type) \
+                .request_body(
+                    CreateMessageRequestBody.builder()
+                    .receive_id(chat_id)
+                    .msg_type("audio")
+                    .content(content)
+                    .build()
+                ).build()
+            
+            response = self._client.im.v1.message.create(request)
+            
+            if not response.success():
+                logger.error(
+                    f"Failed to send Feishu audio message: code={response.code}, "
+                    f"msg={response.msg}"
+                )
+                return False
+            else:
+                logger.info(f"Feishu audio message sent to {chat_id}")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error sending Feishu audio message: {e}")
+            return False
+    
+    async def _send_file_message(self, chat_id: str, file_key: str, file_name: str) -> bool:
+        """Send file message through Feishu.
+        
+        Args:
+            chat_id: Target chat ID
+            file_key: The file key from upload
+            file_name: Display name for the file
+            
+        Returns:
+            True if successful
+        """
+        try:
+            if chat_id.startswith("oc_"):
+                receive_id_type = "chat_id"
+            else:
+                receive_id_type = "open_id"
+            
+            content = json.dumps({
+                "file_key": file_key,
+                "file_name": file_name
+            }, ensure_ascii=False)
+            
+            request = CreateMessageRequest.builder() \
+                .receive_id_type(receive_id_type) \
+                .request_body(
+                    CreateMessageRequestBody.builder()
+                    .receive_id(chat_id)
+                    .msg_type("file")
+                    .content(content)
+                    .build()
+                ).build()
+            
+            response = self._client.im.v1.message.create(request)
+            
+            if not response.success():
+                logger.error(
+                    f"Failed to send Feishu file message: code={response.code}, "
+                    f"msg={response.msg}"
+                )
+                return False
+            else:
+                logger.info(f"Feishu file message sent to {chat_id}")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error sending Feishu file message: {e}")
+            return False
+    
+    async def _send_tts(self, text: str, chat_id: str, tts_config: dict) -> None:
+        """Generate and send TTS audio through Feishu.
+        
+        Args:
+            text: Text to synthesize
+            chat_id: Target chat ID
+            tts_config: TTS configuration dict
+        """
+        try:
+            from backend.services.tts_service import TTSService
+            from backend.data import Database
+            from backend.data.provider_store import ProviderRepository, SettingsRepository
+            from backend.data.session_store import SessionRepository
+            import tempfile
+            import subprocess
+            
+            
+            db = Database()
+            session_repo = SessionRepository(db)
+            provider_repo = ProviderRepository(db)
+            settings_repo = SettingsRepository(db)
+            
+            tts_service = TTSService(session_repo, provider_repo, settings_repo)
+            result = await tts_service.synthesize(text, tts_config)
+            
+            with tempfile.NamedTemporaryFile(suffix=f".{result.format}", delete=False) as tmp:
+                tmp.write(result.audio_data)
+                tmp_path = Path(tmp.name)
+            
+            opus_path = tmp_path.with_suffix(".opus")
+            try:
+                subprocess.run([
+                    "ffmpeg", "-i", str(tmp_path),
+                    "-acodec", "libopus",
+                    "-ac", "1",
+                    "-ar", "16000",
+                    "-y",
+                    str(opus_path)
+                ], check=True, capture_output=True)
+                tmp_path.unlink(missing_ok=True)
+                tmp_path = opus_path
+                audio_format = "opus"
+            except (subprocess.CalledProcessError, FileNotFoundError) as e:
+                logger.warning(f"ffmpeg conversion failed, sending as file: {e}")
+                audio_format = result.format
+            
+            file_type = "opus" if audio_format == "opus" else "stream"
+            file_name = f"tts_audio.{audio_format}"
+            success, file_key = await self._upload_file(tmp_path, file_name, file_type)
+            
+            tmp_path.unlink(missing_ok=True)
+            
+            if not success:
+                logger.error(f"Failed to upload audio file: {file_key}")
+                return
+            
+            if audio_format == "opus":
+                await self._send_audio_message(chat_id, file_key, result.duration_ms)
+            else:
+                await self._send_file_message(chat_id, file_key, file_name)
+            
+            logger.info(f"TTS audio sent to Feishu chat {chat_id}")
+            
+        except Exception as e:
+            logger.error(f"Failed to send TTS audio to Feishu: {e}")
     
     def _download_resource_sync(
         self, 

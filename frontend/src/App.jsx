@@ -11,6 +11,10 @@ import {
   Users,
   RotateCcw,
   Zap,
+  Volume2,
+  X,
+  Play,
+  Pause,
 } from "lucide-react";
 import octopusLogo from "./assets/octopus-logo.png";
 import WindowDots from "./components/WindowDots";
@@ -36,6 +40,112 @@ const generateRequestId = () => {
 };
 
 /**
+ * TTS 音频播放器组件
+ */
+function TTSPlayer({ audioData, format, text, durationMs, onClose }) {
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  useEffect(() => {
+    if (audioRef.current && audioData) {
+      audioRef.current.src = `data:audio/${format};base64,${audioData}`;
+      audioRef.current.load();
+    }
+  }, [audioData, format]);
+
+  const handlePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const handlePlay = () => setIsPlaying(true);
+  const handlePause = () => setIsPlaying(false);
+
+  const formatTime = (time) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleSeek = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = x / rect.width;
+    if (audioRef.current) {
+      audioRef.current.currentTime = percentage * duration;
+    }
+  };
+
+  return (
+    <div className="tts-player">
+      <audio
+        ref={audioRef}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
+        onPlay={handlePlay}
+        onPause={handlePause}
+      />
+      
+      <div className="tts-player-content">
+        <div className="tts-player-icon">
+          <Volume2 size={18} />
+        </div>
+        
+        <button className="tts-player-btn" onClick={handlePlayPause}>
+          {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+        </button>
+        
+        <div className="tts-player-progress" onClick={handleSeek}>
+          <div 
+            className="tts-player-progress-bar" 
+            style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+          />
+        </div>
+        
+        <div className="tts-player-time">
+          {formatTime(currentTime)} / {formatTime(duration)}
+        </div>
+        
+        {text && (
+          <div className="tts-player-text" title={text}>
+            {text.length > 30 ? text.substring(0, 30) + '...' : text}
+          </div>
+        )}
+        
+        <button className="tts-player-close" onClick={onClose}>
+          <X size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * App 主组件
  */
 function App() {
@@ -59,6 +169,8 @@ function App() {
     global: { total_prompt_tokens: 0, total_completion_tokens: 0, total_tokens: 0, request_count: 0 },
     currentSession: { total_prompt_tokens: 0, total_completion_tokens: 0, total_tokens: 0, request_count: 0 },
   });
+  const [ttsAudio, setTtsAudio] = useState(null); // { audioData, format, text, durationMs, instanceId, messageId }
+  const [ttsAudioMap, setTtsAudioMap] = useState({}); // { messageId: { audioData, format, text, durationMs } }
 
   // ===== Refs =====
   const ws = useRef(null);
@@ -209,6 +321,19 @@ function App() {
           case "token_usage_update":
             // Real-time token usage update
             console.log("Token usage update:", data);
+            break;
+          case "tts_auto_reply":
+            // TTS audio auto reply - store for player to display
+            console.log("TTS auto reply received:", data?.instanceId);
+            if (data?.audio && data?.format) {
+              setTtsAudio({
+                audioData: data.audio,
+                format: data.format,
+                text: data.text,
+                durationMs: data.duration_ms,
+                instanceId: data.instanceId
+              });
+            }
             break;
         }
       };
@@ -439,6 +564,8 @@ function App() {
               currentChatInstanceId={currentChatInstanceId}
               toolCalls={toolCalls}
               toolCallAssistantContents={toolCallAssistantContents}
+              ttsAudio={ttsAudio}
+              onTtsPlayed={() => setTtsAudio(null)}
             />
           )}
           {activeTab === "config" && (

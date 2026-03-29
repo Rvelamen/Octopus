@@ -31,6 +31,12 @@ class SessionInstance:
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    tts_enabled: bool = False
+    tts_config: dict[str, Any] = None
+    
+    def __post_init__(self):
+        if self.tts_config is None:
+            self.tts_config = {}
 
 
 @dataclass
@@ -249,6 +255,54 @@ class SessionRepository:
                 logger.info(f"Deleted session instance: {instance_id}")
                 return True
             return False
+    
+    def update_instance_tts_config(
+        self,
+        instance_id: int,
+        enabled: bool | None = None,
+        config: dict[str, Any] | None = None
+    ) -> bool:
+        """Update TTS config for a session instance.
+        
+        Args:
+            instance_id: Session instance ID
+            enabled: TTS enabled status (None to keep current)
+            config: TTS config dict (None to keep current, partial update supported)
+            
+        Returns:
+            True if update successful
+        """
+        with self.db._get_connection() as conn:
+            row = conn.execute(
+                "SELECT tts_enabled, tts_config FROM session_instances WHERE id = ?",
+                (instance_id,)
+            ).fetchone()
+            
+            if not row:
+                logger.warning(f"Instance {instance_id} not found for TTS config update")
+                return False
+            
+            current_enabled = bool(row["tts_enabled"]) if row["tts_enabled"] is not None else False
+            current_config = {}
+            if row["tts_config"]:
+                try:
+                    current_config = json.loads(row["tts_config"])
+                except (json.JSONDecodeError, TypeError):
+                    current_config = {}
+            
+            new_enabled = enabled if enabled is not None else current_enabled
+            new_config = {**current_config, **config} if config else current_config
+            
+            logger.info(f"Updating TTS config for instance {instance_id}: enabled={new_enabled}, config={new_config}")
+            
+            conn.execute(
+                """UPDATE session_instances 
+                   SET tts_enabled = ?, tts_config = ?, updated_at = (datetime('now', 'localtime'))
+                   WHERE id = ?""",
+                (1 if new_enabled else 0, json.dumps(new_config, ensure_ascii=False), instance_id)
+            )
+            
+            return True
     
     # ========== Message Operations ==========
     
@@ -480,13 +534,22 @@ class SessionRepository:
     
     def _row_to_instance(self, row) -> SessionInstance:
         """Convert database row to SessionInstance."""
+        tts_config = {}
+        if "tts_config" in row.keys() and row["tts_config"]:
+            try:
+                tts_config = json.loads(row["tts_config"])
+            except (json.JSONDecodeError, TypeError):
+                tts_config = {}
+        
         return SessionInstance(
             id=row["id"],
             session_id=row["session_id"],
             instance_name=row["instance_name"],
             is_active=bool(row["is_active"]),
             created_at=datetime.fromisoformat(row["created_at"]),
-            updated_at=datetime.fromisoformat(row["updated_at"])
+            updated_at=datetime.fromisoformat(row["updated_at"]),
+            tts_enabled=bool(row["tts_enabled"]) if "tts_enabled" in row.keys() else False,
+            tts_config=tts_config
         )
     
     def _row_to_message(self, row) -> MessageRecord:

@@ -1127,3 +1127,180 @@ class ImageServiceConfigRepository:
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
         )
+
+
+@dataclass
+class TTSServiceConfigRecord:
+    """TTS service config record."""
+    id: int
+    config_type: str
+    default_model_id: int | None
+    default_voice: str | None
+    default_format: str | None
+    config_json: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+
+
+class TTSServiceConfigRepository:
+    """Repository for TTS service config database operations.
+
+    TTS uses models from enabled providers that support audio.
+    This repository stores the default model selection.
+    """
+
+    TTS_PROVIDER_TYPES = {'openai', 'openai-response', 'azure-openai', 'new-api', 'cherryln'}
+
+    DEFAULT_TTS_MODELS = {
+        'openai': 'tts-1',
+        'openai-response': 'tts-1',
+        'azure-openai': 'tts-1',
+        'new-api': 'tts-1',
+        'cherryln': 'tts-1'
+    }
+
+    def __init__(self, db: Database):
+        self.db = db
+
+    def get_config(self) -> TTSServiceConfigRecord | None:
+        """Get TTS service config."""
+        with self.db._get_connection() as conn:
+            row = conn.execute(
+                "SELECT * FROM tts_service_config WHERE config_type = 'tts'"
+            ).fetchone()
+            return self._row_to_config(row) if row else None
+
+    def update_config(
+        self,
+        default_model_id: int | None = None,
+        default_voice: str | None = None,
+        default_format: str | None = None,
+        config_json: dict[str, Any] | None = None,
+    ) -> bool:
+        """Update TTS service config."""
+        updates = []
+        params = []
+
+        if default_model_id is not None:
+            updates.append("default_model_id = ?")
+            params.append(default_model_id)
+        if default_voice is not None:
+            updates.append("default_voice = ?")
+            params.append(default_voice)
+        if default_format is not None:
+            updates.append("default_format = ?")
+            params.append(default_format)
+        if config_json is not None:
+            updates.append("config_json = ?")
+            params.append(json.dumps(config_json))
+
+        if not updates:
+            return False
+
+        updates.append("updated_at = datetime('now', 'localtime')")
+        params.append('tts')
+
+        with self.db._get_connection() as conn:
+            cursor = conn.execute(
+                f"UPDATE tts_service_config SET {', '.join(updates)} WHERE config_type = ?",
+                tuple(params)
+            )
+            return cursor.rowcount > 0
+
+    def get_available_models(self) -> list[dict]:
+        """Get available models for TTS from enabled providers.
+
+        Returns models from providers that support audio/TTS.
+        """
+        provider_types = self.TTS_PROVIDER_TYPES
+        placeholders = ','.join('?' * len(provider_types))
+
+        with self.db._get_connection() as conn:
+            rows = conn.execute(
+                f"""SELECT
+                    m.id as model_db_id,
+                    m.model_id,
+                    m.display_name as model_display_name,
+                    m.model_types,
+                    p.id as provider_id,
+                    p.name as provider_name,
+                    p.display_name as provider_display_name,
+                    p.provider_type,
+                    p.api_key,
+                    p.api_host
+                FROM models m
+                JOIN providers p ON m.provider_id = p.id
+                WHERE m.enabled = 1 AND p.enabled = 1 AND p.provider_type IN ({placeholders})
+                  AND (m.model_types LIKE '%audio%' OR m.model_types LIKE '%tts%' OR m.model_id LIKE '%tts%')
+                ORDER BY p.display_name ASC, m.display_name ASC""",
+                tuple(provider_types)
+            ).fetchall()
+
+            return [
+                {
+                    "value": row["model_db_id"],
+                    "label": f"{row['provider_display_name']} - {row['model_display_name']}",
+                    "providerId": row["provider_id"],
+                    "providerName": row["provider_name"],
+                    "providerDisplayName": row["provider_display_name"],
+                    "providerType": row["provider_type"],
+                    "modelId": row["model_id"],
+                    "modelDbId": row["model_db_id"],
+                    "modelDisplayName": row["model_display_name"],
+                    "modelTypes": row["model_types"],
+                    "apiKey": row["api_key"],
+                    "apiHost": row["api_host"],
+                }
+                for row in rows
+            ]
+
+    def get_default_model(self) -> dict | None:
+        """Get default model for TTS service."""
+        with self.db._get_connection() as conn:
+            row = conn.execute(
+                """SELECT
+                    m.id as model_db_id,
+                    m.model_id,
+                    m.display_name as model_display_name,
+                    p.id as provider_id,
+                    p.name as provider_name,
+                    p.display_name as provider_display_name,
+                    p.provider_type,
+                    p.api_key,
+                    p.api_host,
+                    tsc.default_voice,
+                    tsc.default_format
+                FROM tts_service_config tsc
+                JOIN models m ON tsc.default_model_id = m.id
+                JOIN providers p ON m.provider_id = p.id
+                WHERE tsc.config_type = 'tts' AND m.enabled = 1 AND p.enabled = 1"""
+            ).fetchone()
+
+            if row:
+                return {
+                    "modelDbId": row["model_db_id"],
+                    "modelId": row["model_id"],
+                    "modelDisplayName": row["model_display_name"],
+                    "providerId": row["provider_id"],
+                    "providerName": row["provider_name"],
+                    "providerDisplayName": row["provider_display_name"],
+                    "providerType": row["provider_type"],
+                    "apiKey": row["api_key"],
+                    "apiHost": row["api_host"],
+                    "defaultVoice": row["default_voice"] or "alloy",
+                    "defaultFormat": row["default_format"] or "mp3",
+                }
+            return None
+
+    def _row_to_config(self, row) -> TTSServiceConfigRecord:
+        """Convert database row to TTSServiceConfigRecord."""
+        return TTSServiceConfigRecord(
+            id=row["id"],
+            config_type=row["config_type"],
+            default_model_id=row["default_model_id"],
+            default_voice=row["default_voice"],
+            default_format=row["default_format"],
+            config_json=json.loads(row["config_json"] or "{}"),
+            created_at=datetime.fromisoformat(row["created_at"]),
+            updated_at=datetime.fromisoformat(row["updated_at"]),
+        )

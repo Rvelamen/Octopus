@@ -8023,3 +8023,220 @@ hr {
   color: var(--text-3);
   font-family: var(--font-mono);
 }
+
+/* ========== TTS Audio Player Styles ========== */
+
+.tts-player {
+  position: fixed;
+  bottom: var(--s-6);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--board);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-3);
+  z-index: 1000;
+  min-width: 400px;
+  max-width: 600px;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.tts-player-content {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+}
+
+.tts-player-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--accent-soft);
+  border-radius: var(--r-sm);
+  color: var(--accent);
+}
+
+.tts-player-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--r-sm);
+  color: var(--text-invert);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tts-player-btn:hover {
+  background: var(--accent-2);
+}
+
+.tts-player-progress {
+  flex: 1;
+  height: 6px;
+  background: var(--surface-3);
+  border-radius: 3px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.tts-player-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.1s linear;
+}
+
+.tts-player-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  min-width: 70px;
+  text-align: center;
+}
+
+.tts-player-text {
+  font-size: 12px;
+  color: var(--text-2);
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tts-player-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: 1px solid var(--board);
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tts-player-close:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: white;
+}
+
+@media (max-width: 600px) {
+  .tts-player {
+    min-width: auto;
+    max-width: calc(100vw - var(--s-6) * 2);
+    left: var(--s-6);
+    right: var(--s-6);
+    transform: none;
+  }
+  
+  .tts-player-text {
+    display: none;
+  }
+}
+
+/* ========== TTS Message Player (Inline in Chat) ========== */
+
+.tts-message-player {
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  margin-top: var(--s-2);
+}
+
+.tts-player-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.tts-player-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--accent-soft);
+  border-radius: var(--r-sm);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.tts-player-btn-small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--r-sm);
+  color: var(--text-invert);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.tts-player-btn-small:hover {
+  background: var(--accent-2);
+}
+
+.tts-player-time-small {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-3);
+  min-width: 60px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.tts-player-text-small {
+  font-size: 11px;
+  color: var(--text-2);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tts-player-close-small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: 1px solid var(--board);
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.tts-player-close-small:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: white;
+}

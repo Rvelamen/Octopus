@@ -1,6 +1,7 @@
 """Agent loop: the core processing engine."""
 
 import asyncio
+import base64
 import json
 from pathlib import Path
 from typing import Any
@@ -99,6 +100,23 @@ class AgentLoop:
         self._running = False
         self._stop_current_task = False
         self._register_default_tools()
+        self._tts_service = None
+
+    @property
+    def tts_service(self):
+        """Lazy load TTS service using SessionManager's database."""
+        if self._tts_service is None:
+            from backend.services.tts_service import TTSService
+            from backend.data.provider_store import ProviderRepository, SettingsRepository
+            
+            provider_repo = ProviderRepository(self.db)
+            settings_repo = SettingsRepository(self.db)
+            self._tts_service = TTSService(
+                self.sessions.db, 
+                provider_repo, 
+                settings_repo
+            )
+        return self._tts_service
 
     @property
     def max_iterations(self) -> int:
@@ -265,28 +283,13 @@ class AgentLoop:
             channel=msg.channel
         ))
 
-        # === 1. Check for session management commands ===
-        command_result = await handle_session_command(
-            msg.content,
-            msg.session_key,
-            self.sessions
-        )
-
-        if command_result:
-            # Command was handled, return response
-            return OutboundMessage(
-                channel=msg.channel,
-                chat_id=msg.chat_id,
-                content=command_result.message
-            )
-
-        # Get instance_id from metadata if provided (frontend selected instance)
-        metadata_instance_id = msg.metadata.get("instance_id") if msg.metadata else None
-        
         # Use fixed session key for desktop channel
         session_key = msg.session_key
         if msg.channel == "desktop":
             session_key = "desktop:desktop_session"
+        
+        # Get instance_id from metadata if provided (frontend selected instance)
+        metadata_instance_id = msg.metadata.get("instance_id") if msg.metadata else None
         
         if metadata_instance_id:
             # Switch to the specified instance in the desktop session
@@ -302,6 +305,21 @@ class AgentLoop:
         else:
             # No instance_id provided, use default session
             session = self.sessions.get_or_create(session_key)
+
+        # === 1. Check for session management commands (after instance switch) ===
+        command_result = await handle_session_command(
+            msg.content,
+            session_key,
+            self.sessions
+        )
+
+        if command_result:
+            # Command was handled, return response
+            return OutboundMessage(
+                channel=msg.channel,
+                chat_id=msg.chat_id,
+                content=command_result.message
+            )
         
         # Update tool contexts with session instance ID
         session_instance_id = session.active_instance.id if session.active_instance else None
@@ -558,10 +576,26 @@ class AgentLoop:
         ))
         logger.info(f"[AgentLoop] agent_finish event published")
 
+        # Get TTS config for metadata (channel will handle TTS)
+        tts_enabled = False
+        tts_config = {}
+        if session_instance_id:
+            try:
+                tts_result = self.tts_service.get_instance_tts_config(session_instance_id)
+                tts_enabled = tts_result.get("enabled", False)
+                tts_config = tts_result.get("config", {})
+            except Exception as tts_err:
+                logger.warning(f"Failed to check TTS config: {tts_err}")
+
         return OutboundMessage(
             channel=msg.channel,
             chat_id=msg.chat_id,
-            content=final_content
+            content=final_content,
+            metadata={
+                "session_instance_id": session_instance_id,
+                "tts_enabled": tts_enabled,
+                "tts_config": tts_config
+            }
         )
 
     async def _process_system_message(

@@ -372,6 +372,27 @@ class Database:
                 VALUES ('generation', NULL, '1024x1024', 'standard')
             """)
 
+            # ========== TTS Service Config Table ==========
+            
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS tts_service_config (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    config_type TEXT UNIQUE NOT NULL,
+                    default_model_id INTEGER,
+                    default_voice TEXT DEFAULT 'alloy',
+                    default_format TEXT DEFAULT 'mp3',
+                    config_json TEXT DEFAULT '{}',
+                    created_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
+                    updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
+                    FOREIGN KEY (default_model_id) REFERENCES models(id) ON DELETE SET NULL
+                )
+            """)
+
+            conn.execute("""
+                INSERT OR IGNORE INTO tts_service_config (config_type, default_model_id, default_voice, default_format)
+                VALUES ('tts', NULL, 'alloy', 'mp3')
+            """)
+
             # ========== Provider & Model Indexes ==========
 
             conn.execute("""
@@ -686,6 +707,19 @@ class Database:
             if agent_columns and 'llm_retry_max_delay' not in agent_columns:
                 conn.execute("ALTER TABLE agent_defaults ADD COLUMN llm_retry_max_delay REAL DEFAULT 30.0")
                 logger.info("Migration: Added llm_retry_max_delay column to agent_defaults table")
+            
+            # Migration for session_instances table - TTS fields
+            cursor = conn.execute("PRAGMA table_info(session_instances)")
+            instance_columns = [row[1] for row in cursor.fetchall()]
+            
+            if instance_columns:
+                if 'tts_enabled' not in instance_columns:
+                    conn.execute("ALTER TABLE session_instances ADD COLUMN tts_enabled BOOLEAN DEFAULT 0")
+                    logger.info("Migration: Added tts_enabled column to session_instances table")
+                
+                if 'tts_config' not in instance_columns:
+                    conn.execute("ALTER TABLE session_instances ADD COLUMN tts_config TEXT DEFAULT '{}'")
+                    logger.info("Migration: Added tts_config column to session_instances table")
                 
         except Exception as e:
             logger.warning(f"Migration failed (may be expected): {e}")

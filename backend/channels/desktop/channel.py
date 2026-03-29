@@ -1,6 +1,7 @@
 """Desktop channel implementation using WebSocket."""
 
 import asyncio
+import base64
 from datetime import datetime
 from typing import Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -93,7 +94,6 @@ class DesktopChannel(BaseChannel):
         if not msg.content:
             return
         
-        # Check if this response has a request_id for correlation
         request_id = msg.metadata.get("request_id") if msg.metadata else None
         
         ws_message = WSMessage(
@@ -103,6 +103,47 @@ class DesktopChannel(BaseChannel):
         )
         
         await self._broadcast(ws_message.to_dict())
+        
+        # Handle TTS if enabled
+        if msg.metadata and msg.metadata.get("tts_enabled"):
+            instance_id = msg.metadata.get("session_instance_id")
+            tts_config = msg.metadata.get("tts_config", {})
+            
+            if instance_id and tts_config:
+                asyncio.create_task(
+                    self._send_tts(msg.content, instance_id, tts_config)
+                )
+    
+    async def _send_tts(self, text: str, instance_id: int, tts_config: dict) -> None:
+        """Generate and send TTS audio to desktop frontend."""
+        try:
+            from backend.services.tts_service import TTSService
+            from backend.data import Database
+            from backend.data.provider_store import ProviderRepository, SettingsRepository
+            from backend.data.session_store import SessionRepository
+            
+            db = Database()
+            session_repo = SessionRepository(db)
+            provider_repo = ProviderRepository(db)
+            settings_repo = SettingsRepository(db)
+            
+            tts_service = TTSService(session_repo, provider_repo, settings_repo)
+            result = await tts_service.synthesize(text, tts_config)
+            
+            await self._broadcast({
+                "type": "tts_auto_reply",
+                "data": {
+                    "instanceId": instance_id,
+                    "audio": base64.b64encode(result.audio_data).decode(),
+                    "format": result.format,
+                    "text": text,
+                    "duration_ms": result.duration_ms
+                }
+            })
+            
+            logger.debug(f"TTS audio sent for instance {instance_id}")
+        except Exception as e:
+            logger.error(f"Failed to generate TTS audio: {e}")
                 
     async def _handle_event(self, event: AgentEvent):
         """Handle an agent event from the bus.

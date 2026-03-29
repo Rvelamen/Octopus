@@ -278,6 +278,26 @@ class MessageType(Enum):
     TOKEN_USAGE = "token_usage"                             # Token usage statistics
     TOKEN_USAGE_UPDATE = "token_usage_update"               # Real-time token usage update
 
+    # TTS - Client -> Server
+    TTS_GET_INSTANCE_CONFIG = "tts_get_instance_config"     # Get TTS config for session instance
+    TTS_UPDATE_INSTANCE_CONFIG = "tts_update_instance_config"  # Update TTS config for session instance
+    TTS_GET_DEFAULTS = "tts_get_defaults"                   # Get global default TTS config
+    TTS_SET_DEFAULTS = "tts_set_defaults"                   # Set global default TTS config
+    TTS_GET_VOICES = "tts_get_voices"                       # Get available voices
+    TTS_SYNTHESIZE = "tts_synthesize"                       # Synthesize text to speech
+    TTS_GET_PROVIDERS = "tts_get_providers"                 # Get supported TTS providers
+    TTS_GET_STYLES = "tts_get_styles"                       # Get available styles
+
+    # TTS - Server -> Client
+    TTS_CONFIG = "tts_config"                               # TTS config response
+    TTS_DEFAULTS = "tts_defaults"                           # Global default TTS config
+    TTS_VOICES = "tts_voices"                               # Available voices list
+    TTS_AUDIO = "tts_audio"                                 # Synthesized audio data
+    TTS_PROVIDERS = "tts_providers"                         # Supported TTS providers
+    TTS_STYLES = "tts_styles"                               # Available styles list
+    TTS_ERROR = "tts_error"                                 # TTS error
+    TTS_AUTO_REPLY = "tts_auto_reply"                       # Auto TTS reply from agent
+
 
 @dataclass
 class WSMessage:
@@ -418,6 +438,15 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.SUBAGENT_GET_AVAILABLE_TOOLS,
     MessageType.SUBAGENT_GET_AVAILABLE_EXTENSIONS,
     MessageType.SUBAGENT_GET_PROVIDER_MODELS,
+    # TTS
+    MessageType.TTS_GET_INSTANCE_CONFIG,
+    MessageType.TTS_UPDATE_INSTANCE_CONFIG,
+    MessageType.TTS_GET_DEFAULTS,
+    MessageType.TTS_SET_DEFAULTS,
+    MessageType.TTS_GET_VOICES,
+    MessageType.TTS_SYNTHESIZE,
+    MessageType.TTS_GET_PROVIDERS,
+    MessageType.TTS_GET_STYLES,
 }
 
 SERVER_MESSAGE_TYPES = {
@@ -515,4 +544,13 @@ SERVER_MESSAGE_TYPES = {
     MessageType.SUBAGENT_AVAILABLE_TOOLS,
     MessageType.SUBAGENT_AVAILABLE_EXTENSIONS,
     MessageType.SUBAGENT_PROVIDER_MODELS,
+    # TTS
+    MessageType.TTS_CONFIG,
+    MessageType.TTS_DEFAULTS,
+    MessageType.TTS_VOICES,
+    MessageType.TTS_AUDIO,
+    MessageType.TTS_PROVIDERS,
+    MessageType.TTS_STYLES,
+    MessageType.TTS_ERROR,
+    MessageType.TTS_AUTO_REPLY,
 }

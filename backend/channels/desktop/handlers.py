@@ -561,6 +561,276 @@ class MCPGetStatusHandler(MessageHandler):
         ))
 
 
+# ========== TTS Handlers ==========
+
+class TTSHandler(MessageHandler):
+    """Handle TTS related requests."""
+
+    def __init__(self, bus: MessageBus, db=None):
+        super().__init__(bus)
+        from backend.data import Database
+        self.db = db or Database()
+        self._tts_repo = None
+        self._session_db = None
+
+    @property
+    def tts_repo(self):
+        """Lazy load TTS config repository."""
+        if self._tts_repo is None:
+            from backend.data.provider_store import TTSServiceConfigRepository
+            self._tts_repo = TTSServiceConfigRepository(self.db)
+        return self._tts_repo
+
+    @property
+    def session_db(self):
+        """Lazy load session database."""
+        if self._session_db is None:
+            from backend.data.session_db import SessionDatabase
+            from backend.utils.helpers import get_data_path
+            self._session_db = SessionDatabase(get_data_path() / "sessions.db")
+        return self._session_db
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Route TTS message to appropriate handler."""
+        msg_type = message.type.value if hasattr(message.type, 'value') else message.type
+        
+        if msg_type == "tts_get_instance_config":
+            await self._get_instance_config(websocket, message)
+        elif msg_type == "tts_update_instance_config":
+            await self._update_instance_config(websocket, message)
+        elif msg_type == "tts_get_defaults":
+            await self._get_defaults(websocket, message)
+        elif msg_type == "tts_set_defaults":
+            await self._set_defaults(websocket, message)
+        elif msg_type == "tts_synthesize":
+            await self._synthesize(websocket, message)
+        elif msg_type == "tts_get_voices":
+            await self._get_voices(websocket, message)
+        elif msg_type == "tts_get_providers":
+            await self._get_providers(websocket, message)
+        elif msg_type == "tts_get_styles":
+            await self._get_styles(websocket, message)
+        else:
+            await self._send_error(websocket, message.request_id, f"Unknown TTS message type: {msg_type}")
+
+    async def _get_instance_config(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Get TTS config for a session instance."""
+        try:
+            instance_id = message.data.get("instance_id")
+            if not instance_id:
+                await self._send_error(websocket, message.request_id, "instance_id is required")
+                return
+
+            instance = self.session_db.get_instance(instance_id)
+            
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.TTS_CONFIG,
+                request_id=message.request_id,
+                data={
+                    "instanceId": instance_id,
+                    "enabled": instance.tts_enabled if instance else False,
+                    "config": instance.tts_config if instance else {}
+                }
+            ))
+        except Exception as e:
+            logger.error(f"Failed to get TTS config: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to get TTS config: {e}")
+
+    async def _update_instance_config(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Update TTS config for a session instance."""
+        try:
+            instance_id = message.data.get("instance_id")
+            enabled = message.data.get("enabled")
+            config = message.data.get("config", {})
+
+            if not instance_id:
+                await self._send_error(websocket, message.request_id, "instance_id is required")
+                return
+
+            success = self.session_db.update_instance_tts_config(
+                instance_id, 
+                enabled=enabled, 
+                config=config
+            )
+
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.TTS_CONFIG,
+                request_id=message.request_id,
+                data={"success": success, "instanceId": instance_id}
+            ))
+        except Exception as e:
+            logger.error(f"Failed to update TTS config: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to update TTS config: {e}")
+
+    async def _get_defaults(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Get global default TTS config and available models."""
+        try:
+            available_models = self.tts_repo.get_available_models()
+            default_model = self.tts_repo.get_default_model()
+            
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.TTS_DEFAULTS,
+                request_id=message.request_id,
+                data={
+                    "availableModels": available_models,
+                    "defaultModel": default_model,
+                }
+            ))
+        except Exception as e:
+            logger.error(f"Failed to get TTS defaults: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to get TTS defaults: {e}")
+
+    async def _set_defaults(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Set global default TTS config."""
+        try:
+            model_id = message.data.get("modelId")
+            default_voice = message.data.get("defaultVoice")
+            default_format = message.data.get("defaultFormat")
+
+            success = self.tts_repo.update_config(
+                default_model_id=model_id,
+                default_voice=default_voice,
+                default_format=default_format,
+            )
+
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.TTS_DEFAULTS,
+                request_id=message.request_id,
+                data={"success": success}
+            ))
+        except Exception as e:
+            logger.error(f"Failed to set TTS defaults: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to set TTS defaults: {e}")
+
+    async def _synthesize(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Synthesize text to speech."""
+        try:
+            text = message.data.get("text")
+            model_id = message.data.get("modelId")
+            voice = message.data.get("voice")
+
+            if not text:
+                await self._send_error(websocket, message.request_id, "text is required")
+                return
+
+            from backend.services.tts.factory import TTSFactory
+            from backend.data.provider_store import ProviderRepository
+            
+            provider_repo = ProviderRepository(self.db)
+            
+            model = None
+            if model_id:
+                models = provider_repo.get_models_by_ids([model_id])
+                if models:
+                    model = models[0]
+            
+            if not model:
+                default_config = self.tts_repo.get_default_model()
+                if default_config:
+                    model_id = default_config.get("modelDbId")
+                    models = provider_repo.get_models_by_ids([model_id])
+                    if models:
+                        model = models[0]
+            
+            if not model:
+                await self._send_error(websocket, message.request_id, "No TTS model available")
+                return
+            
+            provider = provider_repo.get_provider_by_id(model.get("provider_id") if isinstance(model, dict) else model.provider_id)
+            
+            tts_provider = TTSFactory.create("openai", provider)
+            
+            result = await tts_provider.synthesize(
+                text=text,
+                voice=voice or "alloy"
+            )
+
+            import base64
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.TTS_AUDIO,
+                request_id=message.request_id,
+                data={
+                    "audio": base64.b64encode(result.audio_data).decode(),
+                    "format": result.format,
+                    "duration_ms": result.duration_ms
+                }
+            ))
+        except Exception as e:
+            logger.error(f"Failed to synthesize TTS: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to synthesize TTS: {e}")
+
+    async def _get_voices(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Get available voices for a provider type."""
+        try:
+            provider_type = message.data.get("provider", "openai")
+            
+            if provider_type == "mimo":
+                from backend.services.tts.mimo_tts import MiMoTTS
+                voices = MiMoTTS.VOICES
+            else:
+                from backend.services.tts.openai_tts import OpenAITTS
+                voices = OpenAITTS.VOICES
+
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.TTS_VOICES,
+                request_id=message.request_id,
+                data={
+                    "voices": [
+                        {"id": v.id, "name": v.name, "gender": v.gender, "language": getattr(v, 'language', 'en')}
+                        for v in voices
+                    ]
+                }
+            ))
+        except Exception as e:
+            logger.error(f"Failed to get TTS voices: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to get TTS voices: {e}")
+
+    async def _get_providers(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Get available TTS models from enabled providers."""
+        try:
+            available_models = self.tts_repo.get_available_models()
+            default_model = self.tts_repo.get_default_model()
+
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.TTS_PROVIDERS,
+                request_id=message.request_id,
+                data={
+                    "availableModels": available_models,
+                    "defaultModel": default_model
+                }
+            ))
+        except Exception as e:
+            logger.error(f"Failed to get TTS providers: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to get TTS providers: {e}")
+
+    async def _get_styles(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Get available styles for a provider type."""
+        try:
+            provider_type = message.data.get("provider", "openai")
+            
+            if provider_type == "mimo":
+                from backend.services.tts.mimo_tts import MiMoTTS
+                styles = MiMoTTS.SUPPORTED_STYLES
+            else:
+                styles = []
+
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.TTS_STYLES,
+                request_id=message.request_id,
+                data={"styles": styles}
+            ))
+        except Exception as e:
+            logger.error(f"Failed to get TTS styles: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to get TTS styles: {e}")
+
+    async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
+        await self.send_response(websocket, WSMessage(
+            type=MessageType.ERROR,
+            request_id=request_id,
+            data={"error": error}
+        ))
+
+
 # ========== System Handlers ==========
 
 class RestartServiceHandler(MessageHandler):
@@ -3319,6 +3589,18 @@ class HandlerRegistry:
         # Register System handlers
         self.handlers.update({
             MessageType.RESTART_SERVICE: RestartServiceHandler(bus),
+        })
+
+        # Register TTS handlers
+        self.handlers.update({
+            MessageType.TTS_GET_INSTANCE_CONFIG: TTSHandler(bus, db=self.db),
+            MessageType.TTS_UPDATE_INSTANCE_CONFIG: TTSHandler(bus, db=self.db),
+            MessageType.TTS_GET_DEFAULTS: TTSHandler(bus, db=self.db),
+            MessageType.TTS_SET_DEFAULTS: TTSHandler(bus, db=self.db),
+            MessageType.TTS_GET_VOICES: TTSHandler(bus, db=self.db),
+            MessageType.TTS_SYNTHESIZE: TTSHandler(bus, db=self.db),
+            MessageType.TTS_GET_PROVIDERS: TTSHandler(bus, db=self.db),
+            MessageType.TTS_GET_STYLES: TTSHandler(bus, db=self.db),
         })
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:

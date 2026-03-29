@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Brain, Bot, Radio, Plus, Save, Image, Search, Settings, Trash2, Edit, Check, X, ChevronDown, ChevronRight, RefreshCw, QrCode, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Brain, Bot, Radio, Plus, Save, Image, Search, Settings, Trash2, Edit, Check, X, ChevronDown, ChevronRight, RefreshCw, QrCode, Clock, CheckCircle, AlertCircle, Volume2, Layers } from 'lucide-react';
 import { InputField, PasswordField, SelectField, SwitchField } from '../forms';
 import { ConfigCard, DynamicItemCard, AddItemDialog } from '../config';
 import WindowDots from '../WindowDots';
-import ImageProviderPanel from './ImageProviderPanel';
+import MultimodalPanel from './MultimodalPanel';
 import { ProviderSetting } from './ProviderSetting';
 
 const CONFIG_TABS = [
   { key: 'providers', label: 'PROVIDERS', Icon: Brain },
   { key: 'agents', label: 'AGENT', Icon: Bot },
   { key: 'channels', label: 'CHANNELS', Icon: Radio },
-  { key: 'images', label: 'IMAGES', Icon: Image }
+  { key: 'multimodal', label: 'MULTIMODAL', Icon: Layers }
 ];
 
 function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
@@ -121,6 +121,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
     }
   }, [sendWSMessage]);
 
+  // Load TTS defaults and providers
   useEffect(() => {
     loadConfig();
     loadAgentDefaults();
@@ -144,8 +145,8 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
       case 'channels':
         loadChannelConfigs();
         break;
-      case 'images':
-        // ImageProviderPanel component handles its own data loading
+      case 'multimodal':
+        // MultimodalPanel component handles its own data loading
         break;
       default:
         break;
@@ -984,7 +985,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
       case 'providers': return <ProviderSetting sendWSMessage={sendWSMessage} />;
       case 'agents': return renderAgentDefaults();
       case 'channels': return renderChannels();
-      case 'images': return <ImageProviderPanel sendWSMessage={sendWSMessage} />;
+      case 'multimodal': return <MultimodalPanel sendWSMessage={sendWSMessage} />;
       default: return <ProviderSetting sendWSMessage={sendWSMessage} />;
     }
   };
