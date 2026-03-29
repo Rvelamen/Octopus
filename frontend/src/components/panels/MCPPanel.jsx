@@ -123,12 +123,26 @@ const MCP_TABS = [
 
   // 更新服务器启用状态
   const toggleServer = async (serverName, enabled) => {
+    const server = servers.find(s => s.name === serverName);
+    if (server && server.enabled === enabled) {
+      return;
+    }
+    
     try {
-      await sendWSMessage('mcp_update_server', { name: serverName, enabled }, 5000);
-      await loadServers();
-      await loadMCPStatus();
+      addToast(`${enabled ? 'Enabling' : 'Disabling'} server "${serverName}"...`, 'info', 2000);
+      const response = await sendWSMessage('mcp_update_server', { name: serverName, enabled }, 5000);
+      
+      if (response.data?.success) {
+        await loadServers();
+        await loadMCPStatus();
+        addToast(`Server "${serverName}" ${enabled ? 'enabled' : 'disabled'} successfully`, 'success', 3000);
+      } else {
+        throw new Error(response.data?.error || 'Update failed');
+      }
     } catch (err) {
       setError('Failed to update server: ' + err.message);
+      addToast(`Failed to update server: ${err.message}`, 'error', 5000);
+      await loadServers();
     }
   };
 
@@ -514,6 +528,9 @@ const MCP_TABS = [
                 itemKey={server.name}
                 onDelete={deleteServer}
                 defaultExpanded={false}
+                enabled={server.enabled !== false}
+                onToggleEnabled={toggleServer}
+                showEnabledSwitch={true}
               >
                 <div className="server-detail-content">
                   <div className="server-meta-row">

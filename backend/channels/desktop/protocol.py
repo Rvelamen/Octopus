@@ -46,6 +46,7 @@ class MessageType(Enum):
     SESSION_DELETE_INSTANCE = "session_delete_instance"            # Delete a session instance
     SESSION_CREATE = "session_create"                              # Create a new session with instance
     SESSION_SET_ACTIVE = "session_set_active"                      # Set an instance as active
+    SESSION_GET_INSTANCES = "session_get_instances"                # Get instances list with pagination
 
     # Workspace File System - Client -> Server
     WORKSPACE_LIST = "workspace_list"                    # List directory contents
@@ -74,6 +75,7 @@ class MessageType(Enum):
 
     # System - Client -> Server
     RESTART_SERVICE = "restart_service"                  # Restart backend service
+    STOP_AGENTS = "stop_agents"                          # Stop all running agents and subagents
 
     # Image - Client -> Server
     IMAGE_UPLOAD = "image_upload"                              # Upload image
@@ -134,6 +136,7 @@ class MessageType(Enum):
     SESSION_INSTANCE_DELETED = "session_instance_deleted"  # Instance deleted confirmation
     SESSION_CREATED = "session_created"                # Session created confirmation
     SESSION_ACTIVE_SET = "session_active_set"          # Active instance set confirmation
+    SESSION_INSTANCES = "session_instances"            # Instances list with pagination
 
     # Workspace File System - Server -> Client
     WORKSPACE_LIST_RESULT = "workspace_list_result"    # Directory listing result
@@ -160,8 +163,19 @@ class MessageType(Enum):
     AGENT_SYSTEM_FILE = "agent_system_file"            # System agent file content
     AGENT_SYSTEM_FILE_SAVED = "agent_system_file_saved"  # System agent file saved
 
+    # Subagent Options - Client -> Server
+    SUBAGENT_GET_AVAILABLE_TOOLS = "subagent_get_available_tools"      # Get available tools
+    SUBAGENT_GET_AVAILABLE_EXTENSIONS = "subagent_get_available_extensions"  # Get available extensions
+    SUBAGENT_GET_PROVIDER_MODELS = "subagent_get_provider_models"      # Get providers with models
+
+    # Subagent Options - Server -> Client
+    SUBAGENT_AVAILABLE_TOOLS = "subagent_available_tools"              # Available tools list
+    SUBAGENT_AVAILABLE_EXTENSIONS = "subagent_available_extensions"    # Available extensions list
+    SUBAGENT_PROVIDER_MODELS = "subagent_provider_models"              # Providers with models
+
     # System - Server -> Client
     SERVICE_RESTARTING = "service_restarting"          # Service is restarting
+    AGENTS_STOPPED = "agents_stopped"                  # Agents stopped confirmation
 
     # Image - Server -> Client
     IMAGE_UPLOADED = "image_uploaded"                        # Image upload confirmation
@@ -331,6 +345,7 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.SESSION_DELETE_INSTANCE,
     MessageType.SESSION_CREATE,
     MessageType.SESSION_SET_ACTIVE,
+    MessageType.SESSION_GET_INSTANCES,
     MessageType.WORKSPACE_LIST,
     MessageType.WORKSPACE_READ,
     MessageType.WORKSPACE_WRITE,
@@ -351,6 +366,7 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.AGENT_GET_SYSTEM_FILE,
     MessageType.AGENT_SAVE_SYSTEM_FILE,
     MessageType.RESTART_SERVICE,
+    MessageType.STOP_AGENTS,
     MessageType.IMAGE_UPLOAD,
     MessageType.IMAGE_ANALYZE,
     MessageType.IMAGE_GENERATE,
@@ -398,6 +414,10 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.IMAGE_SET_DEFAULT_PROVIDER,
     # Token Usage
     MessageType.TOKEN_GET_USAGE,
+    # Subagent Options
+    MessageType.SUBAGENT_GET_AVAILABLE_TOOLS,
+    MessageType.SUBAGENT_GET_AVAILABLE_EXTENSIONS,
+    MessageType.SUBAGENT_GET_PROVIDER_MODELS,
 }
 
 SERVER_MESSAGE_TYPES = {
@@ -440,6 +460,7 @@ SERVER_MESSAGE_TYPES = {
     MessageType.SESSION_INSTANCE_DELETED,
     MessageType.SESSION_CREATED,
     MessageType.SESSION_ACTIVE_SET,
+    MessageType.SESSION_INSTANCES,
     MessageType.WORKSPACE_LIST_RESULT,
     MessageType.WORKSPACE_READ_RESULT,
     MessageType.WORKSPACE_WRITE_RESULT,
@@ -459,6 +480,8 @@ SERVER_MESSAGE_TYPES = {
     MessageType.AGENT_SYSTEM_FILES,
     MessageType.AGENT_SYSTEM_FILE,
     MessageType.AGENT_SYSTEM_FILE_SAVED,
+    MessageType.SERVICE_RESTARTING,
+    MessageType.AGENTS_STOPPED,
     MessageType.IMAGE_UPLOADED,
     MessageType.IMAGE_ANALYSIS_RESULT,
     MessageType.IMAGE_GENERATED,
@@ -488,4 +511,8 @@ SERVER_MESSAGE_TYPES = {
     # Token Usage
     MessageType.TOKEN_USAGE,
     MessageType.TOKEN_USAGE_UPDATE,
+    # Subagent Options
+    MessageType.SUBAGENT_AVAILABLE_TOOLS,
+    MessageType.SUBAGENT_AVAILABLE_EXTENSIONS,
+    MessageType.SUBAGENT_PROVIDER_MODELS,
 }

@@ -130,7 +130,15 @@ async def lifespan(app: FastAPI):
     from backend.channels.desktop.config import DesktopConfig
     
     desktop_config = DesktopConfig()
-    desktop_channel = DesktopChannel(config=desktop_config, bus=bus, app=app, mcp_manager=mcp_manager, cron_service=cron_service)
+    desktop_channel = DesktopChannel(
+        config=desktop_config, 
+        bus=bus, 
+        app=app, 
+        mcp_manager=mcp_manager, 
+        cron_service=cron_service,
+        agent_loop=agent_loop,
+        subagent_manager=subagent_manager
+    )
     
     # 5. Initialize Channel Manager with Desktop Channel
     logger.info(f"Creating ChannelManager with desktop channel: {desktop_channel}")

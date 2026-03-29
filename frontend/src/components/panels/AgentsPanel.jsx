@@ -1,31 +1,40 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Bot, Plus, Save, Trash2, RefreshCw, FileText, Folder } from 'lucide-react';
+import { Bot, Plus, Save, Trash2, RefreshCw, FileText, Folder, Settings, Code, ChevronDown, Check } from 'lucide-react';
 import WindowDots from '../WindowDots';
 
-/**
- * AgentsPanel 组件 - Agent 管理面板
- * 用于查看和编辑 agents/<name>/SOUL.md 文件以及 agents/system/*.md 文件
- */
 function AgentsPanel({ sendWSMessage }) {
-  // 普通 Agents 状态
   const [agents, setAgents] = useState([]);
   const [selectedAgent, setSelectedAgent] = useState(null);
-  const [soulContent, setSoulContent] = useState('');
-
-  // System Agent 状态
   const [systemFiles, setSystemFiles] = useState([]);
   const [selectedSystemFile, setSelectedSystemFile] = useState(null);
   const [systemFileContent, setSystemFileContent] = useState('');
-
-  // 通用状态
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
   const [newAgentName, setNewAgentName] = useState('');
   const [showNewAgentDialog, setShowNewAgentDialog] = useState(false);
-  const [activeTab, setActiveTab] = useState('agents'); // 'agents' | 'system'
+  const [activeTab, setActiveTab] = useState('agents');
+  const [editMode, setEditMode] = useState('form');
+  const [availableTools, setAvailableTools] = useState([]);
+  const [availableExtensions, setAvailableExtensions] = useState([]);
+  const [providers, setProviders] = useState([]);
+  const [showToolsDropdown, setShowToolsDropdown] = useState(false);
+  const [showExtensionsDropdown, setShowExtensionsDropdown] = useState(false);
 
-  // 加载 Agent 列表
+  const [formData, setFormData] = useState({
+    id: null,
+    name: '',
+    description: '',
+    providerId: null,
+    modelId: null,
+    tools: [],
+    extensions: [],
+    maxIterations: 30,
+    temperature: 0.7,
+    systemPrompt: '',
+    enabled: true,
+  });
+
   const loadAgents = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -33,20 +42,17 @@ function AgentsPanel({ sendWSMessage }) {
       const response = await sendWSMessage('agent_get_list', {}, 5000);
       const agentList = response.data?.agents || [];
       setAgents(agentList);
-      // 如果当前选中的 agent 不在列表中，清除选择
-      if (selectedAgent && !agentList.find(a => a.name === selectedAgent)) {
+      if (selectedAgent && !agentList.find(a => a.id === selectedAgent)) {
         setSelectedAgent(null);
-        setSoulContent('');
+        resetFormData();
       }
     } catch (err) {
       setError('Failed to load agents: ' + err.message);
-      console.error('Failed to load agents', err);
     } finally {
       setIsLoading(false);
     }
   }, [sendWSMessage, selectedAgent]);
 
-  // 加载 System 文件列表
   const loadSystemFiles = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -54,46 +60,79 @@ function AgentsPanel({ sendWSMessage }) {
       const response = await sendWSMessage('agent_get_system_files', {}, 5000);
       const files = response.data?.files || [];
       setSystemFiles(files);
-      // 如果有文件且当前没有选中文件，自动选中第一个
       if (files.length > 0 && !selectedSystemFile) {
         const firstFile = files[0];
         setSelectedSystemFile(firstFile.name);
         const contentResponse = await sendWSMessage('agent_get_system_file', { filename: firstFile.name }, 5000);
         setSystemFileContent(contentResponse.data?.content || '');
       }
-      // 如果当前选中的文件不在列表中，清除选择
-      else if (selectedSystemFile && !files.find(f => f.name === selectedSystemFile)) {
-        setSelectedSystemFile(null);
-        setSystemFileContent('');
-      }
     } catch (err) {
       setError('Failed to load system files: ' + err.message);
-      console.error('Failed to load system files', err);
     } finally {
       setIsLoading(false);
     }
   }, [sendWSMessage, selectedSystemFile]);
 
-  // 加载指定 Agent 的 SOUL.md 内容
-  const loadAgentSoul = useCallback(async (agentName) => {
+  const loadOptions = useCallback(async () => {
+    try {
+      const [toolsRes, extRes, providersRes] = await Promise.all([
+        sendWSMessage('subagent_get_available_tools', {}, 5000),
+        sendWSMessage('subagent_get_available_extensions', {}, 5000),
+        sendWSMessage('subagent_get_provider_models', {}, 5000),
+      ]);
+      setAvailableTools(toolsRes.data?.tools || []);
+      setAvailableExtensions(extRes.data?.extensions || []);
+      setProviders(providersRes.data?.providers || []);
+    } catch (err) {
+      console.error('Failed to load options', err);
+    }
+  }, [sendWSMessage]);
+
+  const resetFormData = () => {
+    setFormData({
+      id: null,
+      name: '',
+      description: '',
+      providerId: null,
+      modelId: null,
+      tools: [],
+      extensions: [],
+      maxIterations: 30,
+      temperature: 0.7,
+      systemPrompt: '',
+      enabled: true,
+    });
+  };
+
+  const loadAgent = useCallback(async (agent) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await sendWSMessage('agent_get_soul', { name: agentName }, 5000);
-      setSoulContent(response.data?.content || '');
-      setSelectedAgent(agentName);
-      // 清除 system 文件选择
+      const response = await sendWSMessage('agent_get_soul', { id: agent.id }, 5000);
+      const data = response.data || {};
+      setFormData({
+        id: data.id || null,
+        name: data.name || '',
+        description: data.description || '',
+        providerId: data.providerId || null,
+        modelId: data.modelId || null,
+        tools: data.tools || [],
+        extensions: data.extensions || [],
+        maxIterations: data.maxIterations || 30,
+        temperature: data.temperature || 0.7,
+        systemPrompt: data.systemPrompt || '',
+        enabled: data.enabled !== false,
+      });
+      setSelectedAgent(agent.id);
       setSelectedSystemFile(null);
       setSystemFileContent('');
     } catch (err) {
-      setError('Failed to load agent SOUL.md: ' + err.message);
-      console.error('Failed to load agent SOUL.md', err);
+      setError('Failed to load agent: ' + err.message);
     } finally {
       setIsLoading(false);
     }
   }, [sendWSMessage]);
 
-  // 加载指定 System 文件内容
   const loadSystemFile = useCallback(async (filename) => {
     setIsLoading(true);
     setError(null);
@@ -101,38 +140,41 @@ function AgentsPanel({ sendWSMessage }) {
       const response = await sendWSMessage('agent_get_system_file', { filename }, 5000);
       setSystemFileContent(response.data?.content || '');
       setSelectedSystemFile(filename);
-      // 清除 agent 选择
       setSelectedAgent(null);
-      setSoulContent('');
+      resetFormData();
     } catch (err) {
       setError('Failed to load system file: ' + err.message);
-      console.error('Failed to load system file', err);
     } finally {
       setIsLoading(false);
     }
   }, [sendWSMessage]);
 
-  // 保存 Agent 的 SOUL.md
-  const saveAgentSoul = async () => {
-    if (!selectedAgent) return;
+  const saveAgent = async () => {
+    if (!formData.name) return;
     setIsSaving(true);
     setError(null);
     try {
       await sendWSMessage('agent_save_soul', {
-        name: selectedAgent,
-        content: soulContent
+        id: formData.id,
+        name: formData.name,
+        description: formData.description,
+        providerId: formData.providerId,
+        modelId: formData.modelId,
+        tools: formData.tools,
+        extensions: formData.extensions,
+        maxIterations: formData.maxIterations,
+        temperature: formData.temperature,
+        systemPrompt: formData.systemPrompt,
+        enabled: formData.enabled,
       }, 5000);
-      // 刷新列表以获取可能的元数据更新
       await loadAgents();
     } catch (err) {
       setError('Failed to save: ' + err.message);
-      console.error('Failed to save agent SOUL.md', err);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // 保存 System 文件
   const saveSystemFile = async () => {
     if (!selectedSystemFile) return;
     setIsSaving(true);
@@ -142,108 +184,101 @@ function AgentsPanel({ sendWSMessage }) {
         filename: selectedSystemFile,
         content: systemFileContent
       }, 5000);
-      // 刷新文件列表
       await loadSystemFiles();
     } catch (err) {
       setError('Failed to save: ' + err.message);
-      console.error('Failed to save system file', err);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // 创建新 Agent
   const createNewAgent = async () => {
     if (!newAgentName.trim()) return;
     setIsSaving(true);
     setError(null);
     try {
-      const defaultSoul = `---
-name: ${newAgentName}
-description: A new agent for specific tasks
-tools:
-  - read
-  - write
-  - edit
-  - list
-  - exec
-  - action
-  - message
-extensions: []
-provider: deepseek
-model: deepseek-chat
-max_iterations: 30
-temperature: 0.7
----
-
-You are a specialized agent designed to handle specific tasks.
-
-## Your Role
-- Execute tasks assigned by the main agent
-- Use available tools to complete tasks
-- Report back with clear, concise summaries
-
-## Guidelines
-1. Be efficient and focused in your work
-2. Use tools appropriately to accomplish tasks
-3. When sending messages to users, be helpful and professional
-`;
       await sendWSMessage('agent_save_soul', {
         name: newAgentName.trim(),
-        content: defaultSoul
+        description: 'A new agent for specific tasks',
+        providerId: formData.providerId,
+        modelId: formData.modelId,
+        tools: formData.tools.length > 0 ? formData.tools : ['read', 'write', 'edit', 'list', 'exec', 'action', 'message'],
+        extensions: formData.extensions,
+        maxIterations: formData.maxIterations,
+        temperature: formData.temperature,
+        systemPrompt: formData.systemPrompt || `You are a specialized agent designed to handle specific tasks.\n\n## Your Role\n- Execute tasks assigned by the main agent\n- Use available tools to complete tasks\n- Report back with clear, concise summaries`,
+        enabled: true,
       }, 5000);
       setShowNewAgentDialog(false);
       setNewAgentName('');
+      resetFormData();
       await loadAgents();
-      // 自动选中新创建的 agent
-      await loadAgentSoul(newAgentName.trim());
     } catch (err) {
       setError('Failed to create agent: ' + err.message);
-      console.error('Failed to create agent', err);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // 删除 Agent
-  const deleteAgent = async (agentName) => {
-    if (!confirm(`Are you sure you want to delete agent "${agentName}"?`)) return;
+  const deleteAgent = async (agent) => {
+    if (!confirm(`Delete agent "${agent.name}"?`)) return;
     setIsLoading(true);
     setError(null);
     try {
-      await sendWSMessage('agent_delete', { name: agentName }, 5000);
-      if (selectedAgent === agentName) {
+      await sendWSMessage('agent_delete', { id: agent.id }, 5000);
+      if (selectedAgent === agent.id) {
         setSelectedAgent(null);
-        setSoulContent('');
+        resetFormData();
       }
       await loadAgents();
     } catch (err) {
       setError('Failed to delete agent: ' + err.message);
-      console.error('Failed to delete agent', err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 初始加载
   useEffect(() => {
     loadAgents();
     loadSystemFiles();
-  }, [loadAgents, loadSystemFiles]);
+    loadOptions();
+  }, [loadAgents, loadSystemFiles, loadOptions]);
 
-  // 根据当前激活的标签页决定保存操作
-  const handleSave = () => {
-    if (activeTab === 'agents' && selectedAgent) {
-      saveAgentSoul();
-    } else if (activeTab === 'system' && selectedSystemFile) {
-      saveSystemFile();
-    }
+  const toggleTool = (toolName) => {
+    setFormData(prev => ({
+      ...prev,
+      tools: prev.tools.includes(toolName)
+        ? prev.tools.filter(t => t !== toolName)
+        : [...prev.tools, toolName]
+    }));
   };
 
-  // 判断是否可以保存
-  const canSave = (activeTab === 'agents' && selectedAgent) || (activeTab === 'system' && selectedSystemFile);
-  const currentContent = activeTab === 'agents' ? soulContent : systemFileContent;
-  const setCurrentContent = activeTab === 'agents' ? setSoulContent : setSystemFileContent;
+  const toggleExtension = (extName) => {
+    setFormData(prev => ({
+      ...prev,
+      extensions: prev.extensions.includes(extName)
+        ? prev.extensions.filter(e => e !== extName)
+        : [...prev.extensions, extName]
+    }));
+  };
+
+  const getSelectedProvider = () => providers.find(p => p.id === formData.providerId);
+
+  const handleProviderChange = (providerId) => {
+    const provider = providers.find(p => p.id === parseInt(providerId));
+    setFormData(prev => ({
+      ...prev,
+      providerId: providerId ? parseInt(providerId) : null,
+      modelId: provider?.models?.[0]?.id || null
+    }));
+  };
+
+  const handleModelChange = (modelId) => {
+    setFormData(prev => ({
+      ...prev,
+      modelId: modelId ? parseInt(modelId) : null
+    }));
+  };
 
   return (
     <div className="agents-panel">
@@ -253,19 +288,11 @@ You are a specialized agent designed to handle specific tasks.
           <span className="toolbar-title">AGENT MANAGEMENT</span>
         </div>
         <div className="toolbar-right">
-          <button
-            className="pixel-button small"
-            onClick={() => activeTab === 'agents' ? loadAgents() : loadSystemFiles()}
-            disabled={isLoading}
-            title="Refresh"
-          >
+          <button className="pixel-button small" onClick={() => activeTab === 'agents' ? loadAgents() : loadSystemFiles()} disabled={isLoading} title="Refresh">
             <RefreshCw size={14} className={isLoading ? 'spinning' : ''} />
           </button>
           {activeTab === 'agents' && (
-            <button
-              className="pixel-button small add-btn"
-              onClick={() => setShowNewAgentDialog(true)}
-            >
+            <button className="pixel-button small add-btn" onClick={() => { resetFormData(); setShowNewAgentDialog(true); }}>
               <Plus size={14} />
               <span>NEW</span>
             </button>
@@ -273,61 +300,31 @@ You are a specialized agent designed to handle specific tasks.
         </div>
       </div>
 
-      {/* 标签页切换 */}
       <div className="agents-tabs">
-        <button
-          className={`tab-button ${activeTab === 'agents' ? 'active' : ''}`}
-          onClick={() => setActiveTab('agents')}
-        >
+        <button className={`tab-button ${activeTab === 'agents' ? 'active' : ''}`} onClick={() => setActiveTab('agents')}>
           <Bot size={14} />
           <span>Agents ({agents.length})</span>
         </button>
-        <button
-          className={`tab-button ${activeTab === 'system' ? 'active' : ''}`}
-          onClick={() => setActiveTab('system')}
-        >
+        <button className={`tab-button ${activeTab === 'system' ? 'active' : ''}`} onClick={() => setActiveTab('system')}>
           <Folder size={14} />
           <span>System ({systemFiles.length})</span>
         </button>
       </div>
 
       <div className="agents-content">
-        {/* 左侧边栏 */}
         <div className="agents-sidebar">
           {activeTab === 'agents' ? (
             <>
-              <div className="sidebar-header">
-                <Bot size={16} />
-                <span>AGENTS ({agents.length})</span>
-              </div>
+              <div className="sidebar-header"><Bot size={16} /><span>AGENTS</span></div>
               <div className="agents-list">
-                {agents.length === 0 && !isLoading && (
-                  <div className="empty-state">
-                    No agents found.<br />
-                    Click [+] to create one.
-                  </div>
-                )}
+                {agents.length === 0 && !isLoading && <div className="empty-state">No agents. Click [+] to create one.</div>}
                 {agents.map((agent) => (
-                  <div
-                    key={agent.name}
-                    className={`agent-item ${selectedAgent === agent.name ? 'active' : ''}`}
-                    onClick={() => loadAgentSoul(agent.name)}
-                  >
-                    <div className="agent-info agent-item-info">
-                      <div className="agent-item-row">
-                        <Bot size={14} className="agent-icon" />
-                        <span className="agent-name">{agent.name}</span>
-                      </div>
-                      <span className="agent-desc">{agent.description}</span>
+                  <div key={agent.id} className={`agent-item ${selectedAgent === agent.id ? 'active' : ''}`} onClick={() => loadAgent(agent)}>
+                    <div className="agent-info">
+                      <div className="agent-name">{agent.name}</div>
+                      <div className="agent-desc">{agent.description}</div>
                     </div>
-                    <button
-                      className="delete-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteAgent(agent.name);
-                      }}
-                      title="Delete agent"
-                    >
+                    <button className="delete-btn" onClick={(e) => { e.stopPropagation(); deleteAgent(agent); }} title="Delete">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -336,30 +333,13 @@ You are a specialized agent designed to handle specific tasks.
             </>
           ) : (
             <>
-              <div className="sidebar-header">
-                <Folder size={16} />
-                <span>SYSTEM FILES ({systemFiles.length})</span>
-              </div>
+              <div className="sidebar-header"><Folder size={16} /><span>SYSTEM FILES</span></div>
               <div className="agents-list">
-                {systemFiles.length === 0 && !isLoading && (
-                  <div className="empty-state">
-                    No system files found.
-                  </div>
-                )}
                 {systemFiles.map((file) => (
-                  <div
-                    key={file.name}
-                    className={`agent-item ${selectedSystemFile === file.name ? 'active' : ''}`}
-                    onClick={() => loadSystemFile(file.name)}
-                  >
-                    <div className="agent-info file-item-info">
-                      <div className="file-item-row">
-                        <FileText size={14} className="file-icon" />
-                        <span className="agent-name">{file.name}</span>
-                      </div>
-                      <span className="agent-desc">
-                        {(file.size / 1024).toFixed(1)} KB
-                      </span>
+                  <div key={file.name} className={`agent-item ${selectedSystemFile === file.name ? 'active' : ''}`} onClick={() => loadSystemFile(file.name)}>
+                    <div className="agent-info">
+                      <div className="agent-name"><FileText size={12} /> {file.name}</div>
+                      <div className="agent-desc">{(file.size / 1024).toFixed(1)} KB</div>
                     </div>
                   </div>
                 ))}
@@ -368,107 +348,159 @@ You are a specialized agent designed to handle specific tasks.
           )}
         </div>
 
-        {/* 编辑器 */}
         <div className="agent-editor">
           {activeTab === 'agents' ? (
             selectedAgent ? (
               <>
                 <div className="editor-header">
-                  <span className="editor-title">{selectedAgent}/SOUL.md</span>
-                  <button
-                    className="pixel-button small save-btn"
-                    onClick={saveAgentSoul}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? 'SAVING...' : <><Save size={14} /> SAVE</>}
-                  </button>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    className="name-input"
+                    placeholder="Agent name"
+                  />
+                  <div className="editor-actions">
+                    <button className="pixel-button small save-btn" onClick={saveAgent} disabled={isSaving}>
+                      {isSaving ? 'SAVING...' : <><Save size={14} /> SAVE</>}
+                    </button>
+                  </div>
                 </div>
-                <textarea
-                  className="soul-editor"
-                  value={soulContent}
-                  onChange={(e) => setSoulContent(e.target.value)}
-                  spellCheck={false}
-                  placeholder="Enter SOUL.md content here..."
-                />
+                
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>Description</label>
+                    <input type="text" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} placeholder="Brief description" />
+                  </div>
+                  
+                  <div className="form-row-2">
+                    <div className="form-group">
+                      <label>Provider</label>
+                      <select value={formData.providerId || ''} onChange={(e) => handleProviderChange(e.target.value)}>
+                        <option value="">Select Provider</option>
+                        {providers.filter(p => p.enabled).map(p => <option key={p.id} value={p.id}>{p.displayName || p.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Model</label>
+                      <select value={formData.modelId || ''} onChange={(e) => handleModelChange(e.target.value)} disabled={!formData.providerId}>
+                        <option value="">Select Model</option>
+                        {getSelectedProvider()?.models?.filter(m => m.enabled).map(m => <option key={m.id} value={m.id}>{m.displayName || m.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-row-2">
+                    <div className="form-group">
+                      <label>Max Iterations</label>
+                      <input type="number" value={formData.maxIterations} onChange={(e) => setFormData(prev => ({ ...prev, maxIterations: parseInt(e.target.value) || 30 }))} min="1" max="100" />
+                    </div>
+                    <div className="form-group">
+                      <label>Temperature</label>
+                      <input type="number" value={formData.temperature} onChange={(e) => setFormData(prev => ({ ...prev, temperature: parseFloat(e.target.value) || 0.7 }))} min="0" max="2" step="0.1" />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Tools ({formData.tools.length} selected)</label>
+                    <div className="dropdown-container">
+                      <button className="dropdown-trigger" onClick={() => setShowToolsDropdown(!showToolsDropdown)}>
+                        <span>{formData.tools.length > 0 ? formData.tools.slice(0, 3).join(', ') + (formData.tools.length > 3 ? '...' : '') : 'Select tools'}</span>
+                        <ChevronDown size={14} />
+                      </button>
+                      {showToolsDropdown && (
+                        <div className="dropdown-menu">
+                          {availableTools.map(tool => (
+                            <div key={tool.name} className={`dropdown-item ${formData.tools.includes(tool.name) ? 'selected' : ''}`} onClick={() => toggleTool(tool.name)}>
+                              <span className="check">{formData.tools.includes(tool.name) && <Check size={12} />}</span>
+                              <span>{tool.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Extensions ({formData.extensions.length} selected)</label>
+                    <div className="dropdown-container">
+                      <button className="dropdown-trigger" onClick={() => setShowExtensionsDropdown(!showExtensionsDropdown)}>
+                        <span>{formData.extensions.length > 0 ? formData.extensions.join(', ') : 'Select extensions'}</span>
+                        <ChevronDown size={14} />
+                      </button>
+                      {showExtensionsDropdown && (
+                        <div className="dropdown-menu">
+                          {availableExtensions.length > 0 ? availableExtensions.map(ext => (
+                            <div key={ext.name} className={`dropdown-item ${formData.extensions.includes(ext.name) ? 'selected' : ''}`} onClick={() => toggleExtension(ext.name)}>
+                              <span className="check">{formData.extensions.includes(ext.name) && <Check size={12} />}</span>
+                              <span>{ext.name}</span>
+                            </div>
+                          )) : <div className="dropdown-item empty">No extensions available</div>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="form-group full">
+                    <label>System Prompt</label>
+                    <textarea value={formData.systemPrompt} onChange={(e) => setFormData(prev => ({ ...prev, systemPrompt: e.target.value }))} placeholder="Enter system prompt..." spellCheck={false} />
+                  </div>
+
+                  <div className="form-group checkbox">
+                    <label>
+                      <input type="checkbox" checked={formData.enabled} onChange={(e) => setFormData(prev => ({ ...prev, enabled: e.target.checked }))} />
+                      <span>Enabled</span>
+                    </label>
+                  </div>
+                </div>
               </>
             ) : (
               <div className="empty-editor">
-                <Bot size={48} className="empty-icon" />
-                <p>Select an agent from the list to edit its SOUL.md</p>
-                <p className="hint">Or click [+] to create a new agent</p>
+                <Bot size={48} />
+                <p>Select an agent to edit</p>
               </div>
             )
           ) : (
             selectedSystemFile ? (
               <>
                 <div className="editor-header">
-                  <span className="editor-title">system/{selectedSystemFile}</span>
-                  <button
-                    className="pixel-button small save-btn"
-                    onClick={saveSystemFile}
-                    disabled={isSaving}
-                  >
+                  <span className="file-title">system/{selectedSystemFile}</span>
+                  <button className="pixel-button small save-btn" onClick={saveSystemFile} disabled={isSaving}>
                     {isSaving ? 'SAVING...' : <><Save size={14} /> SAVE</>}
                   </button>
                 </div>
-                <textarea
-                  className="soul-editor"
-                  value={systemFileContent}
-                  onChange={(e) => setSystemFileContent(e.target.value)}
-                  spellCheck={false}
-                  placeholder="Enter file content here..."
-                />
+                <textarea className="raw-editor" value={systemFileContent} onChange={(e) => setSystemFileContent(e.target.value)} spellCheck={false} />
               </>
             ) : (
               <div className="empty-editor">
-                <Folder size={48} className="empty-icon" />
-                <p>Select a system file from the list to edit</p>
-                <p className="hint">System files are used for bootstrap configuration</p>
+                <Folder size={48} />
+                <p>Select a system file to edit</p>
               </div>
             )
           )}
         </div>
       </div>
 
-      {/* 错误提示 */}
-      {error && (
-        <div className="error-toast">
-          {error}
-          <button onClick={() => setError(null)}>×</button>
-        </div>
-      )}
+      {error && <div className="error-toast">{error}<button onClick={() => setError(null)}>×</button></div>}
 
-      {/* 新建 Agent 对话框 */}
       {showNewAgentDialog && (
         <div className="dialog-overlay">
-          <div className="dialog-box pixel-border">
+          <div className="dialog-box">
             <h3>Create New Agent</h3>
-            <input
-              type="text"
-              value={newAgentName}
-              onChange={(e) => setNewAgentName(e.target.value)}
-              placeholder="Agent name (e.g., code-reviewer)"
-              className="pixel-input"
-              autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && createNewAgent()}
-            />
+            <input type="text" value={newAgentName} onChange={(e) => setNewAgentName(e.target.value)} placeholder="Agent name" autoFocus onKeyDown={(e) => e.key === 'Enter' && createNewAgent()} />
+            <div className="dialog-row">
+              <select value={formData.providerId || ''} onChange={(e) => handleProviderChange(e.target.value)}>
+                <option value="">Select Provider</option>
+                {providers.filter(p => p.enabled).map(p => <option key={p.id} value={p.id}>{p.displayName || p.name}</option>)}
+              </select>
+              <select value={formData.modelId || ''} onChange={(e) => handleModelChange(e.target.value)} disabled={!formData.providerId}>
+                <option value="">Select Model</option>
+                {getSelectedProvider()?.models?.filter(m => m.enabled).map(m => <option key={m.id} value={m.id}>{m.displayName || m.name}</option>)}
+              </select>
+            </div>
             <div className="dialog-actions">
-              <button
-                className="pixel-button"
-                onClick={() => {
-                  setShowNewAgentDialog(false);
-                  setNewAgentName('');
-                }}
-              >
-                CANCEL
-              </button>
-              <button
-                className="pixel-button primary"
-                onClick={createNewAgent}
-                disabled={!newAgentName.trim() || isSaving}
-              >
-                {isSaving ? 'CREATING...' : 'CREATE'}
-              </button>
+              <button className="pixel-button" onClick={() => { setShowNewAgentDialog(false); setNewAgentName(''); }}>CANCEL</button>
+              <button className="pixel-button primary" onClick={createNewAgent} disabled={!newAgentName.trim() || isSaving}>{isSaving ? 'CREATING...' : 'CREATE'}</button>
             </div>
           </div>
         </div>

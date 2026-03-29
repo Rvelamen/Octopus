@@ -151,4 +151,4 @@ class SpawnTool(Tool):
             )
             spawned.append(result)
         
-        return f"Batch spawn initiated with {len(tasks)} subagents (group: {group.id}). Results will be aggregated when all complete."
+        return f"[Async] Batch spawn initiated with {len(tasks)} subagents (group: {group.id}). These are long-running tasks - do NOT wait or sleep for them. You may continue with other parallelizable tasks. I'll initiate a new conversation when all complete and results are aggregated."

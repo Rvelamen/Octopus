@@ -53,6 +53,7 @@ function App() {
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [isSaving, setIsSaving] = useState(false);
   const [toolCalls, setToolCalls] = useState([]); // 实时工具调用状态
+  const [toolCallAssistantContents, setToolCallAssistantContents] = useState({}); // 按 iteration 存储的 assistant content
   const [isRestarting, setIsRestarting] = useState(false); // 重启状态
   const [tokenUsage, setTokenUsage] = useState({
     global: { total_prompt_tokens: 0, total_completion_tokens: 0, total_tokens: 0, request_count: 0 },
@@ -135,45 +136,57 @@ function App() {
           case "agent_start":
             setStreamingContent("");
             setToolCalls([]); // 清空之前的工具调用
+            setToolCallAssistantContents({}); // 清空 assistant content
+            break;
+          case "agent_thinking":
+            // 新一轮 LLM 调用开始
+            console.log('[WebSocket] Agent thinking, iteration:', data?.iteration);
+            // 不清空 toolCalls，让之前轮次的继续显示
             break;
           case "agent_finish":
             console.log('[WebSocket] Agent finish received:', data);
             setStreamingContent("");
             setIsProcessing(false);
-            setToolCalls([]); // 清空工具调用
+            // 不清空 toolCalls，让它们继续显示
+            // toolCalls 会在下一轮 agent_thinking 时清空
             break;
           case "chat_response":
             setStreamingContent("");
             setIsProcessing(false);
             setToolCalls([]); // 清空工具调用
+            setToolCallAssistantContents({}); // 清空 assistant content
             break;
           case "error":
             setStreamingContent("");
             setIsProcessing(false);
             setToolCalls([]); // 清空工具调用
+            setToolCallAssistantContents({}); // 清空 assistant content
             break;
           case "agent_tool_call":
             // 工具调用开始 - 实时显示
+            // 按 iteration 存储 assistant content
+            if (data.content) {
+              setToolCallAssistantContents((prev) => ({
+                ...prev,
+                [data.iteration]: data.content
+              }));
+            }
             setToolCalls((prev) => [...prev, {
-              id: Date.now(),
+              id: data.tool_call_id || Date.now(),
               tool: data.tool,
               args: data.args,
-              content: data.content,
               status: 'running',
-              result: null
+              result: null,
+              iteration: data.iteration
             }]);
             break;
           case "agent_tool_result":
             // 工具调用完成 - 更新结果
-            setToolCalls((prev) => {
-              const updated = [...prev];
-              const lastCall = updated[updated.length - 1];
-              if (lastCall && lastCall.status === 'running') {
-                lastCall.status = 'completed';
-                lastCall.result = data.result;
-              }
-              return updated;
-            });
+            setToolCalls((prev) => prev.map(tc => 
+              tc.id === data.tool_call_id 
+                ? { ...tc, status: 'completed', result: data.result }
+                : tc
+            ));
             break;
           case "mcp_state_change":
             // MCP state change event - can be used to update UI in real-time
@@ -258,6 +271,20 @@ function App() {
       setIsProcessing(false);
       setCurrentChatInstanceId(null);
       console.error("Failed to send message:", err);
+    }
+  };
+
+  // ===== 停止生成 =====
+  const handleStopGeneration = async () => {
+    try {
+      await sendWSMessage("stop_agents", {}, 5000);
+      setIsProcessing(false);
+      setStreamingContent("");
+      setToolCalls([]);
+      setToolCallAssistantContents({});
+    } catch (err) {
+      console.error("Failed to stop generation:", err);
+      setIsProcessing(false);
     }
   };
 
@@ -406,10 +433,12 @@ function App() {
             <ChatPanel
               sendWSMessage={sendWSMessage}
               onSendMessage={handleSendMessage}
+              onStopGeneration={handleStopGeneration}
               isProcessing={isProcessing}
               streamingContent={streamingContent}
               currentChatInstanceId={currentChatInstanceId}
               toolCalls={toolCalls}
+              toolCallAssistantContents={toolCallAssistantContents}
             />
           )}
           {activeTab === "config" && (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, RefreshCw, Trash2, Wrench, ChevronUp, ChevronDown, Plus, Image, X, Upload, Check, Loader2, Copy, FileText } from 'lucide-react';
+import { MessageSquare, RefreshCw, Trash2, Wrench, ChevronUp, ChevronDown, Plus, Image, X, Upload, Check, Loader2, Copy, FileText, Maximize2, Minimize2, Send, CirclePause, GripVertical } from 'lucide-react';
 import WindowDots from '../WindowDots';
 import { parseLinks } from '../../utils/linkUtils';
 import octopusAvatar from '../../assets/images/octopus.png';
@@ -13,10 +13,12 @@ const API_BASE = 'http://localhost:18791';
 function ChatPanel({
   sendWSMessage,
   onSendMessage,
+  onStopGeneration,
   isProcessing,
   streamingContent,
   currentChatInstanceId,
-  toolCalls
+  toolCalls,
+  toolCallAssistantContents
 }) {
   // ===== 状态 =====
   const [instances, setInstances] = useState([]);
@@ -30,63 +32,85 @@ function ChatPanel({
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [pendingImages, setPendingImages] = useState([]); // 待发送的图片列表
   const [isUploading, setIsUploading] = useState(false);
+  const [isInputExpanded, setIsInputExpanded] = useState(false); // 编辑区域是否展开
+  const [inputHeight, setInputHeight] = useState(120); // 编辑区域高度
+
+  // 分页状态
+  const [instancesPage, setInstancesPage] = useState(0);
+  const [instancesHasMore, setInstancesHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const PAGE_SIZE = 20;
 
   const messagesEndRef = useRef(null);
   const isComponentMounted = useRef(true);
   const fileInputRef = useRef(null);
   const dropZoneRef = useRef(null);
+  const instanceListRef = useRef(null);
+  const textareaRef = useRef(null);
 
   // ===== 获取 Desktop Channel 的所有 Instances =====
-  const fetchInstances = useCallback(async (showError = true, isInitialLoad = false) => {
+  const fetchInstances = useCallback(async (showError = true, isInitialLoad = false, append = false) => {
     if (!sendWSMessage) return;
+
     if (isInitialLoad) {
       setInitialLoading(true);
-    } else {
+      setInstancesPage(0);
+      setInstancesHasMore(true);
+    } else if (!append) {
       setLoading(true);
+    } else {
+      setIsLoadingMore(true);
     }
+
     if (showError) setError(null);
     try {
-      // 先获取 desktop channel 的所有 sessions
-      const response = await sendWSMessage('session_get_channel_sessions', { channel: 'desktop' }, 5000);
-      const sessions = response.data?.sessions || [];
+      const offset = append ? (instancesPage * PAGE_SIZE) : 0;
+      const response = await sendWSMessage('session_get_instances', {
+        channel: 'desktop',
+        limit: PAGE_SIZE,
+        offset: offset
+      }, 5000);
 
-      // 然后获取每个 session 的 instances
-      const allInstances = [];
-      for (const session of sessions) {
-        try {
-          const detailResponse = await sendWSMessage('session_get_session_detail', {
-            channel: 'desktop',
-            chat_id: session.chat_id
-          }, 5000);
-          const sessionInstances = detailResponse.data?.instances || [];
-          // 添加 session 信息到 instance
-          allInstances.push(...sessionInstances.map(inst => ({
-            ...inst,
-            session_key: session.session_key,
-            chat_id: session.chat_id
-          })));
-        } catch (err) {
-          console.error(`Failed to fetch instances for session ${session.chat_id}:`, err);
-        }
+      const newInstances = response.data?.instances || [];
+      const hasMore = response.data?.has_more ?? false;
+
+      if (append) {
+        setInstances(prev => [...prev, ...newInstances]);
+      } else {
+        setInstances(newInstances);
       }
 
-      // 按创建时间倒序排列
-      allInstances.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      setInstances(allInstances);
+      setInstancesHasMore(hasMore);
+      setInstancesPage(append ? instancesPage + 1 : 1);
     } catch (err) {
       console.error('Failed to fetch instances:', err);
-      // 只在明确请求时显示错误（如手动刷新），初始加载时不显示
       if (showError) {
         setError(err.message);
       }
     } finally {
       if (isInitialLoad) {
         setInitialLoading(false);
-      } else {
+      } else if (!append) {
         setLoading(false);
+      } else {
+        setIsLoadingMore(false);
       }
     }
-  }, [sendWSMessage]);
+  }, [sendWSMessage, instancesPage]);
+
+  // ===== 加载更多 Instances =====
+  const loadMoreInstances = useCallback(() => {
+    if (!instancesHasMore || isLoadingMore || loading) return;
+    fetchInstances(false, false, true);
+  }, [instancesHasMore, isLoadingMore, loading, fetchInstances]);
+
+  // ===== 滚动监听 =====
+  const handleInstanceListScroll = useCallback((e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    if (scrollHeight - scrollTop - clientHeight < 50) {
+      loadMoreInstances();
+    }
+  }, [loadMoreInstances]);
 
   // ===== 获取 Instance 的消息 =====
   const fetchInstanceMessages = useCallback(async (instanceId) => {
@@ -352,6 +376,10 @@ function ChatPanel({
   };
 
   const handleKeyDown = (e) => {
+    // 检查是否在输入法组合状态（如拼音输入）
+    if (e.nativeEvent?.isComposing || e.isComposing) {
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -613,7 +641,9 @@ function ChatPanel({
   };
 
   // ===== 将消息列表中的 tool_call 和 tool_result 配对 =====
-  const pairToolMessages = (messages) => {
+  // hideToolPairs: 当正在 streaming 或有活跃的 tool calls 时，隐藏消息列表中的 tool pairs
+  // 避免与实时显示的 tool calls 重复
+  const pairToolMessages = (messages, hideToolPairs = false) => {
     const pairs = [];
     const toolResults = new Map();
     const seenMessages = new Set();
@@ -644,14 +674,25 @@ function ChatPanel({
 
       const toolCalls = msg.metadata?.tool_calls || msg.tool_calls;
       if (toolCalls && toolCalls.length > 0) {
-        const callId = toolCalls[0]?.id;
-        const result = toolResults.get(callId);
-        pairs.push({
-          type: 'tool_pair',
-          call: msg,
-          result: result,
-          toolCallId: callId,
-          toolName: toolCalls[0]?.function?.name
+        // 如果正在 streaming 或有活跃的 tool calls，跳过消息列表中的 tool pairs
+        // 因为它们会在实时区域显示
+        if (hideToolPairs) {
+          return;
+        }
+        // 支持多个 tool calls - 每个 tool call 单独配对
+        toolCalls.forEach((tc, index) => {
+          const callId = tc?.id;
+          const result = toolResults.get(callId);
+          pairs.push({
+            type: 'tool_pair',
+            call: msg,
+            result: result,
+            toolCallId: callId,
+            toolName: tc?.function?.name,
+            toolCall: tc,
+            toolIndex: index,
+            totalTools: toolCalls.length
+          });
         });
       } else if (!msg.metadata?.tool_call_id && !msg.tool_call_id) {
         pairs.push({ type: 'normal', message: msg });
@@ -661,43 +702,47 @@ function ChatPanel({
     return pairs;
   };
 
-  // ===== 渲染配对的 tool 消息（call + result）- Cherry Studio 风格 =====
-  const renderPairedToolMessage = (pair) => {
-    const { call, result, toolCallId, toolName } = pair;
+  // ===== 渲染 Tool Card - 通用函数，实时和历史消息共用 =====
+  const renderToolCard = ({ 
+    toolCallId, 
+    toolName, 
+    args, 
+    result, 
+    status, 
+    assistantContent, 
+    toolIndex = 0, 
+    totalTools = 1 
+  }) => {
     const isExpanded = expandedTools.has(toolCallId);
-    const toolCalls = call.metadata?.tool_calls || call.tool_calls;
-    const tc = toolCalls?.[0];
-    const status = result ? 'completed' : 'pending';
 
     // 解析参数为对象用于表格展示
-    const parseArgs = () => {
+    const parsedArgs = typeof args === 'string' ? (() => {
       try {
-        return JSON.parse(tc?.function?.arguments || '{}');
+        return JSON.parse(args);
       } catch {
         return {};
       }
-    };
+    })() : (args || {});
 
     // 解析结果为字符串
     const parseResult = () => {
       if (!result) return null;
       try {
-        const parsed = JSON.parse(result.content);
+        const parsed = JSON.parse(result);
         return JSON.stringify(parsed, null, 2);
       } catch {
-        return result.content;
+        return typeof result === 'string' ? result : JSON.stringify(result, null, 2);
       }
     };
 
-    const args = parseArgs();
     const resultContent = parseResult();
 
     return (
       <div className="tool-card">
-        {/* Assistant Content - 如果有的话先展示 */}
-        {call.content && (
+        {/* Assistant Content - 只在第一个 tool call 时展示，避免重复 */}
+        {assistantContent && toolIndex === 0 && (
           <div className="tool-card-assistant-content">
-            {renderMessageContent(call.content)}
+            {renderMessageContent(assistantContent)}
           </div>
         )}
         
@@ -716,6 +761,9 @@ function ChatPanel({
             </div>
             <Wrench size={14} className="tool-icon" />
             <span className="tool-card-name">{toolName || 'unknown'}</span>
+            {totalTools > 1 && (
+              <span className="tool-card-index">({toolIndex + 1}/{totalTools})</span>
+            )}
           </div>
           <div className="tool-card-header-right">
             {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -726,12 +774,12 @@ function ChatPanel({
         {isExpanded && (
           <div className="tool-card-body">
             {/* Parameters Table */}
-            {Object.keys(args).length > 0 && (
+            {Object.keys(parsedArgs).length > 0 && (
               <div className="tool-card-section">
                 <div className="tool-card-section-title">Parameters</div>
                 <table className="tool-params-table">
                   <tbody>
-                    {Object.entries(args).map(([key, value]) => (
+                    {Object.entries(parsedArgs).map(([key, value]) => (
                       <tr key={key}>
                         <td className="tool-param-key">{key}</td>
                         <td className="tool-param-value">
@@ -774,6 +822,24 @@ function ChatPanel({
         )}
       </div>
     );
+  };
+
+  // ===== 渲染配对的 tool 消息（call + result）- 使用通用 Tool Card =====
+  const renderPairedToolMessage = (pair) => {
+    const { call, result, toolCallId, toolName, toolCall, toolIndex, totalTools } = pair;
+    const tc = toolCall || (call.metadata?.tool_calls || call.tool_calls)?.[0];
+    const status = result ? 'completed' : 'pending';
+
+    return renderToolCard({
+      toolCallId,
+      toolName,
+      args: tc?.function?.arguments || '{}',
+      result: result?.content,
+      status,
+      assistantContent: call.content,
+      toolIndex,
+      totalTools
+    });
   };
 
   // ===== 格式化时间 =====
@@ -828,7 +894,11 @@ function ChatPanel({
           </button>
         </div>
 
-        <div className="chat-instance-list">
+        <div 
+          className="chat-instance-list" 
+          ref={instanceListRef}
+          onScroll={handleInstanceListScroll}
+        >
           {initialLoading && (
             <div className="loading-state">
               <div className="loading-spinner"></div>
@@ -863,7 +933,7 @@ function ChatPanel({
                   <span className="instance-name" title={instance.instance_name}>
                     {instance.instance_name}
                   </span>
-                  {instance.is_active && <span className="active-badge">active</span>}
+                  {instance.is_active === true && <span className="active-badge">active</span>}
                 </div>
                 <div className="instance-meta">
                   <span className="instance-time">{formatRelativeTime(instance.created_at)}</span>
@@ -878,6 +948,19 @@ function ChatPanel({
               </button>
             </div>
           ))}
+
+          {isLoadingMore && (
+            <div className="loading-more">
+              <div className="loading-spinner-small"></div>
+              <span>Loading more...</span>
+            </div>
+          )}
+
+          {!instancesHasMore && instances.length > 0 && !initialLoading && (
+            <div className="no-more-data">
+              No more chats
+            </div>
+          )}
         </div>
       </div>
 
@@ -942,8 +1025,10 @@ function ChatPanel({
             </div>
           ) : (
             <div className="messages-list">
-              {pairToolMessages(messages)
-                .map((pair, idx) => {
+              {(() => {
+                const isStreaming = streamingContent && streamingContent.length > 0;
+                const hasActiveToolCalls = toolCalls && toolCalls.length > 0 && selectedInstance?.id === currentChatInstanceId;
+                return pairToolMessages(messages, isStreaming || hasActiveToolCalls).map((pair, idx) => {
                   if (pair.type === 'compression_summary') {
                     const msg = pair.message;
                     const compressionInfo = pair.compressionInfo;
@@ -1012,66 +1097,45 @@ function ChatPanel({
                       </div>
                     );
                   }
-                })}
+                });
+              })()}
 
-              {/* 实时工具调用显示 */}
-              {toolCalls && toolCalls.length > 0 && selectedInstance?.id === currentChatInstanceId && (
-                <div className="tool-calls-live">
-                  {toolCalls.map((toolCall, idx) => (
-                    <div key={toolCall.id || idx} className={`tool-call-live-item ${toolCall.status}`}>
-                      {/* Assistant Content - 在工具调用前展示 */}
-                      {toolCall.content && (
-                        <div className="tool-call-assistant-content">
-                          {renderMessageContent(toolCall.content)}
-                        </div>
-                      )}
-                      <div 
-                        className="tool-call-live-header"
-                        onClick={() => toolCall.status === 'completed' && toggleToolExpand(`live-${toolCall.id}`)}
-                        style={{ cursor: toolCall.status === 'completed' ? 'pointer' : 'default' }}
-                      >
-                        <Wrench size={12} className="tool-icon" />
-                        <span className="tool-name">{toolCall.tool}</span>
-                        {toolCall.status === 'running' ? (
-                          <span className="tool-status running">
-                            <span className="loading-dots">...</span>
-                          </span>
-                        ) : (
-                          <span className="tool-status completed">✓</span>
-                        )}
-                        {toolCall.status === 'completed' && (
-                          expandedTools.has(`live-${toolCall.id}`) ? 
-                            <ChevronUp size={12} /> : <ChevronDown size={12} />
-                        )}
+              {/* 实时工具调用显示 - 使用与历史消息相同的 Tool Card 样式 */}
+              {(() => {
+                if (!toolCalls || toolCalls.length === 0 || selectedInstance?.id !== currentChatInstanceId) {
+                  return null;
+                }
+                
+                // 按 iteration 分组
+                const iterationGroups = {};
+                toolCalls.forEach(tc => {
+                  const iter = tc.iteration || 1;
+                  if (!iterationGroups[iter]) {
+                    iterationGroups[iter] = [];
+                  }
+                  iterationGroups[iter].push(tc);
+                });
+                
+                // 渲染每个 iteration 的 tool calls
+                return Object.entries(iterationGroups).map(([iteration, calls]) => (
+                  <div key={`iteration-${iteration}`} className="tool-iteration-group">
+                    {calls.map((toolCall, idx) => (
+                      <div key={toolCall.id || idx} className="tool-message-wrapper">
+                        {renderToolCard({
+                          toolCallId: `live-${toolCall.id}`,
+                          toolName: toolCall.tool,
+                          args: toolCall.args,
+                          result: toolCall.result,
+                          status: toolCall.status === 'completed' ? 'completed' : 'pending',
+                          assistantContent: idx === 0 ? toolCallAssistantContents[iteration] : null,
+                          toolIndex: idx,
+                          totalTools: calls.length
+                        })}
                       </div>
-                      {/* 已完成的工具调用可以展开查看详情 */}
-                      {toolCall.status === 'completed' && expandedTools.has(`live-${toolCall.id}`) && (
-                        <div className="tool-call-live-details">
-                          <div className="tool-section">
-                            <div className="tool-section-title">Parameters</div>
-                            <pre className="tool-code">
-                              {JSON.stringify(toolCall.args, null, 2)}
-                            </pre>
-                          </div>
-                          <div className="tool-section">
-                            <div className="tool-section-title">Result</div>
-                            <pre className="tool-code">
-                              {(() => {
-                                try {
-                                  const parsed = JSON.parse(toolCall.result);
-                                  return JSON.stringify(parsed, null, 2);
-                                } catch {
-                                  return toolCall.result;
-                                }
-                              })()}
-                            </pre>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                ));
+              })()}
 
               {/* Streaming message preview - 只在当前选中的 instance 是当前聊天的 instance 时显示 */}
               {streamingContent && selectedInstance?.id === currentChatInstanceId && (
@@ -1129,56 +1193,109 @@ function ChatPanel({
             </div>
           )}
 
-          <div className="chat-input-area">
-            <div className="input-wrapper">
-              <div className="input-prompt">&gt;</div>
-              <input
-                type="text"
+          <div className={`inputbar-container ${isInputExpanded ? 'expanded' : ''}`}>
+            {/* 拖拽调整高度把手 */}
+            <div 
+              className="inputbar-drag-handle"
+              onMouseDown={(e) => {
+                const startY = e.clientY;
+                const startHeight = inputHeight;
+                const handleMouseMove = (moveEvent) => {
+                  const deltaY = startY - moveEvent.clientY;
+                  const newHeight = Math.max(60, Math.min(300, startHeight + deltaY));
+                  setInputHeight(newHeight);
+                };
+                const handleMouseUp = () => {
+                  document.removeEventListener('mousemove', handleMouseMove);
+                  document.removeEventListener('mouseup', handleMouseUp);
+                };
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+              }}
+            >
+              <GripVertical size={14} />
+            </div>
+
+            {/* 输入区域 */}
+            <div className="inputbar-textarea-wrapper">
+              <textarea
+                ref={textareaRef}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
-                placeholder={isCreatingNew || selectedInstance ? "ENTER COMMAND... (支持粘贴图片)" : "Select a chat to start chatting..."}
-                className="pixel-input"
+                placeholder={isCreatingNew || selectedInstance ? "输入消息... (Shift+Enter 换行，支持粘贴图片)" : "选择一个对话开始聊天..."}
+                className="inputbar-textarea"
                 disabled={isProcessing || isUploading || (!isCreatingNew && !selectedInstance)}
                 autoFocus
-              />
-              {/* 图片上传按钮 */}
-              <button
-                className="image-upload-btn"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isProcessing || isUploading || (!isCreatingNew && !selectedInstance)}
-                title="上传图片"
-              >
-                <Image size={18} />
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleFileSelect}
-                style={{ display: 'none' }}
+                style={{ height: isInputExpanded ? inputHeight : 60 }}
               />
             </div>
-            <button
-              className="pixel-button"
-              onClick={handleSend}
-              disabled={isProcessing || isUploading || (!isCreatingNew && !selectedInstance) || (!inputValue.trim() && pendingImages.length === 0)}
-            >
-              {isUploading ? 'UPLOADING...' : isProcessing ? 'PROCESSING...' : 'EXECUTE'}
-            </button>
 
-            {/* 图片生成按钮 */}
-            <button
-              className="pixel-button generate-image-btn"
-              onClick={() => setShowGenerateModal(true)}
-              disabled={isProcessing || isUploading || (!isCreatingNew && !selectedInstance)}
-              title="生成图片"
-            >
-              <Image size={18} />
-              生成
-            </button>
+            {/* 底部工具栏 */}
+            <div className="inputbar-bottom-bar">
+              <div className="inputbar-left-tools">
+                {/* 展开/收起按钮 */}
+                <button
+                  className="inputbar-tool-btn"
+                  onClick={() => setIsInputExpanded(!isInputExpanded)}
+                  title={isInputExpanded ? "收起编辑区" : "展开编辑区"}
+                >
+                  {isInputExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                </button>
+                {/* 图片上传按钮 */}
+                <button
+                  className="inputbar-tool-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isProcessing || isUploading || (!isCreatingNew && !selectedInstance)}
+                  title="上传图片"
+                >
+                  <Image size={16} />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+                {/* 图片生成按钮 */}
+                <button
+                  className="inputbar-tool-btn"
+                  onClick={() => setShowGenerateModal(true)}
+                  disabled={isProcessing || isUploading || (!isCreatingNew && !selectedInstance)}
+                  title="生成图片"
+                >
+                  <FileText size={16} />
+                </button>
+              </div>
+              <div className="inputbar-right-tools">
+                {/* 字符计数 */}
+                {inputValue.length > 0 && (
+                  <span className="inputbar-char-count">{inputValue.length}</span>
+                )}
+                {/* 发送/暂停按钮 */}
+                {isProcessing ? (
+                  <button
+                    className="inputbar-send-btn pause"
+                    onClick={onStopGeneration}
+                    title="停止生成"
+                  >
+                    <CirclePause size={18} />
+                  </button>
+                ) : (
+                  <button
+                    className="inputbar-send-btn"
+                    onClick={handleSend}
+                    disabled={isUploading || (!isCreatingNew && !selectedInstance) || (!inputValue.trim() && pendingImages.length === 0)}
+                    title="发送消息"
+                  >
+                    <Send size={18} />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

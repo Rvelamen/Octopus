@@ -519,6 +519,70 @@ class Database:
                 CREATE INDEX IF NOT EXISTS idx_token_summary_date ON token_usage_summary(date_date)
             """)
 
+            # ========== Subagent Tables ==========
+
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS subagents (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL UNIQUE,
+                    description TEXT NOT NULL,
+                    provider_id INTEGER,
+                    model_id INTEGER,
+                    tools TEXT DEFAULT '[]',
+                    extensions TEXT DEFAULT '[]',
+                    max_iterations INTEGER DEFAULT 30,
+                    temperature REAL DEFAULT 0.7,
+                    system_prompt TEXT DEFAULT '',
+                    enabled BOOLEAN DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
+                    updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
+                    FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE SET NULL,
+                    FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE SET NULL
+                )
+            """)
+
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS available_tools (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL UNIQUE,
+                    display_name TEXT NOT NULL,
+                    description TEXT DEFAULT '',
+                    category TEXT DEFAULT 'filesystem',
+                    enabled BOOLEAN DEFAULT 1,
+                    sort_order INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
+                )
+            """)
+
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS available_extensions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL UNIQUE,
+                    display_name TEXT NOT NULL,
+                    description TEXT DEFAULT '',
+                    extension_type TEXT DEFAULT 'skill',
+                    enabled BOOLEAN DEFAULT 1,
+                    sort_order INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
+                )
+            """)
+
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_subagents_name ON subagents(name)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_subagents_provider ON subagents(provider_id)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_subagents_model ON subagents(model_id)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_available_tools_name ON available_tools(name)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_available_extensions_name ON available_extensions(name)
+            """)
+
             # ========== Default Data ==========
 
             # Insert default feishu channel config
@@ -534,6 +598,24 @@ class Database:
                 (channel_name, channel_type, enabled, app_id, app_secret, encrypt_key, verification_token, allow_from, config_json)
                 VALUES ('wechat', 'wechat', 0, '', '', '', '', '[]', '{}')
             """)
+
+            # Insert default available tools
+            default_tools = [
+                ("read", "Read File", "Read file contents from the filesystem", "filesystem", 1),
+                ("write", "Write File", "Write content to a file", "filesystem", 2),
+                ("edit", "Edit File", "Edit file using search and replace", "filesystem", 3),
+                ("list", "List Directory", "List directory contents", "filesystem", 4),
+                ("glob", "Glob Pattern", "Find files matching a pattern", "filesystem", 5),
+                ("grep", "Grep Search", "Search for patterns in files", "filesystem", 6),
+                ("exec", "Execute Command", "Run shell commands", "shell", 7),
+                ("action", "Action", "Perform actions and operations", "action", 8),
+                ("message", "Message", "Send messages to users", "communication", 9),
+            ]
+            for name, display_name, description, category, sort_order in default_tools:
+                conn.execute("""
+                    INSERT OR IGNORE INTO available_tools (name, display_name, description, category, enabled, sort_order)
+                    VALUES (?, ?, ?, ?, 1, ?)
+                """, (name, display_name, description, category, sort_order))
 
             # Run migrations after all tables are created
             self._run_migrations(conn)

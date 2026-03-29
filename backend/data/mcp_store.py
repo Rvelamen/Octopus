@@ -394,27 +394,26 @@ class MCPRepository:
                 enabled = config.get("enabled", True)
                 auto_connect = config.get("auto_connect", True)
                 
-                # Extract other config fields
                 other_config = {k: v for k, v in config.items()
                                if k not in {"name", "url", "protocol", "enabled", "auto_connect"}}
                 
-                # Check if exists
                 row = conn.execute(
-                    "SELECT id FROM mcp_servers WHERE name = ?",
+                    "SELECT id, enabled, auto_connect FROM mcp_servers WHERE name = ?",
                     (name,)
                 ).fetchone()
                 
                 if row:
-                    # Update existing
+                    enabled = bool(row["enabled"])
+                    auto_connect = bool(row["auto_connect"])
+                    
                     conn.execute(
                         """UPDATE mcp_servers
-                           SET url = ?, protocol = ?, enabled = ?, auto_connect = ?, config_json = ?,
+                           SET url = ?, protocol = ?, config_json = ?,
                                updated_at = (datetime('now', 'localtime'))
                            WHERE name = ?""",
-                        (url, protocol, enabled, auto_connect, json.dumps(other_config, ensure_ascii=False), name)
+                        (url, protocol, json.dumps(other_config, ensure_ascii=False), name)
                     )
                 else:
-                    # Insert new
                     conn.execute(
                         """INSERT INTO mcp_servers (name, url, protocol, enabled, auto_connect, config_json, created_at, updated_at)
                            VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
@@ -432,28 +431,26 @@ class MCPRepository:
                 parameters = config.get("parameters", {})
                 dependencies = config.get("dependencies", [])
                 
-                # Extract other config fields
                 other_config = {k: v for k, v in config.items()
                                if k not in {"name", "description", "enabled", "parameters", "dependencies"}}
                 
-                # Check if exists (global tools, no server_id)
                 row = conn.execute(
-                    "SELECT id FROM mcp_tools WHERE name = ? AND server_id IS NULL",
+                    "SELECT id, enabled FROM mcp_tools WHERE name = ? AND server_id IS NULL",
                     (name,)
                 ).fetchone()
                 
                 if row:
-                    # Update existing
+                    enabled = bool(row["enabled"])
+                    
                     conn.execute(
                         """UPDATE mcp_tools
-                           SET description = ?, enabled = ?, parameters_json = ?,
+                           SET description = ?, parameters_json = ?,
                                dependencies_json = ?, config_json = ?, updated_at = (datetime('now', 'localtime'))
                            WHERE name = ? AND server_id IS NULL""",
-                        (description, enabled, json.dumps(parameters, ensure_ascii=False),
+                        (description, json.dumps(parameters, ensure_ascii=False),
                          json.dumps(dependencies, ensure_ascii=False), json.dumps(other_config, ensure_ascii=False), name)
                     )
                 else:
-                    # Insert new
                     cursor = conn.execute(
                         """INSERT INTO mcp_tools
                            (name, description, enabled, parameters_json, dependencies_json, config_json, created_at, updated_at)
@@ -462,7 +459,6 @@ class MCPRepository:
                          json.dumps(dependencies, ensure_ascii=False), json.dumps(other_config, ensure_ascii=False))
                     )
 
-                    # Create stats record
                     conn.execute(
                         "INSERT INTO mcp_tool_stats (tool_id, use_count, last_used_at) VALUES (?, 0, datetime('now', 'localtime'))",
                         (cursor.lastrowid,)

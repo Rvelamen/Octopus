@@ -12,6 +12,11 @@ from backend.data.commands import SessionCommandHandler, CommandResult, handle_s
 from backend.data.provider_store import ProviderRepository, ModelRepository, SettingsRepository, ProviderRecord, ModelRecord
 from backend.data.system_providers import SYSTEM_PROVIDERS, SYSTEM_MODELS, get_default_models
 from backend.data.token_store import TokenUsageRepository, TokenUsageRecord, TokenUsageSummary
+from backend.data.subagent_store import (
+    SubagentRepository, SubagentRecord,
+    AvailableToolRepository, AvailableToolRecord,
+    AvailableExtensionRepository, AvailableExtensionRecord
+)
 
 def init_system_providers(db: Database):
     """Initialize system providers if not exist."""
@@ -84,4 +89,11 @@ __all__ = [
     "TokenUsageRepository",
     "TokenUsageRecord",
     "TokenUsageSummary",
+    # Subagent
+    "SubagentRepository",
+    "SubagentRecord",
+    "AvailableToolRepository",
+    "AvailableToolRecord",
+    "AvailableExtensionRepository",
+    "AvailableExtensionRecord",
 ]

@@ -189,6 +189,39 @@ class PingHandler(MessageHandler):
         ))
 
 
+class StopAgentsHandler(MessageHandler):
+    """Handle stop agents requests."""
+    
+    def __init__(self, bus: MessageBus, agent_loop=None, subagent_manager=None):
+        super().__init__(bus)
+        self.agent_loop = agent_loop
+        self.subagent_manager = subagent_manager
+    
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Stop all running agents and subagents."""
+        stopped_count = 0
+        
+        # Stop main agent current task
+        if self.agent_loop:
+            self.agent_loop.stop_current_task()
+            logger.info("[StopAgentsHandler] Main agent task stop signal sent")
+        
+        # Stop all subagents
+        if self.subagent_manager:
+            stopped_count = self.subagent_manager.stop_all()
+            logger.info(f"[StopAgentsHandler] Stopped {stopped_count} subagents")
+        
+        await self.send_response(websocket, WSMessage(
+            type=MessageType.AGENTS_STOPPED,
+            request_id=message.request_id,
+            data={
+                "status": "stopped",
+                "subagents_stopped": stopped_count,
+                "message": f"已暂停主Agent任务和 {stopped_count} 个子Agent任务"
+            }
+        ))
+
+
 class GetModelsHandler(MessageHandler):
     """Handle get models requests."""
 
@@ -634,6 +667,7 @@ class MCPGetServersHandler(MessageHandler):
                     server_data = {
                         "name": server.name,
                         "protocol": server.protocol,
+                        "enabled": server.enabled,
                         "command": command,
                         "args": args,
                         "env": env,
@@ -648,12 +682,12 @@ class MCPGetServersHandler(MessageHandler):
                         ]
                     }
                 else:
-                    # HTTP/SSE/WebSocket 服务器
                     url = config.get("url", server.url)
                     headers = config.get("headers", {})
                     server_data = {
                         "name": server.name,
                         "protocol": server.protocol,
+                        "enabled": server.enabled,
                         "url": url,
                         "headers": headers,
                         "env": env,
@@ -943,9 +977,30 @@ class MCPUpdateServerHandler(MessageHandler):
             updates = {k: v for k, v in message.data.items() if k != "name" and v is not None}
             success = self.mcp_manager.db.update_server(server_name, **updates)
 
-            # If enabling/disabling, update config
-            if "enabled" in updates and server_name in self.mcp_manager.config.servers:
-                self.mcp_manager.config.servers[server_name].enabled = updates["enabled"]
+            if "enabled" in updates:
+                if server_name in self.mcp_manager.config.servers:
+                    self.mcp_manager.config.servers[server_name].enabled = updates["enabled"]
+                
+                if not updates["enabled"]:
+                    if server_name in self.mcp_manager.connections:
+                        logger.info(f"Disabling server '{server_name}', disconnecting...")
+                        await self.mcp_manager.remove_connection(server_name)
+                else:
+                    if server_name not in self.mcp_manager.connections:
+                        server = self.mcp_manager.db.get_server(server_name)
+                        if server:
+                            server_config = MCPServerConfig(
+                                name=server.name,
+                                url=server.url,
+                                protocol=server.protocol,
+                                enabled=server.enabled,
+                                auto_connect=False,
+                                **server.config
+                            )
+                            logger.info(f"Enabling server '{server_name}', connecting...")
+                            connection = await self.mcp_manager.create_connection(server_config)
+                            if connection and connection.is_available:
+                                await self.mcp_manager.discover_tools(server_name)
 
             await self.send_response(websocket, WSMessage(
                 type=MessageType.MCP_SERVER_UPDATED,
@@ -1694,6 +1749,75 @@ class SessionSetActiveHandler(MessageHandler):
         ))
 
 
+class SessionGetInstancesHandler(MessageHandler):
+    """Handle get instances list with pagination."""
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Return instances list with pagination support."""
+        try:
+            channel = message.data.get("channel", "desktop")
+            limit = message.data.get("limit", 20)
+            offset = message.data.get("offset", 0)
+
+            db = Database()
+
+            total_rows = db.execute(
+                """SELECT COUNT(*) as count FROM session_instances si
+                   JOIN sessions s ON si.session_id = s.id
+                   WHERE s.channel = ?""",
+                (channel,)
+            )
+            total = total_rows[0]["count"] if total_rows else 0
+
+            rows = db.execute(
+                """SELECT si.*, s.session_key, s.chat_id 
+                   FROM session_instances si
+                   JOIN sessions s ON si.session_id = s.id
+                   WHERE s.channel = ?
+                   ORDER BY si.created_at DESC
+                   LIMIT ? OFFSET ?""",
+                (channel, limit, offset)
+            )
+
+            instances = [
+                {
+                    "id": row["id"],
+                    "session_id": row["session_id"],
+                    "instance_name": row["instance_name"],
+                    "is_active": bool(row["is_active"]),
+                    "created_at": row["created_at"],
+                    "updated_at": row["updated_at"],
+                    "session_key": row["session_key"],
+                    "chat_id": row["chat_id"]
+                }
+                for row in rows
+            ]
+
+            has_more = (offset + limit) < total
+
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.SESSION_INSTANCES,
+                request_id=message.request_id,
+                data={
+                    "instances": instances,
+                    "total": total,
+                    "limit": limit,
+                    "offset": offset,
+                    "has_more": has_more
+                }
+            ))
+        except Exception as e:
+            logger.error(f"Failed to get instances: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to get instances: {e}")
+
+    async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
+        await self.send_response(websocket, WSMessage(
+            type=MessageType.ERROR,
+            request_id=request_id,
+            data={"error": error}
+        ))
+
+
 # ========== Workspace File System Handlers ==========
 
 class WorkspaceGetRootHandler(MessageHandler):
@@ -2378,17 +2502,6 @@ class CronRunJobHandler(MessageHandler):
         ))
 
 
-def _get_agents_root_dir() -> Path:
-    """Get the root agents directory within workspace.
-
-    Returns:
-        Path to workspace/agents directory.
-    """
-    from backend.utils.helpers import get_workspace_path
-    workspace = get_workspace_path()
-    return workspace / "agents"
-
-
 def _get_workspace_system_dir() -> Path:
     """Get the workspace root directory (system files are stored at workspace root).
 
@@ -2401,71 +2514,37 @@ def _get_workspace_system_dir() -> Path:
 
 
 class AgentGetListHandler(MessageHandler):
-    """Handle get agent list requests."""
+    """Handle get agent list requests from database."""
+
+    def __init__(self, bus: MessageBus, db: Database = None):
+        super().__init__(bus)
+        self.db = db or Database()
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        """Return list of all agents (excluding system)."""
+        """Return list of all agents from database."""
         try:
-            agents_root = _get_agents_root_dir()
-
+            from backend.data.subagent_store import SubagentRepository
+            
             agents = []
-
-            # Load from new location (agents/ sibling to workspace)
-            if agents_root.exists():
-                for agent_dir in sorted(agents_root.iterdir()):
-                    if agent_dir.is_dir() and not agent_dir.name.startswith(".") and agent_dir.name != "system":
-                        soul_file = agent_dir / "SOUL.md"
-                        if soul_file.exists():
-                            try:
-                                content = soul_file.read_text(encoding="utf-8")
-                                # Parse YAML frontmatter to get name and description
-                                name = agent_dir.name
-                                description = ""
-                                if content.startswith("---"):
-                                    import re
-                                    import yaml
-                                    match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
-                                    if match:
-                                        try:
-                                            metadata = yaml.safe_load(match.group(1)) or {}
-                                            name = metadata.get("name", agent_dir.name)
-                                            description = metadata.get("description", "")
-                                        except Exception:
-                                            pass
-                                agents.append({"name": name, "description": description, "dir": agent_dir.name})
-                            except Exception as e:
-                                logger.warning(f"Failed to read SOUL.md from {agent_dir}: {e}")
-
-            # Fall back to old location for backward compatibility
-            from backend.utils.helpers import get_workspace_path
-            workspace = get_workspace_path()
-            old_agents_dir = workspace / "agents"
-            if old_agents_dir.exists() and old_agents_dir != agents_root:
-                for agent_dir in sorted(old_agents_dir.iterdir()):
-                    if agent_dir.is_dir() and not agent_dir.name.startswith("."):
-                        # Skip if already loaded from new location
-                        if any(a["dir"] == agent_dir.name for a in agents):
-                            continue
-                        soul_file = agent_dir / "SOUL.md"
-                        if soul_file.exists():
-                            try:
-                                content = soul_file.read_text(encoding="utf-8")
-                                name = agent_dir.name
-                                description = ""
-                                if content.startswith("---"):
-                                    import re
-                                    import yaml
-                                    match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
-                                    if match:
-                                        try:
-                                            metadata = yaml.safe_load(match.group(1)) or {}
-                                            name = metadata.get("name", agent_dir.name)
-                                            description = metadata.get("description", "")
-                                        except Exception:
-                                            pass
-                                agents.append({"name": name, "description": description, "dir": agent_dir.name})
-                            except Exception as e:
-                                logger.warning(f"Failed to read SOUL.md from {agent_dir}: {e}")
+            
+            try:
+                repo = SubagentRepository(self.db)
+                db_agents = repo.get_subagents_with_details()
+                for agent in db_agents:
+                    agents.append({
+                        "id": agent["id"],
+                        "name": agent["name"],
+                        "description": agent["description"],
+                        "providerName": agent.get("providerName"),
+                        "modelName": agent.get("modelName"),
+                        "tools": agent.get("tools", []),
+                        "extensions": agent.get("extensions", []),
+                        "maxIterations": agent.get("maxIterations", 30),
+                        "temperature": agent.get("temperature", 0.7),
+                        "enabled": agent.get("enabled", True),
+                    })
+            except Exception as e:
+                logger.warning(f"Failed to load agents from database: {e}")
 
             await self.send_response(websocket, WSMessage(
                 type=MessageType.AGENT_LIST,
@@ -2484,91 +2563,53 @@ class AgentGetListHandler(MessageHandler):
         ))
 
 
-def _find_agent_directory(agent_name: str) -> Path | None:
-    """Find agent directory by agent name (from SOUL.md metadata or directory name).
-
-    Args:
-        agent_name: Agent name from SOUL.md metadata or directory name
-
-    Returns:
-        Path to agent directory or None if not found
-    """
-    import yaml
-
-    agents_root = _get_agents_root_dir()
-
-    # Try new location first (agents/ sibling to workspace)
-    if agents_root.exists():
-        for agent_dir in agents_root.iterdir():
-            if agent_dir.is_dir() and not agent_dir.name.startswith(".") and agent_dir.name != "system":
-                soul_file = agent_dir / "SOUL.md"
-                if soul_file.exists():
-                    content = soul_file.read_text(encoding="utf-8")
-                    # Parse YAML frontmatter to check name
-                    if content.startswith("---"):
-                        match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
-                        if match:
-                            try:
-                                metadata = yaml.safe_load(match.group(1)) or {}
-                                if metadata.get("name") == agent_name:
-                                    return agent_dir
-                            except Exception:
-                                pass
-                    # Also check directory name match as fallback
-                    if agent_dir.name == agent_name:
-                        return agent_dir
-
-    # Fall back to old location for backward compatibility
-    from backend.utils.helpers import get_workspace_path
-    workspace = get_workspace_path()
-    old_agents_dir = workspace / "agents"
-    if old_agents_dir.exists() and old_agents_dir != agents_root:
-        for agent_dir in old_agents_dir.iterdir():
-            if agent_dir.is_dir() and not agent_dir.name.startswith("."):
-                soul_file = agent_dir / "SOUL.md"
-                if soul_file.exists():
-                    content = soul_file.read_text(encoding="utf-8")
-                    if content.startswith("---"):
-                        match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
-                        if match:
-                            try:
-                                metadata = yaml.safe_load(match.group(1)) or {}
-                                if metadata.get("name") == agent_name:
-                                    return agent_dir
-                            except Exception:
-                                pass
-                    if agent_dir.name == agent_name:
-                        return agent_dir
-    return None
-
-
 class AgentGetSoulHandler(MessageHandler):
-    """Handle get agent SOUL.md content requests."""
+    """Handle get agent configuration from database."""
+
+    def __init__(self, bus: MessageBus, db: Database = None):
+        super().__init__(bus)
+        self.db = db or Database()
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        """Return SOUL.md content for a specific agent."""
+        """Return agent configuration from database."""
         try:
+            from backend.data.subagent_store import SubagentRepository
+            
+            agent_id = message.data.get("id")
             agent_name = message.data.get("name")
-            if not agent_name:
-                await self._send_error(websocket, message.request_id, "Agent name is required")
+            
+            repo = SubagentRepository(self.db)
+            record = None
+            
+            if agent_id:
+                record = repo.get_subagent_by_id(agent_id)
+            elif agent_name:
+                record = repo.get_subagent_by_name(agent_name)
+            
+            if record:
+                await self.send_response(websocket, WSMessage(
+                    type=MessageType.AGENT_SOUL,
+                    request_id=message.request_id,
+                    data={
+                        "id": record.id,
+                        "name": record.name,
+                        "description": record.description,
+                        "providerId": record.provider_id,
+                        "modelId": record.model_id,
+                        "tools": record.tools,
+                        "extensions": record.extensions,
+                        "maxIterations": record.max_iterations,
+                        "temperature": record.temperature,
+                        "systemPrompt": record.system_prompt,
+                        "enabled": record.enabled,
+                    }
+                ))
                 return
 
-            agent_dir = _find_agent_directory(agent_name)
-            if not agent_dir:
-                await self._send_error(websocket, message.request_id, f"Agent '{agent_name}' not found")
-                return
-
-            soul_file = agent_dir / "SOUL.md"
-            content = soul_file.read_text(encoding="utf-8")
-
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.AGENT_SOUL,
-                request_id=message.request_id,
-                data={"name": agent_name, "content": content}
-            ))
+            await self._send_error(websocket, message.request_id, f"Agent '{agent_name or agent_id}' not found")
         except Exception as e:
-            logger.error(f"Failed to get agent SOUL.md: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get agent SOUL.md: {e}")
+            logger.error(f"Failed to get agent: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to get agent: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
         await self.send_response(websocket, WSMessage(
@@ -2579,64 +2620,85 @@ class AgentGetSoulHandler(MessageHandler):
 
 
 class AgentSaveSoulHandler(MessageHandler):
-    """Handle save agent SOUL.md content requests."""
+    """Handle save agent requests to database."""
+
+    def __init__(self, bus: MessageBus, db: Database = None):
+        super().__init__(bus)
+        self.db = db or Database()
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        """Save SOUL.md content for a specific agent."""
+        """Save agent configuration to database."""
         try:
-            import yaml
-
-            agent_name = message.data.get("name")
-            content = message.data.get("content")
-
-            if not agent_name:
+            from backend.data.subagent_store import SubagentRepository
+            
+            repo = SubagentRepository(self.db)
+            
+            agent_id = message.data.get("id")
+            name = message.data.get("name")
+            description = message.data.get("description", "")
+            provider_id = message.data.get("providerId")
+            model_id = message.data.get("modelId")
+            tools = message.data.get("tools", [])
+            extensions = message.data.get("extensions", [])
+            max_iterations = message.data.get("maxIterations", 30)
+            temperature = message.data.get("temperature", 0.7)
+            system_prompt = message.data.get("systemPrompt", "")
+            enabled = message.data.get("enabled", True)
+            
+            if not name:
                 await self._send_error(websocket, message.request_id, "Agent name is required")
                 return
-
-            if content is None:
-                await self._send_error(websocket, message.request_id, "Content is required")
-                return
-
-            agents_root = _get_agents_root_dir()
-
-            # Try to find existing agent directory
-            agent_dir = _find_agent_directory(agent_name)
-
-            if agent_dir:
-                # Update existing agent
-                soul_file = agent_dir / "SOUL.md"
+            
+            if provider_id is not None:
+                provider_id = int(provider_id)
+            if model_id is not None:
+                model_id = int(model_id)
+            
+            if agent_id:
+                success = repo.update_subagent(
+                    subagent_id=int(agent_id),
+                    name=name,
+                    description=description,
+                    provider_id=provider_id,
+                    model_id=model_id,
+                    tools=tools,
+                    extensions=extensions,
+                    max_iterations=max_iterations,
+                    temperature=temperature,
+                    system_prompt=system_prompt,
+                    enabled=enabled,
+                )
+                if success:
+                    logger.info(f"Updated subagent in database: {name}")
+                    await self.send_response(websocket, WSMessage(
+                        type=MessageType.ACK,
+                        request_id=message.request_id,
+                        data={"id": agent_id, "name": name, "status": "updated"}
+                    ))
+                else:
+                    await self._send_error(websocket, message.request_id, "Failed to update agent")
             else:
-                # Create new agent - use agent_name as directory name
-                # But first check if content has a name field
-                dir_name = agent_name
-                if content.startswith("---"):
-                    match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
-                    if match:
-                        try:
-                            metadata = yaml.safe_load(match.group(1)) or {}
-                            if metadata.get("name"):
-                                # Use the name from content for directory
-                                # Ensure it's a string (YAML may parse numeric names as int)
-                                dir_name = str(metadata.get("name"))
-                        except Exception:
-                            pass
-                agent_dir = agents_root / dir_name
-                agent_dir.mkdir(parents=True, exist_ok=True)
-                soul_file = agent_dir / "SOUL.md"
-
-            # Write content to file
-            soul_file.write_text(content, encoding="utf-8")
-
-            logger.info(f"Saved SOUL.md for agent: {agent_name}")
-
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.AGENT_SAVED,
-                request_id=message.request_id,
-                data={"name": agent_name, "status": "saved"}
-            ))
+                record = repo.create_subagent(
+                    name=name,
+                    description=description,
+                    provider_id=provider_id,
+                    model_id=model_id,
+                    tools=tools,
+                    extensions=extensions,
+                    max_iterations=max_iterations,
+                    temperature=temperature,
+                    system_prompt=system_prompt,
+                    enabled=enabled,
+                )
+                logger.info(f"Created subagent in database: {name}")
+                await self.send_response(websocket, WSMessage(
+                    type=MessageType.ACK,
+                    request_id=message.request_id,
+                    data={"id": record.id, "name": name, "status": "created"}
+                ))
         except Exception as e:
-            logger.error(f"Failed to save agent SOUL.md: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to save agent SOUL.md: {e}")
+            logger.error(f"Failed to save agent: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to save agent: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
         await self.send_response(websocket, WSMessage(
@@ -2647,35 +2709,50 @@ class AgentSaveSoulHandler(MessageHandler):
 
 
 class AgentDeleteHandler(MessageHandler):
-    """Handle delete agent requests."""
+    """Handle delete agent requests from database."""
+
+    def __init__(self, bus: MessageBus, db: Database = None):
+        super().__init__(bus)
+        self.db = db or Database()
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        """Delete an agent directory."""
+        """Delete an agent from database."""
         try:
-            import shutil
-
+            from backend.data.subagent_store import SubagentRepository
+            
+            agent_id = message.data.get("id")
             agent_name = message.data.get("name")
-            if not agent_name:
-                await self._send_error(websocket, message.request_id, "Agent name is required")
-                return
+            
+            repo = SubagentRepository(self.db)
+            
+            if agent_id:
+                success = repo.delete_subagent(int(agent_id))
+                if success:
+                    logger.info(f"Deleted subagent from database: id={agent_id}")
+                    await self.send_response(websocket, WSMessage(
+                        type=MessageType.AGENT_DELETED,
+                        request_id=message.request_id,
+                        data={"id": agent_id, "status": "deleted"}
+                    ))
+                    return
+                else:
+                    await self._send_error(websocket, message.request_id, f"Agent with id '{agent_id}' not found")
+                    return
+            
+            if agent_name:
+                record = repo.get_subagent_by_name(agent_name)
+                if record:
+                    success = repo.delete_subagent(record.id)
+                    if success:
+                        logger.info(f"Deleted subagent from database: {agent_name}")
+                        await self.send_response(websocket, WSMessage(
+                            type=MessageType.AGENT_DELETED,
+                            request_id=message.request_id,
+                            data={"id": record.id, "name": agent_name, "status": "deleted"}
+                        ))
+                        return
 
-            # Find the agent directory by name
-            agent_dir = _find_agent_directory(agent_name)
-
-            if not agent_dir:
-                await self._send_error(websocket, message.request_id, f"Agent '{agent_name}' not found")
-                return
-
-            # Remove the entire agent directory
-            shutil.rmtree(agent_dir)
-
-            logger.info(f"Deleted agent: {agent_name}")
-
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.AGENT_DELETED,
-                request_id=message.request_id,
-                data={"name": agent_name, "status": "deleted"}
-            ))
+            await self._send_error(websocket, message.request_id, f"Agent '{agent_name or agent_id}' not found")
         except Exception as e:
             logger.error(f"Failed to delete agent: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to delete agent: {e}")
@@ -2832,6 +2909,180 @@ class AgentSaveSystemFileHandler(MessageHandler):
         ))
 
 
+class SubagentGetAvailableToolsHandler(MessageHandler):
+    """Handle get available tools for subagent configuration."""
+
+    def __init__(self, bus: MessageBus, db: Database = None):
+        super().__init__(bus)
+        self.db = db or Database()
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Return list of available tools from database and system."""
+        try:
+            from backend.data.subagent_store import AvailableToolRepository
+            
+            tools = []
+            
+            # Load from database
+            try:
+                repo = AvailableToolRepository(self.db)
+                db_tools = repo.get_all_tools()
+                for tool in db_tools:
+                    tools.append({
+                        "id": tool.id,
+                        "name": tool.name,
+                        "description": tool.description,
+                        "category": tool.category,
+                        "source": "database"
+                    })
+            except Exception as e:
+                logger.warning(f"Failed to load tools from database: {e}")
+            
+            # Also load from tool registry
+            try:
+                from backend.tools.registry import ToolRegistry
+                registry = ToolRegistry()
+                for tool_name in registry.tool_names:
+                    if not any(t["name"] == tool_name for t in tools):
+                        tool = registry.get(tool_name)
+                        tools.append({
+                            "name": tool_name,
+                            "description": tool.description if tool else "",
+                            "source": "registry"
+                        })
+            except Exception as e:
+                logger.warning(f"Failed to load tools from registry: {e}")
+            
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.SUBAGENT_AVAILABLE_TOOLS,
+                request_id=message.request_id,
+                data={"tools": tools}
+            ))
+        except Exception as e:
+            logger.error(f"Failed to get available tools: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to get available tools: {e}")
+
+    async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
+        await self.send_response(websocket, WSMessage(
+            type=MessageType.ERROR,
+            request_id=request_id,
+            data={"error": error}
+        ))
+
+
+class SubagentGetAvailableExtensionsHandler(MessageHandler):
+    """Handle get available extensions for subagent configuration."""
+
+    def __init__(self, bus: MessageBus, db: Database = None):
+        super().__init__(bus)
+        self.db = db or Database()
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Return list of available extensions from database and system."""
+        try:
+            from backend.data.subagent_store import AvailableExtensionRepository
+            
+            extensions = []
+            
+            # Load from database
+            try:
+                repo = AvailableExtensionRepository(self.db)
+                db_extensions = repo.get_all_extensions()
+                for ext in db_extensions:
+                    extensions.append({
+                        "id": ext.id,
+                        "name": ext.name,
+                        "description": ext.description,
+                        "source": "database"
+                    })
+            except Exception as e:
+                logger.warning(f"Failed to load extensions from database: {e}")
+            
+            # Also load from extension registry
+            try:
+                from backend.extensions.registry import ExtensionRegistry
+                registry = ExtensionRegistry()
+                for ext in registry.list_all():
+                    if not any(e["name"] == ext.name for e in extensions):
+                        extensions.append({
+                            "name": ext.name,
+                            "description": ext.description if hasattr(ext, 'description') else "",
+                            "source": "registry"
+                        })
+            except Exception as e:
+                logger.warning(f"Failed to load extensions from registry: {e}")
+            
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.SUBAGENT_AVAILABLE_EXTENSIONS,
+                request_id=message.request_id,
+                data={"extensions": extensions}
+            ))
+        except Exception as e:
+            logger.error(f"Failed to get available extensions: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to get available extensions: {e}")
+
+    async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
+        await self.send_response(websocket, WSMessage(
+            type=MessageType.ERROR,
+            request_id=request_id,
+            data={"error": error}
+        ))
+
+
+class SubagentGetProviderModelsHandler(MessageHandler):
+    """Handle get providers and models for subagent configuration."""
+
+    def __init__(self, bus: MessageBus, db: Database = None):
+        super().__init__(bus)
+        self.db = db or Database()
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Return list of providers with their models."""
+        try:
+            from backend.data.provider_store import ProviderRepository, ModelRepository
+            
+            provider_repo = ProviderRepository(self.db)
+            model_repo = ModelRepository(self.db)
+            
+            providers = []
+            provider_records = provider_repo.get_all_providers()
+            
+            for provider in provider_records:
+                models = model_repo.get_models_by_provider(provider.id)
+                providers.append({
+                    "id": provider.id,
+                    "name": provider.name,
+                    "displayName": provider.display_name or provider.name,
+                    "type": provider.provider_type,
+                    "enabled": provider.enabled,
+                    "models": [
+                        {
+                            "id": m.id,
+                            "name": m.model_id,
+                            "displayName": m.display_name or m.model_id,
+                            "enabled": m.enabled
+                        }
+                        for m in models
+                    ]
+                })
+            
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.SUBAGENT_PROVIDER_MODELS,
+                request_id=message.request_id,
+                data={"providers": providers}
+            ))
+        except Exception as e:
+            logger.error(f"Failed to get providers and models: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to get providers and models: {e}")
+
+    async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
+        await self.send_response(websocket, WSMessage(
+            type=MessageType.ERROR,
+            request_id=request_id,
+            data={"error": error}
+        ))
+
+
 class TokenUsageHandler(MessageHandler):
     """Handle token usage queries."""
 
@@ -2929,11 +3180,13 @@ class TokenUsageHandler(MessageHandler):
 class HandlerRegistry:
     """Registry for message handlers."""
 
-    def __init__(self, bus: MessageBus, pending_responses: dict[str, asyncio.Queue], mcp_manager: MCPManager | None = None, cron_service=None, db=None):
+    def __init__(self, bus: MessageBus, pending_responses: dict[str, asyncio.Queue], mcp_manager: MCPManager | None = None, cron_service=None, db=None, agent_loop=None, subagent_manager=None):
         from backend.data import Database
         self.mcp_manager = mcp_manager
         self.cron_service = cron_service
         self.db = db or Database()
+        self.agent_loop = agent_loop
+        self.subagent_manager = subagent_manager
 
         from backend.data.provider_store import ProviderRepository, ModelRepository, SettingsRepository
         self.provider_handler_db = self.db
@@ -2946,6 +3199,7 @@ class HandlerRegistry:
             MessageType.SAVE_CONFIG: SaveConfigHandler(bus),
             MessageType.PING: PingHandler(bus),
             MessageType.GET_MODELS: GetModelsHandler(bus, self.db),
+            MessageType.STOP_AGENTS: StopAgentsHandler(bus, agent_loop, subagent_manager),
         }
 
         # Register MCP handlers if manager is available
@@ -3012,6 +3266,7 @@ class HandlerRegistry:
             MessageType.SESSION_DELETE_INSTANCE: SessionDeleteInstanceHandler(bus),
             MessageType.SESSION_CREATE: SessionCreateHandler(bus),
             MessageType.SESSION_SET_ACTIVE: SessionSetActiveHandler(bus),
+            MessageType.SESSION_GET_INSTANCES: SessionGetInstancesHandler(bus),
         })
 
         # Register Workspace File System handlers
@@ -3036,13 +3291,20 @@ class HandlerRegistry:
 
         # Register Agent handlers
         self.handlers.update({
-            MessageType.AGENT_GET_LIST: AgentGetListHandler(bus),
-            MessageType.AGENT_GET_SOUL: AgentGetSoulHandler(bus),
-            MessageType.AGENT_SAVE_SOUL: AgentSaveSoulHandler(bus),
-            MessageType.AGENT_DELETE: AgentDeleteHandler(bus),
+            MessageType.AGENT_GET_LIST: AgentGetListHandler(bus, db),
+            MessageType.AGENT_GET_SOUL: AgentGetSoulHandler(bus, db),
+            MessageType.AGENT_SAVE_SOUL: AgentSaveSoulHandler(bus, db),
+            MessageType.AGENT_DELETE: AgentDeleteHandler(bus, db),
             MessageType.AGENT_GET_SYSTEM_FILES: AgentGetSystemFilesHandler(bus),
             MessageType.AGENT_GET_SYSTEM_FILE: AgentGetSystemFileHandler(bus),
             MessageType.AGENT_SAVE_SYSTEM_FILE: AgentSaveSystemFileHandler(bus),
+        })
+
+        # Register Subagent Options handlers
+        self.handlers.update({
+            MessageType.SUBAGENT_GET_AVAILABLE_TOOLS: SubagentGetAvailableToolsHandler(bus, db),
+            MessageType.SUBAGENT_GET_AVAILABLE_EXTENSIONS: SubagentGetAvailableExtensionsHandler(bus, db),
+            MessageType.SUBAGENT_GET_PROVIDER_MODELS: SubagentGetProviderModelsHandler(bus, db),
         })
 
         # Register Image handlers

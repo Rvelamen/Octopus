@@ -235,7 +235,37 @@ def get_registry() -> ExtensionRegistry:
     global _registry
     if _registry is None:
         _registry = ExtensionRegistry()
+        _auto_load_extensions(_registry)
     return _registry
+
+
+def _auto_load_extensions(registry: ExtensionRegistry) -> None:
+    """Auto-load extensions from workspace and builtin directories."""
+    from pathlib import Path
+    from .loader import ExtensionLoader
+
+    workspace = Path.cwd()
+    extensions_dir = workspace / "extensions"
+
+    if not extensions_dir.exists():
+        alt_workspace = workspace / "workspace"
+        if alt_workspace.exists():
+            workspace = alt_workspace
+            extensions_dir = workspace / "extensions"
+
+    if not extensions_dir.exists():
+        logger.warning(f"Extensions directory not found: {extensions_dir}")
+        return
+
+    loader = ExtensionLoader(workspace)
+    try:
+        extensions = loader.load_all()
+        for ext in extensions:
+            if ext.name not in registry._extensions:
+                registry.register(ext)
+        logger.info(f"Auto-loaded {len(extensions)} extensions")
+    except Exception as e:
+        logger.warning(f"Failed to auto-load extensions: {e}")
 
 
 def set_registry(registry: ExtensionRegistry) -> None:

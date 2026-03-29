@@ -25,14 +25,16 @@ class DesktopChannel(BaseChannel):
 
     name = "desktop"
 
-    def __init__(self, config: Any, bus: MessageBus, app: FastAPI, mcp_manager: MCPManager | None = None, cron_service=None):
+    def __init__(self, config: Any, bus: MessageBus, app: FastAPI, mcp_manager: MCPManager | None = None, cron_service=None, agent_loop=None, subagent_manager=None):
         super().__init__(config, bus)
         self.app = app
         self.connected_clients: list[WebSocket] = []
         self.pending_responses: dict[str, asyncio.Queue] = {}
         self.mcp_manager = mcp_manager
         self.cron_service = cron_service
-        self.handler_registry = HandlerRegistry(bus, self.pending_responses, mcp_manager, cron_service)
+        self.agent_loop = agent_loop
+        self.subagent_manager = subagent_manager
+        self.handler_registry = HandlerRegistry(bus, self.pending_responses, mcp_manager, cron_service, agent_loop=agent_loop, subagent_manager=subagent_manager)
         self._mcp_state_callback_registered = False
     
     async def start(self) -> None:

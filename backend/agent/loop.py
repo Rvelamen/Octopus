@@ -2,7 +2,6 @@
 
 import asyncio
 import json
-import re
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +13,7 @@ from backend.core.providers.base import LLMProvider
 from backend.core.providers.factory import create_provider
 from backend.agent.config_service import AgentConfigService
 from backend.agent.context import ContextBuilder, set_agent_loop
+from backend.agent.compressor import ContextCompressor
 from backend.tools.registry import ToolRegistry
 from backend.tools.filesystem import ReadFileTool, WriteFileTool, EditFileTool, ListDirTool
 from backend.tools.shell import ExecTool
@@ -70,6 +70,14 @@ class AgentLoop:
         self.tools = ToolRegistry(mcp_bridge=mcp_bridge)
         self.token_usage = TokenUsageRepository(self.db)
 
+        self.compressor = ContextCompressor(
+            db=self.db,
+            sessions=self.sessions,
+            token_usage=self.token_usage,
+            get_provider_and_model=self._get_current_provider_and_model,
+            record_token_usage=self._record_token_usage,
+        )
+
         # Initialize aggregator for multi-subagent support
         self.aggregator = SubagentAggregator(bus)
         
@@ -89,6 +97,7 @@ class AgentLoop:
         self.extension_loader = ExtensionLoader(workspace=workspace)
 
         self._running = False
+        self._stop_current_task = False
         self._register_default_tools()
 
     @property
@@ -99,33 +108,6 @@ class AgentLoop:
             return config_service.get_max_iterations()
         except Exception:
             return self._default_max_iterations
-
-    @property
-    def context_compression_enabled(self) -> bool:
-        """Get context_compression_enabled from database dynamically."""
-        try:
-            config_service = AgentConfigService(self.db)
-            return config_service.get_context_compression_enabled()
-        except Exception:
-            return False
-
-    @property
-    def context_compression_turns(self) -> int:
-        """Get context_compression_turns from database dynamically."""
-        try:
-            config_service = AgentConfigService(self.db)
-            return config_service.get_context_compression_turns()
-        except Exception:
-            return 10
-    
-    @property
-    def context_compression_token_threshold(self) -> int:
-        """Get context_compression_token_threshold from database dynamically."""
-        try:
-            config_service = AgentConfigService(self.db)
-            return config_service.get_context_compression_token_threshold()
-        except Exception:
-            return 200000
 
     def _get_current_provider_and_model(self) -> tuple[LLMProvider, str, str]:
         """Get current provider, model, and provider_type from database."""
@@ -156,216 +138,6 @@ class AgentLoop:
             ))
             await asyncio.sleep(0.05)
 
-    async def _compress_context(
-        self,
-        session,
-        messages: list[dict[str, Any]],
-    ) -> str:
-        """
-        Compress conversation history using LLM (first-time compression).
-        
-        Args:
-            session: The current session.
-            messages: Messages to compress.
-        
-        Returns:
-            Compressed context summary.
-        """
-        to_compress = messages or session.messages[:-6] if len(session.messages) > 6 else session.messages
-        
-        if len(to_compress) < 4:
-            return ""
-        
-        conversation_text = "\n".join([
-            f"{m.get('role', 'user')}: {m.get('content', '')[:500]}"
-            for m in to_compress
-        ])
-        
-        compression_prompt = f"""请总结以下对话的要点，保留关键信息、用户请求和重要的上下文：
-
-{conversation_text}
-
-请用简洁的中文总结（不超过 300 字），包括：
-1. 用户的主要请求
-2. 已经完成的工作
-3. 重要的上下文信息"""
-
-        provider, model, provider_type = self._get_current_provider_and_model()
-        compression_messages = [
-            {"role": "system", "content": "你是一个对话摘要助手。请简洁地总结对话要点。"},
-            {"role": "user", "content": compression_prompt}
-        ]
-        
-        try:
-            response = await provider.chat(
-                messages=compression_messages,
-                tools=[],
-                model=model
-            )
-            
-            if response.usage:
-                session_instance_id = session.active_instance.id if session.active_instance else None
-                self._record_token_usage(
-                    session_instance_id=session_instance_id,
-                    provider_name=provider_type,
-                    model_id=model,
-                    usage=response.usage,
-                    request_type="compression"
-                )
-            
-            summary = response.content or ""
-            logger.info(f"Context compressed to {len(summary)} characters")
-            return summary
-        except Exception as e:
-            logger.error(f"Context compression failed: {e}")
-            return ""
-
-    async def _compress_incremental(self, last_summary: str, new_messages: list) -> str:
-        """
-        Incremental compression: last_summary + new_messages -> new_summary.
-        
-        Args:
-            last_summary: The previous compressed summary.
-            new_messages: New messages to compress.
-        
-        Returns:
-            New complete summary.
-        """
-        if len(new_messages) < 4:
-            return last_summary
-        
-        new_conversation = "\n".join([
-            f"{m.get('role', 'user')}: {m.get('content', '')[:500]}"
-            for m in new_messages
-        ])
-        
-        prompt = f"""基于之前的对话摘要，整合新的对话内容，生成完整的对话摘要。
-
-## 之前的摘要
-{last_summary}
-
-## 新的对话内容
-{new_conversation}
-
-请生成一个完整的对话摘要（不超过 300 字），整合之前和新的内容，包括：
-1. 用户的主要请求和目标
-2. 已经完成的工作和进展
-3. 重要的上下文信息和决策
-
-注意：要确保摘要连贯完整，不要分段显示。"""
-
-        provider, model, provider_type = self._get_current_provider_and_model()
-        compression_messages = [
-            {"role": "system", "content": "你是一个对话摘要助手。请整合之前的摘要和新的对话内容，生成连贯完整的摘要。"},
-            {"role": "user", "content": prompt}
-        ]
-        
-        try:
-            response = await provider.chat(
-                messages=compression_messages,
-                tools=[],
-                model=model
-            )
-            
-            if response.usage:
-                self._record_token_usage(
-                    session_instance_id=None,
-                    provider_name=provider_type,
-                    model_id=model,
-                    usage=response.usage,
-                    request_type="compression"
-                )
-            
-            summary = response.content or last_summary
-            logger.info(f"Incremental compression: {len(last_summary)} -> {len(summary)} characters")
-            return summary
-        except Exception as e:
-            logger.error(f"Incremental compression failed: {e}")
-            return last_summary
-
-    async def _do_compress(self, session, current_turns: int) -> None:
-        """
-        Perform context compression.
-        
-        Args:
-            session: The current session.
-            current_turns: Current turn count.
-        """
-        instance_id = session.active_instance.id if session.active_instance else None
-        keep_count = 6
-        
-        to_compress = session.messages[:-keep_count] if len(session.messages) > keep_count else []
-        
-        if len(to_compress) < 4:
-            logger.info(f"Not enough messages to compress: {len(to_compress)}")
-            return
-        
-        last_summary = session.compressed_context
-        
-        if last_summary:
-            logger.info(f"Performing incremental compression at turn {current_turns}")
-            summary = await self._compress_incremental(last_summary, to_compress)
-        else:
-            logger.info(f"Performing first-time compression at turn {current_turns}")
-            summary = await self._compress_context(session, to_compress)
-        
-        if not summary:
-            logger.warning("Compression returned empty summary")
-            return
-        
-        session.compressed_context = summary
-        session.compressed_message_count += len(to_compress)
-        session.last_compressed_turn = current_turns
-        
-        message_ids = [m.get('id') for m in to_compress if m.get('id')]
-        if instance_id and message_ids:
-            self.sessions.db.mark_messages_compressed(instance_id, message_ids)
-        
-        session.messages = session.messages[-keep_count:]
-        
-        self.sessions.save(session)
-        logger.info(f"Context compressed: {len(to_compress)} messages, total compressed: {session.compressed_message_count}")
-
-    async def _maybe_compress_context(self, session, prompt_tokens: int = 0) -> None:
-        """
-        Check if context compression is needed and perform it.
-        
-        Hybrid trigger strategy:
-        1. Token threshold (primary): trigger when prompt_tokens >= token_threshold
-        2. Turn threshold (fallback): trigger when turn % turn_threshold == 0
-        
-        Args:
-            session: The current session.
-            prompt_tokens: The prompt tokens from last LLM call (0 if unknown).
-        """
-        if not self.context_compression_enabled:
-            return
-        
-        current_turns = session.get_turn_count()
-        
-        # Avoid compressing right after a compression
-        if session.last_compressed_turn >= current_turns:
-            return
-        
-        should_compress = False
-        trigger_reason = ""
-        
-        # Strategy 1: Token threshold (primary)
-        token_threshold = self.context_compression_token_threshold
-        if token_threshold and prompt_tokens >= token_threshold:
-            should_compress = True
-            trigger_reason = f"token threshold ({prompt_tokens} >= {token_threshold})"
-        
-        # Strategy 2: Turn threshold (fallback)
-        turn_threshold = self.context_compression_turns
-        if not should_compress and current_turns >= turn_threshold and current_turns % turn_threshold == 0:
-            should_compress = True
-            trigger_reason = f"turn threshold (turn {current_turns})"
-        
-        if should_compress:
-            logger.info(f"Compressing context triggered by {trigger_reason}")
-            await self._do_compress(session, current_turns)
-    
     def _register_default_tools(self) -> None:
         """Register the default set of tools."""
         # File tools
@@ -445,6 +217,15 @@ class AgentLoop:
         """Stop the agent loop."""
         self._running = False
         logger.info("Agent loop stopping")
+    
+    def stop_current_task(self) -> None:
+        """Stop the current running task."""
+        self._stop_current_task = True
+        logger.info("Agent current task stopping")
+    
+    def reset_stop_flag(self) -> None:
+        """Reset the stop flag for new task."""
+        self._stop_current_task = False
     
     async def _process_message(
         self,
@@ -577,7 +358,10 @@ class AgentLoop:
 
         should_stop = False  # Flag to stop the outer loop
 
-        while iteration < self.max_iterations and not should_stop:
+        # Reset stop flag for new task
+        self._stop_current_task = False
+
+        while iteration < self.max_iterations and not should_stop and not self._stop_current_task:
             iteration += 1
 
             # Emit "thinking" event
@@ -643,80 +427,107 @@ class AgentLoop:
 
                 # Execute tools with error handling
                 for tool_call in response.tool_calls:
-                    args_str = json.dumps(tool_call.arguments, ensure_ascii=False)
-                    logger.debug(f"Executing tool: {tool_call.name} with arguments: {args_str}")
-
-                    # Emit tool call start (include assistant content if any)
-                    await self._emit("agent_tool_call", {
-                        "tool": tool_call.name,
-                        "args": tool_call.arguments,
-                        "content": response.content if response.content else None
-                    }, channel=msg.channel)
-
-                    # Inject channel, chat_id, and session_instance_id for action tools
-                    tool_args = tool_call.arguments.copy()
-                    if tool_call.name == "action":
-                        tool_args["_channel"] = msg.channel
-                        tool_args["_chat_id"] = msg.chat_id
-                        tool_args["_session_instance_id"] = session.active_instance.id
-
-                    # Execute tool with error handling
+                    # Check if task should stop
+                    if self._stop_current_task:
+                        logger.info("Task stopped by user request")
+                        break
+                    
+                    result = None
                     try:
-                        result = await self.tools.execute(tool_call.name, tool_args)
-                    except Exception as e:
-                        import traceback
-                        traceback.print_exc()
-                        logger.error(f"Tool execution error: {tool_call.name} - {e}")
-                        result = f"Error executing tool {tool_call.name}: {str(e)}"
+                        args_str = json.dumps(tool_call.arguments, ensure_ascii=False)
+                        logger.debug(f"Executing tool: {tool_call.name} with arguments: {args_str}")
 
-                    # Check if this is a longtask auth action - if so, return simple confirmation
-                    is_longtask_auth = (
-                        tool_call.name == "action" and
-                        tool_args.get("type") == "plugin" and
-                        tool_args.get("action") == "auth"
-                    )
+                        # Emit tool call start (include assistant content if any)
+                        try:
+                            await self._emit("agent_tool_call", {
+                                "tool": tool_call.name,
+                                "args": tool_call.arguments,
+                                "content": response.content if response.content else None,
+                                "iteration": iteration,
+                                "tool_call_id": tool_call.id
+                            }, channel=msg.channel)
+                        except Exception as emit_err:
+                            logger.warning(f"Failed to emit tool call event: {emit_err}")
 
-                    if is_longtask_auth and "success" in result:
-                        # For longtask auth actions, return simple confirmation without LLM processing
-                        plugin_name = tool_args.get("name", "longtask")
-                        final_content = f"✅ 授权已发送，{plugin_name} 将继续执行任务。任务完成后我会通知您。"
-                        # Add tool result to messages
-                        messages = self.context.add_tool_result(
-                            messages, tool_call.id, tool_call.name, result, provider_type
+                        # Inject channel, chat_id, and session_instance_id for action tools
+                        tool_args = tool_call.arguments.copy()
+                        if tool_call.name == "action":
+                            tool_args["_channel"] = msg.channel
+                            tool_args["_chat_id"] = msg.chat_id
+                            tool_args["_session_instance_id"] = session.active_instance.id
+
+                        # Execute tool with error handling
+                        try:
+                            result = await self.tools.execute(tool_call.name, tool_args)
+                        except Exception as e:
+                            import traceback
+                            traceback.print_exc()
+                            logger.error(f"Tool execution error: {tool_call.name} - {e}")
+                            result = f"Error executing tool {tool_call.name}: {str(e)}"
+
+                        # Check if this is a longtask auth action - if so, return simple confirmation
+                        is_longtask_auth = (
+                            tool_call.name == "action" and
+                            tool_args.get("type") == "plugin" and
+                            tool_args.get("action") == "auth"
                         )
 
-                        # Save tool result immediately
-                        session.add_message("tool", result,
-                                          message_type="tool_result",
-                                          name=tool_call.name,
-                                          tool_call_id=tool_call.id,
-                                          metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
-                        self.sessions.save(session)
+                        if is_longtask_auth and "success" in result:
+                            # For longtask auth actions, return simple confirmation without LLM processing
+                            plugin_name = tool_args.get("name", "longtask")
+                            final_content = f"✅ 授权已发送，{plugin_name} 将继续执行任务。任务完成后我会通知您。"
+                            # Add tool result to messages
+                            messages = self.context.add_tool_result(
+                                messages, tool_call.id, tool_call.name, result, provider_type
+                            )
 
-                        should_stop = True  # Stop the outer loop
-                        break  # Exit tool execution loop
+                            # Save tool result immediately
+                            session.add_message("tool", result,
+                                              message_type="tool_result",
+                                              name=tool_call.name,
+                                              tool_call_id=tool_call.id,
+                                              metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
+                            self.sessions.save(session)
 
-                    # Emit tool call result (truncated for log)
-                    try:
-                        result_preview = result[:500] + "..." if len(result) > 500 else result
-                        await self._emit("agent_tool_result", {
-                            "tool": tool_call.name,
-                            "result": result_preview
-                        }, channel=msg.channel)
-                    except Exception as e:
-                        logger.warning(f"Failed to emit tool result event: {e}")
+                            should_stop = True  # Stop the outer loop
+                            break  # Exit tool execution loop
 
-                    # Save tool result immediately
-                    session.add_message("tool", result,
-                                      message_type="tool_result",
-                                      name=tool_call.name,
-                                      tool_call_id=tool_call.id,
-                                      metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
-                    self.sessions.save(session)
+                        # Emit tool call result (truncated for log)
+                        try:
+                            result_preview = result[:500] + "..." if len(result) > 500 else result
+                            await self._emit("agent_tool_result", {
+                                "tool": tool_call.name,
+                                "result": result_preview,
+                                "tool_call_id": tool_call.id,
+                                "iteration": iteration
+                            }, channel=msg.channel)
+                        except Exception as e:
+                            logger.warning(f"Failed to emit tool result event: {e}")
 
-                    messages = self.context.add_tool_result(
-                        messages, tool_call.id, tool_call.name, result, provider_type
-                    )
+                    except Exception as outer_e:
+                        import traceback
+                        traceback.print_exc()
+                        logger.error(f"Unexpected error in tool call processing: {tool_call.name} - {outer_e}")
+                        result = f"Unexpected error processing tool {tool_call.name}: {str(outer_e)}"
+
+                    # Always save tool result to database, even if errors occurred
+                    if result is not None:
+                        try:
+                            session.add_message("tool", result,
+                                              message_type="tool_result",
+                                              name=tool_call.name,
+                                              tool_call_id=tool_call.id,
+                                              metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
+                            self.sessions.save(session)
+                        except Exception as save_err:
+                            logger.error(f"Failed to save tool result to database: {save_err}")
+
+                        try:
+                            messages = self.context.add_tool_result(
+                                messages, tool_call.id, tool_call.name, result, provider_type
+                            )
+                        except Exception as add_err:
+                            logger.error(f"Failed to add tool result to messages: {add_err}")
             else:
                 # No tool calls, we're done
                 final_content = response.content
@@ -727,10 +538,14 @@ class AgentLoop:
                 self.sessions.save(session)
                 break
 
+        # Check if stopped by user request
+        if self._stop_current_task and final_content is None:
+            final_content = "任务已被用户暂停。"
+
         if final_content is None:
             final_content = "I've completed processing but have no response to give."
 
-        await self._maybe_compress_context(session, prompt_tokens=last_prompt_tokens)
+        await self.compressor.maybe_compress(session, prompt_tokens=last_prompt_tokens)
 
         logger.info(f"[AgentLoop] Sending final response with {len(final_content)} chars")
         await self._send_stream_chunks(final_content, current_session, msg.channel)
@@ -890,48 +705,63 @@ class AgentLoop:
                 )
 
                 for tool_call in response.tool_calls:
-                    args_str = json.dumps(tool_call.arguments, ensure_ascii=False)
-                    logger.debug(f"Executing tool: {tool_call.name} with arguments: {args_str}")
-
-                    # Emit tool call start
+                    result = None
                     try:
-                        await self._emit("agent_tool_call", {
-                            "tool": tool_call.name,
-                            "args": tool_call.arguments
-                        }, channel=origin_channel)
-                    except Exception as e:
-                        logger.warning(f"Failed to emit tool call event: {e}")
+                        args_str = json.dumps(tool_call.arguments, ensure_ascii=False)
+                        logger.debug(f"Executing tool: {tool_call.name} with arguments: {args_str}")
 
-                    # Execute tool with error handling
-                    try:
-                        result = await self.tools.execute(tool_call.name, tool_call.arguments)
-                    except Exception as e:
+                        # Emit tool call start
+                        try:
+                            await self._emit("agent_tool_call", {
+                                "tool": tool_call.name,
+                                "args": tool_call.arguments
+                            }, channel=origin_channel)
+                        except Exception as e:
+                            logger.warning(f"Failed to emit tool call event: {e}")
+
+                        # Execute tool with error handling
+                        try:
+                            result = await self.tools.execute(tool_call.name, tool_call.arguments)
+                        except Exception as e:
+                            import traceback
+                            traceback.print_exc()
+                            logger.error(f"Tool execution error: {tool_call.name} - {e}")
+                            result = f"Error executing tool {tool_call.name}: {str(e)}"
+
+                        # Emit tool call result
+                        try:
+                            result_preview = result[:500] + "..." if len(result) > 500 else result
+                            await self._emit("agent_tool_result", {
+                                "tool": tool_call.name,
+                                "result": result_preview
+                            }, channel=origin_channel)
+                        except Exception as e:
+                            logger.warning(f"Failed to emit tool result event: {e}")
+
+                    except Exception as outer_e:
                         import traceback
                         traceback.print_exc()
-                        logger.error(f"Tool execution error: {tool_call.name} - {e}")
-                        result = f"Error executing tool {tool_call.name}: {str(e)}"
+                        logger.error(f"Unexpected error in tool call processing: {tool_call.name} - {outer_e}")
+                        result = f"Unexpected error processing tool {tool_call.name}: {str(outer_e)}"
 
-                    # Emit tool call result
-                    try:
-                        result_preview = result[:500] + "..." if len(result) > 500 else result
-                        await self._emit("agent_tool_result", {
-                            "tool": tool_call.name,
-                            "result": result_preview
-                        }, channel=origin_channel)
-                    except Exception as e:
-                        logger.warning(f"Failed to emit tool result event: {e}")
+                    # Always save tool result to database, even if errors occurred
+                    if result is not None:
+                        try:
+                            session.add_message("tool", result,
+                                              message_type="tool_result",
+                                              name=tool_call.name,
+                                              tool_call_id=tool_call.id,
+                                              metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
+                            self.sessions.save(session)
+                        except Exception as save_err:
+                            logger.error(f"Failed to save tool result to database: {save_err}")
 
-                    # Save tool result immediately
-                    session.add_message("tool", result,
-                                      message_type="tool_result",
-                                      name=tool_call.name,
-                                      tool_call_id=tool_call.id,
-                                      metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
-                    self.sessions.save(session)
-
-                    messages = self.context.add_tool_result(
-                        messages, tool_call.id, tool_call.name, result, provider_type
-                    )
+                        try:
+                            messages = self.context.add_tool_result(
+                                messages, tool_call.id, tool_call.name, result, provider_type
+                            )
+                        except Exception as add_err:
+                            logger.error(f"Failed to add tool result to messages: {add_err}")
             else:
                 final_content = response.content
                 # Save final assistant response immediately

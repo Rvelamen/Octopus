@@ -255,12 +255,24 @@ class PluginExtension(Extension):
                            f"Either define 'plugin.handler' in manifest.yaml "
                            f"or create a handler.py with a PluginHandler subclass.")
 
-        # Import and instantiate handler
-        module_path, class_name = handler_class.rsplit(".", 1)
-        module = __import__(module_path, fromlist=[class_name])
-        handler_cls = getattr(module, class_name)
+        from backend.extensions.plugin_isolated_loader import PluginModuleLoader
 
-        return handler_cls(self.directory)
+        loader = PluginModuleLoader(self.name, self.directory)
+        loader.setup()
+
+        try:
+            module = loader.load_handler()
+            for attr_name in dir(module):
+                attr = getattr(module, attr_name)
+                if isinstance(attr, type) and attr.__module__ == module.__name__:
+                    for base in attr.__mro__[1:]:
+                        if base.__name__ in ("PluginHandler", "LongTaskPlugin"):
+                            return attr(self.directory)
+
+            raise ValueError(f"No PluginHandler subclass found in {module.__name__}")
+        except Exception as e:
+            loader.cleanup()
+            raise e
 
 
 class LongTaskExtension(PluginExtension):

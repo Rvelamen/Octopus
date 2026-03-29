@@ -96,7 +96,7 @@ class WebToolsConfig(BaseModel):
 
 class ExecToolConfig(BaseModel):
     """Shell exec tool configuration."""
-    timeout: int = 60
+    timeout: int = 600
     restrict_to_workspace: bool = True
 
 

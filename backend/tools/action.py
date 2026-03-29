@@ -7,23 +7,23 @@ from typing import Any
 from loguru import logger
 
 from backend.tools.base import Tool
-from backend.extensions.registry import ExtensionRegistry
+from backend.extensions.registry import get_registry
 from backend.channels.registry import ChannelRegistry
 
 
 class ActionTool(Tool):
     """
-Unified action tool for plugin operations.
+    Unified action tool for plugin operations.
 
-This single tool replaces multiple plugin-specific tools,
-avoiding tool explosion while providing access to all capabilities.
+    This single tool replaces multiple plugin-specific tools,
+    avoiding tool explosion while providing access to all capabilities.
 
-Usage:
-    action(type="plugin", action="weather_query", name="weather", city="北京")
-"""
+    Usage:
+        action(type="plugin", action="weather_query", name="weather", city="北京")
+    """
 
     def __init__(self):
-        self._extension_registry = ExtensionRegistry()
+        self._extension_registry = get_registry()
         self._channel_registry = ChannelRegistry
 
     @property
@@ -32,26 +32,28 @@ Usage:
 
     @property
     def description(self) -> str:
-        return """Unified action tool for plugin and channel operations.
+        return """Unified action tool for plugin operations.
 
-## Types
+## Parameters
 
-- **plugin**: Extend agent capabilities (read SKILL.md in workspace/plugins/<name>/)
+- **type** (required): Must be "plugin"
+- **action** (required): The action to execute (e.g., "search", "query")
+- **name** (required): The plugin name (e.g., "search_aggregator", "weather")
 
 ## Usage
 
-1. Determine the type (plugin)
-2. Read the corresponding SKILL.md for the specific name to understand available actions
-3. Use type + action + name to execute
+1. First read the SKILL.md file in workspace/extensions/<name>/SKILL.md to understand available actions
+2. Call with type="plugin", action=<action_name>, name=<plugin_name>, plus any action-specific parameters
 
-## Examples
+## Example
 
 ```json
 {
   "type": "plugin",
-  "action": "weather_query",
-  "name": "weather",
-  "city": "北京"
+  "action": "search",
+  "name": "search_aggregator",
+  "query": "大模型安全",
+  "engines": "bing,baidu"
 }
 ```
 
@@ -65,18 +67,18 @@ Usage:
                 "type": {
                     "type": "string",
                     "enum": ["plugin"],
-                    "description": "操作类型：plugin=扩展能力"
+                    "description": "Must be 'plugin'"
                 },
                 "action": {
                     "type": "string",
-                    "description": "具体操作名。请先阅读对应 name 的 SKILL.md 获取可用 actions"
+                    "description": "The action to execute. Read SKILL.md for available actions"
                 },
                 "name": {
                     "type": "string",
-                    "description": "plugin 的具体名称。如 weather, feishu"
+                    "description": "The plugin name (e.g., 'search_aggregator', 'weather', 'pdf_plugin')"
                 }
             },
-            "required": ["type", "action"],
+            "required": ["type", "action", "name"],
             "additionalProperties": True
         }
 

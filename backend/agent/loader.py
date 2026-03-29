@@ -1,11 +1,9 @@
 """SubAgent loader for discovering and loading role-based subagents."""
 
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
 from loguru import logger
 
 
@@ -21,6 +19,8 @@ class SubAgentConfig:
     max_iterations: int = 30
     temperature: float = 0.7
     system_prompt: str = ""
+    provider_id: int | None = None
+    model_id: int | None = None
     
     @property
     def display_name(self) -> str:
@@ -29,19 +29,30 @@ class SubAgentConfig:
 
 
 class SubAgentLoader:
-    """Loader for discovering and loading SubAgent roles from SOUL.md files.
+    """Loader for discovering and loading SubAgent roles from database."""
 
-    Similar to SkillsLoader, but for SubAgent configurations.
-    SubAgents are defined in workspace/agents/<name>/SOUL.md files.
-    """
-
-    def __init__(self, workspace: Path):
+    def __init__(self, workspace: Path, db=None):
         self.workspace = workspace
-        self.agents_dir = workspace / "agents"
         self._cache: dict[str, SubAgentConfig] = {}
+        self._db = db
+        self._subagent_repo = None
+
+    def _get_db(self):
+        """Get database instance."""
+        if self._db is None:
+            from backend.data import Database
+            self._db = Database()
+        return self._db
+
+    def _get_subagent_repo(self):
+        """Get subagent repository instance."""
+        if self._subagent_repo is None:
+            from backend.data.subagent_store import SubagentRepository
+            self._subagent_repo = SubagentRepository(self._get_db())
+        return self._subagent_repo
 
     def load_all(self) -> list[SubAgentConfig]:
-        """Load all available subagent configurations.
+        """Load all available subagent configurations from database.
 
         Returns:
             List of SubAgentConfig instances.
@@ -49,113 +60,81 @@ class SubAgentLoader:
         configs = []
         seen_names = set()
 
-        if self.agents_dir.exists():
-            for agent_dir in sorted(self.agents_dir.iterdir()):
-                if agent_dir.is_dir() and not agent_dir.name.startswith("."):
-                    config = self._load_from_directory(agent_dir)
-                    if config and config.name not in seen_names:
-                        configs.append(config)
-                        seen_names.add(config.name)
-                        logger.debug(f"Loaded subagent config: {config.name}")
+        try:
+            db_configs = self._load_all_from_database()
+            for config in db_configs:
+                if config.name not in seen_names:
+                    configs.append(config)
+                    seen_names.add(config.name)
+                    logger.debug(f"Loaded subagent from database: {config.name}")
+        except Exception as e:
+            logger.warning(f"Failed to load subagents from database: {e}")
 
         logger.info(f"Loaded {len(configs)} subagent configurations")
         return configs
-    
-    def _load_from_directory(self, directory: Path) -> SubAgentConfig | None:
-        """Load subagent configuration from a directory.
+
+    def _load_all_from_database(self) -> list[SubAgentConfig]:
+        """Load all subagent configurations from database.
         
-        Args:
-            directory: Agent directory containing SOUL.md
-            
         Returns:
-            SubAgentConfig or None if invalid
+            List of SubAgentConfig instances.
         """
-        soul_file = directory / "SOUL.md"
-        if not soul_file.exists():
-            logger.debug(f"No SOUL.md found in {directory}")
-            return None
+        from backend.data.provider_store import ProviderRepository, ModelRepository
         
-        try:
-            content = soul_file.read_text(encoding="utf-8")
-            return self._parse_soul_md(directory.name, content)
-        except Exception as e:
-            logger.error(f"Failed to load SOUL.md from {directory}: {e}")
-            return None
-    
-    def _parse_soul_md(self, name: str, content: str) -> SubAgentConfig | None:
-        """Parse SOUL.md content into SubAgentConfig.
+        repo = self._get_subagent_repo()
+        provider_repo = ProviderRepository(self._get_db())
+        model_repo = ModelRepository(self._get_db())
         
-        Args:
-            name: Subagent name (directory name)
-            content: SOUL.md file content
+        records = repo.get_enabled_subagents()
+        configs = []
+        
+        for record in records:
+            provider_name = "openai"
+            model_name = None
             
-        Returns:
-            SubAgentConfig or None if parsing fails
-        """
-        # Extract YAML frontmatter
-        metadata: dict[str, Any] = {}
-        system_prompt = content
-        
-        if content.startswith("---"):
-            match = re.match(r"^---\n(.*?)\n---\n?(.*)$", content, re.DOTALL)
-            if match:
-                yaml_content = match.group(1)
-                system_prompt = match.group(2).strip()
-                try:
-                    metadata = yaml.safe_load(yaml_content) or {}
-                except yaml.YAMLError as e:
-                    logger.warning(f"Failed to parse YAML frontmatter: {e}")
-        
-        # Build config from metadata
-        return SubAgentConfig(
-            name=metadata.get("name", name),
-            description=metadata.get("description", f"SubAgent: {name}"),
-            provider=metadata.get("provider", "openai"),
-            model=metadata.get("model"),
-            tools=self._parse_list_field(metadata.get("tools", [])),
-            extensions=self._parse_list_field(metadata.get("extensions", [])),
-            max_iterations=metadata.get("max_iterations", 30),
-            temperature=metadata.get("temperature", 0.7),
-            system_prompt=system_prompt,
-        )
-    
-    def _parse_list_field(self, value: Any) -> list[str]:
-        """Parse a field that can be string or list into list of strings.
-        
-        Args:
-            value: Field value (string, list, or None)
+            if record.provider_id:
+                provider = provider_repo.get_provider_by_id(record.provider_id)
+                if provider:
+                    provider_name = provider.name
             
-        Returns:
-            List of strings
-        """
-        if not value:
-            return []
-        if isinstance(value, str):
-            # Handle comma-separated string
-            return [item.strip() for item in value.split(",") if item.strip()]
-        if isinstance(value, list):
-            return [str(item).strip() for item in value if item]
-        return []
+            if record.model_id:
+                model = model_repo.get_model_by_id(record.model_id)
+                if model:
+                    model_name = model.model_id
+            
+            config = SubAgentConfig(
+                name=record.name,
+                description=record.description,
+                provider=provider_name,
+                model=model_name,
+                tools=record.tools,
+                extensions=record.extensions,
+                max_iterations=record.max_iterations,
+                temperature=record.temperature,
+                system_prompt=record.system_prompt,
+                provider_id=record.provider_id,
+                model_id=record.model_id,
+            )
+            configs.append(config)
+        
+        return configs
     
     def get(self, name: str, reload: bool = False) -> SubAgentConfig | None:
         """Get a subagent configuration by name.
 
         Args:
-            name: Subagent name (matches the 'name' field in SOUL.md)
-            reload: If True, force reload from disk, bypassing cache
+            name: Subagent name
+            reload: If True, force reload from database, bypassing cache
 
         Returns:
             SubAgentConfig or None if not found
         """
-        # Check cache first (unless reload is requested)
         if not reload and name in self._cache:
             return self._cache[name]
 
-        # If reload is requested, clear cache for this agent
         if reload and name in self._cache:
             del self._cache[name]
 
-        # Load all and find by name field
         for config in self.load_all():
             if config.name == name:
                 self._cache[name] = config

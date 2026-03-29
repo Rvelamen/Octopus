@@ -22,6 +22,7 @@ from backend.tools.message import MessageTool
 from backend.extensions.loader import SkillsLoader
 from backend.agent.loader import SubAgentLoader, SubAgentConfig
 from backend.agent.aggregator import SubagentAggregator
+from backend.agent.compressor import compress_messages
 from backend.data import Database, TokenUsageRepository
 
 
@@ -49,8 +50,10 @@ class SubagentManager:
         self.bus = bus
         self.exec_config = exec_config or ExecToolConfig()
         self._running_tasks: dict[str, asyncio.Task[None]] = {}
+        self._stop_flags: dict[str, bool] = {}
         self._subagent_compression_enabled: bool = False
         self._subagent_compression_turns: int = 10
+        self._subagent_compression_token_threshold: int = 200000
         self._skills = SkillsLoader(workspace)
         self._agent_loader = SubAgentLoader(workspace)
         self._aggregator = aggregator
@@ -64,6 +67,45 @@ class SubagentManager:
         """Get provider, model, and provider_type for a subagent configuration."""
         config_service = AgentConfigService()
         
+        if config.provider_id and config.model_id:
+            from backend.data.provider_store import ProviderRepository, ModelRepository
+            from backend.data import Database
+            from backend.core.config.schema import AgentDefaults, ProviderConfig
+            from backend.core.providers.factory import create_provider
+            
+            db = Database()
+            provider_repo = ProviderRepository(db)
+            model_repo = ModelRepository(db)
+            
+            provider_record = provider_repo.get_provider_by_id(config.provider_id)
+            model_record = model_repo.get_model_by_id(config.model_id)
+            
+            if provider_record and model_record:
+                defaults = config_service._get_agent_defaults_repo().get_or_create_defaults()
+                
+                provider_config = ProviderConfig(
+                    type=provider_record.provider_type,
+                    api_key=provider_record.api_key,
+                    api_base=provider_record.api_host
+                )
+                
+                agent_defaults = AgentDefaults(
+                    provider=provider_record.name,
+                    model=model_record.model_id,
+                    llm_max_retries=getattr(defaults, 'llm_max_retries', 3) or 3,
+                    llm_retry_base_delay=getattr(defaults, 'llm_retry_base_delay', 1.0) or 1.0,
+                    llm_retry_max_delay=getattr(defaults, 'llm_retry_max_delay', 30.0) or 30.0,
+                )
+                
+                providers_dict = {provider_record.name: provider_config}
+                provider = create_provider(providers_dict, agent_defaults)
+                
+                self._subagent_compression_enabled = config_service.get_context_compression_enabled()
+                self._subagent_compression_turns = config_service.get_context_compression_turns()
+                self._subagent_compression_token_threshold = config_service.get_context_compression_token_threshold()
+                
+                return provider, model_record.model_id, provider_record.provider_type
+        
         provider, model = config_service.get_provider_for_subagent(
             provider_name=config.provider,
             model_name=config.model
@@ -74,6 +116,7 @@ class SubagentManager:
         
         self._subagent_compression_enabled = config_service.get_context_compression_enabled()
         self._subagent_compression_turns = config_service.get_context_compression_turns()
+        self._subagent_compression_token_threshold = config_service.get_context_compression_token_threshold()
         
         return provider, model, provider_type
     
@@ -85,6 +128,7 @@ class SubagentManager:
         
         self._subagent_compression_enabled = config_service.get_context_compression_enabled()
         self._subagent_compression_turns = config_service.get_context_compression_turns()
+        self._subagent_compression_token_threshold = config_service.get_context_compression_token_threshold()
         
         return provider, model, provider_type
     
@@ -257,6 +301,9 @@ When you have completed the task, provide a clear summary of your findings or ac
         task_id = str(uuid.uuid4())[:8]
         display_label = label or task[:30] + ("..." if len(task) > 30 else "")
         
+        # Initialize stop flag for this task
+        self._stop_flags[task_id] = False
+        
         origin = {
             "channel": origin_channel,
             "chat_id": origin_chat_id,
@@ -285,12 +332,16 @@ When you have completed the task, provide a clear summary of your findings or ac
         bg_task = asyncio.ensure_future(bg_future)
         
         # Cleanup when done
-        bg_task.add_done_callback(lambda _: self._running_tasks.pop(task_id, None))
+        def cleanup_callback(_):
+            self._running_tasks.pop(task_id, None)
+            self._stop_flags.pop(task_id, None)
+        
+        bg_task.add_done_callback(cleanup_callback)
         
         role_info = f" [{agent_role}]" if agent_role else ""
         group_info = f" [group:{group_id}]" if group_id else ""
         logger.info(f"[Subagent:{task_id}] Spawned{role_info}{group_info}: {display_label}")
-        return f"Subagent [{display_label}]{role_info}{group_info} started (id: {task_id}). I'll notify you when it completes."
+        return f"[Async] Subagent [{display_label}]{role_info}{group_info} started (id: {task_id}). This is a long-running task - do NOT wait or sleep for it. You may continue with other parallelizable tasks. I'll initiate a new conversation when it completes."
     
     async def _run_subagent(
         self,
@@ -340,24 +391,57 @@ When you have completed the task, provide a clear summary of your findings or ac
             # Subagent context compression state
             subagent_compressed_context = ""
             subagent_message_count = 0
+            last_prompt_tokens = 0
             
             while iteration < max_iterations:
+                # Check if task should stop
+                if self._stop_flags.get(task_id, False):
+                    logger.info(f"[Subagent:{task_id}] Task stopped by user request")
+                    final_result = "任务已被用户暂停。"
+                    break
+                
                 iteration += 1
                 logger.info(f"[Subagent:{task_id}] Iteration {iteration}/{max_iterations} - calling LLM...")
                 
-                # Check if context compression is needed
-                if self._subagent_compression_enabled and subagent_message_count >= self._subagent_compression_turns:
-                    logger.info(f"[Subagent:{task_id}] Compressing context at iteration {iteration}")
-                    summary = await self._compress_subagent_context(messages)
-                    if summary:
-                        subagent_compressed_context = summary
-                        messages = [
-                            {"role": "system", "content": f"# Previous Context Summary\n\n{summary}"},
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": task},
-                        ]
-                        subagent_message_count = 0
-                        logger.info(f"[Subagent:{task_id}] Context compressed")
+                # Check if context compression is needed (hybrid trigger)
+                if self._subagent_compression_enabled:
+                    should_compress = False
+                    trigger_reason = ""
+                    
+                    # Strategy 1: Token threshold (primary)
+                    if last_prompt_tokens >= self._subagent_compression_token_threshold:
+                        should_compress = True
+                        trigger_reason = f"token threshold ({last_prompt_tokens} >= {self._subagent_compression_token_threshold})"
+                    
+                    # Strategy 2: Turn threshold (fallback)
+                    if not should_compress and subagent_message_count >= self._subagent_compression_turns:
+                        should_compress = True
+                        trigger_reason = f"turn threshold (turn {subagent_message_count})"
+                    
+                    if should_compress:
+                        logger.info(f"[Subagent:{task_id}] Compressing context triggered by {trigger_reason}")
+                        keep_count = 6
+                        non_system_messages = [m for m in messages if m.get("role") not in ("system",)]
+                        to_compress = non_system_messages[:-keep_count] if len(non_system_messages) > keep_count else non_system_messages
+                        
+                        if len(to_compress) >= 4:
+                            summary = await compress_messages(
+                                messages=to_compress,
+                                provider=provider,
+                                model=model,
+                                provider_type=provider_type,
+                                record_token_usage=self._record_token_usage,
+                                request_type="subagent_compression"
+                            )
+                            if summary:
+                                subagent_compressed_context = summary
+                                system_messages = [m for m in messages if m.get("role") == "system"]
+                                remaining_non_system = non_system_messages[-keep_count:] if len(non_system_messages) > keep_count else non_system_messages
+                                messages = system_messages + [
+                                    {"role": "system", "content": f"# Previous Context Summary\n\n{summary}"},
+                                ] + remaining_non_system
+                                subagent_message_count = 0
+                                logger.info(f"[Subagent:{task_id}] Context compressed")
                 
                 try:
                     response = await provider.chat(
@@ -370,6 +454,7 @@ When you have completed the task, provide a clear summary of your findings or ac
                     
                     # Record token usage
                     if response.usage:
+                        last_prompt_tokens = response.usage.get("prompt_tokens", 0)
                         self._record_token_usage(
                             session_instance_id=session_instance_id,
                             provider_name=provider_type,
@@ -500,68 +585,6 @@ Summarize this naturally for the user. Keep it brief (1-2 sentences). Do not men
         except Exception as e:
             logger.error(f"[Subagent:{task_id}] Failed to announce result: {e}")
 
-    async def _compress_subagent_context(
-        self,
-        messages: list[dict[str, Any]],
-    ) -> str:
-        """
-        Compress subagent conversation history using LLM.
-        
-        Args:
-            messages: Current message list.
-        
-        Returns:
-            Compressed context summary.
-        """
-        # Get non-system messages to compress
-        to_compress = [m for m in messages if m.get("role") not in ("system",)]
-        
-        if len(to_compress) < 4:
-            return ""
-        
-        conversation_text = "\n".join([
-            f"{m.get('role', 'user')}: {m.get('content', '')[:500]}"
-            for m in to_compress
-        ])
-        
-        compression_prompt = f"""请总结以下对话的要点，保留关键信息、用户请求和重要的上下文：
-
-{conversation_text}
-
-请用简洁的中文总结（不超过 300 字），包括：
-1. 用户的主要请求
-2. 已经完成的工作
-3. 重要的上下文信息"""
-
-        provider, model, provider_type = self._get_default_provider_and_model()
-        compression_messages = [
-            {"role": "system", "content": "你是一个对话摘要助手。请简洁地总结对话要点。"},
-            {"role": "user", "content": compression_prompt}
-        ]
-        
-        try:
-            response = await provider.chat(
-                messages=compression_messages,
-                tools=[],
-                model=model
-            )
-            
-            # Record token usage for compression
-            if response.usage:
-                self._record_token_usage(
-                    session_instance_id=None,
-                    provider_name=provider_type,
-                    model_id=model,
-                    usage=response.usage,
-                    request_type="subagent_compression"
-                )
-            
-            summary = response.content or ""
-            return summary
-        except Exception as e:
-            logger.error(f"[Subagent] Context compression failed: {e}")
-            return ""
-    
     def _record_token_usage(
         self,
         session_instance_id: int | None,
@@ -608,3 +631,25 @@ Summarize this naturally for the user. Keep it brief (1-2 sentences). Do not men
     def get_role_config(self, role_name: str) -> SubAgentConfig | None:
         """Get configuration for a specific role."""
         return self._agent_loader.get(role_name)
+    
+    def stop_all(self) -> int:
+        """Stop all running subagents.
+        
+        Returns:
+            Number of subagents that were stopped.
+        """
+        count = len(self._running_tasks)
+        
+        # Set stop flags for all running tasks
+        for task_id in list(self._running_tasks.keys()):
+            self._stop_flags[task_id] = True
+            logger.info(f"[Subagent:{task_id}] Stop flag set")
+        
+        # Cancel all running tasks
+        for task_id, task in list(self._running_tasks.items()):
+            if not task.done():
+                task.cancel()
+                logger.info(f"[Subagent:{task_id}] Task cancelled")
+        
+        logger.info(f"[SubagentManager] Stopped {count} subagents")
+        return count
