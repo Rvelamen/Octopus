@@ -130,16 +130,29 @@ class DesktopChannel(BaseChannel):
             tts_service = TTSService(session_repo, provider_repo, settings_repo)
             result = await tts_service.synthesize(text, tts_config)
             
+            audio_base64 = base64.b64encode(result.audio_data).decode()
+            
             await self._broadcast({
                 "type": "tts_auto_reply",
                 "data": {
                     "instanceId": instance_id,
-                    "audio": base64.b64encode(result.audio_data).decode(),
+                    "audio": audio_base64,
                     "format": result.format,
                     "text": text,
                     "duration_ms": result.duration_ms
                 }
             })
+            
+            session_repo.update_latest_message_tts(
+                instance_id, 
+                "assistant",
+                {
+                    "audio": audio_base64,
+                    "format": result.format,
+                    "text": text,
+                    "duration_ms": result.duration_ms
+                }
+            )
             
             logger.debug(f"TTS audio sent for instance {instance_id}")
         except Exception as e:

@@ -29,6 +29,19 @@
   <h3>🌟 Like an octopus, handle multiple things at once 🌟</h3>
 </div>
 
+## 🎬 Demo Videos
+
+<div align="center">
+
+[![TTS Demo](https://img.shields.io/badge/🔊_TTS_Demo-FF6B35?style=for-the-badge)](./assets/mimo_tts.mp4)
+[![WeChat Demo](https://img.shields.io/badge/💬_WeChat_Demo-07C160?style=for-the-badge)](./assets/wechat.mp4)
+
+*Text-to-Speech & WeChat Channel Demos*
+
+</div>
+
+---
+
 ## ✨ Core Features
 
 <table align="center">
@@ -99,6 +112,41 @@
 🔄 Switch instantly
 👥 Export for team
 💬 Never lose history
+
+</td>
+</tr>
+<tr>
+<td align="center" width="260px">
+
+**🔊 Text-to-Speech**
+*Voice your AI*
+
+🗣️ Multiple TTS engines
+🎵 Natural voice output
+⚙️ Customizable settings
+📱 Real-time playback
+
+</td>
+<td align="center" width="260px">
+
+**💬 WeChat Channel**
+*Chat on WeChat*
+
+📱 QR code login
+📨 Send/receive messages
+🔄 Status management
+🤖 Auto-reply support
+
+</td>
+<td align="center" width="260px">
+
+**📄 Multi-format Files**
+*Read any document*
+
+📑 PDF support
+📝 DOCX parsing
+📊 Excel reading
+🔍 Smart extraction
 
 </td>
 </tr>
@@ -421,6 +469,22 @@ Issues and Pull Requests welcome:
 - ✨ New features
 - 📝 Documentation improvements
 - 🎨 UI/UX optimizations
+
+---
+
+## 📋 Changelog
+
+### 2026-03
+
+| Date | Version | Changes |
+|:--|:--|:--|
+| 2026-03-29 | v1.1.0 | 🔊 New: Text-to-Speech (TTS) feature support |
+| 2026-03-29 | v1.0.9 | 🤖 New: SubAgent management and UI improvements |
+| 2026-03-28 | v1.0.8 | 🗜️ New: Context compression and LLM retry optimization |
+| 2026-03-25 | v1.0.7 | 📄 New: PDF, DOCX, and Excel file support |
+| 2026-03-24 | v1.0.6 | 💬 New: WeChat channel with QR login and messaging |
+| 2026-03-22 | v1.0.5 | 🖼️ New: Frameless window support |
+| 2026-03-20 | v1.0.0 | 🎉 Release: Project renamed to Octopus |
 
 ---
 

@@ -391,6 +391,46 @@ class SessionRepository:
             logger.info(f"Cleared {deleted_count} messages from instance {session_instance_id}")
             return deleted_count
     
+    def update_latest_message_tts(
+        self, 
+        session_instance_id: int, 
+        role: str,
+        tts_data: dict[str, Any]
+    ) -> bool:
+        """Update the latest message's metadata with TTS audio data.
+        
+        Args:
+            session_instance_id: The session instance ID
+            role: The role of the message (e.g., "assistant")
+            tts_data: TTS audio data dict with keys: audio, format, text, duration_ms
+            
+        Returns:
+            True if updated successfully
+        """
+        with self.db._get_connection() as conn:
+            row = conn.execute(
+                """SELECT id, metadata FROM messages 
+                   WHERE session_instance_id = ? AND role = ?
+                   ORDER BY timestamp DESC LIMIT 1""",
+                (session_instance_id, role)
+            ).fetchone()
+            
+            if not row:
+                logger.warning(f"No {role} message found for instance {session_instance_id}")
+                return False
+            
+            message_id = row["id"]
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            metadata["tts"] = tts_data
+            
+            cursor = conn.execute(
+                "UPDATE messages SET metadata = ? WHERE id = ?",
+                (json.dumps(metadata, ensure_ascii=False), message_id)
+            )
+            
+            logger.debug(f"Updated message {message_id} with TTS data")
+            return cursor.rowcount > 0
+    
     # ========== Context Compression Methods ==========
     
     def update_compressed_context(

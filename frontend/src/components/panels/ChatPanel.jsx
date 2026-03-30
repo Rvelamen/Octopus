@@ -22,13 +22,20 @@ function TTSPlayer({ audioData, format, text, durationMs, onClose }) {
     }
   }, [audioData, format]);
 
-  const handlePlayPause = () => {
-    if (audioRef.current) {
+  const handlePlayPause = async () => {
+    if (!audioRef.current) return;
+    
+    try {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play();
+        await audioRef.current.play();
       }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.warn('Audio play error:', err);
+      }
+      setIsPlaying(false);
     }
   };
 
@@ -263,22 +270,35 @@ function ChatPanel({
       console.log('fetchInstanceMessages response:', response.data);
       if (response.data?.messages) {
         console.log('Fetched messages:', response.data.messages);
-        // Merge with existing messages to preserve optimistic update images
         const fetchedMessages = response.data.messages;
+        
+        const ttsMapFromMessages = {};
+        fetchedMessages.forEach(msg => {
+          if (msg.metadata?.tts) {
+            const tts = msg.metadata.tts;
+            ttsMapFromMessages[msg.id] = {
+              audioData: tts.audio || tts.audioData,
+              format: tts.format,
+              text: tts.text,
+              durationMs: tts.duration_ms || tts.durationMs
+            };
+          }
+        });
+        if (Object.keys(ttsMapFromMessages).length > 0) {
+          setMessageTtsMap(prev => ({ ...prev, ...ttsMapFromMessages }));
+        }
+        
         setMessages(prev => {
-          // Create a map of existing messages by role+content for quick lookup
           const existingMap = new Map();
           prev.forEach(msg => {
             const key = `${msg.role}:${msg.content}`;
             existingMap.set(key, msg);
           });
 
-          // Merge fetched messages with existing ones
           return fetchedMessages.map(msg => {
             const key = `${msg.role}:${msg.content}`;
             const existing = existingMap.get(key);
 
-            // Get images from both - handle nested structure
             const existingImages = existing?.metadata?.images || existing?.metadata?.metadata?.images;
             const fetchedImages = msg.metadata?.images || msg.metadata?.metadata?.images;
             const hasFetchedImages = fetchedImages && fetchedImages.length > 0;
@@ -286,10 +306,8 @@ function ChatPanel({
             console.log('Existing images:', existingImages);
             console.log('Fetched images:', fetchedImages);
 
-            // If existing message has images but fetched doesn't have valid images, merge them
             if (existingImages && existingImages.length > 0 && !hasFetchedImages) {
               console.log('Merging images from optimistic update:', existingImages);
-              // Preserve existing metadata structure but add images
               return {
                 ...msg,
                 metadata: {
