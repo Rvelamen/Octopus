@@ -23,7 +23,7 @@
   </p>
 </div>
 
----
+***
 
 <div align="center">
   <h3>🌟 Like an octopus, handle multiple things at once 🌟</h3>
@@ -33,14 +33,18 @@
 
 <div align="center">
 
-[![TTS Demo](https://img.shields.io/badge/🔊_TTS_Demo-FF6B35?style=for-the-badge)](./assets/mimo_tts.mp4)
-[![WeChat Demo](https://img.shields.io/badge/💬_WeChat_Demo-07C160?style=for-the-badge)](./assets/wechat.mp4)
+<a href="https://www.bilibili.com/video/BV1hGXvB2EeT" target="_blank">
+  <img src="https://img.shields.io/badge/🎬_TTS_Demo-FF6B35?style=for-the-badge" alt="TTS Demo" />
+</a>
+<a href="https://www.bilibili.com/video/BV1C4XvBKERc" target="_blank">
+  <img src="https://img.shields.io/badge/🎬_WeChat_Demo-4ECDC4?style=for-the-badge" alt="WeChat Demo" />
+</a>
 
 *Text-to-Speech & WeChat Channel Demos*
 
 </div>
 
----
+***
 
 ## ✨ Core Features
 
@@ -152,7 +156,7 @@
 </tr>
 </table>
 
----
+***
 
 ## 🔌 Extension Ecosystem
 
@@ -180,20 +184,20 @@ Drop it into `workspace/extensions/my-skill/SKILL.md` and restart to activate.
 - Auto-discover tools, no manual configuration needed
 - Visual permission management
 
----
+***
 
 ## ⚙️ Visual Configuration
 
 All configuration has a graphical interface, no YAML required:
 
-| Config Item | Description |
-|:--|:--|
+| Config Item         | Description                                                     |
+| :------------------ | :-------------------------------------------------------------- |
 | **Model Providers** | Add OpenAI/Anthropic/DeepSeek, support multi-provider switching |
-| **Tool Toggles** | Enable/disable tools with one click, set timeout |
-| **Workspace** | Isolated workspaces with separate config and memory |
-| **Budget Limit** | Set monthly token limit with over-budget alerts |
+| **Tool Toggles**    | Enable/disable tools with one click, set timeout                |
+| **Workspace**       | Isolated workspaces with separate config and memory             |
+| **Budget Limit**    | Set monthly token limit with over-budget alerts                 |
 
----
+***
 
 ## 💰 Token Usage Visualization
 
@@ -204,7 +208,7 @@ Monitor the cost of every conversation in real-time:
 - ⚠️ **Budget Alerts**: Set limits with automatic warnings
 - 🔄 **Model Comparison**: Cost efficiency across models at a glance
 
----
+***
 
 ## ⏰ Smart Scheduled Tasks
 
@@ -215,7 +219,7 @@ Not just notifications, but actual work:
 - **Context Inheritance**: Tasks can access session memory from creation time
 - **Persistent Storage**: Tasks saved in SQLite, survive restarts
 
----
+***
 
 ## 🗂️ Workspace Management
 
@@ -235,7 +239,7 @@ workspace/
 - Export/import workspaces supported
 - Team sharing: export workspace, colleagues import to use
 
----
+***
 
 ## 💬 Chat History
 
@@ -244,7 +248,7 @@ workspace/
 - Return to any historical session anytime
 - Support parallel multi-sessions
 
----
+***
 
 ## 🤖 Visual SubAgent
 
@@ -255,25 +259,26 @@ Create and manage specialized agents through the UI:
 - **Isolated Workspace**: Each SubAgent has its own config and memory
 - **Master-Slave Dispatch**: Main agent automatically calls appropriate SubAgent
 
----
+***
 
 ## 🛠️ Built-in Tools
 
-| Category | Tools | Description |
-|:--|:--|:--|
-| 📁 Filesystem | `read`, `write`, `edit`, `list` | File read/write operations |
-| 🖥️ System | `shell`, `spawn` | Command execution |
-| 🌐 Network | `web_fetch` | Web content fetching |
-| 🖼️ Image | `image_understand`, `image_generate` | AI image processing |
-| ⏰ Schedule | `cron_add`, `cron_list`, `cron_remove` | Task scheduling |
-| 💬 Message | `send_message` | Multi-channel messaging |
-| ⚡ Action | `action` | Execute extension actions |
+| Category      | Tools                                  | Description                |
+| :------------ | :------------------------------------- | :------------------------- |
+| 📁 Filesystem | `read`, `write`, `edit`, `list`        | File read/write operations |
+| 🖥️ System    | `shell`, `spawn`                       | Command execution          |
+| 🌐 Network    | `web_fetch`                            | Web content fetching       |
+| 🖼️ Image     | `image_understand`, `image_generate`   | AI image processing        |
+| ⏰ Schedule    | `cron_add`, `cron_list`, `cron_remove` | Task scheduling            |
+| 💬 Message    | `send_message`                         | Multi-channel messaging    |
+| ⚡ Action      | `action`                               | Execute extension actions  |
 
----
+***
 
 ## 🚀 Quick Start
 
 ### Requirements
+
 - **Node.js** >= 18
 - **Python** >= 3.10
 
@@ -292,41 +297,42 @@ npm run dev
 ```
 
 > 💡 `npm run dev` starts both:
-> - Frontend dev server (http://localhost:3000)
+>
+> - Frontend dev server (<http://localhost:3000>)
 > - Electron desktop window
 
----
+***
 
 ## 📦 Build & Release
 
 ### Development Commands
 
-| Command | Description |
-|:--|:--|
-| `npm run dev` | Dev mode (frontend + Electron) |
-| `npm run dev:frontend` | Frontend dev server only |
-| `npm run dev:electron` | Electron only |
+| Command                | Description                    |
+| :--------------------- | :----------------------------- |
+| `npm run dev`          | Dev mode (frontend + Electron) |
+| `npm run dev:frontend` | Frontend dev server only       |
+| `npm run dev:electron` | Electron only                  |
 
 ### Build Commands
 
-| Command | Description |
-|:--|:--|
-| `npm run build:frontend` | Build React frontend |
-| `npm run build:python` | Package Python backend |
-| `npm run build` | Full build (frontend + Electron) |
+| Command                  | Description                      |
+| :----------------------- | :------------------------------- |
+| `npm run build:frontend` | Build React frontend             |
+| `npm run build:python`   | Package Python backend           |
+| `npm run build`          | Full build (frontend + Electron) |
 
 ### Package & Release
 
-| Command | Description | Output |
-|:--|:--|:--|
-| `npm run dist` | Package current platform | Auto-select by platform |
-| `npm run dist:mac` | macOS package | DMG + ZIP (x64/arm64) |
-| `npm run dist:win` | Windows package | NSIS installer + portable |
+| Command            | Description              | Output                    |
+| :----------------- | :----------------------- | :------------------------ |
+| `npm run dist`     | Package current platform | Auto-select by platform   |
+| `npm run dist:mac` | macOS package            | DMG + ZIP (x64/arm64)     |
+| `npm run dist:win` | Windows package          | NSIS installer + portable |
 
 > 📂 Output: `dist-electron/`
-> 📖 Detailed guide: [README_BUILD.md](./README_BUILD.md)
+> 📖 Detailed guide: [README\_BUILD.md](./README_BUILD.md)
 
----
+***
 
 ## 🏗️ Project Architecture
 
@@ -376,18 +382,18 @@ octopus/
 
 ### Tech Stack
 
-| Layer | Technology | Description |
-|:--|:--|:--|
-| **Frontend** | React 18 + Vite | Modern UI framework |
-| | Ant Design | Component library |
-| | Monaco Editor | Code editor |
-| | ECharts | Data visualization |
-| **Backend** | Python 3.10+ + FastAPI | High-performance async web service |
-| | SQLite | Local lightweight database |
-| **Desktop** | Electron 28 | Cross-platform desktop framework |
-| | electron-builder | App packaging tool |
+| Layer        | Technology             | Description                        |
+| :----------- | :--------------------- | :--------------------------------- |
+| **Frontend** | React 18 + Vite        | Modern UI framework                |
+| <br />       | Ant Design             | Component library                  |
+| <br />       | Monaco Editor          | Code editor                        |
+| <br />       | ECharts                | Data visualization                 |
+| **Backend**  | Python 3.10+ + FastAPI | High-performance async web service |
+| <br />       | SQLite                 | Local lightweight database         |
+| **Desktop**  | Electron 28            | Cross-platform desktop framework   |
+| <br />       | electron-builder       | App packaging tool                 |
 
----
+***
 
 ## 🔧 Model Configuration
 
@@ -395,14 +401,14 @@ Add API keys in the app settings panel:
 
 ### Supported Providers
 
-| Provider | Representative Models |
-|:--|:--|
-| OpenAI | GPT-4o, GPT-4 Turbo, GPT-3.5 Turbo |
+| Provider  | Representative Models                          |
+| :-------- | :--------------------------------------------- |
+| OpenAI    | GPT-4o, GPT-4 Turbo, GPT-3.5 Turbo             |
 | Anthropic | Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku |
-| Google | Gemini Pro, Gemini Ultra |
-| DeepSeek | DeepSeek Chat, DeepSeek Coder |
-| Alibaba | Tongyi Qianwen series |
-| Baidu | Wenxin Yiyan series |
+| Google    | Gemini Pro, Gemini Ultra                       |
+| DeepSeek  | DeepSeek Chat, DeepSeek Coder                  |
+| Alibaba   | Tongyi Qianwen series                          |
+| Baidu     | Wenxin Yiyan series                            |
 
 ### Configuration Steps
 
@@ -412,7 +418,7 @@ Add API keys in the app settings panel:
 4. Select model to use
 5. Save and start
 
----
+***
 
 ## 🔌 MCP Protocol
 
@@ -429,7 +435,7 @@ Octopus fully supports **Model Context Protocol (MCP)**:
 - **WebSocket**: Remote real-time connection
 - **SSE**: Server-Sent Events
 
----
+***
 
 ## 🤖 Agent Workspace
 
@@ -437,19 +443,40 @@ Agent system supports continuous memory and personalization:
 
 ### Configuration Files
 
-| File | Purpose |
-|:--|:--|
-| `SOUL.md` | Agent soul - core principles and personality |
-| `IDENTITY.md` | Agent identity - self-introduction |
-| `AGENTS.md` | Workspace guide - usage instructions |
-| `MEMORY.md` | Long-term memory - important info persistence |
-| `memory/YYYY-MM-DD.md` | Daily notes - daily event records |
+| File                   | Purpose                                       |
+| :--------------------- | :-------------------------------------------- |
+| `SOUL.md`              | Agent soul - core principles and personality  |
+| `IDENTITY.md`          | Agent identity - self-introduction            |
+| `AGENTS.md`            | Workspace guide - usage instructions          |
+| `MEMORY.md`            | Long-term memory - important info persistence |
+| `memory/YYYY-MM-DD.md` | Daily notes - daily event records             |
 
 ### Creating Custom Agents
 
 Create new folder in `agents/` directory, add config files to create custom agent.
 
----
+***
+
+## 📂 Project Structure
+
+```
+octopus/
+├── backend/              # Python backend (FastAPI)
+├── frontend/             # React frontend (Vite)
+├── electron/             # Electron main process
+├── workspace/            # ⚠️ Runtime-generated directory (git-ignored)
+│   ├── agents/           #   - User-created agent configurations
+│   ├── extensions/       #   - Installed extensions
+│   ├── files/            #   - Workspace files
+│   ├── images/           #   - Generated images
+│   └── ...               #   - Other runtime data
+├── build/                # Build resources (icons, etc.)
+└── scripts/              # Helper scripts
+```
+
+> **Note**: The `workspace/` directory is created at runtime and contains user data, agent configs, and generated files. It's excluded from version control by `.gitignore`.
+
+***
 
 ## 📖 Documentation
 
@@ -459,7 +486,7 @@ Create new folder in `agents/` directory, add config files to create custom agen
 - 🧠 [Soul Core](./agents/system/SOUL.md) - Agent core principles
 - 🔌 [MCP Docs](./backend/mcp/README.md) - MCP protocol integration
 
----
+***
 
 ## 🤝 Contributing
 
@@ -470,23 +497,23 @@ Issues and Pull Requests welcome:
 - 📝 Documentation improvements
 - 🎨 UI/UX optimizations
 
----
+***
 
 ## 📋 Changelog
 
 ### 2026-03
 
-| Date | Version | Changes |
-|:--|:--|:--|
-| 2026-03-29 | v1.1.0 | 🔊 New: Text-to-Speech (TTS) feature support |
-| 2026-03-29 | v1.0.9 | 🤖 New: SubAgent management and UI improvements |
-| 2026-03-28 | v1.0.8 | 🗜️ New: Context compression and LLM retry optimization |
-| 2026-03-25 | v1.0.7 | 📄 New: PDF, DOCX, and Excel file support |
-| 2026-03-24 | v1.0.6 | 💬 New: WeChat channel with QR login and messaging |
-| 2026-03-22 | v1.0.5 | 🖼️ New: Frameless window support |
-| 2026-03-20 | v1.0.0 | 🎉 Release: Project renamed to Octopus |
+| Date       | Version | Changes                                                 |
+| :--------- | :------ | :------------------------------------------------------ |
+| 2026-03-29 | v1.0.0  | 🔊 New: Text-to-Speech (TTS) feature support            |
+| 2026-03-29 | v1.0.0  | 🤖 New: SubAgent management and UI improvements         |
+| 2026-03-28 | v1.0.0  | 🗜️ New: Context compression and LLM retry optimization |
+| 2026-03-25 | v1.0.0  | 📄 New: PDF, DOCX, and Excel file support               |
+| 2026-03-24 | v1.0.0  | 💬 New: WeChat channel with QR login and messaging      |
+| 2026-03-22 | v1.0.0  | 🖼️ New: Frameless window support                       |
+| 2026-03-20 | v1.0.0  | 🎉 Release: Project renamed to Octopus                  |
 
----
+***
 
 <div align="center">
 

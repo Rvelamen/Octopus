@@ -65,26 +65,22 @@ class ChatHandler(MessageHandler):
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Process a chat message and forward to agent."""
         content = message.data.get("content", "")
-        images = message.data.get("images", [])  # List of uploaded image paths
+        images = message.data.get("images", [])
+        files = message.data.get("files", [])
 
-        # Get instance_id if provided (for continuing existing conversation)
         instance_id = message.data.get("instance_id")
 
-        # Generate request_id if not provided
         request_id = message.request_id or str(uuid.uuid4())
 
-        # Create response queue for this request
         response_queue = asyncio.Queue()
         self.pending_responses[request_id] = response_queue
 
-        # Send acknowledgment
         await self.send_response(websocket, WSMessage(
             type=MessageType.ACK,
             request_id=request_id,
             data={"status": "received"}
         ))
 
-        # Build metadata
         metadata = {
             "request_id": request_id,
             "websocket_client": id(websocket)
@@ -93,9 +89,7 @@ class ChatHandler(MessageHandler):
             metadata["instance_id"] = instance_id
             logger.info(f"Chat message with instance_id: {instance_id}")
 
-        # Build message content
-        if images:
-            # Multi-modal message: text + images
+        if images or files:
             content_items = []
             if content.strip():
                 content_items.append(MessageContentItem(type="text", text=content))
@@ -103,12 +97,23 @@ class ChatHandler(MessageHandler):
                 img_path = img.get("path", "")
                 if img_path:
                     content_items.append(MessageContentItem(type="image", image_path=img_path))
+            for file in files:
+                file_path = file.get("path", "")
+                file_name = file.get("name", "unknown")
+                mime_type = file.get("mime_type", "application/octet-stream")
+                file_size = file.get("size", 0)
+                if file_path:
+                    content_items.append(MessageContentItem(
+                        type="file",
+                        file_path=file_path,
+                        file_name=file_name,
+                        mime_type=mime_type,
+                        file_size=file_size
+                    ))
             processed_content = content_items
         else:
-            # Text-only message
             processed_content = content
 
-        # Forward to message bus
         msg = InboundMessage(
             channel="desktop",
             sender_id="user",
@@ -3580,6 +3585,7 @@ class HandlerRegistry:
         # Register Image handlers
         self.handlers.update({
             MessageType.IMAGE_UPLOAD: ImageUploadHandler(bus),
+            MessageType.FILE_UPLOAD: FileUploadHandler(bus),
             MessageType.IMAGE_ANALYZE: ImageAnalyzeHandler(bus),
             MessageType.IMAGE_GENERATE: ImageGenerateHandler(bus),
             MessageType.IMAGE_GET_UNDERSTANDING_PROVIDERS: ImageGetUnderstandingProvidersHandler(bus),
@@ -3642,29 +3648,23 @@ class ImageUploadHandler(MessageHandler):
                 await self._send_error(websocket, message.request_id, "Image data is required")
                 return
 
-            # Get workspace path
             from backend.utils.helpers import get_workspace_path
             workspace = get_workspace_path()
 
-            # Create images directory
             images_dir = workspace / "images"
             images_dir.mkdir(parents=True, exist_ok=True)
 
-            # Generate unique filename
             import uuid
             ext = file_name.split(".")[-1] if "." in file_name else "png"
             unique_name = f"{uuid.uuid4().hex[:8]}_{file_name}"
             file_path = images_dir / unique_name
 
-            # Save image
             import base64
             image_bytes = base64.b64decode(image_data.split(",")[-1] if "," in image_data else image_data)
             file_path.write_bytes(image_bytes)
 
-            # Get relative path
             rel_path = file_path.relative_to(workspace)
 
-            # Save to database if session_instance_id provided
             if session_instance_id:
                 from backend.data.database import Database
                 db = Database()
@@ -3689,7 +3689,58 @@ class ImageUploadHandler(MessageHandler):
 
         except Exception as e:
             logger.error(f"Failed to upload image: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to upload image: {e}")
+            await self._send_error(websocket, message.request_id, str(e))
+
+
+class FileUploadHandler(MessageHandler):
+    """Handle file upload requests."""
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Save uploaded file to workspace."""
+        try:
+            file_data = message.data.get("file_data")
+            file_name = message.data.get("file_name", "uploaded_file")
+            mime_type = message.data.get("mime_type", "application/octet-stream")
+            session_instance_id = message.data.get("session_instance_id")
+
+            if not file_data:
+                await self._send_error(websocket, message.request_id, "File data is required")
+                return
+
+            from backend.utils.helpers import get_workspace_path
+            workspace = get_workspace_path()
+
+            files_dir = workspace / "files"
+            files_dir.mkdir(parents=True, exist_ok=True)
+
+            import uuid
+            ext = file_name.split(".")[-1] if "." in file_name else ""
+            unique_name = f"{uuid.uuid4().hex[:8]}_{file_name}"
+            file_path = files_dir / unique_name
+
+            import base64
+            file_bytes = base64.b64decode(file_data.split(",")[-1] if "," in file_data else file_data)
+            file_path.write_bytes(file_bytes)
+
+            rel_path = file_path.relative_to(workspace)
+
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.FILE_UPLOADED,
+                request_id=message.request_id,
+                data={
+                    "success": True,
+                    "file_name": unique_name,
+                    "original_name": file_name,
+                    "file_path": str(rel_path),
+                    "full_path": str(file_path),
+                    "mime_type": mime_type,
+                    "size": len(file_bytes)
+                }
+            ))
+
+        except Exception as e:
+            logger.error(f"Failed to upload file: {e}")
+            await self._send_error(websocket, message.request_id, str(e))
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
         await self.send_response(websocket, WSMessage(

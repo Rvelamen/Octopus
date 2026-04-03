@@ -9,10 +9,14 @@ from typing import Any, Dict
 class MessageContentItem:
     """Single item in a multi-modal message."""
 
-    type: str  # "text", "image", "image_url"
+    type: str  # "text", "image", "image_url", "file"
     text: str | None = None  # For type="text"
     image_path: str | None = None  # For type="image" (local path)
     image_url: str | None = None  # For type="image_url" (URL)
+    file_path: str | None = None  # For type="file" (local path)
+    file_name: str | None = None  # For type="file"
+    mime_type: str | None = None  # For type="file"
+    file_size: int | None = None  # For type="file"
 
 
 @dataclass
@@ -52,6 +56,12 @@ class InboundMessage:
         if isinstance(self.content, str):
             return []
         return [item for item in self.content if item.type in ("image", "image_url")]
+    
+    def get_files(self) -> list[MessageContentItem]:
+        """Get all file content items."""
+        if isinstance(self.content, str):
+            return []
+        return [item for item in self.content if item.type == "file"]
 
 
 @dataclass

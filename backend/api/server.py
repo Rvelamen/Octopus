@@ -199,9 +199,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# CORS configuration - restricted to known origins for security
+# Desktop app uses file:// protocol, development uses localhost
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",    # Vite dev server
+    "http://127.0.0.1:3000",    # Vite dev server (alternative)
+    "http://localhost:5173",    # Vite default port (if changed)
+    "http://127.0.0.1:5173",    # Vite default port (alternative)
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

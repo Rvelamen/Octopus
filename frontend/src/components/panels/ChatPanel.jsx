@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, RefreshCw, Trash2, Wrench, ChevronUp, ChevronDown, Plus, Image, X, Upload, Check, Loader2, Copy, FileText, Maximize2, Minimize2, Send, CirclePause, GripVertical, Volume2, Play, Pause } from 'lucide-react';
+import { MessageSquare, RefreshCw, Trash2, Wrench, ChevronUp, ChevronDown, Plus, Image, X, Upload, Check, Loader2, Copy, FileText, Maximize2, Minimize2, Send, CirclePause, GripVertical, Volume2, Play, Pause, Paperclip } from 'lucide-react';
 import WindowDots from '../WindowDots';
 import { parseLinks } from '../../utils/linkUtils';
 import octopusAvatar from '../../assets/images/octopus.png';
@@ -63,6 +63,14 @@ function TTSPlayer({ audioData, format, text, durationMs, onClose }) {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+  
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
   const handleSeek = (e) => {
@@ -146,6 +154,7 @@ function ChatPanel({
   const [inputValue, setInputValue] = useState('');
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [pendingImages, setPendingImages] = useState([]); // 待发送的图片列表
+  const [pendingFiles, setPendingFiles] = useState([]); // 待发送的文件列表
   const [isUploading, setIsUploading] = useState(false);
   const [isInputExpanded, setIsInputExpanded] = useState(false); // 编辑区域是否展开
   const [inputHeight, setInputHeight] = useState(120); // 编辑区域高度
@@ -163,6 +172,7 @@ function ChatPanel({
   const messagesEndRef = useRef(null);
   const isComponentMounted = useRef(true);
   const fileInputRef = useRef(null);
+  const fileUploadRef = useRef(null);
   const dropZoneRef = useRef(null);
   const instanceListRef = useRef(null);
   const textareaRef = useRef(null);
@@ -302,18 +312,25 @@ function ChatPanel({
             const existingImages = existing?.metadata?.images || existing?.metadata?.metadata?.images;
             const fetchedImages = msg.metadata?.images || msg.metadata?.metadata?.images;
             const hasFetchedImages = fetchedImages && fetchedImages.length > 0;
+            
+            const existingFiles = existing?.metadata?.files || existing?.metadata?.metadata?.files;
+            const fetchedFiles = msg.metadata?.files || msg.metadata?.metadata?.files;
+            const hasFetchedFiles = fetchedFiles && fetchedFiles.length > 0;
 
-            console.log('Existing images:', existingImages);
-            console.log('Fetched images:', fetchedImages);
+            const needMerge = (existingImages && existingImages.length > 0 && !hasFetchedImages) ||
+                             (existingFiles && existingFiles.length > 0 && !hasFetchedFiles);
 
-            if (existingImages && existingImages.length > 0 && !hasFetchedImages) {
-              console.log('Merging images from optimistic update:', existingImages);
+            if (needMerge) {
+              const mergedMetadata = { ...msg.metadata };
+              if (existingImages && existingImages.length > 0 && !hasFetchedImages) {
+                mergedMetadata.images = existingImages;
+              }
+              if (existingFiles && existingFiles.length > 0 && !hasFetchedFiles) {
+                mergedMetadata.files = existingFiles;
+              }
               return {
                 ...msg,
-                metadata: {
-                  ...msg.metadata,
-                  images: existingImages
-                }
+                metadata: mergedMetadata
               };
             }
             return msg;
@@ -469,8 +486,9 @@ function ChatPanel({
   const handleSend = async () => {
     const hasText = inputValue.trim();
     const hasImages = pendingImages.length > 0;
+    const hasFiles = pendingFiles.length > 0;
 
-    if (!hasText && !hasImages) return;
+    if (!hasText && !hasImages && !hasFiles) return;
 
     const content = inputValue;
     setInputValue('');
@@ -489,9 +507,27 @@ function ChatPanel({
         setIsUploading(false);
         return;
       }
-      setIsUploading(false);
-      setPendingImages([]); // 清空待发送图片
+      setPendingImages([]);
     }
+    
+    // 如果有文件，先上传
+    let uploadedFiles = [];
+    if (hasFiles) {
+      setIsUploading(true);
+      try {
+        for (const file of pendingFiles) {
+          const uploaded = await uploadFile(file);
+          uploadedFiles.push(uploaded);
+        }
+      } catch (err) {
+        alert('文件上传失败: ' + err.message);
+        setIsUploading(false);
+        return;
+      }
+      setPendingFiles([]);
+    }
+    
+    setIsUploading(false);
 
     // 构建消息数据
     const messageData = {
@@ -499,11 +535,17 @@ function ChatPanel({
       images: uploadedImages.map(img => ({
         path: img.path,
         name: img.name
+      })),
+      files: uploadedFiles.map(file => ({
+        path: file.path,
+        name: file.name,
+        originalName: file.originalName,
+        mime_type: file.mimeType,
+        size: file.size
       }))
     };
 
     // 立即显示用户消息到界面（ optimistic update ）
-    // Note: content should match what backend saves (text_content from multimodal message)
     const displayContent = content || '';
     const tempUserMessage = {
       id: `temp-${Date.now()}`,
@@ -511,24 +553,20 @@ function ChatPanel({
       content: displayContent,
       timestamp: new Date().toISOString(),
       metadata: {
-        images: uploadedImages
+        images: uploadedImages,
+        files: uploadedFiles
       }
     };
     setMessages(prev => [...prev, tempUserMessage]);
 
     // 如果是新对话，先创建
     if (isCreatingNew || !selectedInstance) {
-      // 新对话的消息会由后端自动创建 session 和 instance
-      // 这里只需要发送消息，然后刷新列表
       await onSendMessage?.(messageData);
-      // 刷新 instances 列表以获取新创建的 instance
       setTimeout(() => {
         fetchInstances();
       }, 1000);
     } else {
-      // 继续现有对话，传递 instance_id
       await onSendMessage?.(messageData, selectedInstance.id);
-      // 延迟刷新消息列表，确保后端已保存消息
       setTimeout(() => {
         fetchInstanceMessages(selectedInstance.id);
       }, 1500);
@@ -559,13 +597,14 @@ function ChatPanel({
   // 处理文件列表
   const processFiles = async (files) => {
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    if (imageFiles.length === 0) {
-      alert('请选择图片文件');
-      return;
-    }
-
+    const otherFiles = files.filter(file => !file.type.startsWith('image/'));
+    
     for (const file of imageFiles) {
       await addPendingImage(file);
+    }
+    
+    for (const file of otherFiles) {
+      await addPendingFile(file);
     }
   };
 
@@ -588,10 +627,35 @@ function ChatPanel({
       reader.readAsDataURL(file);
     });
   };
+  
+  // 添加待发送文件
+  const addPendingFile = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const newFile = {
+          id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          file: file,
+          data: e.target.result,
+          name: file.name,
+          type: file.type,
+          size: file.size
+        };
+        setPendingFiles(prev => [...prev, newFile]);
+        resolve();
+      };
+      reader.readAsDataURL(file);
+    });
+  };
 
   // 移除待发送图片
   const removePendingImage = (imageId) => {
     setPendingImages(prev => prev.filter(img => img.id !== imageId));
+  };
+  
+  // 移除待发送文件
+  const removePendingFile = (fileId) => {
+    setPendingFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
   // 上传单张图片到服务器
@@ -614,6 +678,32 @@ function ChatPanel({
       throw new Error(response.data?.error || 'Upload failed');
     } catch (err) {
       console.error('Failed to upload image:', err);
+      throw err;
+    }
+  };
+  
+  // 上传文件到服务器
+  const uploadFile = async (file) => {
+    try {
+      const response = await sendWSMessage('file_upload', {
+        file_data: file.data,
+        file_name: file.name,
+        mime_type: file.type,
+        session_instance_id: selectedInstance?.id
+      }, 60000);
+
+      if (response.data?.success) {
+        return {
+          path: response.data.file_path,
+          name: response.data.file_name,
+          originalName: response.data.original_name,
+          mimeType: response.data.mime_type,
+          size: response.data.size
+        };
+      }
+      throw new Error(response.data?.error || 'Upload failed');
+    } catch (err) {
+      console.error('Failed to upload file:', err);
       throw err;
     }
   };
@@ -699,7 +789,6 @@ function ChatPanel({
   // ===== 渲染消息中的图片 =====
   const renderMessageImages = (metadata) => {
     console.log('renderMessageImages metadata:', metadata);
-    // Handle nested metadata structure: metadata.metadata.images
     const images = metadata?.images || metadata?.metadata?.images;
     console.log('renderMessageImages images:', images);
     if (!images || images.length === 0) return null;
@@ -718,6 +807,25 @@ function ChatPanel({
               }}
             />
             {img.name && <span className="message-image-name">{img.name}</span>}
+          </div>
+        ))}
+      </div>
+    );
+  };
+  
+  const renderMessageFiles = (metadata) => {
+    const files = metadata?.files || metadata?.metadata?.files;
+    if (!files || files.length === 0) return null;
+    
+    return (
+      <div className="message-files">
+        {files.map((file, idx) => (
+          <div key={idx} className="message-file-item">
+            <FileText size={14} />
+            <div className="file-info">
+              <span className="file-name">{file.name || file.originalName || '未知文件'}</span>
+              <span className="file-size">{formatBytes(file.size)}</span>
+            </div>
           </div>
         ))}
       </div>
@@ -863,15 +971,15 @@ function ChatPanel({
   };
 
   // ===== 渲染 Tool Card - 通用函数，实时和历史消息共用 =====
-  const renderToolCard = ({ 
-    toolCallId, 
-    toolName, 
-    args, 
-    result, 
-    status, 
-    assistantContent, 
-    toolIndex = 0, 
-    totalTools = 1 
+  const renderToolCard = ({
+    toolCallId,
+    toolName,
+    args,
+    result,
+    status,
+    assistantContent,
+    toolIndex = 0,
+    totalTools = 1
   }) => {
     const isExpanded = expandedTools.has(toolCallId);
 
@@ -905,7 +1013,7 @@ function ChatPanel({
             {renderMessageContent(assistantContent)}
           </div>
         )}
-        
+
         {/* Tool Card Header */}
         <div
           className={`tool-card-header ${status}`}
@@ -957,7 +1065,7 @@ function ChatPanel({
               <div className="tool-card-section-header">
                 <div className="tool-card-section-title">Result</div>
                 {resultContent && (
-                  <button 
+                  <button
                     className="tool-copy-btn"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1007,6 +1115,15 @@ function ChatPanel({
     if (!timestamp) return '';
     const date = new Date(timestamp);
     return date.toLocaleString();
+  };
+  
+  // ===== 格式化文件大小 =====
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   // ===== 格式化相对时间 =====
@@ -1231,7 +1348,7 @@ function ChatPanel({
                     const msg = pair.message;
                     const isUser = msg.role === 'user';
                     const msgTts = messageTtsMap[msg.id];
-                    
+
                     return (
                       <div
                         key={msg.id || idx}
@@ -1257,6 +1374,7 @@ function ChatPanel({
                             )}
                           </div>
                           {renderMessageImages(msg.metadata)}
+                          {renderMessageFiles(msg.metadata)}
                           {msgTts && !isUser && (
                             <TTSPlayer 
                               audioData={msgTts.audioData}
@@ -1369,6 +1487,32 @@ function ChatPanel({
               ))}
             </div>
           )}
+          
+          {/* 文件预览区域 */}
+          {pendingFiles.length > 0 && (
+            <div className="pending-files-container">
+              {pendingFiles.map((file) => (
+                <div key={file.id} className="pending-file-item">
+                  <FileText size={16} />
+                  <div className="pending-file-info">
+                    <span className="pending-file-name" title={file.name}>
+                      {file.name.length > 20 ? file.name.substring(0, 17) + '...' : file.name}
+                    </span>
+                    <span className="pending-file-size">
+                      {formatBytes(file.size)}
+                    </span>
+                  </div>
+                  <button
+                    className="remove-file-btn"
+                    onClick={() => removePendingFile(file.id)}
+                    title="移除文件"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className={`inputbar-container ${isInputExpanded ? 'expanded' : ''}`}>
             {/* 拖拽调整高度把手 */}
@@ -1437,6 +1581,25 @@ function ChatPanel({
                   onChange={handleFileSelect}
                   style={{ display: 'none' }}
                 />
+                
+                {/* 文件上传按钮 */}
+                <button
+                  className="inputbar-tool-btn"
+                  onClick={() => fileUploadRef.current?.click()}
+                  disabled={isProcessing || isUploading || (!isCreatingNew && !selectedInstance)}
+                  title="上传文件"
+                >
+                  <Paperclip size={16} />
+                </button>
+                <input
+                  ref={fileUploadRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.md,.json,.csv,.xml,.zip,.tar,.gz"
+                  multiple
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+                
                 {/* 图片生成按钮 */}
                 <button
                   className="inputbar-tool-btn"
@@ -1465,7 +1628,7 @@ function ChatPanel({
                   <button
                     className="inputbar-send-btn"
                     onClick={handleSend}
-                    disabled={isUploading || (!isCreatingNew && !selectedInstance) || (!inputValue.trim() && pendingImages.length === 0)}
+                    disabled={isUploading || (!isCreatingNew && !selectedInstance) || (!inputValue.trim() && pendingImages.length === 0 && pendingFiles.length === 0)}
                     title="发送消息"
                   >
                     <Send size={18} />

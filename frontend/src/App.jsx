@@ -250,18 +250,6 @@ function App() {
             setToolCalls([]); // 清空之前的工具调用
             setToolCallAssistantContents({}); // 清空 assistant content
             break;
-          case "agent_thinking":
-            // 新一轮 LLM 调用开始
-            console.log('[WebSocket] Agent thinking, iteration:', data?.iteration);
-            // 不清空 toolCalls，让之前轮次的继续显示
-            break;
-          case "agent_finish":
-            console.log('[WebSocket] Agent finish received:', data);
-            setStreamingContent("");
-            setIsProcessing(false);
-            // 不清空 toolCalls，让它们继续显示
-            // toolCalls 会在下一轮 agent_thinking 时清空
-            break;
           case "chat_response":
             setStreamingContent("");
             setIsProcessing(false);
@@ -269,6 +257,13 @@ function App() {
             setToolCallAssistantContents({}); // 清空 assistant content
             break;
           case "error":
+            setStreamingContent("");
+            setIsProcessing(false);
+            setToolCalls([]); // 清空工具调用
+            setToolCallAssistantContents({}); // 清空 assistant content
+            break;
+          case "agent_finish":
+            console.log('[WebSocket] Agent finish received:', data);
             setStreamingContent("");
             setIsProcessing(false);
             setToolCalls([]); // 清空工具调用
@@ -294,8 +289,8 @@ function App() {
             break;
           case "agent_tool_result":
             // 工具调用完成 - 更新结果
-            setToolCalls((prev) => prev.map(tc => 
-              tc.id === data.tool_call_id 
+            setToolCalls((prev) => prev.map(tc =>
+              tc.id === data.tool_call_id
                 ? { ...tc, status: 'completed', result: data.result }
                 : tc
             ));
@@ -378,13 +373,12 @@ function App() {
       // 2. 新方式: handleSendMessage({ content: "文本", images: [...] }, instanceId)
       let payload;
       if (typeof messageData === 'string') {
-        // 旧方式：纯文本
         payload = { content: messageData };
       } else {
-        // 新方式：包含图片的对象
         payload = {
           content: messageData.content || '',
-          images: messageData.images || []
+          images: messageData.images || [],
+          files: messageData.files || []
         };
       }
 

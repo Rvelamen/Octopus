@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import httpx
 from loguru import logger
 
 from backend.core.events.types import OutboundMessage
@@ -212,82 +213,74 @@ class FeishuChannel(BaseChannel):
         except Exception as e:
             logger.error(f"Error sending Feishu message: {e}")
     
-    def _upload_file_sync(self, file_path: Path, file_name: str, file_type: str = "opus") -> tuple[bool, str]:
+    async def _upload_file_async(self, file_path: Path, file_name: str, file_type: str = "opus") -> tuple[bool, str]:
         """Upload file to Feishu and get file_key.
-        
+
         Args:
             file_path: Path to the audio file path
             file_name: Name of the file
             file_type: File type for Feishu API (opus, mp4, pdf, stream, etc.)
-            
+
         Returns:
             Tuple of (success, file_key or error_message)
         """
         try:
-            import requests
-            
             token_url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
-            token_resp = requests.post(
-                token_url,
-                json={
-                    "app_id": self.config.config.app_id,
-                    "app_secret": self.config.config.app_secret
-                },
-                timeout=30
-            )
-            token_data = token_resp.json()
-            
+            async with httpx.AsyncClient() as client:
+                token_resp = await client.post(
+                    token_url,
+                    json={
+                        "app_id": self.config.config.app_id,
+                        "app_secret": self.config.config.app_secret
+                    },
+                    timeout=30.0
+                )
+                token_data = token_resp.json()
+
             if token_data.get("code") != 0:
                 return False, f"Failed to get access token: {token_data.get('msg')}"
-            
+
             access_token = token_data.get("tenant_access_token")
-            
+
             upload_url = "https://open.feishu.cn/open-apis/im/v1/files"
             headers = {"Authorization": f"Bearer {access_token}"}
-            
-            with open(file_path, "rb") as f:
-                files = {
-                    "file": (file_name, f, "application/octet-stream"),
-                    "file_type": (None, file_type),
-                    "file_name": (None, file_name)
-                }
-                response = requests.post(
-                    upload_url,
-                    headers=headers,
-                    files=files,
-                    timeout=120
-                )
-            
+
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                with open(file_path, "rb") as f:
+                    files = {
+                        "file": (file_name, f, "application/octet-stream"),
+                        "file_type": (None, file_type),
+                        "file_name": (None, file_name)
+                    }
+                    response = await client.post(
+                        upload_url,
+                        headers=headers,
+                        files=files
+                    )
+
             if response.status_code != 200:
                 return False, f"Upload failed: HTTP {response.status_code}, {response.text}"
-            
+
             result = response.json()
-            
+
             if result.get("code") != 0:
                 return False, f"Upload failed: {result.get('msg')} (code: {result.get('code')})"
-            
+
             file_key = result.get("data", {}).get("file_key")
-            
+
             if not file_key:
                 return False, "No file_key in response"
-            
-            logger.info(f"Uploaded audio file to Feishu: {file_key}")
+
+            logger.info(f"Uploaded file to Feishu: {file_key}")
             return True, file_key
-            
+
         except Exception as e:
             logger.error(f"Error uploading file to Feishu: {e}")
             return False, str(e)
-    
+
     async def _upload_file(self, file_path: Path, file_name: str, file_type: str = "stream") -> tuple[bool, str]:
-        """Upload file to Feishu (async wrapper)."""
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None, 
-            self._upload_file_sync, 
-            file_path, 
-            file_name, 
-            file_type
-        )
+        """Upload file to Feishu."""
+        return await self._upload_file_async(file_path, file_name, file_type)
     
     async def _send_audio_message(self, chat_id: str, file_key: str, duration_ms: int = 0) -> bool:
         """Send audio message through Feishu (requires opus format).

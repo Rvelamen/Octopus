@@ -3,6 +3,7 @@
 import asyncio
 import base64
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -339,23 +340,40 @@ class AgentLoop:
         # Build initial messages (use get_history for LLM-formatted messages)
         # Handle multi-modal content
         if msg.is_multimodal:
-            # Multi-modal message: convert to LLM format
             user_content = self._build_multimodal_content(msg.content)
             messages = self.context.build_messages(
                 history=session.get_history(),
-                current_message=user_content,  # Pass the formatted content
-                media=None,  # Images are already in content
+                current_message=user_content,
+                media=None,
                 channel=msg.channel,
                 chat_id=msg.chat_id,
             )
-            # Store text representation for session history, with image metadata
             images = msg.get_images()
             logger.info(f"[AgentLoop] get_images returned: {images}")
             for img in images:
                 logger.info(f"[AgentLoop] Image item: type={img.type}, image_path={img.image_path}")
             image_list = [{"path": img.image_path, "name": img.image_path.split('/').pop()} for img in images] if images else []
-            metadata = {"images": image_list} if image_list else None
-            logger.info(f"[AgentLoop] Saving multimodal message with {len(images)} images, metadata: {metadata}")
+            
+            files = msg.get_files()
+            logger.info(f"[AgentLoop] get_files returned: {files}")
+            file_list = []
+            for f in files:
+                file_list.append({
+                    "path": f.file_path,
+                    "name": f.file_name or f.file_path.split('/').pop(),
+                    "originalName": f.file_name,
+                    "mimeType": f.mime_type,
+                    "size": f.file_size
+                })
+            
+            metadata = {}
+            if image_list:
+                metadata["images"] = image_list
+            if file_list:
+                metadata["files"] = file_list
+            
+            metadata = metadata if metadata else None
+            logger.info(f"[AgentLoop] Saving multimodal message with {len(images)} images, {len(files)} files, metadata: {metadata}")
             session.add_message("user", msg.text_content, message_type=msg.message_type, metadata=metadata)
         else:
             # Text-only message
@@ -924,7 +942,6 @@ class AgentLoop:
                 logger.info(f"[_build_multimodal_content] Adding text: {item.text[:50]}...")
                 result.append({"type": "text", "text": item.text})
             elif item.type == "image" and item.image_path:
-                # Read and encode image
                 path = Path(item.image_path)
                 logger.info(f"[_build_multimodal_content] Processing image path: {item.image_path}")
                 if not path.is_absolute():
@@ -948,6 +965,13 @@ class AgentLoop:
                     "type": "image_url",
                     "image_url": {"url": item.image_url}
                 })
+            elif item.type == "file" and item.file_path:
+                file_info = f"\n[用户上传了文件]\n- 文件名: {item.file_name or '未知'}\n- 路径: {item.file_path}\n- 类型: {item.mime_type or '未知'}\n- 大小: {item.file_size or 0} 字节\n"
+                if result and result[0].get("type") == "text":
+                    result[0]["text"] += file_info
+                else:
+                    result.append({"type": "text", "text": file_info})
+                logger.info(f"[_build_multimodal_content] Added file info: {item.file_name}")
 
         logger.info(f"[_build_multimodal_content] Built {len(result)} content items")
         return result

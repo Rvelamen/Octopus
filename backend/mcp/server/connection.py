@@ -210,30 +210,30 @@ class MCPConnection:
     
     async def _connect_sse(self) -> bool:
         """Connect using Server-Sent Events protocol."""
-        import aiohttp
+        import httpx
 
         try:
-            # 使用更短的连接超时
-            timeout = aiohttp.ClientTimeout(
-                total=self.config.connection_timeout,
-                connect=5.0  # 连接超时 5 秒
-            )
-            self._session = aiohttp.ClientSession(
+            # Establish SSE connection with timeout
+            self._client = httpx.AsyncClient(
                 headers=self.config.headers,
-                timeout=timeout,
+                timeout=httpx.Timeout(
+                    timeout=self.config.connection_timeout,
+                    connect=5.0
+                )
             )
 
-            # Establish SSE connection with timeout
             self._response = await asyncio.wait_for(
-                self._session.get(
+                self._client.stream(
+                    "GET",
                     self.config.url,
                     headers={"Accept": "text/event-stream"},
                 ),
                 timeout=10.0
             )
 
-            if self._response.status != 200:
-                raise RuntimeError(f"HTTP {self._response.status}")
+            if self._response.status_code != 200:
+                await self._response.aclose()
+                raise RuntimeError(f"HTTP {self._response.status_code}")
 
             # Start reading loop
             asyncio.create_task(self._read_sse())
@@ -241,13 +241,13 @@ class MCPConnection:
             return True
         except asyncio.TimeoutError:
             logger.error(f"SSE connection timed out: {self.config.url}")
-            if hasattr(self, '_session') and self._session:
-                await self._session.close()
+            if hasattr(self, '_client') and self._client:
+                await self._client.aclose()
             return False
         except Exception as e:
             logger.error(f"SSE connection error: {e}")
-            if hasattr(self, '_session') and self._session:
-                await self._session.close()
+            if hasattr(self, '_client') and self._client:
+                await self._client.aclose()
             return False
     
     async def _connect_websocket(self) -> bool:
@@ -339,16 +339,17 @@ class MCPConnection:
     async def _read_sse(self) -> None:
         """Read from SSE stream."""
         try:
-            async for line in self._response.content:
-                line = line.decode("utf-8").strip()
-                if line.startswith("data: "):
-                    data_str = line[6:]
-                    try:
-                        data = json.loads(data_str)
-                        await self._handle_message(data)
-                    except json.JSONDecodeError:
-                        logger.warning(f"Invalid JSON from SSE: {data_str[:100]}")
-                        
+            async with self._response as response:
+                async for line in response.aiter_lines():
+                    line = line.strip()
+                    if line.startswith("data: "):
+                        data_str = line[6:]
+                        try:
+                            data = json.loads(data_str)
+                            await self._handle_message(data)
+                        except json.JSONDecodeError:
+                            logger.warning(f"Invalid JSON from SSE: {data_str[:100]}")
+
         except Exception as e:
             logger.error(f"SSE read error: {e}")
         finally:
@@ -483,28 +484,27 @@ class MCPConnection:
                 # SSE is server-to-client only for data
                 # Use HTTP POST for client-to-server
                 try:
-                    if not hasattr(self, '_session') or self._session.closed:
-                        import aiohttp
-                        self._session = aiohttp.ClientSession(
+                    if not hasattr(self, '_client') or self._client.is_closed:
+                        self._client = httpx.AsyncClient(
                             headers=self.config.headers,
-                            timeout=aiohttp.ClientTimeout(total=self.config.connection_timeout),
+                            timeout=httpx.Timeout(timeout=self.config.connection_timeout),
                         )
-                    
+
                     # Send POST request for MCP over HTTP
-                    async with self._session.post(
+                    response = await self._client.post(
                         self.config.url,
                         json=data,
                         headers={"Content-Type": "application/json"}
-                    ) as response:
-                        if response.status == 200:
-                            result = await response.json()
-                            # Handle the response if it's a request
-                            if data.get("id") and result:
-                                await self._handle_message(result)
-                            return True
-                        else:
-                            logger.error(f"HTTP POST failed: {response.status}")
-                            return False
+                    )
+                    if response.status_code == 200:
+                        result = response.json()
+                        # Handle the response if it's a request
+                        if data.get("id") and result:
+                            await self._handle_message(result)
+                        return True
+                    else:
+                        logger.error(f"HTTP POST failed: {response.status_code}")
+                        return False
                 except Exception as e:
                     logger.error(f"SSE send error: {e}")
                     return False
@@ -578,17 +578,17 @@ class MCPConnection:
                     self._transport.wait(timeout=5)
                 except:
                     self._transport.kill()
-                    
+
             elif self.config.protocol == "sse":
                 if hasattr(self, "_response"):
-                    self._response.close()
-                if hasattr(self, "_session"):
-                    await self._session.close()
-                    
+                    await self._response.aclose()
+                if hasattr(self, "_client") and not self._client.is_closed:
+                    await self._client.aclose()
+
             elif self.config.protocol == "websocket" and self._transport:
                 import websockets
                 await self._transport.close()
-                
+
         except Exception as e:
             logger.warning(f"Cleanup error for {self.name}: {e}")
         finally:

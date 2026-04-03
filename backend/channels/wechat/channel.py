@@ -404,12 +404,12 @@ class WechatChannel(BaseChannel):
         if self._session_paused_until > 0:
             remaining = self._session_paused_until - asyncio.get_event_loop().time()
             if remaining > 0:
-                logger.debug(f"WeChat session paused, waiting {remaining:.0f}s before retry")
+                # logger.debug(f"WeChat session paused, waiting {remaining:.0f}s before retry")
                 await asyncio.sleep(min(remaining, 5))
                 return
             self._session_paused_until = 0
 
-        logger.debug("WeChat polling for messages...")
+        # logger.debug("WeChat polling for messages...")
         try:
             body = json.dumps({
                 "get_updates_buf": self._get_updates_buf,
@@ -473,7 +473,7 @@ class WechatChannel(BaseChannel):
         except httpx.TimeoutException:
             pass
         except Exception as e:
-            logger.error(f"Error polling messages: {e}")
+            # logger.error(f"Error polling messages: {e}")
             self._consecutive_failures += 1
 
     async def _handle_wechat_message(self, msg: dict[str, Any]) -> None:

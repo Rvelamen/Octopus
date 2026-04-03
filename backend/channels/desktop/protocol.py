@@ -79,6 +79,7 @@ class MessageType(Enum):
 
     # Image - Client -> Server
     IMAGE_UPLOAD = "image_upload"                              # Upload image
+    FILE_UPLOAD = "file_upload"                                # Upload file
     IMAGE_ANALYZE = "image_analyze"                            # Analyze image request
     IMAGE_GENERATE = "image_generate"                          # Generate image request
     IMAGE_GET_UNDERSTANDING_PROVIDERS = "image_get_understanding_providers"  # Get understanding providers
@@ -179,6 +180,7 @@ class MessageType(Enum):
 
     # Image - Server -> Client
     IMAGE_UPLOADED = "image_uploaded"                        # Image upload confirmation
+    FILE_UPLOADED = "file_uploaded"                          # File upload confirmation
     IMAGE_ANALYSIS_RESULT = "image_analysis_result"          # Image analysis result
     IMAGE_GENERATED = "image_generated"                      # Image generated confirmation
     IMAGE_GENERATION_PROGRESS = "image_generation_progress"  # Generation progress
@@ -388,6 +390,7 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.RESTART_SERVICE,
     MessageType.STOP_AGENTS,
     MessageType.IMAGE_UPLOAD,
+    MessageType.FILE_UPLOAD,
     MessageType.IMAGE_ANALYZE,
     MessageType.IMAGE_GENERATE,
     MessageType.IMAGE_GET_UNDERSTANDING_PROVIDERS,
@@ -512,6 +515,7 @@ SERVER_MESSAGE_TYPES = {
     MessageType.SERVICE_RESTARTING,
     MessageType.AGENTS_STOPPED,
     MessageType.IMAGE_UPLOADED,
+    MessageType.FILE_UPLOADED,
     MessageType.IMAGE_ANALYSIS_RESULT,
     MessageType.IMAGE_GENERATED,
     MessageType.IMAGE_GENERATION_PROGRESS,
