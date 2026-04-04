@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageSquare } from 'lucide-react';
 import WindowDots from '../../WindowDots';
-import { parseLinks } from '../../../utils/linkUtils';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import InstanceList from './components/InstanceList';
 import MessageList from './components/MessageList';
 import ChatInput from './components/ChatInput';
@@ -272,29 +273,62 @@ function ChatPanel({
 
   const renderMessageContent = (content) => {
     if (!content) return null;
-    return content.split('\n').map((line, lineIdx) => {
-      const parts = parseLinks(line);
-      return (
-        <div key={lineIdx}>
-          {parts.map((part, partIdx) => {
-            if (part.type === 'link') {
+    return (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // Remove outer wrapper paragraph
+          p: ({ children }) => <>{children}</>,
+          // Remove paragraph inside list items
+          li: ({ children }) => {
+            // Filter out empty paragraphs
+            const filtered = React.Children.toArray(children).filter(child => {
+              if (typeof child === 'string') return child.trim() !== '';
+              return true;
+            });
+            return <li>{filtered}</li>;
+          },
+          a: ({ href, children }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="md-link"
+            >
+              {children}
+            </a>
+          ),
+          code({ inline, className, children, ...props }) {
+            if (inline) {
               return (
-                <a
-                  key={partIdx}
-                  href={part.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="message-link"
-                >
-                  {part.displayText}
-                </a>
+                <code className="md-inline-code" {...props}>
+                  {children}
+                </code>
               );
             }
-            return <span key={partIdx}>{part.content}</span>;
-          })}
-        </div>
-      );
-    });
+            return (
+              <div className="md-code-block">
+                <pre {...props}>
+                  <code className={className}>{children}</code>
+                </pre>
+              </div>
+            );
+          },
+          pre({ children }) {
+            return <>{children}</>;
+          },
+          table({ children }) {
+            return (
+              <div className="md-table-wrapper">
+                <table className="md-table">{children}</table>
+              </div>
+            );
+          }
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    );
   };
 
   return (

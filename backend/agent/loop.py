@@ -4,6 +4,7 @@ import asyncio
 import base64
 import json
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +33,16 @@ from backend.data.session_manager import SessionManager
 from backend.data.commands import handle_session_command
 from backend.data.token_store import TokenUsageRepository
 from backend.extensions.loader import ExtensionLoader
+
+
+@dataclass
+class PreparedContext:
+    """Shared context prepared before LLM call (used by both streaming and non-streaming paths)."""
+    session: Any
+    messages: list
+    session_instance_id: int | None
+    current_session: str
+    session_key: str
 
 
 class AgentLoop:
@@ -268,9 +279,141 @@ class AgentLoop:
         if enable_streaming:
             return await self._process_streaming_message(msg, session_key)
         else:
-            # Keep original non-streaming logic
             return await self._process_non_streaming_message(msg, session_key)
-    
+
+    async def _prepare_session_and_context(
+        self,
+        msg: InboundMessage,
+        session_key: str | None = None,
+    ) -> tuple[PreparedContext | None, OutboundMessage | None]:
+        """
+        Common preparation logic shared by streaming and non-streaming paths.
+        
+        Handles: message type filtering → session init → instance switching → 
+        command processing → tool context injection → multimodal content building → message saving.
+        
+        Returns:
+            (PreparedContext, None) when ready for LLM call
+            (None, OutboundMessage) for early returns (command result, system message, etc.)
+            (None, None) for longtask_auth (no response needed, caller should return None)
+        """
+
+        if msg.message_type in ("longtask_auth", "longtask_complete"):
+            await self._process_longtask_message(msg)
+            if msg.message_type == "longtask_auth":
+                return None, None
+
+        if msg.channel == "system":
+            resp = await self._process_system_message(msg, session_key=session_key)
+            return None, resp
+
+        logger.info(f"Processing message from {msg.channel}:{msg.sender_id}")
+
+        current_session = session_key or msg.session_key
+
+        event_content = msg.text_content if msg.is_multimodal else msg.content
+
+        await self.bus.publish_event(AgentEvent(
+            event_type="agent_start",
+            data={"content": event_content, "session": current_session},
+            channel=msg.channel
+        ))
+
+        session_key = msg.session_key
+        if msg.channel == "desktop":
+            session_key = "desktop:desktop_session"
+
+        metadata_instance_id = msg.metadata.get("instance_id") if msg.metadata else None
+
+        if metadata_instance_id:
+            success, switch_msg = self.sessions.switch_instance(session_key, int(metadata_instance_id))
+            if success:
+                self.sessions._cache.pop(session_key, None)
+                session = self.sessions.get_or_create(session_key)
+                logger.info(f"Switched to instance {metadata_instance_id} for session {session_key}")
+            else:
+                logger.warning(f"Failed to switch to instance {metadata_instance_id}: {switch_msg}")
+                session = self.sessions.get_or_create(session_key)
+        else:
+            session = self.sessions.get_or_create(session_key)
+
+        command_result = await handle_session_command(
+            msg.content,
+            session_key,
+            self.sessions
+        )
+
+        if command_result:
+            return None, OutboundMessage(
+                channel=msg.channel,
+                chat_id=msg.chat_id,
+                content=command_result.message
+            )
+
+        session_instance_id = session.active_instance.id if session.active_instance else None
+
+        message_tool = self.tools.get("message")
+        if isinstance(message_tool, MessageTool):
+            message_tool.set_context(msg.channel, msg.chat_id)
+
+        spawn_tool = self.tools.get("spawn")
+        if isinstance(spawn_tool, SpawnTool):
+            spawn_tool.set_context(msg.channel, msg.chat_id, session_instance_id)
+
+        cron_tool = self.tools.get("cron")
+        if isinstance(cron_tool, CronTool):
+            cron_tool.set_context(msg.channel, msg.chat_id, session_instance_id)
+
+        if msg.is_multimodal:
+            user_content = self._build_multimodal_content(msg.content)
+            messages = self.context.build_messages(
+                history=session.get_history(),
+                current_message=user_content,
+                media=None,
+                channel=msg.channel,
+                chat_id=msg.chat_id,
+            )
+            images = msg.get_images()
+            image_list = [{"path": img.image_path, "name": img.image_path.split('/').pop()} for img in images] if images else []
+
+            files = msg.get_files()
+            file_list = []
+            for f in files:
+                file_list.append({
+                    "path": f.file_path,
+                    "name": f.file_name or f.file_path.split('/').pop(),
+                    "originalName": f.file_name,
+                    "mimeType": f.mime_type,
+                    "size": f.file_size
+                })
+
+            metadata = {}
+            if image_list:
+                metadata["images"] = image_list
+            if file_list:
+                metadata["files"] = file_list
+
+            metadata = metadata if metadata else None
+            session.add_message("user", msg.text_content, message_type=msg.message_type, metadata=metadata)
+        else:
+            messages = self.context.build_messages(
+                history=session.get_history(),
+                current_message=msg.content,
+                media=msg.media if msg.media else None,
+                channel=msg.channel,
+                chat_id=msg.chat_id,
+            )
+            session.add_message("user", msg.content, message_type=msg.message_type)
+        self.sessions.save(session)
+
+        return PreparedContext(
+            session=session,
+            messages=messages,
+            session_instance_id=session_instance_id,
+            current_session=current_session,
+            session_key=session_key,
+        ), None
+
     async def _process_non_streaming_message(
         self,
         msg: InboundMessage,
@@ -282,131 +425,15 @@ class AgentLoop:
         This method preserves the original non-streaming behavior for non-desktop channels.
         """
 
-        # Handle longtask messages (auth requests, completions)
-        if msg.message_type in ("longtask_auth", "longtask_complete"):
-            await self._process_longtask_message(msg)
-            if msg.message_type == "longtask_auth":
-                return None
+        ctx, early_response = await self._prepare_session_and_context(msg, session_key)
+        if ctx is None:
+            return early_response
 
-        if msg.channel == "system":
-            return await self._process_system_message(msg, session_key=session_key)
+        session = ctx.session
+        messages = ctx.messages
+        session_instance_id = ctx.session_instance_id
+        current_session = ctx.current_session
 
-        logger.info(f"Processing message from {msg.channel}:{msg.sender_id}")
-
-        current_session = session_key or msg.session_key
-
-        # Convert content to JSON-safe format for events
-        event_content = msg.text_content if msg.is_multimodal else msg.content
-
-        await self.bus.publish_event(AgentEvent(
-            event_type="agent_start",
-            data={"content": event_content, "session": current_session},
-            channel=msg.channel
-        ))
-
-        # Use fixed session key for desktop channel
-        session_key = msg.session_key
-        if msg.channel == "desktop":
-            session_key = "desktop:desktop_session"
-        
-        # Get instance_id from metadata if provided (frontend selected instance)
-        metadata_instance_id = msg.metadata.get("instance_id") if msg.metadata else None
-        
-        if metadata_instance_id:
-            # Switch to the specified instance in the desktop session
-            success, switch_msg = self.sessions.switch_instance(session_key, int(metadata_instance_id))
-            if success:
-                # Reload session to get the switched instance
-                self.sessions._cache.pop(session_key, None)
-                session = self.sessions.get_or_create(session_key)
-                logger.info(f"Switched to instance {metadata_instance_id} for session {session_key}")
-            else:
-                logger.warning(f"Failed to switch to instance {metadata_instance_id}: {switch_msg}")
-                session = self.sessions.get_or_create(session_key)
-        else:
-            # No instance_id provided, use default session
-            session = self.sessions.get_or_create(session_key)
-
-        # === 1. Check for session management commands (after instance switch) ===
-        command_result = await handle_session_command(
-            msg.content,
-            session_key,
-            self.sessions
-        )
-
-        if command_result:
-            # Command was handled, return response
-            return OutboundMessage(
-                channel=msg.channel,
-                chat_id=msg.chat_id,
-                content=command_result.message
-            )
-        
-        # Update tool contexts with session instance ID
-        session_instance_id = session.active_instance.id if session.active_instance else None
-        
-        message_tool = self.tools.get("message")
-        if isinstance(message_tool, MessageTool):
-            message_tool.set_context(msg.channel, msg.chat_id)
-        
-        spawn_tool = self.tools.get("spawn")
-        if isinstance(spawn_tool, SpawnTool):
-            spawn_tool.set_context(msg.channel, msg.chat_id, session_instance_id)
-        
-        cron_tool = self.tools.get("cron")
-        if isinstance(cron_tool, CronTool):
-            cron_tool.set_context(msg.channel, msg.chat_id, session_instance_id)
-        
-        # Build initial messages (use get_history for LLM-formatted messages)
-        # Handle multi-modal content
-        if msg.is_multimodal:
-            user_content = self._build_multimodal_content(msg.content)
-            messages = self.context.build_messages(
-                history=session.get_history(),
-                current_message=user_content,
-                media=None,
-                channel=msg.channel,
-                chat_id=msg.chat_id,
-            )
-            images = msg.get_images()
-            logger.info(f"[AgentLoop] get_images returned: {images}")
-            for img in images:
-                logger.info(f"[AgentLoop] Image item: type={img.type}, image_path={img.image_path}")
-            image_list = [{"path": img.image_path, "name": img.image_path.split('/').pop()} for img in images] if images else []
-            
-            files = msg.get_files()
-            logger.info(f"[AgentLoop] get_files returned: {files}")
-            file_list = []
-            for f in files:
-                file_list.append({
-                    "path": f.file_path,
-                    "name": f.file_name or f.file_path.split('/').pop(),
-                    "originalName": f.file_name,
-                    "mimeType": f.mime_type,
-                    "size": f.file_size
-                })
-            
-            metadata = {}
-            if image_list:
-                metadata["images"] = image_list
-            if file_list:
-                metadata["files"] = file_list
-            
-            metadata = metadata if metadata else None
-            logger.info(f"[AgentLoop] Saving multimodal message with {len(images)} images, {len(files)} files, metadata: {metadata}")
-            session.add_message("user", msg.text_content, message_type=msg.message_type, metadata=metadata)
-        else:
-            # Text-only message
-            messages = self.context.build_messages(
-                history=session.get_history(),
-                current_message=msg.content,
-                media=msg.media if msg.media else None,
-                channel=msg.channel,
-                chat_id=msg.chat_id,
-            )
-            session.add_message("user", msg.content, message_type=msg.message_type)
-        self.sessions.save(session)
-        
         # Agent loop
         iteration = 0
         final_content = None
@@ -1006,125 +1033,16 @@ class AgentLoop:
         
         This method implements real-time streaming of tokens and tool call status updates.
         """
-        # Handle longtask messages (auth requests, completions)
-        if msg.message_type in ("longtask_auth", "longtask_complete"):
-            await self._process_longtask_message(msg)
-            if msg.message_type == "longtask_auth":
-                return None
 
-        if msg.channel == "system":
-            return await self._process_system_message(msg, session_key=session_key)
+        ctx, early_response = await self._prepare_session_and_context(msg, session_key)
+        if ctx is None:
+            return early_response
 
-        logger.info(f"[Stream] Processing message from {msg.channel}:{msg.sender_id}")
+        session = ctx.session
+        messages = ctx.messages
+        session_instance_id = ctx.session_instance_id
+        current_session = ctx.current_session
 
-        current_session = session_key or msg.session_key
-
-        # Convert content to JSON-safe format for events
-        event_content = msg.text_content if msg.is_multimodal else msg.content
-
-        await self.bus.publish_event(AgentEvent(
-            event_type="agent_start",
-            data={"content": event_content, "session": current_session},
-            channel=msg.channel
-        ))
-
-        # Use fixed session key for desktop channel
-        session_key = msg.session_key
-        if msg.channel == "desktop":
-            session_key = "desktop:desktop_session"
-        
-        # Get instance_id from metadata if provided (frontend selected instance)
-        metadata_instance_id = msg.metadata.get("instance_id") if msg.metadata else None
-        
-        if metadata_instance_id:
-            # Switch to the specified instance in the desktop session
-            success, switch_msg = self.sessions.switch_instance(session_key, int(metadata_instance_id))
-            if success:
-                # Reload session to get the switched instance
-                self.sessions._cache.pop(session_key, None)
-                session = self.sessions.get_or_create(session_key)
-                logger.info(f"Switched to instance {metadata_instance_id} for session {session_key}")
-            else:
-                logger.warning(f"Failed to switch to instance {metadata_instance_id}: {switch_msg}")
-                session = self.sessions.get_or_create(session_key)
-        else:
-            # No instance_id provided, use default session
-            session = self.sessions.get_or_create(session_key)
-
-        # === 1. Check for session management commands (after instance switch) ===
-        command_result = await handle_session_command(
-            msg.content,
-            session_key,
-            self.sessions
-        )
-
-        if command_result:
-            # Command was handled, return response
-            return OutboundMessage(
-                channel=msg.channel,
-                chat_id=msg.chat_id,
-                content=command_result.message
-            )
-        
-        # Update tool contexts with session instance ID
-        session_instance_id = session.active_instance.id if session.active_instance else None
-        
-        message_tool = self.tools.get("message")
-        if isinstance(message_tool, MessageTool):
-            message_tool.set_context(msg.channel, msg.chat_id)
-        
-        spawn_tool = self.tools.get("spawn")
-        if isinstance(spawn_tool, SpawnTool):
-            spawn_tool.set_context(msg.channel, msg.chat_id, session_instance_id)
-        
-        cron_tool = self.tools.get("cron")
-        if isinstance(cron_tool, CronTool):
-            cron_tool.set_context(msg.channel, msg.chat_id, session_instance_id)
-        
-        # Build initial messages
-        if msg.is_multimodal:
-            user_content = self._build_multimodal_content(msg.content)
-            messages = self.context.build_messages(
-                history=session.get_history(),
-                current_message=user_content,
-                media=None,
-                channel=msg.channel,
-                chat_id=msg.chat_id,
-            )
-            images = msg.get_images()
-            image_list = [{"path": img.image_path, "name": img.image_path.split('/').pop()} for img in images] if images else []
-            
-            files = msg.get_files()
-            file_list = []
-            for f in files:
-                file_list.append({
-                    "path": f.file_path,
-                    "name": f.file_name or f.file_path.split('/').pop(),
-                    "originalName": f.file_name,
-                    "mimeType": f.mime_type,
-                    "size": f.file_size
-                })
-            
-            metadata = {}
-            if image_list:
-                metadata["images"] = image_list
-            if file_list:
-                metadata["files"] = file_list
-            
-            metadata = metadata if metadata else None
-            session.add_message("user", msg.text_content, message_type=msg.message_type, metadata=metadata)
-        else:
-            # Text-only message
-            messages = self.context.build_messages(
-                history=session.get_history(),
-                current_message=msg.content,
-                media=msg.media if msg.media else None,
-                channel=msg.channel,
-                chat_id=msg.chat_id,
-            )
-            session.add_message("user", msg.content, message_type=msg.message_type)
-        self.sessions.save(session)
-        
         # Agent loop with streaming
         iteration = 0
         final_content = None

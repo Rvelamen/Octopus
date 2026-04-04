@@ -6,8 +6,8 @@
 .messages-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px;
+  gap: 8px;
+  padding: 16px 20px;
   min-height: 100%;
 }
 
@@ -200,7 +200,7 @@
 /* Content Area */
 .message-bubble-content {
   font-size: 14px;
-  line-height: 1.75;
+  line-height: 1.35;
   color: #343a40;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -313,44 +313,25 @@
    ======================================== */
 
 .tool-message-wrapper {
-  margin: 12px 0;
+  margin: 2px 0;
 }
 
 .tool-iteration-group {
-  margin: 16px 0;
+  margin: 4px 0;
 }
 
 .tool-card {
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 14px;
+  background: #f8f9fa;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 6px;
   overflow: hidden;
-  margin-bottom: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: all 0.25s ease;
-  position: relative;
-}
-
-/* Left accent bar for tool cards */
-.tool-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: linear-gradient(180deg, var(--accent, #B46A57) 0%, #e9967a 100%);
-  opacity: 0;
-  transition: opacity 0.25s ease;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
 }
 
 .tool-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border-color: rgba(180, 106, 87, 0.2);
-}
-
-.tool-card:hover::before {
-  opacity: 1;
+  background: #f1f3f4;
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
 .tool-card:last-child {
@@ -359,11 +340,11 @@
 
 /* Tool Assistant Content (thinking text) */
 .tool-card-assistant-content {
-  padding: 14px 18px;
-  background: linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 8px 12px;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   font-size: 13px;
-  line-height: 1.65;
+  line-height: 1.5;
   color: #495057;
   font-style: italic;
 }
@@ -373,68 +354,63 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 6px 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  background: #ffffff;
+  transition: all 0.15s ease;
+  background: transparent;
 }
 
 .tool-card-header:hover {
-  background: #fafbfc;
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .tool-card-header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   flex: 1;
 }
 
-/* Status Indicator Circle */
+/* Status Indicator - small inline dot */
 .tool-status-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
-/* Status Colors */
+/* Status Colors - subtle, no gradients */
 .tool-status-indicator.completed {
-  background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
-  color: white;
-  box-shadow: 0 2px 6px rgba(81, 207, 102, 0.3);
+  background: #d3f9d8;
+  color: #2b8a3e;
 }
 
 .tool-status-indicator.pending {
-  background: linear-gradient(135deg, #fcc419 0%, #fab005 100%);
-  color: white;
-  animation: pulse 2s infinite;
+  background: #fff3bf;
+  color: #e67700;
 }
 
 .tool-status-indicator.invoking {
-  background: linear-gradient(135deg, #339af0 0%, #228be6 100%);
-  color: white;
-  animation: pulse 1.5s infinite;
+  background: #d0ebff;
+  color: #1864ab;
 }
 
 .tool-status-indicator.streaming {
-  background: linear-gradient(135deg, #ff922b 0%, #fd7e14 100%);
-  color: white;
-  animation: pulse 1s infinite;
+  background: #ffe8cc;
+  color: #d9480f;
 }
 
 .tool-status-indicator.error {
-  background: linear-gradient(135deg, #ff6b6b 0%, #fa5252 100%);
-  color: white;
-  box-shadow: 0 2px 6px rgba(255, 107, 107, 0.3);
+  background: #ffe3e3;
+  color: #c92a2a;
 }
 
 .tool-status-indicator.default {
   background: #e9ecef;
-  color: #6c757d;
+  color: #868e96;
 }
 
 @keyframes pulse {
@@ -450,36 +426,31 @@
 
 /* Tool Icon & Name */
 .tool-icon {
-  color: var(--accent, #B46A57);
-  width: 16px;
-  height: 16px;
+  color: #868e96;
+  width: 14px;
+  height: 14px;
 }
 
 .tool-card-name {
-  font-size: 14px;
-  font-weight: 650;
-  color: #212529;
+  font-size: 13px;
+  font-weight: 600;
+  color: #343a40;
   letter-spacing: -0.01em;
 }
 
 .tool-card-index {
   font-size: 11px;
   color: #adb5bd;
-  font-weight: 500;
-  margin-left: 4px;
+  font-weight: 400;
+  margin-left: 3px;
 }
 
 /* Status Text Badge */
 .tool-status-text {
   font-size: 11px;
-  font-weight: 600;
-  color: #6c757d;
-  background: #f8f9fa;
-  padding: 3px 10px;
-  border-radius: 20px;
-  margin-left: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-weight: 500;
+  color: #868e96;
+  margin-left: 6px;
 }
 
 /* Streaming indicator in status */
@@ -492,23 +463,23 @@
 
 /* Toggle Button */
 .tool-card-header-right {
-  color: #adb5bd;
-  transition: color 0.2s ease;
+  color: #ced4da;
+  transition: color 0.15s ease;
 }
 
 .tool-card-header:hover .tool-card-header-right {
-  color: var(--accent, #B46A57);
+  color: #868e96;
 }
 
 /* Tool Body (expanded) */
 .tool-card-body {
-  padding: 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  background: #fafbfc;
+  padding: 8px 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  background: #ffffff;
 }
 
 .tool-card-section {
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
 
 .tool-card-section:last-child {
@@ -519,12 +490,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .tool-card-section-title {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   color: #868e96;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -534,11 +505,11 @@
 .tool-params-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .tool-params-table tr {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
 }
 
 .tool-params-table tr:last-child {
@@ -546,62 +517,62 @@
 }
 
 .tool-param-key {
-  padding: 8px 12px;
+  padding: 5px 8px;
   color: #868e96;
   font-weight: 600;
-  width: 30%;
+  width: 28%;
   vertical-align: top;
 }
 
 .tool-param-value {
-  padding: 8px 12px;
-  color: #212529;
+  padding: 5px 8px;
+  color: #343a40;
   word-break: break-all;
 }
 
 .tool-param-value code {
   background: #ffffff;
-  padding: 3px 8px;
-  border-radius: 6px;
+  padding: 2px 6px;
+  border-radius: 4px;
   font-size: 11px;
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  color: #e83e8c;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  color: #c92a2a;
 }
 
 /* Copy Button */
 .tool-copy-btn {
   background: transparent;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  color: #6c757d;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  color: #868e96;
   cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 6px;
+  padding: 4px 8px;
+  border-radius: 5px;
   font-size: 11px;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .tool-copy-btn:hover {
-  background: var(--accent, #B46A57);
+  background: #343a40;
   color: white;
-  border-color: var(--accent, #B46A57);
+  border-color: #343a40;
 }
 
 /* Result Code Block */
 .tool-card-code {
-  background: #ffffff;
-  padding: 14px 16px;
-  border-radius: 10px;
+  background: #f8f9fa;
+  padding: 8px 10px;
+  border-radius: 6px;
   font-size: 12px;
-  line-height: 1.65;
+  line-height: 1.5;
   overflow-x: auto;
-  color: #212529;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #343a40;
+  border: 1px solid rgba(0, 0, 0, 0.05);
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  max-height: 300px;
+  max-height: 280px;
   overflow-y: auto;
 }
 
@@ -609,11 +580,11 @@
 .tool-card-pending {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
-  background: linear-gradient(135deg, #fff9db 0%, #fff3bf 100%);
-  border-radius: 10px;
-  font-size: 13px;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #fff9db;
+  border-radius: 6px;
+  font-size: 12px;
   color: #e67700;
   font-weight: 500;
 }
@@ -622,13 +593,12 @@
 .tool-card-error {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 14px 16px;
-  background: linear-gradient(135deg, #ffe3e3 0%, #ffd6d6 100%);
-  border-radius: 10px;
-  font-size: 13px;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #ffe3e3;
+  border-radius: 6px;
+  font-size: 12px;
   color: #c92a2a;
-  border: 1px solid rgba(255, 107, 107, 0.2);
   line-height: 1.5;
 }
 
@@ -646,42 +616,41 @@
    ======================================== */
 
 .tool-card-group {
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 16px;
+  background: #f8f9fa;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
   overflow: hidden;
-  margin: 16px 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin: 4px 0;
 }
 
 .tool-card-group-header {
-  padding: 14px 18px;
-  background: linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 8px 12px;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .tool-card-group-header:hover {
-  background: linear-gradient(135deg, #f1f3f4 0%, #e9ecef 100%);
+  background: #fafbfc;
 }
 
 .tool-card-group-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 6px 10px;
   background: #ffffff;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .tool-card-group-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex: 1;
 }
 
@@ -689,28 +658,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
 }
 
 .tool-group-status-indicator.completed {
-  background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
-  color: white;
+  background: #d3f9d8;
+  color: #2b8a3e;
 }
 
 .tool-group-status-indicator.pending {
-  background: linear-gradient(135deg, #fcc419 0%, #fab005 100%);
-  color: white;
+  background: #fff3bf;
+  color: #e67700;
 }
 
 .tool-group-title {
-  font-size: 14px;
-  font-weight: 650;
-  color: #212529;
+  font-size: 13px;
+  font-weight: 600;
+  color: #343a40;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .tool-group-iteration {
@@ -734,26 +703,26 @@
 .tool-group-toggle-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 5px;
+  padding: 5px 10px;
   background: transparent;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  color: #6c757d;
-  font-size: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  color: #868e96;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .tool-group-toggle-btn:hover {
-  background: var(--accent, #B46A57);
+  background: #343a40;
   color: white;
-  border-color: var(--accent, #B46A57);
+  border-color: #343a40;
 }
 
 .tool-card-group-content {
-  padding: 10px;
+  padding: 6px;
 }
 
 .tool-card-group-assistant-content {
@@ -825,5 +794,203 @@
   background: #f8f9fa;
   border-top: 1px solid rgba(0, 0, 0, 0.06);
   font-size: 11px;
+  color: #868e96;
+}
+
+/* ========================================
+   MARKDOWN CONTENT STYLES
+   ======================================== */
+
+.message-bubble-content p {
+  margin: 0 0 2px 0;
+}
+
+.message-bubble-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Headings */
+.message-bubble-content h1,
+.message-bubble-content h2,
+.message-bubble-content h3,
+.message-bubble-content h4,
+.message-bubble-content h5,
+.message-bubble-content h6 {
+  margin: 6px 0 2px 0;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #212529;
+}
+
+.message-bubble-content h1 { font-size: 20px; }
+.message-bubble-content h2 { font-size: 17px; }
+.message-bubble-content h3 { font-size: 15px; }
+.message-bubble-content h4 { font-size: 14px; }
+
+.message-bubble-content h1:first-child,
+.message-bubble-content h2:first-child,
+.message-bubble-content h3:first-child {
+  margin-top: 2px;
+}
+
+/* Links */
+.md-link {
+  color: var(--accent, #B46A57);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease;
+}
+
+.md-link:hover {
+  border-bottom-color: var(--accent, #B46A57);
+}
+
+/* Inline Code */
+.md-inline-code {
+  background: rgba(0, 0, 0, 0.05);
+  color: #c92a2a;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  word-break: break-word;
+}
+
+/* Code Block */
+.md-code-block {
+  margin: 2px 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #f8f9fa;
+}
+
+.md-code-block pre {
+  margin: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #343a40;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.md-code-block code {
+  background: none;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Blockquote */
+.message-bubble-content blockquote {
+  margin: 2px 0;
+  padding: 2px 8px;
+  border-left: 3px solid var(--accent, #B46A57);
+  background: rgba(180, 106, 87, 0.04);
+  color: #495057;
+  border-radius: 0 6px 6px 0;
+}
+
+.message-bubble-content blockquote p {
+  margin-bottom: 1px;
+}
+
+.message-bubble-content blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* Lists */
+.message-bubble-content ul,
+.message-bubble-content ol {
+  margin: 1px 0;
+  padding-left: 16px;
+}
+
+.message-bubble-content li {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.message-bubble-content li > p {
+  margin: 0;
+}
+
+.message-bubble-content li > ul,
+.message-bubble-content li > ol {
+  margin: 0;
+}
+
+/* Horizontal Rule */
+.message-bubble-content hr {
+  margin: 4px 0;
+  border: none;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* Tables */
+.md-table-wrapper {
+  margin: 2px 0;
+  overflow-x: auto;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.md-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.md-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.md-table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  color: #343a40;
+}
+
+.md-table tr:last-child td {
+  border-bottom: none;
+}
+
+.md-table tr:hover td {
+  background: #fafbfc;
+}
+
+/* Images in markdown */
+.message-bubble-content img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 2px 0;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Strong / Bold */
+.message-bubble-content strong {
+  font-weight: 700;
+  color: #212529;
+}
+
+/* Emphasis / Italic */
+.message-bubble-content em {
+  font-style: italic;
+  color: #495057;
+}
+
+/* Strikethrough */
+.message-bubble-content del {
+  text-decoration: line-through;
   color: #868e96;
 }

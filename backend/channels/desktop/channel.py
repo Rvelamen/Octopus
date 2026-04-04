@@ -54,14 +54,13 @@ class DesktopChannel(BaseChannel):
 
             self.connected_clients.append(websocket)
 
+            heartbeat_task = asyncio.create_task(self._heartbeat_loop(websocket))
+
             try:
                 while True:
                     try:
-                        # Wait for client message with timeout
-                        data = await asyncio.wait_for(websocket.receive_json(), timeout=1.0)
+                        data = await websocket.receive_json()
                         await self._handle_client_message(websocket, data)
-                    except asyncio.TimeoutError:
-                        pass
                     except WebSocketDisconnect:
                         break
                     except Exception as e:
@@ -71,6 +70,11 @@ class DesktopChannel(BaseChannel):
             except WebSocketDisconnect:
                 logger.info("Desktop client disconnected")
             finally:
+                heartbeat_task.cancel()
+                try:
+                    await heartbeat_task
+                except (asyncio.CancelledError, Exception):
+                    pass
                 if websocket in self.connected_clients:
                     self.connected_clients.remove(websocket)
 
@@ -238,6 +242,20 @@ class DesktopChannel(BaseChannel):
                 await websocket.send_json(error_msg.to_dict())
             except Exception:
                 pass  # Client may have disconnected
+
+    async def _heartbeat_loop(self, websocket: WebSocket, interval: int = 30) -> None:
+        """Send periodic ping frames to detect dead connections.
+
+        Args:
+            websocket: The client WebSocket connection.
+            interval: Heartbeat interval in seconds (default 30s).
+        """
+        while True:
+            await asyncio.sleep(interval)
+            try:
+                await websocket.send_json({"type": "ping"})
+            except Exception:
+                break
 
     def _on_mcp_state_change(self, event_type: str, old_value: Any, new_value: Any) -> None:
         """Handle MCP state changes and broadcast to all connected clients."""
