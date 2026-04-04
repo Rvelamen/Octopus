@@ -84,3 +84,16 @@ class AgentEvent:
     data: Dict[str, Any] = field(default_factory=dict)
     channel: str = ""  # Source channel (desktop, feishu, etc.)
 
+
+@dataclass
+class ToolCallStatus:
+    """Tool call status with detailed info."""
+    tool_call_id: str
+    tool_name: str
+    status: str  # pending, invoking, streaming, completed, error
+    args: dict[str, Any] | None = None
+    partial_args: dict[str, Any] | None = None  # For streaming args
+    result: str | None = None
+    error: str | None = None
+    iteration: int = 1
+

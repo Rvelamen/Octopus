@@ -261,6 +261,26 @@ class AgentLoop:
         Returns:
             The response message, or None if no response needed.
         """
+        
+        # Determine if streaming should be enabled (only for desktop channel)
+        enable_streaming = msg.channel == "desktop"
+        
+        if enable_streaming:
+            return await self._process_streaming_message(msg, session_key)
+        else:
+            # Keep original non-streaming logic
+            return await self._process_non_streaming_message(msg, session_key)
+    
+    async def _process_non_streaming_message(
+        self,
+        msg: InboundMessage,
+        session_key: str | None = None
+    ) -> OutboundMessage | None:
+        """
+        Process message without streaming (original logic).
+        
+        This method preserves the original non-streaming behavior for non-desktop channels.
+        """
 
         # Handle longtask messages (auth requests, completions)
         if msg.message_type in ("longtask_auth", "longtask_complete"):
@@ -975,6 +995,362 @@ class AgentLoop:
 
         logger.info(f"[_build_multimodal_content] Built {len(result)} content items")
         return result
+
+    async def _process_streaming_message(
+        self,
+        msg: InboundMessage,
+        session_key: str | None = None
+    ) -> OutboundMessage | None:
+        """
+        Process message with streaming for desktop channel.
+        
+        This method implements real-time streaming of tokens and tool call status updates.
+        """
+        # Handle longtask messages (auth requests, completions)
+        if msg.message_type in ("longtask_auth", "longtask_complete"):
+            await self._process_longtask_message(msg)
+            if msg.message_type == "longtask_auth":
+                return None
+
+        if msg.channel == "system":
+            return await self._process_system_message(msg, session_key=session_key)
+
+        logger.info(f"[Stream] Processing message from {msg.channel}:{msg.sender_id}")
+
+        current_session = session_key or msg.session_key
+
+        # Convert content to JSON-safe format for events
+        event_content = msg.text_content if msg.is_multimodal else msg.content
+
+        await self.bus.publish_event(AgentEvent(
+            event_type="agent_start",
+            data={"content": event_content, "session": current_session},
+            channel=msg.channel
+        ))
+
+        # Use fixed session key for desktop channel
+        session_key = msg.session_key
+        if msg.channel == "desktop":
+            session_key = "desktop:desktop_session"
+        
+        # Get instance_id from metadata if provided (frontend selected instance)
+        metadata_instance_id = msg.metadata.get("instance_id") if msg.metadata else None
+        
+        if metadata_instance_id:
+            # Switch to the specified instance in the desktop session
+            success, switch_msg = self.sessions.switch_instance(session_key, int(metadata_instance_id))
+            if success:
+                # Reload session to get the switched instance
+                self.sessions._cache.pop(session_key, None)
+                session = self.sessions.get_or_create(session_key)
+                logger.info(f"Switched to instance {metadata_instance_id} for session {session_key}")
+            else:
+                logger.warning(f"Failed to switch to instance {metadata_instance_id}: {switch_msg}")
+                session = self.sessions.get_or_create(session_key)
+        else:
+            # No instance_id provided, use default session
+            session = self.sessions.get_or_create(session_key)
+
+        # === 1. Check for session management commands (after instance switch) ===
+        command_result = await handle_session_command(
+            msg.content,
+            session_key,
+            self.sessions
+        )
+
+        if command_result:
+            # Command was handled, return response
+            return OutboundMessage(
+                channel=msg.channel,
+                chat_id=msg.chat_id,
+                content=command_result.message
+            )
+        
+        # Update tool contexts with session instance ID
+        session_instance_id = session.active_instance.id if session.active_instance else None
+        
+        message_tool = self.tools.get("message")
+        if isinstance(message_tool, MessageTool):
+            message_tool.set_context(msg.channel, msg.chat_id)
+        
+        spawn_tool = self.tools.get("spawn")
+        if isinstance(spawn_tool, SpawnTool):
+            spawn_tool.set_context(msg.channel, msg.chat_id, session_instance_id)
+        
+        cron_tool = self.tools.get("cron")
+        if isinstance(cron_tool, CronTool):
+            cron_tool.set_context(msg.channel, msg.chat_id, session_instance_id)
+        
+        # Build initial messages
+        if msg.is_multimodal:
+            user_content = self._build_multimodal_content(msg.content)
+            messages = self.context.build_messages(
+                history=session.get_history(),
+                current_message=user_content,
+                media=None,
+                channel=msg.channel,
+                chat_id=msg.chat_id,
+            )
+            images = msg.get_images()
+            image_list = [{"path": img.image_path, "name": img.image_path.split('/').pop()} for img in images] if images else []
+            
+            files = msg.get_files()
+            file_list = []
+            for f in files:
+                file_list.append({
+                    "path": f.file_path,
+                    "name": f.file_name or f.file_path.split('/').pop(),
+                    "originalName": f.file_name,
+                    "mimeType": f.mime_type,
+                    "size": f.file_size
+                })
+            
+            metadata = {}
+            if image_list:
+                metadata["images"] = image_list
+            if file_list:
+                metadata["files"] = file_list
+            
+            metadata = metadata if metadata else None
+            session.add_message("user", msg.text_content, message_type=msg.message_type, metadata=metadata)
+        else:
+            # Text-only message
+            messages = self.context.build_messages(
+                history=session.get_history(),
+                current_message=msg.content,
+                media=msg.media if msg.media else None,
+                channel=msg.channel,
+                chat_id=msg.chat_id,
+            )
+            session.add_message("user", msg.content, message_type=msg.message_type)
+        self.sessions.save(session)
+        
+        # Agent loop with streaming
+        iteration = 0
+        final_content = None
+        last_prompt_tokens = 0
+
+        should_stop = False
+
+        # Reset stop flag for new task
+        self._stop_current_task = False
+
+        while iteration < self.max_iterations and not should_stop and not self._stop_current_task:
+            iteration += 1
+
+            # Emit "thinking" event
+            await self._emit("agent_thinking", {"iteration": iteration, "session": session.key}, channel=msg.channel)
+
+            # Call LLM with streaming
+            provider, model, provider_type = self._get_current_provider_and_model()
+            
+            full_content = ""
+            tool_calls_buffer = {}
+            
+            try:
+                # Use streaming API
+                async for chunk in provider.chat_stream(
+                    messages=messages,
+                    tools=self.tools.get_definitions(),
+                    model=model
+                ):
+                    # Send content token
+                    if chunk.content:
+                        full_content += chunk.content
+                        await self._emit("agent_token", {
+                            "content": chunk.content,
+                            "session": current_session
+                        }, channel=msg.channel)
+                    
+                    # Handle tool calls (streaming)
+                    if chunk.tool_calls:
+                        for tc in chunk.tool_calls:
+                            # Cache tool call
+                            if tc.id not in tool_calls_buffer:
+                                tool_calls_buffer[tc.id] = {
+                                    "id": tc.id,
+                                    "name": tc.name,
+                                    "arguments": tc.arguments
+                                }
+                                # Send tool call start event
+                                await self._emit("agent_tool_call_start", {
+                                    "tool_call_id": tc.id,
+                                    "tool": tc.name,
+                                    "iteration": iteration,
+                                    "status": "pending"
+                                }, channel=msg.channel)
+                            else:
+                                # Update arguments (streaming)
+                                tool_calls_buffer[tc.id]["arguments"].update(tc.arguments)
+                                await self._emit("agent_tool_call_streaming", {
+                                    "tool_call_id": tc.id,
+                                    "tool": tc.name,
+                                    "partial_args": tool_calls_buffer[tc.id]["arguments"],
+                                    "status": "streaming"
+                                }, channel=msg.channel)
+                    
+                    # Final chunk
+                    if chunk.is_final:
+                        # Record token usage
+                        if chunk.usage:
+                            last_prompt_tokens = chunk.usage.get("prompt_tokens", 0)
+                            self._record_token_usage(
+                                session_instance_id=session_instance_id,
+                                provider_name=provider_type,
+                                model_id=model,
+                                usage=chunk.usage
+                            )
+                
+                # Save assistant message with tool calls
+                if tool_calls_buffer:
+                    tool_calls_data = [
+                        {
+                            "id": tc_data["id"],
+                            "type": "function",
+                            "function": {
+                                "name": tc_data["name"],
+                                "arguments": json.dumps(tc_data["arguments"], ensure_ascii=False)
+                            }
+                        }
+                        for tc_data in tool_calls_buffer.values()
+                    ]
+                    
+                    session.add_message("assistant", full_content or "",
+                                      message_type="tool_call",
+                                      tool_calls=tool_calls_data,
+                                      metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
+                    self.sessions.save(session)
+                    
+                    # Add assistant message to messages
+                    tool_call_dicts = [
+                        {
+                            "id": tc_data["id"],
+                            "type": "function",
+                            "function": {
+                                "name": tc_data["name"],
+                                "arguments": json.dumps(tc_data["arguments"], ensure_ascii=False)
+                            }
+                        }
+                        for tc_data in tool_calls_buffer.values()
+                    ]
+                    messages = self.context.add_assistant_message(
+                        messages, full_content, tool_call_dicts, provider_type
+                    )
+                    
+                    # Execute tools
+                    for tc_id, tc_data in tool_calls_buffer.items():
+                        if self._stop_current_task:
+                            logger.info("Task stopped by user request")
+                            break
+                        
+                        # Update status to invoking
+                        await self._emit("agent_tool_call_invoking", {
+                            "tool_call_id": tc_id,
+                            "tool": tc_data["name"],
+                            "status": "invoking"
+                        }, channel=msg.channel)
+                        
+                        result = None
+                        try:
+                            # Inject channel, chat_id, and session_instance_id for action tools
+                            tool_args = tc_data["arguments"].copy()
+                            if tc_data["name"] == "action":
+                                tool_args["_channel"] = msg.channel
+                                tool_args["_chat_id"] = msg.chat_id
+                                tool_args["_session_instance_id"] = session.active_instance.id
+                            
+                            # Execute tool
+                            result = await self.tools.execute(tc_data["name"], tool_args)
+                            
+                            # Send completion event
+                            await self._emit("agent_tool_call_complete", {
+                                "tool_call_id": tc_id,
+                                "tool": tc_data["name"],
+                                "result": result[:500] + "..." if len(result) > 500 else result,
+                                "status": "completed"
+                            }, channel=msg.channel)
+                            
+                        except Exception as e:
+                            import traceback
+                            traceback.print_exc()
+                            logger.error(f"Tool execution error: {tc_data['name']} - {e}")
+                            result = f"Error executing tool {tc_data['name']}: {str(e)}"
+                            
+                            # Send error event
+                            await self._emit("agent_tool_call_error", {
+                                "tool_call_id": tc_id,
+                                "tool": tc_data["name"],
+                                "error": str(e),
+                                "status": "error"
+                            }, channel=msg.channel)
+                        
+                        # Save tool result
+                        if result is not None:
+                            session.add_message("tool", result,
+                                              message_type="tool_result",
+                                              name=tc_data["name"],
+                                              tool_call_id=tc_id,
+                                              metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
+                            self.sessions.save(session)
+                            
+                            messages = self.context.add_tool_result(
+                                messages, tc_id, tc_data["name"], result, provider_type
+                            )
+                else:
+                    # No tool calls, we're done
+                    final_content = full_content
+                    # Save final assistant response
+                    session.add_message("assistant", final_content or "",
+                                      message_type=msg.message_type,
+                                      metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
+                    self.sessions.save(session)
+                    break
+                    
+            except Exception as e:
+                import traceback
+                logger.error(f"[Stream] Error in streaming: {e}")
+                logger.error(traceback.format_exc())
+                final_content = f"Error: {str(e)}"
+                break
+
+        # Check if stopped by user request
+        if self._stop_current_task and final_content is None:
+            final_content = "任务已被用户暂停。"
+
+        if final_content is None:
+            final_content = "I've completed processing but have no response to give."
+
+        await self.compressor.maybe_compress(session, prompt_tokens=last_prompt_tokens)
+
+        logger.info(f"[Stream] Sending final response with {len(final_content)} chars")
+
+        await self.bus.publish_event(AgentEvent(
+            event_type="agent_finish",
+            data={"content": final_content, "session": msg.chat_id},
+            channel=msg.channel
+        ))
+
+        # Get TTS config for metadata
+        tts_enabled = False
+        tts_config = {}
+        if session_instance_id:
+            try:
+                tts_result = self.tts_service.get_instance_tts_config(session_instance_id)
+                tts_enabled = tts_result.get("enabled", False)
+                tts_config = tts_result.get("config", {})
+            except Exception as tts_err:
+                logger.warning(f"Failed to check TTS config: {tts_err}")
+
+        return OutboundMessage(
+            channel=msg.channel,
+            chat_id=msg.chat_id,
+            content=final_content,
+            metadata={
+                "session_instance_id": session_instance_id,
+                "tts_enabled": tts_enabled,
+                "tts_config": tts_config
+            }
+        )
 
     def _record_token_usage(
         self,

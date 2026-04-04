@@ -95,12 +95,20 @@ class MessageType(Enum):
     ACK = "ack"                      # Message acknowledged
     CHAT_RESPONSE = "chat_response"  # Chat response (full)
     AGENT_START = "agent_start"      # Agent started processing
+    AGENT_TOKEN = "agent_token"      # Streaming token (new)
     AGENT_CHUNK = "agent_chunk"      # Streaming chunk
     AGENT_FINISH = "agent_finish"    # Agent finished
     CONFIG = "config"                # Configuration data
     ERROR = "error"                  # Error message
     PONG = "pong"                    # Keep-alive pong
     MODELS = "models"                # Available models list
+    
+    # Tool Call Events - Server -> Client (new)
+    AGENT_TOOL_CALL_START = "agent_tool_call_start"          # Tool call started
+    AGENT_TOOL_CALL_STREAMING = "agent_tool_call_streaming"  # Tool call streaming
+    AGENT_TOOL_CALL_INVOKING = "agent_tool_call_invoking"    # Tool call invoking
+    AGENT_TOOL_CALL_COMPLETE = "agent_tool_call_complete"    # Tool call completed
+    AGENT_TOOL_CALL_ERROR = "agent_tool_call_error"          # Tool call error
 
     # MCP - Server -> Client
     MCP_STATUS = "mcp_status"              # MCP status response
@@ -456,12 +464,18 @@ SERVER_MESSAGE_TYPES = {
     MessageType.ACK,
     MessageType.CHAT_RESPONSE,
     MessageType.AGENT_START,
+    MessageType.AGENT_TOKEN,
     MessageType.AGENT_CHUNK,
     MessageType.AGENT_FINISH,
     MessageType.CONFIG,
     MessageType.ERROR,
     MessageType.PONG,
     MessageType.MODELS,
+    MessageType.AGENT_TOOL_CALL_START,
+    MessageType.AGENT_TOOL_CALL_STREAMING,
+    MessageType.AGENT_TOOL_CALL_INVOKING,
+    MessageType.AGENT_TOOL_CALL_COMPLETE,
+    MessageType.AGENT_TOOL_CALL_ERROR,
     MessageType.MCP_STATUS,
     MessageType.MCP_SERVERS,
     MessageType.MCP_SERVER_TOOLS,

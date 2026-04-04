@@ -241,6 +241,10 @@ function App() {
         console.log('[WebSocket] Processing event:', type);
 
         switch (type) {
+          case "agent_token":
+            // New: Real-time streaming token
+            setStreamingContent((prev) => prev + (data.content || ""));
+            break;
           case "agent_chunk":
             console.log('[WebSocket] Agent chunk received:', data?.content?.substring(0, 50));
             setStreamingContent((prev) => prev + (data.content || ""));
@@ -269,9 +273,52 @@ function App() {
             setToolCalls([]); // 清空工具调用
             setToolCallAssistantContents({}); // 清空 assistant content
             break;
+          case "agent_tool_call_start":
+            // Tool call started
+            setToolCalls((prev) => [...prev, {
+              id: data.tool_call_id || Date.now(),
+              tool: data.tool,
+              args: {},
+              partialArgs: {},
+              status: 'pending',
+              result: null,
+              iteration: data.iteration || 1
+            }]);
+            break;
+          case "agent_tool_call_streaming":
+            // Tool call arguments streaming
+            setToolCalls((prev) => prev.map(tc =>
+              tc.id === data.tool_call_id
+                ? { ...tc, partialArgs: data.partial_args, status: 'streaming' }
+                : tc
+            ));
+            break;
+          case "agent_tool_call_invoking":
+            // Tool call invoking (executing)
+            setToolCalls((prev) => prev.map(tc =>
+              tc.id === data.tool_call_id
+                ? { ...tc, args: tc.partialArgs || tc.args, status: 'invoking' }
+                : tc
+            ));
+            break;
+          case "agent_tool_call_complete":
+            // Tool call completed
+            setToolCalls((prev) => prev.map(tc =>
+              tc.id === data.tool_call_id
+                ? { ...tc, args: tc.partialArgs || tc.args, result: data.result, status: 'completed' }
+                : tc
+            ));
+            break;
+          case "agent_tool_call_error":
+            // Tool call error
+            setToolCalls((prev) => prev.map(tc =>
+              tc.id === data.tool_call_id
+                ? { ...tc, args: tc.partialArgs || tc.args, error: data.error, status: 'error' }
+                : tc
+            ));
+            break;
           case "agent_tool_call":
-            // 工具调用开始 - 实时显示
-            // 按 iteration 存储 assistant content
+            // Legacy: Tool call start (for backward compatibility)
             if (data.content) {
               setToolCallAssistantContents((prev) => ({
                 ...prev,
@@ -288,7 +335,7 @@ function App() {
             }]);
             break;
           case "agent_tool_result":
-            // 工具调用完成 - 更新结果
+            // Legacy: Tool call result (for backward compatibility)
             setToolCalls((prev) => prev.map(tc =>
               tc.id === data.tool_call_id
                 ? { ...tc, status: 'completed', result: data.result }

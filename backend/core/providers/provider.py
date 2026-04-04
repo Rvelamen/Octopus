@@ -10,7 +10,7 @@ from openai.types.chat import ChatCompletionChunk
 from anthropic import Anthropic, AsyncAnthropic
 from loguru import logger
 
-from backend.core.providers.base import LLMProvider, LLMResponse, ToolCallRequest
+from backend.core.providers.base import LLMProvider, LLMResponse, ToolCallRequest, StreamChunk
 from backend.core.providers.message_adapter import MessageAdapter
 
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
@@ -209,6 +209,39 @@ class UnifiedProvider(LLMProvider):
             return await self._chat_anthropic(messages, tools, model, max_tokens, temperature, stream)
         else:
             return await self._chat_openai(messages, tools, model, max_tokens, temperature, stream, provider)
+    
+    async def chat_stream(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        model: str | None = None,
+        max_tokens: int = 8192,
+        temperature: float = 0.7,
+    ) -> AsyncGenerator[StreamChunk, None]:
+        """
+        Stream chat completion with structured chunks.
+        
+        Args:
+            messages: List of message dicts with 'role' and 'content'.
+            tools: Optional list of tool definitions.
+            model: Model identifier.
+            max_tokens: Maximum tokens in response.
+            temperature: Sampling temperature.
+        
+        Yields:
+            StreamChunk with content, tool_calls, is_final, and usage.
+        """
+        model = model or self.default_model
+        provider = self.provider_type or self._detect_provider_type(self.api_base)
+        
+        logger.info(f"[Stream] Calling {provider.upper()} API with model: {model}")
+        
+        if provider in ("anthropic", "kimi", "minimax"):
+            async for chunk in self._chat_stream_anthropic(messages, tools, model, max_tokens, temperature):
+                yield chunk
+        else:
+            async for chunk in self._chat_stream_openai(messages, tools, model, max_tokens, temperature, provider):
+                yield chunk
 
     async def _chat_openai(
         self,
@@ -304,6 +337,7 @@ class UnifiedProvider(LLMProvider):
         
         system_message = None
         anthropic_messages = []
+        added_tool_use_ids = set()  # Track all tool_use IDs we've added
         
         for msg in messages:
             if msg["role"] == "system":
@@ -359,14 +393,16 @@ class UnifiedProvider(LLMProvider):
                     for tool in msg["tool_use"]:
                         tool_id = tool.get("id")
                         if not tool_id:
-                            logger.warning(f"[Anthropic] Skipping tool_use with missing id: {tool}")
-                            continue
+                            # Generate a fallback ID instead of skipping
+                            tool_id = f"fallback_{hash(str(tool))}_{len(added_tool_use_ids)}"
+                            logger.warning(f"[Anthropic] Tool use missing id, generated fallback: {tool_id}")
                         content_blocks.append({
                             "type": "tool_use",
                             "id": tool_id,
-                            "name": tool.get("name"),
+                            "name": tool.get("name", "unknown"),
                             "input": tool.get("input", {}),
                         })
+                        added_tool_use_ids.add(tool_id)  # Track this ID
                 if msg.get("tool_calls"):
                     for tc in msg["tool_calls"]:
                         func = tc.get("function", {})
@@ -378,23 +414,36 @@ class UnifiedProvider(LLMProvider):
                                 args = {}
                         tc_id = tc.get("id")
                         if not tc_id:
-                            logger.warning(f"[Anthropic] Skipping tool_call with missing id: {tc}")
-                            continue
+                            # Generate a fallback ID instead of skipping
+                            tc_id = f"fallback_{hash(str(tc))}_{len(added_tool_use_ids)}"
+                            logger.warning(f"[Anthropic] Tool call missing id, generated fallback: {tc_id}")
                         content_blocks.append({
                             "type": "tool_use",
                             "id": tc_id,
-                            "name": func.get("name"),
+                            "name": func.get("name", "unknown"),
                             "input": args,
                         })
-                anthropic_messages.append({
-                    "role": "assistant",
-                    "content": content_blocks if content_blocks else [{"type": "text", "text": ""}],
-                })
+                        added_tool_use_ids.add(tc_id)  # Track this ID
+                
+                # Only add assistant message if it has content
+                if content_blocks:
+                    anthropic_messages.append({
+                        "role": "assistant",
+                        "content": content_blocks,
+                    })
+                else:
+                    # Skip empty assistant messages
+                    logger.warning(f"[Anthropic] Skipping empty assistant message: {msg}")
+                    continue
             elif msg["role"] == "tool":
                 tool_use_id = msg.get("tool_use_id") or msg.get("tool_call_id")
                 if not tool_use_id:
-                    logger.warning(f"[Anthropic] Tool message missing tool_use_id, generating fallback ID: {msg}")
-                    tool_use_id = f"tool_call_fallback_{hash(str(msg))}"
+                    logger.warning(f"[Anthropic] Tool message missing tool_use_id, skipping: {msg}")
+                    continue
+                # Verify that this tool_use_id exists in previous messages
+                if tool_use_id not in added_tool_use_ids:
+                    logger.warning(f"[Anthropic] Tool result references non-existent tool_use_id: {tool_use_id}, skipping")
+                    continue
                 anthropic_messages.append({
                     "role": "user",
                     "content": [{
@@ -543,3 +592,307 @@ class UnifiedProvider(LLMProvider):
     async def close(self):
         """Close the async client."""
         await self._client.aclose()
+    
+    async def _chat_stream_openai(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None,
+        model: str,
+        max_tokens: int,
+        temperature: float,
+        provider: str,
+    ) -> AsyncGenerator[StreamChunk, None]:
+        """Stream OpenAI/Azure completions with structured chunks."""
+        try:
+            adapted_messages = MessageAdapter.adapt_messages(messages, provider)
+            
+            kwargs = dict(
+                model=model,
+                messages=adapted_messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                stream=True,
+            )
+            
+            if tools:
+                kwargs["tools"] = tools
+                kwargs["tool_choice"] = "auto"
+            
+            stream = await self._client.chat.completions.create(**kwargs)
+            
+            tool_calls_accumulator = {}  # Accumulate tool call chunks by ID
+            
+            async for chunk in stream:
+                if not chunk.choices or len(chunk.choices) == 0:
+                    continue
+                
+                choice = chunk.choices[0]
+                delta = choice.delta
+                
+                # Handle content
+                if delta.content:
+                    yield StreamChunk(content=delta.content)
+                
+                # Handle tool calls (streaming)
+                if delta.tool_calls:
+                    for tc in delta.tool_calls:
+                        tc_id = tc.id
+                        
+                        # Initialize tool call accumulator if new
+                        if tc_id and tc_id not in tool_calls_accumulator:
+                            tool_calls_accumulator[tc_id] = {
+                                "id": tc_id,
+                                "name": "",
+                                "arguments": ""
+                            }
+                        
+                        # Update tool call data
+                        if tc.function:
+                            if tc.function.name:
+                                tool_calls_accumulator[tc_id]["name"] = tc.function.name
+                            if tc.function.arguments:
+                                tool_calls_accumulator[tc_id]["arguments"] += tc.function.arguments
+                
+                # Handle finish reason
+                if choice.finish_reason:
+                    # Parse accumulated tool calls
+                    tool_calls = []
+                    for tc_id, tc_data in tool_calls_accumulator.items():
+                        try:
+                            args = json.loads(tc_data["arguments"]) if tc_data["arguments"] else {}
+                        except json.JSONDecodeError:
+                            args = {"raw": tc_data["arguments"]}
+                        
+                        tool_calls.append(ToolCallRequest(
+                            id=tc_data["id"],
+                            name=tc_data["name"],
+                            arguments=args,
+                        ))
+                    
+                    # Yield final chunk with usage if available
+                    usage = {}
+                    if hasattr(chunk, 'usage') and chunk.usage:
+                        usage = {
+                            "prompt_tokens": chunk.usage.prompt_tokens,
+                            "completion_tokens": chunk.usage.completion_tokens,
+                            "total_tokens": chunk.usage.total_tokens,
+                        }
+                    
+                    yield StreamChunk(
+                        tool_calls=tool_calls if tool_calls else None,
+                        is_final=True,
+                        usage=usage
+                    )
+                    
+        except Exception as e:
+            logger.error(f"[Stream] OpenAI streaming failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            yield StreamChunk(
+                content=f"Error: {str(e)}",
+                is_final=True
+            )
+    
+    async def _chat_stream_anthropic(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None,
+        model: str,
+        max_tokens: int,
+        temperature: float,
+    ) -> AsyncGenerator[StreamChunk, None]:
+        """Stream Anthropic completions with structured chunks."""
+        try:
+            # Prepare messages (same as _chat_anthropic)
+            system_message = None
+            anthropic_messages = []
+            added_tool_use_ids = set()  # Track all tool_use IDs we've added
+            
+            for msg in messages:
+                if msg["role"] == "system":
+                    system_message = msg["content"]
+                elif msg["role"] == "user":
+                    content = msg["content"]
+                    if isinstance(content, list):
+                        anthropic_content = []
+                        for item in content:
+                            if item["type"] == "text":
+                                anthropic_content.append({"type": "text", "text": item["text"]})
+                            elif item["type"] == "image_url":
+                                image_url = item["image_url"]["url"]
+                                if image_url.startswith("data:"):
+                                    mime_type = image_url.split(";")[0].split(":")[1]
+                                    base64_data = image_url.split(",")[1]
+                                    anthropic_content.append({
+                                        "type": "image",
+                                        "source": {
+                                            "type": "base64",
+                                            "media_type": mime_type,
+                                            "data": base64_data,
+                                        }
+                                    })
+                                else:
+                                    anthropic_content.append({
+                                        "type": "image",
+                                        "source": {
+                                            "type": "url",
+                                            "url": image_url,
+                                        }
+                                    })
+                        anthropic_messages.append({
+                            "role": "user",
+                            "content": anthropic_content,
+                        })
+                    else:
+                        anthropic_messages.append({
+                            "role": "user",
+                            "content": content,
+                        })
+                elif msg["role"] == "assistant":
+                    content_blocks = []
+                    if msg.get("content"):
+                        content_blocks.append({"type": "text", "text": msg["content"]})
+                    # Handle tool_use (Anthropic format)
+                    if msg.get("tool_use"):
+                        for tool in msg["tool_use"]:
+                            tool_id = tool.get("id")
+                            if not tool_id:
+                                # Generate a fallback ID instead of skipping
+                                tool_id = f"fallback_{hash(str(tool))}_{len(added_tool_use_ids)}"
+                                logger.warning(f"[Stream] Tool use missing id, generated fallback: {tool_id}")
+                            content_blocks.append({
+                                "type": "tool_use",
+                                "id": tool_id,
+                                "name": tool.get("name", "unknown"),
+                                "input": tool.get("input", {}),
+                            })
+                            added_tool_use_ids.add(tool_id)  # Track this ID
+                    # Handle tool_calls (OpenAI format)
+                    if msg.get("tool_calls"):
+                        for tc in msg["tool_calls"]:
+                            func = tc.get("function", {})
+                            args = func.get("arguments", "{}")
+                            if isinstance(args, str):
+                                try:
+                                    args = json.loads(args)
+                                except json.JSONDecodeError:
+                                    args = {}
+                            tc_id = tc.get("id")
+                            if not tc_id:
+                                # Generate a fallback ID instead of skipping
+                                tc_id = f"fallback_{hash(str(tc))}_{len(added_tool_use_ids)}"
+                                logger.warning(f"[Stream] Tool call missing id, generated fallback: {tc_id}")
+                            content_blocks.append({
+                                "type": "tool_use",
+                                "id": tc_id,
+                                "name": func.get("name", "unknown"),
+                                "input": args,
+                            })
+                            added_tool_use_ids.add(tc_id)  # Track this ID
+                    
+                    # Only add assistant message if it has content
+                    if content_blocks:
+                        anthropic_messages.append({
+                            "role": "assistant",
+                            "content": content_blocks,
+                        })
+                    else:
+                        # Skip empty assistant messages
+                        logger.warning(f"[Stream] Skipping empty assistant message: {msg}")
+                        continue
+                elif msg["role"] == "tool":
+                    tool_use_id = msg.get("tool_use_id") or msg.get("tool_call_id")
+                    if not tool_use_id:
+                        logger.warning(f"[Stream] Tool message missing tool_use_id, skipping: {msg}")
+                        continue
+                    # Verify that this tool_use_id exists in previous messages
+                    if tool_use_id not in added_tool_use_ids:
+                        logger.warning(f"[Stream] Tool result references non-existent tool_use_id: {tool_use_id}, skipping")
+                        continue
+                    anthropic_messages.append({
+                        "role": "user",
+                        "content": [{
+                            "type": "tool_result",
+                            "tool_use_id": tool_use_id,
+                            "content": msg.get("content", ""),
+                        }],
+                    })
+            
+            kwargs = dict(
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system=system_message,
+                messages=anthropic_messages,
+            )
+            
+            if tools:
+                anthropic_tools = convert_tools_to_anthropic_format(tools)
+                kwargs["tools"] = anthropic_tools
+            
+            tool_calls_accumulator = {}  # Accumulate tool use blocks by ID
+            
+            async with self._client.messages.stream(**kwargs) as stream:
+                async for event in stream:
+                    # Handle text content
+                    if event.type == "content_block_delta" and event.delta.type == "text_delta":
+                        yield StreamChunk(content=event.delta.text)
+                    
+                    # Handle tool use (streaming)
+                    elif event.type == "content_block_start":
+                        if hasattr(event, 'content_block') and event.content_block.type == "tool_use":
+                            tc_id = event.content_block.id
+                            tool_calls_accumulator[tc_id] = {
+                                "id": tc_id,
+                                "name": event.content_block.name,
+                                "arguments": ""
+                            }
+                    
+                    elif event.type == "content_block_delta":
+                        if hasattr(event, 'delta') and event.delta.type == "input_json_delta":
+                            # Get the tool use ID from the index
+                            if hasattr(event, 'index'):
+                                # Find the tool call by index
+                                for tc_id, tc_data in tool_calls_accumulator.items():
+                                    if list(tool_calls_accumulator.keys()).index(tc_id) == event.index:
+                                        tc_data["arguments"] += event.delta.partial_json
+                                        break
+                    
+                    # Handle message stop (final)
+                    elif event.type == "message_stop":
+                        # Parse accumulated tool calls
+                        tool_calls = []
+                        for tc_id, tc_data in tool_calls_accumulator.items():
+                            try:
+                                args = json.loads(tc_data["arguments"]) if tc_data["arguments"] else {}
+                            except json.JSONDecodeError:
+                                args = {"raw": tc_data["arguments"]}
+                            
+                            tool_calls.append(ToolCallRequest(
+                                id=tc_data["id"],
+                                name=tc_data["name"],
+                                arguments=args,
+                            ))
+                        
+                        # Get final message for usage
+                        final_message = await stream.get_final_message()
+                        usage = {
+                            "prompt_tokens": final_message.usage.input_tokens,
+                            "completion_tokens": final_message.usage.output_tokens,
+                            "total_tokens": final_message.usage.input_tokens + final_message.usage.output_tokens,
+                        }
+                        
+                        yield StreamChunk(
+                            tool_calls=tool_calls if tool_calls else None,
+                            is_final=True,
+                            usage=usage
+                        )
+                        
+        except Exception as e:
+            logger.error(f"[Stream] Anthropic streaming failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            yield StreamChunk(
+                content=f"Error: {str(e)}",
+                is_final=True
+            )

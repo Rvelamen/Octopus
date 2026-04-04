@@ -1,0 +1,88 @@
+.tts-message-player {
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+}
+
+.tts-player-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tts-player-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
+
+.tts-player-btn-small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--primary);
+  border: none;
+  border-radius: 50%;
+  color: var(--bg-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tts-player-btn-small:hover {
+  background: var(--primary-dark);
+  transform: scale(1.1);
+}
+
+.tts-player-progress {
+  flex: 1;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.tts-player-progress-bar {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.1s ease;
+}
+
+.tts-player-time-small {
+  font-size: 11px;
+  color: var(--text-secondary);
+  min-width: 70px;
+  text-align: center;
+}
+
+.tts-player-text-small {
+  font-size: 11px;
+  color: var(--text-secondary);
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tts-player-close-small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.tts-player-close-small:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+}

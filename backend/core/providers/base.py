@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, AsyncIterator
 
 
 @dataclass
@@ -11,6 +11,15 @@ class ToolCallRequest:
     id: str
     name: str
     arguments: dict[str, Any]
+
+
+@dataclass
+class StreamChunk:
+    """Streaming chunk from LLM."""
+    content: str | None = None
+    tool_calls: list[ToolCallRequest] | None = None
+    is_final: bool = False
+    usage: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -62,6 +71,37 @@ class LLMProvider(ABC):
             LLMResponse with content and/or tool calls.
         """
         pass
+    
+    async def chat_stream(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        model: str | None = None,
+        max_tokens: int = 80000,
+        temperature: float = 0.7,
+    ) -> AsyncIterator[StreamChunk]:
+        """
+        Stream chat completion.
+        
+        Args:
+            messages: List of message dicts with 'role' and 'content'.
+            tools: Optional list of tool definitions.
+            model: Model identifier (provider-specific).
+            max_tokens: Maximum tokens in response.
+            temperature: Sampling temperature.
+        
+        Yields:
+            StreamChunk with fields:
+                - content: str | None (text content)
+                - tool_calls: list[ToolCallRequest] | None (tool calls)
+                - is_final: bool (whether this is the final chunk)
+                - usage: dict | None (token usage info)
+        
+        Note:
+            Subclasses should implement this method to support streaming.
+            Default implementation raises NotImplementedError.
+        """
+        raise NotImplementedError("Subclasses must implement chat_stream for streaming support")
     
     @abstractmethod
     def get_default_model(self) -> str:

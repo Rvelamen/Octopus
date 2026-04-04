@@ -174,8 +174,15 @@ class DesktopChannel(BaseChannel):
         # Map event types to message types
         event_type_map = {
             "agent_start": MessageType.AGENT_START,
+            "agent_token": MessageType.AGENT_TOKEN,  # New: streaming token
             "agent_chunk": MessageType.AGENT_CHUNK,
             "agent_finish": MessageType.AGENT_FINISH,
+            # Tool call events
+            "agent_tool_call_start": MessageType.AGENT_TOOL_CALL_START,
+            "agent_tool_call_streaming": MessageType.AGENT_TOOL_CALL_STREAMING,
+            "agent_tool_call_invoking": MessageType.AGENT_TOOL_CALL_INVOKING,
+            "agent_tool_call_complete": MessageType.AGENT_TOOL_CALL_COMPLETE,
+            "agent_tool_call_error": MessageType.AGENT_TOOL_CALL_ERROR,
         }
         
         msg_type = event_type_map.get(event.event_type)
