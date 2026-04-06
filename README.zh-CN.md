@@ -33,6 +33,8 @@
 
 <div align="center">
 
+https://github.com/user-attachments/assets/29a64b38-3f98-4cbc-99d4-662f55cbec74
+
 ### 文本转语音演示
 https://github.com/user-attachments/assets/ef0af274-e988-436f-a7da-a007e1a814ee
 
