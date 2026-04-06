@@ -6688,7 +6688,7 @@ hr {
 .message-bubble-header {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   margin-bottom: 8px;
 }
@@ -6762,7 +6762,6 @@ hr {
   font-size: 14px;
   line-height: 1.6;
   color: var(--text);
-  white-space: pre-wrap;
   word-wrap: break-word;
 }
 

@@ -720,7 +720,7 @@ class Database:
                 if 'tts_config' not in instance_columns:
                     conn.execute("ALTER TABLE session_instances ADD COLUMN tts_config TEXT DEFAULT '{}'")
                     logger.info("Migration: Added tts_config column to session_instances table")
-                
+            
         except Exception as e:
             logger.warning(f"Migration failed (may be expected): {e}")
     

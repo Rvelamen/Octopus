@@ -1,0 +1,251 @@
+"""Handler registry for Desktop channel."""
+
+import asyncio
+
+from fastapi import WebSocket
+from loguru import logger
+
+from backend.channels.desktop.protocol import MessageType, WSMessage
+from backend.channels.desktop.handlers.base import MessageHandler
+from backend.channels.desktop.provider_handlers import (
+    ProviderHandler, ModelHandler, SettingsHandler, AgentDefaultsHandler,
+    ChannelConfigHandler, ToolConfigHandler, ImageProviderConfigHandler
+)
+from backend.channels.desktop.wechat_handler import WechatConfigHandler
+from backend.core.events.bus import MessageBus
+from backend.mcp.manager import MCPManager
+
+# Import handlers from extensions (unified extension system)
+from backend.extensions.desktop_handlers import (
+    ExtensionGetListHandler,
+    ExtensionInstallHandler,
+    ExtensionUninstallHandler,
+    ExtensionRunHandler,
+    ExtensionConfigHandler,
+)
+
+# Import chat handlers
+from backend.channels.desktop.handlers.chat import ChatHandler
+
+# Import config handlers
+from backend.channels.desktop.handlers.config import (
+    GetConfigHandler, SaveConfigHandler, PingHandler, StopAgentsHandler
+)
+
+# Import models handlers
+from backend.channels.desktop.handlers.models import GetModelsHandler
+
+# Import MCP handlers
+from backend.channels.desktop.handlers.mcp import (
+    MCPGetStatusHandler, TTSHandler, MCPGetServersHandler,
+    MCPGetServerToolsHandler, MCPAddServerHandler, MCPDeleteServerHandler,
+    MCPUpdateServerHandler, MCPUpdateToolHandler, MCPDiscoverToolsHandler,
+    MCPConnectServerHandler, MCPDisconnectServerHandler, MCPReconnectServerHandler,
+    MCPCallToolHandler, MCPGetConfigHandler, MCPUpdateConfigHandler
+)
+
+# Import session handlers
+from backend.channels.desktop.handlers.session import (
+    SessionGetChannelsHandler, SessionGetChannelSessionsHandler,
+    SessionGetSessionDetailHandler, SessionGetMessagesHandler,
+    SessionDeleteInstanceHandler, SessionCreateHandler,
+    SessionSetActiveHandler, SessionGetInstancesHandler
+)
+
+# Import workspace handlers
+from backend.channels.desktop.handlers.workspace import (
+    WorkspaceGetRootHandler, WorkspaceListHandler, WorkspaceReadHandler,
+    WorkspaceWriteHandler, WorkspaceDeleteHandler, WorkspaceMkdirHandler,
+    WorkspaceRenameHandler
+)
+
+# Import cron handlers
+from backend.channels.desktop.handlers.cron import (
+    CronGetJobsHandler, CronAddJobHandler, CronDeleteJobHandler,
+    CronToggleJobHandler, CronRunJobHandler
+)
+
+# Import agent handlers
+from backend.channels.desktop.handlers.agent import (
+    AgentGetListHandler, AgentGetSoulHandler, AgentSaveSoulHandler,
+    AgentDeleteHandler, AgentGetSystemFilesHandler, AgentGetSystemFileHandler,
+    AgentSaveSystemFileHandler
+)
+
+# Import subagent handlers
+from backend.channels.desktop.handlers.subagent import (
+    SubagentGetAvailableToolsHandler, SubagentGetAvailableExtensionsHandler,
+    SubagentGetProviderModelsHandler
+)
+
+# Import token handlers
+from backend.channels.desktop.handlers.token import TokenUsageHandler
+
+# Import image handlers
+from backend.channels.desktop.handlers.image import (
+    ImageUploadHandler, FileUploadHandler, ImageAnalyzeHandler,
+    ImageGenerateHandler, ImageGetUnderstandingProvidersHandler,
+    ImageGetGenerationProvidersHandler
+)
+
+
+class HandlerRegistry:
+    """Registry for message handlers."""
+
+    def __init__(self, bus: MessageBus, pending_responses: dict[str, asyncio.Queue], mcp_manager: MCPManager | None = None, cron_service=None, db=None, agent_loop=None, subagent_manager=None):
+        from backend.data import Database
+        self.mcp_manager = mcp_manager
+        self.cron_service = cron_service
+        self.db = db or Database()
+        self.agent_loop = agent_loop
+        self.subagent_manager = subagent_manager
+
+        from backend.data.provider_store import ProviderRepository, ModelRepository, SettingsRepository
+        self.provider_handler_db = self.db
+        self.model_handler_db = self.db
+        self.settings_handler_db = self.db
+
+        self.handlers: dict[MessageType, MessageHandler] = {
+            MessageType.CHAT: ChatHandler(bus, pending_responses),
+            MessageType.GET_CONFIG: GetConfigHandler(bus, self.db),
+            MessageType.SAVE_CONFIG: SaveConfigHandler(bus),
+            MessageType.PING: PingHandler(bus),
+            MessageType.GET_MODELS: GetModelsHandler(bus, self.db),
+            MessageType.STOP_AGENTS: StopAgentsHandler(bus, agent_loop, subagent_manager),
+        }
+
+        # Register MCP handlers if manager is available
+        if mcp_manager:
+            self.handlers.update({
+                MessageType.MCP_GET_STATUS: MCPGetStatusHandler(bus, mcp_manager),
+                MessageType.MCP_GET_SERVERS: MCPGetServersHandler(bus, mcp_manager),
+                MessageType.MCP_GET_SERVER_TOOLS: MCPGetServerToolsHandler(bus, mcp_manager),
+                MessageType.MCP_ADD_SERVER: MCPAddServerHandler(bus, mcp_manager),
+                MessageType.MCP_DELETE_SERVER: MCPDeleteServerHandler(bus, mcp_manager),
+                MessageType.MCP_UPDATE_SERVER: MCPUpdateServerHandler(bus, mcp_manager),
+                MessageType.MCP_UPDATE_TOOL: MCPUpdateToolHandler(bus, mcp_manager),
+                MessageType.MCP_DISCOVER_TOOLS: MCPDiscoverToolsHandler(bus, mcp_manager),
+                MessageType.MCP_CONNECT_SERVER: MCPConnectServerHandler(bus, mcp_manager),
+                MessageType.MCP_RECONNECT_SERVER: MCPReconnectServerHandler(bus, mcp_manager),
+                MessageType.MCP_DISCONNECT_SERVER: MCPDisconnectServerHandler(bus, mcp_manager),
+                MessageType.MCP_CALL_TOOL: MCPCallToolHandler(bus, mcp_manager),
+                MessageType.MCP_GET_CONFIG: MCPGetConfigHandler(bus, mcp_manager),
+                MessageType.MCP_UPDATE_CONFIG: MCPUpdateConfigHandler(bus, mcp_manager),
+                MessageType.PROVIDER_GET_ALL: ProviderHandler(bus, self.provider_handler_db),
+                MessageType.PROVIDER_GET: ProviderHandler(bus, self.provider_handler_db),
+                MessageType.PROVIDER_ADD: ProviderHandler(bus, self.provider_handler_db),
+                MessageType.PROVIDER_UPDATE: ProviderHandler(bus, self.provider_handler_db),
+                MessageType.PROVIDER_DELETE: ProviderHandler(bus, self.provider_handler_db),
+                MessageType.PROVIDER_ENABLE: ProviderHandler(bus, self.provider_handler_db),
+                MessageType.MODEL_GET_ALL: ModelHandler(bus, self.model_handler_db),
+                MessageType.MODEL_ADD: ModelHandler(bus, self.model_handler_db),
+                MessageType.MODEL_UPDATE: ModelHandler(bus, self.model_handler_db),
+                MessageType.MODEL_DELETE: ModelHandler(bus, self.model_handler_db),
+                MessageType.MODEL_SET_DEFAULT: ModelHandler(bus, self.model_handler_db),
+                MessageType.SETTINGS_GET: SettingsHandler(bus, self.settings_handler_db),
+                MessageType.SETTINGS_SET: SettingsHandler(bus, self.settings_handler_db),
+                MessageType.AGENT_DEFAULTS_GET: AgentDefaultsHandler(bus, self.db),
+                MessageType.AGENT_DEFAULTS_UPDATE: AgentDefaultsHandler(bus, self.db),
+                MessageType.GET_ENABLED_MODELS: AgentDefaultsHandler(bus, self.db),
+                MessageType.CHANNEL_GET_LIST: ChannelConfigHandler(bus, self.db),
+                MessageType.CHANNEL_UPDATE: ChannelConfigHandler(bus, self.db),
+                MessageType.CHANNEL_DELETE: ChannelConfigHandler(bus, self.db),
+                MessageType.WECHAT_GET_QRCODE: WechatConfigHandler(bus, self.db),
+                MessageType.WECHAT_CHECK_STATUS: WechatConfigHandler(bus, self.db),
+                MessageType.WECHAT_CLEAR_TOKEN: WechatConfigHandler(bus, self.db),
+                MessageType.TOOL_GET_CONFIG: ToolConfigHandler(bus, self.db),
+                MessageType.TOOL_UPDATE_CONFIG: ToolConfigHandler(bus, self.db),
+                MessageType.IMAGE_GET_PROVIDERS: ImageProviderConfigHandler(bus, self.db),
+                MessageType.IMAGE_SET_DEFAULT_PROVIDER: ImageProviderConfigHandler(bus, self.db),
+                MessageType.TOKEN_GET_USAGE: TokenUsageHandler(bus, self.db),
+            })
+
+        # Register Extension handlers (unified)
+        self.handlers.update({
+            MessageType.EXTENSION_GET_LIST: ExtensionGetListHandler(bus),
+            MessageType.EXTENSION_INSTALL: ExtensionInstallHandler(bus, pending_responses),
+            MessageType.EXTENSION_UNINSTALL: ExtensionUninstallHandler(bus),
+            MessageType.EXTENSION_RUN: ExtensionRunHandler(bus, pending_responses),
+            MessageType.EXTENSION_CONFIG: ExtensionConfigHandler(bus),
+        })
+
+        # Register Session History handlers
+        self.handlers.update({
+            MessageType.SESSION_GET_CHANNELS: SessionGetChannelsHandler(bus),
+            MessageType.SESSION_GET_CHANNEL_SESSIONS: SessionGetChannelSessionsHandler(bus),
+            MessageType.SESSION_GET_SESSION_DETAIL: SessionGetSessionDetailHandler(bus),
+            MessageType.SESSION_GET_MESSAGES: SessionGetMessagesHandler(bus),
+            MessageType.SESSION_DELETE_INSTANCE: SessionDeleteInstanceHandler(bus),
+            MessageType.SESSION_CREATE: SessionCreateHandler(bus),
+            MessageType.SESSION_SET_ACTIVE: SessionSetActiveHandler(bus),
+            MessageType.SESSION_GET_INSTANCES: SessionGetInstancesHandler(bus),
+        })
+
+        # Register Workspace File System handlers
+        self.handlers.update({
+            MessageType.WORKSPACE_GET_ROOT: WorkspaceGetRootHandler(bus),
+            MessageType.WORKSPACE_LIST: WorkspaceListHandler(bus),
+            MessageType.WORKSPACE_READ: WorkspaceReadHandler(bus),
+            MessageType.WORKSPACE_WRITE: WorkspaceWriteHandler(bus),
+            MessageType.WORKSPACE_DELETE: WorkspaceDeleteHandler(bus),
+            MessageType.WORKSPACE_MKDIR: WorkspaceMkdirHandler(bus),
+            MessageType.WORKSPACE_RENAME: WorkspaceRenameHandler(bus),
+        })
+
+        # Register Cron Job handlers
+        self.handlers.update({
+            MessageType.CRON_GET_JOBS: CronGetJobsHandler(bus, cron_service),
+            MessageType.CRON_ADD_JOB: CronAddJobHandler(bus, cron_service),
+            MessageType.CRON_DELETE_JOB: CronDeleteJobHandler(bus, cron_service),
+            MessageType.CRON_TOGGLE_JOB: CronToggleJobHandler(bus, cron_service),
+            MessageType.CRON_RUN_JOB: CronRunJobHandler(bus, cron_service),
+        })
+
+        # Register Agent handlers
+        self.handlers.update({
+            MessageType.AGENT_GET_LIST: AgentGetListHandler(bus, db),
+            MessageType.AGENT_GET_SOUL: AgentGetSoulHandler(bus, db),
+            MessageType.AGENT_SAVE_SOUL: AgentSaveSoulHandler(bus, db),
+            MessageType.AGENT_DELETE: AgentDeleteHandler(bus, db),
+            MessageType.AGENT_GET_SYSTEM_FILES: AgentGetSystemFilesHandler(bus),
+            MessageType.AGENT_GET_SYSTEM_FILE: AgentGetSystemFileHandler(bus),
+            MessageType.AGENT_SAVE_SYSTEM_FILE: AgentSaveSystemFileHandler(bus),
+        })
+
+        # Register Subagent Options handlers
+        self.handlers.update({
+            MessageType.SUBAGENT_GET_AVAILABLE_TOOLS: SubagentGetAvailableToolsHandler(bus, db),
+            MessageType.SUBAGENT_GET_AVAILABLE_EXTENSIONS: SubagentGetAvailableExtensionsHandler(bus, db),
+            MessageType.SUBAGENT_GET_PROVIDER_MODELS: SubagentGetProviderModelsHandler(bus, db),
+        })
+
+        # Register Image handlers
+        self.handlers.update({
+            MessageType.IMAGE_UPLOAD: ImageUploadHandler(bus),
+            MessageType.FILE_UPLOAD: FileUploadHandler(bus),
+            MessageType.IMAGE_ANALYZE: ImageAnalyzeHandler(bus),
+            MessageType.IMAGE_GENERATE: ImageGenerateHandler(bus),
+            MessageType.IMAGE_GET_UNDERSTANDING_PROVIDERS: ImageGetUnderstandingProvidersHandler(bus),
+            MessageType.IMAGE_GET_GENERATION_PROVIDERS: ImageGetGenerationProvidersHandler(bus),
+        })
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Route message to appropriate handler."""
+        handler = self.handlers.get(message.type)
+        if handler:
+            try:
+                await handler.handle(websocket, message)
+            except Exception as e:
+                logger.error(f"Handler error for {message.type}: {e}")
+                await websocket.send_json(WSMessage(
+                    type=MessageType.ERROR,
+                    request_id=message.request_id,
+                    data={"error": f"Internal error: {str(e)}"}
+                ).to_dict())
+        else:
+            logger.warning(f"No handler for message type: {message.type}")
+            await websocket.send_json(WSMessage(
+                type=MessageType.ERROR,
+                request_id=message.request_id,
+                data={"error": f"Unknown message type: {message.type}"}
+            ).to_dict())

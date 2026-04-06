@@ -128,13 +128,13 @@ async def lifespan(app: FastAPI):
     # 4. Initialize Desktop Channel
     from backend.channels.desktop.channel import DesktopChannel
     from backend.channels.desktop.config import DesktopConfig
-    
+
     desktop_config = DesktopConfig()
     desktop_channel = DesktopChannel(
-        config=desktop_config, 
-        bus=bus, 
-        app=app, 
-        mcp_manager=mcp_manager, 
+        config=desktop_config,
+        bus=bus,
+        app=app,
+        mcp_manager=mcp_manager,
         cron_service=cron_service,
         agent_loop=agent_loop,
         subagent_manager=subagent_manager
@@ -170,10 +170,10 @@ async def lifespan(app: FastAPI):
     logger.info(f"Mounted /workspace to {workspace_path}")
 
     yield
-    
+
     # Shutdown
     logger.info("Shutting down Octopus Desktop Service...")
-    
+
     # Stop cron service
     if cron_service:
         cron_service.stop()

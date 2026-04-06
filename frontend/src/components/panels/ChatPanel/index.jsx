@@ -277,17 +277,6 @@ function ChatPanel({
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          // Remove outer wrapper paragraph
-          p: ({ children }) => <>{children}</>,
-          // Remove paragraph inside list items
-          li: ({ children }) => {
-            // Filter out empty paragraphs
-            const filtered = React.Children.toArray(children).filter(child => {
-              if (typeof child === 'string') return child.trim() !== '';
-              return true;
-            });
-            return <li>{filtered}</li>;
-          },
           a: ({ href, children }) => (
             <a
               href={href}

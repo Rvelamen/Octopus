@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
+  Routes,
+  Route,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
+import {
   MessageSquare,
   Settings,
   Server,
@@ -377,6 +383,7 @@ function App() {
               });
             }
             break;
+
         }
       };
 
@@ -482,6 +489,51 @@ function App() {
     }
   };
 
+  // ===== 路由导航 =====
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // 同步 activeTab 与路由
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/chat') {
+      setActiveTab('chat');
+    } else if (path === '/config') {
+      setActiveTab('config');
+    } else if (path === '/mcp') {
+      setActiveTab('mcp');
+    } else if (path === '/extensions') {
+      setActiveTab('extensions');
+    } else if (path === '/cron') {
+      setActiveTab('cron');
+    } else if (path === '/agents') {
+      setActiveTab('agents');
+    } else if (path === '/workspace') {
+      setActiveTab('workspace');
+    } else if (path === '/history') {
+      setActiveTab('history');
+    } else if (path === '/tokens') {
+      setActiveTab('tokens');
+    }
+  }, [location.pathname]);
+
+  // 处理导航
+  const handleNavClick = (tab) => {
+    setActiveTab(tab);
+    const routeMap = {
+      chat: '/chat',
+      config: '/config',
+      mcp: '/mcp',
+      extensions: '/extensions',
+      cron: '/cron',
+      agents: '/agents',
+      workspace: '/workspace',
+      history: '/history',
+      tokens: '/tokens',
+    };
+    navigate(routeMap[tab] || '/chat');
+  };
+
   // ===== 渲染 =====
   return (
     <div className="app-container">
@@ -494,63 +546,63 @@ function App() {
         <nav>
           <button
             className={`nav-item ${activeTab === "chat" ? "active" : ""}`}
-            onClick={() => setActiveTab("chat")}
+            onClick={() => handleNavClick("chat")}
           >
             <Bot size={18} />
             <span>CHAT</span>
           </button>
           <button
             className={`nav-item ${activeTab === "config" ? "active" : ""}`}
-            onClick={() => setActiveTab("config")}
+            onClick={() => handleNavClick("config")}
           >
             <Settings size={18} />
             <span>SYSTEM</span>
           </button>
           <button
             className={`nav-item ${activeTab === "mcp" ? "active" : ""}`}
-            onClick={() => setActiveTab("mcp")}
+            onClick={() => handleNavClick("mcp")}
           >
             <Server size={18} />
             <span>SERVERS</span>
           </button>
           <button
             className={`nav-item ${activeTab === "extensions" ? "active" : ""}`}
-            onClick={() => setActiveTab("extensions")}
+            onClick={() => handleNavClick("extensions")}
           >
             <Package size={18} />
             <span>EXTENSIONS</span>
           </button>
           <button
             className={`nav-item ${activeTab === "cron" ? "active" : ""}`}
-            onClick={() => setActiveTab("cron")}
+            onClick={() => handleNavClick("cron")}
           >
             <Clock size={18} />
             <span>CRON</span>
           </button>
           <button
             className={`nav-item ${activeTab === "agents" ? "active" : ""}`}
-            onClick={() => setActiveTab("agents")}
+            onClick={() => handleNavClick("agents")}
           >
             <Users size={18} />
             <span>AGENTS</span>
           </button>
           <button
             className={`nav-item ${activeTab === "workspace" ? "active" : ""}`}
-            onClick={() => setActiveTab("workspace")}
+            onClick={() => handleNavClick("workspace")}
           >
             <FolderOpen size={18} />
             <span>WORKSPACE</span>
           </button>
           <button
             className={`nav-item ${activeTab === "history" ? "active" : ""}`}
-            onClick={() => setActiveTab("history")}
+            onClick={() => handleNavClick("history")}
           >
             <History size={18} />
             <span>HISTORY</span>
           </button>
           <button
             className={`nav-item ${activeTab === "tokens" ? "active" : ""}`}
-            onClick={() => setActiveTab("tokens")}
+            onClick={() => handleNavClick("tokens")}
           >
             <Zap size={18} />
             <span>TOKENS</span>
@@ -595,42 +647,58 @@ function App() {
         </header>
 
         <div className="content-area">
-          {activeTab === "chat" && (
-            <ChatPanel
-              sendWSMessage={sendWSMessage}
-              onSendMessage={handleSendMessage}
-              onStopGeneration={handleStopGeneration}
-              isProcessing={isProcessing}
-              streamingContent={streamingContent}
-              currentChatInstanceId={currentChatInstanceId}
-              toolCalls={toolCalls}
-              toolCallAssistantContents={toolCallAssistantContents}
-              ttsAudio={ttsAudio}
-              onTtsPlayed={() => setTtsAudio(null)}
-            />
-          )}
-          {activeTab === "config" && (
-            <ConfigPanel
-              config={config}
-              setConfig={setConfig}
-              onSave={handleSaveConfig}
-              isSaving={isSaving}
-              sendWSMessage={sendWSMessage}
-            />
-          )}
-          {activeTab === "mcp" && <MCPPanel sendWSMessage={sendWSMessage} />}
-          {activeTab === "extensions" && (
-            <ExtensionsPanel sendWSMessage={sendWSMessage} ws={ws.current} />
-          )}
-          {activeTab === "workspace" && (
-            <WorkspacePanel sendWSMessage={sendWSMessage} />
-          )}
-          {activeTab === "history" && (
-            <HistoryPanel sendWSMessage={sendWSMessage} />
-          )}
-          {activeTab === "cron" && <CronPanel sendWSMessage={sendWSMessage} />}
-          {activeTab === "agents" && <AgentsPanel sendWSMessage={sendWSMessage} />}
-          {activeTab === "tokens" && <TokenUsagePanel sendWSMessage={sendWSMessage} />}
+          <Routes>
+            <Route path="/chat" element={
+              <ChatPanel
+                sendWSMessage={sendWSMessage}
+                onSendMessage={handleSendMessage}
+                onStopGeneration={handleStopGeneration}
+                isProcessing={isProcessing}
+                streamingContent={streamingContent}
+                currentChatInstanceId={currentChatInstanceId}
+                toolCalls={toolCalls}
+                toolCallAssistantContents={toolCallAssistantContents}
+                ttsAudio={ttsAudio}
+                onTtsPlayed={() => setTtsAudio(null)}
+              />
+            } />
+            <Route path="/config" element={
+              <ConfigPanel
+                config={config}
+                setConfig={setConfig}
+                onSave={handleSaveConfig}
+                isSaving={isSaving}
+                sendWSMessage={sendWSMessage}
+              />
+            } />
+            <Route path="/mcp" element={<MCPPanel sendWSMessage={sendWSMessage} />} />
+            <Route path="/extensions" element={
+              <ExtensionsPanel sendWSMessage={sendWSMessage} ws={ws.current} />
+            } />
+            <Route path="/workspace" element={
+              <WorkspacePanel sendWSMessage={sendWSMessage} />
+            } />
+            <Route path="/history" element={
+              <HistoryPanel sendWSMessage={sendWSMessage} />
+            } />
+            <Route path="/cron" element={<CronPanel sendWSMessage={sendWSMessage} />} />
+            <Route path="/agents" element={<AgentsPanel sendWSMessage={sendWSMessage} />} />
+            <Route path="/tokens" element={<TokenUsagePanel sendWSMessage={sendWSMessage} />} />
+            <Route path="/" element={
+              <ChatPanel
+                sendWSMessage={sendWSMessage}
+                onSendMessage={handleSendMessage}
+                onStopGeneration={handleStopGeneration}
+                isProcessing={isProcessing}
+                streamingContent={streamingContent}
+                currentChatInstanceId={currentChatInstanceId}
+                toolCalls={toolCalls}
+                toolCallAssistantContents={toolCallAssistantContents}
+                ttsAudio={ttsAudio}
+                onTtsPlayed={() => setTtsAudio(null)}
+              />
+            } />
+          </Routes>
         </div>
       </main>
     </div>
