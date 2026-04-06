@@ -33,14 +33,11 @@
 
 <div align="center">
 
-<a href="https://www.bilibili.com/video/BV1hGXvB2EeT" target="_blank">
-  <img src="https://img.shields.io/badge/🎬_TTS_Demo-FF6B35?style=for-the-badge" alt="TTS Demo" />
-</a>
-<a href="https://www.bilibili.com/video/BV1C4XvBKERc" target="_blank">
-  <img src="https://img.shields.io/badge/🎬_WeChat_Demo-4ECDC4?style=for-the-badge" alt="WeChat Demo" />
-</a>
+### Text-to-Speech Demo
+https://github.com/user-attachments/assets/ef0af274-e988-436f-a7da-a007e1a814ee
 
-*Text-to-Speech & WeChat Channel Demos*
+### WeChat Channel Demo
+https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 
 </div>
 

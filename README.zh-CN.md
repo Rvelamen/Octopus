@@ -33,10 +33,11 @@
 
 <div align="center">
 
-[!\[TTS 演示\](https://img.shields.io/badge/🔊\_TTS演示-FF6B35?style=for-the-badge null)](./assets/mimo_tts.mp4)
-[!\[微信演示\](https://img.shields.io/badge/💬\_微信演示-07C160?style=for-the-badge null)](./assets/wechat.mp4)
+### 文本转语音演示
+https://github.com/user-attachments/assets/ef0af274-e988-436f-a7da-a007e1a814ee
 
-*文本转语音 & 微信通道功能演示*
+### 微信通道演示
+https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 
 </div>
 
