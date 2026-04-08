@@ -21,6 +21,8 @@ import {
   X,
   Play,
   Pause,
+  PanelLeftClose,
+  PanelRight,
 } from "lucide-react";
 import octopusLogo from "./assets/octopus-logo.png";
 import WindowDots from "./components/WindowDots";
@@ -157,6 +159,7 @@ function TTSPlayer({ audioData, format, text, durationMs, onClose }) {
 function App() {
   // ===== 状态 =====
   const [activeTab, setActiveTab] = useState("chat");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [config, setConfig] = useState({
     providers: {},
     agents: { defaults: { model: "deepseek-chat", workspace: "" } },
@@ -177,6 +180,9 @@ function App() {
   });
   const [ttsAudio, setTtsAudio] = useState(null); // { audioData, format, text, durationMs, instanceId, messageId }
   const [ttsAudioMap, setTtsAudioMap] = useState({}); // { messageId: { audioData, format, text, durationMs } }
+  const [lastElapsedMs, setLastElapsedMs] = useState(null); // 最近一次 agent 运行的耗时（毫秒）
+  const [lastTokenUsage, setLastTokenUsage] = useState(null); // 最近一次 agent 运行的 token 消耗
+  const [refreshInstanceId, setRefreshInstanceId] = useState(null); // 需要刷新的 instance ID
 
   // ===== Refs =====
   const ws = useRef(null);
@@ -274,18 +280,33 @@ function App() {
             break;
           case "agent_finish":
             console.log('[WebSocket] Agent finish received:', data);
+            console.log('[Debug] token_usage in data:', data.token_usage);
             setStreamingContent("");
             setIsProcessing(false);
+            if (data.elapsed_ms != null) {
+              setLastElapsedMs(data.elapsed_ms);
+            }
+            if (data.token_usage) {
+              console.log('[Debug] Setting lastTokenUsage:', data.token_usage);
+              setLastTokenUsage(data.token_usage);
+            }
             setToolCalls([]); // 清空工具调用
             setToolCallAssistantContents({}); // 清空 assistant content
             break;
           case "agent_tool_call_start":
             // Tool call started
+            if (data.content) {
+              setToolCallAssistantContents((prev) => ({
+                ...prev,
+                [data.iteration]: data.content
+              }));
+              setStreamingContent("");
+            }
             setToolCalls((prev) => [...prev, {
               id: data.tool_call_id || Date.now(),
               tool: data.tool,
-              args: {},
-              partialArgs: {},
+              args: data.args || {},
+              partialArgs: data.partial_args || data.args || {},
               status: 'pending',
               result: null,
               iteration: data.iteration || 1
@@ -311,7 +332,7 @@ function App() {
             // Tool call completed
             setToolCalls((prev) => prev.map(tc =>
               tc.id === data.tool_call_id
-                ? { ...tc, args: tc.partialArgs || tc.args, result: data.result, status: 'completed' }
+                ? { ...tc, args: data.args || tc.partialArgs || tc.args, result: data.result, status: 'completed' }
                 : tc
             ));
             break;
@@ -319,7 +340,7 @@ function App() {
             // Tool call error
             setToolCalls((prev) => prev.map(tc =>
               tc.id === data.tool_call_id
-                ? { ...tc, args: tc.partialArgs || tc.args, error: data.error, status: 'error' }
+                ? { ...tc, args: data.args || tc.partialArgs || tc.args, error: data.error, status: 'error' }
                 : tc
             ));
             break;
@@ -347,6 +368,16 @@ function App() {
                 ? { ...tc, status: 'completed', result: data.result }
                 : tc
             ));
+            break;
+          case "agent_iteration_complete":
+            // Iteration complete - 立即触发消息刷新，避免竞态条件
+            // 从 session 字段获取 instance ID，如果不可用则使用 currentChatInstanceId
+            if (currentChatInstanceId) {
+              setRefreshInstanceId(currentChatInstanceId);
+            }
+            // 清空 streamingContent 和 assistantContents，确保不显示重复内容
+            setStreamingContent("");
+            setToolCallAssistantContents({});
             break;
           case "mcp_state_change":
             // MCP state change event - can be used to update UI in real-time
@@ -538,79 +569,89 @@ function App() {
   return (
     <div className="app-container">
       {/* Sidebar */}
-      <aside className="sidebar pixel-border">
-        <div className="logo">
-          <img src={octopusLogo} alt="Octopus" className="logo-icon" style={{ width: 30, height: 40, objectFit: 'contain' }} />
-          OCTOPUS
+      <aside className={`sidebar pixel-border ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-nav">
+          <div className="logo">
+            <img src={octopusLogo} alt="Octopus" className="logo-icon" style={{ width: 28, height: 36, objectFit: 'contain' }} />
+            <span>OCTOPUS</span>
+          </div>
+          <nav>
+            <button
+              className={`nav-item ${activeTab === "chat" ? "active" : ""}`}
+              onClick={() => handleNavClick("chat")}
+            >
+              <Bot size={16} />
+              <span>CHAT</span>
+            </button>
+            <button
+              className={`nav-item ${activeTab === "config" ? "active" : ""}`}
+              onClick={() => handleNavClick("config")}
+            >
+              <Settings size={16} />
+              <span>SYSTEM</span>
+            </button>
+            <button
+              className={`nav-item ${activeTab === "mcp" ? "active" : ""}`}
+              onClick={() => handleNavClick("mcp")}
+            >
+              <Server size={16} />
+              <span>SERVERS</span>
+            </button>
+            <button
+              className={`nav-item ${activeTab === "extensions" ? "active" : ""}`}
+              onClick={() => handleNavClick("extensions")}
+            >
+              <Package size={16} />
+              <span>EXTENSIONS</span>
+            </button>
+            <button
+              className={`nav-item ${activeTab === "cron" ? "active" : ""}`}
+              onClick={() => handleNavClick("cron")}
+            >
+              <Clock size={16} />
+              <span>CRON</span>
+            </button>
+            <button
+              className={`nav-item ${activeTab === "agents" ? "active" : ""}`}
+              onClick={() => handleNavClick("agents")}
+            >
+              <Users size={16} />
+              <span>AGENTS</span>
+            </button>
+            <button
+              className={`nav-item ${activeTab === "workspace" ? "active" : ""}`}
+              onClick={() => handleNavClick("workspace")}
+            >
+              <FolderOpen size={16} />
+              <span>WORKSPACE</span>
+            </button>
+            <button
+              className={`nav-item ${activeTab === "history" ? "active" : ""}`}
+              onClick={() => handleNavClick("history")}
+            >
+              <History size={16} />
+              <span>HISTORY</span>
+            </button>
+            <button
+              className={`nav-item ${activeTab === "tokens" ? "active" : ""}`}
+              onClick={() => handleNavClick("tokens")}
+            >
+              <Zap size={16} />
+              <span>TOKENS</span>
+            </button>
+          </nav>
+          <div className="status-panel">
+            <div className="status-line">VER: 1.0.0</div>
+          </div>
         </div>
-        <nav>
-          <button
-            className={`nav-item ${activeTab === "chat" ? "active" : ""}`}
-            onClick={() => handleNavClick("chat")}
-          >
-            <Bot size={18} />
-            <span>CHAT</span>
-          </button>
-          <button
-            className={`nav-item ${activeTab === "config" ? "active" : ""}`}
-            onClick={() => handleNavClick("config")}
-          >
-            <Settings size={18} />
-            <span>SYSTEM</span>
-          </button>
-          <button
-            className={`nav-item ${activeTab === "mcp" ? "active" : ""}`}
-            onClick={() => handleNavClick("mcp")}
-          >
-            <Server size={18} />
-            <span>SERVERS</span>
-          </button>
-          <button
-            className={`nav-item ${activeTab === "extensions" ? "active" : ""}`}
-            onClick={() => handleNavClick("extensions")}
-          >
-            <Package size={18} />
-            <span>EXTENSIONS</span>
-          </button>
-          <button
-            className={`nav-item ${activeTab === "cron" ? "active" : ""}`}
-            onClick={() => handleNavClick("cron")}
-          >
-            <Clock size={18} />
-            <span>CRON</span>
-          </button>
-          <button
-            className={`nav-item ${activeTab === "agents" ? "active" : ""}`}
-            onClick={() => handleNavClick("agents")}
-          >
-            <Users size={18} />
-            <span>AGENTS</span>
-          </button>
-          <button
-            className={`nav-item ${activeTab === "workspace" ? "active" : ""}`}
-            onClick={() => handleNavClick("workspace")}
-          >
-            <FolderOpen size={18} />
-            <span>WORKSPACE</span>
-          </button>
-          <button
-            className={`nav-item ${activeTab === "history" ? "active" : ""}`}
-            onClick={() => handleNavClick("history")}
-          >
-            <History size={18} />
-            <span>HISTORY</span>
-          </button>
-          <button
-            className={`nav-item ${activeTab === "tokens" ? "active" : ""}`}
-            onClick={() => handleNavClick("tokens")}
-          >
-            <Zap size={18} />
-            <span>TOKENS</span>
-          </button>
-        </nav>
-        <div className="status-panel">
-          <div className="status-line">VER: 1.0.0</div>
-        </div>
+        {/* Toggle Button - Always visible, outside drag region */}
+        <button
+          className="sidebar-toggle-btn"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          title={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
+        >
+          {sidebarCollapsed ? <PanelRight size={14} /> : <PanelLeftClose size={14} />}
+        </button>
       </aside>
 
       {/* Main Content */}
@@ -620,7 +661,7 @@ function App() {
             {/* <WindowDots /> */}
             <span>
               {activeTab === "chat"
-                ? "TERMINAL_SESSION_ACTIVE"
+                ? "TERMINAL_SESSION"
                 : "CONFIG_EDITOR"}
             </span>
           </div>
@@ -632,8 +673,8 @@ function App() {
               title="重启后端服务"
               style={{ WebkitAppRegion: 'no-drag' }}
             >
-              <RotateCcw size={14} className={isRestarting ? "spinning" : ""} />
-              <span>{isRestarting ? "RESTARTING..." : "RESTART"}</span>
+              <RotateCcw size={12} className={isRestarting ? "spinning" : ""} />
+              <span>{isRestarting ? "…" : "RESTART"}</span>
             </button>
             <div className={`status-indicator ${connectionStatus}`} style={{ WebkitAppRegion: 'no-drag' }}></div>
             <span className={`status-text ${connectionStatus}`} style={{ WebkitAppRegion: 'no-drag' }}>
@@ -660,6 +701,9 @@ function App() {
                 toolCallAssistantContents={toolCallAssistantContents}
                 ttsAudio={ttsAudio}
                 onTtsPlayed={() => setTtsAudio(null)}
+                lastElapsedMs={lastElapsedMs}
+                lastTokenUsage={lastTokenUsage}
+                refreshInstanceId={refreshInstanceId}
               />
             } />
             <Route path="/config" element={
@@ -696,6 +740,9 @@ function App() {
                 toolCallAssistantContents={toolCallAssistantContents}
                 ttsAudio={ttsAudio}
                 onTtsPlayed={() => setTtsAudio(null)}
+                lastElapsedMs={lastElapsedMs}
+                lastTokenUsage={lastTokenUsage}
+                refreshInstanceId={refreshInstanceId}
               />
             } />
           </Routes>

@@ -76,14 +76,14 @@
 }
 
 .provider-list-search {
-  padding: 12px;
+  padding: 8px;
   border-bottom: 1px solid var(--border, #e0e0e0);
   position: relative;
 }
 
 .provider-list-search .search-icon {
   position: absolute;
-  left: 20px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-3, #999);
@@ -91,10 +91,10 @@
 
 .provider-list-search .search-input {
   width: 100%;
-  padding: 8px 12px 8px 32px;
+  padding: 6px 10px 6px 28px;
   border: 1px solid var(--border, #e0e0e0);
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: 5px;
+  font-size: 12px;
   background: var(--surface-2, #f5f5f5);
 }
 
@@ -125,7 +125,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: 7px 12px;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -150,16 +150,21 @@
   border-radius: 4px;
   object-fit: contain;
   flex-shrink: 0;
+  background: var(--surface-2);
 }
 
 .provider-avatar-fallback {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent, #0066cc);
+  background: var(--accent, #b46a57);
   color: white;
   font-size: 12px;
   font-weight: 600;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
 .provider-name {
@@ -230,10 +235,12 @@
   height: 16px;
   width: 16px;
   left: 3px;
-  bottom: 3px;
+  top: 50%;
   background-color: white;
-  transition: 0.3s;
+  transition: transform 0.3s;
   border-radius: 50%;
+  transform: translateY(-50%);
+  box-sizing: border-box;
 }
 
 .provider-list-item .switch-label input:checked + .switch-slider {
@@ -241,7 +248,7 @@
 }
 
 .provider-list-item .switch-label input:checked + .switch-slider:before {
-  transform: translateX(18px);
+  transform: translate(18px, -50%);
 }
 
 .provider-list-item .switch-label input:disabled + .switch-slider {
@@ -341,6 +348,11 @@
 
 .provider-detail-avatar.provider-avatar-fallback {
   font-size: 18px;
+  background: var(--accent, #b46a57);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .provider-title {
@@ -369,21 +381,23 @@
   gap: 12px;
 }
 
-/* Switch */
-.switch-label {
+/* Switch — 仅 Provider 详情页，避免覆盖 MCP DynamicItemCard 的 .switch-slider */
+.provider-detail-container .switch-label {
   position: relative;
   display: inline-block;
   width: 44px;
   height: 24px;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 
-.switch-label input {
+.provider-detail-container .switch-label input {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.switch-slider {
+.provider-detail-container .switch-slider {
   position: absolute;
   cursor: pointer;
   top: 0;
@@ -393,26 +407,29 @@
   background-color: #ccc;
   transition: 0.3s;
   border-radius: 24px;
+  box-sizing: border-box;
 }
 
-.switch-slider:before {
+.provider-detail-container .switch-slider:before {
   position: absolute;
   content: "";
   height: 18px;
   width: 18px;
   left: 3px;
-  bottom: 3px;
+  top: 50%;
   background-color: white;
-  transition: 0.3s;
+  transition: transform 0.3s;
   border-radius: 50%;
+  transform: translateY(-50%);
+  box-sizing: border-box;
 }
 
-.switch-label input:checked + .switch-slider {
+.provider-detail-container .switch-label input:checked + .switch-slider {
   background-color: var(--accent, #0066cc);
 }
 
-.switch-label input:checked + .switch-slider:before {
-  transform: translateX(20px);
+.provider-detail-container .switch-label input:checked + .switch-slider:before {
+  transform: translate(20px, -50%);
 }
 
 /* Provider Sections */
@@ -443,10 +460,10 @@
 
 .api-key-input {
   flex: 1;
-  padding: 10px 12px;
+  padding: 6px 10px;
   border: 1px solid var(--border, #e0e0e0);
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: 5px;
+  font-size: 12px;
   font-family: monospace;
 }
 
@@ -494,10 +511,10 @@
 
 .api-host-input {
   flex: 1;
-  padding: 10px 12px;
+  padding: 6px 10px;
   border: 1px solid var(--border, #e0e0e0);
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: 5px;
+  font-size: 12px;
   font-family: monospace;
 }
 
@@ -521,10 +538,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--border, #e0e0e0);
-  border-radius: 6px;
+  border-radius: 5px;
   background: var(--surface, #fff);
   color: var(--text-2, #666);
   cursor: pointer;
@@ -562,7 +579,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 8px 12px;
   background: var(--surface-2, #f5f5f5);
   border-bottom: 1px solid var(--border, #e0e0e0);
 }
@@ -601,17 +618,20 @@
 .models-section-footer {
   display: flex;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 8px 12px;
   background: var(--surface-2, #f5f5f5);
   border-top: 1px solid var(--border, #e0e0e0);
 }
 
 .model-action-btn {
-  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
   border: 1px solid var(--border, #e0e0e0);
   border-radius: 4px;
   background: var(--surface, #fff);
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -740,10 +760,10 @@
 }
 
 .model-action-btn.small {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   padding: 0;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .model-action-btn.small.danger:hover {
@@ -761,13 +781,13 @@
 .delete-provider-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: 5px;
+  padding: 5px 12px;
   border: 1px solid #ef4444;
-  border-radius: 6px;
+  border-radius: 5px;
   background: transparent;
   color: #ef4444;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1078,10 +1098,10 @@
 
 .form-input {
   width: 100%;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 1px solid var(--border, #e0e0e0);
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: 5px;
+  font-size: 12px;
   background: var(--surface, #fff);
 }
 
@@ -1163,13 +1183,13 @@
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: 5px;
+  padding: 5px 12px;
   border: 1px solid var(--border, #e0e0e0);
-  border-radius: 6px;
+  border-radius: 5px;
   background: var(--surface, #fff);
   color: var(--text-2, #666);
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1195,8 +1215,8 @@
 }
 
 .btn-sm {
-  padding: 4px 8px;
-  font-size: 12px;
+  padding: 3px 8px;
+  font-size: 11px;
 }
 
 .btn-danger {
@@ -1436,7 +1456,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px;
+  padding: 8px 10px;
   border: 1px solid var(--border, #d9d9d9);
   border-radius: 6px;
   cursor: pointer;
@@ -1473,9 +1493,12 @@
   display: inline-block;
   width: 44px;
   height: 22px;
+  flex-shrink: 0;
+  align-self: center;
   background-color: #ccc;
   border-radius: 22px;
-  transition: 0.3s;
+  transition: background-color 0.3s;
+  box-sizing: border-box;
 }
 
 .switch-row .switch-slider::before {
@@ -1484,10 +1507,12 @@
   height: 18px;
   width: 18px;
   left: 2px;
-  bottom: 2px;
+  top: 50%;
   background-color: white;
   border-radius: 50%;
-  transition: 0.3s;
+  transition: transform 0.3s;
+  transform: translateY(-50%);
+  box-sizing: border-box;
 }
 
 .switch-row input:checked + .switch-slider {
@@ -1495,7 +1520,7 @@
 }
 
 .switch-row input:checked + .switch-slider::before {
-  transform: translateX(22px);
+  transform: translate(22px, -50%);
 }
 
 /* Form Actions */

@@ -42,6 +42,9 @@ function MCPPanel({ sendWSMessage }) {
   // JSON input state
   const [jsonInput, setJsonInput] = useState('');
 
+  // Adding server loading state
+  const [isAddingServer, setIsAddingServer] = useState(false);
+
   // MCP tabs
 const MCP_TABS = [
   { key: 'servers', label: 'SERVERS', Icon: Server },
@@ -171,16 +174,16 @@ const MCP_TABS = [
       args: '',
       env: ''
     });
+    // 使用标准 MCP mcpServers 格式
     setJsonInput(JSON.stringify({
-      "server-name": {
-        "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/files"],
-        "env": {
-          "API_KEY": "your-api-key"
+      "mcpServers": {
+        "server-name": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/files"]
         }
       }
     }, null, 2));
-    setIsJsonMode(false);
+    setIsJsonMode(true);
     setShowAddDialog(true);
   };
 
@@ -248,9 +251,24 @@ const MCP_TABS = [
     if (isJsonMode) {
       try {
         const parsed = JSON.parse(jsonInput);
-        // 标准格式: { "server-name": { command, args, env } }
-        const serverName = Object.keys(parsed)[0];
-        const serverConfig = parsed[serverName];
+        
+        // 支持两种格式：
+        // 1. 标准 mcpServers 格式: { "mcpServers": { "server-name": {...} } }
+        // 2. 直接格式: { "server-name": {...} }
+        let serversObj = parsed;
+        if (parsed.mcpServers) {
+          serversObj = parsed.mcpServers;
+        }
+        
+        // 获取第一个服务器配置
+        const serverName = Object.keys(serversObj)[0];
+        const serverConfig = serversObj[serverName];
+        
+        if (!serverName || !serverConfig) {
+          setError('Invalid JSON format: missing server name or config');
+          return;
+        }
+        
         serverData = {
           name: serverName,
           ...serverConfig
@@ -299,6 +317,8 @@ const MCP_TABS = [
       }
     }
 
+    // 显示 loading 状态
+    setIsAddingServer(true);
     try {
       if (isEditMode && editingServerName) {
         // 编辑模式：先删除旧服务器，再添加新配置
@@ -331,6 +351,8 @@ const MCP_TABS = [
       setShowAddDialog(false);
     } catch (err) {
       setError('Failed to add server: ' + err.message);
+    } finally {
+      setIsAddingServer(false);
     }
   };
 
@@ -651,7 +673,7 @@ const MCP_TABS = [
             {isJsonMode ? (
               <div className="json-mode-content">
                 <div className="form-field">
-                  <label className="form-label">Server Config (JSON)</label>
+                  <label className="form-label">Server Config (JSON) - 标准 mcpServers 格式</label>
                   <textarea
                     value={jsonInput}
                     onChange={(e) => setJsonInput(e.target.value)}
@@ -659,14 +681,14 @@ const MCP_TABS = [
                     rows={14}
                     spellCheck={false}
                     placeholder={`{
-  "stdio-server": {
-    "command": "npx",
-    "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path"],
-    "env": { "API_KEY": "xxx" }
-  },
-  "http-server": {
-    "url": "https://mcp.example.com/mcp",
-    "protocol": "sse"
+  "mcpServers": {
+    "amap-maps": {
+      "url": "https://mcp.amap.com/mcp?key=YOUR_KEY"
+    },
+    "stdio-server": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path"]
+    }
   }
 }`}
                   />
@@ -712,11 +734,21 @@ const MCP_TABS = [
           </div>
 
           <div className="dialog-footer">
-            <button className="pixel-button small secondary" onClick={() => setShowAddDialog(false)}>
+            <button className="pixel-button small secondary" onClick={() => setShowAddDialog(false)} disabled={isAddingServer}>
               <X size={14} /> Cancel
             </button>
-            <button className="pixel-button small" onClick={doAddServer}>
-              {isEditMode ? <><Check size={14} /> Save</> : <><Plus size={14} /> Add</>}
+            <button 
+              className={`pixel-button small ${isAddingServer ? 'loading' : ''}`} 
+              onClick={doAddServer}
+              disabled={isAddingServer}
+            >
+              {isAddingServer ? (
+                <>...</>
+              ) : isEditMode ? (
+                <><Check size={14} /> Save</>
+              ) : (
+                <><Plus size={14} /> Add</>
+              )}
             </button>
           </div>
         </div>

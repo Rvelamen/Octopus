@@ -5,14 +5,14 @@ function ToolCardGroup({
   tools,
   assistantContent,
   iteration,
-  renderMessageContent
+  renderPlainContent
 }) {
   return (
     <div className="tool-card-group">
       {assistantContent && (
         <div className="tool-card-group-header">
           <div className="tool-card-group-assistant-content">
-            {renderMessageContent(assistantContent)}
+            {renderPlainContent(assistantContent)}
           </div>
         </div>
       )}
@@ -29,7 +29,7 @@ function ToolCardGroup({
             assistantContent={null}
             toolIndex={idx}
             totalTools={tools.length}
-            renderMessageContent={renderMessageContent}
+            renderPlainContent={renderPlainContent}
           />
         ))}
       </div>

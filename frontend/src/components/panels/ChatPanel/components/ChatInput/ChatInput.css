@@ -6,16 +6,16 @@
 .pending-images-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: 6px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border-color);
 }
 
 .pending-image-item {
   position: relative;
-  width: 80px;
-  height: 80px;
-  border-radius: 6px;
+  width: 64px;
+  height: 64px;
+  border-radius: 4px;
   overflow: hidden;
   cursor: pointer;
   border: 1px solid var(--border-color);
@@ -77,18 +77,18 @@
 .pending-files-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 16px;
+  gap: 4px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border-color);
 }
 
 .pending-file-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   background: var(--bg-tertiary);
-  border-radius: 6px;
+  border-radius: 4px;
   border: 1px solid var(--border-color);
 }
 
@@ -157,19 +157,19 @@
 
 .inputbar-textarea-wrapper {
   flex: 1;
-  padding: 8px 12px;
+  padding: 6px 10px;
 }
 
 .inputbar-textarea {
   width: 100%;
-  min-height: 60px;
-  padding: 8px 12px;
+  min-height: 48px;
+  padding: 6px 10px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 4px;
   color: var(--text-primary);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.4;
   resize: none;
   outline: none;
   transition: all 0.2s ease;
@@ -193,7 +193,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-top: 1px solid var(--border-color);
 }
 
@@ -207,13 +207,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   background: transparent;
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: all 0.2s ease;
 }
 
@@ -234,19 +234,19 @@
 }
 
 .inputbar-char-count {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-secondary);
-  padding: 4px 8px;
+  padding: 3px 6px;
   background: var(--bg-tertiary);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 .inputbar-send-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   background: var(--primary);
   border: none;
   border-radius: 50%;
@@ -257,7 +257,7 @@
 
 .inputbar-send-btn:hover:not(:disabled) {
   background: var(--primary-dark);
-  transform: scale(1.1);
+  transform: none;
 }
 
 .inputbar-send-btn:disabled {

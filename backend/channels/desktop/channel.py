@@ -187,6 +187,8 @@ class DesktopChannel(BaseChannel):
             "agent_tool_call_invoking": MessageType.AGENT_TOOL_CALL_INVOKING,
             "agent_tool_call_complete": MessageType.AGENT_TOOL_CALL_COMPLETE,
             "agent_tool_call_error": MessageType.AGENT_TOOL_CALL_ERROR,
+            # Iteration event
+            "agent_iteration_complete": MessageType.AGENT_ITERATION_COMPLETE,
         }
         
         msg_type = event_type_map.get(event.event_type)

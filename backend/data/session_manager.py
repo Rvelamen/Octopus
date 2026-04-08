@@ -75,22 +75,30 @@ class Session:
         # Get recent messages
         recent = self.messages[-max_messages:] if len(self.messages) > max_messages else self.messages
         
-        # Convert to LLM format, preserving tool_calls and tool_call_id
+        # Convert to LLM format, preserving tool-related fields for all providers
         for m in recent:
             msg = {"role": m["role"], "content": m.get("content", "")}
-            
-            # Preserve tool_calls for assistant messages
+
+            # Preserve tool_calls (OpenAI format) for assistant messages
             if m.get("tool_calls"):
                 msg["tool_calls"] = m["tool_calls"]
-            
-            # Preserve tool_call_id for tool messages
+
+            # Preserve tool_use (Anthropic format) for assistant messages
+            if m.get("tool_use"):
+                msg["tool_use"] = m["tool_use"]
+
+            # Preserve tool_call_id (OpenAI format) for tool messages
             if m.get("tool_call_id"):
                 msg["tool_call_id"] = m["tool_call_id"]
-            
+
+            # Preserve tool_use_id (Anthropic format) for tool messages
+            if m.get("tool_use_id"):
+                msg["tool_use_id"] = m["tool_use_id"]
+
             # Preserve name for tool messages (optional but helpful)
             if m.get("name"):
                 msg["name"] = m["name"]
-            
+
             result.append(msg)
         
         return result
@@ -160,7 +168,7 @@ class SessionManager:
                 "role": msg.role,
                 "content": msg.content,
                 "timestamp": msg.timestamp.isoformat(),
-                **msg.metadata
+                "metadata": msg.metadata if msg.metadata else {}
             }
             messages.append(msg_dict)
         

@@ -180,17 +180,19 @@ class ContextCompressor:
 2. 已经完成的工作
 3. 重要的上下文信息"""
 
-        provider, model, provider_type = self._get_provider_and_model()
+        provider, model, provider_type, max_tokens, temperature = self._get_provider_and_model()
         compression_messages = [
             {"role": "system", "content": "你是一个对话摘要助手。请简洁地总结对话要点。"},
             {"role": "user", "content": compression_prompt}
         ]
-        
+
         try:
             response = await provider.chat(
                 messages=compression_messages,
                 tools=[],
-                model=model
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
             )
             
             if response.usage:
@@ -244,17 +246,19 @@ class ContextCompressor:
 
 注意：要确保摘要连贯完整，不要分段显示。"""
 
-        provider, model, provider_type = self._get_provider_and_model()
+        provider, model, provider_type, max_tokens, temperature = self._get_provider_and_model()
         compression_messages = [
             {"role": "system", "content": "你是一个对话摘要助手。请整合之前的摘要和新的对话内容，生成连贯完整的摘要。"},
             {"role": "user", "content": prompt}
         ]
-        
+
         try:
             response = await provider.chat(
                 messages=compression_messages,
                 tools=[],
-                model=model
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
             )
             
             if response.usage:

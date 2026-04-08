@@ -47,8 +47,8 @@ Use this when you need to:
                 },
                 "render_js": {
                     "type": "boolean",
-                    "description": "Whether to render JavaScript (slower but handles SPAs). Default: false for static sites, auto-detect if needed.",
-                    "default": False
+                    "description": "Whether to render JavaScript. Default: true (uses browser mode for better compatibility with dynamic sites). Set to false for faster static site fetching.",
+                    "default": True
                 },
                 "extract_content": {
                     "type": "string",
@@ -88,7 +88,7 @@ Use this when you need to:
         url: str,
         method: str = "GET",
         headers: dict = None,
-        render_js: bool = False,
+        render_js: bool = True,
         extract_content: str = "article",
         timeout: int = 30,
         follow_redirects: bool = True,

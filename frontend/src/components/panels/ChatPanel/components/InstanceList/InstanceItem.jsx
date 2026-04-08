@@ -40,7 +40,7 @@ function InstanceItem({ instance, isSelected, onSelect, onDelete }) {
         onClick={(e) => onDelete(instance.id, e)}
         title="Delete this chat"
       >
-        <Trash2 size={12} />
+        <Trash2 size={11} />
       </button>
     </div>
   );

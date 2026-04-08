@@ -110,6 +110,9 @@ class MessageType(Enum):
     AGENT_TOOL_CALL_COMPLETE = "agent_tool_call_complete"    # Tool call completed
     AGENT_TOOL_CALL_ERROR = "agent_tool_call_error"          # Tool call error
 
+    # Iteration Events - Server -> Client
+    AGENT_ITERATION_COMPLETE = "agent_iteration_complete"    # Iteration round completed
+
     # MCP - Server -> Client
     MCP_STATUS = "mcp_status"              # MCP status response
     MCP_SERVERS = "mcp_servers"            # MCP servers list

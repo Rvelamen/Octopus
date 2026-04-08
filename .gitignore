@@ -136,3 +136,4 @@ workspace/extensions/
 workspace
 
 .temp/
+.playwright-mcp/

@@ -8,6 +8,8 @@ import MessageList from './components/MessageList';
 import ChatInput from './components/ChatInput';
 import ImageModal from './components/Modals/ImageModal';
 import GenerateImageModal from './components/Modals/GenerateImageModal';
+import WorkspaceFilePreviewModal from './components/Modals/WorkspaceFilePreviewModal';
+import { looksLikeWorkspaceFilePath } from './utils/workspacePathUtils';
 import { useInstances } from './hooks/useInstances';
 import { useMessages } from './hooks/useMessages';
 import { useFileUpload } from './hooks/useFileUpload';
@@ -24,12 +26,16 @@ function ChatPanel({
   toolCalls,
   toolCallAssistantContents,
   ttsAudio,
-  onTtsPlayed
+  onTtsPlayed,
+  lastElapsedMs,
+  lastTokenUsage,
+  refreshInstanceId,
 }) {
   const [selectedInstance, setSelectedInstance] = useState(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [modalImage, setModalImage] = useState(null);
+  const [workspacePreviewPath, setWorkspacePreviewPath] = useState(null);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generatePrompt, setGeneratePrompt] = useState('');
   const [generateSize, setGenerateSize] = useState('1024x1024');
@@ -38,6 +44,8 @@ function ChatPanel({
 
   const messagesEndRef = useRef(null);
   const prevStreamingContentRef = useRef('');
+  const prevIsProcessingRef = useRef(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   const {
     instances,
@@ -81,10 +89,10 @@ function ChatPanel({
   } = useTTS(ttsAudio, messages, selectedInstance, onTtsPlayed);
 
   useEffect(() => {
-    if (messagesEndRef.current) {
+    if (messagesEndRef.current && shouldAutoScroll) {
       messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
     }
-  }, [messages, streamingContent]);
+  }, [messages, streamingContent, shouldAutoScroll]);
 
   useEffect(() => {
     const wasStreaming = prevStreamingContentRef.current && prevStreamingContentRef.current.length > 0;
@@ -97,6 +105,22 @@ function ChatPanel({
   }, [streamingContent, selectedInstance]);
 
   useEffect(() => {
+    if (prevIsProcessingRef.current && !isProcessing && selectedInstance) {
+      console.log('Agent finished processing, refreshing messages for instance:', selectedInstance.id);
+      fetchInstanceMessages(selectedInstance.id);
+    }
+    prevIsProcessingRef.current = isProcessing;
+  }, [isProcessing, selectedInstance]);
+
+  // 监听 refreshInstanceId 变化，在迭代完成时刷新消息
+  useEffect(() => {
+    if (refreshInstanceId) {
+      console.log('Iteration complete, refreshing messages for instance:', refreshInstanceId);
+      fetchInstanceMessages(refreshInstanceId);
+    }
+  }, [refreshInstanceId]);
+
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && modalImage) {
         setModalImage(null);
@@ -105,6 +129,18 @@ function ChatPanel({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [modalImage]);
+
+  const handleScroll = useCallback(() => {
+    if (!messagesEndRef.current) return;
+    const el = messagesEndRef.current;
+    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const isNearBottom = distanceToBottom < 80;
+    if (isNearBottom && !shouldAutoScroll) {
+      setShouldAutoScroll(true);
+    } else if (!isNearBottom && shouldAutoScroll) {
+      setShouldAutoScroll(false);
+    }
+  }, [shouldAutoScroll]);
 
   const handleSelectInstance = async (instance) => {
     if (!sendWSMessage) return;
@@ -117,6 +153,7 @@ function ChatPanel({
 
     setSelectedInstance({ ...instance, is_active: true });
     setIsCreatingNew(false);
+    setShouldAutoScroll(true);
     fetchInstanceMessages(instance.id);
 
     fetchInstances();
@@ -168,6 +205,7 @@ function ChatPanel({
 
     const content = inputValue;
     setInputValue('');
+    setShouldAutoScroll(true);
 
     let uploadedImages = [];
     if (hasImages) {
@@ -271,7 +309,7 @@ function ChatPanel({
     }
   };
 
-  const renderMessageContent = (content) => {
+  const renderMessageContent = useCallback((content) => {
     if (!content) return null;
     return (
       <ReactMarkdown
@@ -289,10 +327,38 @@ function ChatPanel({
           ),
           code({ inline, className, children, ...props }) {
             if (inline) {
+              const inlineText = String(children).trim();
+              if (looksLikeWorkspaceFilePath(inlineText)) {
+                return (
+                  <button
+                    type="button"
+                    className="md-inline-workspace-path"
+                    onClick={() => setWorkspacePreviewPath(inlineText)}
+                    title="点击预览工作区文件"
+                  >
+                    {inlineText}
+                  </button>
+                );
+              }
               return (
                 <code className="md-inline-code" {...props}>
                   {children}
                 </code>
+              );
+            }
+            const text = String(children).replace(/\n$/, '').trim();
+            if (looksLikeWorkspaceFilePath(text)) {
+              return (
+                <button
+                  type="button"
+                  className="md-code-block md-workspace-path-btn"
+                  onClick={() => setWorkspacePreviewPath(text)}
+                  title="点击预览工作区文件"
+                >
+                  <pre {...props}>
+                    <code className={className}>{children}</code>
+                  </pre>
+                </button>
               );
             }
             return (
@@ -318,6 +384,11 @@ function ChatPanel({
         {content}
       </ReactMarkdown>
     );
+  }, []);
+
+  const renderPlainContent = (content) => {
+    if (!content) return null;
+    return <span className="plain-text-content">{content}</span>;
   };
 
   return (
@@ -354,6 +425,7 @@ function ChatPanel({
         <div
           className="chat-messages"
           ref={messagesEndRef}
+          onScroll={handleScroll}
         >
           {!selectedInstance && !isCreatingNew ? (
             <div className="empty-state">
@@ -380,6 +452,9 @@ function ChatPanel({
               currentChatInstanceId={currentChatInstanceId}
               onImageClick={setModalImage}
               renderMessageContent={renderMessageContent}
+              renderPlainContent={renderPlainContent}
+              lastElapsedMs={lastElapsedMs}
+              lastTokenUsage={lastTokenUsage}
             />
           )}
         </div>
@@ -416,6 +491,14 @@ function ChatPanel({
         onClose={() => setShowGenerateModal(false)}
         onGenerate={handleGenerateImage}
       />
+
+      {workspacePreviewPath && (
+        <WorkspaceFilePreviewModal
+          sendWSMessage={sendWSMessage}
+          pathInput={workspacePreviewPath}
+          onClose={() => setWorkspacePreviewPath(null)}
+        />
+      )}
     </div>
   );
 }

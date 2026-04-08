@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Sparkle, Copy, Check, RefreshCw } from 'lucide-react';
+import { FileText, Sparkle, Copy, Check } from 'lucide-react';
 import TTSPlayer from '../TTSPlayer';
 import octopusAvatar from '../../../../../assets/images/octopus.png';
 
@@ -10,10 +10,21 @@ function MessageItem({
   ttsAudio, 
   onImageClick, 
   renderMessageContent,
-  isStreaming = false 
+  isStreaming = false,
+  usage = null
 }) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = React.useState(false);
+  
+  // Use prop usage if available, otherwise fall back to message.metadata.usage
+  // Note: backend saves usage in metadata.metadata.usage (nested structure)
+  const rawMetadata = message.metadata;
+  const displayUsage = usage || rawMetadata?.usage || rawMetadata?.metadata?.usage;
+
+  const formatTokenCount = (n) => {
+    if (n == null || Number.isNaN(Number(n))) return '0';
+    return Number(n).toLocaleString('zh-CN');
+  };
 
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 B';
@@ -121,28 +132,8 @@ function MessageItem({
             </div>
             <div className="message-bubble-info">
               <span className="message-bubble-time">{formatTime(message.timestamp)}</span>
-              {message.usage && (
-                <>
-                  <span className="message-bubble-divider">•</span>
-                  <span className="message-bubble-tokens">
-                    {message.usage.prompt_tokens || 0} → {message.usage.completion_tokens || 0} tokens
-                  </span>
-                </>
-              )}
             </div>
           </div>
-          {/* Action buttons for assistant messages */}
-          {!isUser && !isStreaming && message.content && (
-            <div className="message-bubble-actions">
-              <button 
-                className="message-action-btn"
-                onClick={() => copyToClipboard(message.content)}
-                title="复制内容"
-              >
-                {copied ? <Check size={14} /> : <Copy size={14} />}
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Content */}
@@ -166,6 +157,33 @@ function MessageItem({
             durationMs={ttsAudio.durationMs}
             onClose={() => {}}
           />
+        )}
+
+        {!isUser && !isStreaming && message.content && (
+          <div className="message-bubble-footer">
+            <div className="message-bubble-footer-actions">
+              <button
+                type="button"
+                className="message-action-btn"
+                onClick={() => copyToClipboard(message.content)}
+                title="复制内容"
+              >
+                {copied ? <Check size={14} /> : <Copy size={14} />}
+              </button>
+            </div>
+            {displayUsage && (
+              <span className="message-bubble-footer-tokens">
+                Tokens:{' '}
+                {formatTokenCount(
+                  displayUsage.total_tokens != null
+                    ? displayUsage.total_tokens
+                    : (displayUsage.prompt_tokens || 0) + (displayUsage.completion_tokens || 0)
+                )}{' '}
+                ↑{formatTokenCount(displayUsage.prompt_tokens ?? 0)} ↓
+                {formatTokenCount(displayUsage.completion_tokens ?? 0)}
+              </span>
+            )}
+          </div>
         )}
       </div>
     </div>

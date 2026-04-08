@@ -42,7 +42,7 @@ function InstanceList({
           disabled={loading || !sendWSMessage}
           title={!sendWSMessage ? 'WebSocket not connected' : 'Refresh'}
         >
-          <RefreshCw size={14} className={loading ? 'spin' : ''} />
+          <RefreshCw size={12} className={loading ? 'spin' : ''} />
         </button>
       </div>
 
@@ -51,7 +51,7 @@ function InstanceList({
           className={`new-chat-btn ${isCreatingNew ? 'active' : ''}`}
           onClick={onCreateNew}
         >
-          <Plus size={16} />
+          <Plus size={12} />
           <span>NEW CHAT</span>
         </button>
       </div>

@@ -89,38 +89,38 @@ class AgentConfigService:
     
     # ========== Provider and Model ==========
     
-    def get_default_provider_and_model(self) -> tuple[LLMProvider, str, str]:
+    def get_default_provider_and_model(self) -> tuple[LLMProvider, str, str, int, float]:
         """Get default provider, model, and provider_type from database.
-        
+
         Returns:
-            Tuple of (provider, model_id, provider_type)
+            Tuple of (provider, model_id, provider_type, max_tokens, temperature)
         """
         from backend.core.providers.factory import create_provider
         from backend.core.config.schema import AgentDefaults, ProviderConfig
-        
+
         defaults = self._get_agent_defaults_repo().get_or_create_defaults()
-        
+
         # Get provider details
         provider_record = None
         if defaults.default_provider_id:
             provider_record = self._get_provider_repo().get_provider_by_id(defaults.default_provider_id)
-        
+
         # If no provider configured, use first available enabled provider
         if not provider_record:
             providers = self._get_provider_repo().get_enabled_providers()
             if providers:
                 provider_record = providers[0]
-        
+
         if not provider_record:
             raise ValueError("No provider configured in database")
-        
+
         # Get model
         model_id = None
         if defaults.default_model_id:
             model_record = self._get_model_repo().get_model_by_id(defaults.default_model_id)
             if model_record:
                 model_id = model_record.model_id
-        
+
         if not model_id:
             # Use provider's default model (find model with is_default=True)
             default_model = self._get_model_repo().get_default_model(provider_record.id)
@@ -133,28 +133,33 @@ class AgentConfigService:
                     model_id = enabled_models[0].model_id
                 else:
                     model_id = "gpt-4o"  # Ultimate fallback
-        
+
+        max_tokens = getattr(defaults, 'max_tokens', 8192) or 8192
+        temperature = getattr(defaults, 'temperature', 0.7) or 0.7
+
         # Create ProviderConfig for factory
         provider_config = ProviderConfig(
             type=provider_record.provider_type,
             api_key=provider_record.api_key,
             api_base=provider_record.api_host
         )
-        
+
         # Create AgentDefaults for factory
         agent_defaults = AgentDefaults(
             provider=provider_record.name,
             model=model_id,
+            max_tokens=max_tokens,
+            temperature=temperature,
             llm_max_retries=getattr(defaults, 'llm_max_retries', 3) or 3,
             llm_retry_base_delay=getattr(defaults, 'llm_retry_base_delay', 1.0) or 1.0,
             llm_retry_max_delay=getattr(defaults, 'llm_retry_max_delay', 30.0) or 30.0,
         )
-        
+
         # Create provider using factory
         providers_dict = {provider_record.name: provider_config}
         provider = create_provider(providers_dict, agent_defaults)
-        
-        return provider, model_id, provider_record.provider_type
+
+        return provider, model_id, provider_record.provider_type, max_tokens, temperature
     
     def get_provider_by_name(self, name: str) -> Any | None:
         """Get provider record by name.

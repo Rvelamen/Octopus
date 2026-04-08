@@ -63,69 +63,72 @@ class SubagentManager:
         if self._aggregator:
             self._aggregator.set_bus(bus)
     
-    def _get_provider_for_config(self, config: SubAgentConfig) -> tuple[LLMProvider, str, str]:
-        """Get provider, model, and provider_type for a subagent configuration."""
+    def _get_provider_for_config(self, config: SubAgentConfig) -> tuple[LLMProvider, str, str, int, float]:
+        """Get provider, model, provider_type, max_tokens, and temperature for a subagent configuration."""
         config_service = AgentConfigService()
-        
+        defaults = config_service._get_agent_defaults_repo().get_or_create_defaults()
+        max_tokens = getattr(defaults, 'max_tokens', 8192) or 8192
+        temperature = getattr(defaults, 'temperature', 0.7) or 0.7
+
         if config.provider_id and config.model_id:
             from backend.data.provider_store import ProviderRepository, ModelRepository
             from backend.data import Database
             from backend.core.config.schema import AgentDefaults, ProviderConfig
             from backend.core.providers.factory import create_provider
-            
+
             db = Database()
             provider_repo = ProviderRepository(db)
             model_repo = ModelRepository(db)
-            
+
             provider_record = provider_repo.get_provider_by_id(config.provider_id)
             model_record = model_repo.get_model_by_id(config.model_id)
-            
+
             if provider_record and model_record:
-                defaults = config_service._get_agent_defaults_repo().get_or_create_defaults()
-                
                 provider_config = ProviderConfig(
                     type=provider_record.provider_type,
                     api_key=provider_record.api_key,
                     api_base=provider_record.api_host
                 )
-                
+
                 agent_defaults = AgentDefaults(
                     provider=provider_record.name,
                     model=model_record.model_id,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
                     llm_max_retries=getattr(defaults, 'llm_max_retries', 3) or 3,
                     llm_retry_base_delay=getattr(defaults, 'llm_retry_base_delay', 1.0) or 1.0,
                     llm_retry_max_delay=getattr(defaults, 'llm_retry_max_delay', 30.0) or 30.0,
                 )
-                
+
                 providers_dict = {provider_record.name: provider_config}
                 provider = create_provider(providers_dict, agent_defaults)
-                
+
                 self._subagent_compression_enabled = config_service.get_context_compression_enabled()
                 self._subagent_compression_turns = config_service.get_context_compression_turns()
                 self._subagent_compression_token_threshold = config_service.get_context_compression_token_threshold()
-                
-                return provider, model_record.model_id, provider_record.provider_type
-        
+
+                return provider, model_record.model_id, provider_record.provider_type, max_tokens, temperature
+
         provider, model = config_service.get_provider_for_subagent(
             provider_name=config.provider,
             model_name=config.model
         )
-        
+
         provider_record = config_service.get_provider_by_name(config.provider)
         provider_type = provider_record.provider_type if provider_record else "openai"
-        
+
         self._subagent_compression_enabled = config_service.get_context_compression_enabled()
         self._subagent_compression_turns = config_service.get_context_compression_turns()
         self._subagent_compression_token_threshold = config_service.get_context_compression_token_threshold()
-        
-        return provider, model, provider_type
+
+        return provider, model, provider_type, max_tokens, temperature
     
-    def _get_default_provider_and_model(self) -> tuple[LLMProvider, str, str]:
-        """Get default provider, model, and provider_type from database."""
+    def _get_default_provider_and_model(self) -> tuple[LLMProvider, str, str, int, float]:
+        """Get default provider, model, provider_type, max_tokens, and temperature from database."""
         config_service = AgentConfigService()
-        
-        provider, model, provider_type = config_service.get_default_provider_and_model()
-        
+
+        provider, model, provider_type, max_tokens, temperature = config_service.get_default_provider_and_model()
+
         self._subagent_compression_enabled = config_service.get_context_compression_enabled()
         self._subagent_compression_turns = config_service.get_context_compression_turns()
         self._subagent_compression_token_threshold = config_service.get_context_compression_token_threshold()
@@ -360,18 +363,18 @@ When you have completed the task, provide a clear summary of your findings or ac
         try:
             # Get configuration
             if agent_config:
-                provider, model, provider_type = self._get_provider_for_config(agent_config)
+                provider, model, provider_type, max_tokens, temperature = self._get_provider_for_config(agent_config)
                 tools = self._build_tools_for_config(agent_config, origin)
                 system_prompt = self._build_subagent_prompt(agent_config, task)
                 max_iterations = agent_config.max_iterations
                 temperature = agent_config.temperature
             else:
                 # Fallback to default behavior
-                provider, model, provider_type = self._get_default_provider_and_model()
+                provider, model, provider_type, max_tokens, temperature = self._get_default_provider_and_model()
                 tools = self._build_default_tools(origin)
                 system_prompt = self._build_default_subagent_prompt(task)
                 max_iterations = 50
-                temperature = 0.7
+                temperature = temperature
             
             session_instance_id = origin.get("session_instance_id")
             
@@ -448,6 +451,7 @@ When you have completed the task, provide a clear summary of your findings or ac
                         messages=messages,
                         tools=tools.get_definitions(),
                         model=model,
+                        max_tokens=max_tokens,
                         temperature=temperature,
                     )
                     logger.info(f"[Subagent:{task_id}] LLM response received, has_tool_calls={response.has_tool_calls}")

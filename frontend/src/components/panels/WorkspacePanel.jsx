@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Folder, File, ChevronRight, ChevronDown, Home,
   RefreshCw, Plus, Trash2, Edit3, Save, X, FolderPlus,
@@ -8,6 +8,8 @@ import {
 import { Modal, Input, Button, Dropdown, Menu, message, Table } from 'antd';
 import Editor from '@monaco-editor/react';
 import * as XLSX from 'xlsx';
+import * as mammoth from 'mammoth';
+import JSZip from 'jszip';
 import { Document, Page, pdfjs } from 'react-pdf';
 import WindowDots from '../WindowDots';
 
@@ -356,6 +358,36 @@ const PdfViewer = ({ file, content }) => {
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const pdfContentRef = useRef(null);
+  const [pageWidth, setPageWidth] = useState(null);
+
+  useLayoutEffect(() => {
+    if (!pdfUrl) return;
+    const el = pdfContentRef.current;
+    if (!el) return;
+    const contentWidth = (node) => {
+      const r = node.getBoundingClientRect();
+      const s = getComputedStyle(node);
+      const pl = parseFloat(s.paddingLeft) || 0;
+      const pr = parseFloat(s.paddingRight) || 0;
+      return Math.max(0, r.width - pl - pr);
+    };
+    const measure = (entry) => {
+      const w = entry ? entry.contentRect.width : contentWidth(el);
+      setPageWidth(Math.max(120, Math.min(Math.floor(w), 3200)));
+    };
+    measure();
+    const ro = new ResizeObserver((entries) => {
+      const e = entries[0];
+      if (e) measure(e);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [pdfUrl]);
+
+  useEffect(() => {
+    setPageNumber(1);
+  }, [pdfUrl]);
 
   useEffect(() => {
     try {
@@ -434,19 +466,23 @@ const PdfViewer = ({ file, content }) => {
           Next →
         </button>
       </div>
-      <div className="pdf-content">
+      <div className="pdf-content" ref={pdfContentRef}>
         <Document
           file={pdfUrl}
           onLoadSuccess={onDocumentLoadSuccess}
           loading={<div className="pdf-page-loading">Loading page...</div>}
           error={<div className="pdf-page-error">Failed to load page</div>}
         >
-          <Page 
-            pageNumber={pageNumber} 
-            scale={1.2}
-            renderTextLayer={true}
-            renderAnnotationLayer={true}
-          />
+          {pageWidth != null ? (
+            <Page
+              pageNumber={pageNumber}
+              width={pageWidth}
+              renderTextLayer={true}
+              renderAnnotationLayer={true}
+            />
+          ) : (
+            <div className="pdf-page-loading">Loading page...</div>
+          )}
         </Document>
       </div>
     </div>
@@ -495,6 +531,709 @@ const BinaryViewer = ({ file, content }) => {
       <p className="binary-hint">
         This file type cannot be previewed. Please download to view.
       </p>
+    </div>
+  );
+};
+
+/**
+ * HTML Preview Component — renders raw HTML content in a sandboxed iframe
+ * Supports:
+ *   - Auto-fit width (default) — scales iframe to match scroll area width
+ *   - Ctrl/⌘ + 滚轮缩放；适应宽度时滚轮交给容器原生滚动
+ *   - 缩放后滚轮平移画布；拖拽平移
+ *   - 双击预览区恢复「适应宽度」
+ */
+
+// measurer script lives at module scope so Babel never sees <script> inside JSX
+const MEASURER_SCRIPT = [
+  '<' + 'script>',
+  '(function(){',
+  '  var lastW=0,lastH=0;',
+  '  function report(){',
+  '    try{',
+  '      var de=document.documentElement,b=document.body;',
+  '      var w=Math.max(de.scrollWidth,b.scrollWidth,de.offsetWidth,b.offsetWidth,400);',
+  '      var h=Math.max(de.scrollHeight,b.scrollHeight,de.offsetHeight,b.offsetHeight,300);',
+  '      if(w!==lastW||h!==lastH){lastW=w;lastH=h;window.parent.postMessage({type:"sizeResult",w:w,h:h},"*");}',
+  '    }catch(e){}',
+  '  }',
+  '  window.addEventListener("message",function(e){if(e.data&&e.data.type==="getSize")report();});',
+  '  if(document.readyState==="complete"){report();setTimeout(report,200);setTimeout(report,500);}',
+  '  else{window.addEventListener("load",function(){report();setTimeout(report,200);setTimeout(report,500);});}',
+  '})();',
+  '</' + 'script>'
+].join('\n');
+
+const HtmlViewer = ({ content, baseStyles = '' }) => {
+  const iframeRef = useRef(null);
+  const transformRef = useRef(null);
+  const scrollRef = useRef(null);
+
+  const [fitMode, setFitMode] = useState(true);
+  const [scale, setScale] = useState(1);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const [contentSize, setContentSize] = useState({ w: 1280, h: 800 });
+  const [iframeSize, setIframeSize] = useState({ w: 1280, h: 800 });
+  const [viewportW, setViewportW] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+
+  // 滚动区内「去掉左右 padding」后的真实内容宽度，用于贴边铺满（避免 margin:auto + 舍入产生大块灰边）
+  const availW = viewportW > 0 ? Math.max(viewportW, 1) : 0;
+
+  // effectiveScale: fit → scale content to available width; manual → use slider value
+  const effectiveScale = fitMode
+    ? availW > 0 && contentSize.w > 0
+      ? Math.max(0.05, Math.min(availW / contentSize.w, 8))
+      : 1
+    : scale;
+
+  // Apply translate + scale on the inner layer (clip box holds layout = scaled size → no phantom horizontal scroll)
+  const applyTransform = useCallback((s, px, py) => {
+    const el = transformRef.current;
+    if (!el) return;
+    el.style.transformOrigin = 'top left';
+    el.style.transform = `translate(${px}px, ${py}px) scale(${s})`;
+  }, []);
+
+  // Measure iframe from inside via postMessage (avoids scrollWidth-in-inline-block issues)
+  const measureFromIframe = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe?.contentWindow) return;
+    try {
+      iframe.contentWindow.postMessage({ type: 'getSize' }, '*');
+    } catch (_) {}
+  }, []);
+
+  // Listen for measurement result from iframe
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.data?.type !== 'sizeResult') return;
+      const { w, h } = e.data;
+      if (!w || !h) return;
+      const cappedW = Math.min(Math.max(w, 320), 12000);
+      const cappedH = Math.min(Math.max(h, 300), 24000);
+      setContentSize({ w: cappedW, h: cappedH });
+      setIframeSize({ w: cappedW, h: cappedH });
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  // ResizeObserver：用内容区宽度（clientWidth 减去左右 padding），与 clip 实际占位一致
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const measure = () => {
+      const style = getComputedStyle(el);
+      const pl = parseFloat(style.paddingLeft) || 0;
+      const pr = parseFloat(style.paddingRight) || 0;
+      setViewportW(Math.max(1, el.clientWidth - pl - pr));
+    };
+    measure();
+    const ro = new ResizeObserver(() => measure());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Inject content into iframe via srcdoc + helper script, then measure
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    setPanX(0);
+    setPanY(0);
+    setFitMode(true);
+
+    const userBody = content ?? '';
+    const docStyles = baseStyles
+      ? '<style>' + baseStyles + '</style>'
+      : '';
+
+    iframe.srcdoc = '<!DOCTYPE html>\n<html>\n<head><meta charset="utf-8">' +
+      docStyles +
+      MEASURER_SCRIPT +
+      '</head>\n<body>' + userBody + '</body>\n</html>';
+
+    // If iframe already loaded, trigger measurement immediately
+    if (iframe.contentDocument?.readyState === 'complete') {
+      setTimeout(measureFromIframe, 100);
+    }
+  }, [content, measureFromIframe]);
+
+  // Re-apply transform whenever scale/pan changes
+  useEffect(() => {
+    applyTransform(effectiveScale, panX, panY);
+  }, [effectiveScale, panX, panY, applyTransform]);
+
+  const handleWheel = useCallback((e) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      setScale((s) => Math.max(0.05, Math.min(s + delta, 10)));
+      setFitMode(false);
+      return;
+    }
+    if (fitMode) {
+      return;
+    }
+    e.preventDefault();
+    setPanX((px) => px - e.deltaX);
+    setPanY((py) => py - e.deltaY);
+  }, [fitMode]);
+
+  // Drag-to-pan
+  const handleMouseDown = (e) => {
+    if (e.button !== 0) return;
+    setIsDragging(true);
+    dragStart.current = { x: e.clientX, y: e.clientY, panX, panY };
+  };
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging) return;
+    setPanX(dragStart.current.panX + (e.clientX - dragStart.current.x));
+    setPanY(dragStart.current.panY + (e.clientY - dragStart.current.y));
+  }, [isDragging]);
+
+  const handleMouseUp = useCallback(() => setIsDragging(false), []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [handleWheel]);
+
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  const zoomReset = () => {
+    setScale(1); setPanX(0); setPanY(0);
+    setIframeSize({ w: contentSize.w, h: contentSize.h });
+    setFitMode(true);
+  };
+
+  // Fit 时 clip 宽强制等于 availW，避免 round(w*scale) 小于容器导致 margin:auto 两侧大块灰底
+  const scaledW = fitMode
+    ? Math.max(1, Math.round(availW))
+    : Math.max(1, Math.round(iframeSize.w * effectiveScale));
+  const scaledH = Math.max(1, Math.round(iframeSize.h * effectiveScale));
+
+  return (
+    <div className="html-preview">
+      <div
+        ref={scrollRef}
+        className={`html-preview-scroll ${isDragging ? 'dragging' : ''}`}
+        onMouseDown={handleMouseDown}
+        onDoubleClick={zoomReset}
+        title="Ctrl 或 ⌘ + 滚轮缩放 · 双击恢复适应宽度"
+      >
+        <div
+          className="html-preview-clip"
+          style={{ width: scaledW, height: scaledH }}
+        >
+          <div
+            ref={transformRef}
+            className="html-preview-transform"
+            style={{ width: iframeSize.w, height: iframeSize.h }}
+          >
+            <iframe
+              ref={iframeRef}
+              className="html-preview-iframe"
+              style={{ width: iframeSize.w, height: iframeSize.h }}
+              title="HTML Preview"
+              sandbox="allow-scripts allow-same-origin"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * DOCX Viewer Component — converts .docx to styled HTML via mammoth
+ */
+const DocxViewer = ({ file, content }) => {
+  const [html, setHtml] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        let byteArray;
+        if (file.encoding === 'hex') {
+          const hexString = content.replace(/\s/g, '');
+          byteArray = new Uint8Array(hexString.match(/.{1,2}/g).map((b) => parseInt(b, 16)));
+        } else {
+          const binaryData = atob(content);
+          byteArray = new Uint8Array(binaryData.length);
+          for (let i = 0; i < binaryData.length; i++) {
+            byteArray[i] = binaryData.charCodeAt(i);
+          }
+        }
+
+        const result = await mammoth.convertToHtml({ arrayBuffer: byteArray.buffer }, {
+          styleMap: [
+            "p[style-name='Heading 1'] => h1:fresh",
+            "p[style-name='Heading 2'] => h2:fresh",
+            "p[style-name='Heading 3'] => h3:fresh",
+            "p[style-name='Title'] => h1.title-docx:fresh",
+            "b => strong",
+            "i => em",
+            "u => u",
+            "strike => del",
+          ]
+        });
+
+        setHtml(`<div class="docx-flow">${result.value}</div>`);
+      } catch (err) {
+        console.error('Failed to load docx:', err);
+        setError('Failed to load Word file: ' + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [content, file.encoding]);
+
+  if (loading) {
+    return (
+      <div className="docx-preview loading">
+        <RefreshCw size={32} className="spin" />
+        <p>Loading Word document…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="docx-preview error">
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="docx-preview">
+      <HtmlViewer content={html} baseStyles={DOCX_BASE_STYLES} />
+    </div>
+  );
+};
+
+// Default styles injected into DOCX iframe so mammoth HTML looks like a real document.
+// Word→mammoth 常带右缩进、max-width、大页边距等内联样式，易在预览里留下大块右侧空白；此处统一压平并让块级内容铺满 .docx-flow。
+const DOCX_BASE_STYLES = [
+  'html, body { margin: 0; width: 100%; box-sizing: border-box; }',
+  'body { font-family: "Times New Roman", Georgia, "Songti SC", "SimSun", serif; font-size: 12pt; line-height: 1.6; color: #222; background: #fff; padding: 28px 20px; }',
+  '.docx-flow { width: 100%; max-width: 100%; margin: 0; padding: 0; box-sizing: border-box; }',
+  '.docx-flow p, .docx-flow h1, .docx-flow h2, .docx-flow h3, .docx-flow h4 { width: 100% !important; max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; padding-left: 0 !important; padding-right: 0 !important; box-sizing: border-box; }',
+  '.docx-flow ul, .docx-flow ol { width: 100% !important; max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; padding-right: 0 !important; box-sizing: border-box; }',
+  '.docx-flow table { width: 100% !important; max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; }',
+  '.docx-flow blockquote { width: 100% !important; max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; padding-left: 12pt !important; padding-right: 0 !important; border-left: 4px solid #ccc; box-sizing: border-box; }',
+  'h1 { font-size: 24pt; font-weight: bold; margin: 18pt 0 6pt; border-bottom: 2px solid #333; padding-bottom: 4pt; }',
+  'h1.title-docx { font-size: 28pt; text-align: center; border-bottom: none; margin-bottom: 18pt; }',
+  'h2 { font-size: 18pt; font-weight: bold; margin: 14pt 0 4pt; }',
+  'h3 { font-size: 14pt; font-weight: bold; margin: 10pt 0 4pt; }',
+  'p { margin: 4pt 0; text-indent: 24pt; }',
+  'p[style-name]:not([style-name^="Heading"]):not([style-name="Title"]) { text-indent: 0; }',
+  'strong, b { font-weight: bold; }',
+  'em, i { font-style: italic; }',
+  'u { text-decoration: underline; }',
+  'del { text-decoration: line-through; }',
+  'ul, ol { margin: 6pt 0; padding-left: 30pt; }',
+  'li { margin: 3pt 0; }',
+  'table { border-collapse: collapse; width: 100%; margin: 8pt 0; }',
+  'td, th { border: 1px solid #999; padding: 4pt 8pt; }',
+  'th { background: #f0f0f0; font-weight: bold; }',
+  'img { max-width: 100%; height: auto; }',
+  'blockquote { border-left: 4px solid #ccc; padding-left: 12pt; color: #555; margin: 8pt 0; }',
+].join('\n');
+
+/**
+ * PPTX: decode entities and escape for safe HTML
+ */
+const decodeXmlEntities = (str) => {
+  if (!str) return '';
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+};
+
+const escapeHtml = (str) =>
+  str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+const PPTX_WEB_IMAGE_EXT = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg']);
+
+const pptxMimeFromExt = (ext) => {
+  const e = (ext || '').toLowerCase();
+  if (e === 'png') return 'image/png';
+  if (e === 'jpg' || e === 'jpeg') return 'image/jpeg';
+  if (e === 'gif') return 'image/gif';
+  if (e === 'webp') return 'image/webp';
+  if (e === 'bmp') return 'image/bmp';
+  if (e === 'svg') return 'image/svg+xml';
+  return null;
+};
+
+const zipEntryInsensitive = (zip, pathNorm) => {
+  const n = pathNorm.replace(/\\/g, '/');
+  const lower = n.toLowerCase();
+  const key = Object.keys(zip.files).find(
+    (k) => !zip.files[k].dir && k.replace(/\\/g, '/').toLowerCase() === lower
+  );
+  return key ? zip.file(key) : null;
+};
+
+/** Resolve OOXML Target= relative to the part path (e.g. slide1.xml). */
+const resolvePptxRelTarget = (partPath, target) => {
+  const norm = partPath.replace(/\\/g, '/');
+  const idx = norm.lastIndexOf('/');
+  const dir = idx >= 0 ? norm.slice(0, idx) : '';
+  const parts = dir.split('/').filter(Boolean);
+  const segs = target.replace(/\\/g, '/').split('/').filter((x) => x && x !== '.');
+  for (const p of segs) {
+    if (p === '..') parts.pop();
+    else parts.push(p);
+  }
+  return parts.join('/');
+};
+
+const parsePptxRelationshipElements = (relsXml) => {
+  const rows = [];
+  if (!relsXml) return rows;
+  const re = /<Relationship\b([^>]*)>/gi;
+  let m;
+  while ((m = re.exec(relsXml)) !== null) {
+    const attrs = m[1];
+    const id = /Id\s*=\s*"([^"]+)"/i.exec(attrs)?.[1];
+    const type = /Type\s*=\s*"([^"]+)"/i.exec(attrs)?.[1];
+    const target = /Target\s*=\s*"([^"]+)"/i.exec(attrs)?.[1];
+    const targetMode = /TargetMode\s*=\s*"([^"]+)"/i.exec(attrs)?.[1];
+    if (id && target) rows.push({ id, type: type || '', target, targetMode });
+  }
+  return rows;
+};
+
+/** r:embed ids in document order (deduped) for pictures / backgrounds. */
+const collectOrderedPptxEmbedIds = (slideXml) => {
+  const ids = [];
+  const seen = new Set();
+  // Collect all r:embed attributes (covers shapes, blip fills, backgrounds, etc.)
+  const re = /\br:embed="([^"]+)"/g;
+  let m;
+  while ((m = re.exec(slideXml)) !== null) {
+    const id = m[1];
+    if (!seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
+    }
+  }
+  return ids;
+};
+
+const PPTX_MAX_IMAGE_BYTES = 12 * 1024 * 1024;
+
+const loadPptxSlideImageDataUrls = async (zip, slidePath, slideXml) => {
+  const slideNorm = slidePath.replace(/\\/g, '/');
+  const fileName = slideNorm.split('/').pop();
+  const dir = slideNorm.includes('/') ? slideNorm.slice(0, slideNorm.lastIndexOf('/') + 1) : '';
+  const relsPath = `${dir}_rels/${fileName}.rels`;
+  const relFile = zip.file(relsPath) || zipEntryInsensitive(zip, relsPath);
+
+  const idToImagePath = new Map();
+  if (relFile) {
+    const relsXml = await relFile.async('string');
+    for (const row of parsePptxRelationshipElements(relsXml)) {
+      if (row.targetMode === 'External') continue;
+      if (!row.type.toLowerCase().includes('relationships/image')) continue;
+      const t = row.target.replace(/\\/g, '/');
+      const resolved = t.startsWith('/')
+        ? t.replace(/^\/+/, '')
+        : resolvePptxRelTarget(slideNorm, row.target);
+      idToImagePath.set(row.id, resolved);
+    }
+  }
+
+  const embedIds = collectOrderedPptxEmbedIds(slideXml);
+  const dataUrls = [];
+
+  for (const rid of embedIds) {
+    const imgPath = idToImagePath.get(rid);
+    if (!imgPath) continue;
+    const ext = (imgPath.split('.').pop() || '').split('?')[0];
+    const mime = pptxMimeFromExt(ext);
+    if (!mime || !PPTX_WEB_IMAGE_EXT.has(ext.toLowerCase())) continue;
+    const f = zip.file(imgPath) || zipEntryInsensitive(zip, imgPath);
+    if (!f) continue;
+    const u8 = await f.async('uint8array');
+    if (u8.length > PPTX_MAX_IMAGE_BYTES) continue;
+    let binary = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < u8.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, u8.subarray(i, Math.min(i + chunk, u8.length)));
+    }
+    dataUrls.push(`data:${mime};base64,${btoa(binary)}`);
+  }
+
+  return dataUrls;
+};
+
+/**
+ * Extract visible text from a slide / OOXML fragment.
+ * Real PPTX uses <a:t xml:space="preserve"> — plain <a:t> regex misses almost all text.
+ */
+const extractPptxSlideTexts = (slideXml) => {
+  if (!slideXml) return [];
+  const texts = [];
+
+  const pushText = (raw) => {
+    const t = decodeXmlEntities(raw).replace(/\s+/g, ' ').trim();
+    if (t) texts.push(t);
+  };
+
+  // DrawingML text runs (most common)
+  const reAT = /<a:t[^>]*>([\s\S]*?)<\/a:t>/gi;
+  let m;
+  while ((m = reAT.exec(slideXml)) !== null) {
+    pushText(m[1]);
+  }
+
+  // Some generators use different prefix but same local name
+  if (texts.length === 0) {
+    const reAnyT = /<[^:>\s]+:t[^>]*>([\s\S]*?)<\/[^:>\s]+:t>/gi;
+    while ((m = reAnyT.exec(slideXml)) !== null) {
+      pushText(m[1]);
+    }
+  }
+
+  return texts;
+};
+
+const buildSlidePreviewHtml = (slideXml, slideIndex, imageDataUrls = []) => {
+  const texts = extractPptxSlideTexts(slideXml);
+  const textBlock =
+    texts.length > 0 ? texts.map((t) => `<p>${escapeHtml(t)}</p>`).join('') : '';
+  const imgs =
+    imageDataUrls.length > 0
+      ? imageDataUrls
+          .map(
+            (src) =>
+              `<div class="pptx-slide-img-wrap"><img class="pptx-slide-img" src="${src}" alt="" /></div>`
+          )
+          .join('')
+      : '';
+  const emptyHint =
+    !textBlock && !imgs
+      ? '<p class="pptx-empty-hint">此页未解析到文本或图片（可能为图表、视频或特殊版式）。</p>'
+      : '';
+  return `
+      <div class="pptx-slide-inner" data-slide="${slideIndex}">
+        <div class="slide-texts">${textBlock}${emptyHint}</div>
+        ${imgs ? `<div class="slide-images">${imgs}</div>` : ''}
+      </div>
+    `;
+};
+
+/**
+ * PPTX Viewer Component
+ */
+const PptxViewer = ({ file, content }) => {
+  const [slides, setSlides] = useState([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadPptx = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        let byteArray;
+        if (file.encoding === 'hex') {
+          const hexString = content.replace(/\s/g, '');
+          byteArray = new Uint8Array(hexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16)));
+        } else if (file.encoding === 'base64') {
+          const binaryData = atob(content);
+          byteArray = new Uint8Array(binaryData.length);
+          for (let i = 0; i < binaryData.length; i++) {
+            byteArray[i] = binaryData.charCodeAt(i);
+          }
+        } else {
+          const binaryData = atob(content);
+          byteArray = new Uint8Array(binaryData.length);
+          for (let i = 0; i < binaryData.length; i++) {
+            byteArray[i] = binaryData.charCodeAt(i);
+          }
+        }
+
+        const zip = await JSZip.loadAsync(byteArray);
+
+        const slideRefs = [];
+        const contentTypes = await zip.file('[Content_Types].xml')?.async('string');
+
+        if (contentTypes) {
+          const slideMatches = contentTypes.match(/PartName="\/ppt\/slides\/slide\d+\.xml"/g) || [];
+          for (const match of slideMatches) {
+            const slideNum = match.match(/slide(\d+)\.xml/)[1];
+            slideRefs.push(`ppt/slides/slide${slideNum}.xml`);
+          }
+        }
+
+        if (slideRefs.length === 0) {
+          const allFiles = Object.keys(zip.files);
+          for (const fileName of allFiles) {
+            if (fileName.match(/ppt\/slides\/slide\d+\.xml$/)) {
+              slideRefs.push(fileName);
+            }
+          }
+        }
+
+        slideRefs.sort((a, b) => {
+          const numA = parseInt(a.match(/slide(\d+)/)[1], 10);
+          const numB = parseInt(b.match(/slide(\d+)/)[1], 10);
+          return numA - numB;
+        });
+
+        const slidesData = [];
+        for (const slidePath of slideRefs) {
+          const slideXml = await zip.file(slidePath)?.async('string');
+          if (slideXml) {
+            const imageDataUrls = await loadPptxSlideImageDataUrls(zip, slidePath, slideXml);
+            slidesData.push({ path: slidePath, xml: slideXml, imageDataUrls });
+          }
+        }
+
+        setSlides(slidesData);
+        setCurrentSlide(0);
+      } catch (err) {
+        console.error('Failed to load pptx:', err);
+        setError('Failed to load PowerPoint file: ' + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPptx();
+  }, [content, file.encoding]);
+
+  const currentSlideHtml = useMemo(() => {
+    const s = slides[currentSlide];
+    if (!s?.xml) return '';
+    return buildSlidePreviewHtml(s.xml, currentSlide, s.imageDataUrls || []);
+  }, [slides, currentSlide]);
+
+  const thumbHtml = useMemo(() => {
+    return slides.map((s, i) => buildSlidePreviewHtml(s.xml, i, s.imageDataUrls || []));
+  }, [slides]);
+
+  const goToPrevSlide = () => setCurrentSlide((prev) => Math.max(prev - 1, 0));
+  const goToNextSlide = () => setCurrentSlide((prev) => Math.min(prev + 1, slides.length - 1));
+
+  if (loading) {
+    return (
+      <div className="pptx-preview loading">
+        <RefreshCw size={32} className="spin" />
+        <p>Loading PowerPoint file...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="pptx-preview error">
+        <File size={48} />
+        <p>{error}</p>
+        <p style={{ fontSize: '12px', color: '#666' }}>{file.name}</p>
+      </div>
+    );
+  }
+
+  if (slides.length === 0) {
+    return (
+      <div className="pptx-preview error">
+        <File size={48} />
+        <p>No slides found in this file</p>
+        <p style={{ fontSize: '12px', color: '#666' }}>{file.name}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pptx-preview">
+      <div className="pptx-toolbar">
+        <button
+          className="pptx-nav-btn"
+          onClick={goToPrevSlide}
+          disabled={currentSlide <= 0}
+        >
+          ← Prev
+        </button>
+        <span className="pptx-page-info">
+          Slide {currentSlide + 1} of {slides.length}
+        </span>
+        <button
+          className="pptx-nav-btn"
+          onClick={goToNextSlide}
+          disabled={currentSlide >= slides.length - 1}
+        >
+          Next →
+        </button>
+      </div>
+      <div className="pptx-content">
+        <div className="pptx-slide-container">
+          <div className="pptx-slide">
+            <div className="pptx-slide-number">Slide {currentSlide + 1}</div>
+            <div
+              className="pptx-slide-html"
+              dangerouslySetInnerHTML={{
+                __html: currentSlideHtml || '<div class="pptx-empty-hint">Loading…</div>',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+      <div className="pptx-thumbnails">
+        {slides.map((slide, index) => (
+          <div
+            key={slide.path || index}
+            className={`pptx-thumb ${currentSlide === index ? 'active' : ''}`}
+            onClick={() => setCurrentSlide(index)}
+          >
+            <div className="thumb-number">{index + 1}</div>
+            <div className="thumb-content">
+              {thumbHtml[index] ? (
+                <div dangerouslySetInnerHTML={{ __html: thumbHtml[index] }} />
+              ) : (
+                <div className="thumb-placeholder">Slide {index + 1}</div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -592,17 +1331,19 @@ const getLanguage = (filename) => {
 /**
  * File Editor Component with Monaco Editor
  */
-const FileEditor = ({ file, content, onSave, onClose, isSaving }) => {
+const FileEditor = ({ file, content, onSave, onClose, isSaving, readOnly = false }) => {
   // 确保 content 是字符串
   const safeContent = content ?? '';
   const [editedContent, setEditedContent] = useState(safeContent);
   const [isDirty, setIsDirty] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const editorRef = useRef(null);
 
   // 监听 content 变化，更新 editedContent
   useEffect(() => {
     setEditedContent(safeContent);
     setIsDirty(false);
+    setIsPreviewMode(false);
   }, [safeContent, file?.path]);
 
   const handleSave = () => {
@@ -617,10 +1358,9 @@ const FileEditor = ({ file, content, onSave, onClose, isSaving }) => {
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
-    
-    // 添加保存快捷键 Ctrl+S / Cmd+S
+
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      if (isDirty && !isSaving) {
+      if (!readOnly && isDirty && !isSaving) {
         handleSave();
       }
     });
@@ -633,6 +1373,9 @@ const FileEditor = ({ file, content, onSave, onClose, isSaving }) => {
   const isBinary = file.encoding === 'hex';
   const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(fileExt);
+  const isPptx = ['pptx', 'ppt'].includes(fileExt);
+  const isDocx = ['docx', 'doc'].includes(fileExt);
+  const isHtml = ['html', 'htm'].includes(fileExt);
   const language = getLanguage(file.name);
 
   return (
@@ -641,7 +1384,16 @@ const FileEditor = ({ file, content, onSave, onClose, isSaving }) => {
         <WindowDots />
         <span className="editor-filename">{file.name}</span>
         <div className="editor-actions">
-          {!isBinary && !isImage && (
+          {isHtml && !isImage && (
+            <button
+              className={`editor-btn ${isPreviewMode ? 'active' : ''}`}
+              onClick={() => setIsPreviewMode((p) => !p)}
+              title={isPreviewMode ? '切换到编辑' : '预览 HTML'}
+            >
+              {isPreviewMode ? <Edit3 size={14} /> : <FileText size={14} />}
+            </button>
+          )}
+          {!readOnly && !isBinary && !isImage && (
             <button
               className="editor-btn"
               onClick={handleSave}
@@ -663,14 +1415,20 @@ const FileEditor = ({ file, content, onSave, onClose, isSaving }) => {
           <PdfViewer file={file} content={safeContent} />
         ) : ['xlsx', 'xls'].includes(fileExt) ? (
           <XlsxViewer file={file} content={safeContent} />
+        ) : isPptx ? (
+          <PptxViewer file={file} content={safeContent} />
+        ) : isDocx ? (
+          <DocxViewer file={file} content={safeContent} />
         ) : isBinary ? (
           <BinaryViewer file={file} content={safeContent} />
+        ) : isHtml && isPreviewMode ? (
+          <HtmlViewer content={editedContent} />
         ) : (
           <Editor
             height="100%"
             language={language}
             value={editedContent}
-            onChange={handleEditorChange}
+            onChange={readOnly ? undefined : handleEditorChange}
             onMount={handleEditorDidMount}
             options={{
               minimap: { enabled: true },
@@ -685,11 +1443,12 @@ const FileEditor = ({ file, content, onSave, onClose, isSaving }) => {
               renderWhitespace: 'selection',
               folding: true,
               bracketPairColorization: { enabled: true },
-              formatOnPaste: true,
-              formatOnType: true,
-              suggestOnTriggerCharacters: true,
-              quickSuggestions: true,
+              formatOnPaste: !readOnly,
+              formatOnType: !readOnly,
+              suggestOnTriggerCharacters: !readOnly,
+              quickSuggestions: !readOnly,
               snippetSuggestions: 'inline',
+              readOnly: readOnly,
             }}
             theme="vs-dark"
           />
@@ -1199,4 +1958,5 @@ const WorkspacePanel = ({ sendWSMessage }) => {
   );
 };
 
+export { FileEditor };
 export default WorkspacePanel;

@@ -1,0 +1,54 @@
+.workspace-file-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-4);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.workspace-file-preview-dialog {
+  position: relative;
+  width: min(92vw, 1200px);
+  height: min(88vh, 900px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--board);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.workspace-file-preview-dialog .file-editor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace-file-preview-dialog .file-editor-content {
+  flex: 1;
+  min-height: 0;
+}
+
+.workspace-file-preview-status {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  padding: var(--s-6);
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: center;
+}
+
+.workspace-file-preview-status.is-error {
+  color: var(--danger, #e5484d);
+}

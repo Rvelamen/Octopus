@@ -139,8 +139,8 @@ class AgentLoop:
         except Exception:
             return self._default_max_iterations
 
-    def _get_current_provider_and_model(self) -> tuple[LLMProvider, str, str]:
-        """Get current provider, model, and provider_type from database."""
+    def _get_current_provider_and_model(self) -> tuple[LLMProvider, str, str, int, float]:
+        """Get current provider, model, provider_type, max_tokens, and temperature from database."""
         config_service = AgentConfigService(self.db)
         return config_service.get_default_provider_and_model()
 
@@ -438,11 +438,18 @@ class AgentLoop:
         iteration = 0
         final_content = None
         last_prompt_tokens = 0  # Track prompt tokens for compression trigger
+        
+        # Track total token usage for this run
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
 
         should_stop = False  # Flag to stop the outer loop
 
         # Reset stop flag for new task
         self._stop_current_task = False
+
+        # Track elapsed time for this agent run
+        start_time = time.time()
 
         while iteration < self.max_iterations and not should_stop and not self._stop_current_task:
             iteration += 1
@@ -451,18 +458,22 @@ class AgentLoop:
             await self._emit("agent_thinking", {"iteration": iteration, "session": session.key}, channel=msg.channel)
 
             # Call LLM - get fresh provider and model from config
-            provider, model, provider_type = self._get_current_provider_and_model()
+            provider, model, provider_type, max_tokens, temperature = self._get_current_provider_and_model()
             # logger.info(f"Message: {messages}")
             response = await provider.chat(
                 messages=messages,
                 tools=self.tools.get_definitions(),
-                model=model
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
             )
             logger.info(f"LLM Response: {response}")
             
             # Record token usage and track prompt_tokens for compression
             if response.usage:
                 last_prompt_tokens = response.usage.get("prompt_tokens", 0)
+                total_prompt_tokens += response.usage.get("prompt_tokens", 0)
+                total_completion_tokens += response.usage.get("completion_tokens", 0)
                 self._record_token_usage(
                     session_instance_id=session_instance_id,
                     provider_name=provider_type,
@@ -489,7 +500,18 @@ class AgentLoop:
                 session.add_message("assistant", response.content or "",
                                   message_type="tool_call",
                                   tool_calls=tool_calls_data,
-                                  metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
+                                  metadata={
+                                      "session_instance_id": session_instance_id,
+                                      "usage": {
+                                          "prompt_tokens": total_prompt_tokens,
+                                          "completion_tokens": total_completion_tokens
+                                      }
+                                  } if session_instance_id else {
+                                      "usage": {
+                                          "prompt_tokens": total_prompt_tokens,
+                                          "completion_tokens": total_completion_tokens
+                                      }
+                                  })
                 self.sessions.save(session)
 
                 # Add assistant message with tool calls to messages
@@ -611,14 +633,39 @@ class AgentLoop:
                             )
                         except Exception as add_err:
                             logger.error(f"Failed to add tool result to messages: {add_err}")
+
+                # Emit iteration complete event after all tool calls executed (non-streaming)
+                if not should_stop and not self._stop_current_task:
+                    await self._emit("agent_iteration_complete", {
+                        "iteration": iteration,
+                        "final_content": response.content or "",
+                        "status": "completed"
+                    }, channel=msg.channel)
             else:
                 # No tool calls, we're done
                 final_content = response.content
-                # Save final assistant response immediately
+                # Save final assistant response immediately with token usage
                 session.add_message("assistant", final_content or "",
                                   message_type=msg.message_type,
-                                  metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
+                                  metadata={
+                                      "session_instance_id": session_instance_id,
+                                      "usage": {
+                                          "prompt_tokens": total_prompt_tokens,
+                                          "completion_tokens": total_completion_tokens
+                                      }
+                                  } if session_instance_id else {
+                                      "usage": {
+                                          "prompt_tokens": total_prompt_tokens,
+                                          "completion_tokens": total_completion_tokens
+                                      }
+                                  })
                 self.sessions.save(session)
+                # Emit iteration complete event
+                await self._emit("agent_iteration_complete", {
+                    "iteration": iteration,
+                    "final_content": final_content or "",
+                    "status": "completed"
+                }, channel=msg.channel)
                 break
 
         # Check if stopped by user request
@@ -633,10 +680,22 @@ class AgentLoop:
         logger.info(f"[AgentLoop] Sending final response with {len(final_content)} chars")
         await self._send_stream_chunks(final_content, current_session, msg.channel)
 
+        elapsed_ms = int((time.time() - start_time) * 1000)
+
         logger.info(f"[AgentLoop] Publishing agent_finish event")
+        logger.info(f"[AgentLoop] Token usage for this run: prompt={total_prompt_tokens}, completion={total_completion_tokens}")
         await self.bus.publish_event(AgentEvent(
             event_type="agent_finish",
-            data={"content": final_content, "session": msg.chat_id},
+            data={
+                "content": final_content, 
+                "session": msg.chat_id, 
+                "elapsed_ms": elapsed_ms,
+                "token_usage": {
+                    "prompt_tokens": total_prompt_tokens,
+                    "completion_tokens": total_completion_tokens,
+                    "total_tokens": total_prompt_tokens + total_completion_tokens
+                }
+            },
             channel=msg.channel
         ))
         logger.info(f"[AgentLoop] agent_finish event published")
@@ -659,7 +718,8 @@ class AgentLoop:
             metadata={
                 "session_instance_id": session_instance_id,
                 "tts_enabled": tts_enabled,
-                "tts_config": tts_config
+                "tts_config": tts_config,
+                "elapsed_ms": elapsed_ms
             }
         )
 
@@ -751,11 +811,13 @@ class AgentLoop:
             iteration += 1
 
             # Call LLM - get fresh provider and model from config
-            provider, model, provider_type = self._get_current_provider_and_model()
+            provider, model, provider_type, max_tokens, temperature = self._get_current_provider_and_model()
             response = await provider.chat(
                 messages=messages,
                 tools=self.tools.get_definitions(),
-                model=model
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
             )
 
             # Record token usage
@@ -785,7 +847,18 @@ class AgentLoop:
                 session.add_message("assistant", response.content or "",
                                   message_type="tool_call",
                                   tool_calls=tool_calls_data,
-                                  metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
+                                  metadata={
+                                      "session_instance_id": session_instance_id,
+                                      "usage": {
+                                          "prompt_tokens": total_prompt_tokens,
+                                          "completion_tokens": total_completion_tokens
+                                      }
+                                  } if session_instance_id else {
+                                      "usage": {
+                                          "prompt_tokens": total_prompt_tokens,
+                                          "completion_tokens": total_completion_tokens
+                                      }
+                                  })
                 self.sessions.save(session)
 
                 tool_call_dicts = [
@@ -861,6 +934,13 @@ class AgentLoop:
                             )
                         except Exception as add_err:
                             logger.error(f"Failed to add tool result to messages: {add_err}")
+
+                # Emit iteration complete event for system message processing
+                await self._emit("agent_iteration_complete", {
+                    "iteration": iteration,
+                    "final_content": response.content or "",
+                    "status": "completed"
+                }, channel=origin_channel)
             else:
                 final_content = response.content
                 # Save final assistant response immediately
@@ -1047,11 +1127,18 @@ class AgentLoop:
         iteration = 0
         final_content = None
         last_prompt_tokens = 0
-
+        
+        # Track total token usage for this run
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
+        
         should_stop = False
 
         # Reset stop flag for new task
         self._stop_current_task = False
+
+        # Track elapsed time for this agent run
+        start_time = time.time()
 
         while iteration < self.max_iterations and not should_stop and not self._stop_current_task:
             iteration += 1
@@ -1060,8 +1147,8 @@ class AgentLoop:
             await self._emit("agent_thinking", {"iteration": iteration, "session": session.key}, channel=msg.channel)
 
             # Call LLM with streaming
-            provider, model, provider_type = self._get_current_provider_and_model()
-            
+            provider, model, provider_type, max_tokens, temperature = self._get_current_provider_and_model()
+
             full_content = ""
             tool_calls_buffer = {}
             
@@ -1070,7 +1157,9 @@ class AgentLoop:
                 async for chunk in provider.chat_stream(
                     messages=messages,
                     tools=self.tools.get_definitions(),
-                    model=model
+                    model=model,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
                 ):
                     # Send content token
                     if chunk.content:
@@ -1094,6 +1183,9 @@ class AgentLoop:
                                 await self._emit("agent_tool_call_start", {
                                     "tool_call_id": tc.id,
                                     "tool": tc.name,
+                                    "args": tc.arguments,
+                                    "partial_args": tc.arguments,
+                                    "content": full_content if full_content else None,
                                     "iteration": iteration,
                                     "status": "pending"
                                 }, channel=msg.channel)
@@ -1112,6 +1204,8 @@ class AgentLoop:
                         # Record token usage
                         if chunk.usage:
                             last_prompt_tokens = chunk.usage.get("prompt_tokens", 0)
+                            total_prompt_tokens += chunk.usage.get("prompt_tokens", 0)
+                            total_completion_tokens += chunk.usage.get("completion_tokens", 0)
                             self._record_token_usage(
                                 session_instance_id=session_instance_id,
                                 provider_name=provider_type,
@@ -1136,7 +1230,18 @@ class AgentLoop:
                     session.add_message("assistant", full_content or "",
                                       message_type="tool_call",
                                       tool_calls=tool_calls_data,
-                                      metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
+                                      metadata={
+                                          "session_instance_id": session_instance_id,
+                                          "usage": {
+                                              "prompt_tokens": total_prompt_tokens,
+                                              "completion_tokens": total_completion_tokens
+                                          }
+                                      } if session_instance_id else {
+                                          "usage": {
+                                              "prompt_tokens": total_prompt_tokens,
+                                              "completion_tokens": total_completion_tokens
+                                          }
+                                      })
                     self.sessions.save(session)
                     
                     # Add assistant message to messages
@@ -1184,6 +1289,7 @@ class AgentLoop:
                             await self._emit("agent_tool_call_complete", {
                                 "tool_call_id": tc_id,
                                 "tool": tc_data["name"],
+                                "args": tc_data["arguments"],
                                 "result": result[:500] + "..." if len(result) > 500 else result,
                                 "status": "completed"
                             }, channel=msg.channel)
@@ -1198,6 +1304,7 @@ class AgentLoop:
                             await self._emit("agent_tool_call_error", {
                                 "tool_call_id": tc_id,
                                 "tool": tc_data["name"],
+                                "args": tc_data["arguments"],
                                 "error": str(e),
                                 "status": "error"
                             }, channel=msg.channel)
@@ -1214,14 +1321,35 @@ class AgentLoop:
                             messages = self.context.add_tool_result(
                                 messages, tc_id, tc_data["name"], result, provider_type
                             )
+                    
+                    # Emit iteration complete event after all tool calls executed (streaming)
+                    if not self._stop_current_task:
+                        await self._emit("agent_iteration_complete", {
+                            "iteration": iteration,
+                            "final_content": full_content or "",
+                            "status": "completed"
+                        }, channel=msg.channel)
                 else:
                     # No tool calls, we're done
                     final_content = full_content
-                    # Save final assistant response
+                    # Save final assistant response with token usage
+                    current_usage = {
+                        "prompt_tokens": total_prompt_tokens,
+                        "completion_tokens": total_completion_tokens
+                    }
                     session.add_message("assistant", final_content or "",
                                       message_type=msg.message_type,
-                                      metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
+                                      metadata={
+                                          "session_instance_id": session_instance_id,
+                                          "usage": current_usage
+                                      } if session_instance_id else {"usage": current_usage})
                     self.sessions.save(session)
+                    # Emit iteration complete event
+                    await self._emit("agent_iteration_complete", {
+                        "iteration": iteration,
+                        "final_content": final_content or "",
+                        "status": "completed"
+                    }, channel=msg.channel)
                     break
                     
             except Exception as e:
@@ -1240,13 +1368,33 @@ class AgentLoop:
 
         await self.compressor.maybe_compress(session, prompt_tokens=last_prompt_tokens)
 
+        elapsed_ms = int((time.time() - start_time) * 1000)
+
         logger.info(f"[Stream] Sending final response with {len(final_content)} chars")
 
-        await self.bus.publish_event(AgentEvent(
-            event_type="agent_finish",
-            data={"content": final_content, "session": msg.chat_id},
-            channel=msg.channel
-        ))
+        token_usage_data = {
+            "prompt_tokens": total_prompt_tokens,
+            "completion_tokens": total_completion_tokens,
+            "total_tokens": total_prompt_tokens + total_completion_tokens
+        }
+        logger.info(f"[Stream] Token usage for this run: {token_usage_data}")
+        
+        try:
+            await self.bus.publish_event(AgentEvent(
+                event_type="agent_finish",
+                data={
+                    "content": final_content, 
+                    "session": msg.chat_id, 
+                    "elapsed_ms": elapsed_ms,
+                    "token_usage": token_usage_data
+                },
+                channel=msg.channel
+            ))
+            logger.info(f"[Stream] agent_finish event published successfully")
+        except Exception as e:
+            logger.error(f"[Stream] Failed to publish agent_finish event: {e}")
+            import traceback
+            traceback.print_exc()
 
         # Get TTS config for metadata
         tts_enabled = False
@@ -1266,7 +1414,8 @@ class AgentLoop:
             metadata={
                 "session_instance_id": session_instance_id,
                 "tts_enabled": tts_enabled,
-                "tts_config": tts_config
+                "tts_config": tts_config,
+                "elapsed_ms": elapsed_ms
             }
         )
 

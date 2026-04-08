@@ -47,13 +47,13 @@
 .service-tab-btn {
   display: flex;
   align-items: center;
-  gap: var(--s-2);
-  padding: var(--s-2) var(--s-4);
+  gap: var(--s-1);
+  padding: var(--s-1) var(--s-3);
   background: var(--surface);
   border: 1px solid var(--board);
-  border-radius: var(--r-sm);
+  border-radius: 6px;
   color: var(--text-2);
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -80,13 +80,13 @@
 .tab-btn {
   display: flex;
   align-items: center;
-  gap: var(--s-2);
-  padding: var(--s-2) var(--s-4);
+  gap: var(--s-1);
+  padding: var(--s-1) var(--s-3);
   background: var(--surface);
   border: 1px solid var(--board);
-  border-radius: var(--r-sm);
+  border-radius: 6px;
   color: var(--text-2);
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
 }

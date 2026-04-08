@@ -26,7 +26,7 @@ function ChatInput({
   placeholder
 }) {
   const [isInputExpanded, setIsInputExpanded] = useState(false);
-  const [inputHeight, setInputHeight] = useState(120);
+  const [inputHeight, setInputHeight] = useState(200);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const fileUploadRef = useRef(null);
@@ -87,7 +87,7 @@ function ChatInput({
             const startHeight = inputHeight;
             const handleMouseMove = (moveEvent) => {
               const deltaY = startY - moveEvent.clientY;
-              const newHeight = Math.max(60, Math.min(300, startHeight + deltaY));
+              const newHeight = Math.max(48, Math.min(300, startHeight + deltaY));
               setInputHeight(newHeight);
             };
             const handleMouseUp = () => {
@@ -98,7 +98,7 @@ function ChatInput({
             document.addEventListener('mouseup', handleMouseUp);
           }}
         >
-          <GripVertical size={14} />
+          <GripVertical size={12} />
         </div>
 
         <div className="inputbar-textarea-wrapper">
@@ -112,7 +112,7 @@ function ChatInput({
             className="inputbar-textarea"
             disabled={isProcessing || isUploading || disabled}
             autoFocus
-            style={{ height: isInputExpanded ? inputHeight : 60 }}
+            style={{ height: isInputExpanded ? inputHeight : 48 }}
           />
         </div>
 
@@ -120,10 +120,16 @@ function ChatInput({
           <div className="inputbar-left-tools">
             <button
               className="inputbar-tool-btn"
-              onClick={() => setIsInputExpanded(!isInputExpanded)}
+              onClick={() => {
+                const newExpanded = !isInputExpanded;
+                setIsInputExpanded(newExpanded);
+                if (newExpanded) {
+                  setInputHeight(200);
+                }
+              }}
               title={isInputExpanded ? "收起编辑区" : "展开编辑区"}
             >
-              {isInputExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              {isInputExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
             
             <button
@@ -132,7 +138,7 @@ function ChatInput({
               disabled={isProcessing || isUploading || disabled}
               title="上传图片"
             >
-              <Image size={16} />
+              <Image size={14} />
             </button>
             <input
               ref={fileInputRef}
@@ -153,7 +159,7 @@ function ChatInput({
               disabled={isProcessing || isUploading || disabled}
               title="上传文件"
             >
-              <Paperclip size={16} />
+              <Paperclip size={14} />
             </button>
             <input
               ref={fileUploadRef}
@@ -174,7 +180,7 @@ function ChatInput({
               disabled={isProcessing || isUploading || disabled}
               title="生成图片"
             >
-              <FileText size={16} />
+              <FileText size={14} />
             </button>
           </div>
           
@@ -189,7 +195,7 @@ function ChatInput({
                 onClick={onStop}
                 title="停止生成"
               >
-                <CirclePause size={18} />
+                <CirclePause size={15} />
               </button>
             ) : (
               <button
@@ -198,7 +204,7 @@ function ChatInput({
                 disabled={isUploading || disabled || (!inputValue.trim() && pendingImages.length === 0 && pendingFiles.length === 0)}
                 title="发送消息"
               >
-                <Send size={18} />
+                <Send size={15} />
               </button>
             )}
           </div>
