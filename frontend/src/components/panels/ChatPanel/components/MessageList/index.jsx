@@ -278,6 +278,14 @@ function MessageList({
     streamingContent,
   ]);
 
+  const lastThoughtFoldIdx = useMemo(() => {
+    const indices = [];
+    displayList.forEach((item, i) => {
+      if (item.type === 'thought_fold') indices.push(i);
+    });
+    return indices.length > 0 ? indices[indices.length - 1] : -1;
+  }, [displayList]);
+
   return (
     <div className="messages-list">
       {displayList.map((item, idx) => {
@@ -291,6 +299,10 @@ function MessageList({
               renderMessageContent={renderMessageContent}
             />
           );
+        }
+        // 仅隐藏最后一个 thought_fold（避免与 liveThought 重复展示），历史折叠正常显示
+        if (item.type === 'thought_fold' && hasActiveToolCalls && idx === lastThoughtFoldIdx) {
+          return null;
         }
         if (item.type === 'thought_fold') {
           return (

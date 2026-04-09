@@ -137,3 +137,5 @@ workspace
 
 .temp/
 .playwright-mcp/
+
+.dist-electron/
