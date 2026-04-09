@@ -27,7 +27,11 @@ class TokenUsageHandler(MessageHandler):
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Return token usage statistics."""
         scope = message.data.get("scope", "global")
-        scope_id = message.data.get("scope_id")
+        scope_id = (
+            message.data.get("scope_id")
+            or message.data.get("instance_id")
+            or message.data.get("session_instance_id")
+        )
         days = message.data.get("days", 7)
 
         try:

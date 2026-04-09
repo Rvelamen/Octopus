@@ -128,6 +128,21 @@ function ChatPanel({
     }
   }, [messages, streamingContent, shouldAutoScroll]);
 
+  const fetchInstanceTokenUsage = useCallback(async (instanceId) => {
+    if (!sendWSMessage || !instanceId) return;
+    try {
+      const response = await sendWSMessage('token_get_usage', {
+        scope: 'instance',
+        instance_id: instanceId,
+      }, 5000);
+      if (response.data?.summary) {
+        onTokenUsageUpdate(response.data.summary);
+      }
+    } catch (err) {
+      console.error('Failed to fetch instance token usage:', err);
+    }
+  }, [sendWSMessage, onTokenUsageUpdate]);
+
   useEffect(() => {
     const wasStreaming = prevStreamingContentRef.current && prevStreamingContentRef.current.length > 0;
     const isDone = !streamingContent || streamingContent.length === 0;
@@ -142,24 +157,26 @@ function ChatPanel({
     if (prevIsProcessingRef.current && !isProcessing && selectedInstance) {
       console.log('Agent finished processing, refreshing messages for instance:', selectedInstance.id);
       fetchInstanceMessages(selectedInstance.id);
+      fetchInstanceTokenUsage(selectedInstance.id);
     }
     prevIsProcessingRef.current = isProcessing;
-  }, [isProcessing, selectedInstance]);
+  }, [isProcessing, selectedInstance, fetchInstanceMessages, fetchInstanceTokenUsage]);
 
-  // 监听 refreshInstanceId 变化，在迭代完成时刷新消息
+  // 监听 refreshInstanceId 变化，在迭代完成时刷新消息和 token 统计
   useEffect(() => {
     if (refreshInstanceId) {
       console.log('Iteration complete, refreshing messages for instance:', refreshInstanceId);
       fetchInstanceMessages(refreshInstanceId);
+      fetchInstanceTokenUsage(refreshInstanceId);
     }
-  }, [refreshInstanceId]);
+  }, [refreshInstanceId, fetchInstanceMessages, fetchInstanceTokenUsage]);
 
   // 同步 selectedInstance 到 App 层，让 App 层正确跟踪当前聊天的 instance ID
   useEffect(() => {
     onInstanceIdUpdate?.(selectedInstance?.id ?? null);
   }, [selectedInstance?.id]);
 
-  // 从消息中恢复 elapsed_ms 和 token_usage
+  // 从消息中恢复 elapsed_ms（token_usage 改为走持久化查询，见 fetchInstanceTokenUsage）
   useEffect(() => {
     if (!messages || messages.length === 0) return;
 
@@ -169,13 +186,9 @@ function ChatPanel({
       if (msg.role === 'assistant') {
         const metadata = msg.metadata || {};
         const elapsedMs = metadata.elapsed_ms;
-        const tokenUsage = metadata.usage || metadata.token_usage;
 
         if (elapsedMs != null && elapsedMs > 0) {
           onElapsedMsUpdate(elapsedMs);
-        }
-        if (tokenUsage && typeof tokenUsage === 'object') {
-          onTokenUsageUpdate(tokenUsage);
         }
         break;
       }
@@ -217,6 +230,7 @@ function ChatPanel({
     setIsCreatingNew(false);
     setShouldAutoScroll(true);
     fetchInstanceMessages(instance.id);
+    fetchInstanceTokenUsage(instance.id);
 
     fetchInstances();
   };
