@@ -206,8 +206,10 @@ function MessageList({
 
   /** 进行中：整段合并为一个折叠，按 iteration 顺序交错「推理 + 工具」 */
   const liveThought = useMemo(() => {
-    // 如果没有活跃的 tool calls，返回 null
-    if (!hasActiveToolCalls) {
+    const isAgentRunning = isProcessing && selectedInstance?.id === currentChatInstanceId;
+    const hasStreaming = !!streamingContent && selectedInstance?.id === currentChatInstanceId;
+    // 只要当前 agent 在跑、有流式内容、或有活跃 tool call，都渲染 liveThought
+    if (!hasActiveToolCalls && !isAgentRunning && !hasStreaming) {
       return null;
     }
 
@@ -340,7 +342,7 @@ function MessageList({
         />
       )}
 
-      {streamingContent && selectedInstance?.id === currentChatInstanceId && (
+      {streamingContent && selectedInstance?.id === currentChatInstanceId && !liveThought && (
         <div className="message-row message-row-assistant streaming">
           <div className="message-bubble message-bubble-assistant">
             <div className="message-bubble-header">
