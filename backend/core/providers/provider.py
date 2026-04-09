@@ -489,15 +489,21 @@ class UnifiedProvider(LLMProvider):
                                 arguments=block.input,
                             ))
                 
+                usage = {
+                    "prompt_tokens": response.usage.input_tokens,
+                    "completion_tokens": response.usage.output_tokens,
+                    "total_tokens": response.usage.input_tokens + response.usage.output_tokens,
+                }
+                if hasattr(response.usage, "cache_read_input_tokens"):
+                    usage["cache_read_input_tokens"] = response.usage.cache_read_input_tokens
+                if hasattr(response.usage, "cache_creation_input_tokens"):
+                    usage["cache_creation_input_tokens"] = response.usage.cache_creation_input_tokens
+
                 return LLMResponse(
                     content=content,
                     tool_calls=tool_calls,
                     finish_reason=response.stop_reason or "stop",
-                    usage={
-                        "prompt_tokens": response.usage.input_tokens,
-                        "completion_tokens": response.usage.output_tokens,
-                        "total_tokens": response.usage.input_tokens + response.usage.output_tokens,
-                    },
+                    usage=usage,
                 )
             
             return await self._execute_with_retry(_call_anthropic, "Anthropic chat")
@@ -577,6 +583,10 @@ class UnifiedProvider(LLMProvider):
                 "completion_tokens": response.usage.completion_tokens,
                 "total_tokens": response.usage.total_tokens,
             }
+            if hasattr(response.usage, "prompt_tokens_details") and response.usage.prompt_tokens_details:
+                usage["prompt_tokens_details"] = {
+                    "cached_tokens": getattr(response.usage.prompt_tokens_details, "cached_tokens", 0),
+                }
 
         return LLMResponse(
             content=message.content,
@@ -677,7 +687,11 @@ class UnifiedProvider(LLMProvider):
                             "completion_tokens": chunk.usage.completion_tokens,
                             "total_tokens": chunk.usage.total_tokens,
                         }
-                    
+                        if hasattr(chunk.usage, "prompt_tokens_details") and chunk.usage.prompt_tokens_details:
+                            usage["prompt_tokens_details"] = {
+                                "cached_tokens": getattr(chunk.usage.prompt_tokens_details, "cached_tokens", 0),
+                            }
+
                     yield StreamChunk(
                         tool_calls=tool_calls if tool_calls else None,
                         is_final=True,
@@ -881,7 +895,11 @@ class UnifiedProvider(LLMProvider):
                             "completion_tokens": final_message.usage.output_tokens,
                             "total_tokens": final_message.usage.input_tokens + final_message.usage.output_tokens,
                         }
-                        
+                        if hasattr(final_message.usage, "cache_read_input_tokens"):
+                            usage["cache_read_input_tokens"] = final_message.usage.cache_read_input_tokens
+                        if hasattr(final_message.usage, "cache_creation_input_tokens"):
+                            usage["cache_creation_input_tokens"] = final_message.usage.cache_creation_input_tokens
+
                         yield StreamChunk(
                             tool_calls=tool_calls if tool_calls else None,
                             is_final=True,
