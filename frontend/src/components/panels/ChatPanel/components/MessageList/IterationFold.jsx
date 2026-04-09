@@ -14,6 +14,7 @@ import {
   Loader2,
   CheckCircle2,
   Zap,
+  CirclePause,
 } from 'lucide-react';
 
 const formatTotalTime = (ms) => {
@@ -35,17 +36,20 @@ const TokenUsage = memo(({ tokenUsage }) => {
 
   const promptTokens = tokenUsage.prompt_tokens ?? 0;
   const completionTokens = tokenUsage.completion_tokens ?? 0;
+  const cachedTokens = tokenUsage.cached_tokens ?? 0;
 
-  if (promptTokens <= 0 && completionTokens <= 0) return null;
+  if (promptTokens <= 0 && completionTokens <= 0 && cachedTokens <= 0) return null;
+
+  const cacheLabel = cachedTokens > 0 ? ` | 缓存命中: ${Number(cachedTokens).toLocaleString('zh-CN')}` : '';
 
   return (
     <span
       className="thought-token-usage"
-      title={`输入: ${Number(promptTokens).toLocaleString('zh-CN')} | 输出: ${Number(completionTokens).toLocaleString('zh-CN')}`}
+      title={`输入: ${Number(promptTokens).toLocaleString('zh-CN')}${cacheLabel} | 输出: ${Number(completionTokens).toLocaleString('zh-CN')}`}
     >
       <Zap size={12} className="thought-token-icon" />
       <span className="thought-token-text">
-        ↑{formatTokenNumber(promptTokens)} ↓{formatTokenNumber(completionTokens)}
+        ↑{formatTokenNumber(promptTokens)}{cachedTokens > 0 && <span className="thought-token-cache">({formatTokenNumber(cachedTokens)} 缓存)</span>} ↓{formatTokenNumber(completionTokens)}
       </span>
     </span>
   );
@@ -78,13 +82,21 @@ const ExecutionTime = memo(({ isExecuting, totalMs }) => {
     };
   }, [isExecuting]);
 
-  // 已完成时用 totalMs 精确值
-  const displayMs = isExecuting ? elapsed : (totalMs != null ? totalMs : elapsed);
-  if (displayMs <= 0 && isExecuting) return null;
+  // 已完成：仅信 totalMs；缺失时不显示（避免竞态下误显 0ms）
+  if (isExecuting) {
+    if (elapsed <= 0) return null;
+    return (
+      <span className="thought-total-time">
+        {formatTotalTime(elapsed)}
+      </span>
+    );
+  }
+  if (totalMs == null) return null;
+  if (totalMs < 0) return null;
 
   return (
     <span className="thought-total-time">
-      {formatTotalTime(displayMs)}
+      {formatTotalTime(totalMs)}
     </span>
   );
 });
@@ -193,6 +205,10 @@ function StepIcon({ toolName, status }) {
   const { Icon } = toolMeta(toolName);
   const pending = status === 'pending' || status === 'streaming';
   const running = status === 'invoking' || status === 'running';
+  const cancelled = status === 'cancelled';
+  if (cancelled) {
+    return <CirclePause size={14} className="thought-step-icon-svg thought-step-icon--cancelled" strokeWidth={1.75} />;
+  }
   if (pending || running) {
     return <Loader2 size={14} className="thought-step-icon-svg spin" />;
   }
@@ -244,6 +260,7 @@ function IterationFold({
   const [openSteps, setOpenSteps] = useState(() => new Set());
   const isExpanded = isExpandedProp !== undefined ? isExpandedProp : isExpandedInternal;
   const isRunning = status === 'active' || status === 'running';
+  const isPaused = status === 'paused';
 
   const handleToggle = () => {
     if (onToggleExpand) onToggleExpand();
@@ -266,24 +283,33 @@ function IterationFold({
     }
   };
 
-  const headerTitle = isRunning ? '思考中…' : '已完成思考';
+  const headerTitle = isRunning ? '思考中…' : isPaused ? '已暂停' : '已完成思考';
   const nTools = countSteps(segments);
   const preview =
     firstReasoningPreview(segments) ||
     (nTools > 0 ? `${nTools} 个步骤` : '');
 
   return (
-    <div className={`thought-fold ${isRunning ? 'is-running' : 'is-done'}`}>
+    <div className={`thought-fold ${isRunning ? 'is-running' : isPaused ? 'is-paused' : 'is-done'}`}>
       <button type="button" className="thought-fold-header" onClick={handleToggle}>
         <span className="thought-fold-chevron">
           {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </span>
-        {!isRunning && (
+        {!isRunning && !isPaused && (
           <span className="thought-done-badge">
             <CheckCircle2 size={14} strokeWidth={2} />
           </span>
         )}
-        <span className="thought-fold-title">{headerTitle}</span>
+        {!isRunning && isPaused && (
+          <span className="thought-paused-badge" title="用户已暂停生成">
+            <CirclePause size={14} strokeWidth={2} />
+          </span>
+        )}
+        <span
+          className={`thought-fold-title ${isRunning ? 'thought-fold-title--thinking' : ''}`}
+        >
+          {headerTitle}
+        </span>
         <ExecutionTime isExecuting={isRunning} totalMs={totalMs} />
         <TokenUsage tokenUsage={tokenUsage} />
         {!isExpanded && preview && (
@@ -396,6 +422,24 @@ function IterationFold({
                 </div>
               );
             })}
+
+            {isRunning && segments.length > 0 && (
+              <div className="thought-step thought-pending-tail" aria-live="polite">
+                <div className="thought-step-glyph thought-pending-tail__glyph">
+                  <Circle size={6} className="thought-pending-tail__pulse" fill="currentColor" />
+                </div>
+                <div className="thought-step-body">
+                  <p className="thought-pending-line">
+                    <span className="thought-pending-text">继续处理</span>
+                    <span className="thought-wave-dots" aria-hidden>
+                      <span className="thought-wave-dots__dot" />
+                      <span className="thought-wave-dots__dot" />
+                      <span className="thought-wave-dots__dot" />
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
 
             {segments.length === 0 && (
               <div className="thought-step">

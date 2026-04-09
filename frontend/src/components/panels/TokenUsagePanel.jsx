@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Zap, TrendingUp, TrendingDown, Activity, Calendar, RefreshCw } from 'lucide-react';
+import { Zap, TrendingUp, TrendingDown, Activity, Calendar, RefreshCw, Database } from 'lucide-react';
 import WindowDots from '../WindowDots';
 
 const formatNumber = (num) => {
@@ -15,6 +15,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
   const [globalUsage, setGlobalUsage] = useState({
     total_prompt_tokens: 0,
     total_completion_tokens: 0,
+    total_cached_tokens: 0,
     total_tokens: 0,
     request_count: 0,
   });
@@ -65,7 +66,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
 
       <div className="panel-content">
         {loading && <div className="loading-overlay">Loading...</div>}
-        
+
         <div className="usage-summary">
           <div className="summary-card total">
             <div className="card-icon">
@@ -77,7 +78,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
               <div className="card-sub">{globalUsage.request_count} requests</div>
             </div>
           </div>
-          
+
           <div className="summary-card prompt">
             <div className="card-icon">
               <TrendingUp size={24} />
@@ -88,7 +89,18 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
               <div className="card-sub">Input / Upload</div>
             </div>
           </div>
-          
+
+          <div className="summary-card cache">
+            <div className="card-icon">
+              <Database size={24} />
+            </div>
+            <div className="card-content">
+              <div className="card-label">Cache Hit Tokens</div>
+              <div className="card-value">{formatNumber(globalUsage.total_cached_tokens || 0)}</div>
+              <div className="card-sub">Prompt cache hits</div>
+            </div>
+          </div>
+
           <div className="summary-card completion">
             <div className="card-icon">
               <TrendingDown size={24} />
@@ -113,7 +125,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
               <option value={30}>30 days</option>
             </select>
           </div>
-          
+
           <div className="daily-chart">
             {dailyUsage.length === 0 ? (
               <div className="empty-state">No data available</div>
@@ -122,17 +134,24 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
                 <div key={index} className="daily-bar-container">
                   <div className="daily-label">{day.date}</div>
                   <div className="daily-bar-wrapper">
-                    <div 
-                      className="daily-bar prompt" 
-                      style={{ 
-                        width: `${((day.prompt_tokens || 0) / maxDailyTokens) * 100}%` 
+                    <div
+                      className="daily-bar prompt"
+                      style={{
+                        width: `${((day.prompt_tokens || 0) / maxDailyTokens) * 100}%`
                       }}
                       title={`Prompt: ${day.prompt_tokens}`}
                     />
-                    <div 
-                      className="daily-bar completion" 
-                      style={{ 
-                        width: `${((day.completion_tokens || 0) / maxDailyTokens) * 100}%` 
+                    <div
+                      className="daily-bar cache"
+                      style={{
+                        width: `${((day.cached_tokens || 0) / maxDailyTokens) * 100}%`
+                      }}
+                      title={`Cache: ${day.cached_tokens}`}
+                    />
+                    <div
+                      className="daily-bar completion"
+                      style={{
+                        width: `${((day.completion_tokens || 0) / maxDailyTokens) * 100}%`
                       }}
                       title={`Completion: ${day.completion_tokens}`}
                     />
@@ -156,6 +175,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
                     <tr>
                       <th>Provider</th>
                       <th>Prompt</th>
+                      <th>Cache</th>
                       <th>Completion</th>
                       <th>Total</th>
                       <th>Requests</th>
@@ -166,6 +186,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
                       <tr key={index}>
                         <td>{item.provider_name}</td>
                         <td>{formatNumber(item.prompt_tokens)}</td>
+                        <td>{formatNumber(item.cached_tokens || 0)}</td>
                         <td>{formatNumber(item.completion_tokens)}</td>
                         <td>{formatNumber(item.total_tokens)}</td>
                         <td>{item.request_count}</td>
@@ -188,6 +209,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
                     <tr>
                       <th>Model</th>
                       <th>Prompt</th>
+                      <th>Cache</th>
                       <th>Completion</th>
                       <th>Total</th>
                       <th>Requests</th>
@@ -201,6 +223,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
                           {item.model_id}
                         </td>
                         <td>{formatNumber(item.prompt_tokens)}</td>
+                        <td>{formatNumber(item.cached_tokens || 0)}</td>
                         <td>{formatNumber(item.completion_tokens)}</td>
                         <td>{formatNumber(item.total_tokens)}</td>
                         <td>{item.request_count}</td>
@@ -277,9 +300,15 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
 
         .usage-summary {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(4, 1fr);
           gap: var(--s-4);
           margin-bottom: var(--s-6);
+        }
+
+        @media (max-width: 1100px) {
+          .usage-summary {
+            grid-template-columns: repeat(2, 1fr);
+          }
         }
 
         .summary-card {
@@ -299,6 +328,11 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         .summary-card.prompt .card-icon {
           background: rgba(16, 185, 129, 0.2);
           color: #10b981;
+        }
+
+        .summary-card.cache .card-icon {
+          background: rgba(139, 92, 246, 0.2);
+          color: #8b5cf6;
         }
 
         .summary-card.completion .card-icon {
@@ -411,6 +445,10 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
 
         .daily-bar.prompt {
           background: #10b981;
+        }
+
+        .daily-bar.cache {
+          background: #8b5cf6;
         }
 
         .daily-bar.completion {

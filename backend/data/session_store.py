@@ -431,6 +431,45 @@ class SessionRepository:
             logger.debug(f"Updated message {message_id} with TTS data")
             return cursor.rowcount > 0
     
+    def update_last_message_metadata(
+        self,
+        session_instance_id: int,
+        update_data: dict[str, Any]
+    ) -> bool:
+        """Update the latest assistant message's metadata with additional data.
+        
+        Args:
+            session_instance_id: The session instance ID
+            update_data: Dict of metadata fields to update/merge
+            
+        Returns:
+            True if updated successfully
+        """
+        with self.db._get_connection() as conn:
+            row = conn.execute(
+                """SELECT id, metadata FROM messages 
+                   WHERE session_instance_id = ? AND role = 'assistant'
+                   ORDER BY timestamp DESC LIMIT 1""",
+                (session_instance_id,)
+            ).fetchone()
+            
+            if not row:
+                logger.warning(f"No assistant message found for instance {session_instance_id}")
+                return False
+            
+            message_id = row["id"]
+            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            # Merge update data into existing metadata
+            metadata = {**metadata, **update_data}
+            
+            cursor = conn.execute(
+                "UPDATE messages SET metadata = ? WHERE id = ?",
+                (json.dumps(metadata, ensure_ascii=False), message_id)
+            )
+            
+            logger.debug(f"Updated message {message_id} with metadata: {update_data.keys()}")
+            return cursor.rowcount > 0
+    
     # ========== Context Compression Methods ==========
     
     def update_compressed_context(

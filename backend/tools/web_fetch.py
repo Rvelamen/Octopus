@@ -23,7 +23,9 @@ Use this when you need to:
 - Read documentation from websites
 - Extract article content
 - Get data from web pages
-- Follow redirects and resolve URLs"""
+- Follow redirects and resolve URLs
+
+The output can be in plain text or Markdown format."""
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -55,6 +57,12 @@ Use this when you need to:
                     "description": "Content extraction mode",
                     "enum": ["full", "article", "text"],
                     "default": "article"
+                },
+                "raw": {
+                    "type": "string",
+                    "description": "Output format: 'markdown' (default) for converted Markdown, 'html' for raw HTML content",
+                    "enum": ["html", "markdown"],
+                    "default": "markdown"
                 },
                 "timeout": {
                     "type": "integer",
@@ -92,7 +100,8 @@ Use this when you need to:
         extract_content: str = "article",
         timeout: int = 30,
         follow_redirects: bool = True,
-        max_retries: int = 2
+        max_retries: int = 2,
+        raw: str = "markdown"
     ) -> str:
         """Execute web fetch with anti-detection measures."""
 
@@ -106,12 +115,12 @@ Use this when you need to:
         try:
             if render_js:
                 return await self._fetch_with_browser(
-                    url, method, headers, extract_content, timeout, max_retries
+                    url, method, headers, extract_content, timeout, max_retries, raw
                 )
             else:
                 return await self._fetch_with_http(
                     url, method, headers, extract_content, timeout,
-                    follow_redirects, max_retries
+                    follow_redirects, max_retries, raw
                 )
         except Exception as e:
             return f"Error fetching {url}: {str(e)}"
@@ -119,7 +128,7 @@ Use this when you need to:
     async def _fetch_with_http(
         self, url: str, method: str, headers: dict,
         extract_content: str, timeout: int,
-        follow_redirects: bool, max_retries: int
+        follow_redirects: bool, max_retries: int, raw: str
     ) -> str:
         """Fetch using HTTP client with anti-detection headers."""
         try:
@@ -165,7 +174,9 @@ Use this when you need to:
                         response.text,
                         response.headers.get('content-type', ''),
                         extract_content,
-                        url
+                        url,
+                        raw,
+                        None  # HTTP mode doesn't have inner_text
                     )
 
             except httpx.HTTPStatusError as e:
@@ -185,14 +196,14 @@ Use this when you need to:
         # If HTTP fails with 403, fallback to browser
         if last_error and isinstance(last_error, httpx.HTTPStatusError) and last_error.response.status_code == 403:
             return await self._fetch_with_browser(
-                url, method, headers, extract_content, timeout, 0
+                url, method, headers, extract_content, timeout, 0, raw
             )
 
         raise last_error
 
     async def _fetch_with_browser(
         self, url: str, method: str, headers: dict,
-        extract_content: str, timeout: int, max_retries: int
+        extract_content: str, timeout: int, max_retries: int, raw: str
     ) -> str:
         """Fetch using Playwright for JavaScript-rendered content."""
         try:
@@ -245,8 +256,9 @@ Use this when you need to:
                 await page.wait_for_load_state('domcontentloaded')
                 await asyncio.sleep(1)  # Extra wait for dynamic content
 
-                # Get page content
+                # Get page content and inner text
                 content = await page.content()
+                inner_text = await page.inner_text('body')
 
                 await browser.close()
 
@@ -254,7 +266,9 @@ Use this when you need to:
                     content,
                     response.headers.get('content-type', ''),
                     extract_content,
-                    url
+                    url,
+                    raw,
+                    inner_text
                 )
 
             except Exception as e:
@@ -263,7 +277,8 @@ Use this when you need to:
 
     def _extract_content(
         self, html: str, content_type: str,
-        mode: str, base_url: str
+        mode: str, base_url: str, raw: str = "markdown",
+        inner_text: str = None
     ) -> str:
         """Extract content from HTML based on mode."""
         try:
@@ -274,14 +289,44 @@ Use this when you need to:
 
         soup = BeautifulSoup(html, 'html.parser')
 
-        # Remove script and style elements
-        for element in soup(['script', 'style', 'nav', 'footer', 'header', 'aside']):
+        # Remove script and style elements (including those with special attributes)
+        for element in soup(['script', 'style', 'noscript', 'nav', 'footer', 'header', 'aside']):
             element.decompose()
+        
+        # Remove link tags (CSS files) and meta tags
+        for element in soup(['link', 'meta']):
+            element.decompose()
+        
+        # Remove textarea elements (often contain inline CSS/JS in encoded form)
+        for element in soup(['textarea']):
+            element.decompose()
+
+        # If raw='html', return cleaned HTML
+        if raw == "html":
+            return str(soup)
+
+        # If we have inner_text from browser, use it for text extraction
+        if inner_text:
+            # Convert plain text to simple markdown-like format
+            lines = inner_text.strip().split('\n')
+            result_lines = []
+            for line in lines:
+                line = line.strip()
+                if line:
+                    result_lines.append(line)
+            result = '\n'.join(result_lines)
+            
+            # Limit length
+            max_length = 100000
+            if len(result) > max_length:
+                result = result[:max_length] + f"\n\n... [Content truncated]"
+            return result
 
         if mode == 'full':
             # Return full body content
             body = soup.find('body')
-            return body.get_text(separator='\n', strip=True) if body else soup.get_text(separator='\n', strip=True)
+            content = body if body else soup
+            return self.html_to_markdown(str(content), base_url)
 
         elif mode == 'article':
             # Try to find main article content
@@ -298,20 +343,23 @@ Use this when you need to:
                 if element:
                     text = element.get_text(separator='\n', strip=True)
                     if len(text) > 200:  # Ensure we got substantial content
-                        return self._format_text(text)
+                        return self.html_to_markdown(str(element), base_url)
 
-            # Fallback to largest text block
+            # Fallback to largest text block or full content
             paragraphs = soup.find_all('p')
             if paragraphs:
                 texts = [p.get_text(strip=True) for p in paragraphs]
-                return self._format_text('\n\n'.join(texts))
+                if texts:
+                    return self.html_to_markdown('\n\n'.join(texts), base_url)
 
-            # Last resort
-            return self._format_text(soup.get_text(separator='\n', strip=True))
+            # Last resort: use full page content
+            body = soup.find('body')
+            content = body if body else soup
+            return self.html_to_markdown(str(content), base_url)
 
         else:  # text mode
             # Just plain text, minimal formatting
-            return soup.get_text(separator=' ', strip=True)
+            return self.html_to_markdown(str(soup), base_url)
 
     def _simple_extract(self, html: str, mode: str) -> str:
         """Simple extraction without BeautifulSoup."""
@@ -345,3 +393,153 @@ Use this when you need to:
             text = text[:max_length] + f"\n\n... [Content truncated, total length: {len(text)} characters]"
 
         return text.strip()
+
+    def html_to_markdown(self, html: str, base_url: str) -> str:
+        """Convert HTML to Markdown format."""
+        try:
+            from bs4 import BeautifulSoup
+        except ImportError:
+            return self._simple_extract(html, 'text')
+
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        # 如果没有找到标准元素，使用降级方案
+        standard_elements = soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 
+                                          'ul', 'ol', 'li', 'blockquote', 'pre', 
+                                          'table', 'br', 'hr'])
+        
+        if not standard_elements:
+            # 没有标准元素，返回清理后的纯文本
+            text = soup.get_text(separator=' ', strip=True)
+            text = re.sub(r'\s+', ' ', text)
+            if len(text) > 100000:
+                text = text[:100000] + f"\n\n... [Content truncated]"
+            return text
+
+        markdown_parts = []
+
+        def get_text(element):
+            return element.get_text(separator=' ', strip=True)
+
+        def get_attrs(element):
+            return {k: v for k, v in element.attrs.items() if k in ('href', 'src', 'alt', 'title')}
+
+        # Process each element
+        for element in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'a', 'img',
+                                     'ul', 'ol', 'li', 'blockquote', 'pre', 'code',
+                                     'table', 'thead', 'tbody', 'tr', 'th', 'td', 'br', 'hr',
+                                     'strong', 'b', 'em', 'i', 'div', 'span']):
+            tag_name = element.name
+
+            if tag_name in ('h1', 'h2', 'h3', 'h4', 'h5', 'h6'):
+                level = int(tag_name[1])
+                text = get_text(element)
+                if text:
+                    markdown_parts.append(f"\n{'#' * level} {text}\n")
+
+            elif tag_name == 'p':
+                text = get_text(element)
+                if text:
+                    # Check for links in this paragraph
+                    links = element.find_all('a')
+                    if links:
+                        for link in links:
+                            link_text = link.get_text(strip=True)
+                            href = link.get('href', '')
+                            if href:
+                                href = urljoin(base_url, href)
+                            if link_text and href:
+                                text = text.replace(link_text, f'[{link_text}]({href})', 1)
+                    markdown_parts.append(text + "\n")
+
+            elif tag_name == 'a':
+                # Handled in p
+                pass
+
+            elif tag_name == 'img':
+                src = element.get('src', '')
+                alt = element.get('alt', get_text(element))
+                if src:
+                    src = urljoin(base_url, src)
+                    markdown_parts.append(f'![{alt}]({src})')
+
+            elif tag_name == 'ul':
+                for li in element.find_all('li', recursive=False):
+                    text = get_text(li)
+                    markdown_parts.append(f"- {text}\n")
+
+            elif tag_name == 'ol':
+                for idx, li in enumerate(element.find_all('li', recursive=False), 1):
+                    text = get_text(li)
+                    markdown_parts.append(f"{idx}. {text}\n")
+
+            elif tag_name == 'blockquote':
+                text = get_text(element)
+                if text:
+                    for line in text.split('\n'):
+                        markdown_parts.append(f"> {line}\n")
+
+            elif tag_name == 'pre':
+                code = element.get_text()
+                if code:
+                    markdown_parts.append(f"\n```\n{code}\n```\n")
+
+            elif tag_name == 'code' and element.parent.name != 'pre':
+                code = element.get_text(strip=True)
+                if code:
+                    markdown_parts.append(f'`{code}`')
+
+            elif tag_name == 'table':
+                rows = element.find_all('tr')
+                if rows:
+                    markdown_parts.append("\n")
+                    for row_idx, row in enumerate(rows):
+                        cells = row.find_all(['th', 'td'])
+                        cell_texts = []
+                        for cell in cells:
+                            cell_texts.append(get_text(cell))
+                        markdown_parts.append('| ' + ' | '.join(cell_texts) + ' |\n')
+                        if row_idx == 0:
+                            markdown_parts.append('| ' + ' | '.join(['---'] * len(cells)) + ' |\n')
+
+            elif tag_name == 'br':
+                markdown_parts.append("\n")
+
+            elif tag_name == 'hr':
+                markdown_parts.append("\n---\n")
+
+            elif tag_name in ('strong', 'b'):
+                text = get_text(element)
+                if text:
+                    markdown_parts.append(f"**{text}**")
+
+            elif tag_name in ('em', 'i'):
+                text = get_text(element)
+                if text:
+                    markdown_parts.append(f"*{text}*")
+            
+            elif tag_name in ('div', 'span'):
+                # 处理 div/span 中的文本，但避免重复
+                text = get_text(element)
+                if text and len(text) > 10:
+                    # 检查是否已经有这个文本（避免重复）
+                    if text not in ''.join(markdown_parts):
+                        markdown_parts.append(text + "\n")
+
+        result = ''.join(markdown_parts)
+
+        # Clean up
+        result = re.sub(r'\n{3,}', '\n\n', result)
+        result = result.strip()
+
+        # 如果结果为空，返回纯文本
+        if not result.strip():
+            result = soup.get_text(separator=' ', strip=True)
+            result = re.sub(r'\s+', ' ', result)
+
+        # Limit length
+        max_length = 100000
+        if len(result) > max_length:
+            result = result[:max_length] + f"\n\n... [Content truncated, total length: {len(result)} characters]"
+
+        return result

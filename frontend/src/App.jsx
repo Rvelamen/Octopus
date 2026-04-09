@@ -168,12 +168,86 @@ function App() {
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
+  const streamingContentRef = useRef("");
+  const streamingFlushTimerRef = useRef(null);
+
+  const resetStreamingContent = useCallback(() => {
+    if (streamingFlushTimerRef.current) {
+      clearTimeout(streamingFlushTimerRef.current);
+      streamingFlushTimerRef.current = null;
+    }
+    streamingContentRef.current = "";
+    setStreamingContent("");
+  }, []);
+
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+
+  const appendStreamingContent = useCallback((text) => {
+    streamingContentRef.current += text || "";
+    if (!streamingFlushTimerRef.current) {
+      streamingFlushTimerRef.current = setTimeout(() => {
+        streamingFlushTimerRef.current = null;
+        if (activeTabRef.current === 'chat') {
+          setStreamingContent(streamingContentRef.current);
+        }
+      }, 80);
+    }
+  }, []);
+
   const [currentChatInstanceId, setCurrentChatInstanceId] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [isSaving, setIsSaving] = useState(false);
-  const [toolCalls, setToolCalls] = useState([]); // 实时工具调用状态
-  const [toolCallAssistantContents, setToolCallAssistantContents] = useState({}); // 按 iteration 存储的 assistant content
-  const [isRestarting, setIsRestarting] = useState(false); // 重启状态
+  const [toolCalls, _setToolCalls] = useState([]); // 实时工具调用（仅当前 instance）
+  const [toolCallAssistantContents, _setToolCallAssistantContents] = useState({}); // 按 iteration 存储的 assistant content（仅当前 instance）
+  const toolCallsByInstanceRef = useRef({}); // { [instanceId]: ToolCall[] }，全量缓存
+  const assistantContentsByInstanceRef = useRef({}); // { [instanceId]: { [iteration]: content } }
+  const currentChatInstanceIdRef = useRef(null);
+  currentChatInstanceIdRef.current = currentChatInstanceId;
+  const prevToolCallInstanceRef = useRef(null); // 切换前保存 toolCalls
+
+  // 统一的 setter：同时写 ref（所有 instance 的数据）和 state（仅当前可见 instance 的数据）
+  const setToolCalls = useCallback((updater) => {
+    _setToolCalls((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      const id = currentChatInstanceIdRef.current;
+      if (id != null) toolCallsByInstanceRef.current[id] = next;
+      return next;
+    });
+  }, []);
+
+  const setToolCallAssistantContents = useCallback((updater) => {
+    _setToolCallAssistantContents((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      const id = currentChatInstanceIdRef.current;
+      if (id != null) assistantContentsByInstanceRef.current[id] = next;
+      return next;
+    });
+  }, []);
+
+  // 切换 instance 时保存/恢复 toolCalls（与 useMessages 完全一致的模式）
+  useEffect(() => {
+    const newId = currentChatInstanceId;
+    const prevId = prevToolCallInstanceRef.current;
+
+    // 保存切出 instance 的 toolCalls
+    if (prevId !== undefined && prevId !== null && prevId !== newId) {
+      toolCallsByInstanceRef.current[prevId] = toolCallsByInstanceRef.current[prevId] || [];
+    }
+    prevToolCallInstanceRef.current = newId;
+
+    // 恢复目标 instance 的 toolCalls（可能为 undefined，此时用空数组）
+    if (newId !== null) {
+      const restored = toolCallsByInstanceRef.current[newId];
+      _setToolCalls(restored ?? []);
+      _setToolCallAssistantContents(assistantContentsByInstanceRef.current[newId] ?? {});
+    } else {
+      _setToolCalls([]);
+      _setToolCallAssistantContents({});
+    }
+  }, [currentChatInstanceId]);
+
+  const [isRestarting, setIsRestarting] = useState(false);
   const [tokenUsage, setTokenUsage] = useState({
     global: { total_prompt_tokens: 0, total_completion_tokens: 0, total_tokens: 0, request_count: 0 },
     currentSession: { total_prompt_tokens: 0, total_completion_tokens: 0, total_tokens: 0, request_count: 0 },
@@ -182,6 +256,7 @@ function App() {
   const [ttsAudioMap, setTtsAudioMap] = useState({}); // { messageId: { audioData, format, text, durationMs } }
   const [lastElapsedMs, setLastElapsedMs] = useState(null); // 最近一次 agent 运行的耗时（毫秒）
   const [lastTokenUsage, setLastTokenUsage] = useState(null); // 最近一次 agent 运行的 token 消耗
+  const [liveTokenUsage, setLiveTokenUsage] = useState(null); // 当前运行中累计的 token 消耗（随 agent_iteration_complete 累加）
   const [refreshInstanceId, setRefreshInstanceId] = useState(null); // 需要刷新的 instance ID
 
   // ===== Refs =====
@@ -215,6 +290,20 @@ function App() {
   useEffect(() => {
     let reconnectTimer = null;
     let isComponentMounted = true;
+
+    const updateToolCallsForInstance = (instanceId, updater) => {
+      if (instanceId == null) return;
+      const prev = toolCallsByInstanceRef.current[instanceId] ?? [];
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      toolCallsByInstanceRef.current[instanceId] = next;
+    };
+
+    const updateAssistantContentsForInstance = (instanceId, updater) => {
+      if (instanceId == null) return;
+      const prev = assistantContentsByInstanceRef.current[instanceId] ?? {};
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      assistantContentsByInstanceRef.current[instanceId] = next;
+    };
 
     const connectWS = () => {
       if (
@@ -252,36 +341,69 @@ function App() {
 
         console.log('[WebSocket] Processing event:', type);
 
+        const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
+        const isCurrentInstance = eventInstanceId == null || eventInstanceId === currentChatInstanceIdRef.current;
+
         switch (type) {
           case "agent_token":
-            // New: Real-time streaming token
-            setStreamingContent((prev) => prev + (data.content || ""));
+            if (!isCurrentInstance) return;
+            appendStreamingContent(data.content || "");
             break;
           case "agent_chunk":
+            if (!isCurrentInstance) return;
             console.log('[WebSocket] Agent chunk received:', data?.content?.substring(0, 50));
-            setStreamingContent((prev) => prev + (data.content || ""));
+            appendStreamingContent(data.content || "");
             break;
           case "agent_start":
-            setStreamingContent("");
-            setToolCalls([]); // 清空之前的工具调用
-            setToolCallAssistantContents({}); // 清空 assistant content
+            if (!isCurrentInstance) {
+              updateToolCallsForInstance(eventInstanceId, () => []);
+              updateAssistantContentsForInstance(eventInstanceId, () => ({}));
+              return;
+            }
+            resetStreamingContent();
+            setToolCalls(() => []);
+            setToolCallAssistantContents(() => ({}));
+            setLiveTokenUsage(null);
+            break;
+          case "agent_thinking":
+            if (!isCurrentInstance) return;
+            setIsProcessing(true);
+            resetStreamingContent();
+            setToolCallAssistantContents((prev) => prev || {});
             break;
           case "chat_response":
-            setStreamingContent("");
+            if (!isCurrentInstance) {
+              updateToolCallsForInstance(eventInstanceId, () => []);
+              updateAssistantContentsForInstance(eventInstanceId, () => ({}));
+              return;
+            }
+            resetStreamingContent();
             setIsProcessing(false);
-            setToolCalls([]); // 清空工具调用
-            setToolCallAssistantContents({}); // 清空 assistant content
+            setToolCalls(() => []);
+            setToolCallAssistantContents(() => ({}));
+            setLiveTokenUsage(null);
             break;
           case "error":
-            setStreamingContent("");
+            if (!isCurrentInstance) {
+              updateToolCallsForInstance(eventInstanceId, () => []);
+              updateAssistantContentsForInstance(eventInstanceId, () => ({}));
+              return;
+            }
+            resetStreamingContent();
             setIsProcessing(false);
-            setToolCalls([]); // 清空工具调用
-            setToolCallAssistantContents({}); // 清空 assistant content
+            setToolCalls(() => []);
+            setToolCallAssistantContents(() => ({}));
+            setLiveTokenUsage(null);
             break;
           case "agent_finish":
+            if (!isCurrentInstance) {
+              updateToolCallsForInstance(eventInstanceId, () => []);
+              updateAssistantContentsForInstance(eventInstanceId, () => ({}));
+              return;
+            }
             console.log('[WebSocket] Agent finish received:', data);
             console.log('[Debug] token_usage in data:', data.token_usage);
-            setStreamingContent("");
+            resetStreamingContent();
             setIsProcessing(false);
             if (data.elapsed_ms != null) {
               setLastElapsedMs(data.elapsed_ms);
@@ -289,20 +411,13 @@ function App() {
             if (data.token_usage) {
               console.log('[Debug] Setting lastTokenUsage:', data.token_usage);
               setLastTokenUsage(data.token_usage);
+              setLiveTokenUsage(data.token_usage);
             }
-            setToolCalls([]); // 清空工具调用
-            setToolCallAssistantContents({}); // 清空 assistant content
+            setToolCalls(() => []);
+            setToolCallAssistantContents(() => ({}));
             break;
-          case "agent_tool_call_start":
-            // Tool call started
-            if (data.content) {
-              setToolCallAssistantContents((prev) => ({
-                ...prev,
-                [data.iteration]: data.content
-              }));
-              setStreamingContent("");
-            }
-            setToolCalls((prev) => [...prev, {
+          case "agent_tool_call_start": {
+            const addToolCall = (prev) => [...prev, {
               id: data.tool_call_id || Date.now(),
               tool: data.tool,
               args: data.args || {},
@@ -310,75 +425,98 @@ function App() {
               status: 'pending',
               result: null,
               iteration: data.iteration || 1
-            }]);
+            }];
+            if (data.content) {
+              const setContent = (prev) => ({ ...prev, [data.iteration]: data.content });
+              if (isCurrentInstance) {
+                setToolCallAssistantContents(setContent);
+                resetStreamingContent();
+              } else {
+                updateAssistantContentsForInstance(eventInstanceId, setContent);
+              }
+            }
+            if (isCurrentInstance) setToolCalls(addToolCall);
+            else updateToolCallsForInstance(eventInstanceId, addToolCall);
             break;
-          case "agent_tool_call_streaming":
-            // Tool call arguments streaming
-            setToolCalls((prev) => prev.map(tc =>
+          }
+          case "agent_tool_call_streaming": {
+            const updater = (prev) => prev.map(tc =>
               tc.id === data.tool_call_id
                 ? { ...tc, partialArgs: data.partial_args, status: 'streaming' }
                 : tc
-            ));
+            );
+            if (isCurrentInstance) setToolCalls(updater);
+            else updateToolCallsForInstance(eventInstanceId, updater);
             break;
-          case "agent_tool_call_invoking":
-            // Tool call invoking (executing)
-            setToolCalls((prev) => prev.map(tc =>
+          }
+          case "agent_tool_call_invoking": {
+            const updater = (prev) => prev.map(tc =>
               tc.id === data.tool_call_id
                 ? { ...tc, args: tc.partialArgs || tc.args, status: 'invoking' }
                 : tc
-            ));
+            );
+            if (isCurrentInstance) setToolCalls(updater);
+            else updateToolCallsForInstance(eventInstanceId, updater);
             break;
-          case "agent_tool_call_complete":
-            // Tool call completed
-            setToolCalls((prev) => prev.map(tc =>
+          }
+          case "agent_tool_call_complete": {
+            const updater = (prev) => prev.map(tc =>
               tc.id === data.tool_call_id
                 ? { ...tc, args: data.args || tc.partialArgs || tc.args, result: data.result, status: 'completed' }
                 : tc
-            ));
+            );
+            if (isCurrentInstance) setToolCalls(updater);
+            else updateToolCallsForInstance(eventInstanceId, updater);
             break;
-          case "agent_tool_call_error":
-            // Tool call error
-            setToolCalls((prev) => prev.map(tc =>
+          }
+          case "agent_tool_call_error": {
+            const updater = (prev) => prev.map(tc =>
               tc.id === data.tool_call_id
                 ? { ...tc, args: data.args || tc.partialArgs || tc.args, error: data.error, status: 'error' }
                 : tc
-            ));
+            );
+            if (isCurrentInstance) setToolCalls(updater);
+            else updateToolCallsForInstance(eventInstanceId, updater);
             break;
-          case "agent_tool_call":
-            // Legacy: Tool call start (for backward compatibility)
-            if (data.content) {
-              setToolCallAssistantContents((prev) => ({
-                ...prev,
-                [data.iteration]: data.content
-              }));
-            }
-            setToolCalls((prev) => [...prev, {
+          }
+          case "agent_tool_call": {
+            const addToolCall = (prev) => [...prev, {
               id: data.tool_call_id || Date.now(),
               tool: data.tool,
               args: data.args,
               status: 'running',
               result: null,
               iteration: data.iteration
-            }]);
+            }];
+            if (data.content) {
+              const setContent = (prev) => ({ ...prev, [data.iteration]: data.content });
+              if (isCurrentInstance) setToolCallAssistantContents(setContent);
+              else updateAssistantContentsForInstance(eventInstanceId, setContent);
+            }
+            if (isCurrentInstance) setToolCalls(addToolCall);
+            else updateToolCallsForInstance(eventInstanceId, addToolCall);
             break;
-          case "agent_tool_result":
-            // Legacy: Tool call result (for backward compatibility)
-            setToolCalls((prev) => prev.map(tc =>
+          }
+          case "agent_tool_result": {
+            const updater = (prev) => prev.map(tc =>
               tc.id === data.tool_call_id
                 ? { ...tc, status: 'completed', result: data.result }
                 : tc
-            ));
+            );
+            if (isCurrentInstance) setToolCalls(updater);
+            else updateToolCallsForInstance(eventInstanceId, updater);
             break;
-          case "agent_iteration_complete":
-            // Iteration complete - 立即触发消息刷新，避免竞态条件
-            // 从 session 字段获取 instance ID，如果不可用则使用 currentChatInstanceId
-            if (currentChatInstanceId) {
-              setRefreshInstanceId(currentChatInstanceId);
+          }
+          case "agent_iteration_complete": {
+            const targetId = data?.session_instance_id ?? currentChatInstanceIdRef.current;
+            if (targetId) {
+              setRefreshInstanceId(targetId);
             }
-            // 清空 streamingContent 和 assistantContents，确保不显示重复内容
-            setStreamingContent("");
-            setToolCallAssistantContents({});
+            if (isCurrentInstance && data?.token_usage) {
+              setLiveTokenUsage(data.token_usage);
+            }
             break;
+          }
           case "mcp_state_change":
             // MCP state change event - can be used to update UI in real-time
             console.log("MCP state change:", data);
@@ -439,6 +577,10 @@ function App() {
     return () => {
       isComponentMounted = false;
       if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (streamingFlushTimerRef.current) {
+        clearTimeout(streamingFlushTimerRef.current);
+        streamingFlushTimerRef.current = null;
+      }
       if (ws.current) {
         ws.current.close(1000, "Component unmounting");
         ws.current = null;
@@ -449,8 +591,11 @@ function App() {
   // ===== 发送消息 =====
   const handleSendMessage = async (messageData, instanceId = null) => {
     setIsProcessing(true);
-    setStreamingContent("");
-    setCurrentChatInstanceId(instanceId); // 记录当前聊天的 instance ID
+    resetStreamingContent();
+    setLiveTokenUsage(null);
+    // 同步更新 ref，确保 WS 事件到达时 currentChatInstanceIdRef 是发送时的 instance_id
+    currentChatInstanceIdRef.current = instanceId;
+    setCurrentChatInstanceId(instanceId);
 
     try {
       // 支持两种调用方式：
@@ -481,11 +626,15 @@ function App() {
   // ===== 停止生成 =====
   const handleStopGeneration = async () => {
     try {
-      await sendWSMessage("stop_agents", {}, 5000);
+      // 传递当前正在处理的 instance_id，以便后端精准停止对应任务
+      await sendWSMessage("stop_agents", { 
+        instance_id: currentChatInstanceId 
+      }, 5000);
       setIsProcessing(false);
-      setStreamingContent("");
+      resetStreamingContent();
       setToolCalls([]);
       setToolCallAssistantContents({});
+      setLiveTokenUsage(null);
     } catch (err) {
       console.error("Failed to stop generation:", err);
       setIsProcessing(false);
@@ -547,6 +696,13 @@ function App() {
       setActiveTab('tokens');
     }
   }, [location.pathname]);
+
+  // 切回 chat tab 时，把 ref 中累积的 streamingContent 同步到 state
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      setStreamingContent(streamingContentRef.current);
+    }
+  }, [activeTab]);
 
   // 处理导航
   const handleNavClick = (tab) => {
@@ -703,7 +859,11 @@ function App() {
                 onTtsPlayed={() => setTtsAudio(null)}
                 lastElapsedMs={lastElapsedMs}
                 lastTokenUsage={lastTokenUsage}
+                liveTokenUsage={liveTokenUsage}
+                onElapsedMsUpdate={setLastElapsedMs}
+                onTokenUsageUpdate={setLastTokenUsage}
                 refreshInstanceId={refreshInstanceId}
+                onInstanceIdUpdate={setCurrentChatInstanceId}
               />
             } />
             <Route path="/config" element={
@@ -742,6 +902,9 @@ function App() {
                 onTtsPlayed={() => setTtsAudio(null)}
                 lastElapsedMs={lastElapsedMs}
                 lastTokenUsage={lastTokenUsage}
+                liveTokenUsage={liveTokenUsage}
+                onElapsedMsUpdate={setLastElapsedMs}
+                onTokenUsageUpdate={setLastTokenUsage}
                 refreshInstanceId={refreshInstanceId}
               />
             } />

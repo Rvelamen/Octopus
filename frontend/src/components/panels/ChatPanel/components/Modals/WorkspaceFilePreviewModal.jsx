@@ -78,6 +78,7 @@ function WorkspaceFilePreviewModal({ sendWSMessage, pathInput, onClose }) {
             onClose={onClose}
             isSaving={false}
             readOnly
+            sendWSMessage={sendWSMessage}
           />
         )}
       </div>

@@ -79,25 +79,44 @@ class StopAgentsHandler(MessageHandler):
         self.subagent_manager = subagent_manager
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        """Stop all running agents and subagents."""
+        """Stop running agents and subagents for a specific instance, or all if no instance specified."""
+        # 从消息中获取 instance_id，如果为空则停止所有
+        instance_id = message.data.get("instance_id") if message.data else None
+        
         stopped_count = 0
+        main_agent_stopped = False
 
-        # Stop main agent current task
+        # Stop main agent current task (optionally by instance_id)
         if self.agent_loop:
-            self.agent_loop.stop_current_task()
-            logger.info("[StopAgentsHandler] Main agent task stop signal sent")
+            if instance_id:
+                self.agent_loop.stop_instance_task(instance_id)
+                logger.info(f"[StopAgentsHandler] Main agent task stop signal sent for instance: {instance_id}")
+            else:
+                self.agent_loop.stop_current_task()
+                logger.info("[StopAgentsHandler] Main agent task stop signal sent (all instances)")
+            main_agent_stopped = True
 
-        # Stop all subagents
+        # Stop subagents (optionally by instance_id)
         if self.subagent_manager:
-            stopped_count = self.subagent_manager.stop_all()
-            logger.info(f"[StopAgentsHandler] Stopped {stopped_count} subagents")
+            if instance_id:
+                stopped_count = self.subagent_manager.stop_by_instance(instance_id)
+                logger.info(f"[StopAgentsHandler] Stopped {stopped_count} subagents for instance: {instance_id}")
+            else:
+                stopped_count = self.subagent_manager.stop_all()
+                logger.info(f"[StopAgentsHandler] Stopped {stopped_count} subagents (all instances)")
+
+        message_text = f"已暂停主Agent任务和 {stopped_count} 个子Agent任务"
+        if instance_id:
+            message_text = f"已暂停实例 {instance_id} 的主Agent任务和 {stopped_count} 个子Agent任务"
 
         await self.send_response(websocket, WSMessage(
             type=MessageType.AGENTS_STOPPED,
             request_id=message.request_id,
             data={
                 "status": "stopped",
+                "main_agent_stopped": main_agent_stopped,
                 "subagents_stopped": stopped_count,
-                "message": f"已暂停主Agent任务和 {stopped_count} 个子Agent任务"
+                "instance_id": instance_id,
+                "message": message_text
             }
         ))

@@ -29,7 +29,11 @@ function ChatPanel({
   onTtsPlayed,
   lastElapsedMs,
   lastTokenUsage,
+  liveTokenUsage,
+  onElapsedMsUpdate,
+  onTokenUsageUpdate,
   refreshInstanceId,
+  onInstanceIdUpdate,
 }) {
   const [selectedInstance, setSelectedInstance] = useState(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
@@ -46,6 +50,7 @@ function ChatPanel({
   const prevStreamingContentRef = useRef('');
   const prevIsProcessingRef = useRef(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const hasAutoSelectedRef = useRef(false);
 
   const {
     instances,
@@ -89,6 +94,35 @@ function ChatPanel({
   } = useTTS(ttsAudio, messages, selectedInstance, onTtsPlayed);
 
   useEffect(() => {
+    const autoSelectFirstInstance = async () => {
+      if (
+        !hasAutoSelectedRef.current &&
+        !initialLoading &&
+        instances.length > 0 &&
+        !selectedInstance &&
+        !isCreatingNew &&
+        sendWSMessage
+      ) {
+        console.log('Auto-selecting first instance:', instances[0].id);
+        hasAutoSelectedRef.current = true;
+        
+        try {
+          await sendWSMessage('session_set_active', { instance_id: instances[0].id }, 5000);
+        } catch (err) {
+          console.error('Failed to set active instance:', err);
+        }
+        
+        setSelectedInstance({ ...instances[0], is_active: true });
+        setIsCreatingNew(false);
+        setShouldAutoScroll(true);
+        fetchInstanceMessages(instances[0].id);
+      }
+    };
+    
+    autoSelectFirstInstance();
+  }, [instances, initialLoading, selectedInstance, isCreatingNew, sendWSMessage, fetchInstanceMessages]);
+
+  useEffect(() => {
     if (messagesEndRef.current && shouldAutoScroll) {
       messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
     }
@@ -119,6 +153,34 @@ function ChatPanel({
       fetchInstanceMessages(refreshInstanceId);
     }
   }, [refreshInstanceId]);
+
+  // 同步 selectedInstance 到 App 层，让 App 层正确跟踪当前聊天的 instance ID
+  useEffect(() => {
+    onInstanceIdUpdate?.(selectedInstance?.id ?? null);
+  }, [selectedInstance?.id]);
+
+  // 从消息中恢复 elapsed_ms 和 token_usage
+  useEffect(() => {
+    if (!messages || messages.length === 0) return;
+
+    // 从后往前找最后一条 assistant 消息
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg.role === 'assistant') {
+        const metadata = msg.metadata || {};
+        const elapsedMs = metadata.elapsed_ms;
+        const tokenUsage = metadata.usage || metadata.token_usage;
+
+        if (elapsedMs != null && elapsedMs > 0) {
+          onElapsedMsUpdate(elapsedMs);
+        }
+        if (tokenUsage && typeof tokenUsage === 'object') {
+          onTokenUsageUpdate(tokenUsage);
+        }
+        break;
+      }
+    }
+  }, [messages]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -445,6 +507,7 @@ function ChatPanel({
             <MessageList
               messages={messages}
               streamingContent={streamingContent}
+              isProcessing={isProcessing}
               toolCalls={toolCalls}
               toolCallAssistantContents={toolCallAssistantContents}
               messageTtsMap={messageTtsMap}
@@ -455,6 +518,7 @@ function ChatPanel({
               renderPlainContent={renderPlainContent}
               lastElapsedMs={lastElapsedMs}
               lastTokenUsage={lastTokenUsage}
+              liveTokenUsage={liveTokenUsage}
             />
           )}
         </div>

@@ -97,15 +97,20 @@ class DesktopChannel(BaseChannel):
         """Send a message to the desktop frontend."""
         if not msg.content:
             return
-        
+
         request_id = msg.metadata.get("request_id") if msg.metadata else None
-        
+        session_instance_id = msg.metadata.get("session_instance_id") if msg.metadata else None
+
+        data = {"content": msg.content}
+        if session_instance_id is not None:
+            data["session_instance_id"] = session_instance_id
+
         ws_message = WSMessage(
             type=MessageType.CHAT_RESPONSE,
             request_id=request_id,
-            data={"content": msg.content}
+            data=data
         )
-        
+
         await self._broadcast(ws_message.to_dict())
         
         # Handle TTS if enabled

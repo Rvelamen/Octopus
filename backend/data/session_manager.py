@@ -272,6 +272,22 @@ class SessionManager:
         self._save_messages_to_instance(session, target_instance_id)
         self._cache[session.key] = session
     
+    def update_last_message_metadata(
+        self,
+        session_instance_id: int,
+        update_data: dict[str, Any]
+    ) -> bool:
+        """Update the latest assistant message's metadata with additional data.
+        
+        Args:
+            session_instance_id: The session instance ID
+            update_data: Dict of metadata fields to update/merge
+            
+        Returns:
+            True if updated successfully
+        """
+        return self.db.update_last_message_metadata(session_instance_id, update_data)
+    
     # Multi-session management commands
     def create_instance(self, key: str, instance_name: str) -> tuple[bool, str]:
         """

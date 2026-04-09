@@ -45,6 +45,40 @@ class PreparedContext:
     session_key: str
 
 
+def _extract_cached_tokens(usage: dict) -> int:
+    """Extract cache hit tokens from provider-specific usage fields."""
+    if not usage:
+        return 0
+    # DeepSeek style
+    if "prompt_cache_hit_tokens" in usage:
+        return usage.get("prompt_cache_hit_tokens", 0)
+    # OpenAI style
+    details = usage.get("prompt_tokens_details")
+    if details and isinstance(details, dict):
+        return details.get("cached_tokens", 0)
+    # Generic fallback
+    return usage.get("cached_tokens", 0) or usage.get("cache_read_input_tokens", 0)
+
+
+def _extract_prompt_tokens_with_cache(usage: dict) -> int:
+    """Get real prompt/input tokens including cache hits.
+
+    Provider behavior:
+    - DeepSeek: prompt_tokens does NOT include prompt_cache_hit_tokens, so we add them.
+    - OpenAI/Anthropic: prompt_tokens / input_tokens already include cached tokens.
+    """
+    if not usage:
+        return 0
+    # DeepSeek style: need to add cache hits
+    if "prompt_cache_hit_tokens" in usage:
+        return usage.get("prompt_tokens", 0) + usage.get("prompt_cache_hit_tokens", 0)
+    # Anthropic style
+    if "input_tokens" in usage:
+        return usage.get("input_tokens", 0)
+    # OpenAI / generic style
+    return usage.get("prompt_tokens", 0)
+
+
 class AgentLoop:
     """
     The agent loop is the core processing engine.
@@ -111,6 +145,8 @@ class AgentLoop:
 
         self._running = False
         self._stop_current_task = False
+        # Instance-level stop flags: { instance_id: stop_flag }
+        self._instance_stop_flags = {}
         self._register_default_tools()
         self._tts_service = None
 
@@ -154,16 +190,16 @@ class AgentLoop:
                 channel=channel
             ))
     
-    async def _send_stream_chunks(self, content: str, session: str, channel: str, chunk_size: int = 10):
+    async def _send_stream_chunks(self, content: str, session: str, channel: str, session_instance_id: int | None = None, chunk_size: int = 10):
         """Send content in chunks for streaming effect."""
         if not content:
             return
-        
+
         for i in range(0, len(content), chunk_size):
             chunk = content[i:i+chunk_size]
             await self.bus.publish_event(AgentEvent(
                 event_type="agent_chunk",
-                data={"content": chunk, "session": session},
+                data={"content": chunk, "session": session, "session_instance_id": session_instance_id},
                 channel=channel
             ))
             await asyncio.sleep(0.05)
@@ -249,13 +285,84 @@ class AgentLoop:
         logger.info("Agent loop stopping")
     
     def stop_current_task(self) -> None:
-        """Stop the current running task."""
+        """Stop the current running task (all instances)."""
         self._stop_current_task = True
-        logger.info("Agent current task stopping")
+        # Stop all instance-specific tasks as well
+        for instance_id in list(self._instance_stop_flags.keys()):
+            self._instance_stop_flags[instance_id] = True
+        logger.info("Agent current task stopping (all instances)")
     
-    def reset_stop_flag(self) -> None:
+    def stop_instance_task(self, instance_id) -> None:
+        """Stop the running task for a specific instance."""
+        # Convert to int if string
+        instance_id_int = int(instance_id) if instance_id else None
+        if instance_id_int:
+            self._instance_stop_flags[instance_id_int] = True
+            logger.info(f"Agent task stop signal sent for instance: {instance_id_int}")
+        else:
+            # Fallback to global stop
+            self._stop_current_task = True
+            logger.info("Agent task stop signal sent (no instance_id, using global stop)")
+    
+    def reset_stop_flag(self, instance_id=None) -> None:
         """Reset the stop flag for new task."""
-        self._stop_current_task = False
+        if instance_id:
+            instance_id_int = int(instance_id) if instance_id else None
+            if instance_id_int and instance_id_int in self._instance_stop_flags:
+                self._instance_stop_flags[instance_id_int] = False
+        else:
+            self._stop_current_task = False
+    
+    def _should_stop(self, instance_id=None) -> bool:
+        """Check if task should stop for a specific instance or globally."""
+        if self._stop_current_task:
+            return True
+        if instance_id:
+            instance_id_int = int(instance_id) if instance_id else None
+            if instance_id_int and self._instance_stop_flags.get(instance_id_int, False):
+                return True
+        return False
+
+    def _save_cancelled_tool_results_and_mark_stopped(
+        self,
+        session: Any,
+        *,
+        tool_call_entries: list[tuple[str, str]],
+        saved_ids: set[str],
+        session_instance_id: int | None,
+        start_time: float,
+    ) -> None:
+        """Persist placeholder tool results for calls not executed after user stop; tag last assistant message."""
+        cancel = "已取消（用户暂停）"
+        for tc_id, tool_name in tool_call_entries:
+            tid = str(tc_id)
+            if tid in saved_ids:
+                continue
+            meta: dict[str, Any] = {"cancelled_by_user": True}
+            if session_instance_id:
+                meta["session_instance_id"] = session_instance_id
+            session.add_message(
+                "tool",
+                cancel,
+                message_type="tool_result",
+                name=tool_name,
+                tool_call_id=tid,
+                metadata=meta,
+            )
+        try:
+            self.sessions.save(session)
+        except Exception as e:
+            logger.error(f"Failed to save session after cancelled tool placeholders: {e}")
+
+        elapsed_ms = int((time.time() - start_time) * 1000)
+        if session_instance_id:
+            try:
+                self.sessions.update_last_message_metadata(
+                    int(session_instance_id),
+                    {"stopped_by_user": True, "elapsed_ms": elapsed_ms},
+                )
+            except Exception as e:
+                logger.warning(f"Failed to update stopped_by_user metadata: {e}")
     
     async def _process_message(
         self,
@@ -313,12 +420,6 @@ class AgentLoop:
 
         event_content = msg.text_content if msg.is_multimodal else msg.content
 
-        await self.bus.publish_event(AgentEvent(
-            event_type="agent_start",
-            data={"content": event_content, "session": current_session},
-            channel=msg.channel
-        ))
-
         session_key = msg.session_key
         if msg.channel == "desktop":
             session_key = "desktop:desktop_session"
@@ -351,6 +452,12 @@ class AgentLoop:
             )
 
         session_instance_id = session.active_instance.id if session.active_instance else None
+
+        await self.bus.publish_event(AgentEvent(
+            event_type="agent_start",
+            data={"content": event_content, "session": current_session, "session_instance_id": session_instance_id},
+            channel=msg.channel
+        ))
 
         message_tool = self.tools.get("message")
         if isinstance(message_tool, MessageTool):
@@ -442,20 +549,24 @@ class AgentLoop:
         # Track total token usage for this run
         total_prompt_tokens = 0
         total_completion_tokens = 0
+        total_cached_tokens = 0
 
         should_stop = False  # Flag to stop the outer loop
 
-        # Reset stop flag for new task
+        # Reset stop flags for new task
         self._stop_current_task = False
+        instance_id_int = int(session_instance_id) if session_instance_id else None
+        if instance_id_int:
+            self._instance_stop_flags[instance_id_int] = False
 
         # Track elapsed time for this agent run
         start_time = time.time()
 
-        while iteration < self.max_iterations and not should_stop and not self._stop_current_task:
+        while iteration < self.max_iterations and not should_stop and not self._should_stop(instance_id_int):
             iteration += 1
 
             # Emit "thinking" event
-            await self._emit("agent_thinking", {"iteration": iteration, "session": session.key}, channel=msg.channel)
+            await self._emit("agent_thinking", {"iteration": iteration, "session": session.key, "session_instance_id": session_instance_id}, channel=msg.channel)
 
             # Call LLM - get fresh provider and model from config
             provider, model, provider_type, max_tokens, temperature = self._get_current_provider_and_model()
@@ -471,9 +582,10 @@ class AgentLoop:
             
             # Record token usage and track prompt_tokens for compression
             if response.usage:
-                last_prompt_tokens = response.usage.get("prompt_tokens", 0)
-                total_prompt_tokens += response.usage.get("prompt_tokens", 0)
+                last_prompt_tokens = _extract_prompt_tokens_with_cache(response.usage)
+                total_prompt_tokens += _extract_prompt_tokens_with_cache(response.usage)
                 total_completion_tokens += response.usage.get("completion_tokens", 0)
+                total_cached_tokens += _extract_cached_tokens(response.usage)
                 self._record_token_usage(
                     session_instance_id=session_instance_id,
                     provider_name=provider_type,
@@ -504,12 +616,16 @@ class AgentLoop:
                                       "session_instance_id": session_instance_id,
                                       "usage": {
                                           "prompt_tokens": total_prompt_tokens,
-                                          "completion_tokens": total_completion_tokens
+                                          "completion_tokens": total_completion_tokens,
+                                          "total_tokens": total_prompt_tokens + total_completion_tokens,
+                                          "cached_tokens": total_cached_tokens
                                       }
                                   } if session_instance_id else {
                                       "usage": {
                                           "prompt_tokens": total_prompt_tokens,
-                                          "completion_tokens": total_completion_tokens
+                                          "completion_tokens": total_completion_tokens,
+                                          "total_tokens": total_prompt_tokens + total_completion_tokens,
+                                          "cached_tokens": total_cached_tokens
                                       }
                                   })
                 self.sessions.save(session)
@@ -531,9 +647,10 @@ class AgentLoop:
                 )
 
                 # Execute tools with error handling
+                saved_tool_ids: set[str] = set()
                 for tool_call in response.tool_calls:
                     # Check if task should stop
-                    if self._stop_current_task:
+                    if self._should_stop(instance_id_int):
                         logger.info("Task stopped by user request")
                         break
                     
@@ -549,7 +666,8 @@ class AgentLoop:
                                 "args": tool_call.arguments,
                                 "content": response.content if response.content else None,
                                 "iteration": iteration,
-                                "tool_call_id": tool_call.id
+                                "tool_call_id": tool_call.id,
+                                "session_instance_id": session_instance_id
                             }, channel=msg.channel)
                         except Exception as emit_err:
                             logger.warning(f"Failed to emit tool call event: {emit_err}")
@@ -593,6 +711,7 @@ class AgentLoop:
                                               tool_call_id=tool_call.id,
                                               metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
                             self.sessions.save(session)
+                            saved_tool_ids.add(str(tool_call.id))
 
                             should_stop = True  # Stop the outer loop
                             break  # Exit tool execution loop
@@ -604,7 +723,8 @@ class AgentLoop:
                                 "tool": tool_call.name,
                                 "result": result_preview,
                                 "tool_call_id": tool_call.id,
-                                "iteration": iteration
+                                "iteration": iteration,
+                                "session_instance_id": session_instance_id
                             }, channel=msg.channel)
                         except Exception as e:
                             logger.warning(f"Failed to emit tool result event: {e}")
@@ -634,12 +754,31 @@ class AgentLoop:
                         except Exception as add_err:
                             logger.error(f"Failed to add tool result to messages: {add_err}")
 
+                        saved_tool_ids.add(str(tool_call.id))
+
+                if response.tool_calls and self._should_stop(instance_id_int):
+                    entries = [(str(tc.id), tc.name) for tc in response.tool_calls]
+                    self._save_cancelled_tool_results_and_mark_stopped(
+                        session,
+                        tool_call_entries=entries,
+                        saved_ids=saved_tool_ids,
+                        session_instance_id=session_instance_id,
+                        start_time=start_time,
+                    )
+
                 # Emit iteration complete event after all tool calls executed (non-streaming)
-                if not should_stop and not self._stop_current_task:
+                if not should_stop and not self._should_stop(instance_id_int):
                     await self._emit("agent_iteration_complete", {
                         "iteration": iteration,
                         "final_content": response.content or "",
-                        "status": "completed"
+                        "status": "completed",
+                        "session_instance_id": session_instance_id,
+                        "token_usage": {
+                            "prompt_tokens": total_prompt_tokens,
+                            "completion_tokens": total_completion_tokens,
+                            "total_tokens": total_prompt_tokens + total_completion_tokens,
+                            "cached_tokens": total_cached_tokens
+                        }
                     }, channel=msg.channel)
             else:
                 # No tool calls, we're done
@@ -651,12 +790,16 @@ class AgentLoop:
                                       "session_instance_id": session_instance_id,
                                       "usage": {
                                           "prompt_tokens": total_prompt_tokens,
-                                          "completion_tokens": total_completion_tokens
+                                          "completion_tokens": total_completion_tokens,
+                                          "total_tokens": total_prompt_tokens + total_completion_tokens,
+                                          "cached_tokens": total_cached_tokens
                                       }
                                   } if session_instance_id else {
                                       "usage": {
                                           "prompt_tokens": total_prompt_tokens,
-                                          "completion_tokens": total_completion_tokens
+                                          "completion_tokens": total_completion_tokens,
+                                          "total_tokens": total_prompt_tokens + total_completion_tokens,
+                                          "cached_tokens": total_cached_tokens
                                       }
                                   })
                 self.sessions.save(session)
@@ -664,12 +807,19 @@ class AgentLoop:
                 await self._emit("agent_iteration_complete", {
                     "iteration": iteration,
                     "final_content": final_content or "",
-                    "status": "completed"
+                    "status": "completed",
+                    "session_instance_id": session_instance_id,
+                    "token_usage": {
+                        "prompt_tokens": total_prompt_tokens,
+                        "completion_tokens": total_completion_tokens,
+                        "total_tokens": total_prompt_tokens + total_completion_tokens,
+                        "cached_tokens": total_cached_tokens
+                    }
                 }, channel=msg.channel)
                 break
 
         # Check if stopped by user request
-        if self._stop_current_task and final_content is None:
+        if self._should_stop(instance_id_int) and final_content is None:
             final_content = "任务已被用户暂停。"
 
         if final_content is None:
@@ -678,27 +828,9 @@ class AgentLoop:
         await self.compressor.maybe_compress(session, prompt_tokens=last_prompt_tokens)
 
         logger.info(f"[AgentLoop] Sending final response with {len(final_content)} chars")
-        await self._send_stream_chunks(final_content, current_session, msg.channel)
+        await self._send_stream_chunks(final_content, current_session, msg.channel, session_instance_id)
 
         elapsed_ms = int((time.time() - start_time) * 1000)
-
-        logger.info(f"[AgentLoop] Publishing agent_finish event")
-        logger.info(f"[AgentLoop] Token usage for this run: prompt={total_prompt_tokens}, completion={total_completion_tokens}")
-        await self.bus.publish_event(AgentEvent(
-            event_type="agent_finish",
-            data={
-                "content": final_content, 
-                "session": msg.chat_id, 
-                "elapsed_ms": elapsed_ms,
-                "token_usage": {
-                    "prompt_tokens": total_prompt_tokens,
-                    "completion_tokens": total_completion_tokens,
-                    "total_tokens": total_prompt_tokens + total_completion_tokens
-                }
-            },
-            channel=msg.channel
-        ))
-        logger.info(f"[AgentLoop] agent_finish event published")
 
         # Get TTS config for metadata (channel will handle TTS)
         tts_enabled = False
@@ -710,6 +842,44 @@ class AgentLoop:
                 tts_config = tts_result.get("config", {})
             except Exception as tts_err:
                 logger.warning(f"Failed to check TTS config: {tts_err}")
+
+        # Persist elapsed_ms BEFORE agent_finish so clients that immediately refetch see correct metadata
+        if session_instance_id and final_content is not None:
+            try:
+                self.sessions.update_last_message_metadata(
+                    session_instance_id,
+                    {
+                        "elapsed_ms": elapsed_ms,
+                        "usage": {
+                            "prompt_tokens": total_prompt_tokens,
+                            "completion_tokens": total_completion_tokens,
+                            "total_tokens": total_prompt_tokens + total_completion_tokens,
+                            "cached_tokens": total_cached_tokens
+                        }
+                    }
+                )
+            except Exception as update_err:
+                logger.warning(f"Failed to update message metadata with elapsed_ms: {update_err}")
+
+        logger.info(f"[AgentLoop] Publishing agent_finish event")
+        logger.info(f"[AgentLoop] Token usage for this run: prompt={total_prompt_tokens}, completion={total_completion_tokens}, cached={total_cached_tokens}")
+        await self.bus.publish_event(AgentEvent(
+            event_type="agent_finish",
+            data={
+                "content": final_content,
+                "session": msg.chat_id,
+                "elapsed_ms": elapsed_ms,
+                "token_usage": {
+                    "prompt_tokens": total_prompt_tokens,
+                    "completion_tokens": total_completion_tokens,
+                    "total_tokens": total_prompt_tokens + total_completion_tokens,
+                    "cached_tokens": total_cached_tokens
+                },
+                "session_instance_id": session_instance_id
+            },
+            channel=msg.channel
+        ))
+        logger.info(f"[AgentLoop] agent_finish event published")
 
         return OutboundMessage(
             channel=msg.channel,
@@ -851,12 +1021,16 @@ class AgentLoop:
                                       "session_instance_id": session_instance_id,
                                       "usage": {
                                           "prompt_tokens": total_prompt_tokens,
-                                          "completion_tokens": total_completion_tokens
+                                          "completion_tokens": total_completion_tokens,
+                                          "total_tokens": total_prompt_tokens + total_completion_tokens,
+                                          "cached_tokens": total_cached_tokens
                                       }
                                   } if session_instance_id else {
                                       "usage": {
                                           "prompt_tokens": total_prompt_tokens,
-                                          "completion_tokens": total_completion_tokens
+                                          "completion_tokens": total_completion_tokens,
+                                          "total_tokens": total_prompt_tokens + total_completion_tokens,
+                                          "cached_tokens": total_cached_tokens
                                       }
                                   })
                 self.sessions.save(session)
@@ -886,7 +1060,8 @@ class AgentLoop:
                         try:
                             await self._emit("agent_tool_call", {
                                 "tool": tool_call.name,
-                                "args": tool_call.arguments
+                                "args": tool_call.arguments,
+                                "session_instance_id": session_instance_id
                             }, channel=origin_channel)
                         except Exception as e:
                             logger.warning(f"Failed to emit tool call event: {e}")
@@ -905,7 +1080,8 @@ class AgentLoop:
                             result_preview = result[:500] + "..." if len(result) > 500 else result
                             await self._emit("agent_tool_result", {
                                 "tool": tool_call.name,
-                                "result": result_preview
+                                "result": result_preview,
+                                "session_instance_id": session_instance_id
                             }, channel=origin_channel)
                         except Exception as e:
                             logger.warning(f"Failed to emit tool result event: {e}")
@@ -939,7 +1115,14 @@ class AgentLoop:
                 await self._emit("agent_iteration_complete", {
                     "iteration": iteration,
                     "final_content": response.content or "",
-                    "status": "completed"
+                    "status": "completed",
+                    "session_instance_id": session_instance_id,
+                    "token_usage": {
+                        "prompt_tokens": total_prompt_tokens,
+                        "completion_tokens": total_completion_tokens,
+                        "total_tokens": total_prompt_tokens + total_completion_tokens,
+                        "cached_tokens": total_cached_tokens
+                    }
                 }, channel=origin_channel)
             else:
                 final_content = response.content
@@ -956,7 +1139,8 @@ class AgentLoop:
         return OutboundMessage(
             channel=origin_channel,
             chat_id=origin_chat_id,
-            content=final_content
+            content=final_content,
+            metadata={"session_instance_id": session_instance_id} if session_instance_id else {}
         )
 
     async def _process_longtask_message(
@@ -989,10 +1173,12 @@ class AgentLoop:
             session.add_message("assistant", content, message_type="longtask_auth")
             self.sessions.save(session)
             logger.info(f"[_process_longtask_message] Saved longtask_auth message to session {session.key}")
+            instance_id = session.active_instance.id if session.active_instance else None
             return OutboundMessage(
                 channel=msg.channel,
                 chat_id=msg.chat_id,
                 content=content,
+                metadata={"session_instance_id": instance_id} if instance_id else {}
             )
 
         # For completion notifications, just notify the user
@@ -1002,10 +1188,12 @@ class AgentLoop:
             session.add_message("assistant", content, message_type="longtask_complete")
             self.sessions.save(session)
             logger.info(f"[_process_longtask_message] Saved longtask_complete message to session {session.key}")
+            instance_id = session.active_instance.id if session.active_instance else None
             return OutboundMessage(
                 channel=msg.channel,
                 chat_id=msg.chat_id,
                 content=content,
+                metadata={"session_instance_id": instance_id} if instance_id else {}
             )
 
         return None
@@ -1131,20 +1319,24 @@ class AgentLoop:
         # Track total token usage for this run
         total_prompt_tokens = 0
         total_completion_tokens = 0
-        
+        total_cached_tokens = 0
+
         should_stop = False
 
-        # Reset stop flag for new task
+        # Reset stop flags for new task
         self._stop_current_task = False
+        instance_id_int = int(session_instance_id) if session_instance_id else None
+        if instance_id_int:
+            self._instance_stop_flags[instance_id_int] = False
 
         # Track elapsed time for this agent run
         start_time = time.time()
 
-        while iteration < self.max_iterations and not should_stop and not self._stop_current_task:
+        while iteration < self.max_iterations and not should_stop and not self._should_stop(instance_id_int):
             iteration += 1
 
             # Emit "thinking" event
-            await self._emit("agent_thinking", {"iteration": iteration, "session": session.key}, channel=msg.channel)
+            await self._emit("agent_thinking", {"iteration": iteration, "session": session.key, "session_instance_id": session_instance_id}, channel=msg.channel)
 
             # Call LLM with streaming
             provider, model, provider_type, max_tokens, temperature = self._get_current_provider_and_model()
@@ -1166,7 +1358,8 @@ class AgentLoop:
                         full_content += chunk.content
                         await self._emit("agent_token", {
                             "content": chunk.content,
-                            "session": current_session
+                            "session": current_session,
+                            "session_instance_id": session_instance_id
                         }, channel=msg.channel)
                     
                     # Handle tool calls (streaming)
@@ -1187,7 +1380,8 @@ class AgentLoop:
                                     "partial_args": tc.arguments,
                                     "content": full_content if full_content else None,
                                     "iteration": iteration,
-                                    "status": "pending"
+                                    "status": "pending",
+                                    "session_instance_id": session_instance_id
                                 }, channel=msg.channel)
                             else:
                                 # Update arguments (streaming)
@@ -1196,16 +1390,18 @@ class AgentLoop:
                                     "tool_call_id": tc.id,
                                     "tool": tc.name,
                                     "partial_args": tool_calls_buffer[tc.id]["arguments"],
-                                    "status": "streaming"
+                                    "status": "streaming",
+                                    "session_instance_id": session_instance_id
                                 }, channel=msg.channel)
                     
                     # Final chunk
                     if chunk.is_final:
                         # Record token usage
                         if chunk.usage:
-                            last_prompt_tokens = chunk.usage.get("prompt_tokens", 0)
-                            total_prompt_tokens += chunk.usage.get("prompt_tokens", 0)
+                            last_prompt_tokens = _extract_prompt_tokens_with_cache(chunk.usage)
+                            total_prompt_tokens += _extract_prompt_tokens_with_cache(chunk.usage)
                             total_completion_tokens += chunk.usage.get("completion_tokens", 0)
+                            total_cached_tokens += _extract_cached_tokens(chunk.usage)
                             self._record_token_usage(
                                 session_instance_id=session_instance_id,
                                 provider_name=provider_type,
@@ -1234,12 +1430,16 @@ class AgentLoop:
                                           "session_instance_id": session_instance_id,
                                           "usage": {
                                               "prompt_tokens": total_prompt_tokens,
-                                              "completion_tokens": total_completion_tokens
+                                              "completion_tokens": total_completion_tokens,
+                                              "total_tokens": total_prompt_tokens + total_completion_tokens,
+                                              "cached_tokens": total_cached_tokens
                                           }
                                       } if session_instance_id else {
                                           "usage": {
                                               "prompt_tokens": total_prompt_tokens,
-                                              "completion_tokens": total_completion_tokens
+                                              "completion_tokens": total_completion_tokens,
+                                              "total_tokens": total_prompt_tokens + total_completion_tokens,
+                                              "cached_tokens": total_cached_tokens
                                           }
                                       })
                     self.sessions.save(session)
@@ -1261,8 +1461,9 @@ class AgentLoop:
                     )
                     
                     # Execute tools
+                    saved_stream_tool_ids: set[str] = set()
                     for tc_id, tc_data in tool_calls_buffer.items():
-                        if self._stop_current_task:
+                        if self._should_stop(instance_id_int):
                             logger.info("Task stopped by user request")
                             break
                         
@@ -1270,7 +1471,8 @@ class AgentLoop:
                         await self._emit("agent_tool_call_invoking", {
                             "tool_call_id": tc_id,
                             "tool": tc_data["name"],
-                            "status": "invoking"
+                            "status": "invoking",
+                            "session_instance_id": session_instance_id
                         }, channel=msg.channel)
                         
                         result = None
@@ -1291,7 +1493,8 @@ class AgentLoop:
                                 "tool": tc_data["name"],
                                 "args": tc_data["arguments"],
                                 "result": result[:500] + "..." if len(result) > 500 else result,
-                                "status": "completed"
+                                "status": "completed",
+                                "session_instance_id": session_instance_id
                             }, channel=msg.channel)
                             
                         except Exception as e:
@@ -1306,7 +1509,8 @@ class AgentLoop:
                                 "tool": tc_data["name"],
                                 "args": tc_data["arguments"],
                                 "error": str(e),
-                                "status": "error"
+                                "status": "error",
+                                "session_instance_id": session_instance_id
                             }, channel=msg.channel)
                         
                         # Save tool result
@@ -1321,13 +1525,31 @@ class AgentLoop:
                             messages = self.context.add_tool_result(
                                 messages, tc_id, tc_data["name"], result, provider_type
                             )
+                            saved_stream_tool_ids.add(str(tc_id))
                     
+                    if tool_calls_buffer and self._should_stop(instance_id_int):
+                        entries = [(str(tid), tc_data["name"]) for tid, tc_data in tool_calls_buffer.items()]
+                        self._save_cancelled_tool_results_and_mark_stopped(
+                            session,
+                            tool_call_entries=entries,
+                            saved_ids=saved_stream_tool_ids,
+                            session_instance_id=session_instance_id,
+                            start_time=start_time,
+                        )
+
                     # Emit iteration complete event after all tool calls executed (streaming)
-                    if not self._stop_current_task:
+                    if not self._should_stop(instance_id_int):
                         await self._emit("agent_iteration_complete", {
                             "iteration": iteration,
                             "final_content": full_content or "",
-                            "status": "completed"
+                            "status": "completed",
+                            "session_instance_id": session_instance_id,
+                            "token_usage": {
+                                "prompt_tokens": total_prompt_tokens,
+                                "completion_tokens": total_completion_tokens,
+                                "total_tokens": total_prompt_tokens + total_completion_tokens,
+                                "cached_tokens": total_cached_tokens
+                            }
                         }, channel=msg.channel)
                 else:
                     # No tool calls, we're done
@@ -1335,7 +1557,9 @@ class AgentLoop:
                     # Save final assistant response with token usage
                     current_usage = {
                         "prompt_tokens": total_prompt_tokens,
-                        "completion_tokens": total_completion_tokens
+                        "completion_tokens": total_completion_tokens,
+                        "total_tokens": total_prompt_tokens + total_completion_tokens,
+                        "cached_tokens": total_cached_tokens
                     }
                     session.add_message("assistant", final_content or "",
                                       message_type=msg.message_type,
@@ -1348,7 +1572,14 @@ class AgentLoop:
                     await self._emit("agent_iteration_complete", {
                         "iteration": iteration,
                         "final_content": final_content or "",
-                        "status": "completed"
+                        "status": "completed",
+                        "session_instance_id": session_instance_id,
+                        "token_usage": {
+                            "prompt_tokens": total_prompt_tokens,
+                            "completion_tokens": total_completion_tokens,
+                            "total_tokens": total_prompt_tokens + total_completion_tokens,
+                            "cached_tokens": total_cached_tokens
+                        }
                     }, channel=msg.channel)
                     break
                     
@@ -1360,7 +1591,7 @@ class AgentLoop:
                 break
 
         # Check if stopped by user request
-        if self._stop_current_task and final_content is None:
+        if self._should_stop(instance_id_int) and final_content is None:
             final_content = "任务已被用户暂停。"
 
         if final_content is None:
@@ -1375,26 +1606,10 @@ class AgentLoop:
         token_usage_data = {
             "prompt_tokens": total_prompt_tokens,
             "completion_tokens": total_completion_tokens,
-            "total_tokens": total_prompt_tokens + total_completion_tokens
+            "total_tokens": total_prompt_tokens + total_completion_tokens,
+            "cached_tokens": total_cached_tokens
         }
         logger.info(f"[Stream] Token usage for this run: {token_usage_data}")
-        
-        try:
-            await self.bus.publish_event(AgentEvent(
-                event_type="agent_finish",
-                data={
-                    "content": final_content, 
-                    "session": msg.chat_id, 
-                    "elapsed_ms": elapsed_ms,
-                    "token_usage": token_usage_data
-                },
-                channel=msg.channel
-            ))
-            logger.info(f"[Stream] agent_finish event published successfully")
-        except Exception as e:
-            logger.error(f"[Stream] Failed to publish agent_finish event: {e}")
-            import traceback
-            traceback.print_exc()
 
         # Get TTS config for metadata
         tts_enabled = False
@@ -1406,6 +1621,37 @@ class AgentLoop:
                 tts_config = tts_result.get("config", {})
             except Exception as tts_err:
                 logger.warning(f"Failed to check TTS config: {tts_err}")
+
+        # Persist elapsed_ms BEFORE agent_finish so immediate refetch includes it (stop/complete race)
+        if session_instance_id and final_content is not None:
+            try:
+                self.sessions.update_last_message_metadata(
+                    session_instance_id,
+                    {
+                        "elapsed_ms": elapsed_ms,
+                        "usage": token_usage_data
+                    }
+                )
+            except Exception as update_err:
+                logger.warning(f"Failed to update message metadata with elapsed_ms: {update_err}")
+
+        try:
+            await self.bus.publish_event(AgentEvent(
+                event_type="agent_finish",
+                data={
+                    "content": final_content,
+                    "session": msg.chat_id,
+                    "elapsed_ms": elapsed_ms,
+                    "token_usage": token_usage_data,
+                    "session_instance_id": session_instance_id
+                },
+                channel=msg.channel
+            ))
+            logger.info(f"[Stream] agent_finish event published successfully")
+        except Exception as e:
+            logger.error(f"[Stream] Failed to publish agent_finish event: {e}")
+            import traceback
+            traceback.print_exc()
 
         return OutboundMessage(
             channel=msg.channel,
@@ -1437,20 +1683,22 @@ class AgentLoop:
             request_type: Type of request (chat, compression, etc.)
         """
         try:
-            prompt_tokens = usage.get("prompt_tokens", 0)
+            prompt_tokens = _extract_prompt_tokens_with_cache(usage)
             completion_tokens = usage.get("completion_tokens", 0)
-            
+            cached_tokens = _extract_cached_tokens(usage)
+
             self.token_usage.record_usage(
                 session_instance_id=session_instance_id,
                 provider_name=provider_name,
                 model_id=model_id,
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
+                cached_tokens=cached_tokens,
                 request_type=request_type
             )
-            
+
             logger.debug(f"Token usage recorded: {provider_name}/{model_id} - "
-                        f"prompt={prompt_tokens}, completion={completion_tokens}")
+                        f"prompt={prompt_tokens}, completion={completion_tokens}, cached={cached_tokens}")
         except Exception as e:
             logger.error(f"Failed to record token usage: {e}")
 

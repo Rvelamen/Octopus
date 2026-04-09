@@ -1149,16 +1149,6 @@ class TTSServiceConfigRepository:
     This repository stores the default model selection.
     """
 
-    TTS_PROVIDER_TYPES = {'openai', 'openai-response', 'azure-openai', 'new-api', 'cherryln'}
-
-    DEFAULT_TTS_MODELS = {
-        'openai': 'tts-1',
-        'openai-response': 'tts-1',
-        'azure-openai': 'tts-1',
-        'new-api': 'tts-1',
-        'cherryln': 'tts-1'
-    }
-
     def __init__(self, db: Database):
         self.db = db
 
@@ -1210,14 +1200,11 @@ class TTSServiceConfigRepository:
     def get_available_models(self) -> list[dict]:
         """Get available models for TTS from enabled providers.
 
-        Returns models from providers that support audio/TTS.
+        Returns models with model_types containing 'audio' or 'tts'.
         """
-        provider_types = self.TTS_PROVIDER_TYPES
-        placeholders = ','.join('?' * len(provider_types))
-
         with self.db._get_connection() as conn:
             rows = conn.execute(
-                f"""SELECT
+                """SELECT
                     m.id as model_db_id,
                     m.model_id,
                     m.display_name as model_display_name,
@@ -1230,10 +1217,9 @@ class TTSServiceConfigRepository:
                     p.api_host
                 FROM models m
                 JOIN providers p ON m.provider_id = p.id
-                WHERE m.enabled = 1 AND p.enabled = 1 AND p.provider_type IN ({placeholders})
-                  AND (m.model_types LIKE '%audio%' OR m.model_types LIKE '%tts%' OR m.model_id LIKE '%tts%')
-                ORDER BY p.display_name ASC, m.display_name ASC""",
-                tuple(provider_types)
+                WHERE m.enabled = 1 AND p.enabled = 1
+                  AND (m.model_types LIKE '%"audio"%' OR m.model_types LIKE '%"tts"%')
+                ORDER BY p.display_name ASC, m.display_name ASC"""
             ).fetchall()
 
             return [

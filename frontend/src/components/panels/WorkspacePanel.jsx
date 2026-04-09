@@ -3,9 +3,11 @@ import {
   Folder, File, ChevronRight, ChevronDown, Home,
   RefreshCw, Plus, Trash2, Edit3, Save, X, FolderPlus,
   FilePlus, ArrowLeft, Search, FileText, Image, Code,
-  MoreVertical, Download, Upload
+  MoreVertical, Download, Upload, Eye
 } from 'lucide-react';
 import { Modal, Input, Button, Dropdown, Menu, message, Table } from 'antd';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import Editor from '@monaco-editor/react';
 import * as XLSX from 'xlsx';
 import * as mammoth from 'mammoth';
@@ -863,6 +865,196 @@ const DOCX_BASE_STYLES = [
   'blockquote { border-left: 4px solid #ccc; padding-left: 12pt; color: #555; margin: 8pt 0; }',
 ].join('\n');
 
+/** MIME type for workspace image preview (Blob) from file path extension */
+const mimeFromImagePath = (p) => {
+  const ext = (p.split('.').pop() || '').toLowerCase().split('?')[0];
+  const map = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    bmp: 'image/bmp',
+    svg: 'image/svg+xml',
+    ico: 'image/x-icon',
+  };
+  return map[ext] || 'application/octet-stream';
+};
+
+/** workspace_read returns binary as hex — must parse pairs, not atob (base64) */
+const workspaceHexToBlob = (hexContent, mimeType) => {
+  const hexString = (hexContent || '').replace(/\s/g, '');
+  if (!hexString || hexString.length % 2 !== 0) return null;
+  const pairs = hexString.match(/.{1,2}/g);
+  if (!pairs) return null;
+  const byteArray = new Uint8Array(pairs.map((b) => parseInt(b, 16)));
+  return new Blob([byteArray], { type: mimeType });
+};
+
+/**
+ * Markdown Viewer Component
+ */
+const MarkdownViewer = ({ content, file, sendWSMessage }) => {
+  const [loadingImages, setLoadingImages] = useState(new Set());
+  // blob URLs stored in a ref so img closures always read the latest values
+  const imageUrlsRef = useRef({});
+  const inFlightRef = useRef(new Set());
+  const cleanupRef = useRef([]);
+
+  const filePath = file?.path || '';
+  const fileDir = filePath.includes('/')
+    ? filePath.substring(0, filePath.lastIndexOf('/'))
+    : '';
+
+  // Clean up all blob URLs and reset state whenever the file changes
+  useEffect(() => {
+    // Revoke any lingering blob URLs from the previous file
+    cleanupRef.current.forEach((url) => URL.revokeObjectURL(url));
+    cleanupRef.current = [];
+    imageUrlsRef.current = {};
+    inFlightRef.current.clear();
+    setLoadingImages(new Set());
+  }, [file?.path]);
+
+  // Load images: only re-runs when content/file/sendWSMessage/dir actually change
+  useEffect(() => {
+    const loadImages = async () => {
+      if (!content || !sendWSMessage) return;
+
+      const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+      const pathsToLoad = [];
+
+      let match;
+      while ((match = imgRegex.exec(content)) !== null) {
+        let imgSrc = (match[2] || '').trim();
+        if (imgSrc.startsWith('<') || imgSrc.includes(' ')) continue;
+        imgSrc = imgSrc.replace(/^\.\//, '');
+
+        if (imgSrc && !imgSrc.startsWith('http') && !imgSrc.startsWith('data:')) {
+          const fullPath = fileDir
+            ? `${fileDir}/${imgSrc}`.replace(/\/+/g, '/')
+            : imgSrc;
+
+          if (
+            !imageUrlsRef.current[fullPath] &&
+            !inFlightRef.current.has(fullPath)
+          ) {
+            pathsToLoad.push(fullPath);
+          }
+        }
+      }
+
+      if (pathsToLoad.length === 0) return;
+
+      pathsToLoad.forEach((p) => inFlightRef.current.add(p));
+      setLoadingImages((prev) => new Set([...prev, ...pathsToLoad]));
+
+      for (const imgPath of pathsToLoad) {
+        try {
+          const response = await sendWSMessage('workspace_read', { path: imgPath });
+          const enc = response.data?.encoding;
+          const raw = response.data?.content;
+          if (raw == null || !enc) continue;
+
+          let blobUrl = null;
+          const mime = mimeFromImagePath(imgPath);
+
+          if (enc === 'hex') {
+            const blob = workspaceHexToBlob(raw, mime);
+            if (blob) blobUrl = URL.createObjectURL(blob);
+          } else if (enc === 'base64') {
+            blobUrl = `data:${mime};base64,${raw}`;
+          } else {
+            const te = new TextEncoder().encode(String(raw));
+            blobUrl = URL.createObjectURL(new Blob([te], { type: mime }));
+          }
+
+          if (blobUrl) {
+            imageUrlsRef.current = { ...imageUrlsRef.current, [imgPath]: blobUrl };
+            cleanupRef.current.push(blobUrl);
+            // Force a re-render so <img> closures pick up the new value
+            setLoadingImages((prev) => {
+              const next = new Set(prev);
+              next.delete(imgPath);
+              return next;
+            });
+          }
+        } catch (err) {
+          console.error('Failed to load image:', imgPath, err);
+        } finally {
+          inFlightRef.current.delete(imgPath);
+          setLoadingImages((prev) => {
+            const next = new Set(prev);
+            next.delete(imgPath);
+            return next;
+          });
+        }
+      }
+    };
+
+    loadImages();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content, file?.path, sendWSMessage, fileDir]);
+
+  // On unmount, revoke all blob URLs
+  useEffect(() => {
+    return () => {
+      cleanupRef.current.forEach((url) => URL.revokeObjectURL(url));
+      cleanupRef.current = [];
+    };
+  }, []);
+
+  if (!content) {
+    return (
+      <div className="markdown-preview empty">
+        <p>No content to preview</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="markdown-preview">
+      <ReactMarkdown 
+        remarkPlugins={[remarkGfm]}
+        components={{
+          img: ({ src, alt, ...props }) => {
+            let normalized = (src || '').trim().replace(/^\.\//, '');
+            if (
+              normalized &&
+              !normalized.startsWith('http') &&
+              !normalized.startsWith('data:')
+            ) {
+              const fullPath = fileDir
+                ? `${fileDir}/${normalized}`.replace(/\/+/g, '/')
+                : normalized;
+
+              // Read from ref so this closure always gets the latest URL
+              const imgSrc = imageUrlsRef.current[fullPath] || src;
+              
+              return (
+                <img 
+                  src={imgSrc} 
+                  alt={alt} 
+                  {...props} 
+                  style={{ 
+                    maxWidth: '100%', 
+                    height: 'auto',
+                    opacity: loadingImages.has(fullPath) ? 0.5 : 1,
+                    transition: 'opacity 0.3s'
+                  }} 
+                />
+              );
+            }
+            return <img src={src} alt={alt} {...props} />;
+          }
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+};
+
 /**
  * PPTX: decode entities and escape for safe HTML
  */
@@ -1331,7 +1523,7 @@ const getLanguage = (filename) => {
 /**
  * File Editor Component with Monaco Editor
  */
-const FileEditor = ({ file, content, onSave, onClose, isSaving, readOnly = false }) => {
+const FileEditor = ({ file, content, onSave, onClose, isSaving, readOnly = false, sendWSMessage }) => {
   // 确保 content 是字符串
   const safeContent = content ?? '';
   const [editedContent, setEditedContent] = useState(safeContent);
@@ -1376,6 +1568,7 @@ const FileEditor = ({ file, content, onSave, onClose, isSaving, readOnly = false
   const isPptx = ['pptx', 'ppt'].includes(fileExt);
   const isDocx = ['docx', 'doc'].includes(fileExt);
   const isHtml = ['html', 'htm'].includes(fileExt);
+  const isMarkdown = ['md'].includes(fileExt);
   const language = getLanguage(file.name);
 
   return (
@@ -1384,13 +1577,13 @@ const FileEditor = ({ file, content, onSave, onClose, isSaving, readOnly = false
         <WindowDots />
         <span className="editor-filename">{file.name}</span>
         <div className="editor-actions">
-          {isHtml && !isImage && (
+          {(isHtml || isMarkdown) && !isImage && (
             <button
               className={`editor-btn ${isPreviewMode ? 'active' : ''}`}
               onClick={() => setIsPreviewMode((p) => !p)}
-              title={isPreviewMode ? '切换到编辑' : '预览 HTML'}
+              title={isPreviewMode ? '切换到编辑' : '预览'}
             >
-              {isPreviewMode ? <Edit3 size={14} /> : <FileText size={14} />}
+              {isPreviewMode ? <Edit3 size={14} /> : <Eye size={14} />}
             </button>
           )}
           {!readOnly && !isBinary && !isImage && (
@@ -1421,8 +1614,12 @@ const FileEditor = ({ file, content, onSave, onClose, isSaving, readOnly = false
           <DocxViewer file={file} content={safeContent} />
         ) : isBinary ? (
           <BinaryViewer file={file} content={safeContent} />
-        ) : isHtml && isPreviewMode ? (
-          <HtmlViewer content={editedContent} />
+        ) : (isHtml || isMarkdown) && isPreviewMode ? (
+          isMarkdown ? (
+            <MarkdownViewer content={editedContent} file={file} sendWSMessage={sendWSMessage} />
+          ) : (
+            <HtmlViewer content={editedContent} />
+          )
         ) : (
           <Editor
             height="100%"
@@ -1886,6 +2083,7 @@ const WorkspacePanel = ({ sendWSMessage }) => {
               setFileContent('');
             }}
             isSaving={isSaving}
+            sendWSMessage={sendWSMessage}
           />
         ) : (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>

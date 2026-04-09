@@ -16,14 +16,23 @@ function isToolResultMessage(msg) {
 
 function buildToolRow(tc, toolResults) {
   const callId = tc?.id;
-  const result = toolResults.get(callId);
+  const result =
+    toolResults.get(callId) ??
+    (callId != null ? toolResults.get(String(callId)) : undefined);
+  let status = result ? 'completed' : 'pending';
+  if (
+    result?.metadata?.cancelled_by_user ||
+    (result?.content && String(result.content).includes('已取消（用户暂停）'))
+  ) {
+    status = 'cancelled';
+  }
   return {
     type: 'tool',
     toolCallId: callId,
     toolName: tc?.function?.name,
     args: tc?.function?.arguments || '{}',
     result: result?.content,
-    status: result ? 'completed' : 'pending',
+    status,
     error: undefined,
   };
 }
@@ -34,7 +43,10 @@ function buildDisplayList(messages) {
   messages.forEach((msg) => {
     if (isToolResultMessage(msg)) {
       const callId = msg.metadata?.tool_call_id || msg.tool_call_id;
-      toolResults.set(callId, msg);
+      if (callId != null) {
+        toolResults.set(callId, msg);
+        toolResults.set(String(callId), msg);
+      }
     }
   });
 
@@ -42,19 +54,24 @@ function buildDisplayList(messages) {
   let pendingSegments = [];
   let thoughtKeySeed = 0;
   let lastAssistantUsage = null;
+  let lastElapsedMs = null;
+  let pendingThoughtStoppedByUser = false;
 
-  const flushThought = (usage = lastAssistantUsage) => {
+  const flushThought = (usage = lastAssistantUsage, elapsed = lastElapsedMs) => {
     if (pendingSegments.length === 0) return;
     thoughtKeySeed += 1;
     out.push({
       type: 'thought_fold',
       key: `thought-${thoughtKeySeed}`,
       segments: pendingSegments,
-      status: 'completed',
+      status: pendingThoughtStoppedByUser ? 'paused' : 'completed',
       usage: usage,
+      elapsedMs: elapsed,
     });
     pendingSegments = [];
     lastAssistantUsage = null; // Reset after flushing
+    lastElapsedMs = null;
+    pendingThoughtStoppedByUser = false;
   };
 
   for (let i = 0; i < messages.length; i += 1) {
@@ -74,9 +91,12 @@ function buildDisplayList(messages) {
       continue;
     }
 
-    // Track usage from assistant messages
+    // Track usage and elapsed time from assistant messages
     if (msg.role === 'assistant' && msg.metadata?.usage) {
       lastAssistantUsage = msg.metadata.usage;
+    }
+    if (msg.role === 'assistant' && msg.metadata?.elapsed_ms != null) {
+      lastElapsedMs = msg.metadata.elapsed_ms;
     }
 
     const toolCalls = msg.metadata?.tool_calls || msg.tool_calls;
@@ -84,6 +104,9 @@ function buildDisplayList(messages) {
       msg.role === 'assistant' && toolCalls && toolCalls.length > 0;
 
     if (isAssistantWithTools) {
+      if (msg.metadata?.stopped_by_user) {
+        pendingThoughtStoppedByUser = true;
+      }
       const text = (msg.content || '').trim();
       if (text) {
         pendingSegments.push({ type: 'reasoning', text });
@@ -124,6 +147,7 @@ function buildDisplayList(messages) {
 function MessageList({
   messages,
   streamingContent,
+  isProcessing = false,
   toolCalls,
   toolCallAssistantContents,
   messageTtsMap,
@@ -134,6 +158,7 @@ function MessageList({
   renderPlainContent,
   lastElapsedMs,
   lastTokenUsage,
+  liveTokenUsage,
 }) {
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
@@ -181,11 +206,8 @@ function MessageList({
 
   /** 进行中：整段合并为一个折叠，按 iteration 顺序交错「推理 + 工具」 */
   const liveThought = useMemo(() => {
-    // 如果已完成消息里已有折叠（fetchInstanceMessages 已返回完整数据），不再显示 liveThought
-    if (hasActiveToolCalls) {
-      const hasCompletedFolds = displayList.some((item) => item.type === 'thought_fold');
-      if (hasCompletedFolds) return null;
-    } else {
+    // 如果没有活跃的 tool calls，返回 null
+    if (!hasActiveToolCalls) {
       return null;
     }
 
@@ -215,17 +237,46 @@ function MessageList({
         });
     });
 
-    const anyActive = toolCalls.some(
+    // Follow-up / 多轮场景：toolCallAssistantContents 只有第一轮的推理内容，
+    // 后续轮次的推理内容通过 streamingContent 实时追加，
+    // 需从 toolCalls 反推当前是第几轮，再拼上 streamingContent
+    const lastIter = iterKeys.length > 0 ? iterKeys[iterKeys.length - 1] : 1;
+    const liveIter = lastIter + 1;
+    const prevContent = toolCallAssistantContents?.[liveIter] || '';
+    const hasStreamingForNewIter =
+      !!streamingContent &&
+      selectedInstance?.id === currentChatInstanceId &&
+      !prevContent;
+    if (hasStreamingForNewIter && String(streamingContent).trim()) {
+      segments.push({ type: 'reasoning', text: String(streamingContent).trim() });
+    }
+
+    // 工具刚返回、下一轮 LLM 尚未开始时，所有 tc 可能已是 completed，但 agent 仍在跑
+    const anyToolInFlight = toolCalls.some(
       (tc) =>
         tc.status &&
         tc.status !== 'completed' &&
         tc.status !== 'error'
     );
+    const agentRunInProgress =
+      isProcessing && selectedInstance?.id === currentChatInstanceId;
+    const streamingThisTurn =
+      !!streamingContent && selectedInstance?.id === currentChatInstanceId;
+    const isThoughtRunning =
+      anyToolInFlight || agentRunInProgress || streamingThisTurn;
     return {
       segments,
-      status: anyActive ? 'active' : 'completed',
+      status: isThoughtRunning ? 'active' : 'completed',
     };
-  }, [toolCalls, toolCallAssistantContents, hasActiveToolCalls, displayList]);
+  }, [
+    toolCalls,
+    toolCallAssistantContents,
+    hasActiveToolCalls,
+    isProcessing,
+    selectedInstance,
+    currentChatInstanceId,
+    streamingContent,
+  ]);
 
   return (
     <div className="messages-list">
@@ -247,7 +298,7 @@ function MessageList({
               key={item.key}
               status={item.status}
               segments={item.segments}
-              totalMs={lastElapsedMs}
+              totalMs={item.elapsedMs}
               tokenUsage={item.usage}
             />
           );
@@ -272,6 +323,7 @@ function MessageList({
           status={liveThought.status}
           segments={liveThought.segments}
           totalMs={totalMs}
+          tokenUsage={liveTokenUsage}
           isExpanded
         />
       )}

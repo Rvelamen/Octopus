@@ -496,6 +496,7 @@ class Database:
                     model_id TEXT NOT NULL,
                     prompt_tokens INTEGER DEFAULT 0,
                     completion_tokens INTEGER DEFAULT 0,
+                    cached_tokens INTEGER DEFAULT 0,
                     total_tokens INTEGER DEFAULT 0,
                     request_type TEXT DEFAULT 'chat',
                     created_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
@@ -688,14 +689,22 @@ class Database:
                 conn.execute("ALTER TABLE messages ADD COLUMN is_compressed BOOLEAN DEFAULT 0")
                 logger.info("Migration: Added is_compressed column to messages table")
             
+            # Migration for token_usage table - cached_tokens field
+            cursor = conn.execute("PRAGMA table_info(token_usage)")
+            token_usage_columns = [row[1] for row in cursor.fetchall()]
+
+            if token_usage_columns and 'cached_tokens' not in token_usage_columns:
+                conn.execute("ALTER TABLE token_usage ADD COLUMN cached_tokens INTEGER DEFAULT 0")
+                logger.info("Migration: Added cached_tokens column to token_usage table")
+
             # Migration for agent_defaults table - token threshold field
             cursor = conn.execute("PRAGMA table_info(agent_defaults)")
             agent_columns = [row[1] for row in cursor.fetchall()]
-            
+
             if agent_columns and 'context_compression_token_threshold' not in agent_columns:
                 conn.execute("ALTER TABLE agent_defaults ADD COLUMN context_compression_token_threshold INTEGER DEFAULT 200000")
                 logger.info("Migration: Added context_compression_token_threshold column to agent_defaults table")
-            
+
             if agent_columns and 'llm_max_retries' not in agent_columns:
                 conn.execute("ALTER TABLE agent_defaults ADD COLUMN llm_max_retries INTEGER DEFAULT 3")
                 logger.info("Migration: Added llm_max_retries column to agent_defaults table")

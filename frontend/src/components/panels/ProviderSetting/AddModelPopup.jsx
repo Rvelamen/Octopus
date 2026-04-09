@@ -6,7 +6,8 @@ const MODEL_TYPES = [
   { value: 'completion', label: 'Completion', description: '补全模型，用于文本补全任务' },
   { value: 'embedding', label: 'Embedding', description: '嵌入模型，用于生成向量表示' },
   { value: 'image', label: 'Image', description: '图像模型，用于图像生成' },
-  { value: 'audio', label: 'Audio', description: '音频模型，用于语音合成或识别' },
+  { value: 'audio', label: 'Audio (TTS/STT)', description: '音频模型，用于语音合成（TTS）或语音识别（STT）' },
+  { value: 'tts', label: 'TTS', description: '语音合成模型，用于文本转语音' },
   { value: 'vision', label: 'Vision', description: '视觉模型，用于图像理解和分析' },
 ];
 

@@ -51,6 +51,8 @@ class SubagentManager:
         self.exec_config = exec_config or ExecToolConfig()
         self._running_tasks: dict[str, asyncio.Task[None]] = {}
         self._stop_flags: dict[str, bool] = {}
+        # Track which instance each subagent belongs to: { task_id: session_instance_id }
+        self._task_instance_map: dict[str, int | None] = {}
         self._subagent_compression_enabled: bool = False
         self._subagent_compression_turns: int = 10
         self._subagent_compression_token_threshold: int = 200000
@@ -306,6 +308,8 @@ When you have completed the task, provide a clear summary of your findings or ac
         
         # Initialize stop flag for this task
         self._stop_flags[task_id] = False
+        # Track which instance this subagent belongs to
+        self._task_instance_map[task_id] = session_instance_id
         
         origin = {
             "channel": origin_channel,
@@ -338,6 +342,7 @@ When you have completed the task, provide a clear summary of your findings or ac
         def cleanup_callback(_):
             self._running_tasks.pop(task_id, None)
             self._stop_flags.pop(task_id, None)
+            self._task_instance_map.pop(task_id, None)
         
         bg_task.add_done_callback(cleanup_callback)
         
@@ -656,4 +661,40 @@ Summarize this naturally for the user. Keep it brief (1-2 sentences). Do not men
                 logger.info(f"[Subagent:{task_id}] Task cancelled")
         
         logger.info(f"[SubagentManager] Stopped {count} subagents")
+        return count
+    
+    def stop_by_instance(self, instance_id: int) -> int:
+        """Stop all running subagents for a specific session instance.
+        
+        Args:
+            instance_id: The session instance ID to stop subagents for.
+        
+        Returns:
+            Number of subagents that were stopped.
+        """
+        instance_id_int = int(instance_id) if instance_id else None
+        if not instance_id_int:
+            logger.warning("[SubagentManager] stop_by_instance called with invalid instance_id")
+            return 0
+        
+        # Find all subagents belonging to this instance
+        tasks_to_stop = [
+            task_id for task_id, inst_id in self._task_instance_map.items()
+            if inst_id == instance_id_int and task_id in self._running_tasks
+        ]
+        
+        count = len(tasks_to_stop)
+        
+        # Set stop flags and cancel tasks
+        for task_id in tasks_to_stop:
+            self._stop_flags[task_id] = True
+            logger.info(f"[Subagent:{task_id}] Stop flag set for instance {instance_id_int}")
+            
+            if task_id in self._running_tasks:
+                task = self._running_tasks[task_id]
+                if not task.done():
+                    task.cancel()
+                    logger.info(f"[Subagent:{task_id}] Task cancelled for instance {instance_id_int}")
+        
+        logger.info(f"[SubagentManager] Stopped {count} subagents for instance {instance_id_int}")
         return count

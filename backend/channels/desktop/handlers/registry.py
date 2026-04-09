@@ -229,6 +229,18 @@ class HandlerRegistry:
             MessageType.IMAGE_GET_GENERATION_PROVIDERS: ImageGetGenerationProvidersHandler(bus),
         })
 
+        # Register TTS handlers
+        self.handlers.update({
+            MessageType.TTS_GET_INSTANCE_CONFIG: TTSHandler(bus, self.db),
+            MessageType.TTS_UPDATE_INSTANCE_CONFIG: TTSHandler(bus, self.db),
+            MessageType.TTS_GET_DEFAULTS: TTSHandler(bus, self.db),
+            MessageType.TTS_SET_DEFAULTS: TTSHandler(bus, self.db),
+            MessageType.TTS_SYNTHESIZE: TTSHandler(bus, self.db),
+            MessageType.TTS_GET_VOICES: TTSHandler(bus, self.db),
+            MessageType.TTS_GET_PROVIDERS: TTSHandler(bus, self.db),
+            MessageType.TTS_GET_STYLES: TTSHandler(bus, self.db),
+        })
+
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Route message to appropriate handler."""
         handler = self.handlers.get(message.type)
