@@ -27,6 +27,7 @@ from backend.tools.cron import CronTool
 from backend.tools.action import ActionTool
 from backend.tools.image import ImageUnderstandTool, ImageGenerateTool
 from backend.tools.web_fetch import WebFetchTool
+from backend.tools.browser.registration import register_browser_tools, cleanup_browser_tools
 from backend.agent.subagent import SubagentManager
 from backend.agent.aggregator import SubagentAggregator
 from backend.data.session_manager import SessionManager
@@ -240,6 +241,12 @@ class AgentLoop:
 
         # Web fetch tool
         self.tools.register(WebFetchTool())
+
+        # Browser tools
+        try:
+            register_browser_tools(self.tools, workspace=self.workspace)
+        except Exception as e:
+            logger.warning(f"Failed to register browser tools: {e}")
 
     async def load_extensions(self) -> dict[str, bool]:
         """Load all discovered extensions (plugins, skills, workers)."""
@@ -778,7 +785,8 @@ class AgentLoop:
                             "completion_tokens": total_completion_tokens,
                             "total_tokens": total_prompt_tokens + total_completion_tokens,
                             "cached_tokens": total_cached_tokens
-                        }
+                        },
+                        "messages": session.messages[-20:]
                     }, channel=msg.channel)
             else:
                 # No tool calls, we're done
@@ -814,7 +822,8 @@ class AgentLoop:
                         "completion_tokens": total_completion_tokens,
                         "total_tokens": total_prompt_tokens + total_completion_tokens,
                         "cached_tokens": total_cached_tokens
-                    }
+                    },
+                    "messages": session.messages[-20:]
                 }, channel=msg.channel)
                 break
 
@@ -875,7 +884,8 @@ class AgentLoop:
                     "total_tokens": total_prompt_tokens + total_completion_tokens,
                     "cached_tokens": total_cached_tokens
                 },
-                "session_instance_id": session_instance_id
+                "session_instance_id": session_instance_id,
+                "messages": session.messages[-20:]
             },
             channel=msg.channel
         ))
@@ -1122,7 +1132,8 @@ class AgentLoop:
                         "completion_tokens": total_completion_tokens,
                         "total_tokens": total_prompt_tokens + total_completion_tokens,
                         "cached_tokens": total_cached_tokens
-                    }
+                    },
+                    "messages": session.messages[-20:]
                 }, channel=origin_channel)
             else:
                 final_content = response.content
@@ -1549,7 +1560,8 @@ class AgentLoop:
                                 "completion_tokens": total_completion_tokens,
                                 "total_tokens": total_prompt_tokens + total_completion_tokens,
                                 "cached_tokens": total_cached_tokens
-                            }
+                            },
+                            "messages": session.messages[-20:]
                         }, channel=msg.channel)
                 else:
                     # No tool calls, we're done
@@ -1579,7 +1591,8 @@ class AgentLoop:
                             "completion_tokens": total_completion_tokens,
                             "total_tokens": total_prompt_tokens + total_completion_tokens,
                             "cached_tokens": total_cached_tokens
-                        }
+                        },
+                        "messages": session.messages[-20:]
                     }, channel=msg.channel)
                     break
                     
@@ -1643,7 +1656,8 @@ class AgentLoop:
                     "session": msg.chat_id,
                     "elapsed_ms": elapsed_ms,
                     "token_usage": token_usage_data,
-                    "session_instance_id": session_instance_id
+                    "session_instance_id": session_instance_id,
+                    "messages": session.messages[-20:]
                 },
                 channel=msg.channel
             ))

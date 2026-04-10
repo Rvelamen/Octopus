@@ -184,8 +184,11 @@ class MCPManager:
                 )
                 self.config.servers[db_server.name] = server_config
 
+            # Cleanup: disable tools belonging to disabled servers (修复历史脏数据)
+            await loop.run_in_executor(None, self.db.disable_tools_for_disabled_servers)
+
             # Load tools from database (后台线程)
-            db_tools = await loop.run_in_executor(None, self.db.list_tools)
+            db_tools = await loop.run_in_executor(None, lambda: self.db.list_tools(server_enabled_only=True))
             # 并行注册工具，避免顺序阻塞
             tool_tasks = []
             for db_tool in db_tools:

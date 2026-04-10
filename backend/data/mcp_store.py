@@ -253,22 +253,33 @@ class MCPRepository:
             
             return self._row_to_tool(row) if row else None
     
-    def list_tools(self, server_id: Optional[int] = None,
-                   enabled_only: bool = False) -> list[MCPToolRecord]:
+    def list_tools(
+        self,
+        server_id: Optional[int] = None,
+        enabled_only: bool = False,
+        server_enabled_only: bool = False,
+    ) -> list[MCPToolRecord]:
         """List all tools, optionally filtered by server and enabled status."""
         with self.db._get_connection() as conn:
-            query = "SELECT * FROM mcp_tools WHERE 1=1"
+            if server_enabled_only:
+                query = """SELECT t.* FROM mcp_tools t
+                           JOIN mcp_servers s ON t.server_id = s.id
+                           WHERE 1=1"""
+                query += " AND s.enabled = 1"
+            else:
+                query = "SELECT * FROM mcp_tools WHERE 1=1"
+
             params = []
-            
+
             if server_id is not None:
                 query += " AND server_id = ?"
                 params.append(server_id)
-            
+
             if enabled_only:
                 query += " AND enabled = 1"
-            
+
             query += " ORDER BY name"
-            
+
             rows = conn.execute(query, params).fetchall()
             return [self._row_to_tool(row) for row in rows]
     
@@ -353,7 +364,21 @@ class MCPRepository:
                 logger.info(f"Deleted MCP tool: {name}")
                 return True
             return False
-    
+
+    def disable_tools_for_disabled_servers(self) -> int:
+        """Disable all tools that belong to disabled servers."""
+        with self.db._get_connection() as conn:
+            cursor = conn.execute(
+                """UPDATE mcp_tools
+                   SET enabled = 0
+                   WHERE enabled = 1
+                     AND server_id IN (SELECT id FROM mcp_servers WHERE enabled = 0)"""
+            )
+            count = cursor.rowcount
+            if count > 0:
+                logger.info(f"Disabled {count} tools belonging to disabled servers")
+            return count
+
     # ========== Tool Statistics ==========
     
     def record_tool_use(self, tool_id: int) -> bool:
@@ -521,7 +546,7 @@ class MCPRepository:
                 ).fetchone()
                 
                 if row:
-                    # Update existing
+                    # Update existing (preserve enabled state)
                     conn.execute(
                         """UPDATE mcp_tools
                            SET description = ?, parameters_json = ?, updated_at = (datetime('now', 'localtime'))
@@ -530,12 +555,13 @@ class MCPRepository:
                     )
                     tool_id = row["id"]
                 else:
-                    # Insert new (enabled by default)
+                    # Insert new (enabled only if server is enabled)
+                    is_enabled = 1 if server.enabled else 0
                     cursor = conn.execute(
                         """INSERT INTO mcp_tools
                            (server_id, name, description, enabled, parameters_json, dependencies_json, config_json, created_at, updated_at)
-                           VALUES (?, ?, ?, 1, ?, '[]', '{}', datetime('now', 'localtime'), datetime('now', 'localtime'))""",
-                        (server.id, name, description, json.dumps(parameters, ensure_ascii=False))
+                           VALUES (?, ?, ?, ?, ?, '[]', '{}', datetime('now', 'localtime'), datetime('now', 'localtime'))""",
+                        (server.id, name, description, is_enabled, json.dumps(parameters, ensure_ascii=False))
                     )
                     tool_id = cursor.lastrowid
 

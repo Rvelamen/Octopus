@@ -1354,11 +1354,13 @@
    MARKDOWN CONTENT STYLES
    ======================================== */
 
-.message-bubble-content p {
+.message-bubble-content p,
+.message-bubble-content .md-paragraph {
   margin: 0 0 6px 0;
 }
 
-.message-bubble-content p:last-child {
+.message-bubble-content p:last-child,
+.message-bubble-content .md-paragraph:last-child {
   margin-bottom: 0;
 }
 
