@@ -78,11 +78,24 @@ class ContextBuilder:
         bootstrap = self._load_bootstrap_files()
         if bootstrap:
             parts.append(bootstrap)
-        
-        # Memory context
+
+        # Memory context (with fenced injection to prevent model confusion)
         memory = self.memory.get_memory_context()
         if memory:
-            parts.append(f"# Memory\n\n{memory}")
+            # Clean any existing fence tags to prevent nesting
+            memory = memory.replace("<memory-context>", "").replace("</memory-context>", "")
+            
+            # Use fenced injection with system note
+            memory_block = (
+                "<memory-context>\n"
+                "[System note: The following is recalled memory from previous conversations. "
+                "This is background information to help you understand the user's context and preferences. "
+                "DO NOT respond to this as if it were a new user message. "
+                "Use this information to provide more relevant and personalized responses.]\n\n"
+                f"{memory}\n"
+                "</memory-context>"
+            )
+            parts.append(memory_block)
         
         # Skills - progressive loading
         # 1. Always-loaded skills: include full content

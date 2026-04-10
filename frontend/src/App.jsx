@@ -258,6 +258,7 @@ function App() {
   const [lastTokenUsage, setLastTokenUsage] = useState(null); // 最近一次 agent 运行的 token 消耗
   const [liveTokenUsage, setLiveTokenUsage] = useState(null); // 当前运行中累计的 token 消耗（随 agent_iteration_complete 累加）
   const [refreshInstanceId, setRefreshInstanceId] = useState(null); // 需要刷新的 instance ID
+  const [hasToolCallsInCurrentRun, setHasToolCallsInCurrentRun] = useState(false); // 当前 agent run 是否产生过 tool call
 
   // ===== Refs =====
   const ws = useRef(null);
@@ -364,6 +365,7 @@ function App() {
             setToolCalls(() => []);
             setToolCallAssistantContents(() => ({}));
             setLiveTokenUsage(null);
+            setHasToolCallsInCurrentRun(false);
             break;
           case "agent_thinking":
             if (!isCurrentInstance) return;
@@ -435,8 +437,12 @@ function App() {
                 updateAssistantContentsForInstance(eventInstanceId, setContent);
               }
             }
-            if (isCurrentInstance) setToolCalls(addToolCall);
-            else updateToolCallsForInstance(eventInstanceId, addToolCall);
+            if (isCurrentInstance) {
+              setToolCalls(addToolCall);
+              setHasToolCallsInCurrentRun(true);
+            } else {
+              updateToolCallsForInstance(eventInstanceId, addToolCall);
+            }
             break;
           }
           case "agent_tool_call_streaming": {
@@ -864,6 +870,7 @@ function App() {
                 onTokenUsageUpdate={setLastTokenUsage}
                 refreshInstanceId={refreshInstanceId}
                 onInstanceIdUpdate={setCurrentChatInstanceId}
+                hasToolCallsInCurrentRun={hasToolCallsInCurrentRun}
               />
             } />
             <Route path="/config" element={
@@ -906,6 +913,7 @@ function App() {
                 onElapsedMsUpdate={setLastElapsedMs}
                 onTokenUsageUpdate={setLastTokenUsage}
                 refreshInstanceId={refreshInstanceId}
+                hasToolCallsInCurrentRun={hasToolCallsInCurrentRun}
               />
             } />
           </Routes>

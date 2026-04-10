@@ -34,6 +34,7 @@ function ChatPanel({
   onTokenUsageUpdate,
   refreshInstanceId,
   onInstanceIdUpdate,
+  hasToolCallsInCurrentRun,
 }) {
   const [selectedInstance, setSelectedInstance] = useState(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
@@ -533,6 +534,7 @@ function ChatPanel({
               lastElapsedMs={lastElapsedMs}
               lastTokenUsage={lastTokenUsage}
               liveTokenUsage={liveTokenUsage}
+              hasToolCallsInCurrentRun={hasToolCallsInCurrentRun}
             />
           )}
         </div>

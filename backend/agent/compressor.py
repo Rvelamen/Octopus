@@ -9,6 +9,29 @@ from backend.data.session_manager import SessionManager
 from backend.data.token_store import TokenUsageRepository
 
 
+# Structured summary template for organized context compression
+STRUCTURED_SUMMARY_TEMPLATE = """[CONTEXT COMPACTION] Earlier turns in this conversation were compacted to save context space. The summary below describes work that was already completed, and the current session state may still reflect that work (for example, files may already be changed). Use the summary and the current state to continue from where things left off, and avoid repeating work:
+
+**Goal**: What is the user trying to accomplish?
+**Progress**: What has been completed so far?
+**Decisions**: What key decisions were made?
+**Files**: What files were created or modified?
+**Next Steps**: What should be done next?
+
+If any section is not applicable, you can omit it."""
+
+# System prompt for structured summarization
+STRUCTURED_SUMMARY_SYSTEM_PROMPT = """你是一个对话摘要助手。请按照以下结构总结对话内容：
+
+**目标**：用户想要完成什么？
+**进展**：目前完成了什么？
+**决策**：做出了哪些关键决策？
+**文件**：创建或修改了哪些文件？
+**下一步**：接下来应该做什么？
+
+如果某些部分不适用，可以省略。请确保摘要简洁明了，便于后续对话快速参考。"""
+
+
 async def compress_messages(
     messages: list[dict[str, Any]],
     provider: Any,
@@ -19,11 +42,11 @@ async def compress_messages(
     request_type: str = "compression",
 ) -> str:
     """
-    Compress a list of messages using LLM (standalone function).
-    
+    Compress a list of messages using LLM with structured summary (standalone function).
+
     This is a utility function that can be used by both AgentLoop and SubagentManager
     without needing a full ContextCompressor instance.
-    
+
     Args:
         messages: Messages to compress.
         provider: LLM provider instance.
@@ -32,29 +55,26 @@ async def compress_messages(
         record_token_usage: Optional callback to record token usage.
         session_instance_id: Optional session instance ID for token recording.
         request_type: Type of request for token recording.
-    
+
     Returns:
-        Compressed context summary.
+        Compressed context summary with structured format.
     """
     if len(messages) < 4:
         return ""
-    
+
     conversation_text = "\n".join([
         f"{m.get('role', 'user')}: {m.get('content', '')[:500]}"
         for m in messages
     ])
-    
-    compression_prompt = f"""请总结以下对话的要点，保留关键信息、用户请求和重要的上下文：
 
-{conversation_text}
+    # Use structured summary template
+    compression_prompt = f"""{STRUCTURED_SUMMARY_TEMPLATE}
 
-请用简洁的中文总结（不超过 300 字），包括：
-1. 用户的主要请求
-2. 已经完成的工作
-3. 重要的上下文信息"""
+Conversation to summarize:
+{conversation_text}"""
 
     compression_messages = [
-        {"role": "system", "content": "你是一个对话摘要助手。请简洁地总结对话要点。"},
+        {"role": "system", "content": STRUCTURED_SUMMARY_SYSTEM_PROMPT},
         {"role": "user", "content": compression_prompt}
     ]
     
@@ -152,37 +172,34 @@ class ContextCompressor:
         messages: list[dict[str, Any]],
     ) -> str:
         """
-        Compress conversation history using LLM (first-time compression).
-        
+        Compress conversation history using LLM with structured summary (first-time compression).
+
         Args:
             session: The current session.
             messages: Messages to compress.
-        
+
         Returns:
-            Compressed context summary.
+            Compressed context summary with structured format.
         """
         to_compress = messages or session.messages[:-6] if len(session.messages) > 6 else session.messages
-        
+
         if len(to_compress) < 4:
             return ""
-        
+
         conversation_text = "\n".join([
             f"{m.get('role', 'user')}: {m.get('content', '')[:500]}"
             for m in to_compress
         ])
-        
-        compression_prompt = f"""请总结以下对话的要点，保留关键信息、用户请求和重要的上下文：
 
-{conversation_text}
+        # Use structured summary prompt
+        compression_prompt = f"""{STRUCTURED_SUMMARY_TEMPLATE}
 
-请用简洁的中文总结（不超过 300 字），包括：
-1. 用户的主要请求
-2. 已经完成的工作
-3. 重要的上下文信息"""
+Conversation to summarize:
+{conversation_text}"""
 
         provider, model, provider_type, max_tokens, temperature = self._get_provider_and_model()
         compression_messages = [
-            {"role": "system", "content": "你是一个对话摘要助手。请简洁地总结对话要点。"},
+            {"role": "system", "content": STRUCTURED_SUMMARY_SYSTEM_PROMPT},
             {"role": "user", "content": compression_prompt}
         ]
 
@@ -214,41 +231,37 @@ class ContextCompressor:
 
     async def compress_incremental(self, last_summary: str, new_messages: list) -> str:
         """
-        Incremental compression: last_summary + new_messages -> new_summary.
-        
+        Incremental compression: last_summary + new_messages -> new structured summary.
+
         Args:
             last_summary: The previous compressed summary.
             new_messages: New messages to compress.
-        
+
         Returns:
-            New complete summary.
+            New complete structured summary.
         """
         if len(new_messages) < 4:
             return last_summary
-        
+
         new_conversation = "\n".join([
             f"{m.get('role', 'user')}: {m.get('content', '')[:500]}"
             for m in new_messages
         ])
-        
-        prompt = f"""基于之前的对话摘要，整合新的对话内容，生成完整的对话摘要。
 
-## 之前的摘要
+        # Use structured summary template for incremental compression
+        prompt = f"""{STRUCTURED_SUMMARY_TEMPLATE}
+
+## Previous Summary
 {last_summary}
 
-## 新的对话内容
+## New Conversation to Integrate
 {new_conversation}
 
-请生成一个完整的对话摘要（不超过 300 字），整合之前和新的内容，包括：
-1. 用户的主要请求和目标
-2. 已经完成的工作和进展
-3. 重要的上下文信息和决策
-
-注意：要确保摘要连贯完整，不要分段显示。"""
+Please generate a complete structured summary that integrates both the previous summary and the new conversation."""
 
         provider, model, provider_type, max_tokens, temperature = self._get_provider_and_model()
         compression_messages = [
-            {"role": "system", "content": "你是一个对话摘要助手。请整合之前的摘要和新的对话内容，生成连贯完整的摘要。"},
+            {"role": "system", "content": STRUCTURED_SUMMARY_SYSTEM_PROMPT},
             {"role": "user", "content": prompt}
         ]
 

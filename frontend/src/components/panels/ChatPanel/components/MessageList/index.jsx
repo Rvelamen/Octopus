@@ -159,6 +159,7 @@ function MessageList({
   lastElapsedMs,
   lastTokenUsage,
   liveTokenUsage,
+  hasToolCallsInCurrentRun = false,
 }) {
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
@@ -208,8 +209,11 @@ function MessageList({
   const liveThought = useMemo(() => {
     const isAgentRunning = isProcessing && selectedInstance?.id === currentChatInstanceId;
     const hasStreaming = !!streamingContent && selectedInstance?.id === currentChatInstanceId;
-    // 只要当前 agent 在跑、有流式内容、或有活跃 tool call，都渲染 liveThought
-    if (!hasActiveToolCalls && !isAgentRunning && !hasStreaming) {
+    // 只有已出现过 tool call（或当前有活跃 tool call）时，才渲染 liveThought。
+    // 普通对话（始终没有 tool call）保持为普通 message 输出。
+    const shouldRenderLiveThought =
+      hasActiveToolCalls || (isAgentRunning && hasToolCallsInCurrentRun) || (hasStreaming && hasToolCallsInCurrentRun);
+    if (!shouldRenderLiveThought) {
       return null;
     }
 
@@ -278,6 +282,7 @@ function MessageList({
     selectedInstance,
     currentChatInstanceId,
     streamingContent,
+    hasToolCallsInCurrentRun,
   ]);
 
   const lastThoughtFoldIdx = useMemo(() => {
