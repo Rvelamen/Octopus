@@ -51,7 +51,7 @@ class ChannelsConfig(BaseModel):
 class AgentDefaults(BaseModel):
     """Default agent configuration."""
     model_config = {"populate_by_name": True}
-    
+
     workspace: str = ""
     model: str = "anthropic/claude-opus-4-5"
     provider: str = ""
@@ -60,6 +60,9 @@ class AgentDefaults(BaseModel):
     max_iterations: int = Field(default=20, alias="maxIterations")
     context_compression_enabled: bool = Field(default=False, alias="contextCompressionEnabled")
     context_compression_turns: int = Field(default=10, alias="contextCompressionTurns")
+    context_compression_token_threshold: int = Field(default=100000, alias="contextCompressionTokenThreshold")
+    compression_trigger_ratio: float = Field(default=0.60, alias="compressionTriggerRatio")
+    compression_tail_token_budget: int = Field(default=15000, alias="compressionTailTokenBudget")
     llm_max_retries: int = Field(default=3, alias="llmMaxRetries")
     llm_retry_base_delay: float = Field(default=1.0, alias="llmRetryBaseDelay")
     llm_retry_max_delay: float = Field(default=30.0, alias="llmRetryMaxDelay")

@@ -75,9 +75,25 @@ class AgentConfigService:
         """Get context compression token threshold from database."""
         try:
             defaults = self._get_agent_defaults_repo().get_or_create_defaults()
-            return getattr(defaults, 'context_compression_token_threshold', 8000) or 8000
+            return getattr(defaults, 'context_compression_token_threshold', 100000) or 100000
         except Exception:
-            return 8000  # Default fallback
+            return 100000  # Default fallback: 100K tokens
+
+    def get_compression_trigger_ratio(self) -> float:
+        """Get compression trigger ratio (上下文窗口使用率阈值) from database."""
+        try:
+            defaults = self._get_agent_defaults_repo().get_or_create_defaults()
+            return getattr(defaults, 'compression_trigger_ratio', 0.60) or 0.60
+        except Exception:
+            return 0.60  # Default fallback: 60%
+
+    def get_compression_tail_token_budget(self) -> int:
+        """Get compression tail token budget from database."""
+        try:
+            defaults = self._get_agent_defaults_repo().get_or_create_defaults()
+            return getattr(defaults, 'compression_tail_token_budget', 15000) or 15000
+        except Exception:
+            return 15000  # Default fallback: ~15K tokens
     
     def get_workspace_path(self) -> str:
         """Get workspace path from database."""
@@ -86,6 +102,33 @@ class AgentConfigService:
             return defaults.workspace_path or ""
         except Exception:
             return ""
+
+    def get_model_context_window(self) -> int:
+        """Get current model's context window size.
+        
+        Returns:
+            Context window size in tokens (default 32768 if not found)
+        """
+        try:
+            defaults = self._get_agent_defaults_repo().get_or_create_defaults()
+            
+            # Get model record
+            if defaults.default_model_id:
+                model_record = self._get_model_repo().get_model_by_id(defaults.default_model_id)
+                if model_record:
+                    return model_record.context_window
+            
+            # Fallback: try provider's default model
+            if defaults.default_provider_id:
+                provider_record = self._get_provider_repo().get_provider_by_id(defaults.default_provider_id)
+                if provider_record:
+                    default_model = self._get_model_repo().get_default_model(provider_record.id)
+                    if default_model:
+                        return default_model.context_window
+            
+            return 32768  # Default fallback
+        except Exception:
+            return 32768  # Default fallback
     
     # ========== Provider and Model ==========
     

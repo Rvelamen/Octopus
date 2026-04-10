@@ -406,7 +406,12 @@ function ChatPanel({
             const hasBlock = React.Children.toArray(children).some((child) => {
               if (typeof child === 'object' && child?.type) {
                 const tag = typeof child.type === 'string' ? child.type : child.type?.name;
-                return ['pre', 'div', 'table', 'ul', 'ol', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag);
+                if (['pre', 'div', 'table', 'ul', 'ol', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) {
+                  return true;
+                }
+                if (tag === 'code' && child.props?.inline === false) {
+                  return true;
+                }
               }
               return false;
             });

@@ -834,7 +834,9 @@ class AgentLoop:
         if final_content is None:
             final_content = "I've completed processing but have no response to give."
 
-        await self.compressor.maybe_compress(session, prompt_tokens=last_prompt_tokens)
+        # Get model context window for smart compression trigger
+        model_context_window = self.compressor.sessions.db.get_model_context_window() if hasattr(self.compressor.sessions.db, 'get_model_context_window') else 0
+        await self.compressor.maybe_compress(session, prompt_tokens=last_prompt_tokens, model_context_window=model_context_window)
 
         logger.info(f"[AgentLoop] Sending final response with {len(final_content)} chars")
         await self._send_stream_chunks(final_content, current_session, msg.channel, session_instance_id)
@@ -1610,7 +1612,9 @@ class AgentLoop:
         if final_content is None:
             final_content = "I've completed processing but have no response to give."
 
-        await self.compressor.maybe_compress(session, prompt_tokens=last_prompt_tokens)
+        # Get model context window for smart compression trigger
+        model_context_window = self.compressor.sessions.db.get_model_context_window() if hasattr(self.compressor.sessions.db, 'get_model_context_window') else 0
+        await self.compressor.maybe_compress(session, prompt_tokens=last_prompt_tokens, model_context_window=model_context_window)
 
         elapsed_ms = int((time.time() - start_time) * 1000)
 
