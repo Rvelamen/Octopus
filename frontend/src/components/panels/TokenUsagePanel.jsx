@@ -74,7 +74,9 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
             </div>
             <div className="card-content">
               <div className="card-label">Total Tokens</div>
-              <div className="card-value">{formatNumber(globalUsage.total_tokens)}</div>
+              <div className="card-value">
+                {formatNumber(globalUsage.total_tokens + (globalUsage.total_cached_tokens || 0))}
+              </div>
               <div className="card-sub">{globalUsage.request_count} requests</div>
             </div>
           </div>
@@ -85,8 +87,10 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
             </div>
             <div className="card-content">
               <div className="card-label">Prompt Tokens</div>
-              <div className="card-value">{formatNumber(globalUsage.total_prompt_tokens)}</div>
-              <div className="card-sub">Input / Upload</div>
+              <div className="card-value">
+                {formatNumber(globalUsage.total_prompt_tokens + (globalUsage.total_cached_tokens || 0))}
+              </div>
+              <div className="card-sub">Input / Upload (incl. cache)</div>
             </div>
           </div>
 
@@ -156,7 +160,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
                       title={`Completion: ${day.completion_tokens}`}
                     />
                   </div>
-                  <div className="daily-value">{formatNumber(day.total_tokens)}</div>
+                  <div className="daily-value">{formatNumber((day.total_tokens || 0) + (day.cached_tokens || 0))}</div>
                 </div>
               ))
             )}
@@ -185,10 +189,10 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
                     {byProvider.map((item, index) => (
                       <tr key={index}>
                         <td>{item.provider_name}</td>
-                        <td>{formatNumber(item.prompt_tokens)}</td>
+                        <td>{formatNumber((item.prompt_tokens || 0) + (item.cached_tokens || 0))}</td>
                         <td>{formatNumber(item.cached_tokens || 0)}</td>
                         <td>{formatNumber(item.completion_tokens)}</td>
-                        <td>{formatNumber(item.total_tokens)}</td>
+                        <td>{formatNumber((item.total_tokens || 0) + (item.cached_tokens || 0))}</td>
                         <td>{item.request_count}</td>
                       </tr>
                     ))}
@@ -222,10 +226,10 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
                           <span className="model-provider">{item.provider_name}/</span>
                           {item.model_id}
                         </td>
-                        <td>{formatNumber(item.prompt_tokens)}</td>
+                        <td>{formatNumber((item.prompt_tokens || 0) + (item.cached_tokens || 0))}</td>
                         <td>{formatNumber(item.cached_tokens || 0)}</td>
                         <td>{formatNumber(item.completion_tokens)}</td>
-                        <td>{formatNumber(item.total_tokens)}</td>
+                        <td>{formatNumber((item.total_tokens || 0) + (item.cached_tokens || 0))}</td>
                         <td>{item.request_count}</td>
                       </tr>
                     ))}

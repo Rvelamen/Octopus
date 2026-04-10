@@ -34,9 +34,10 @@ const formatTokenNumber = (num) => {
 const TokenUsage = memo(({ tokenUsage }) => {
   if (!tokenUsage) return null;
 
-  const promptTokens = tokenUsage.prompt_tokens ?? 0;
+  const rawPromptTokens = tokenUsage.prompt_tokens ?? 0;
   const completionTokens = tokenUsage.completion_tokens ?? 0;
   const cachedTokens = tokenUsage.cached_tokens ?? 0;
+  const promptTokens = rawPromptTokens + cachedTokens;
 
   if (promptTokens <= 0 && completionTokens <= 0 && cachedTokens <= 0) return null;
 

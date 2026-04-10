@@ -175,11 +175,12 @@ function MessageItem({
               <span className="message-bubble-footer-tokens">
                 Tokens:{' '}
                 {formatTokenCount(
-                  displayUsage.total_tokens != null
+                  (displayUsage.total_tokens != null
                     ? displayUsage.total_tokens
                     : (displayUsage.prompt_tokens || 0) + (displayUsage.completion_tokens || 0)
+                  ) + (displayUsage.cached_tokens || 0)
                 )}{' '}
-                ↑{formatTokenCount(displayUsage.prompt_tokens ?? 0)} ↓
+                ↑{formatTokenCount((displayUsage.prompt_tokens ?? 0) + (displayUsage.cached_tokens || 0))} ↓
                 {formatTokenCount(displayUsage.completion_tokens ?? 0)}
               </span>
             )}
