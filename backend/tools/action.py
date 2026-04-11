@@ -34,28 +34,55 @@ class ActionTool(Tool):
     def description(self) -> str:
         return """Unified action tool for plugin operations.
 
+## [Critical] IMPORTANT: Must Read Skill Documentation Before Calling
+
+**[Critical] You MUST read the SKILL.md documentation for the corresponding plugin before calling this tool**, otherwise the call will fail.
+
+### How to Get Skill Documentation
+
+1. Use `read_file` tool to read `workspace/extensions/<name>/SKILL.md`
+2. Example: Read `workspace/extensions/weather/SKILL.md` to understand available actions and parameters for the weather plugin
+
+### Why Reading Skill Documentation is [Critical]
+
+- Understand the specific actions supported by the plugin
+- Master the parameters required for each action and their types
+- Understand the correct format and value range of parameters
+- Avoid call failures due to errors
+
 ## Parameters
 
 - **type** (required): Must be "plugin"
-- **action** (required): The action to execute (e.g., "search", "query")
+- **action** (required): The action to execute (e.g., "search", "query") - **[Critical] MUST obtain from SKILL.md first**
 - **name** (required): The plugin name (e.g., "search_aggregator", "weather")
 
-## Usage
+## [Critical] Correct Calling Process
 
-1. First read the SKILL.md file in workspace/extensions/<name>/SKILL.md to understand available actions
-2. Call with type="plugin", action=<action_name>, name=<plugin_name>, plus any action-specific parameters
+1. **[Critical] Step 1**: Use `read_file` to read `workspace/extensions/<name>/SKILL.md`
+2. **[Critical] Step 2**: Understand the available actions and parameters described in the documentation
+3. **[Critical] Step 3**: Call this tool according to the documentation
 
 ## Example
 
+**[Critical] Read documentation first:**
+```
+read_file: workspace/extensions/search_aggregator/SKILL.md
+```
+
+**Then call according to documentation:**
 ```json
 {
   "type": "plugin",
   "action": "search",
   "name": "search_aggregator",
-  "query": "大模型安全",
+  "query": "AI safety",
   "engines": "bing,baidu"
 }
 ```
+
+## [Critical] Warning
+
+**[Critical] Calling this tool directly without reading SKILL.md will result in call failure or parameter errors!**
 
 """
 
