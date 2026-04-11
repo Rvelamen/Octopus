@@ -627,6 +627,17 @@ function App() {
             else updateToolCallsForInstance(eventInstanceId, subagentResultUpdater);
             break;
           }
+          case "subagent_token": {
+            const parentToolCallId = data.parent_tool_call_id;
+            const tokenUpdater = (prev) => prev.map((tc) =>
+              tc.id === parentToolCallId
+                ? { ...tc, subagentStreamingContent: (tc.subagentStreamingContent || '') + (data.content || '') }
+                : tc
+            );
+            if (isCurrentInstance) setToolCalls(tokenUpdater);
+            else updateToolCallsForInstance(eventInstanceId, tokenUpdater);
+            break;
+          }
           case "agent_iteration_complete": {
             const targetId = data?.session_instance_id ?? currentChatInstanceIdRef.current;
             if (targetId) {

@@ -140,9 +140,9 @@ class SubagentManager:
         self._subagent_compression_enabled = config_service.get_context_compression_enabled()
         self._subagent_compression_turns = config_service.get_context_compression_turns()
         self._subagent_compression_token_threshold = config_service.get_context_compression_token_threshold()
-        
-        return provider, model, provider_type
-    
+
+        return provider, model, provider_type, max_tokens, temperature
+
     async def _emit(
         self,
         event_type: str,
@@ -514,78 +514,99 @@ When you have completed the task, provide a clear summary of your findings or ac
                 
                 iter_record: dict[str, Any] = {"iteration": iteration, "tools": []}
                 
+                # 使用流式 API，边接收边 emit token 给前端
+                full_content = ""
+                tool_calls_buffer = {}
                 try:
-                    response = await provider.chat_streaming_complete(
+                    async for chunk in provider.chat_stream(
                         messages=messages,
                         tools=tools.get_definitions(),
                         model=model,
                         max_tokens=max_tokens,
                         temperature=temperature,
-                    )
+                    ):
+                        if chunk.content:
+                            full_content += chunk.content
+                            await self._emit("subagent_token", {
+                                "content": chunk.content,
+                                "iteration": iteration,
+                                "session_instance_id": session_instance_id,
+                                "subagent_id": task_id,
+                            }, task_id)
 
-                    if response.usage:
-                        total_prompt_tokens += response.usage.get("prompt_tokens", 0)
-                        total_completion_tokens += response.usage.get("completion_tokens", 0)
-                        self._record_token_usage(
-                            session_instance_id=session_instance_id,
-                            provider_name=provider_type,
-                            model_id=model,
-                            usage=response.usage,
-                            request_type="subagent"
-                        )
+                        if chunk.tool_calls:
+                            for tc in chunk.tool_calls:
+                                if tc.id not in tool_calls_buffer:
+                                    tool_calls_buffer[tc.id] = {
+                                        "id": tc.id,
+                                        "name": tc.name,
+                                        "arguments": tc.arguments,
+                                    }
+                                    await self._emit("subagent_tool_call", {
+                                        "tool": tc.name,
+                                        "args": tc.arguments,
+                                        "content": full_content if full_content else None,
+                                        "iteration": iteration,
+                                        "tool_call_id": tc.id,
+                                        "session_instance_id": session_instance_id,
+                                        "subagent_id": task_id,
+                                    }, task_id)
+                                else:
+                                    tool_calls_buffer[tc.id]["arguments"].update(tc.arguments)
+
+                        if chunk.is_final and chunk.usage:
+                            total_prompt_tokens += chunk.usage.get("prompt_tokens", 0)
+                            total_completion_tokens += chunk.usage.get("completion_tokens", 0)
+                            self._record_token_usage(
+                                session_instance_id=session_instance_id,
+                                provider_name=provider_type,
+                                model_id=model,
+                                usage=chunk.usage,
+                                request_type="subagent"
+                            )
 
                 except Exception as e:
                     logger.error(f"[Subagent:sync:{task_id}] LLM call failed: {e}")
                     raise
 
-                if response.content:
-                    iter_record["reasoning"] = response.content
+                if full_content:
+                    iter_record["reasoning"] = full_content
 
-                if response.has_tool_calls:
+                if tool_calls_buffer:
                     tool_call_dicts = [
                         {
-                            "id": tc.id,
+                            "id": tc_data["id"],
                             "type": "function",
                             "function": {
-                                "name": tc.name,
-                                "arguments": json.dumps(tc.arguments, ensure_ascii=False),
+                                "name": tc_data["name"],
+                                "arguments": json.dumps(tc_data["arguments"], ensure_ascii=False),
                             },
                         }
-                        for tc in response.tool_calls
+                        for tc_data in tool_calls_buffer.values()
                     ]
                     messages.append({
                         "role": "assistant",
-                        "content": response.content or "",
+                        "content": full_content or "",
                         "tool_calls": tool_call_dicts,
                     })
 
-                    for tool_call in response.tool_calls:
+                    for tc_id, tc_data in tool_calls_buffer.items():
                         try:
-                            await self._emit("subagent_tool_call", {
-                                "tool": tool_call.name,
-                                "args": tool_call.arguments,
-                                "content": response.content if response.content else None,
-                                "iteration": iteration,
-                                "tool_call_id": tool_call.id,
-                                "session_instance_id": session_instance_id,
-                                "subagent_id": task_id,
-                            }, task_id)
-                            
-                            result = await tools.execute(tool_call.name, tool_call.arguments)
-                            
+                            result = await tools.execute(tc_data["name"], tc_data["arguments"])
+
                             iter_record["tools"].append({
-                                "toolCallId": tool_call.id,
-                                "toolName": tool_call.name,
-                                "args": tool_call.arguments,
+                                "toolCallId": tc_id,
+                                "toolName": tc_data["name"],
+                                "args": tc_data["arguments"],
                                 "result": result[:2000] if len(result) > 2000 else result,
                                 "status": "completed",
                             })
-                            
+
                             result_preview = result[:500] + "..." if len(result) > 500 else result
                             await self._emit("subagent_tool_result", {
-                                "tool": tool_call.name,
+                                "tool": tc_data["name"],
                                 "result": result_preview,
-                                "tool_call_id": tool_call.id,
+                                "tool_call_id": tc_id,
                                 "iteration": iteration,
                                 "session_instance_id": session_instance_id,
                                 "subagent_id": task_id,
@@ -593,16 +614,16 @@ When you have completed the task, provide a clear summary of your findings or ac
                         except Exception as e:
                             result = f"Error: {str(e)}"
                             iter_record["tools"].append({
-                                "toolCallId": tool_call.id,
-                                "toolName": tool_call.name,
-                                "args": tool_call.arguments,
+                                "toolCallId": tc_id,
+                                "toolName": tc_data["name"],
+                                "args": tc_data["arguments"],
                                 "result": f"Error: {str(e)}",
                                 "status": "error",
                             })
                             await self._emit("subagent_tool_result", {
-                                "tool": tool_call.name,
+                                "tool": tc_data["name"],
                                 "result": f"Error: {str(e)}",
-                                "tool_call_id": tool_call.id,
+                                "tool_call_id": tc_id,
                                 "iteration": iteration,
                                 "session_instance_id": session_instance_id,
                                 "subagent_id": task_id,
@@ -611,12 +632,12 @@ When you have completed the task, provide a clear summary of your findings or ac
 
                         messages.append({
                             "role": "tool",
-                            "tool_call_id": tool_call.id,
-                            "name": tool_call.name,
+                            "tool_call_id": tc_id,
+                            "name": tc_data["name"],
                             "content": result,
                         })
                 else:
-                    final_result = response.content
+                    final_result = full_content
                     iterations.append(iter_record)
                     break
 
@@ -652,13 +673,13 @@ When you have completed the task, provide a clear summary of your findings or ac
             error_msg = f"Error: {str(e)}"
             logger.error(f"[Subagent:sync:{task_id}] Failed: {e}")
             logger.error(f"[Subagent:sync:{task_id}] Traceback: {traceback.format_exc()}")
-            
+
             if not future.done():
                 future.set_result({
                     "summary": error_msg,
                     "token_usage": {},
                     "duration": duration,
-                    "iterations": iterations,
+                    "iterations": locals().get("iterations", []),
                 })
     
     async def _run_subagent(

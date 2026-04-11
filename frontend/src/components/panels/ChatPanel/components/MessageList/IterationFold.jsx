@@ -412,10 +412,11 @@ function IterationFold({
                             onClick={(e) => e.stopPropagation()}
                           >
                             {(tool.toolName === 'spawn' || tool.toolName === 'subagent') && (
-                              <SpawnDetailButton 
-                                result={tool.result} 
+                              <SpawnDetailButton
+                                result={tool.result}
                                 subagentCalls={tool.subagentCalls}
                                 subagentLabel={tool.subagentCalls?.[0]?.subagentLabel}
+                                streamingContent={tool.subagentStreamingContent}
                               />
                             )}
                             <span className="thought-step-row-chev" aria-hidden>
@@ -488,7 +489,7 @@ function IterationFold({
 }
 
 // Spawn 工具详情按钮组件
-function SpawnDetailButton({ result, subagentCalls, subagentLabel: propLabel }) {
+function SpawnDetailButton({ result, subagentCalls, subagentLabel: propLabel, streamingContent }) {
   const [open, setOpen] = useState(false);
 
   // 优先使用 result 中的 iterations 数据，如果没有则使用 subagentCalls
@@ -531,7 +532,7 @@ function SpawnDetailButton({ result, subagentCalls, subagentLabel: propLabel }) 
   const hasSubagentCalls = effectiveSubagentCalls.length > 0;
 
   // 提前计算所有派生值（在条件返回之前）
-  const shouldShow = subagentResult || hasSubagentCalls;
+  const shouldShow = subagentResult || hasSubagentCalls || !!streamingContent;
   const label = subagentResult?.label || propLabel || 'Subagent';
   const status = subagentResult?.status || 'completed';
   const summary = subagentResult?.summary || '';
@@ -586,7 +587,8 @@ function SpawnDetailButton({ result, subagentCalls, subagentLabel: propLabel }) 
 
   // 将 iterations 或 subagentCalls 转换为 segments
   // 生成唯一的 key 前缀，避免与外部 IterationFold 冲突
-  const keyPrefix = useMemo(() => `modal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
+  const keyPrefixRef = useRef(`modal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const keyPrefix = keyPrefixRef.current;
 
   const detailSegments = useMemo(() => {
     // 优先使用 iterations（最终完整数据）
@@ -611,9 +613,11 @@ function SpawnDetailButton({ result, subagentCalls, subagentLabel: propLabel }) 
       return segments;
     }
 
-    // 如果没有 iterations，使用 subagentCalls（历史数据）
+    // 如果没有 iterations，使用 subagentCalls（历史数据）+ 实时 streamingContent
+    // streamingContent 是当前正在生成的 reasoning，理应放在已完成的 tool calls 之后
+    const segments = [];
     if (hasSubagentCalls) {
-      return effectiveSubagentCalls.map((sc) => ({
+      segments.push(...effectiveSubagentCalls.map((sc) => ({
         type: 'tool',
         toolCallId: `${keyPrefix}-${sc.id}`,
         toolName: sc.tool,
@@ -621,11 +625,13 @@ function SpawnDetailButton({ result, subagentCalls, subagentLabel: propLabel }) 
         result: sc.result,
         status: sc.status || 'running',
         error: sc.error,
-      }));
+      })));
     }
-
-    return [];
-  }, [iterations, effectiveSubagentCalls, hasSubagentCalls, keyPrefix]);
+    if (streamingContent) {
+      segments.push({ type: 'reasoning', text: streamingContent, keyPrefix });
+    }
+    return segments;
+  }, [iterations, effectiveSubagentCalls, hasSubagentCalls, keyPrefix, streamingContent]);
 
   // 如果没有 result 数据也没有 subagentCalls，不显示按钮
   if (!shouldShow) return null;

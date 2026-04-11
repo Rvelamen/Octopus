@@ -267,7 +267,8 @@ function MessageList({
             result: tc.result,
             status: tc.status,
             error: tc.error,
-            subagentCalls: tc.subagentCalls,  // 传递 subagentCalls
+            subagentCalls: tc.subagentCalls,
+            subagentStreamingContent: tc.subagentStreamingContent,
           });
         });
     });
