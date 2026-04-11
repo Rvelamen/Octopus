@@ -511,12 +511,17 @@ function SpawnDetailButton({ result, subagentCalls, subagentLabel: propLabel }) 
   useEffect(() => {
     if (subagentCalls && subagentCalls.length > 0) {
       setSubagentCallsHistory((prev) => {
-        // 合并新数据和历史数据，避免重复
+        // 1) 先更新已有 call 的状态/结果等字段
+        const merged = prev.map((oldCall) => {
+          const newCall = subagentCalls.find((sc) => sc.id === oldCall.id);
+          return newCall ? { ...oldCall, ...newCall } : oldCall;
+        });
+        // 2) 再追加全新的 call
         const newCalls = subagentCalls.filter(
           (newCall) => !prev.some((oldCall) => oldCall.id === newCall.id)
         );
-        if (newCalls.length === 0) return prev;
-        return [...prev, ...newCalls];
+        const next = [...merged, ...newCalls];
+        return next;
       });
     }
   }, [subagentCalls]);
@@ -533,9 +538,13 @@ function SpawnDetailButton({ result, subagentCalls, subagentLabel: propLabel }) 
   const finalDuration = subagentResult?.duration || 0;
   const iterations = subagentResult?.iterations || [];
 
-  // 判断是否正在运行中：有 subagentResult 且 status 不是 completed 才算运行中
-  // 只有 subagentCalls 历史数据（没有 subagentResult）时，认为是已完成的
-  const isRunning = subagentResult && status !== 'completed';
+  // 判断是否正在运行中
+  // 1) 有 subagentResult 时，按 result 中的 status 判断
+  // 2) 没有 subagentResult 时，查看 subagentCalls 中是否还有未完成的步骤
+  const isRunning = subagentResult
+    ? status !== 'completed'
+    : hasSubagentCalls;
+
 
   // 实时计算 token_usage
   const [liveTokenUsage, setLiveTokenUsage] = useState({ prompt_tokens: 0, completion_tokens: 0 });

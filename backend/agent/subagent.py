@@ -617,6 +617,7 @@ When you have completed the task, provide a clear summary of your findings or ac
                         })
                 else:
                     final_result = response.content
+                    iterations.append(iter_record)
                     break
 
                 iterations.append(iter_record)

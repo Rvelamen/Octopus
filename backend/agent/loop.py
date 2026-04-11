@@ -739,9 +739,9 @@ class AgentLoop:
                             except json.JSONDecodeError:
                                 pass  # 不是 JSON 格式，忽略
 
-                        # Emit tool call result (truncated for log)
+                        # Emit tool call result (truncated for log; preserve full result for spawn so subagent_sync JSON is parseable)
                         try:
-                            result_preview = result[:500] + "..." if len(result) > 500 else result
+                            result_preview = result if tool_call.name == "spawn" else (result[:500] + "..." if len(result) > 500 else result)
                             await self._emit("agent_tool_result", {
                                 "tool": tool_call.name,
                                 "result": result_preview,
@@ -1532,12 +1532,12 @@ class AgentLoop:
                                 except json.JSONDecodeError:
                                     pass  # 不是 JSON 格式，忽略
                             
-                            # Send completion event
+                            # Send completion event (preserve full result for spawn so subagent_sync JSON is parseable)
                             await self._emit("agent_tool_call_complete", {
                                 "tool_call_id": tc_id,
                                 "tool": tc_data["name"],
                                 "args": tc_data["arguments"],
-                                "result": result[:500] + "..." if len(result) > 500 else result,
+                                "result": result if tc_data["name"] == "spawn" else (result[:500] + "..." if len(result) > 500 else result),
                                 "status": "completed",
                                 "session_instance_id": session_instance_id
                             }, channel=msg.channel)
