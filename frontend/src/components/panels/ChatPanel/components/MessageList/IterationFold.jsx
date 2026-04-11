@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, memo } from 'react';
+import React, { useState, useEffect, useRef, memo, useMemo } from 'react';
 import {
   ChevronDown,
   ChevronUp,
@@ -15,20 +15,34 @@ import {
   CheckCircle2,
   Zap,
   CirclePause,
+  Eye,
+  Bot,
+  Clock,
+  Coins,
 } from 'lucide-react';
+import { Modal } from 'antd';
+import ReactMarkdown from 'react-markdown';
 
+// 格式化为分秒显示（如 9m 48s）
 const formatTotalTime = (ms) => {
-  if (ms < 1000) return `${ms}ms`;
-  const seconds = ms / 1000;
-  if (seconds < 60) return `${seconds.toFixed(1)}s`;
-  return `${(seconds / 60).toFixed(1)}min`;
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
+  }
+  return `${seconds}s`;
 };
 
+// 格式化为 xxxK 显示（如 124.3k）
 const formatTokenNumber = (num) => {
-  if (!num && num !== 0) return null;
+  if (!num && num !== 0) return '0';
   const n = Number(num);
-  if (Number.isNaN(n)) return null;
-  return n.toLocaleString('zh-CN');
+  if (Number.isNaN(n)) return '0';
+  if (n >= 1000) {
+    return `${(n / 1000).toFixed(1)}k`;
+  }
+  return n.toString();
 };
 
 const TokenUsage = memo(({ tokenUsage }) => {
@@ -37,20 +51,15 @@ const TokenUsage = memo(({ tokenUsage }) => {
   const rawPromptTokens = tokenUsage.prompt_tokens ?? 0;
   const completionTokens = tokenUsage.completion_tokens ?? 0;
   const cachedTokens = tokenUsage.cached_tokens ?? 0;
-  const promptTokens = rawPromptTokens + cachedTokens;
+  const totalTokens = rawPromptTokens + completionTokens + cachedTokens;
 
-  if (promptTokens <= 0 && completionTokens <= 0 && cachedTokens <= 0) return null;
-
-  const cacheLabel = cachedTokens > 0 ? ` | 缓存命中: ${Number(cachedTokens).toLocaleString('zh-CN')}` : '';
+  if (totalTokens <= 0) return null;
 
   return (
-    <span
-      className="thought-token-usage"
-      title={`输入: ${Number(promptTokens).toLocaleString('zh-CN')}${cacheLabel} | 输出: ${Number(completionTokens).toLocaleString('zh-CN')}`}
-    >
-      <Zap size={12} className="thought-token-icon" />
+    <span className="thought-token-usage">
+      <Coins size={12} className="thought-token-icon" />
       <span className="thought-token-text">
-        ↑{formatTokenNumber(promptTokens)}{cachedTokens > 0 && <span className="thought-token-cache">({formatTokenNumber(cachedTokens)} 缓存)</span>} ↓{formatTokenNumber(completionTokens)}
+        {formatTokenNumber(totalTokens)} tokens
       </span>
     </span>
   );
@@ -88,7 +97,8 @@ const ExecutionTime = memo(({ isExecuting, totalMs }) => {
     if (elapsed <= 0) return null;
     return (
       <span className="thought-total-time">
-        {formatTotalTime(elapsed)}
+        <Clock size={12} className="thought-time-icon" />
+        <span className="thought-time-text">{formatTotalTime(elapsed)}</span>
       </span>
     );
   }
@@ -97,7 +107,8 @@ const ExecutionTime = memo(({ isExecuting, totalMs }) => {
 
   return (
     <span className="thought-total-time">
-      {formatTotalTime(totalMs)}
+      <Clock size={12} className="thought-time-icon" />
+      <span className="thought-time-text">{formatTotalTime(totalMs)}</span>
     </span>
   );
 });
@@ -241,8 +252,9 @@ function toolStepNeedsToggle(details, primary) {
   return p.length > PRIMARY_COLLAPSE_LEN;
 }
 
-function stepKey(seg, idx) {
-  return seg.type === 'reasoning' ? `r-${idx}` : `t-${seg.toolCallId ?? idx}`;
+function stepKey(seg, idx, prefix = '') {
+  const prefixStr = prefix ? `${prefix}-` : '';
+  return seg.type === 'reasoning' ? `${prefixStr}r-${idx}` : `${prefixStr}t-${seg.toolCallId ?? idx}`;
 }
 
 /**
@@ -256,6 +268,7 @@ function IterationFold({
   tokenUsage = null,
   isExpanded: isExpandedProp,
   onToggleExpand,
+  keyPrefix = '',
 }) {
   const [isExpandedInternal, setIsExpandedInternal] = useState(true);
   const [openSteps, setOpenSteps] = useState(() => new Set());
@@ -311,8 +324,10 @@ function IterationFold({
         >
           {headerTitle}
         </span>
-        <ExecutionTime isExecuting={isRunning} totalMs={totalMs} />
-        <TokenUsage tokenUsage={tokenUsage} />
+        <span className="thought-fold-meta">
+          <ExecutionTime isExecuting={isRunning} totalMs={totalMs} />
+          <TokenUsage tokenUsage={tokenUsage} />
+        </span>
         {!isExpanded && preview && (
           <span className="thought-fold-preview">{preview}</span>
         )}
@@ -324,7 +339,7 @@ function IterationFold({
           <div className="thought-steps">
             {segments.map((seg, idx) => {
               if (seg.type === 'reasoning') {
-                const key = stepKey(seg, idx);
+                const key = stepKey(seg, idx, keyPrefix);
                 const expandable = reasoningNeedsToggle(seg.text);
                 const open = openSteps.has(key);
 
@@ -368,13 +383,13 @@ function IterationFold({
                 tool.result,
                 tool.error
               );
-              const key = stepKey(seg, idx);
-              const expandable = toolStepNeedsToggle(details, primary);
+              const key = stepKey(seg, idx, keyPrefix);
+              const expandable = toolStepNeedsToggle(details, primary) || (tool.subagentCalls && tool.subagentCalls.length > 0);
               const open = openSteps.has(key);
 
               return (
                 <div
-                  key={tool.toolCallId || `t-${idx}`}
+                  key={key}
                   className={`thought-step ${expandable ? (open ? 'is-open' : 'is-collapsed') : 'is-static'}`}
                 >
                   <div className="thought-step-glyph">
@@ -392,9 +407,21 @@ function IterationFold({
                           onKeyDown={(e) => onStepRowKeyDown(e, key)}
                         >
                           <p className="thought-step-line">{primary}</p>
-                          <span className="thought-step-row-chev" aria-hidden>
-                            {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                          </span>
+                          <div 
+                            className="thought-step-row-actions"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {(tool.toolName === 'spawn' || tool.toolName === 'subagent') && (
+                              <SpawnDetailButton 
+                                result={tool.result} 
+                                subagentCalls={tool.subagentCalls}
+                                subagentLabel={tool.subagentCalls?.[0]?.subagentLabel}
+                              />
+                            )}
+                            <span className="thought-step-row-chev" aria-hidden>
+                              {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                            </span>
+                          </div>
                         </div>
                         {open &&
                           details.map((b, i) => (
@@ -405,6 +432,7 @@ function IterationFold({
                               {b.text}
                             </pre>
                           ))}
+
                       </>
                     ) : (
                       <>
@@ -456,6 +484,221 @@ function IterationFold({
         </div>
       )}
     </div>
+  );
+}
+
+// Spawn 工具详情按钮组件
+function SpawnDetailButton({ result, subagentCalls, subagentLabel: propLabel }) {
+  const [open, setOpen] = useState(false);
+
+  // 优先使用 result 中的 iterations 数据，如果没有则使用 subagentCalls
+  const subagentResult = useMemo(() => {
+    if (result) {
+      try {
+        const parsed = JSON.parse(result);
+        if (parsed.type === 'subagent_sync' && Array.isArray(parsed.iterations) && parsed.iterations.length > 0) {
+          return parsed;
+        }
+      } catch {
+        // not valid JSON
+      }
+    }
+    return null;
+  }, [result]);
+
+  // 累积保存 subagentCalls 历史，避免第二次打开 Modal 时数据丢失
+  const [subagentCallsHistory, setSubagentCallsHistory] = useState([]);
+  useEffect(() => {
+    if (subagentCalls && subagentCalls.length > 0) {
+      setSubagentCallsHistory((prev) => {
+        // 合并新数据和历史数据，避免重复
+        const newCalls = subagentCalls.filter(
+          (newCall) => !prev.some((oldCall) => oldCall.id === newCall.id)
+        );
+        if (newCalls.length === 0) return prev;
+        return [...prev, ...newCalls];
+      });
+    }
+  }, [subagentCalls]);
+
+  // 使用累积的历史数据或实时数据
+  const effectiveSubagentCalls = subagentResult?.iterations ? [] : subagentCallsHistory;
+  const hasSubagentCalls = effectiveSubagentCalls.length > 0;
+
+  // 提前计算所有派生值（在条件返回之前）
+  const shouldShow = subagentResult || hasSubagentCalls;
+  const label = subagentResult?.label || propLabel || 'Subagent';
+  const status = subagentResult?.status || 'completed';
+  const summary = subagentResult?.summary || '';
+  const finalDuration = subagentResult?.duration || 0;
+  const iterations = subagentResult?.iterations || [];
+
+  // 判断是否正在运行中：有 subagentResult 且 status 不是 completed 才算运行中
+  // 只有 subagentCalls 历史数据（没有 subagentResult）时，认为是已完成的
+  const isRunning = subagentResult && status !== 'completed';
+
+  // 实时计算 token_usage
+  const [liveTokenUsage, setLiveTokenUsage] = useState({ prompt_tokens: 0, completion_tokens: 0 });
+  useEffect(() => {
+    if (subagentResult?.token_usage) {
+      setLiveTokenUsage(subagentResult.token_usage);
+    } else if (hasSubagentCalls) {
+      let promptTokens = 0;
+      let completionTokens = 0;
+      effectiveSubagentCalls.forEach((sc) => {
+        if (sc.tokenUsage) {
+          promptTokens += sc.tokenUsage.prompt_tokens || 0;
+          completionTokens += sc.tokenUsage.completion_tokens || 0;
+        }
+      });
+      setLiveTokenUsage({ prompt_tokens: promptTokens, completion_tokens: completionTokens });
+    }
+  }, [subagentResult, effectiveSubagentCalls, hasSubagentCalls]);
+
+  // 实时计算 duration
+  const [liveDuration, setLiveDuration] = useState(0);
+  const startTimeRef = useRef(null);
+  useEffect(() => {
+    if (finalDuration > 0) {
+      setLiveDuration(finalDuration);
+      return;
+    }
+    if (isRunning && open) {
+      startTimeRef.current = Date.now();
+      const interval = setInterval(() => {
+        setLiveDuration((Date.now() - startTimeRef.current) / 1000);
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, [isRunning, open, finalDuration]);
+
+  const token_usage = subagentResult?.token_usage || liveTokenUsage;
+  const duration = finalDuration > 0 ? finalDuration : liveDuration;
+
+  // 将 iterations 或 subagentCalls 转换为 segments
+  // 生成唯一的 key 前缀，避免与外部 IterationFold 冲突
+  const keyPrefix = useMemo(() => `modal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
+
+  const detailSegments = useMemo(() => {
+    // 优先使用 iterations（最终完整数据）
+    if (iterations.length > 0) {
+      const segments = [];
+      for (const iter of iterations) {
+        if (iter.reasoning) {
+          segments.push({ type: 'reasoning', text: iter.reasoning, keyPrefix });
+        }
+        for (const tool of iter.tools || []) {
+          segments.push({
+            type: 'tool',
+            toolCallId: `${keyPrefix}-${tool.toolCallId}`,
+            toolName: tool.toolName,
+            args: typeof tool.args === 'string' ? tool.args : JSON.stringify(tool.args || {}),
+            result: tool.result,
+            status: tool.status || 'completed',
+            error: tool.status === 'error' ? tool.result : undefined,
+          });
+        }
+      }
+      return segments;
+    }
+
+    // 如果没有 iterations，使用 subagentCalls（历史数据）
+    if (hasSubagentCalls) {
+      return effectiveSubagentCalls.map((sc) => ({
+        type: 'tool',
+        toolCallId: `${keyPrefix}-${sc.id}`,
+        toolName: sc.tool,
+        args: typeof sc.args === 'string' ? sc.args : JSON.stringify(sc.args || {}),
+        result: sc.result,
+        status: sc.status || 'running',
+        error: sc.error,
+      }));
+    }
+
+    return [];
+  }, [iterations, effectiveSubagentCalls, hasSubagentCalls, keyPrefix]);
+
+  // 如果没有 result 数据也没有 subagentCalls，不显示按钮
+  if (!shouldShow) return null;
+
+  return (
+    <>
+      <button
+        type="button"
+        className="spawn-detail-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+        title="查看 ReAct 执行流程"
+      >
+        <Eye size={12} />
+        <span>详情</span>
+      </button>
+
+      <Modal
+        open={open}
+        onCancel={() => setOpen(false)}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Bot size={16} style={{ color: '#6366f1' }} />
+            <span>{label} — ReAct 流程</span>
+          </div>
+        }
+        width={720}
+        footer={null}
+        destroyOnClose
+      >
+        <div 
+          style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {detailSegments.length > 0 ? (
+            <IterationFold
+              status={isRunning ? 'running' : 'completed'}
+              segments={detailSegments}
+              totalMs={duration * 1000}
+              tokenUsage={token_usage}
+              keyPrefix={keyPrefix}
+            />
+          ) : isRunning ? (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#666' }}>
+              <div style={{ marginBottom: 16 }}>
+                <span className="processing-spinner" style={{
+                  display: 'inline-block',
+                  width: 24,
+                  height: 24,
+                  border: '2px solid #e5e7eb',
+                  borderTop: '2px solid #6366f1',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }} />
+              </div>
+              <div style={{ fontSize: 14, color: '#666' }}>
+                思考中
+                <span className="processing-dots" style={{ marginLeft: 4 }}>
+                  <span style={{ animation: 'dot 1.4s infinite', animationDelay: '0s' }}>.</span>
+                  <span style={{ animation: 'dot 1.4s infinite', animationDelay: '0.2s' }}>.</span>
+                  <span style={{ animation: 'dot 1.4s infinite', animationDelay: '0.4s' }}>.</span>
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#999' }}>
+              暂无执行流程记录
+            </div>
+          )}
+          {!isRunning && summary && (
+            <div style={{ marginTop: 16, padding: 12, background: '#f5f5f5', borderRadius: 8, border: '1px solid #e0e0e0' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#666', marginBottom: 8 }}>最终结果</div>
+              <div style={{ fontSize: 13, lineHeight: 1.6, color: '#333' }}>
+                <ReactMarkdown>{summary}</ReactMarkdown>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+    </>
   );
 }
 

@@ -208,6 +208,25 @@ class Database:
                 )
             """)
 
+            # ========== Subagent Tables ==========
+
+            # Subagent messages table (独立存储 subagent 的消息)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS subagent_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_instance_id INTEGER NOT NULL,
+                    subagent_id TEXT NOT NULL,
+                    parent_tool_call_id TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    message_type TEXT DEFAULT 'subagent_tool_call',
+                    tool_call_id TEXT,
+                    timestamp TIMESTAMP DEFAULT (datetime('now', 'localtime')),
+                    metadata TEXT DEFAULT '{}',
+                    FOREIGN KEY (session_instance_id) REFERENCES session_instances(id) ON DELETE CASCADE
+                )
+            """)
+
             # ========== Indexes ==========
             
             # MCP indexes
@@ -241,6 +260,17 @@ class Database:
             """)
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_tasks_session ON tasks(parent_session)
+            """)
+
+            # Subagent indexes
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_subagent_messages_instance ON subagent_messages(session_instance_id)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_subagent_messages_parent ON subagent_messages(parent_tool_call_id)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_subagent_messages_subagent ON subagent_messages(subagent_id)
             """)
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_tasks_instance ON tasks(parent_instance_id)

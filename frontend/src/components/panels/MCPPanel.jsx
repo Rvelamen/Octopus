@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Server, Wrench, Activity, Plus, RefreshCw, Eye, Search, Pencil, X, Check, ChevronDown, ChevronRight, Cpu, Plug, BarChart3 } from 'lucide-react';
-import WindowDots from '../WindowDots';
+import PanelToolbar from './PanelToolbar';
 import { ConfigCard, DynamicItemCard } from '../config';
 import { SwitchField, InputField } from '../forms';
 import { ToastContainer } from '../Toast';
+import WindowDots from '../WindowDots';
 
 /**
  * MCPPanel 组件 - MCP管理面板
@@ -867,23 +868,17 @@ const MCP_TABS = [
 
   return (
     <div className="mcp-panel-container">
-      <div className="mcp-toolbar">
-        <div className="toolbar-left">
-          <WindowDots />
-          <span className="toolbar-title">MCP MANAGEMENT</span>
-        </div>
-        <div className="toolbar-right">
-          <button
-            className="pixel-button small"
-            onClick={() => {
-              loadMCPStatus();
-              loadServers();
-            }}
-            disabled={loading}
-          >
-            {loading ? '...' : <RefreshCw size={14} />}
-          </button>
-        </div>
+      <div className="window-header">
+        <WindowDots />
+        <span className="window-title">MCP MANAGEMENT</span>
+        <RefreshCw
+          size={14}
+          className={`header-icon ${loading ? 'spinning' : ''}`}
+          onClick={() => {
+            loadMCPStatus();
+            loadServers();
+          }}
+        />
       </div>
 
       <div className="mcp-content-with-tabs">

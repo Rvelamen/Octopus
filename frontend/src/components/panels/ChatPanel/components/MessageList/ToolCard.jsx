@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Wrench, ChevronUp, ChevronDown, Check, Loader2, Copy, Clock, XCircle, AlertCircle, Maximize2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Wrench, ChevronUp, ChevronDown, Check, Loader2, Copy, Clock, XCircle, AlertCircle, Maximize2, Eye, Bot } from 'lucide-react';
 import { Modal, Button, Tag, Space } from 'antd';
+import IterationFold from './IterationFold';
 
 const MAX_PREVIEW_LENGTH = 300;
 
@@ -73,6 +74,72 @@ function ViewModal({ title, content, onClose }) {
   );
 }
 
+function iterationsToSegments(iterations) {
+  if (!iterations || !Array.isArray(iterations)) return [];
+  const segments = [];
+  for (const iter of iterations) {
+    if (iter.reasoning) {
+      segments.push({ type: 'reasoning', text: iter.reasoning });
+    }
+    for (const tool of iter.tools || []) {
+      segments.push({
+        type: 'tool',
+        toolCallId: tool.toolCallId,
+        toolName: tool.toolName,
+        args: typeof tool.args === 'string' ? tool.args : JSON.stringify(tool.args || {}),
+        result: tool.result,
+        status: tool.status || 'completed',
+        error: tool.status === 'error' ? tool.result : undefined,
+      });
+    }
+  }
+  return segments;
+}
+
+function SubagentDetailModal({ open, onClose, result }) {
+  if (!result) return null;
+  const {
+    label = 'Subagent',
+    status = 'completed',
+    token_usage = {},
+    duration = 0,
+    iterations = [],
+  } = result;
+
+  const detailSegments = useMemo(() => iterationsToSegments(iterations), [iterations]);
+
+  return (
+    <Modal
+      open={open}
+      onCancel={onClose}
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Bot size={16} style={{ color: '#6366f1' }} />
+          <span>{label} — ReAct 流程</span>
+        </div>
+      }
+      width={720}
+      footer={null}
+      destroyOnClose
+    >
+      <div style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>
+        {detailSegments.length > 0 ? (
+          <IterationFold
+            status={status === 'completed' ? 'completed' : status}
+            segments={detailSegments}
+            totalMs={duration * 1000}
+            tokenUsage={token_usage}
+          />
+        ) : (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#999' }}>
+            暂无执行流程记录
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 function ToolCard({
   toolCallId,
   toolName,
@@ -91,6 +158,7 @@ function ToolCard({
 }) {
   const [isExpandedInternal, setIsExpandedInternal] = useState(false);
   const [modal, setModal] = useState(null);
+  const [subagentDetailOpen, setSubagentDetailOpen] = useState(false);
 
   const isExpanded = isExpandedProp !== undefined ? isExpandedProp : isExpandedInternal;
 
@@ -123,6 +191,21 @@ function ToolCard({
   };
 
   const resultContent = parseResult();
+
+  // 检测是否为 spawn 工具的 subagent_sync 结果
+  const subagentResult = useMemo(() => {
+    if (toolName !== 'spawn' || !result) return null;
+    try {
+      const parsed = JSON.parse(result);
+      if (parsed.type === 'subagent_sync' && Array.isArray(parsed.iterations) && parsed.iterations.length > 0) {
+        return parsed;
+      }
+    } catch {
+      // not valid JSON
+    }
+    return null;
+  }, [toolName, result]);
+  const hasSubagentDetail = !!subagentResult;
 
   const argsString = Object.keys(displayArgs).length > 0
     ? JSON.stringify(displayArgs, null, 2)
@@ -196,6 +279,21 @@ function ToolCard({
           <span className="tool-status-text">{getStatusText()}</span>
         </div>
         <div className="tool-card-header-right">
+          {hasSubagentDetail && status === 'completed' && (
+            <Button
+              type="text"
+              size="small"
+              icon={<Eye size={12} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSubagentDetailOpen(true);
+              }}
+              title="查看 ReAct 执行流程"
+              style={{ color: '#6366f1', marginRight: 4 }}
+            >
+              详情
+            </Button>
+          )}
           {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         </div>
       </div>
@@ -271,18 +369,35 @@ function ToolCard({
           <div className="tool-card-section">
             <div className="tool-card-section-header">
               <div className="tool-card-section-title">Result</div>
-              {resultContent && (
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<Copy size={12} />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigator.clipboard.writeText(resultContent);
-                  }}
-                  title="Copy result"
-                />
-              )}
+              <div style={{ display: 'flex', gap: 4 }}>
+                {hasSubagentDetail && (
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<Eye size={12} />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSubagentDetailOpen(true);
+                    }}
+                    title="查看 ReAct 执行流程"
+                    style={{ color: '#6366f1' }}
+                  >
+                    详情
+                  </Button>
+                )}
+                {resultContent && (
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<Copy size={12} />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(resultContent);
+                    }}
+                    title="Copy result"
+                  />
+                )}
+              </div>
             </div>
             {error ? (
               <div className="tool-card-error">
@@ -323,6 +438,12 @@ function ToolCard({
         title={modal?.title}
         content={modal?.content}
         onClose={() => setModal(null)}
+      />
+
+      <SubagentDetailModal
+        open={subagentDetailOpen}
+        onClose={() => setSubagentDetailOpen(false)}
+        result={subagentResult}
       />
     </div>
   );

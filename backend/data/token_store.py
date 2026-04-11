@@ -311,6 +311,33 @@ class TokenUsageRepository:
 
             return [self._row_to_record(row) for row in rows]
 
+    def get_usage_by_request_type(self, days: int = 30) -> list[dict]:
+        """Get token usage grouped by request type.
+
+        Args:
+            days: Number of days to look back
+
+        Returns:
+            List of request type usage dicts
+        """
+        with self.db._get_connection() as conn:
+            rows = conn.execute(
+                """SELECT
+                    request_type,
+                    SUM(prompt_tokens) as prompt_tokens,
+                    SUM(completion_tokens) as completion_tokens,
+                    SUM(cached_tokens) as cached_tokens,
+                    SUM(total_tokens) as total_tokens,
+                    COUNT(*) as request_count
+                FROM token_usage
+                WHERE created_at >= datetime('now', 'localtime', ?)
+                GROUP BY request_type
+                ORDER BY total_tokens DESC""",
+                (f'-{days} days',)
+            ).fetchall()
+
+            return [dict(row) for row in rows]
+
     def get_instance_recent_usage(self, instance_id: int, limit: int = 50) -> list[TokenUsageRecord]:
         """Get recent token usage records for a session instance.
 

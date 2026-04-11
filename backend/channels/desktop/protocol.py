@@ -185,6 +185,10 @@ class MessageType(Enum):
     SUBAGENT_AVAILABLE_EXTENSIONS = "subagent_available_extensions"    # Available extensions list
     SUBAGENT_PROVIDER_MODELS = "subagent_provider_models"              # Providers with models
 
+    # Subagent Events - Server -> Client
+    SUBAGENT_TOOL_CALL = "subagent_tool_call"                        # Subagent tool call started
+    SUBAGENT_TOOL_RESULT = "subagent_tool_result"                    # Subagent tool call result
+
     # System - Server -> Client
     SERVICE_RESTARTING = "service_restarting"          # Service is restarting
     AGENTS_STOPPED = "agents_stopped"                  # Agents stopped confirmation
@@ -565,6 +569,9 @@ SERVER_MESSAGE_TYPES = {
     MessageType.SUBAGENT_AVAILABLE_TOOLS,
     MessageType.SUBAGENT_AVAILABLE_EXTENSIONS,
     MessageType.SUBAGENT_PROVIDER_MODELS,
+    # Subagent Events
+    MessageType.SUBAGENT_TOOL_CALL,
+    MessageType.SUBAGENT_TOOL_RESULT,
     # TTS
     MessageType.TTS_CONFIG,
     MessageType.TTS_DEFAULTS,

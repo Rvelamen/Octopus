@@ -685,6 +685,10 @@ class AgentLoop:
                             tool_args["_channel"] = msg.channel
                             tool_args["_chat_id"] = msg.chat_id
                             tool_args["_session_instance_id"] = session.active_instance.id
+                        
+                        # Inject parent_tool_call_id for spawn tool
+                        if tool_call.name == "spawn":
+                            tool_args["parent_tool_call_id"] = tool_call.id
 
                         # Execute tool with error handling
                         try:
@@ -722,6 +726,18 @@ class AgentLoop:
 
                             should_stop = True  # Stop the outer loop
                             break  # Exit tool execution loop
+
+                        # 如果是 spawn 工具，累加 subagent 的 token 到主 agent 的统计
+                        if tool_call.name == "spawn" and result:
+                            try:
+                                parsed_result = json.loads(result)
+                                if parsed_result.get("type") == "subagent_sync" and parsed_result.get("token_usage"):
+                                    subagent_usage = parsed_result["token_usage"]
+                                    total_prompt_tokens += subagent_usage.get("prompt_tokens", 0)
+                                    total_completion_tokens += subagent_usage.get("completion_tokens", 0)
+                                    logger.info(f"[AgentLoop] Added subagent tokens: prompt={subagent_usage.get('prompt_tokens', 0)}, completion={subagent_usage.get('completion_tokens', 0)}")
+                            except json.JSONDecodeError:
+                                pass  # 不是 JSON 格式，忽略
 
                         # Emit tool call result (truncated for log)
                         try:
@@ -1497,8 +1513,24 @@ class AgentLoop:
                                 tool_args["_chat_id"] = msg.chat_id
                                 tool_args["_session_instance_id"] = session.active_instance.id
                             
+                            # Inject parent_tool_call_id for spawn tool
+                            if tc_data["name"] == "spawn":
+                                tool_args["parent_tool_call_id"] = tc_id
+                            
                             # Execute tool
                             result = await self.tools.execute(tc_data["name"], tool_args)
+                            
+                            # 如果是 spawn 工具，累加 subagent 的 token 到主 agent 的统计
+                            if tc_data["name"] == "spawn" and result:
+                                try:
+                                    parsed_result = json.loads(result)
+                                    if parsed_result.get("type") == "subagent_sync" and parsed_result.get("token_usage"):
+                                        subagent_usage = parsed_result["token_usage"]
+                                        total_prompt_tokens += subagent_usage.get("prompt_tokens", 0)
+                                        total_completion_tokens += subagent_usage.get("completion_tokens", 0)
+                                        logger.info(f"[AgentLoop:stream] Added subagent tokens: prompt={subagent_usage.get('prompt_tokens', 0)}, completion={subagent_usage.get('completion_tokens', 0)}")
+                                except json.JSONDecodeError:
+                                    pass  # 不是 JSON 格式，忽略
                             
                             # Send completion event
                             await self._emit("agent_tool_call_complete", {

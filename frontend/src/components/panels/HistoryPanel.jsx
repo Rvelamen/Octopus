@@ -378,7 +378,7 @@ function HistoryPanel({ sendWSMessage }) {
       <div className="history-sidebar">
         <div className="window-header">
           <WindowDots />
-          <span className="window-title">CHANNELS & SESSIONS</span>
+          <span className="window-title">SESSIONS</span>
           <button
             className="refresh-btn"
             onClick={handleRefresh}

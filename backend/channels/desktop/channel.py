@@ -173,11 +173,12 @@ class DesktopChannel(BaseChannel):
         Only process events from the desktop channel to avoid
         displaying messages from other channels (feishu, etc.)
         """
-        # logger.info(f"[DesktopChannel] Received event: {event.event_type}, channel: {event.channel}")
+        # 调试日志
+        logger.debug(f"[DesktopChannel] Received event: type={event.event_type}, channel={event.channel}")
         
         # Only handle events from desktop channel
         if event.channel != "desktop":
-            # logger.info(f"[DesktopChannel] Ignoring event from channel: {event.channel}")
+            logger.debug(f"[DesktopChannel] Ignoring event from channel: {event.channel} (expected: desktop)")
             return
         
         # Map event types to message types
@@ -194,6 +195,9 @@ class DesktopChannel(BaseChannel):
             "agent_tool_call_error": MessageType.AGENT_TOOL_CALL_ERROR,
             # Iteration event
             "agent_iteration_complete": MessageType.AGENT_ITERATION_COMPLETE,
+            # Subagent events
+            "subagent_tool_call": MessageType.SUBAGENT_TOOL_CALL,
+            "subagent_tool_result": MessageType.SUBAGENT_TOOL_RESULT,
         }
         
         msg_type = event_type_map.get(event.event_type)
@@ -202,11 +206,11 @@ class DesktopChannel(BaseChannel):
                 type=msg_type,
                 data=event.data
             )
-            # logger.info(f"[DesktopChannel] Broadcasting event: {event.event_type} to {len(self.connected_clients)} clients")
+            logger.debug(f"[DesktopChannel] Broadcasting mapped event: {event.event_type} to {len(self.connected_clients)} clients")
             await self._broadcast(ws_message.to_dict())
         else:
             # For unknown events, broadcast as-is
-            # logger.info(f"[DesktopChannel] Broadcasting unknown event: {event.event_type}")
+            logger.debug(f"[DesktopChannel] Broadcasting unknown event: {event.event_type}")
             await self._broadcast({
                 "type": event.event_type,
                 "data": event.data

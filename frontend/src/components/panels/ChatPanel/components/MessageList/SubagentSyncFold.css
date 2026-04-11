@@ -1,0 +1,311 @@
+/* SubagentSyncFold - 同步子代理结果展示样式 */
+
+.subagent-sync-fold {
+  margin: 8px 0;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  background: var(--bg-secondary, #f8f9fa);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.subagent-sync-fold:hover {
+  border-color: var(--border-hover, #c0c0c0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* 头部样式 */
+.subagent-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  user-select: none;
+  background: linear-gradient(to right, var(--bg-tertiary, #f0f1f3), transparent);
+  transition: background 0.2s ease;
+}
+
+.subagent-header:hover {
+  background: var(--bg-hover, #e8e9eb);
+}
+
+.expand-icon {
+  color: var(--text-secondary, #666);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.status-icon {
+  flex-shrink: 0;
+}
+
+.status-icon.success {
+  color: #10b981;
+}
+
+.status-icon.warning {
+  color: #f59e0b;
+}
+
+.status-icon.error {
+  color: #ef4444;
+}
+
+.label {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary, #333);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta-info {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary, #666);
+  white-space: nowrap;
+}
+
+.meta-item svg {
+  opacity: 0.7;
+}
+
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.status-badge.timeout {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fbbf24;
+}
+
+.status-badge.error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #f87171;
+}
+
+/* 详情按钮 */
+.detail-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6366f1;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  margin-left: 8px;
+}
+
+.detail-btn:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+  color: #4f46e5;
+}
+
+.detail-btn:active {
+  background: #c7d2fe;
+}
+
+.detail-btn svg {
+  flex-shrink: 0;
+}
+
+/* 展开内容样式 */
+.subagent-body {
+  padding: 12px;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+  background: var(--bg-primary, #fff);
+}
+
+.subagent-summary {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-primary, #333);
+}
+
+.subagent-summary p {
+  margin: 4px 0;
+}
+
+.subagent-summary .summary-line {
+  margin: 6px 0;
+}
+
+.subagent-summary ul {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.subagent-summary li {
+  margin: 2px 0;
+}
+
+/* Modal 样式 */
+.subagent-detail-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-primary, #333);
+}
+
+.subagent-detail-title svg {
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.subagent-detail-content {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.subagent-detail-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.subagent-detail-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.subagent-detail-content::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.subagent-detail-content::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.subagent-detail-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary, #999);
+  font-size: 14px;
+}
+
+/* Modal 覆盖 antd 默认样式 */
+.subagent-detail-modal .ant-modal-header {
+  border-bottom: 1px solid var(--border-color, #f0f0f0);
+  padding: 16px 24px;
+}
+
+.subagent-detail-modal .ant-modal-body {
+  padding: 16px 24px;
+}
+
+.subagent-detail-modal .ant-modal-close {
+  top: 14px;
+  right: 14px;
+}
+
+/* 暗色主题适配 */
+@media (prefers-color-scheme: dark) {
+  .subagent-sync-fold {
+    border-color: #3a3a3a;
+    background: #1e1e1e;
+  }
+  
+  .subagent-header {
+    background: linear-gradient(to right, #2a2a2a, transparent);
+  }
+  
+  .subagent-header:hover {
+    background: #2d2d2d;
+  }
+  
+  .label {
+    color: #e0e0e0;
+  }
+  
+  .meta-item {
+    color: #a0a0a0;
+  }
+  
+  .subagent-body {
+    background: #1a1a1a;
+    border-top-color: #3a3a3a;
+  }
+  
+  .subagent-summary {
+    color: #d0d0d0;
+  }
+  
+  .status-badge.timeout {
+    background: #422006;
+    color: #fbbf24;
+    border-color: #854d0e;
+  }
+  
+  .status-badge.error {
+    background: #450a0a;
+    color: #f87171;
+    border-color: #991b1b;
+  }
+
+  .detail-btn {
+    color: #818cf8;
+    background: #1e1b4b;
+    border-color: #312e81;
+  }
+
+  .detail-btn:hover {
+    background: #312e81;
+    border-color: #4338ca;
+    color: #a5b4fc;
+  }
+
+  .detail-btn:active {
+    background: #3730a3;
+  }
+
+  .subagent-detail-title {
+    color: #e0e0e0;
+  }
+
+  .subagent-detail-empty {
+    color: #666;
+  }
+
+  .subagent-detail-content::-webkit-scrollbar-thumb {
+    background: #4a4a4a;
+  }
+
+  .subagent-detail-content::-webkit-scrollbar-thumb:hover {
+    background: #666;
+  }
+
+  .subagent-detail-modal .ant-modal-header {
+    border-bottom-color: #333;
+  }
+
+  .subagent-detail-modal .ant-modal-body {
+    background: #1a1a1a;
+  }
+}

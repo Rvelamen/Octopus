@@ -40,6 +40,18 @@ import {
 
 const WS_BASE = "ws://127.0.0.1:18791";
 
+const APP_TITLE_BY_TAB = {
+  chat: "TERMINAL_SESSION",
+  config: "CONFIG_EDITOR",
+  mcp: "MCP_SERVERS",
+  extensions: "EXTENSIONS",
+  cron: "CRON",
+  agents: "AGENTS",
+  workspace: "WORKSPACE_EXPLORER",
+  history: "HISTORY",
+  tokens: "TOKENS",
+};
+
 /**
  * 生成唯一请求 ID
  */
@@ -170,6 +182,9 @@ function App() {
   const [streamingContent, setStreamingContent] = useState("");
   const streamingContentRef = useRef("");
   const streamingFlushTimerRef = useRef(null);
+
+  // 窗口焦点状态 - 用于控制交通灯颜色（失焦时变为灰色）
+  const [isWindowFocused, setIsWindowFocused] = useState(true);
 
   const resetStreamingContent = useCallback(() => {
     if (streamingFlushTimerRef.current) {
@@ -513,6 +528,105 @@ function App() {
             else updateToolCallsForInstance(eventInstanceId, updater);
             break;
           }
+          case "subagent_tool_call": {
+            console.log('[WebSocket] subagent_tool_call received:', JSON.stringify(data, null, 2));
+            console.log('[WebSocket] Current toolCalls:', JSON.parse(JSON.stringify(toolCalls)));
+            console.log('[WebSocket] isCurrentInstance:', isCurrentInstance, 'eventInstanceId:', eventInstanceId);
+            const parentToolCallId = data.parent_tool_call_id;
+            console.log('[WebSocket] parentToolCallId:', parentToolCallId);
+            
+            // 如果 parentToolCallId 不存在，创建一个新的 subagent container
+            const subagentUpdater = (prev) => {
+              const targetTc = prev.find(tc => tc.id === parentToolCallId);
+              console.log('[WebSocket] Finding target toolCall with id:', parentToolCallId, 'found:', !!targetTc);
+              
+              if (targetTc) {
+                return prev.map(tc =>
+                  tc.id === parentToolCallId
+                    ? {
+                        ...tc,
+                        subagentCalls: [...(tc.subagentCalls || []), {
+                          id: data.tool_call_id,
+                          tool: data.tool,
+                          args: data.args,
+                          status: 'running',
+                          subagentId: data.subagent_id,
+                          subagentLabel: data.subagent_label,
+                        }]
+                      }
+                    : tc
+                );
+              }
+              
+              // 如果找不到父 toolCall，也添加到列表中
+              console.log('[WebSocket] Parent toolCall not found, adding as standalone subagent');
+              return [...prev, {
+                id: parentToolCallId || `subagent-${Date.now()}`,
+                tool: 'spawn',
+                args: { task: 'subagent' },
+                status: 'running',
+                subagentCalls: [{
+                  id: data.tool_call_id,
+                  tool: data.tool,
+                  args: data.args,
+                  status: 'running',
+                  subagentId: data.subagent_id,
+                  subagentLabel: data.subagent_label,
+                }],
+                isSubagentContainer: true,
+              }];
+            };
+            
+            if (isCurrentInstance) setToolCalls(subagentUpdater);
+            else updateToolCallsForInstance(eventInstanceId, subagentUpdater);
+            break;
+          }
+          case "subagent_tool_result": {
+            console.log('[WebSocket] subagent_tool_result received:', JSON.stringify(data, null, 2));
+            console.log('[WebSocket] Current toolCalls:', JSON.parse(JSON.stringify(toolCalls)));
+            const parentToolCallId = data.parent_tool_call_id;
+            console.log('[WebSocket] parentToolCallId for result:', parentToolCallId);
+            
+            const subagentResultUpdater = (prev) => {
+              // 尝试找到父 toolCall 并更新 subagentCalls
+              const updated = prev.map(tc =>
+                tc.id === parentToolCallId && tc.subagentCalls
+                  ? {
+                      ...tc,
+                      subagentCalls: tc.subagentCalls?.map(sc =>
+                        sc.id === data.tool_call_id
+                          ? { ...sc, status: 'completed', result: data.result }
+                          : sc
+                      )
+                    }
+                  : tc
+              );
+              
+              // 如果没有找到父 toolCall，检查是否有 standalone subagent
+              const hasTarget = updated.some(tc => tc.id === parentToolCallId);
+              if (!hasTarget) {
+                // 添加一个包含 subagent 结果的容器
+                return [...updated, {
+                  id: parentToolCallId || `subagent-${Date.now()}`,
+                  tool: 'spawn',
+                  args: { task: 'subagent' },
+                  status: 'completed',
+                  subagentCalls: [{
+                    id: data.tool_call_id,
+                    tool: data.tool,
+                    status: 'completed',
+                    result: data.result,
+                  }],
+                  isSubagentContainer: true,
+                }];
+              }
+              return updated;
+            };
+            
+            if (isCurrentInstance) setToolCalls(subagentResultUpdater);
+            else updateToolCallsForInstance(eventInstanceId, subagentResultUpdater);
+            break;
+          }
           case "agent_iteration_complete": {
             const targetId = data?.session_instance_id ?? currentChatInstanceIdRef.current;
             if (targetId) {
@@ -727,78 +841,121 @@ function App() {
     navigate(routeMap[tab] || '/chat');
   };
 
+  const appTitleBarText = APP_TITLE_BY_TAB[activeTab] ?? "OCTOPUS";
+
   // ===== 渲染 =====
   return (
     <div className="app-container">
-      {/* Sidebar */}
-      <aside className={`sidebar pixel-border ${sidebarCollapsed ? 'collapsed' : ''}`}>
-        <div className="sidebar-nav">
-          <div className="logo">
-            <img src={octopusLogo} alt="Octopus" className="logo-icon" style={{ width: 28, height: 36, objectFit: 'contain' }} />
-            <span>OCTOPUS</span>
+      {/* 整窗顶栏：品牌区（Logo+折叠）宽度与侧栏一致，右侧为当前页标题 */}
+      <header className="app-titlebar">
+        <div className="app-titlebar-brand">
+          <div className="app-titlebar-logo-pill">
+            <div className="logo app-titlebar-logo">
+              <img src={octopusLogo} alt="Octopus" className="logo-icon" style={{ width: 24, height: 30, objectFit: 'contain' }} />
+              <span className="logo-text">OCTOPUS</span>
+            </div>
           </div>
+          <button
+            type="button"
+            className="sidebar-toggle-btn"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            title={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
+          >
+            {sidebarCollapsed ? <PanelRight size={14} /> : <PanelLeftClose size={14} />}
+          </button>
+        </div>
+        <div className="app-titlebar-sep" aria-hidden />
+        <div className="tab-title">
+          <span>{appTitleBarText}</span>
+        </div>
+        <div className="top-actions" style={{ WebkitAppRegion: 'no-drag' }}>
+          <button
+            className="restart-btn"
+            onClick={handleRestart}
+            disabled={isRestarting || connectionStatus !== "connected"}
+            title="重启后端服务"
+            style={{ WebkitAppRegion: 'no-drag' }}
+          >
+            <RotateCcw size={12} className={isRestarting ? "spinning" : ""} />
+            <span>{isRestarting ? "…" : "RESTART"}</span>
+          </button>
+          <div className={`status-indicator ${connectionStatus}`} style={{ WebkitAppRegion: 'no-drag' }}></div>
+          <span className={`status-text ${connectionStatus}`} style={{ WebkitAppRegion: 'no-drag' }}>
+            {connectionStatus === "connected"
+              ? "ONLINE"
+              : connectionStatus === "connecting"
+                ? "CONNECTING..."
+                : "OFFLINE"}
+          </span>
+        </div>
+      </header>
+
+      <div className={`app-body ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
+      {/* Sidebar：仅导航，顶栏已上提 */}
+      <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
+        <div className="sidebar-nav">
           <nav>
             <button
               className={`nav-item ${activeTab === "chat" ? "active" : ""}`}
               onClick={() => handleNavClick("chat")}
             >
-              <Bot size={16} />
+              <Bot size={18} />
               <span>CHAT</span>
             </button>
             <button
               className={`nav-item ${activeTab === "config" ? "active" : ""}`}
               onClick={() => handleNavClick("config")}
             >
-              <Settings size={16} />
+              <Settings size={18} />
               <span>SYSTEM</span>
             </button>
             <button
               className={`nav-item ${activeTab === "mcp" ? "active" : ""}`}
               onClick={() => handleNavClick("mcp")}
             >
-              <Server size={16} />
+              <Server size={18} />
               <span>SERVERS</span>
             </button>
             <button
               className={`nav-item ${activeTab === "extensions" ? "active" : ""}`}
               onClick={() => handleNavClick("extensions")}
             >
-              <Package size={16} />
+              <Package size={18} />
               <span>EXTENSIONS</span>
             </button>
             <button
               className={`nav-item ${activeTab === "cron" ? "active" : ""}`}
               onClick={() => handleNavClick("cron")}
             >
-              <Clock size={16} />
+              <Clock size={18} />
               <span>CRON</span>
             </button>
             <button
               className={`nav-item ${activeTab === "agents" ? "active" : ""}`}
               onClick={() => handleNavClick("agents")}
             >
-              <Users size={16} />
+              <Users size={18} />
               <span>AGENTS</span>
             </button>
             <button
               className={`nav-item ${activeTab === "workspace" ? "active" : ""}`}
               onClick={() => handleNavClick("workspace")}
             >
-              <FolderOpen size={16} />
+              <FolderOpen size={18} />
               <span>WORKSPACE</span>
             </button>
             <button
               className={`nav-item ${activeTab === "history" ? "active" : ""}`}
               onClick={() => handleNavClick("history")}
             >
-              <History size={16} />
+              <History size={18} />
               <span>HISTORY</span>
             </button>
             <button
               className={`nav-item ${activeTab === "tokens" ? "active" : ""}`}
               onClick={() => handleNavClick("tokens")}
             >
-              <Zap size={16} />
+              <Zap size={18} />
               <span>TOKENS</span>
             </button>
           </nav>
@@ -806,49 +963,9 @@ function App() {
             <div className="status-line">VER: 1.0.0</div>
           </div>
         </div>
-        {/* Toggle Button - Always visible, outside drag region */}
-        <button
-          className="sidebar-toggle-btn"
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          title={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
-        >
-          {sidebarCollapsed ? <PanelRight size={14} /> : <PanelLeftClose size={14} />}
-        </button>
       </aside>
 
-      {/* Main Content */}
       <main className="main-content">
-        <header className="top-bar">
-          <div className="tab-title">
-            {/* <WindowDots /> */}
-            <span>
-              {activeTab === "chat"
-                ? "TERMINAL_SESSION"
-                : "CONFIG_EDITOR"}
-            </span>
-          </div>
-          <div className="top-actions" style={{ WebkitAppRegion: 'no-drag' }}>
-            <button
-              className="restart-btn"
-              onClick={handleRestart}
-              disabled={isRestarting || connectionStatus !== "connected"}
-              title="重启后端服务"
-              style={{ WebkitAppRegion: 'no-drag' }}
-            >
-              <RotateCcw size={12} className={isRestarting ? "spinning" : ""} />
-              <span>{isRestarting ? "…" : "RESTART"}</span>
-            </button>
-            <div className={`status-indicator ${connectionStatus}`} style={{ WebkitAppRegion: 'no-drag' }}></div>
-            <span className={`status-text ${connectionStatus}`} style={{ WebkitAppRegion: 'no-drag' }}>
-              {connectionStatus === "connected"
-                ? "ONLINE"
-                : connectionStatus === "connecting"
-                  ? "CONNECTING..."
-                  : "OFFLINE"}
-            </span>
-          </div>
-        </header>
-
         <div className="content-area">
           <Routes>
             <Route path="/chat" element={
@@ -919,6 +1036,7 @@ function App() {
           </Routes>
         </div>
       </main>
+      </div>
     </div>
   );
 }

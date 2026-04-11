@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Brain, Bot, Radio, Plus, Save, Image, Search, Settings, Trash2, Edit, Check, X, ChevronDown, ChevronRight, RefreshCw, QrCode, Clock, CheckCircle, AlertCircle, Volume2, Layers } from 'lucide-react';
+import { Brain, Bot, Radio, Plus, Image, Search, Settings, Trash2, Edit, Check, X, ChevronDown, ChevronRight, RefreshCw, QrCode, Clock, CheckCircle, AlertCircle, Volume2, Layers } from 'lucide-react';
 import { InputField, PasswordField, SelectField, SwitchField } from '../forms';
 import { ConfigCard, DynamicItemCard, AddItemDialog } from '../config';
 import WindowDots from '../WindowDots';
@@ -992,16 +992,9 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
 
   return (
     <div className="config-form-container">
-      <div className="config-toolbar">
-        <div className="toolbar-left">
-          <WindowDots />
-          <span className="toolbar-title">SYSTEM CONFIGURATION</span>
-        </div>
-        <div className="toolbar-right">
-          <button className="pixel-button small save-btn" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? 'SAVING...' : <Save size={14} />}
-          </button>
-        </div>
+      <div className="window-header">
+        <WindowDots />
+        <span className="window-title">SYSTEM CONFIGURATION</span>
       </div>
 
       <div className="config-with-tabs">

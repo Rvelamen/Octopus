@@ -262,15 +262,24 @@ async function createWindow() {
       transparent: true,
       vibrancy: 'under-window',
       visualEffectState: 'active',
-      frame: process.platform === 'darwin' ? true : false,
+      frame: false, // 使用自定义窗口框架以支持失焦时保持交通灯可见
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
         preload: path.join(__dirname, 'preload.js'),
         webSecurity: false, // 允许跨域请求到本地API
       },
-      titleBarStyle: 'hiddenInset', // macOS风格
+      titleBarStyle: 'hidden', // 隐藏原生标题栏
       show: false, // 先不显示，等加载完成
+    });
+
+    // 监听窗口焦点状态变化，通知渲染进程
+    mainWindow.on('focus', () => {
+      mainWindow.webContents.send('window-focus-change', true);
+    });
+
+    mainWindow.on('blur', () => {
+      mainWindow.webContents.send('window-focus-change', false);
     });
     
     // 设置API端口
@@ -332,6 +341,45 @@ ipcMain.handle('get-app-version', () => {
 
 ipcMain.handle('get-platform', () => {
   return process.platform;
+});
+
+// 窗口控制 IPC 处理
+ipcMain.handle('window-minimize', () => {
+  if (mainWindow) {
+    mainWindow.minimize();
+  }
+});
+
+ipcMain.handle('window-maximize', () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+});
+
+ipcMain.handle('window-close', () => {
+  if (mainWindow) {
+    mainWindow.close();
+  }
+});
+
+ipcMain.handle('window-is-maximized', () => {
+  return mainWindow ? mainWindow.isMaximized() : false;
+});
+
+// 监听窗口最大化状态变化
+ipcMain.handle('on-window-maximize-change', (event) => {
+  if (mainWindow) {
+    mainWindow.on('maximize', () => {
+      event.sender.send('window-maximize-change', true);
+    });
+    mainWindow.on('unmaximize', () => {
+      event.sender.send('window-maximize-change', false);
+    });
+  }
 });
 
 // 应用生命周期

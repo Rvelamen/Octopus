@@ -20,10 +20,10 @@
     "mammoth": "^1.12.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-markdown": "^10.1.0",
+    "react-markdown": "^8.0.0",
     "react-pdf": "^10.3.0",
     "react-router-dom": "^7.13.0",
-    "remark-gfm": "^4.0.1",
+    "remark-gfm": "^2.0.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

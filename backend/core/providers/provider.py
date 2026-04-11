@@ -599,6 +599,70 @@ class UnifiedProvider(LLMProvider):
         """Get the default model."""
         return self.default_model
 
+    async def chat_streaming_complete(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        model: str | None = None,
+        max_tokens: int = 8192,
+        temperature: float = 0.7,
+    ) -> LLMResponse:
+        """
+        Stream chat completion and return complete LLMResponse.
+        
+        This method uses streaming internally to avoid timeout limits (e.g., Anthropic's 10-minute limit),
+        but returns a complete LLMResponse object instead of streaming chunks.
+        
+        Args:
+            messages: List of message dicts with 'role' and 'content'.
+            tools: Optional list of tool definitions.
+            model: Model identifier.
+            max_tokens: Maximum tokens in response.
+            temperature: Sampling temperature.
+        
+        Returns:
+            LLMResponse with content, tool_calls, and usage information.
+        """
+        content_parts = []
+        tool_calls = []
+        finish_reason = "stop"
+        usage = {}
+        
+        try:
+            async for chunk in self.chat_stream(
+                messages=messages,
+                tools=tools,
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            ):
+                if chunk.content:
+                    content_parts.append(chunk.content)
+                
+                if chunk.tool_calls:
+                    tool_calls.extend(chunk.tool_calls)
+                
+                if chunk.is_final:
+                    finish_reason = "stop"
+                    if chunk.usage:
+                        usage = chunk.usage
+            
+            final_content = "".join(content_parts) if content_parts else None
+            
+            return LLMResponse(
+                content=final_content,
+                tool_calls=tool_calls,
+                finish_reason=finish_reason,
+                usage=usage,
+            )
+            
+        except Exception as e:
+            logger.error(f"[Provider] Streaming complete failed: {e}")
+            return LLMResponse(
+                content=f"Error calling LLM: {str(e)}",
+                finish_reason="error",
+            )
+
     async def close(self):
         """Close the async client."""
         await self._client.aclose()

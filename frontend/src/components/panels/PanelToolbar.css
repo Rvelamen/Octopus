@@ -1,0 +1,85 @@
+/* ========== PanelToolbar ========== */
+
+/* 基础顶栏容器 */
+.panel-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-2) var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--board);
+  border-bottom: none;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* 左侧：图标 + 标题，可随容器收缩 */
+.panel-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* 图标 */
+.panel-toolbar-icon {
+  display: flex;
+  align-items: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* 标题：可省略 */
+.panel-toolbar-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+/* 右侧：固定不压缩 */
+.panel-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-shrink: 0;
+}
+
+/* 通用 toolbar-btn（与原 .toolbar-btn 保持一致） */
+.panel-toolbar .toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--surface-2);
+  border: 1px solid var(--board);
+  border-radius: 6px;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.panel-toolbar .toolbar-btn:hover {
+  background: var(--surface-3);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.panel-toolbar .toolbar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.panel-toolbar .toolbar-btn.spin {
+  animation: spin 1s linear infinite;
+}

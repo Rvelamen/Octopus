@@ -17,6 +17,9 @@ from backend.data.subagent_store import (
     AvailableToolRepository, AvailableToolRecord,
     AvailableExtensionRepository, AvailableExtensionRecord
 )
+from backend.data.subagent_message_store import (
+    SubagentMessageRepository, SubagentMessageRecord
+)
 
 def init_system_providers(db: Database):
     """Initialize system providers if not exist."""
@@ -96,4 +99,7 @@ __all__ = [
     "AvailableToolRecord",
     "AvailableExtensionRepository",
     "AvailableExtensionRecord",
+    # Subagent Messages
+    "SubagentMessageRepository",
+    "SubagentMessageRecord",
 ]

@@ -352,15 +352,16 @@ const XlsxViewer = ({ file, content }) => {
 };
 
 /**
- * PDF Viewer Component
+ * PDF Viewer Component - Vertical Scroll Preview
  */
 const PdfViewer = ({ file, content }) => {
   const [numPages, setNumPages] = useState(null);
-  const [pageNumber, setPageNumber] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const pdfContentRef = useRef(null);
+  const pageRefs = useRef([]);
   const [pageWidth, setPageWidth] = useState(null);
 
   useLayoutEffect(() => {
@@ -376,7 +377,7 @@ const PdfViewer = ({ file, content }) => {
     };
     const measure = (entry) => {
       const w = entry ? entry.contentRect.width : contentWidth(el);
-      setPageWidth(Math.max(120, Math.min(Math.floor(w), 3200)));
+      setPageWidth(Math.max(120, Math.min(Math.floor(w * 0.85), 3200)));
     };
     measure();
     const ro = new ResizeObserver((entries) => {
@@ -388,18 +389,12 @@ const PdfViewer = ({ file, content }) => {
   }, [pdfUrl]);
 
   useEffect(() => {
-    setPageNumber(1);
-  }, [pdfUrl]);
-
-  useEffect(() => {
     try {
-      // 将 hex 直接转换为 Uint8Array
       let byteArray;
       if (file.encoding === 'hex') {
-        const hexString = content.replace(/\s/g, ''); // 移除空白字符
+        const hexString = content.replace(/\s/g, '');
         byteArray = new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
       } else {
-        // 如果是 base64 编码
         const binaryData = atob(content);
         byteArray = new Uint8Array(binaryData.length);
         for (let i = 0; i < binaryData.length; i++) {
@@ -425,8 +420,42 @@ const PdfViewer = ({ file, content }) => {
     setNumPages(numPages);
   };
 
-  const goToPrevPage = () => setPageNumber((prev) => Math.max(prev - 1, 1));
-  const goToNextPage = () => setPageNumber((prev) => Math.min(prev + 1, numPages));
+  const scrollToPage = useCallback((pageNum) => {
+    const pageElement = pageRefs.current[pageNum - 1];
+    if (pageElement && pdfContentRef.current) {
+      pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
+  useEffect(() => {
+    const container = pdfContentRef.current;
+    if (!container || !numPages) return;
+
+    const handleScroll = () => {
+      const containerRect = container.getBoundingClientRect();
+      const containerTop = containerRect.top;
+
+      let closestPage = 1;
+      let minDistance = Infinity;
+
+      pageRefs.current.forEach((pageEl, index) => {
+        if (!pageEl) return;
+        const pageRect = pageEl.getBoundingClientRect();
+        const pageTop = pageRect.top - containerTop;
+        const distance = Math.abs(pageTop);
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestPage = index + 1;
+        }
+      });
+
+      setCurrentPage(closestPage);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [numPages]);
 
   if (loading) {
     return (
@@ -448,42 +477,48 @@ const PdfViewer = ({ file, content }) => {
   }
 
   return (
-    <div className="pdf-preview">
-      <div className="pdf-toolbar">
-        <button 
-          className="pdf-nav-btn" 
-          onClick={goToPrevPage} 
-          disabled={pageNumber <= 1}
-        >
-          ← Prev
-        </button>
-        <span className="pdf-page-info">
-          Page {pageNumber} of {numPages || '?'}
-        </span>
-        <button 
-          className="pdf-nav-btn" 
-          onClick={goToNextPage} 
-          disabled={pageNumber >= numPages}
-        >
-          Next →
-        </button>
+    <div className="pdf-preview pdf-scroll-mode">
+      <div className="pdf-sidebar">
+        <div className="pdf-sidebar-header">
+          <span className="pdf-sidebar-title">Pages ({numPages || 0})</span>
+        </div>
+        <div className="pdf-thumbnails-scroll">
+          {Array.from({ length: numPages || 0 }, (_, index) => (
+            <div
+              key={index + 1}
+              className={`pdf-thumb ${currentPage === index + 1 ? 'active' : ''}`}
+              onClick={() => scrollToPage(index + 1)}
+            >
+              <div className="pdf-thumb-number">{index + 1}</div>
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="pdf-content" ref={pdfContentRef}>
+      <div className="pdf-content-scroll" ref={pdfContentRef}>
         <Document
           file={pdfUrl}
           onLoadSuccess={onDocumentLoadSuccess}
-          loading={<div className="pdf-page-loading">Loading page...</div>}
-          error={<div className="pdf-page-error">Failed to load page</div>}
+          loading={<div className="pdf-page-loading">Loading document...</div>}
+          error={<div className="pdf-page-error">Failed to load document</div>}
         >
-          {pageWidth != null ? (
-            <Page
-              pageNumber={pageNumber}
-              width={pageWidth}
-              renderTextLayer={true}
-              renderAnnotationLayer={true}
-            />
+          {numPages && pageWidth != null ? (
+            Array.from({ length: numPages }, (_, index) => (
+              <div
+                key={index + 1}
+                ref={(el) => (pageRefs.current[index] = el)}
+                className="pdf-page-card"
+              >
+                <Page
+                  pageNumber={index + 1}
+                  width={pageWidth}
+                  renderTextLayer={true}
+                  renderAnnotationLayer={true}
+                  loading={<div className="pdf-page-loading">Loading page {index + 1}...</div>}
+                />
+              </div>
+            ))
           ) : (
-            <div className="pdf-page-loading">Loading page...</div>
+            <div className="pdf-page-loading">Loading pages...</div>
           )}
         </Document>
       </div>
@@ -1250,13 +1285,15 @@ const buildSlidePreviewHtml = (slideXml, slideIndex, imageDataUrls = []) => {
 };
 
 /**
- * PPTX Viewer Component
+ * PPTX Viewer Component - Vertical Scroll Preview
  */
 const PptxViewer = ({ file, content }) => {
   const [slides, setSlides] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const scrollContainerRef = useRef(null);
+  const slideRefs = useRef([]);
 
   useEffect(() => {
     const loadPptx = async () => {
@@ -1284,34 +1321,34 @@ const PptxViewer = ({ file, content }) => {
 
         const zip = await JSZip.loadAsync(byteArray);
 
-        const slideRefs = [];
+        const slideRefsList = [];
         const contentTypes = await zip.file('[Content_Types].xml')?.async('string');
 
         if (contentTypes) {
           const slideMatches = contentTypes.match(/PartName="\/ppt\/slides\/slide\d+\.xml"/g) || [];
           for (const match of slideMatches) {
             const slideNum = match.match(/slide(\d+)\.xml/)[1];
-            slideRefs.push(`ppt/slides/slide${slideNum}.xml`);
+            slideRefsList.push(`ppt/slides/slide${slideNum}.xml`);
           }
         }
 
-        if (slideRefs.length === 0) {
+        if (slideRefsList.length === 0) {
           const allFiles = Object.keys(zip.files);
           for (const fileName of allFiles) {
             if (fileName.match(/ppt\/slides\/slide\d+\.xml$/)) {
-              slideRefs.push(fileName);
+              slideRefsList.push(fileName);
             }
           }
         }
 
-        slideRefs.sort((a, b) => {
+        slideRefsList.sort((a, b) => {
           const numA = parseInt(a.match(/slide(\d+)/)[1], 10);
           const numB = parseInt(b.match(/slide(\d+)/)[1], 10);
           return numA - numB;
         });
 
         const slidesData = [];
-        for (const slidePath of slideRefs) {
+        for (const slidePath of slideRefsList) {
           const slideXml = await zip.file(slidePath)?.async('string');
           if (slideXml) {
             const imageDataUrls = await loadPptxSlideImageDataUrls(zip, slidePath, slideXml);
@@ -1332,18 +1369,47 @@ const PptxViewer = ({ file, content }) => {
     loadPptx();
   }, [content, file.encoding]);
 
-  const currentSlideHtml = useMemo(() => {
-    const s = slides[currentSlide];
-    if (!s?.xml) return '';
-    return buildSlidePreviewHtml(s.xml, currentSlide, s.imageDataUrls || []);
-  }, [slides, currentSlide]);
-
   const thumbHtml = useMemo(() => {
     return slides.map((s, i) => buildSlidePreviewHtml(s.xml, i, s.imageDataUrls || []));
   }, [slides]);
 
-  const goToPrevSlide = () => setCurrentSlide((prev) => Math.max(prev - 1, 0));
-  const goToNextSlide = () => setCurrentSlide((prev) => Math.min(prev + 1, slides.length - 1));
+  const scrollToSlide = useCallback((index) => {
+    const slideElement = slideRefs.current[index];
+    if (slideElement && scrollContainerRef.current) {
+      slideElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || slides.length === 0) return;
+
+    const handleScroll = () => {
+      const containerRect = container.getBoundingClientRect();
+      const containerTop = containerRect.top;
+      const containerHeight = containerRect.height;
+
+      let closestSlide = 0;
+      let minDistance = Infinity;
+
+      slideRefs.current.forEach((slideEl, index) => {
+        if (!slideEl) return;
+        const slideRect = slideEl.getBoundingClientRect();
+        const slideTop = slideRect.top - containerTop;
+        const distance = Math.abs(slideTop);
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestSlide = index;
+        }
+      });
+
+      setCurrentSlide(closestSlide);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [slides.length]);
 
   if (loading) {
     return (
@@ -1375,56 +1441,48 @@ const PptxViewer = ({ file, content }) => {
   }
 
   return (
-    <div className="pptx-preview">
-      <div className="pptx-toolbar">
-        <button
-          className="pptx-nav-btn"
-          onClick={goToPrevSlide}
-          disabled={currentSlide <= 0}
-        >
-          ← Prev
-        </button>
-        <span className="pptx-page-info">
-          Slide {currentSlide + 1} of {slides.length}
-        </span>
-        <button
-          className="pptx-nav-btn"
-          onClick={goToNextSlide}
-          disabled={currentSlide >= slides.length - 1}
-        >
-          Next →
-        </button>
-      </div>
-      <div className="pptx-content">
-        <div className="pptx-slide-container">
-          <div className="pptx-slide">
-            <div className="pptx-slide-number">Slide {currentSlide + 1}</div>
+    <div className="pptx-preview pptx-scroll-mode">
+      <div className="pptx-sidebar">
+        <div className="pptx-sidebar-header">
+          <span className="pptx-sidebar-title">Slides ({slides.length})</span>
+        </div>
+        <div className="pptx-thumbnails-scroll">
+          {slides.map((slide, index) => (
             <div
-              className="pptx-slide-html"
-              dangerouslySetInnerHTML={{
-                __html: currentSlideHtml || '<div class="pptx-empty-hint">Loading…</div>',
-              }}
-            />
-          </div>
+              key={slide.path || index}
+              className={`pptx-thumb ${currentSlide === index ? 'active' : ''}`}
+              onClick={() => scrollToSlide(index)}
+            >
+              <div className="thumb-number">{index + 1}</div>
+              <div className="thumb-content">
+                {thumbHtml[index] ? (
+                  <div dangerouslySetInnerHTML={{ __html: thumbHtml[index] }} />
+                ) : (
+                  <div className="thumb-placeholder">Slide {index + 1}</div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-      <div className="pptx-thumbnails">
-        {slides.map((slide, index) => (
-          <div
-            key={slide.path || index}
-            className={`pptx-thumb ${currentSlide === index ? 'active' : ''}`}
-            onClick={() => setCurrentSlide(index)}
-          >
-            <div className="thumb-number">{index + 1}</div>
-            <div className="thumb-content">
-              {thumbHtml[index] ? (
-                <div dangerouslySetInnerHTML={{ __html: thumbHtml[index] }} />
-              ) : (
-                <div className="thumb-placeholder">Slide {index + 1}</div>
-              )}
+      <div className="pptx-content-scroll" ref={scrollContainerRef}>
+        {slides.map((slide, index) => {
+          const slideHtml = buildSlidePreviewHtml(slide.xml, index, slide.imageDataUrls || []);
+          return (
+            <div
+              key={slide.path || index}
+              ref={(el) => (slideRefs.current[index] = el)}
+              className="pptx-slide-card"
+            >
+              <div
+                className="pptx-slide-html"
+                dangerouslySetInnerHTML={{
+                  __html: slideHtml || '<div class="pptx-empty-hint">Loading…</div>',
+                }}
+              />
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

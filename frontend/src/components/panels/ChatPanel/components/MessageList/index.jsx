@@ -3,6 +3,7 @@ import { MessageSquare } from 'lucide-react';
 import MessageItem from './MessageItem';
 import IterationFold from './IterationFold';
 import CompressionSummary from './CompressionSummary';
+import SubagentSyncFold from './SubagentSyncFold';
 import octopusAvatar from '../../../../../assets/images/octopus.png';
 import './MessageList.css';
 
@@ -85,6 +86,33 @@ function buildDisplayList(messages) {
         compressionInfo: msg.metadata?.compression_info || {},
       });
       continue;
+    }
+
+    // 检测同步 subagent 结果
+    if (msg.role === 'tool' && msg.metadata?.tool_name === 'spawn') {
+      try {
+        const parsed = JSON.parse(msg.content || '{}');
+        if (parsed.type === 'subagent_sync') {
+          // 累加 subagent 的 token 消耗到主 agent
+          if (parsed.token_usage) {
+            if (!lastAssistantUsage) {
+              lastAssistantUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+            }
+            lastAssistantUsage.prompt_tokens += parsed.token_usage.prompt_tokens || 0;
+            lastAssistantUsage.completion_tokens += parsed.token_usage.completion_tokens || 0;
+            lastAssistantUsage.total_tokens += (parsed.token_usage.prompt_tokens || 0) + (parsed.token_usage.completion_tokens || 0);
+          }
+          flushThought();
+          out.push({
+            type: 'subagent_sync',
+            message: msg,
+            result: parsed,
+          });
+          continue;
+        }
+      } catch (e) {
+        // 不是 JSON，按普通 tool result 处理
+      }
     }
 
     if (isToolResultMessage(msg)) {
@@ -239,6 +267,7 @@ function MessageList({
             result: tc.result,
             status: tc.status,
             error: tc.error,
+            subagentCalls: tc.subagentCalls,  // 传递 subagentCalls
           });
         });
     });
@@ -307,6 +336,16 @@ function MessageList({
             />
           );
         }
+        
+        if (item.type === 'subagent_sync') {
+          return (
+            <SubagentSyncFold
+              key={item.message.id || idx}
+              result={item.result}
+            />
+          );
+        }
+        
         // 仅隐藏最后一个 thought_fold（避免与 liveThought 重复展示），历史折叠正常显示
         if (item.type === 'thought_fold' && hasActiveToolCalls && idx === lastThoughtFoldIdx) {
           return null;

@@ -11,7 +11,7 @@ from backend.data.session_manager import SessionManager
 from backend.data.token_store import TokenUsageRepository
 
 # 配置压缩日志输出到独立文件
-_log_dir = Path(__file__).parent.parent.parent.parent / "logs"
+_log_dir = Path(__file__).parent.parent.parent / "logs"
 _log_dir.mkdir(exist_ok=True)
 _compression_log_file = _log_dir / "compression.log"
 

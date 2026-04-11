@@ -42,7 +42,7 @@ function InstanceList({
           disabled={loading || !sendWSMessage}
           title={!sendWSMessage ? 'WebSocket not connected' : 'Refresh'}
         >
-          <RefreshCw size={12} className={loading ? 'spin' : ''} />
+          <RefreshCw size={10} className={loading ? 'spin' : ''} />
         </button>
       </div>
 

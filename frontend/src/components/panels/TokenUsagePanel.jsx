@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Zap, TrendingUp, TrendingDown, Activity, Calendar, RefreshCw, Database } from 'lucide-react';
 import WindowDots from '../WindowDots';
 
@@ -21,6 +21,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
   });
   const [byProvider, setByProvider] = useState([]);
   const [byModel, setByModel] = useState([]);
+  const [byRequestType, setByRequestType] = useState([]);
   const [dailyUsage, setDailyUsage] = useState([]);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(7);
@@ -34,6 +35,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         setGlobalUsage(response.data.summary || {});
         setByProvider(response.data.by_provider || []);
         setByModel(response.data.by_model || []);
+        setByRequestType(response.data.by_request_type || []);
         setDailyUsage(response.data.daily || []);
       }
     } catch (err) {
@@ -48,6 +50,12 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
   }, [fetchTokenUsage]);
 
   const maxDailyTokens = Math.max(...dailyUsage.map(d => d.total_tokens || 0), 1);
+
+  // 计算 subagent 的 token 使用量
+  const subagentUsage = useMemo(() => {
+    const subagent = byRequestType.find(t => t.request_type === 'subagent');
+    return subagent || { total_tokens: 0, prompt_tokens: 0, completion_tokens: 0, request_count: 0 };
+  }, [byRequestType]);
 
   return (
     <div className="panel token-usage-panel">
@@ -65,7 +73,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
       </div>
 
       <div className="panel-content">
-        {loading && <div className="loading-overlay">Loading...</div>}
+        {loading && <div className="loading-inline">Loading...</div>}
 
         <div className="usage-summary">
           <div className="summary-card total">
@@ -75,9 +83,9 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
             <div className="card-content">
               <div className="card-label">Total Tokens</div>
               <div className="card-value">
-                {formatNumber(globalUsage.total_tokens + (globalUsage.total_cached_tokens || 0))}
+                {loading ? '—' : formatNumber(globalUsage.total_tokens + (globalUsage.total_cached_tokens || 0))}
               </div>
-              <div className="card-sub">{globalUsage.request_count} requests</div>
+              <div className="card-sub">{loading ? '—' : `${globalUsage.request_count} requests`}</div>
             </div>
           </div>
 
@@ -88,7 +96,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
             <div className="card-content">
               <div className="card-label">Prompt Tokens</div>
               <div className="card-value">
-                {formatNumber(globalUsage.total_prompt_tokens + (globalUsage.total_cached_tokens || 0))}
+                {loading ? '—' : formatNumber(globalUsage.total_prompt_tokens + (globalUsage.total_cached_tokens || 0))}
               </div>
               <div className="card-sub">Input / Upload (incl. cache)</div>
             </div>
@@ -100,7 +108,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
             </div>
             <div className="card-content">
               <div className="card-label">Cache Hit Tokens</div>
-              <div className="card-value">{formatNumber(globalUsage.total_cached_tokens || 0)}</div>
+              <div className="card-value">{loading ? '—' : formatNumber(globalUsage.total_cached_tokens || 0)}</div>
               <div className="card-sub">Prompt cache hits</div>
             </div>
           </div>
@@ -111,8 +119,19 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
             </div>
             <div className="card-content">
               <div className="card-label">Completion Tokens</div>
-              <div className="card-value">{formatNumber(globalUsage.total_completion_tokens)}</div>
+              <div className="card-value">{loading ? '—' : formatNumber(globalUsage.total_completion_tokens)}</div>
               <div className="card-sub">Output / Download</div>
+            </div>
+          </div>
+
+          <div className="summary-card subagent">
+            <div className="card-icon">
+              <Zap size={24} />
+            </div>
+            <div className="card-content">
+              <div className="card-label">Subagent Tokens</div>
+              <div className="card-value">{loading ? '—' : formatNumber(subagentUsage.total_tokens)}</div>
+              <div className="card-sub">{loading ? '—' : `${subagentUsage.request_count || 0} subagent calls`}</div>
             </div>
           </div>
         </div>
@@ -171,7 +190,9 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           <div className="usage-section">
             <h3>By Provider</h3>
             <div className="usage-table">
-              {byProvider.length === 0 ? (
+              {loading ? (
+                <div className="empty-state">Loading...</div>
+              ) : byProvider.length === 0 ? (
                 <div className="empty-state">No data available</div>
               ) : (
                 <table>
@@ -205,7 +226,9 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           <div className="usage-section">
             <h3>By Model</h3>
             <div className="usage-table">
-              {byModel.length === 0 ? (
+              {loading ? (
+                <div className="empty-state">Loading...</div>
+              ) : byModel.length === 0 ? (
                 <div className="empty-state">No data available</div>
               ) : (
                 <table>
@@ -288,18 +311,13 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           padding: var(--s-5);
         }
 
-        .loading-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
+        .loading-inline {
           display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--text);
-          z-index: 10;
+          padding: var(--s-6);
+          color: var(--text-2);
+          font-size: 13px;
         }
 
         .usage-summary {
@@ -342,6 +360,11 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         .summary-card.completion .card-icon {
           background: rgba(245, 158, 11, 0.2);
           color: #f59e0b;
+        }
+
+        .summary-card.subagent .card-icon {
+          background: rgba(210, 105, 30, 0.2);
+          color: #d2691e;
         }
 
         .card-icon {

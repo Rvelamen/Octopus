@@ -157,7 +157,9 @@ hr {
 
 /* App Layout - adapted to fit dashboard style */
 .app-container {
+  --app-sidebar-width: 220px;
   display: flex;
+  flex-direction: column;
   height: 100vh;
   width: 100vw;
   background: var(--bg);
@@ -165,9 +167,83 @@ hr {
   overflow: hidden;
 }
 
+.app-body.sidebar-is-collapsed {
+  --app-sidebar-width: 80px;
+}
+
+/* 整窗顶栏：品牌区宽度与侧栏一致，与参考图「红绿灯 | Logo | 折叠 | 竖线 | 主标题」同一条基线 */
+.app-titlebar {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 48px;
+  padding: 0 var(--s-5) 0 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--board);
+  -webkit-app-region: drag;
+}
+
+.app-titlebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  flex: 0 0 var(--app-sidebar-width);
+  width: var(--app-sidebar-width);
+  max-width: var(--app-sidebar-width);
+  min-width: 0;
+  padding: 0 var(--s-4);
+  box-sizing: border-box;
+  -webkit-app-region: drag;
+  transition: flex-basis 0.2s ease, width 0.2s ease;
+  overflow: hidden;
+}
+
+[data-platform="darwin"] .app-titlebar-brand {
+  /* -webkit-app-region: drag; */
+}
+
+.app-titlebar-logo-pill {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 0;
+  max-width: 100%;
+  padding: 4px 10px;
+  overflow: hidden;
+}
+
+.app-titlebar-logo.logo {
+  margin-bottom: 0;
+  font-size: 15px;
+  gap: var(--s-2);
+}
+
+.app-titlebar-logo .logo-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.app-titlebar-sep {
+  width: 1px;
+  height: 24px;
+  flex-shrink: 0;
+  background: var(--board);
+  align-self: center;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
 /* Sidebar */
 .sidebar {
-  width: 260px;
+  width: var(--app-sidebar-width);
   background: var(--surface);
   border-right: 1px solid var(--board);
   display: flex;
@@ -175,13 +251,12 @@ hr {
   padding: var(--s-4);
   flex-shrink: 0;
   -webkit-app-region: drag;
-  border-radius: 8px 0 0 8px;
+  border-radius: 0 0 0 8px;
   transition: width 0.2s ease, padding 0.2s ease;
   position: relative;
 }
 
 .sidebar.collapsed {
-  width: 80px;
   padding: var(--s-3);
 }
 
@@ -191,6 +266,7 @@ hr {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
 /* Collapsed sidebar: icon-only mode */
@@ -199,19 +275,6 @@ hr {
   flex-direction: column;
   align-items: center;
   gap: var(--s-2);
-}
-
-.sidebar.collapsed .logo {
-  justify-content: center;
-  margin-bottom: var(--s-4);
-}
-
-.sidebar.collapsed .logo span {
-  display: none;
-}
-
-.sidebar.collapsed .logo .logo-icon {
-  margin: 0;
 }
 
 .sidebar.collapsed nav {
@@ -225,8 +288,8 @@ hr {
 .sidebar.collapsed .nav-item {
   justify-content: center;
   padding: var(--s-2);
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
 }
 
 .sidebar.collapsed .nav-item span {
@@ -234,21 +297,20 @@ hr {
 }
 
 .sidebar.collapsed .nav-item svg {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
 }
 
 .sidebar.collapsed .status-panel {
   display: none;
 }
 
-/* Toggle Button - Outside drag region */
 .sidebar-toggle-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 32px;
+  height: 32px;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -257,17 +319,6 @@ hr {
   transition: all 0.2s;
   flex-shrink: 0;
   -webkit-app-region: no-drag;
-  position: absolute;
-  bottom: var(--s-3);
-  right: var(--s-3);
-  z-index: 10;
-}
-
-.sidebar.collapsed .sidebar-toggle-btn {
-  bottom: var(--s-3);
-  right: auto;
-  left: 50%;
-  transform: translateX(-50%);
 }
 
 .sidebar-toggle-btn:hover {
@@ -276,13 +327,40 @@ hr {
   color: var(--accent);
 }
 
+.sidebar-is-collapsed .sidebar-toggle-btn {
+  width: 30px;
+  height: 30px;
+}
+
+.app-titlebar .tab-title {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+  padding: 0 var(--s-4);
+  -webkit-app-region: no-drag;
+  background: var(--surface);
+}
+
+.app-titlebar .tab-title > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-titlebar .top-actions {
+  flex-shrink: 0;
+}
+
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   background: var(--bg);
   overflow: hidden;
-  border-radius: 0 12px 12px 0;
+  border-radius: 0 0 12px 0;
+  min-width: 0;
 }
 
 .logo {
@@ -304,17 +382,17 @@ hr {
 .nav-item {
   display: flex;
   align-items: center;
-  gap: var(--s-2);
+  gap: var(--s-3);
   width: 100%;
   text-align: left;
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-2);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
-  padding: var(--s-2) var(--s-3);
-  margin-bottom: var(--s-1);
+  padding: var(--s-3) var(--s-4);
+  margin-bottom: var(--s-2);
   cursor: pointer;
   transition: all 0.2s ease;
   border-radius: var(--r-sm);
@@ -339,7 +417,7 @@ hr {
 }
 
 .status-line {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-3);
   margin-bottom: var(--s-2);
   font-family: var(--font-mono);
@@ -357,6 +435,7 @@ hr {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--s-4);
   padding: 0 var(--s-5);
   background: var(--surface);
   -webkit-app-region: drag;
@@ -369,6 +448,8 @@ hr {
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
+  flex: 1;
+  min-width: 0;
 }
 
 .status-indicator {
@@ -482,7 +563,7 @@ hr {
 .window-header {
   background: var(--surface);
   color: var(--text);
-  padding: var(--s-2) var(--s-5);
+  padding: var(--s-1) var(--s-5);
   font-weight: 600;
   font-size: 13px;
   border-bottom: 1px solid var(--board);
@@ -888,27 +969,23 @@ hr {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.config-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--s-2) var(--s-6);
   background: var(--surface);
-  border-radius: var(--r-lg) var(--r-lg) 0 0;
   border: 1px solid var(--board);
-  border-bottom: none;
+  border-radius: var(--r-lg);
 }
 
-.toolbar-left {
+.config-form-container .window-header {
   display: flex;
   align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-4);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--board);
 }
 
-.toolbar-title {
-  margin-left: var(--s-2);
-  font-size: 14px;
+.config-form-container .window-header .window-title {
+  flex: 1;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text);
   font-family: var(--font-mono);
@@ -1162,9 +1239,7 @@ hr {
   gap: var(--s-1);
   padding: var(--s-2) var(--s-4);
   background: var(--surface);
-  border: 1px solid var(--board);
-  border-bottom: none;
-  border-radius: 0;
+  border-bottom: 1px solid var(--board);
 }
 
 .config-tab {
@@ -1497,30 +1572,41 @@ hr {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.mcp-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--s-2) var(--s-4);
   background: var(--surface);
-  border-radius: var(--r-lg) var(--r-lg) 0 0;
   border: 1px solid var(--board);
+  border-radius: var(--r-lg);
 }
 
-.mcp-toolbar .toolbar-left {
+.mcp-panel-container .window-header {
   display: flex;
   align-items: center;
-  gap: var(--s-2);
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-4);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--board);
 }
 
-.mcp-toolbar .toolbar-title {
-  margin-left: var(--s-1);
+.mcp-panel-container .window-header .window-title {
+  flex: 1;
   font-size: 12px;
   font-weight: 600;
   color: var(--text);
   font-family: var(--font-mono);
+}
+
+.mcp-panel-container .window-header .header-icon {
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.mcp-panel-container .window-header .header-icon:hover {
+  color: var(--text);
+  transform: scale(1.1);
+}
+
+.mcp-panel-container .window-header .header-icon.spinning {
+  animation: spin 1s linear infinite;
 }
 
 .mcp-toolbar .toolbar-right {
@@ -1541,9 +1627,7 @@ hr {
   gap: var(--s-1);
   padding: var(--s-2) var(--s-4);
   background: var(--surface);
-  border: 1px solid var(--board);
-  border-bottom: none;
-  border-radius: 0;
+  border-bottom: 1px solid var(--board);
 }
 
 .mcp-tab {
@@ -3989,7 +4073,7 @@ hr {
   display: flex;
   align-items: center;
   gap: var(--s-3);
-  padding: var(--s-2) var(--s-4);
+  padding: var(--s-1) var(--s-4);
   background: var(--surface-2);
   border-bottom: 1px solid var(--board);
 }
@@ -4142,7 +4226,7 @@ hr {
   display: flex;
   align-items: center;
   gap: var(--s-3);
-  padding: var(--s-3) var(--s-4);
+  padding: var(--s-1) var(--s-4);
   background: var(--surface-2);
   border-bottom: 1px solid var(--board);
 }
@@ -4801,11 +4885,12 @@ hr {
   background: var(--bg);
 }
 
-/* Workspace Toolbar */
+/* Workspace Toolbar（标题已上移至 app-titlebar，此处仅保留操作按钮） */
 .workspace-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--s-2);
   padding: var(--s-2) var(--s-4);
   background: var(--surface);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
@@ -4891,7 +4976,8 @@ hr {
   overflow: hidden;
 }
 
-.sidebar-header {
+/* 必须限定在 workspace 内：勿与 App 主侧栏 .sidebar-header（Logo 区）共用类名样式，否则会串台 */
+.workspace-sidebar .sidebar-header {
   display: flex;
   align-items: center;
   padding: var(--s-3) var(--s-4);
@@ -5832,16 +5918,17 @@ hr {
 
 .pptx-thumb {
   flex-shrink: 0;
-  width: 100px;
-  height: 75px;
+  width: 100%;
+  height: auto;
+  min-height: 60px;
   background: var(--surface-2);
   border: 2px solid var(--board);
   border-radius: var(--r-md);
   cursor: pointer;
   transition: all 0.2s;
   overflow: hidden;
-  padding: var(--s-2);
-  font-size: 10px;
+  padding: var(--s-1);
+  font-size: 9px;
   color: var(--text-3);
   display: flex;
   flex-direction: column;
@@ -5858,16 +5945,16 @@ hr {
 }
 
 .thumb-number {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--text-3);
-  margin-bottom: var(--s-1);
+  margin-bottom: 2px;
   font-family: var(--font-mono);
 }
 
 .thumb-content {
   flex: 1;
   overflow: hidden;
-  font-size: 9px;
+  font-size: 8px;
   line-height: 1.2;
 }
 
@@ -5887,6 +5974,259 @@ hr {
   padding: var(--s-2) var(--s-3);
   color: var(--text-3);
   font-size: 12px;
+}
+
+/* ===== PPTX Vertical Scroll Mode ===== */
+.pptx-scroll-mode {
+  flex-direction: row;
+}
+
+.pptx-sidebar {
+  width: 140px;
+  background: var(--surface);
+  border-right: 1px solid var(--board);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.pptx-sidebar-header {
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--board);
+  background: var(--surface-2);
+}
+
+.pptx-sidebar-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+.pptx-thumbnails-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.pptx-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s-6);
+  background: var(--surface-2);
+  scroll-behavior: smooth;
+}
+
+.pptx-slide-card {
+  background: white;
+  border-radius: var(--r-lg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: var(--s-6);
+  margin-bottom: var(--s-6);
+  min-width: 600px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  transition: box-shadow 0.3s ease;
+}
+
+.pptx-slide-card:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* PPTX Slide Images */
+.pptx-slide-img-wrap {
+  margin: var(--s-3) 0;
+  text-align: center;
+}
+
+.pptx-slide-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--r-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Scrollbar styling for PPTX */
+.pptx-content-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pptx-content-scroll::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+.pptx-content-scroll::-webkit-scrollbar-thumb {
+  background: var(--board);
+  border-radius: 4px;
+}
+
+.pptx-content-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}
+
+.pptx-thumbnails-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pptx-thumbnails-scroll::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+.pptx-thumbnails-scroll::-webkit-scrollbar-thumb {
+  background: var(--board);
+  border-radius: 3px;
+}
+
+.pptx-thumbnails-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}
+
+/* ===== PDF Vertical Scroll Mode ===== */
+.pdf-scroll-mode {
+  flex-direction: row;
+}
+
+.pdf-sidebar {
+  width: 140px;
+  background: var(--surface);
+  border-right: 1px solid var(--board);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.pdf-sidebar-header {
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--board);
+  background: var(--surface-2);
+}
+
+.pdf-sidebar-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+.pdf-thumbnails-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.pdf-thumb {
+  flex-shrink: 0;
+  width: 100%;
+  height: 40px;
+  background: var(--surface-2);
+  border: 2px solid var(--board);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+.pdf-thumb:hover {
+  border-color: var(--accent);
+  background: var(--surface-3);
+}
+
+.pdf-thumb.active {
+  border-color: var(--accent);
+  background: var(--surface-3);
+  color: var(--accent);
+}
+
+.pdf-thumb-number {
+  font-size: 11px;
+}
+
+.pdf-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s-6);
+  background: var(--surface-2);
+  scroll-behavior: smooth;
+}
+
+.pdf-page-card {
+  background: white;
+  border-radius: var(--r-lg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  margin-bottom: var(--s-6);
+  display: flex;
+  justify-content: center;
+  transition: box-shadow 0.3s ease;
+}
+
+.pdf-page-card:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+
+.pdf-content-scroll .react-pdf__Document {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pdf-content-scroll .react-pdf__Page {
+  background: white;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.pdf-content-scroll .react-pdf__Page__canvas {
+  display: block;
+  max-width: 100%;
+}
+
+.pdf-content-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pdf-content-scroll::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+.pdf-content-scroll::-webkit-scrollbar-thumb {
+  background: var(--board);
+  border-radius: 4px;
+}
+
+.pdf-content-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}
+
+.pdf-thumbnails-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pdf-thumbnails-scroll::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+.pdf-thumbnails-scroll::-webkit-scrollbar-thumb {
+  background: var(--board);
+  border-radius: 3px;
+}
+
+.pdf-thumbnails-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
 }
 
 /* react-pdf default styles */
@@ -7468,7 +7808,7 @@ hr {
   display: flex;
   align-items: center;
   gap: var(--s-3);
-  padding: var(--s-2) var(--s-4);
+  padding: var(--s-1) var(--s-4);
   background: var(--surface-2);
   border-bottom: 1px solid var(--board);
 }
@@ -7507,9 +7847,7 @@ hr {
 }
 
 .new-chat-btn:hover {
-  background: var(--accent);
   border-color: var(--accent);
-  color: var(--text-invert);
 }
 
 .new-chat-btn.active {
@@ -7719,7 +8057,7 @@ hr {
   display: flex;
   align-items: center;
   gap: var(--s-3);
-  padding: var(--s-3) var(--s-4);
+  padding: var(--s-2) var(--s-4);
   background: var(--surface-2);
   border-bottom: 1px solid var(--board);
 }

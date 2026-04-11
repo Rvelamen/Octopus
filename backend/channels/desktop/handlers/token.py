@@ -44,6 +44,7 @@ class TokenUsageHandler(MessageHandler):
                     "summary": summary.to_dict(),
                     "by_provider": self.token_repo.get_usage_by_provider(days),
                     "by_model": self.token_repo.get_usage_by_model(days),
+                    "by_request_type": self.token_repo.get_usage_by_request_type(days),
                     "daily": self.token_repo.get_daily_usage(days),
                 }
             elif scope == "instance" and scope_id:
