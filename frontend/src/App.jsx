@@ -12,7 +12,7 @@ import {
   Server,
   Bot,
   Package,
-  History,
+  History as HistoryIcon,
   FolderOpen,
   Clock,
   Users,
@@ -26,19 +26,17 @@ import {
   BookOpen,
 } from "lucide-react";
 import octopusLogo from "./assets/octopus-logo.png";
-import WindowDots from "./components/WindowDots";
-import {
-  ConfigPanel,
-  ChatPanel,
-  MCPPanel,
-  ExtensionsPanel,
-  HistoryPanel,
-  WorkspacePanel,
-  CronPanel,
-  AgentsPanel,
-  TokenUsagePanel,
-  KnowledgePanel,
-} from "./components/panels";
+import WindowDots from "./components/layout/WindowDots";
+import Chat from "./pages/Chat/ChatPanel";
+import Config from "./pages/Config";
+import MCP from "./pages/MCP";
+import Extensions from "./pages/Extensions";
+import History from "./pages/History";
+import Workspace from "./pages/Workspace";
+import Cron from "./pages/Cron";
+import Agents from "./pages/Agents";
+import Tokens from "./pages/Tokens";
+import Knowledge from "./pages/Knowledge";
 
 const WS_BASE = "ws://127.0.0.1:18791";
 
@@ -1104,7 +1102,7 @@ function App() {
               className={`nav-item ${activeTab === "history" ? "active" : ""}`}
               onClick={() => handleNavClick("history")}
             >
-              <History size={18} />
+              <HistoryIcon size={18} />
               <span>HISTORY</span>
             </button>
             <button
@@ -1125,7 +1123,7 @@ function App() {
         <div className="content-area">
           <Routes>
             <Route path="/chat" element={
-              <ChatPanel
+              <Chat
                 sendWSMessage={sendWSMessage}
                 onSendMessage={handleSendMessage}
                 onStopGeneration={handleStopGeneration}
@@ -1147,7 +1145,7 @@ function App() {
               />
             } />
             <Route path="/config" element={
-              <ConfigPanel
+              <Config
                 config={config}
                 setConfig={setConfig}
                 onSave={handleSaveConfig}
@@ -1155,22 +1153,22 @@ function App() {
                 sendWSMessage={sendWSMessage}
               />
             } />
-            <Route path="/mcp" element={<MCPPanel sendWSMessage={sendWSMessage} />} />
+            <Route path="/mcp" element={<MCP sendWSMessage={sendWSMessage} />} />
             <Route path="/extensions" element={
-              <ExtensionsPanel sendWSMessage={sendWSMessage} ws={ws.current} />
+              <Extensions sendWSMessage={sendWSMessage} ws={ws.current} />
             } />
             <Route path="/workspaces" element={
-              <WorkspacePanel sendWSMessage={sendWSMessage} />
+              <Workspace sendWSMessage={sendWSMessage} />
             } />
             <Route path="/history" element={
-              <HistoryPanel sendWSMessage={sendWSMessage} />
+              <History sendWSMessage={sendWSMessage} />
             } />
-            <Route path="/cron" element={<CronPanel sendWSMessage={sendWSMessage} />} />
-            <Route path="/agents" element={<AgentsPanel sendWSMessage={sendWSMessage} />} />
-            <Route path="/tokens" element={<TokenUsagePanel sendWSMessage={sendWSMessage} />} />
-            <Route path="/knowledge" element={<KnowledgePanel sendWSMessage={sendWSMessage} />} />
+            <Route path="/cron" element={<Cron sendWSMessage={sendWSMessage} />} />
+            <Route path="/agents" element={<Agents sendWSMessage={sendWSMessage} />} />
+            <Route path="/tokens" element={<Tokens sendWSMessage={sendWSMessage} />} />
+            <Route path="/knowledge" element={<Knowledge sendWSMessage={sendWSMessage} />} />
             <Route path="/" element={
-              <ChatPanel
+              <Chat
                 sendWSMessage={sendWSMessage}
                 onSendMessage={handleSendMessage}
                 onStopGeneration={handleStopGeneration}

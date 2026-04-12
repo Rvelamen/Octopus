@@ -572,6 +572,16 @@ hr {
   gap: 12px;
 }
 
+.window-header .window-title {
+  flex: 1;
+}
+
+.window-header .window-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
 .window-dots {
   display: flex;
   gap: 6px;
@@ -986,6 +996,30 @@ hr {
 .config-form-container .window-header .window-title {
   flex: 1;
   font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+.config-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--s-4) var(--s-6);
+  background: var(--surface);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  border: 1px solid var(--board);
+  border-bottom: none;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.toolbar-title {
+  margin-left: var(--s-2);
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
   font-family: var(--font-mono);

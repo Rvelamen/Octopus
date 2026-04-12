@@ -80,19 +80,12 @@ class KnowledgeTaskWorker:
                 logger.warning(f"Failed to get workspace path, using fallback: {e}")
                 current_workspace = self._workspace_root
 
-            # 检查是否是 preview 任务（output_path 为 None）
-            is_preview = task.output_path is None
-
             # 构建蒸馏任务描述
             template_instructions = ""
             if task.template and task.template != "custom":
                 template_instructions = f"\nTemplate: {task.template}\nFollow the template guidelines for {task.template}."
 
-            output_instruction = ""
-            if task.output_path:
-                output_instruction = f"\n\nOutput path: Save the extracted note to: `{task.output_path}`"
-            else:
-                output_instruction = "\n\n**Preview mode**: Do NOT write to a file. Instead, return the extracted Markdown content in your final response, starting with the exact raw Markdown you would have written."
+            output_instruction = f"\n\nOutput path: Save the extracted note to: `{task.output_path}`"
 
             distill_task_desc = f"""You are tasked with distilling a document into a structured Markdown note.
 
@@ -106,11 +99,11 @@ class KnowledgeTaskWorker:
 1. Use the `read` tool to read the source document
 2. Analyse the content and extract key information based on the user's request
 3. Optionally use `kb_search` to find related notes in the knowledge base
-4. {'Use the `write` tool to save the extracted note as Markdown' if task.output_path else 'Return the extracted Markdown in your final response (do NOT write to a file)'}
+4. Use the `write` tool to save the extracted note as Markdown
    - Include YAML front-matter with source, extracted_at, and extraction_prompt
    - Use proper Markdown headings, lists, and tables
    - Add wiki-style links like [[Related Concept]] where appropriate
-5. When done, report the output path (or the raw Markdown for preview) in your final response
+5. When done, report the output path in your final response
 
 Be concise but complete. If information is not found in the document, state it explicitly.
 """.strip()
@@ -138,8 +131,7 @@ Be concise but complete. If information is not found in the document, state it e
                     data.update(extra)
                 await self._broadcast_progress(data)
 
-            # 初始化 extra_data，避免 preview 模式分支中未定义
-            extra_data: dict = {}
+
 
             try:
                 await on_progress(
@@ -236,39 +228,26 @@ Be concise but complete. If information is not found in the document, state it e
                                     markdown_content = next_reasoning
                                 break
 
-                # ✅ 根据是否有 output_path 决定写入文件还是发送给前端
-                logger.info(f"Distill task {task.id}: Checking write fallback - output_path={output_path}, is_preview={is_preview}, has_markdown={markdown_content is not None}")
-
-                if is_preview:
-                    # Preview 模式：将 markdown 通过 progress 事件发送给前端
-                    logger.info(f"Distill task {task.id}: Preview mode, sending markdown to frontend ({len(markdown_content) if markdown_content else 0} chars)")
-                    if markdown_content:
-                        extra_data = {"markdown": markdown_content}
-                    else:
-                        logger.warning(f"Distill task {task.id}: No markdown content to send for preview!")
-                        extra_data = {"markdown": "", "warning": "No markdown content extracted"}
-                else:
-                    # 正式模式：写入文件
-                    # 检查 subagent 是否已经调用了 write 工具
-                    wrote_file = False
-                    if result and "iterations" in result:
-                        for iter_data in result["iterations"]:
-                            for tool in iter_data.get("tools", []):
-                                tool_name = tool.get("toolName", "")
-                                if tool_name in ("write", "write_file"):
-                                    wrote_file = True
-                                    logger.info(f"Task {task.id}: Subagent already wrote file via {tool_name}")
-                                    break
-                            if wrote_file:
+                # 检查 subagent 是否已经调用了 write 工具
+                wrote_file = False
+                if result and "iterations" in result:
+                    for iter_data in result["iterations"]:
+                        for tool in iter_data.get("tools", []):
+                            tool_name = tool.get("toolName", "")
+                            if tool_name in ("write", "write_file"):
+                                wrote_file = True
+                                logger.info(f"Task {task.id}: Subagent already wrote file via {tool_name}")
                                 break
+                        if wrote_file:
+                            break
 
-                    if not wrote_file and markdown_content:
-                        # Subagent 没有写文件，我们代为写入
-                        logger.info(f"Distill task {task.id}: Fallback writing {len(markdown_content)} chars to {output_path}")
+                if not wrote_file and markdown_content:
+                    # Subagent 没有写文件，我们代为写入
+                    logger.info(f"Distill task {task.id}: Fallback writing {len(markdown_content)} chars to {output_path}")
 
-                        # 添加 frontmatter（如果没有的话）
-                        if not markdown_content.startswith("---"):
-                            frontmatter = f"""---
+                    # 添加 frontmatter（如果没有的话）
+                    if not markdown_content.startswith("---"):
+                        frontmatter = f"""---
 source: {source_path_for_frontmatter}
 extracted_at: {extracted_at}
 extraction_prompt: |
@@ -276,31 +255,31 @@ extraction_prompt: |
 ---
 
 """
-                            markdown_content = frontmatter + markdown_content
+                        markdown_content = frontmatter + markdown_content
 
-                        try:
-                            full_path = Path(output_path)
-                            if not full_path.is_absolute():
-                                full_path = Path(current_workspace) / full_path
-                            full_path.parent.mkdir(parents=True, exist_ok=True)
-                            full_path.write_text(markdown_content, encoding="utf-8")
-                            logger.info(f"✅ Wrote distilled content to {output_path} (subagent didn't call write tool)")
-                        except Exception as e:
-                            logger.error(f"❌ Failed to write distilled content: {e}")
-                            import traceback
-                            logger.error(traceback.format_exc())
-                    elif not wrote_file:
-                        logger.warning(f"Distill task {task.id}: No write tool called AND no markdown content - cannot fallback!")
+                    try:
+                        full_path = Path(output_path)
+                        if not full_path.is_absolute():
+                            full_path = Path(current_workspace) / full_path
+                        full_path.parent.mkdir(parents=True, exist_ok=True)
+                        full_path.write_text(markdown_content, encoding="utf-8")
+                        logger.info(f"✅ Wrote distilled content to {output_path} (subagent didn't call write tool)")
+                    except Exception as e:
+                        logger.error(f"❌ Failed to write distilled content: {e}")
+                        import traceback
+                        logger.error(traceback.format_exc())
+                elif not wrote_file:
+                    logger.warning(f"Distill task {task.id}: No write tool called AND no markdown content - cannot fallback!")
 
-                    # 更新索引
-                    output_full_for_index = Path(output_path)
-                    if not output_full_for_index.is_absolute():
-                        output_full_for_index = Path(current_workspace) / output_full_for_index
-                    if output_full_for_index.exists():
-                        self.engine.update_note(output_path)
-                        logger.info(f"Updated index for {output_path}")
-                    else:
-                        logger.warning(f"Output file {output_path} does not exist after distillation!")
+                # 更新索引
+                output_full_for_index = Path(output_path)
+                if not output_full_for_index.is_absolute():
+                    output_full_for_index = Path(current_workspace) / output_full_for_index
+                if output_full_for_index.exists():
+                    self.engine.update_note(output_path)
+                    logger.info(f"Updated index for {output_path}")
+                else:
+                    logger.warning(f"Output file {output_path} does not exist after distillation!")
 
                 self.queue.update_status(
                     task.id,
@@ -310,14 +289,12 @@ extraction_prompt: |
                     progress=1.0,
                     result_path=output_path,
                 )
-                if not extra_data:
-                    extra_data = {"output_path": output_path}
                 await on_progress(
                     task.request_id,
                     "completed",
                     "Done",
                     1.0,
-                    extra_data,
+                    {"output_path": output_path},
                 )
 
             except asyncio.TimeoutError:

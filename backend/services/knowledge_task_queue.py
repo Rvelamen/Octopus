@@ -133,6 +133,7 @@ class KnowledgeTaskQueue:
             conn.commit()
 
     def list_recent(self, limit: int = 20) -> list[DistillTask]:
+        """Deprecated: Use list_tasks instead for pagination support."""
         with self._connection() as conn:
             cursor = conn.execute(
                 """
@@ -143,6 +144,34 @@ class KnowledgeTaskQueue:
                 (limit,),
             )
             return [self._row_to_task(row) for row in cursor.fetchall()]
+
+    def list_tasks(self, limit: int = 20, offset: int = 0) -> tuple[list[DistillTask], int]:
+        """List tasks with pagination support.
+
+        Args:
+            limit: Number of tasks per page
+            offset: Number of tasks to skip
+
+        Returns:
+            Tuple of (tasks list, total count)
+        """
+        with self._connection() as conn:
+            # Get total count
+            total = conn.execute(
+                "SELECT COUNT(*) FROM knowledge_distill_tasks"
+            ).fetchone()[0]
+
+            # Get paginated data
+            cursor = conn.execute(
+                """
+                SELECT * FROM knowledge_distill_tasks
+                ORDER BY created_at DESC
+                LIMIT ? OFFSET ?
+                """,
+                (limit, offset),
+            )
+            tasks = [self._row_to_task(row) for row in cursor.fetchall()]
+            return tasks, total
 
     def get_by_request_id(self, request_id: str) -> Optional[DistillTask]:
         with self._connection() as conn:

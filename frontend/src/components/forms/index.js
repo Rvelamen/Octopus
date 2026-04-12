@@ -1,4 +1,4 @@
-export { default as InputField } from './InputField';
-export { default as PasswordField } from './PasswordField';
-export { default as SelectField } from './SelectField';
-export { default as SwitchField } from './SwitchField';
+export { default as InputField } from './InputField/index.jsx';
+export { default as PasswordField } from './PasswordField/index.jsx';
+export { default as SelectField } from './SelectField/index.jsx';
+export { default as SwitchField } from './SwitchField/index.jsx';

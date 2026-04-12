@@ -193,7 +193,7 @@ class KnowledgeGraphHandler(_KnowledgeHandlerMixin, MessageHandler):
 
 
 class KnowledgeDistillListHandler(_KnowledgeHandlerMixin, MessageHandler):
-    """Handle knowledge distillation task list requests."""
+    """Handle knowledge distillation task list requests with pagination."""
 
     def __init__(self, bus, queue: KnowledgeTaskQueue):
         super().__init__(bus)
@@ -202,7 +202,8 @@ class KnowledgeDistillListHandler(_KnowledgeHandlerMixin, MessageHandler):
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         try:
             limit = message.data.get("limit", 20)
-            tasks = self.queue.list_recent(limit=limit)
+            offset = message.data.get("offset", 0)
+            tasks, total = self.queue.list_tasks(limit=limit, offset=offset)
             await self.send_response(websocket, WSMessage(
                 type=MessageType.KNOWLEDGE_DISTILL_LIST_RESULT,
                 request_id=message.request_id,
@@ -222,7 +223,12 @@ class KnowledgeDistillListHandler(_KnowledgeHandlerMixin, MessageHandler):
                             "updated_at": t.updated_at,
                         }
                         for t in tasks
-                    ]
+                    ],
+                    "pagination": {
+                        "total": total,
+                        "limit": limit,
+                        "offset": offset,
+                    }
                 }
             ))
         except Exception as e:
@@ -232,9 +238,9 @@ class KnowledgeDistillListHandler(_KnowledgeHandlerMixin, MessageHandler):
 
 class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
     """Handle knowledge distillation requests (async queue mode).
-    
-    This handler now uses the task queue for asynchronous execution,
-    supporting both file write mode and preview mode.
+
+    This handler uses the task queue for asynchronous execution,
+    writing the distilled content to a markdown file.
     """
 
     def __init__(self, bus, queue: KnowledgeTaskQueue):
