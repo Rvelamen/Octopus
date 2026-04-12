@@ -7119,6 +7119,7 @@ hr {
   opacity: 0;
   transition: all 0.2s;
   border-radius: var(--r-sm);
+  padding: var(--s-1) var(--s-1);
 }
 
 .agent-item:hover .delete-btn {

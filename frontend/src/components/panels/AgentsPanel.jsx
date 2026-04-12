@@ -324,9 +324,12 @@ function AgentsPanel({ sendWSMessage }) {
                       <div className="agent-name">{agent.name}</div>
                       <div className="agent-desc">{agent.description}</div>
                     </div>
-                    <button className="delete-btn" onClick={(e) => { e.stopPropagation(); deleteAgent(agent); }} title="Delete">
-                      <Trash2 size={14} />
-                    </button>
+                    <Trash2
+                      className="delete-btn"
+                      size={16}
+                      onClick={(e) => { e.stopPropagation(); deleteAgent(agent); }}
+                      title="Delete"
+                    />
                   </div>
                 ))}
               </div>
