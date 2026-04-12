@@ -135,7 +135,17 @@ To spawn a subagent with a specific role, use:
 
 Example: Spawn a code-reviewer subagent to review a file.
 """)
-        
+
+        # Knowledge base guidance
+        parts.append("""# Knowledge Base
+
+You have access to a local markdown-based knowledge base maintained by the user.
+- Use `kb_search` to find relevant notes by keyword.
+- Use `kb_read_note` to read the full content of a note once you know its path.
+- Use `kb_list_links` to explore related notes via [[wiki-style links]].
+When the user asks about a topic, prefer searching the knowledge base before answering from memory.
+""")
+
         return "\n\n---\n\n".join(parts)
     
     def _load_bootstrap_files(self) -> str:

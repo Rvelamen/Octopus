@@ -19,6 +19,7 @@ from backend.tools.shell import ExecTool
 
 from backend.tools.action import ActionTool
 from backend.tools.message import MessageTool
+from backend.tools.knowledge import KBSearchTool, KBReadNoteTool, KBListLinksTool
 from backend.extensions.loader import SkillsLoader
 from backend.agent.loader import SubAgentLoader, SubAgentConfig
 from backend.agent.aggregator import SubagentAggregator
@@ -193,6 +194,9 @@ class SubagentManager:
             ),
             "action": ActionTool,
             "message": lambda: MessageTool(send_callback=self.bus.publish_outbound),
+            "kb_search": KBSearchTool,
+            "kb_read_note": KBReadNoteTool,
+            "kb_list_links": KBListLinksTool,
         }
         
         # Register requested tools
@@ -231,10 +235,13 @@ class SubagentManager:
             restrict_to_workspace=self.exec_config.restrict_to_workspace,
         ))
         tools.register(ActionTool())
+        tools.register(KBSearchTool())
+        tools.register(KBReadNoteTool())
+        tools.register(KBListLinksTool())
         message_tool = MessageTool(send_callback=self.bus.publish_outbound)
         message_tool.set_context(origin.get("channel", ""), origin.get("chat_id", ""))
         tools.register(message_tool)
-        
+
         return tools
     
     def _load_bootstrap_files(self) -> str:

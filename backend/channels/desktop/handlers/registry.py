@@ -1,7 +1,8 @@
 """Handler registry for Desktop channel."""
 
 import asyncio
-
+import time
+from pathlib import Path
 from fastapi import WebSocket
 from loguru import logger
 
@@ -55,7 +56,7 @@ from backend.channels.desktop.handlers.session import (
 # Import workspace handlers
 from backend.channels.desktop.handlers.workspace import (
     WorkspaceGetRootHandler, WorkspaceListHandler, WorkspaceReadHandler,
-    WorkspaceWriteHandler, WorkspaceDeleteHandler, WorkspaceMkdirHandler,
+    WorkspaceWriteHandler, WorkspaceWriteChunkHandler, WorkspaceDeleteHandler, WorkspaceMkdirHandler,
     WorkspaceRenameHandler
 )
 
@@ -87,6 +88,18 @@ from backend.channels.desktop.handlers.image import (
     ImageGenerateHandler, ImageGetUnderstandingProvidersHandler,
     ImageGetGenerationProvidersHandler
 )
+
+# Import knowledge handlers
+from backend.channels.desktop.handlers.knowledge import (
+    KnowledgeListHandler, KnowledgeReadHandler, KnowledgeWriteHandler,
+    KnowledgeDeleteHandler, KnowledgeSearchHandler, KnowledgeGraphHandler,
+    KnowledgeDistillHandler, KnowledgeDistillPreviewHandler, KnowledgeDistillListHandler,
+    KnowledgeDistillDetailHandler, KnowledgeGetTagsHandler, KnowledgeExportHandler, KnowledgeImportHandler
+)
+
+from backend.services.knowledge_engine import KnowledgeGraphEngine
+from backend.services.knowledge_task_queue import KnowledgeTaskQueue
+from backend.services.knowledge_task_worker import KnowledgeTaskWorker
 
 
 class HandlerRegistry:
@@ -187,6 +200,7 @@ class HandlerRegistry:
             MessageType.WORKSPACE_LIST: WorkspaceListHandler(bus),
             MessageType.WORKSPACE_READ: WorkspaceReadHandler(bus),
             MessageType.WORKSPACE_WRITE: WorkspaceWriteHandler(bus),
+            MessageType.WORKSPACE_WRITE_CHUNK: WorkspaceWriteChunkHandler(),
             MessageType.WORKSPACE_DELETE: WorkspaceDeleteHandler(bus),
             MessageType.WORKSPACE_MKDIR: WorkspaceMkdirHandler(bus),
             MessageType.WORKSPACE_RENAME: WorkspaceRenameHandler(bus),
@@ -241,23 +255,74 @@ class HandlerRegistry:
             MessageType.TTS_GET_STYLES: TTSHandler(bus, self.db),
         })
 
+        # Register Knowledge Base handlers
+        from backend.utils.helpers import get_workspace_path
+        workspace_root = str(get_workspace_path())
+        knowledge_engine = KnowledgeGraphEngine(workspace_root)
+        task_queue_db = Path(workspace_root) / "knowledge" / ".distill_tasks.db"
+        self.knowledge_task_queue = KnowledgeTaskQueue(task_queue_db)
+        self.knowledge_task_worker = KnowledgeTaskWorker(
+            queue=self.knowledge_task_queue,
+            bus=bus,
+            engine=knowledge_engine,
+            workspace_root=Path(workspace_root),
+            subagent_manager=self.agent_loop.subagents,
+        )
+        self.knowledge_task_worker.start()
+
+        self.handlers.update({
+            MessageType.KNOWLEDGE_LIST: KnowledgeListHandler(bus, knowledge_engine),
+            MessageType.KNOWLEDGE_READ: KnowledgeReadHandler(bus, knowledge_engine),
+            MessageType.KNOWLEDGE_WRITE: KnowledgeWriteHandler(bus, knowledge_engine),
+            MessageType.KNOWLEDGE_DELETE: KnowledgeDeleteHandler(bus, knowledge_engine),
+            MessageType.KNOWLEDGE_SEARCH: KnowledgeSearchHandler(bus, knowledge_engine),
+            MessageType.KNOWLEDGE_GRAPH: KnowledgeGraphHandler(bus, knowledge_engine),
+            MessageType.KNOWLEDGE_DISTILL: KnowledgeDistillHandler(bus, self.knowledge_task_queue),
+            MessageType.KNOWLEDGE_DISTILL_PREVIEW: KnowledgeDistillPreviewHandler(bus, self.knowledge_task_queue),
+            MessageType.KNOWLEDGE_DISTILL_LIST: KnowledgeDistillListHandler(bus, self.knowledge_task_queue),
+            MessageType.KNOWLEDGE_DISTILL_DETAIL: KnowledgeDistillDetailHandler(bus, self.knowledge_task_queue),
+            MessageType.KNOWLEDGE_GET_TAGS: KnowledgeGetTagsHandler(bus, knowledge_engine),
+            MessageType.KNOWLEDGE_EXPORT: KnowledgeExportHandler(bus, knowledge_engine, self.knowledge_task_queue),
+            MessageType.KNOWLEDGE_IMPORT: KnowledgeImportHandler(bus, knowledge_engine),
+        })
+
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        """Route message to appropriate handler."""
+        """Route message to appropriate handler with timing and structured logging."""
         handler = self.handlers.get(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
+        request_id = message.request_id
+        start = time.perf_counter()
+        error_info: str | None = None
+
         if handler:
             try:
                 await handler.handle(websocket, message)
             except Exception as e:
+                error_info = str(e)
                 logger.error(f"Handler error for {message.type}: {e}")
                 await websocket.send_json(WSMessage(
                     type=MessageType.ERROR,
-                    request_id=message.request_id,
+                    request_id=request_id,
                     data={"error": f"Internal error: {str(e)}"}
                 ).to_dict())
         else:
+            error_info = f"Unknown message type: {msg_type_str}"
             logger.warning(f"No handler for message type: {message.type}")
             await websocket.send_json(WSMessage(
                 type=MessageType.ERROR,
-                request_id=message.request_id,
-                data={"error": f"Unknown message type: {message.type}"}
+                request_id=request_id,
+                data={"error": error_info}
             ).to_dict())
+
+        duration_ms = round((time.perf_counter() - start) * 1000, 2)
+        log_payload = {
+            "event": "ws_handler_metric",
+            "message_type": msg_type_str,
+            "request_id": request_id,
+            "duration_ms": duration_ms,
+            "success": error_info is None,
+        }
+        if error_info:
+            log_payload["error"] = error_info
+        # logger.bind(**log_payload).info("WS handler finished")
+

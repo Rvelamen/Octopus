@@ -47,6 +47,12 @@ async def lifespan(app: FastAPI):
     # 2. Initialize Message Bus
     bus = MessageBus()
 
+    # 2.1. Seed built-in subagent configurations
+    from backend.data.subagent_store import SubagentRepository
+    from backend.data.subagent_seeder import seed_builtin_subagents
+    subagent_repo = SubagentRepository(db)
+    seed_builtin_subagents(subagent_repo)
+
     # 3. Initialize workspace path from database
     from backend.data.provider_store import AgentDefaultsRepository
     from backend.services.workspace_service import setup_workspace_from_template

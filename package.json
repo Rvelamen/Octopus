@@ -107,6 +107,7 @@
   "dependencies": {
     "docx": "^9.6.1",
     "electron-log": "^5.0.1",
-    "electron-updater": "^6.1.7"
+    "electron-updater": "^6.1.7",
+    "react-force-graph-2d": "^1.29.1"
   }
 }

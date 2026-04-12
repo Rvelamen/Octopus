@@ -184,7 +184,7 @@ class DesktopChannel(BaseChannel):
         # Map event types to message types
         event_type_map = {
             "agent_start": MessageType.AGENT_START,
-            "agent_token": MessageType.AGENT_TOKEN,  # New: streaming token
+            "agent_token": MessageType.AGENT_TOKEN,
             "agent_chunk": MessageType.AGENT_CHUNK,
             "agent_finish": MessageType.AGENT_FINISH,
             # Tool call events
@@ -196,8 +196,11 @@ class DesktopChannel(BaseChannel):
             # Iteration event
             "agent_iteration_complete": MessageType.AGENT_ITERATION_COMPLETE,
             # Subagent events
+            "subagent_token": MessageType.SUBAGENT_TOKEN,
             "subagent_tool_call": MessageType.SUBAGENT_TOOL_CALL,
             "subagent_tool_result": MessageType.SUBAGENT_TOOL_RESULT,
+            # Knowledge distill events
+            "knowledge_distill_progress": MessageType.KNOWLEDGE_DISTILL_PROGRESS,
         }
         
         msg_type = event_type_map.get(event.event_type)
@@ -234,6 +237,11 @@ class DesktopChannel(BaseChannel):
 
     async def _handle_client_message(self, websocket: WebSocket, data: dict):
         """Handle incoming message from client."""
+        import time
+        start = time.perf_counter()
+        message_type = data.get("type", "unknown")
+        request_id = data.get("request_id")
+        error_info = None
         try:
             # Parse the message
             message = WSMessage.from_dict(data)
@@ -242,17 +250,30 @@ class DesktopChannel(BaseChannel):
             await self.handler_registry.handle(websocket, message)
 
         except Exception as e:
+            error_info = str(e)
             logger.error(f"Error handling client message: {e}")
             # Send error response
             try:
                 error_msg = WSMessage(
                     type=MessageType.ERROR,
-                    request_id=data.get("request_id"),
+                    request_id=request_id,
                     data={"error": f"Failed to process message: {str(e)}"}
                 )
                 await websocket.send_json(error_msg.to_dict())
             except Exception:
                 pass  # Client may have disconnected
+        finally:
+            duration_ms = round((time.perf_counter() - start) * 1000, 2)
+            log_payload = {
+                "event": "ws_message_roundtrip",
+                "message_type": message_type,
+                "request_id": request_id,
+                "duration_ms": duration_ms,
+                "success": error_info is None,
+            }
+            if error_info:
+                log_payload["error"] = error_info
+            # logger.bind(**log_payload).info("WS message roundtrip finished")
 
     async def _heartbeat_loop(self, websocket: WebSocket, interval: int = 30) -> None:
         """Send periodic ping frames to detect dead connections.

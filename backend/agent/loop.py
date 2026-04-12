@@ -27,6 +27,7 @@ from backend.tools.cron import CronTool
 from backend.tools.action import ActionTool
 from backend.tools.image import ImageUnderstandTool, ImageGenerateTool
 from backend.tools.web_fetch import WebFetchTool
+from backend.tools.knowledge import KBSearchTool, KBReadNoteTool, KBListLinksTool
 from backend.tools.browser.registration import register_browser_tools, cleanup_browser_tools
 from backend.agent.subagent import SubagentManager
 from backend.agent.aggregator import SubagentAggregator
@@ -241,6 +242,11 @@ class AgentLoop:
 
         # Web fetch tool
         self.tools.register(WebFetchTool())
+
+        # Knowledge base tools
+        self.tools.register(KBSearchTool())
+        self.tools.register(KBReadNoteTool())
+        self.tools.register(KBListLinksTool())
 
         # Browser tools
         try:

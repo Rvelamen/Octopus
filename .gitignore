@@ -139,3 +139,9 @@ workspace
 .playwright-mcp/
 
 .dist-electron/
+
+
+docs/
+.qwen/
+scripts/
+tests/

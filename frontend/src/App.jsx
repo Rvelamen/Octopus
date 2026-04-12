@@ -23,6 +23,7 @@ import {
   Pause,
   PanelLeftClose,
   PanelRight,
+  BookOpen,
 } from "lucide-react";
 import octopusLogo from "./assets/octopus-logo.png";
 import WindowDots from "./components/WindowDots";
@@ -36,6 +37,7 @@ import {
   CronPanel,
   AgentsPanel,
   TokenUsagePanel,
+  KnowledgePanel,
 } from "./components/panels";
 
 const WS_BASE = "ws://127.0.0.1:18791";
@@ -683,6 +685,9 @@ function App() {
               });
             }
             break;
+          case "knowledge_distill_progress":
+            window.dispatchEvent(new CustomEvent("knowledge-distill-progress", { detail: data }));
+            break;
 
         }
       };
@@ -825,6 +830,8 @@ function App() {
       setActiveTab('history');
     } else if (path === '/tokens') {
       setActiveTab('tokens');
+    } else if (path === '/knowledge') {
+      setActiveTab('knowledge');
     }
   }, [location.pathname]);
 
@@ -848,6 +855,7 @@ function App() {
       workspace: '/workspace',
       history: '/history',
       tokens: '/tokens',
+      knowledge: '/knowledge',
     };
     navigate(routeMap[tab] || '/chat');
   };
@@ -956,6 +964,13 @@ function App() {
               <span>WORKSPACE</span>
             </button>
             <button
+              className={`nav-item ${activeTab === "knowledge" ? "active" : ""}`}
+              onClick={() => handleNavClick("knowledge")}
+            >
+              <BookOpen size={18} />
+              <span>KNOWLEDGE</span>
+            </button>
+            <button
               className={`nav-item ${activeTab === "history" ? "active" : ""}`}
               onClick={() => handleNavClick("history")}
             >
@@ -1023,6 +1038,7 @@ function App() {
             <Route path="/cron" element={<CronPanel sendWSMessage={sendWSMessage} />} />
             <Route path="/agents" element={<AgentsPanel sendWSMessage={sendWSMessage} />} />
             <Route path="/tokens" element={<TokenUsagePanel sendWSMessage={sendWSMessage} />} />
+            <Route path="/knowledge" element={<KnowledgePanel sendWSMessage={sendWSMessage} />} />
             <Route path="/" element={
               <ChatPanel
                 sendWSMessage={sendWSMessage}

@@ -48,10 +48,19 @@ class MessageType(Enum):
     SESSION_SET_ACTIVE = "session_set_active"                      # Set an instance as active
     SESSION_GET_INSTANCES = "session_get_instances"                # Get instances list with pagination
 
+    # Knowledge Base - Client -> Server
+    KNOWLEDGE_LIST = "knowledge_list"                    # List knowledge directory contents
+    KNOWLEDGE_READ = "knowledge_read"                    # Read knowledge file content
+    KNOWLEDGE_WRITE = "knowledge_write"                  # Write knowledge file content
+    KNOWLEDGE_DELETE = "knowledge_delete"                # Delete knowledge file or directory
+    KNOWLEDGE_SEARCH = "knowledge_search"                # Search knowledge notes
+    KNOWLEDGE_GRAPH = "knowledge_graph"                  # Get knowledge graph data
+
     # Workspace File System - Client -> Server
     WORKSPACE_LIST = "workspace_list"                    # List directory contents
     WORKSPACE_READ = "workspace_read"                    # Read file content
     WORKSPACE_WRITE = "workspace_write"                  # Write file content
+    WORKSPACE_WRITE_CHUNK = "workspace_write_chunk"      # Write a file chunk (resumable upload)
     WORKSPACE_DELETE = "workspace_delete"                # Delete file or directory
     WORKSPACE_MKDIR = "workspace_mkdir"                  # Create directory
     WORKSPACE_RENAME = "workspace_rename"                # Rename file or directory
@@ -150,10 +159,19 @@ class MessageType(Enum):
     SESSION_ACTIVE_SET = "session_active_set"          # Active instance set confirmation
     SESSION_INSTANCES = "session_instances"            # Instances list with pagination
 
+    # Knowledge Base - Server -> Client
+    KNOWLEDGE_LIST_RESULT = "knowledge_list_result"    # Knowledge directory listing result
+    KNOWLEDGE_READ_RESULT = "knowledge_read_result"    # Knowledge file content result
+    KNOWLEDGE_WRITE_RESULT = "knowledge_write_result"  # Knowledge write success confirmation
+    KNOWLEDGE_DELETE_RESULT = "knowledge_delete_result"  # Knowledge delete success confirmation
+    KNOWLEDGE_SEARCH_RESULT = "knowledge_search_result"  # Knowledge search results
+    KNOWLEDGE_GRAPH_RESULT = "knowledge_graph_result"  # Knowledge graph data
+
     # Workspace File System - Server -> Client
     WORKSPACE_LIST_RESULT = "workspace_list_result"    # Directory listing result
     WORKSPACE_READ_RESULT = "workspace_read_result"    # File content result
     WORKSPACE_WRITE_RESULT = "workspace_write_result"  # Write success confirmation
+    WORKSPACE_WRITE_CHUNK_RESULT = "workspace_write_chunk_result"  # Chunk upload progress
     WORKSPACE_DELETE_RESULT = "workspace_delete_result"  # Delete success confirmation
     WORKSPACE_MKDIR_RESULT = "workspace_mkdir_result"  # Mkdir success confirmation
     WORKSPACE_RENAME_RESULT = "workspace_rename_result"  # Rename success confirmation
@@ -186,6 +204,7 @@ class MessageType(Enum):
     SUBAGENT_PROVIDER_MODELS = "subagent_provider_models"              # Providers with models
 
     # Subagent Events - Server -> Client
+    SUBAGENT_TOKEN = "subagent_token"                            # Subagent streaming token
     SUBAGENT_TOOL_CALL = "subagent_tool_call"                        # Subagent tool call started
     SUBAGENT_TOOL_RESULT = "subagent_tool_result"                    # Subagent tool call result
 
@@ -315,6 +334,25 @@ class MessageType(Enum):
     TTS_ERROR = "tts_error"                                 # TTS error
     TTS_AUTO_REPLY = "tts_auto_reply"                       # Auto TTS reply from agent
 
+    # Knowledge - Client -> Server
+    KNOWLEDGE_DISTILL = "knowledge_distill"                 # Distill document to note
+    KNOWLEDGE_DISTILL_PREVIEW = "knowledge_distill_preview" # Preview distillation without writing
+    KNOWLEDGE_DISTILL_LIST = "knowledge_distill_list"       # List distillation tasks
+    KNOWLEDGE_GET_TAGS = "knowledge_get_tags"               # Get all tags
+    KNOWLEDGE_EXPORT = "knowledge_export"                   # Export knowledge base as zip
+    KNOWLEDGE_IMPORT = "knowledge_import"                   # Import knowledge base from zip
+
+    # Knowledge - Server -> Client
+    KNOWLEDGE_DISTILL_RESULT = "knowledge_distill_result"   # Distill result
+    KNOWLEDGE_DISTILL_PREVIEW_RESULT = "knowledge_distill_preview_result"  # Preview result
+    KNOWLEDGE_DISTILL_PROGRESS = "knowledge_distill_progress"  # Distill progress
+    KNOWLEDGE_DISTILL_LIST_RESULT = "knowledge_distill_list_result"  # Task list result
+    KNOWLEDGE_DISTILL_DETAIL = "knowledge_distill_detail"  # Request task detail
+    KNOWLEDGE_DISTILL_DETAIL_RESULT = "knowledge_distill_detail_result"  # Task detail with iterations
+    KNOWLEDGE_GET_TAGS_RESULT = "knowledge_get_tags_result"  # Tags list result
+    KNOWLEDGE_EXPORT_RESULT = "knowledge_export_result"      # Export zip data
+    KNOWLEDGE_IMPORT_RESULT = "knowledge_import_result"      # Import success/failure
+
 
 @dataclass
 class WSMessage:
@@ -383,6 +421,12 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.SESSION_CREATE,
     MessageType.SESSION_SET_ACTIVE,
     MessageType.SESSION_GET_INSTANCES,
+    MessageType.KNOWLEDGE_LIST,
+    MessageType.KNOWLEDGE_READ,
+    MessageType.KNOWLEDGE_WRITE,
+    MessageType.KNOWLEDGE_DELETE,
+    MessageType.KNOWLEDGE_SEARCH,
+    MessageType.KNOWLEDGE_GRAPH,
     MessageType.WORKSPACE_LIST,
     MessageType.WORKSPACE_READ,
     MessageType.WORKSPACE_WRITE,
@@ -465,6 +509,19 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.TTS_SYNTHESIZE,
     MessageType.TTS_GET_PROVIDERS,
     MessageType.TTS_GET_STYLES,
+    # Knowledge
+    MessageType.KNOWLEDGE_LIST,
+    MessageType.KNOWLEDGE_READ,
+    MessageType.KNOWLEDGE_WRITE,
+    MessageType.KNOWLEDGE_DELETE,
+    MessageType.KNOWLEDGE_SEARCH,
+    MessageType.KNOWLEDGE_GRAPH,
+    MessageType.KNOWLEDGE_DISTILL,
+    MessageType.KNOWLEDGE_DISTILL_PREVIEW,
+    MessageType.KNOWLEDGE_DISTILL_LIST,
+    MessageType.KNOWLEDGE_GET_TAGS,
+    MessageType.KNOWLEDGE_EXPORT,
+    MessageType.KNOWLEDGE_IMPORT,
 }
 
 SERVER_MESSAGE_TYPES = {
@@ -517,6 +574,7 @@ SERVER_MESSAGE_TYPES = {
     MessageType.WORKSPACE_LIST_RESULT,
     MessageType.WORKSPACE_READ_RESULT,
     MessageType.WORKSPACE_WRITE_RESULT,
+    MessageType.WORKSPACE_WRITE_CHUNK_RESULT,
     MessageType.WORKSPACE_DELETE_RESULT,
     MessageType.WORKSPACE_MKDIR_RESULT,
     MessageType.WORKSPACE_RENAME_RESULT,
@@ -570,6 +628,7 @@ SERVER_MESSAGE_TYPES = {
     MessageType.SUBAGENT_AVAILABLE_EXTENSIONS,
     MessageType.SUBAGENT_PROVIDER_MODELS,
     # Subagent Events
+    MessageType.SUBAGENT_TOKEN,
     MessageType.SUBAGENT_TOOL_CALL,
     MessageType.SUBAGENT_TOOL_RESULT,
     # TTS
@@ -581,4 +640,20 @@ SERVER_MESSAGE_TYPES = {
     MessageType.TTS_STYLES,
     MessageType.TTS_ERROR,
     MessageType.TTS_AUTO_REPLY,
+    # Knowledge
+    MessageType.KNOWLEDGE_LIST_RESULT,
+    MessageType.KNOWLEDGE_READ_RESULT,
+    MessageType.KNOWLEDGE_WRITE_RESULT,
+    MessageType.KNOWLEDGE_DELETE_RESULT,
+    MessageType.KNOWLEDGE_SEARCH_RESULT,
+    MessageType.KNOWLEDGE_GRAPH_RESULT,
+    MessageType.KNOWLEDGE_DISTILL_RESULT,
+    MessageType.KNOWLEDGE_DISTILL_PREVIEW_RESULT,
+    MessageType.KNOWLEDGE_DISTILL_PROGRESS,
+    MessageType.KNOWLEDGE_DISTILL_DETAIL,
+    MessageType.KNOWLEDGE_DISTILL_DETAIL_RESULT,
+    MessageType.KNOWLEDGE_DISTILL_LIST_RESULT,
+    MessageType.KNOWLEDGE_GET_TAGS_RESULT,
+    MessageType.KNOWLEDGE_EXPORT_RESULT,
+    MessageType.KNOWLEDGE_IMPORT_RESULT,
 }

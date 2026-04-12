@@ -7,3 +7,5 @@ export { default as WorkspacePanel } from './WorkspacePanel';
 export { default as CronPanel } from './CronPanel';
 export { default as AgentsPanel } from './AgentsPanel';
 export { default as TokenUsagePanel } from './TokenUsagePanel';
+export { default as KnowledgePanel } from './Knowledge/KnowledgePanel';
+export { default as DistillDialog } from './Knowledge/DistillDialog';
