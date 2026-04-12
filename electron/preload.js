@@ -16,6 +16,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('api-port', (event, port) => callback(port));
   },
 
+  // 监听后端服务启动完成
+  onBackendReady: (callback) => {
+    ipcRenderer.on('backend-ready', (event, port) => callback(port));
+  },
+
+  // 监听后端服务启动错误
+  onBackendError: (callback) => {
+    ipcRenderer.on('backend-error', (event, error) => callback(error));
+  },
+
   // 移除监听器
   removeAllListeners: (channel) => {
     ipcRenderer.removeAllListeners(channel);

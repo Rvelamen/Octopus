@@ -235,10 +235,6 @@ function stopPythonService() {
 // 创建主窗口
 async function createWindow() {
   try {
-    // 先启动Python服务
-    const port = await startPythonService();
-    log.info(`Python service running on port ${port}`);
-    
     // 设置 macOS Dock 图标 (1024x1024 - App Store、Finder 详情)
     if (process.platform === 'darwin') {
       const dockIconPath = getIconPath(1024);
@@ -282,17 +278,11 @@ async function createWindow() {
       mainWindow.webContents.send('window-focus-change', false);
     });
     
-    // 设置API端口
-    mainWindow.webContents.on('dom-ready', () => {
-      mainWindow.webContents.send('api-port', port);
-    });
-    
     const isDev = !app.isPackaged;
     
     if (isDev) {
       // 开发模式：加载Vite开发服务器
       mainWindow.loadURL('http://localhost:3000');
-      mainWindow.webContents.openDevTools();
     } else {
       // 生产模式：加载打包后的文件
       const indexPath = path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
@@ -319,12 +309,27 @@ async function createWindow() {
       mainWindow = null;
     });
     
+    // 异步启动Python服务（不阻塞窗口显示）
+    startPythonService().then((port) => {
+      log.info(`Python service running on port ${port}`);
+      // 通知前端服务已启动
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('backend-ready', port);
+      }
+    }).catch((error) => {
+      log.error('Failed to start Python service:', error);
+      // 通知前端服务启动失败
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('backend-error', error.message);
+      }
+    });
+    
   } catch (error) {
     log.error('Failed to create window:', error);
     
     // 显示错误对话框
     const { dialog } = require('electron');
-    dialog.showErrorBox('启动错误', `无法启动Octopus服务:\n${error.message}`);
+    dialog.showErrorBox('启动错误', `无法启动Octopus:\n${error.message}`);
     
     app.quit();
   }

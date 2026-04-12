@@ -5,6 +5,7 @@ import {
   useNavigate,
   useLocation,
 } from "react-router-dom";
+import { createPortal } from "react-dom";
 import {
   MessageSquare,
   Settings,
@@ -18,7 +19,6 @@ import {
   RotateCcw,
   Zap,
   Volume2,
-  X,
   Play,
   Pause,
   PanelLeftClose,
@@ -214,6 +214,8 @@ function App() {
 
   const [currentChatInstanceId, setCurrentChatInstanceId] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(true);
+  const overlayShowTimeRef = useRef(Date.now()); // 记录遮罩显示时间
   const [isSaving, setIsSaving] = useState(false);
   const [toolCalls, _setToolCalls] = useState([]); // 实时工具调用（仅当前 instance）
   const [toolCallAssistantContents, _setToolCallAssistantContents] = useState({}); // 按 iteration 存储的 assistant content（仅当前 instance）
@@ -282,9 +284,19 @@ function App() {
   const pendingRequests = useRef(new Map());
 
   // ===== WebSocket 消息发送 =====
-  const sendWSMessage = useCallback((type, data, timeout = 10000) => {
+  const sendWSMessage = useCallback((type, data, timeout = 10000, retryCount = 0) => {
     return new Promise((resolve, reject) => {
+      // 如果 WebSocket 未连接，且重试次数小于3次，则延迟重试
       if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
+        if (retryCount < 3) {
+          console.log(`[WebSocket] Not connected, retrying ${type} (attempt ${retryCount + 1})`);
+          setTimeout(() => {
+            sendWSMessage(type, data, timeout, retryCount + 1)
+              .then(resolve)
+              .catch(reject);
+          }, 1000 * (retryCount + 1)); // 递增延迟：1s, 2s, 3s
+          return;
+        }
         reject(new Error("WebSocket not connected"));
         return;
       }
@@ -302,6 +314,26 @@ function App() {
         }
       }, timeout);
     });
+  }, []);
+
+  // ===== 监听后端启动状态 =====
+  useEffect(() => {
+    // 检查是否在 Electron 环境中
+    if (window.electronAPI) {
+      // 监听后端启动完成
+      window.electronAPI.onBackendReady((port) => {
+        console.log('[App] Backend ready on port:', port);
+        // 后端已启动，但还要等待 WebSocket 连接
+        // 这里不隐藏遮罩，等待 WebSocket onopen 时统一处理
+      });
+
+      // 监听后端启动错误
+      window.electronAPI.onBackendError((error) => {
+        console.error('[App] Backend error:', error);
+        // 后端启动失败，但仍然尝试连接（可能后端已经启动了）
+      });
+    }
+    // 非 Electron 环境（如浏览器），直接等待 WebSocket 连接
   }, []);
 
   // ===== WebSocket 连接 =====
@@ -335,7 +367,20 @@ function App() {
       ws.current = new WebSocket(`${WS_BASE}/ws`);
 
       ws.current.onopen = () => {
-        if (isComponentMounted) setConnectionStatus("connected");
+        if (isComponentMounted) {
+          setConnectionStatus("connected");
+          // 计算遮罩已经显示的时间
+          const elapsed = Date.now() - overlayShowTimeRef.current;
+          const minShowTime = 2000; // 最小显示2秒
+          const remaining = Math.max(0, minShowTime - elapsed);
+          
+          // 延迟隐藏遮罩，确保至少显示2秒
+          setTimeout(() => {
+            if (isComponentMounted) {
+              setShowLoadingOverlay(false);
+            }
+          }, remaining);
+        }
       };
 
       ws.current.onmessage = (event) => {
@@ -695,6 +740,8 @@ function App() {
       ws.current.onclose = (event) => {
         if (isComponentMounted) {
           setConnectionStatus("disconnected");
+          setShowLoadingOverlay(true); // 断开连接时重新显示遮罩
+          overlayShowTimeRef.current = Date.now(); // 重置显示时间
           if (event.code !== 1000 && event.code !== 1001) {
             reconnectTimer = setTimeout(() => {
               if (isComponentMounted) connectWS();
@@ -704,7 +751,11 @@ function App() {
       };
 
       ws.current.onerror = () => {
-        if (isComponentMounted) setConnectionStatus("disconnected");
+        if (isComponentMounted) {
+          setConnectionStatus("disconnected");
+          setShowLoadingOverlay(true); // 连接错误时显示遮罩
+          overlayShowTimeRef.current = Date.now(); // 重置显示时间
+        }
       };
     };
 
@@ -862,9 +913,88 @@ function App() {
 
   const appTitleBarText = APP_TITLE_BY_TAB[activeTab] ?? "OCTOPUS";
 
+  // ===== 全局 Loading 遮罩 =====
+  const GlobalLoadingOverlay = () => {
+    const overlayContent = (
+      <div
+        className="global-loading-overlay"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'var(--bg, #1a1a1a)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2147483647,
+          gap: '32px',
+        }}
+      >
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
+          <img src={octopusLogo} alt="Octopus" style={{ width: 64, height: 80, objectFit: 'contain' }} />
+          <span style={{
+            fontSize: '32px',
+            fontWeight: 700,
+            color: 'var(--text, #e0e0e0)',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            letterSpacing: '2px'
+          }}>OCTOPUS</span>
+        </div>
+
+        {/* 小球掉落动画 */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'center',
+          gap: '12px',
+          height: '80px',
+        }}>
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="bouncing-ball"
+              style={{
+                width: '16px',
+                height: '16px',
+                backgroundColor: '#ec5e37ff',
+                borderRadius: '50%',
+                animation: `bounce 0.6s ease-in-out infinite`,
+                animationDelay: `${i * 0.12}s`,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* 小球动画样式 */}
+        <style>{`
+          @keyframes bounce {
+            0%, 100% {
+              transform: translateY(0);
+            }
+            50% {
+              transform: translateY(-50px);
+            }
+          }
+        `}</style>
+      </div>
+    );
+
+    // 使用 Portal 渲染到 body，确保在最上层
+    return createPortal(overlayContent, document.body);
+  };
+
   // ===== 渲染 =====
   return (
     <div className="app-container">
+
+      {/* WebSocket 未连接时显示全局 Loading */}
+      {showLoadingOverlay && <GlobalLoadingOverlay />}
       {/* 整窗顶栏：品牌区（Logo+折叠）宽度与侧栏一致，右侧为当前页标题 */}
       <header className="app-titlebar">
         <div className="app-titlebar-brand">
