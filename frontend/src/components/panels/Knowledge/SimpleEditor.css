@@ -1,0 +1,110 @@
+/* 简洁编辑器样式 */
+
+.simple-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--surface);
+}
+
+/* 面包屑导航 */
+.simple-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.simple-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-2);
+  overflow: hidden;
+}
+
+.simple-breadcrumb-item {
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.simple-breadcrumb-item:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.simple-breadcrumb-separator {
+  color: var(--text-3);
+}
+
+.simple-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.simple-editor-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.simple-editor-btn:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.simple-editor-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.simple-editor-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 编辑器内容区 */
+.simple-editor-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.simple-editor-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* 空状态 */
+.simple-editor-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+  font-size: 14px;
+  gap: 12px;
+}
+
+/* 修改标记 */
+.simple-editor-dirty {
+  color: var(--accent);
+  font-size: 11px;
+}

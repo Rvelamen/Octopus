@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
+import { DistillTaskProvider } from './contexts/DistillTaskContext'
 import './pixel-theme.css'
 
 // Polyfill for URL.parse (used by react-pdf / pdfjs-dist in some environments)
@@ -18,8 +19,10 @@ if (typeof URL !== 'undefined' && !URL.parse) {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <div className="crt-overlay" />
-      <App />
+      <DistillTaskProvider>
+        <div className="crt-overlay" />
+        <App />
+      </DistillTaskProvider>
     </BrowserRouter>
   </React.StrictMode>,
 )

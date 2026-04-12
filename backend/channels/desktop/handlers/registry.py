@@ -93,7 +93,7 @@ from backend.channels.desktop.handlers.image import (
 from backend.channels.desktop.handlers.knowledge import (
     KnowledgeListHandler, KnowledgeReadHandler, KnowledgeWriteHandler,
     KnowledgeDeleteHandler, KnowledgeSearchHandler, KnowledgeGraphHandler,
-    KnowledgeDistillHandler, KnowledgeDistillPreviewHandler, KnowledgeDistillListHandler,
+    KnowledgeDistillHandler, KnowledgeDistillListHandler,
     KnowledgeDistillDetailHandler, KnowledgeGetTagsHandler, KnowledgeExportHandler, KnowledgeImportHandler
 )
 
@@ -278,7 +278,6 @@ class HandlerRegistry:
             MessageType.KNOWLEDGE_SEARCH: KnowledgeSearchHandler(bus, knowledge_engine),
             MessageType.KNOWLEDGE_GRAPH: KnowledgeGraphHandler(bus, knowledge_engine),
             MessageType.KNOWLEDGE_DISTILL: KnowledgeDistillHandler(bus, self.knowledge_task_queue),
-            MessageType.KNOWLEDGE_DISTILL_PREVIEW: KnowledgeDistillPreviewHandler(bus, self.knowledge_task_queue),
             MessageType.KNOWLEDGE_DISTILL_LIST: KnowledgeDistillListHandler(bus, self.knowledge_task_queue),
             MessageType.KNOWLEDGE_DISTILL_DETAIL: KnowledgeDistillDetailHandler(bus, self.knowledge_task_queue),
             MessageType.KNOWLEDGE_GET_TAGS: KnowledgeGetTagsHandler(bus, knowledge_engine),

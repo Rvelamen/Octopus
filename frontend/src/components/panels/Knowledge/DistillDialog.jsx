@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { message } from 'antd';
-import { Sparkles, RotateCcw, Check, X, FileText } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { Sparkles, Check, X } from 'lucide-react';
+import { useDistillTasks } from '../../../contexts/DistillTaskContext';
 
 const TEMPLATES = [
   { key: 'summary', label: 'Summary', desc: 'Concise summary with conclusions, methods, evidence and limitations' },
@@ -16,25 +14,17 @@ export default function DistillDialog({
   visible,
   sourceFile,
   onCancel,
-  onConfirm,
-  onPreview,
+  onStartDistill,
 }) {
   const [template, setTemplate] = useState('summary');
   const [prompt, setPrompt] = useState('');
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewMarkdown, setPreviewMarkdown] = useState('');
-  const [confirmLoading, setConfirmLoading] = useState(false);
-  const [previewJobId, setPreviewJobId] = useState(null);
-  const [previewStatus, setPreviewStatus] = useState(null);
+  const [isStarting, setIsStarting] = useState(false);
+  const { addTask } = useDistillTasks();
 
   const reset = () => {
     setTemplate('summary');
     setPrompt('');
-    setPreviewMarkdown('');
-    setPreviewLoading(false);
-    setConfirmLoading(false);
-    setPreviewJobId(null);
-    setPreviewStatus(null);
+    setIsStarting(false);
   };
 
   const handleCancel = () => {
@@ -42,108 +32,45 @@ export default function DistillDialog({
     onCancel();
   };
 
-  const handlePreview = async () => {
-    setPreviewLoading(true);
-    setPreviewStatus({ stage: 'queued', message: 'Queued...', progress: 0 });
-    try {
-      const result = await onPreview({ prompt, template });
-      
-      // 检查是否是队列模式
-      if (result && result.job_id) {
-        setPreviewJobId(result.job_id);
-        setPreviewStatus({ 
-          stage: 'queued', 
-          message: result.message || 'Task queued, waiting...', 
-          progress: 0 
-        });
-        // 不设置 previewLoading=false，等待进度事件
-      } else {
-        // 同步模式，直接返回 markdown
-        setPreviewMarkdown(result?.markdown || '');
-        setPreviewLoading(false);
-      }
-    } catch (err) {
-      setPreviewLoading(false);
-      setPreviewStatus(null);
-    }
-  };
+  const handleStart = async () => {
+    if (!sourceFile) return;
 
-  // 暴露更新进度的方法（供父组件调用）
-  React.useImperativeHandle(null, () => ({
-    updateProgress: (data) => {
-      setPreviewStatus({
-        stage: data.stage,
-        message: data.message,
-        progress: data.progress,
+    setIsStarting(true);
+
+    try {
+      // 添加任务到全局任务列表
+      const taskId = addTask({
+        sourceFile,
+        template,
+        prompt,
       });
 
-      if (data.stage === 'completed') {
-        // Preview 完成：优先使用 markdown，其次使用 output_path
-        setPreviewLoading(false);
-        setPreviewStatus(null);
-        if (data.markdown) {
-          setPreviewMarkdown(data.markdown);
-        }
-        message.success('Preview complete!');
-      } else if (data.stage === 'failed') {
-        setPreviewLoading(false);
-        setPreviewStatus(null);
-        message.error('Preview failed: ' + data.message);
-      }
-    },
-  }));
+      // 调用 onStartDistill 发送任务到后台
+      const result = await onStartDistill({ prompt, template, taskId });
 
-  const handleConfirm = async () => {
-    // 如果有 previewMarkdown，直接使用；否则让后端重新生成
-    setConfirmLoading(true);
-    try {
-      await onConfirm({ prompt, template, previewMarkdown });
+      // 如果后端返回了 job_id，更新任务 ID
+      if (result?.job_id) {
+        // 任务已在 addTask 时创建，这里可以更新 job_id 映射
+        // 实际更新会通过 WebSocket 事件处理
+      }
+
+      // 关闭 Modal
       reset();
-    } finally {
-      setConfirmLoading(false);
+      onCancel();
+    } catch (err) {
+      console.error('Failed to start distillation:', err);
+      setIsStarting(false);
     }
   };
-
-  // 监听预览进度事件
-  React.useEffect(() => {
-    const handler = async (e) => {
-      const { stage, message: msg, progress, output_path } = e.detail;
-      
-      setPreviewStatus({
-        stage,
-        message: msg,
-        progress,
-      });
-      
-      if (stage === 'completed') {
-        // 预览完成，直接使用后端推送的 markdown
-        setPreviewStatus(null);
-        setPreviewLoading(false);
-        if (e.detail.markdown) {
-          setPreviewMarkdown(e.detail.markdown);
-        }
-        message.success('Preview complete!');
-      } else if (stage === 'failed') {
-        setPreviewStatus(null);
-        setPreviewLoading(false);
-        message.error('Preview failed: ' + msg);
-      }
-    };
-    
-    window.addEventListener('knowledge-distill-preview-progress', handler);
-    return () => window.removeEventListener('knowledge-distill-preview-progress', handler);
-  }, [message, onPreview, prompt, template]);
 
   if (!visible) return null;
-
-  const showPromptBox = template === 'custom' || true; // allow extra prompt for all templates
 
   return (
     <div className="dialog-overlay" onClick={handleCancel}>
       <div
         className="dialog-content"
         style={{
-          minWidth: previewMarkdown ? 840 : 520,
+          minWidth: 520,
           maxWidth: '90vw',
           maxHeight: '90vh',
           display: 'flex',
@@ -154,7 +81,7 @@ export default function DistillDialog({
         <div className="dialog-header">
           <div className="dialog-header-left">
             <Sparkles size={16} style={{ color: 'var(--accent)' }} />
-            <span style={{ fontWeight: 600 }}>Distill: {sourceFile}</span>
+            <span style={{ fontWeight: 600 }}>Distill: {sourceFile?.split('/').pop() || ''}</span>
           </div>
           <button
             onClick={handleCancel}
@@ -182,10 +109,7 @@ export default function DistillDialog({
               {TEMPLATES.map((t) => (
                 <button
                   key={t.key}
-                  onClick={() => {
-                    setTemplate(t.key);
-                    setPreviewMarkdown('');
-                  }}
+                  onClick={() => setTemplate(t.key)}
                   title={t.desc}
                   style={{
                     padding: '6px 12px',
@@ -206,154 +130,64 @@ export default function DistillDialog({
           </div>
 
           {/* Prompt input */}
-          {showPromptBox && (
-            <div>
-              <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>
-                {template === 'custom' ? 'Instructions' : 'Additional instructions (optional)'}
-              </label>
-              <textarea
-                rows={3}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder={
-                  template === 'custom'
-                    ? 'e.g. Extract all figures and tables as markdown'
-                    : 'e.g. Focus on experimental design and limitations'
-                }
-                style={{
-                  width: '100%',
-                  padding: 10,
-                  fontSize: 13,
-                  fontFamily: 'var(--font-sans)',
-                  borderRadius: 'var(--r-sm)',
-                  border: '1px solid var(--border)',
-                  background: 'var(--surface)',
-                  color: 'var(--text)',
-                  resize: 'vertical',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-          )}
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>
+              {template === 'custom' ? 'Instructions' : 'Additional instructions (optional)'}
+            </label>
+            <textarea
+              rows={4}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder={
+                template === 'custom'
+                  ? 'e.g. Extract all figures and tables as markdown'
+                  : 'e.g. Focus on experimental design and limitations'
+              }
+              style={{
+                width: '100%',
+                padding: 10,
+                fontSize: 13,
+                fontFamily: 'var(--font-sans)',
+                borderRadius: 'var(--r-sm)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface)',
+                color: 'var(--text)',
+                resize: 'vertical',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
 
-          {/* Preview result */}
-          {(previewMarkdown || previewStatus) && (
-            <div style={{ display: 'flex', gap: 12, minHeight: 0, flex: 1 }}>
-              <div
-                style={{
-                  flex: 1,
-                  border: '1px solid var(--border)',
-                  borderRadius: 8,
-                  background: 'var(--surface)',
-                  overflow: 'auto',
-                  maxHeight: '48vh',
-                }}
-              >
-                <div
-                  style={{
-                    position: 'sticky',
-                    top: 0,
-                    background: 'var(--surface-2)',
-                    padding: '8px 12px',
-                    borderBottom: '1px solid var(--border)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: 'var(--text)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <FileText size={14} />
-                    Preview
-                  </div>
-                  {previewStatus && (
-                    <div style={{ fontSize: 11, color: 'var(--text-2)' }}>
-                      {previewStatus.message} ({Math.round(previewStatus.progress * 100)}%)
-                    </div>
-                  )}
-                </div>
-                
-                {previewStatus && !previewMarkdown && (
-                  <div style={{ padding: 20, textAlign: 'center' }}>
-                    <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12 }}>
-                      {previewStatus.message}
-                    </div>
-                    {/* Progress bar */}
-                    <div style={{
-                      width: '100%',
-                      height: 4,
-                      background: 'var(--border)',
-                      borderRadius: 2,
-                      overflow: 'hidden',
-                    }}>
-                      <div style={{
-                        width: `${previewStatus.progress * 100}%`,
-                        height: '100%',
-                        background: 'var(--accent)',
-                        transition: 'width 0.3s ease',
-                      }} />
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 8 }}>
-                      Stage: {previewStatus.stage}
-                    </div>
-                  </div>
-                )}
-                
-                {previewMarkdown && (
-                  <div style={{ padding: 14, fontSize: 13, lineHeight: 1.6 }} className="markdown-preview">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{previewMarkdown}</ReactMarkdown>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          {/* Info text */}
+          <div
+            style={{
+              padding: 10,
+              borderRadius: 6,
+              background: 'var(--surface-2)',
+              fontSize: 12,
+              color: 'var(--text-2)',
+              lineHeight: 1.5,
+            }}
+          >
+            <strong style={{ color: 'var(--text)' }}>How it works:</strong>
+            <br />
+            Click "Start Distillation" to send the task to background. You can monitor progress in the task indicator at the top right.
+          </div>
         </div>
 
-        <div className="dialog-footer" style={{ justifyContent: previewMarkdown ? 'space-between' : 'flex-end', gap: 10 }}>
-          {previewMarkdown ? (
-            <>
-              <button
-                className="pixel-button secondary"
-                onClick={handlePreview}
-                disabled={previewLoading || confirmLoading}
-                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <RotateCcw size={14} />
-                {previewLoading ? 'Generating...' : 'Regenerate'}
-              </button>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button className="pixel-button secondary" onClick={handleCancel} disabled={confirmLoading}>
-                  Cancel
-                </button>
-                <button
-                  className={`pixel-button ${confirmLoading ? 'loading' : ''}`}
-                  onClick={handleConfirm}
-                  disabled={confirmLoading}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                >
-                  <Check size={14} />
-                  {confirmLoading ? '' : 'Confirm & Distill'}
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <button className="pixel-button secondary" onClick={handleCancel} disabled={previewLoading}>
-                Cancel
-              </button>
-              <button
-                className={`pixel-button ${previewLoading ? 'loading' : ''}`}
-                onClick={handlePreview}
-                disabled={previewLoading}
-                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <Sparkles size={14} />
-                {previewLoading ? 'Generating...' : 'Preview'}
-              </button>
-            </>
-          )}
+        <div className="dialog-footer" style={{ justifyContent: 'flex-end', gap: 10 }}>
+          <button className="pixel-button secondary" onClick={handleCancel} disabled={isStarting}>
+            Cancel
+          </button>
+          <button
+            className={`pixel-button ${isStarting ? 'loading' : ''}`}
+            onClick={handleStart}
+            disabled={isStarting}
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <Sparkles size={14} />
+            {isStarting ? 'Starting...' : 'Start Distillation'}
+          </button>
         </div>
       </div>
     </div>

@@ -1,0 +1,210 @@
+/* VSCode 风格文件树样式 */
+
+.vscode-file-tree {
+  --vscode-bg: var(--surface-2, #252526);
+  --vscode-hover-bg: var(--surface-3, #2a2d2e);
+  --vscode-active-bg: var(--accent-soft, #37373d);
+  --vscode-text: var(--text, #cccccc);
+  --vscode-text-inactive: var(--text-2, #858585);
+  --vscode-accent: var(--accent, #007acc);
+  --vscode-border: var(--border, #1e1e1e);
+  
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-size: 13px;
+  background: var(--vscode-bg);
+  height: 100%;
+  overflow: auto;
+}
+
+/* React Complex Tree 样式覆盖 */
+.rct-tree-root {
+  background: transparent !important;
+}
+
+.rct-tree-item {
+  cursor: pointer;
+  user-select: none;
+}
+
+.rct-tree-item-title-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px 4px 4px;
+  border-radius: 4px;
+  margin: 1px 4px;
+  transition: background-color 0.1s ease;
+}
+
+.rct-tree-item-title-container:hover {
+  background-color: var(--vscode-hover-bg);
+}
+
+.rct-tree-item-title-container.rct-tree-item-title-container-selected {
+  background-color: var(--vscode-active-bg);
+}
+
+.rct-tree-item-title-container.rct-tree-item-title-container-focused {
+  outline: 1px solid var(--vscode-accent);
+  outline-offset: -1px;
+}
+
+/* 展开/收起箭头 */
+.rct-tree-item-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--vscode-text-inactive);
+  transition: transform 0.15s ease;
+}
+
+.rct-tree-item-arrow-expanded {
+  transform: rotate(90deg);
+}
+
+/* 文件图标 */
+.rct-tree-item-file-icon,
+.rct-tree-item-folder-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* 文件名 */
+.rct-tree-item-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--vscode-text);
+}
+
+/* 重命名输入框 */
+.rct-tree-item-rename-input {
+  flex: 1;
+  background: var(--vscode-bg);
+  border: 1px solid var(--vscode-accent);
+  border-radius: 3px;
+  padding: 2px 6px;
+  color: var(--vscode-text);
+  font-size: 13px;
+  outline: none;
+}
+
+/* 拖拽指示器 */
+.rct-tree-item-dragging-over {
+  background-color: var(--vscode-accent) !important;
+  opacity: 0.8;
+}
+
+.rct-tree-item-dragging-over-top {
+  border-top: 2px solid var(--vscode-accent);
+}
+
+.rct-tree-item-dragging-over-bottom {
+  border-bottom: 2px solid var(--vscode-accent);
+}
+
+/* 多选状态 */
+.rct-tree-item-title-container.rct-tree-item-title-container-selected {
+  background-color: var(--vscode-active-bg);
+}
+
+/* 右键菜单 */
+.vscode-context-menu {
+  position: fixed;
+  background: var(--surface, #1e1e1e);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 0;
+  min-width: 160px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  animation: contextMenuAppear 0.1s ease;
+}
+
+@keyframes contextMenuAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.vscode-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 13px;
+  transition: background-color 0.1s ease;
+}
+
+.vscode-context-menu-item:hover {
+  background-color: var(--accent-soft);
+}
+
+.vscode-context-menu-item-danger:hover {
+  background-color: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+}
+
+.vscode-context-menu-divider {
+  height: 1px;
+  background-color: var(--border);
+  margin: 4px 0;
+}
+
+.vscode-context-menu-shortcut {
+  margin-left: auto;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+/* 滚动条样式 */
+.vscode-file-tree::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.vscode-file-tree::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vscode-file-tree::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 5px;
+  border: 2px solid var(--surface-2);
+}
+
+.vscode-file-tree::-webkit-scrollbar-thumb:hover {
+  background: var(--text-2);
+}
+
+/* 空状态 */
+.vscode-file-tree-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  color: var(--vscode-text-inactive);
+  font-size: 13px;
+}
+
+/* 搜索高亮 */
+.rct-tree-search-match {
+  background-color: rgba(255, 215, 0, 0.3);
+  border-radius: 2px;
+}

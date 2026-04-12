@@ -1,0 +1,297 @@
+/* VSCode 风格编辑器样式 */
+
+.vscode-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--surface, #1e1e1e);
+}
+
+/* 标签页栏 */
+.vscode-tabs {
+  display: flex;
+  align-items: center;
+  background: var(--surface-2, #252526);
+  border-bottom: 1px solid var(--border, #1e1e1e);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.vscode-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* 单个标签页 */
+.vscode-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  min-width: 120px;
+  max-width: 200px;
+  background: var(--surface-3, #2d2d2d);
+  border-right: 1px solid var(--border, #1e1e1e);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+  position: relative;
+}
+
+.vscode-tab:hover {
+  background: var(--surface-4, #3c3c3c);
+}
+
+.vscode-tab.active {
+  background: var(--surface, #1e1e1e);
+  border-bottom: 1px solid var(--accent, #007acc);
+  margin-bottom: -1px;
+}
+
+.vscode-tab.dirty::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent, #007acc);
+}
+
+.vscode-tab.dirty .vscode-tab-name {
+  padding-left: 12px;
+}
+
+.vscode-tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.vscode-tab-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--text, #cccccc);
+}
+
+.vscode-tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+  cursor: pointer;
+  color: var(--text-2, #858585);
+}
+
+.vscode-tab:hover .vscode-tab-close,
+.vscode-tab.active .vscode-tab-close {
+  opacity: 1;
+}
+
+.vscode-tab-close:hover {
+  background: var(--surface-4, #3c3c3c);
+  color: var(--text, #cccccc);
+}
+
+/* 新建文件按钮 */
+.vscode-tab-new {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  color: var(--text-2, #858585);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.vscode-tab-new:hover {
+  background: var(--surface-3, #2d2d2d);
+  color: var(--text, #cccccc);
+}
+
+/* 面包屑导航 */
+.vscode-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 16px;
+  background: var(--surface, #1e1e1e);
+  border-bottom: 1px solid var(--border, #1e1e1e);
+  font-size: 12px;
+  color: var(--text-2, #858585);
+}
+
+.vscode-breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: background-color 0.15s ease;
+}
+
+.vscode-breadcrumb-item:hover {
+  background: var(--surface-2, #252526);
+  color: var(--text, #cccccc);
+}
+
+.vscode-breadcrumb-separator {
+  color: var(--text-3, #6e6e6e);
+}
+
+/* 编辑器内容区 */
+.vscode-editor-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.vscode-editor-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* 空状态 */
+.vscode-editor-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2, #858585);
+  font-size: 14px;
+  gap: 16px;
+}
+
+.vscode-editor-empty-icon {
+  opacity: 0.3;
+}
+
+.vscode-editor-empty-shortcuts {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.vscode-editor-empty-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-3, #6e6e6e);
+}
+
+.vscode-editor-empty-shortcut kbd {
+  padding: 2px 6px;
+  background: var(--surface-2, #252526);
+  border: 1px solid var(--border, #3c3c3c);
+  border-radius: 3px;
+  font-family: var(--font-mono, monospace);
+}
+
+/* 工具栏 */
+.vscode-editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--surface, #1e1e1e);
+  border-bottom: 1px solid var(--border, #1e1e1e);
+}
+
+.vscode-editor-toolbar-left,
+.vscode-editor-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vscode-editor-toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-2, #858585);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.vscode-editor-toolbar-btn:hover {
+  background: var(--surface-2, #252526);
+  color: var(--text, #cccccc);
+}
+
+.vscode-editor-toolbar-btn.active {
+  background: var(--accent-soft, #094771);
+  color: var(--accent, #007acc);
+}
+
+.vscode-editor-toolbar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 分割视图 */
+.vscode-editor-split {
+  display: flex;
+  flex: 1;
+}
+
+.vscode-editor-split > .vscode-editor-pane {
+  border-right: 1px solid var(--border, #1e1e1e);
+}
+
+.vscode-editor-split > .vscode-editor-pane:last-child {
+  border-right: none;
+}
+
+/* 状态栏 */
+.vscode-editor-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 16px;
+  background: var(--accent, #007acc);
+  color: white;
+  font-size: 12px;
+}
+
+.vscode-editor-statusbar-left,
+.vscode-editor-statusbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.vscode-editor-statusbar-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: background-color 0.15s ease;
+}
+
+.vscode-editor-statusbar-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}

@@ -162,6 +162,7 @@ export class PixiGraphRenderer {
   }
 
   _getWorldPos(ev) {
+    if (!this.app?.view || !this.viewport) return { x: 0, y: 0 };
     const rect = this.app.view.getBoundingClientRect();
     const x = ev.clientX - rect.left;
     const y = ev.clientY - rect.top;

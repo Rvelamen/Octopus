@@ -1,47 +1,85 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { File, Sparkles, X, FileText, StickyNote, GitGraph, ListTodo } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Sparkles, X, FileText, StickyNote, GitGraph } from 'lucide-react';
 import { message, Modal } from 'antd';
 import WindowDots from '../../WindowDots';
+import TaskIndicator from '../../TaskIndicator';
+import { useDistillTasks } from '../../../contexts/DistillTaskContext';
 import KnowledgeGraphTab from './KnowledgeGraphTab';
 import DistillDialog from './DistillDialog';
-import KnowledgeTree from './KnowledgeTree';
-import NoteEditor from './NoteEditor';
+import SimpleFileTree from './SimpleFileTree';
+import SimpleEditor from './SimpleEditor';
 import UploadDropzone from './UploadDropzone';
-import DistillTaskList from './DistillTaskList';
 import NewNoteModal from './NewNoteModal';
-import KnowledgeBinaryPreview from './KnowledgeBinaryPreview';
 import DocumentGridView from './DocumentGridView';
+import TaskDetailModal from '../../TaskIndicator/TaskDetailModal';
 
 const TABS = [
   { key: 'documents', label: 'DOCUMENTS', icon: FileText },
   { key: 'notes', label: 'NOTES', icon: StickyNote },
   { key: 'graph', label: 'GRAPH', icon: GitGraph },
-  { key: 'distill-tasks', label: 'DISTILL TASKS', icon: ListTodo },
 ];
 
 export default function KnowledgePanel({ sendWSMessage }) {
+  const { registerSyncTasks, syncTasksFromBackend } = useDistillTasks();
   const [activeTab, setActiveTab] = useState('documents');
   const [treeItems, setTreeItems] = useState({});
-  const [selectedPath, setSelectedPath] = useState(null);
-  const [content, setContent] = useState('');
   const [expandedPaths, setExpandedPaths] = useState(new Set());
   const [distillDialogVisible, setDistillDialogVisible] = useState(false);
-  const [distillProgress, setDistillProgress] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isNewNoteModalOpen, setIsNewNoteModalOpen] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState('');
-  const [fileEncoding, setFileEncoding] = useState('utf-8');
-  const [noteTags, setNoteTags] = useState([]);
   const [graphTagFilter, setGraphTagFilter] = useState(null);
-  const [distillTasks, setDistillTasks] = useState([]);
-  const [expandedDistillTask, setExpandedDistillTask] = useState(null);
-  const [taskDetailResult, setTaskDetailResult] = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [taskDetailModalVisible, setTaskDetailModalVisible] = useState(false);
   const [currentDocPath, setCurrentDocPath] = useState('knowledge/raw');
   const [selectedDocItem, setSelectedDocItem] = useState(null);
   const [docPreviewFile, setDocPreviewFile] = useState(null);
 
+  // 当前打开的文件（单文件模式）
+  const [currentFile, setCurrentFile] = useState(null);
+
+  // Sidebar 宽度状态
+  const [sidebarWidth, setSidebarWidth] = useState(240);
+  const isResizingRef = useRef(false);
+  const sidebarRef = useRef(null);
+
   const rootPath = activeTab === 'documents' ? 'knowledge/raw' : 'knowledge/notes';
+
+  // Sidebar 拖拽调整宽度
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(240);
+
+  const handleResizeStart = useCallback((e) => {
+    e.preventDefault();
+    isResizingRef.current = true;
+    startXRef.current = e.clientX;
+    startWidthRef.current = sidebarWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [sidebarWidth]);
+
+  const handleResizeMove = useCallback((e) => {
+    if (!isResizingRef.current) return;
+    const delta = e.clientX - startXRef.current;
+    const newWidth = Math.max(150, Math.min(400, startWidthRef.current + delta));
+    setSidebarWidth(newWidth);
+  }, []);
+
+  const handleResizeEnd = useCallback(() => {
+    isResizingRef.current = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', handleResizeMove);
+    window.addEventListener('mouseup', handleResizeEnd);
+    return () => {
+      window.removeEventListener('mousemove', handleResizeMove);
+      window.removeEventListener('mouseup', handleResizeEnd);
+    };
+  }, [handleResizeMove, handleResizeEnd]);
 
   const loadDirectory = useCallback(
     async (path) => {
@@ -65,48 +103,27 @@ export default function KnowledgePanel({ sendWSMessage }) {
       try {
         const response = await sendWSMessage('knowledge_read', { path });
         const encoding = response.data?.encoding || 'utf-8';
-        setFileEncoding(encoding);
-        setContent(response.data?.content || '');
-        setSelectedPath(path);
-        if (path.endsWith('.md')) {
-          try {
-            const tagResp = await sendWSMessage('knowledge_get_tags', {});
-            const allTags = tagResp.data?.tags || [];
-            const text = response.data?.content || '';
-            const found = new Set();
-            const matches = text.match(/(?<!\w)#([\w\u4e00-\u9fa5\-]+)/g);
-            if (matches) {
-              matches.forEach((m) => {
-                const t = m.replace(/^#/, '').toLowerCase();
-                if (t) found.add(t);
-              });
-            }
-            setNoteTags(Array.from(found));
-          } catch {
-            setNoteTags([]);
-          }
-        } else {
-          setNoteTags([]);
-        }
+        const content = response.data?.content || '';
+        return { content, encoding, path };
       } catch (err) {
         message.error('Failed to read file: ' + err.message);
+        return null;
       }
     },
     [sendWSMessage]
   );
 
   const writeFile = useCallback(
-    async (newContent) => {
-      if (!selectedPath) return;
+    async (path, content) => {
       try {
-        await sendWSMessage('knowledge_write', { path: selectedPath, content: newContent });
+        await sendWSMessage('knowledge_write', { path, content });
         message.success('Saved successfully');
       } catch (err) {
         message.error('Failed to save file: ' + err.message);
         throw err;
       }
     },
-    [sendWSMessage, selectedPath]
+    [sendWSMessage]
   );
 
   const handleToggle = useCallback(
@@ -128,26 +145,256 @@ export default function KnowledgePanel({ sendWSMessage }) {
     [expandedPaths, treeItems, loadDirectory]
   );
 
-  const handleSelect = useCallback(
-    (item) => {
-      setSelectedPath(item.path);
+  // 打开文件
+  const handleOpenFile = useCallback(
+    async (item) => {
       if (item.is_directory) {
-        setExpandedPaths((prev) => {
-          if (!prev.has(item.path)) {
-            const next = new Set(prev);
-            next.add(item.path);
-            if (!treeItems[item.path]) {
-              loadDirectory(item.path);
-            }
-            return next;
-          }
-          return prev;
+        handleToggle(item.path);
+        return;
+      }
+
+      const fileData = await readFile(item.path);
+      if (fileData) {
+        setCurrentFile({
+          path: item.path,
+          name: item.name,
+          content: fileData.content,
+          encoding: fileData.encoding,
         });
-      } else {
-        readFile(item.path);
       }
     },
-    [readFile, treeItems, loadDirectory]
+    [readFile, handleToggle]
+  );
+
+  // 关闭文件
+  const handleCloseFile = useCallback(() => {
+    setCurrentFile(null);
+  }, []);
+
+  // 创建文件
+  const handleCreateFile = useCallback(
+    async (dirPath) => {
+      Modal.confirm({
+        title: 'New File',
+        content: (
+          <input
+            id="new-file-input"
+            placeholder="File name"
+            defaultValue="untitled.md"
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: 6,
+              border: '1px solid var(--border)',
+              background: 'var(--bg)',
+              color: 'var(--text)',
+              fontSize: 14,
+            }}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const btn = document.querySelector('.ant-modal-confirm-btns .ant-btn-primary');
+                if (btn) btn.click();
+              }
+            }}
+          />
+        ),
+        okText: 'Create',
+        cancelText: 'Cancel',
+        onOk: async () => {
+          const input = document.getElementById('new-file-input');
+          const name = input?.value?.trim();
+          if (!name) return Promise.reject();
+          const safeName = name.replace(/[^a-zA-Z0-9一-龥_\- .]/g, '');
+          if (!safeName) return Promise.reject();
+          const newPath = `${dirPath}/${safeName}`;
+          try {
+            await sendWSMessage('knowledge_write', { path: newPath, content: '' });
+            message.success(`Created file: ${safeName}`);
+            await loadDirectory(dirPath);
+            handleOpenFile({ path: newPath, name: safeName, is_directory: false });
+          } catch (err) {
+            message.error('Failed to create file: ' + (err.message || String(err)));
+            return Promise.reject();
+          }
+        },
+      });
+    },
+    [loadDirectory, sendWSMessage, handleOpenFile]
+  );
+
+  // 创建文件夹
+  const handleCreateFolder = useCallback(
+    async (dirPath) => {
+      Modal.confirm({
+        title: 'New Folder',
+        content: (
+          <input
+            id="new-folder-input"
+            placeholder="Folder name"
+            defaultValue="New Folder"
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: 6,
+              border: '1px solid var(--border)',
+              background: 'var(--bg)',
+              color: 'var(--text)',
+              fontSize: 14,
+            }}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const btn = document.querySelector('.ant-modal-confirm-btns .ant-btn-primary');
+                if (btn) btn.click();
+              }
+            }}
+          />
+        ),
+        okText: 'Create',
+        cancelText: 'Cancel',
+        onOk: async () => {
+          const input = document.getElementById('new-folder-input');
+          const name = input?.value?.trim();
+          if (!name) return Promise.reject();
+          const safeName = name.replace(/[^a-zA-Z0-9一-龥_\- .]/g, '');
+          if (!safeName) return Promise.reject();
+          const newPath = `${dirPath}/${safeName}`;
+          try {
+            await sendWSMessage('workspace_mkdir', { path: newPath });
+            message.success(`Created folder: ${safeName}`);
+            await loadDirectory(dirPath);
+          } catch (err) {
+            message.error('Failed to create folder: ' + (err.message || String(err)));
+            return Promise.reject();
+          }
+        },
+      });
+    },
+    [loadDirectory, sendWSMessage]
+  );
+
+  // 重命名
+  const handleRename = useCallback(
+    async (item) => {
+      Modal.confirm({
+        title: 'Rename',
+        content: (
+          <input
+            id="rename-input"
+            placeholder="New name"
+            defaultValue={item.name}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: 6,
+              border: '1px solid var(--border)',
+              background: 'var(--bg)',
+              color: 'var(--text)',
+              fontSize: 14,
+            }}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const btn = document.querySelector('.ant-modal-confirm-btns .ant-btn-primary');
+                if (btn) btn.click();
+              }
+            }}
+          />
+        ),
+        okText: 'Rename',
+        cancelText: 'Cancel',
+        onOk: async () => {
+          const input = document.getElementById('rename-input');
+          const newName = input?.value?.trim();
+          if (!newName || newName === item.name) return Promise.reject();
+          const safeName = newName.replace(/[^a-zA-Z0-9一-龥_\- .]/g, '');
+          if (!safeName) return Promise.reject();
+
+          const dir = item.path.substring(0, item.path.lastIndexOf('/'));
+          const newPath = `${dir}/${safeName}`;
+          try {
+            await sendWSMessage('workspace_rename', { old_path: item.path, new_path: newPath });
+            message.success(`Renamed to: ${safeName}`);
+            await loadDirectory(dir);
+
+            // 更新当前打开的文件
+            if (currentFile?.path === item.path) {
+              setCurrentFile((prev) =>
+                prev ? { ...prev, path: newPath, name: safeName } : null
+              );
+            }
+          } catch (err) {
+            message.error('Failed to rename: ' + (err.message || String(err)));
+            return Promise.reject();
+          }
+        },
+      });
+    },
+    [loadDirectory, sendWSMessage, currentFile]
+  );
+
+  // 删除
+  const handleDelete = useCallback(
+    async (item) => {
+      const confirmed = window.confirm(`Delete "${item.name}"? This cannot be undone.`);
+      if (!confirmed) return;
+      try {
+        await sendWSMessage('knowledge_delete', { path: item.path });
+        message.success(`Deleted: ${item.name}`);
+
+        // 关闭已打开的文件
+        if (currentFile?.path === item.path) {
+          setCurrentFile(null);
+        }
+
+        const dir = item.path.substring(0, item.path.lastIndexOf('/'));
+        await loadDirectory(dir);
+      } catch (err) {
+        message.error('Failed to delete: ' + (err.message || String(err)));
+      }
+    },
+    [sendWSMessage, loadDirectory, currentFile]
+  );
+
+  // 移动文件/文件夹
+  const handleMove = useCallback(
+    async (sourcePath, targetDirPath) => {
+      try {
+        const fileName = sourcePath.split('/').pop();
+        const targetPath = `${targetDirPath}/${fileName}`;
+        
+        // 检查目标是否已存在
+        const targetDirItems = treeItems[targetDirPath] || [];
+        const exists = targetDirItems.some(item => item.name === fileName);
+        if (exists) {
+          message.error(`A file or folder named "${fileName}" already exists in the target directory.`);
+          return;
+        }
+
+        await sendWSMessage('workspace_rename', { 
+          old_path: sourcePath, 
+          new_path: targetPath 
+        });
+        message.success(`Moved to: ${targetDirPath}`);
+        
+        // 刷新源目录和目标目录
+        const sourceDir = sourcePath.substring(0, sourcePath.lastIndexOf('/'));
+        await loadDirectory(sourceDir);
+        await loadDirectory(targetDirPath);
+        
+        // 如果移动的是当前打开的文件，更新路径
+        if (currentFile?.path === sourcePath) {
+          setCurrentFile(prev => prev ? { ...prev, path: targetPath } : null);
+        }
+      } catch (err) {
+        message.error('Failed to move: ' + (err.message || String(err)));
+      }
+    },
+    [sendWSMessage, loadDirectory, currentFile, treeItems]
   );
 
   const handleDocNavigate = useCallback((path) => {
@@ -160,64 +407,16 @@ export default function KnowledgePanel({ sendWSMessage }) {
     setSelectedDocItem(item);
   }, []);
 
-  const handleDocFileOpen = useCallback((item) => {
-    if (item.is_directory) return;
-    setDocPreviewFile(item);
-    setSelectedPath(item.path);
-    readFile(item.path);
-  }, [readFile]);
-
-  const handleCreateFolder = useCallback(async () => {
-    Modal.confirm({
-      title: 'New Folder',
-      content: (
-        <input
-          id="new-folder-input"
-          placeholder="Folder name"
-          defaultValue="New Folder"
-          style={{
-            width: '100%',
-            padding: '8px 12px',
-            borderRadius: 6,
-            border: '1px solid var(--border)',
-            background: 'var(--bg)',
-            color: 'var(--text)',
-            fontSize: 14,
-          }}
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              const btn = document.querySelector('.ant-modal-confirm-btns .ant-btn-primary');
-              if (btn) btn.click();
-            }
-          }}
-        />
-      ),
-      okText: 'Create',
-      cancelText: 'Cancel',
-      onOk: async () => {
-        const input = document.getElementById('new-folder-input');
-        const name = input?.value;
-        if (!name || !name.trim()) return Promise.reject();
-        const safeName = name.replace(/[^a-zA-Z0-9一-龥_\- .]/g, '').trim();
-        if (!safeName) return Promise.reject();
-        const newPath = `${currentDocPath}/${safeName}`;
-        try {
-          await sendWSMessage('workspace_mkdir', { path: newPath });
-          message.success(`Created folder: ${safeName}`);
-          await loadDirectory(currentDocPath);
-        } catch (err) {
-          message.error('Failed to create folder: ' + (err.message || String(err)));
-          return Promise.reject();
-        }
-      },
-    });
-  }, [currentDocPath, loadDirectory, sendWSMessage]);
+  const handleDocFileOpen = useCallback(
+    async (item) => {
+      if (item.is_directory) return;
+      setDocPreviewFile(item);
+      await handleOpenFile(item);
+    },
+    [handleOpenFile]
+  );
 
   useEffect(() => {
-    setSelectedPath(null);
-    setContent('');
     if (activeTab === 'documents') {
       setCurrentDocPath('knowledge/raw');
       setSelectedDocItem(null);
@@ -230,26 +429,21 @@ export default function KnowledgePanel({ sendWSMessage }) {
   const loadDistillTasks = useCallback(async () => {
     try {
       const resp = await sendWSMessage('knowledge_distill_list', { limit: 50 });
-      setDistillTasks(resp.data?.tasks || []);
+      const tasks = resp.data?.tasks || [];
+      // 同步到 DistillTaskContext
+      syncTasksFromBackend(tasks);
     } catch {
       // ignore
     }
-  }, [sendWSMessage]);
+  }, [sendWSMessage, syncTasksFromBackend]);
 
-  const handleExpandDistillTask = useCallback(async (taskId) => {
-    if (expandedDistillTask === taskId) {
-      setExpandedDistillTask(null);
-      setTaskDetailResult(null);
-      return;
-    }
-    setExpandedDistillTask(taskId);
-    try {
-      const resp = await sendWSMessage('knowledge_distill_detail', { task_id: taskId });
-      setTaskDetailResult(resp.data?.result || null);
-    } catch {
-      setTaskDetailResult(null);
-    }
-  }, [expandedDistillTask, sendWSMessage]);
+  const handleViewTaskDetail = useCallback(
+    (task) => {
+      setSelectedTask(task);
+      setTaskDetailModalVisible(true);
+    },
+    []
+  );
 
   useEffect(() => {
     loadDistillTasks();
@@ -257,53 +451,27 @@ export default function KnowledgePanel({ sendWSMessage }) {
     return () => clearInterval(timer);
   }, [loadDistillTasks]);
 
+  // 注册同步函数到 DistillTaskContext
+  useEffect(() => {
+    registerSyncTasks(loadDistillTasks);
+  }, [registerSyncTasks, loadDistillTasks]);
+
   useEffect(() => {
     const handler = (e) => {
-      const { stage, message: msg, progress, output_path, request_id } = e.detail;
-      setDistillProgress({ stage, message: msg, progress });
+      const { stage, message: msg, output_path } = e.detail;
       if (stage === 'completed' && output_path) {
         message.success('Distillation complete!');
         setActiveTab('notes');
-        readFile(output_path);
-        setDistillProgress(null);
+        handleOpenFile({ path: output_path, name: output_path.split('/').pop(), is_directory: false });
         loadDistillTasks();
       } else if (stage === 'failed') {
         message.error('Distillation failed: ' + msg);
-        setDistillProgress(null);
         loadDistillTasks();
       }
-      window.dispatchEvent(new CustomEvent('knowledge-distill-preview-progress', {
-        detail: { request_id, stage, message: msg, progress, output_path, markdown: e.detail.markdown }
-      }));
     };
     window.addEventListener('knowledge-distill-progress', handler);
     return () => window.removeEventListener('knowledge-distill-progress', handler);
-  }, [readFile, loadDistillTasks]);
-
-  useEffect(() => {
-    let timer = null;
-    const checkTasks = async () => {
-      try {
-        const resp = await sendWSMessage('knowledge_distill_list', { limit: 5 });
-        const tasks = resp.data?.tasks || [];
-        const running = tasks.find((t) => t.status === 'running');
-        if (running) {
-          setDistillProgress({
-            stage: running.stage,
-            message: running.message,
-            progress: running.progress,
-          });
-        } else {
-          setDistillProgress(null);
-        }
-      } catch {
-        // ignore
-      }
-    };
-    checkTasks();
-    timer = setInterval(checkTasks, 5000);
-    return () => clearInterval(timer);
-  }, [sendWSMessage]);
+  }, [handleOpenFile, loadDistillTasks]);
 
   const uploadFile = async (file, targetDir = null) => {
     if (!file) return;
@@ -392,101 +560,48 @@ export default function KnowledgePanel({ sendWSMessage }) {
     }
   };
 
-  const handleDocUpload = useCallback(async (file) => {
-    await uploadFile(file, currentDocPath);
-  }, [uploadFile, currentDocPath]);
+  const handleDocUpload = useCallback(
+    async (file) => {
+      await uploadFile(file, currentDocPath);
+    },
+    [uploadFile, currentDocPath]
+  );
 
-  const handleRenameFile = useCallback(async (item, newName, targetDir = null) => {
-    const dir = targetDir || item.path.substring(0, item.path.lastIndexOf('/'));
-    const newPath = `${dir}/${newName}`;
-    await sendWSMessage('workspace_rename', { old_path: item.path, new_path: newPath });
-    // 不在这里显示消息，让调用方处理
-  }, [sendWSMessage]);
+  // 处理右键菜单上传文件 - 弹出文件选择框
+  const handleUploadFileFromMenu = useCallback(
+    (targetDir) => {
+      // 创建隐藏的文件输入元素
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.style.display = 'none';
+      input.onchange = async (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+          await uploadFile(file, targetDir);
+        }
+        document.body.removeChild(input);
+      };
+      document.body.appendChild(input);
+      input.click();
+    },
+    [uploadFile]
+  );
 
-  const handleDeleteFile = useCallback(async (item) => {
-    const confirmed = window.confirm(`Delete "${item.name}"? This cannot be undone.`);
-    if (!confirmed) return;
-    try {
-      await sendWSMessage('knowledge_delete', { path: item.path });
-      message.success(`Deleted: ${item.name}`);
-      if (selectedDocItem?.path === item.path) {
-        setSelectedDocItem(null);
-      }
-      await loadDirectory(currentDocPath);
-    } catch (err) {
-      message.error('Failed to delete: ' + (err.message || String(err)));
-    }
-  }, [sendWSMessage, loadDirectory, currentDocPath, selectedDocItem]);
-
-  const handlePreview = async ({ prompt, template }) => {
+  const handleStartDistill = async ({ prompt, template, taskId }) => {
     const source = effectiveSelectedPath;
     if (!source) return '';
     try {
-      const response = await sendWSMessage('knowledge_distill_preview', {
+      const response = await sendWSMessage('knowledge_distill', {
         source_path: source,
         prompt,
         template,
+        task_id: taskId,
       });
-      return response.data?.markdown || '';
+      return response.data || {};
     } catch (err) {
-      message.error('Preview failed: ' + (err.message || String(err)));
+      message.error('Failed to start distillation: ' + (err.message || String(err)));
       throw err;
     }
-  };
-
-  const startDistill = async ({ prompt, template, previewMarkdown }) => {
-    const source = effectiveSelectedPath;
-    if (!source) return;
-
-    // 如果有 previewMarkdown，直接写入文件（复用预览结果）
-    if (previewMarkdown) {
-      try {
-        const sourceName = source.split('/').pop()?.replace(/\.[^.]+$/, '') || 'extracted';
-        const outputPath = `knowledge/notes/${sourceName}_extracted.md`;
-        // 添加 frontmatter（如果没有的话）
-        let contentToSave = previewMarkdown;
-        if (!previewMarkdown.startsWith('---')) {
-          const frontmatter = `---
-source: ${source}
-extracted_at: ${new Date().toISOString()}
-extraction_prompt: |
-  ${prompt}
----
-
-`;
-          contentToSave = frontmatter + previewMarkdown;
-        }
-        // 确保目录存在
-        await sendWSMessage('workspace_mkdir', { path: 'knowledge/notes' }).catch(() => {});
-        // 写入文件（后端会自动更新索引）
-        await sendWSMessage('knowledge_write', { path: outputPath, content: contentToSave });
-        message.success('Distillation saved successfully!');
-        setActiveTab('notes');
-        readFile(outputPath);
-        loadDistillTasks();
-      } catch (err) {
-        message.error('Failed to save distillation: ' + (err.message || String(err)));
-      }
-      setDistillDialogVisible(false);
-      return;
-    }
-
-    // 没有 previewMarkdown，回退到原来的队列模式
-    try {
-      await sendWSMessage('knowledge_distill', {
-        source_path: source,
-        prompt,
-        template,
-      });
-      setDistillProgress({
-        stage: 'queued',
-        message: 'Queued, waiting to start...',
-        progress: 0,
-      });
-    } catch (err) {
-      message.error('Failed to queue distillation: ' + (err.message || String(err)));
-    }
-    setDistillDialogVisible(false);
   };
 
   const createNewNote = async () => {
@@ -509,7 +624,7 @@ extraction_prompt: |
         next.add(rootPath);
         return next;
       });
-      readFile(path);
+      handleOpenFile({ path, name: `${safeName}.md`, is_directory: false });
     } catch (err) {
       message.error('Failed to create note: ' + (err.message || String(err)));
     }
@@ -518,14 +633,14 @@ extraction_prompt: |
   const ALLOWED_DISTILL_EXTENSIONS = ['ppt', 'pptx', 'pdf', 'html', 'htm', 'doc', 'docx', 'md', 'txt'];
 
   const canDistill = (() => {
-    const path = activeTab === 'documents' ? selectedDocItem?.path : selectedPath;
+    const path = activeTab === 'documents' ? selectedDocItem?.path : currentFile?.path;
     if (!path) return false;
     if (path.endsWith('/')) return false;
     const ext = path.split('.').pop()?.toLowerCase() || '';
     return ALLOWED_DISTILL_EXTENSIONS.includes(ext);
   })();
 
-  const effectiveSelectedPath = activeTab === 'documents' ? (selectedDocItem?.path || null) : selectedPath;
+  const effectiveSelectedPath = activeTab === 'documents' ? (selectedDocItem?.path || null) : currentFile?.path;
 
   const handleExport = async () => {
     try {
@@ -606,6 +721,7 @@ extraction_prompt: |
         position: 'relative',
       }}
     >
+      {/* Header */}
       <div
         className="window-header"
         style={{
@@ -645,15 +761,19 @@ extraction_prompt: |
             );
           })}
         </div>
+        <div style={{ flex: 1 }} />
+        <TaskIndicator onViewTaskDetail={handleViewTaskDetail} />
       </div>
 
+      {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
         {activeTab === 'documents' ? (
           docPreviewFile ? (
             <>
+              {/* Documents Sidebar - narrower */}
               <div
                 style={{
-                  width: 280,
+                  width: 200,
                   flexShrink: 0,
                   display: 'flex',
                   flexDirection: 'column',
@@ -661,7 +781,7 @@ extraction_prompt: |
                   borderRight: '1px solid var(--border)',
                 }}
               >
-              <DocumentGridView
+                <DocumentGridView
                   items={treeItems[currentDocPath] || []}
                   currentPath={currentDocPath}
                   rootPath="knowledge/raw"
@@ -671,104 +791,20 @@ extraction_prompt: |
                   onNavigate={handleDocNavigate}
                   onFileOpen={handleDocFileOpen}
                   onCreateFolder={handleCreateFolder}
-                  onUploadFile={handleDocUpload}
-                  onRenameFile={handleRenameFile}
-                  onDeleteFile={handleDeleteFile}
+                  onUploadFile={handleUploadFileFromMenu}
+                  onRenameFile={handleRename}
+                  onDeleteFile={handleDelete}
                   treeItems={treeItems}
                 />
               </div>
+              {/* Editor Area */}
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--bg)' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '10px 16px',
-                    borderBottom: '1px solid var(--border)',
-                    background: 'var(--surface-2)',
-                    gap: 12,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
-                    <span
-                      style={{
-                        fontSize: 12,
-                        color: 'var(--text-2)',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {selectedPath || ''}
-                    </span>
-                    {noteTags.length > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        {noteTags.map((t) => (
-                          <button
-                            key={t}
-                            onClick={() => {
-                              setGraphTagFilter(t);
-                              setActiveTab('graph');
-                            }}
-                            style={{
-                              padding: '2px 8px',
-                              borderRadius: 4,
-                              border: '1px solid var(--accent)',
-                              background: 'var(--accent-soft)',
-                              color: 'var(--accent)',
-                              fontSize: 11,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            #{t}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <button
-                      onClick={() => {
-                        setDocPreviewFile(null);
-                        setSelectedPath(null);
-                        setContent('');
-                        setNoteTags([]);
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        padding: '4px 10px',
-                        borderRadius: 4,
-                        border: 'none',
-                        background: 'transparent',
-                        color: 'var(--text-2)',
-                        cursor: 'pointer',
-                        fontSize: 12,
-                      }}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
-                  {fileEncoding === 'hex' ? (
-                    <KnowledgeBinaryPreview
-                      fileName={selectedPath?.split('/').pop()}
-                      content={content}
-                      encoding={fileEncoding}
-                    />
-                  ) : (
-                    <NoteEditor
-                      fileName={selectedPath?.split('/').pop()}
-                      content={content}
-                      onSave={writeFile}
-                      sendWSMessage={sendWSMessage}
-                      onViewInGraph={() => setActiveTab('graph')}
-                    />
-                  )}
-                </div>
+                <SimpleEditor
+                  file={currentFile}
+                  onSave={writeFile}
+                  sendWSMessage={sendWSMessage}
+                  onViewInGraph={() => setActiveTab('graph')}
+                />
               </div>
             </>
           ) : (
@@ -783,206 +819,126 @@ extraction_prompt: |
                 onNavigate={handleDocNavigate}
                 onFileOpen={handleDocFileOpen}
                 onCreateFolder={handleCreateFolder}
-                onUploadFile={handleDocUpload}
-                onRenameFile={handleRenameFile}
-                onDeleteFile={handleDeleteFile}
+                onUploadFile={handleUploadFileFromMenu}
+                onRenameFile={handleRename}
+                onDeleteFile={handleDelete}
                 treeItems={treeItems}
               />
             </div>
           )
+        ) : activeTab === 'graph' ? (
+          /* Graph Tab - Full screen, no sidebar, global graph */
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--bg)' }}>
+            <KnowledgeGraphTab
+              sendWSMessage={sendWSMessage}
+              centerPath={null}
+              filterTag={graphTagFilter}
+              onNodeNavigate={(path) => {
+                handleOpenFile({ path, name: path.split('/').pop(), is_directory: false });
+              }}
+            />
+          </div>
         ) : (
-        <>
-        <div
-          style={{
-            width: 220,
-            flexShrink: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            background: 'var(--surface-2)',
-            borderRight: '1px solid var(--border)',
-          }}
-        >
-          <UploadDropzone
-            activeTab={activeTab}
-            isUploading={isUploading}
-            uploadProgress={uploadProgress}
-            onFileSelect={uploadFile}
-            onNewNoteClick={() => setIsNewNoteModalOpen(true)}
-            onExport={handleExport}
-            onImport={handleImport}
-          />
-          <KnowledgeTree
-            rootPath={rootPath}
-            treeItems={treeItems}
-            selectedPath={selectedPath}
-            expandedPaths={expandedPaths}
-            onSelect={handleSelect}
-            onToggle={handleToggle}
-          />
-          <div style={{ padding: 12, borderTop: '1px solid var(--border)' }}>
-            <button
-              disabled={!canDistill}
-              onClick={() => canDistill && setDistillDialogVisible(true)}
+          <>
+            {/* Sidebar - resizable */}
+            <div
+              ref={sidebarRef}
               style={{
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: 6,
-                border: 'none',
-                background: 'var(--accent)',
-                color: 'var(--text-invert)',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: canDistill ? 'pointer' : 'not-allowed',
-                opacity: canDistill ? 1 : 0.5,
+                width: sidebarWidth,
+                flexShrink: 0,
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
+                flexDirection: 'column',
+                background: 'var(--surface-2)',
+                borderRight: '1px solid var(--border)',
+                position: 'relative',
               }}
             >
-              <Sparkles size={14} />
-              <span>Distill with AI</span>
-            </button>
-            {distillProgress && (
-              <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-2)' }}>
-                {distillProgress.message} ({Math.round(distillProgress.progress * 100)}%)
+              <UploadDropzone
+                activeTab={activeTab}
+                isUploading={isUploading}
+                uploadProgress={uploadProgress}
+                onFileSelect={uploadFile}
+                onNewNoteClick={() => setIsNewNoteModalOpen(true)}
+                onExport={handleExport}
+                onImport={handleImport}
+              />
+              <div style={{ flex: 1, overflow: 'auto' }}>
+                <SimpleFileTree
+                  rootPath={rootPath}
+                  treeItems={treeItems}
+                  selectedPath={currentFile?.path}
+                  expandedPaths={expandedPaths}
+                  onSelect={handleOpenFile}
+                  onToggle={handleToggle}
+                  onCreateFile={handleCreateFile}
+                  onCreateFolder={handleCreateFolder}
+                  onRename={handleRename}
+                  onDelete={handleDelete}
+                  onRefresh={loadDirectory}
+                  onMove={handleMove}
+                />
               </div>
-            )}
-          </div>
-        </div>
-
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--bg)' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 16px',
-              borderBottom: '1px solid var(--border)',
-              background: 'var(--surface-2)',
-              gap: 12,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
-              <span
-                style={{
-                  fontSize: 12,
-                  color: 'var(--text-2)',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {selectedPath || rootPath}
-              </span>
-              {noteTags.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  {noteTags.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => {
-                        setGraphTagFilter(t);
-                        setActiveTab('graph');
-                      }}
-                      style={{
-                        padding: '2px 8px',
-                        borderRadius: 4,
-                        border: '1px solid var(--accent)',
-                        background: 'var(--accent-soft)',
-                        color: 'var(--accent)',
-                        fontSize: 11,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      #{t}
-                    </button>
-                  ))}
+              {activeTab === 'documents' && (
+                <div style={{ padding: 8, borderTop: '1px solid var(--border)' }}>
+                  <button
+                    disabled={!canDistill}
+                    onClick={() => canDistill && setDistillDialogVisible(true)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: 4,
+                      border: 'none',
+                      background: canDistill ? 'var(--accent)' : 'var(--surface)',
+                      color: canDistill ? 'var(--text-invert)' : 'var(--text-3)',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: canDistill ? 'pointer' : 'not-allowed',
+                      opacity: canDistill ? 1 : 0.5,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <Sparkles size={12} />
+                    <span>Distill</span>
+                  </button>
                 </div>
               )}
-            </div>
-            {selectedPath && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <button
-                  onClick={() => {
-                    setSelectedPath(null);
-                    setContent('');
-                    setNoteTags([]);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: '4px 10px',
-                    borderRadius: 4,
-                    border: 'none',
-                    background: 'transparent',
-                    color: 'var(--text-2)',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                  }}
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
-            {activeTab === 'distill-tasks' ? (
-              <DistillTaskList
-                tasks={distillTasks}
-                expandedTaskId={expandedDistillTask}
-                taskDetailResult={taskDetailResult}
-                onExpandTask={handleExpandDistillTask}
-                sendWSMessage={sendWSMessage}
-              />
-            ) : activeTab === 'graph' ? (
-              <KnowledgeGraphTab
-                sendWSMessage={sendWSMessage}
-                centerPath={selectedPath}
-                filterTag={graphTagFilter}
-                onNodeNavigate={(path) => {
-                  setSelectedPath(path);
-                  setActiveTab('notes');
-                  readFile(path);
-                }}
-              />
-            ) : selectedPath ? (
-              fileEncoding === 'hex' ? (
-                <KnowledgeBinaryPreview
-                  fileName={selectedPath.split('/').pop()}
-                  content={content}
-                  encoding={fileEncoding}
-                />
-              ) : (
-                <NoteEditor
-                  fileName={selectedPath.split('/').pop()}
-                  content={content}
-                  onSave={writeFile}
-                  sendWSMessage={sendWSMessage}
-                  onViewInGraph={() => setActiveTab('graph')}
-                />
-              )
-            ) : (
+              {/* Resize handle */}
               <div
+                onMouseDown={handleResizeStart}
+                className="sidebar-resize-handle"
                 style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--text-2)',
-                  fontSize: 14,
-                  flexDirection: 'column',
-                  gap: 12,
+                  position: 'absolute',
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 4,
+                  cursor: 'col-resize',
+                  background: 'transparent',
+                  transition: 'background 0.15s',
+                  zIndex: 10,
                 }}
-              >
-                <File size={48} style={{ opacity: 0.3 }} />
-                <span>Select a file from the sidebar to preview or edit</span>
-              </div>
-            )}
-          </div>
-        </div>
-        </>
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--accent)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              />
+            </div>
+
+            {/* Main Editor Area */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--bg)' }}>
+              <SimpleEditor
+                file={currentFile}
+                onSave={writeFile}
+                sendWSMessage={sendWSMessage}
+                onViewInGraph={() => setActiveTab('graph')}
+              />
+            </div>
+          </>
         )}
 
         {activeTab === 'documents' && !docPreviewFile && (
@@ -992,12 +948,12 @@ extraction_prompt: |
               bottom: 0,
               left: 0,
               right: 0,
-              padding: '12px 16px',
+              padding: '8px 12px',
               borderTop: '1px solid var(--border)',
               background: 'var(--surface-2)',
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 8,
             }}
           >
             <UploadDropzone
@@ -1011,7 +967,7 @@ extraction_prompt: |
               disabled={!canDistill}
               onClick={() => canDistill && setDistillDialogVisible(true)}
               style={{
-                padding: '8px 16px',
+                padding: '8px 14px',
                 borderRadius: 6,
                 border: 'none',
                 background: canDistill ? 'var(--accent)' : 'var(--surface)',
@@ -1023,16 +979,12 @@ extraction_prompt: |
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
+                whiteSpace: 'nowrap',
               }}
             >
-              <Sparkles size={14} />
+              <Sparkles size={15} />
               <span>Distill</span>
             </button>
-            {distillProgress && (
-              <span style={{ fontSize: 11, color: 'var(--text-2)', flex: 1 }}>
-                {distillProgress.message} ({Math.round(distillProgress.progress * 100)}%)
-              </span>
-            )}
           </div>
         )}
       </div>
@@ -1052,8 +1004,14 @@ extraction_prompt: |
         visible={distillDialogVisible}
         sourceFile={effectiveSelectedPath || ''}
         onCancel={() => setDistillDialogVisible(false)}
-        onConfirm={startDistill}
-        onPreview={handlePreview}
+        onStartDistill={handleStartDistill}
+      />
+
+      <TaskDetailModal
+        task={selectedTask}
+        visible={taskDetailModalVisible}
+        onClose={() => setTaskDetailModalVisible(false)}
+        sendWSMessage={sendWSMessage}
       />
     </div>
   );

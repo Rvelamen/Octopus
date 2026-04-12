@@ -414,6 +414,29 @@ class WorkspaceRenameHandler(MessageHandler):
             # Rename
             full_old_path.rename(full_new_path)
 
+            # Auto-update knowledge base index when markdown files in knowledge/notes are renamed
+            if old_path.startswith("knowledge/notes"):
+                from backend.services.knowledge_engine import KnowledgeGraphEngine
+                engine = KnowledgeGraphEngine(workspace_root)
+                
+                if old_path.endswith(".md"):
+                    # Single markdown file: delete old index entry and update new one
+                    engine.delete_note(old_path)
+                    engine.update_note(new_path)
+                elif full_new_path.is_dir():
+                    # Directory was moved: clean up old index entries and update new ones
+                    # First, calculate what the old paths would have been and delete them
+                    # We need to reconstruct the old paths based on the new paths
+                    for md_file in full_new_path.rglob("*.md"):
+                        new_rel_path = str(md_file.relative_to(Path(workspace_root)))
+                        # Calculate the corresponding old path
+                        # new_path = old_path.replace(old_dir_name, new_dir_name)
+                        # So old_path = new_path.replace(new_dir_name, old_dir_name)
+                        # But we need to be careful about partial matches
+                        old_rel_path = new_rel_path.replace(new_path, old_path, 1)
+                        engine.delete_note(old_rel_path)
+                        engine.update_note(new_rel_path)
+
             await self.send_response(websocket, WSMessage(
                 type=MessageType.WORKSPACE_RENAME_RESULT,
                 request_id=message.request_id,

@@ -1,0 +1,143 @@
+/* 简洁文件树样式 */
+
+.simple-file-tree {
+  font-size: 13px;
+  background: var(--surface-2);
+  height: 100%;
+  overflow: auto;
+  user-select: none;
+}
+
+/* 树项容器 */
+.simple-tree-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background-color 0.1s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.simple-tree-item:hover {
+  background: var(--surface-3);
+}
+
+.simple-tree-item.selected {
+  background: var(--accent-soft);
+}
+
+/* 展开箭头 */
+.simple-tree-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--text-2);
+}
+
+.simple-tree-arrow.expanded {
+  transform: rotate(90deg);
+}
+
+/* 文件图标 */
+.simple-tree-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* 文件名 */
+.simple-tree-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 子项容器 */
+.simple-tree-children {
+  margin-left: 0;
+}
+
+/* 右键菜单 */
+.simple-context-menu {
+  position: fixed;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 0;
+  min-width: 140px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  font-size: 12px;
+}
+
+.simple-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.simple-context-menu-item:hover {
+  background: var(--accent-soft);
+}
+
+.simple-context-menu-item.danger:hover {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+}
+
+.simple-context-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* 空状态 */
+.simple-tree-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+/* 拖拽状态 */
+.simple-tree-item.drag-over {
+  background: var(--accent-soft);
+  border: 1px dashed var(--accent);
+  border-radius: 4px;
+}
+
+/* 根目录拖拽状态 */
+.simple-file-tree.root-drag-over {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* 默认悬停状态使用 pointer */
+.simple-tree-item {
+  cursor: pointer;
+}
+
+/* 可拖拽元素悬停时使用 pointer - 提高优先级 */
+.simple-tree-item[draggable="true"],
+.simple-file-tree .simple-tree-item[draggable="true"] {
+  cursor: pointer;
+}
+
+/* 拖拽过程中（点击并按住）使用 grabbing */
+.simple-tree-item[draggable="true"]:active,
+.simple-file-tree .simple-tree-item[draggable="true"]:active {
+  cursor: grabbing;
+}

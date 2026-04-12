@@ -49,7 +49,7 @@ const APP_TITLE_BY_TAB = {
   extensions: "EXTENSIONS",
   cron: "CRON",
   agents: "AGENTS",
-  workspace: "WORKSPACE_EXPLORER",
+  workspaces: "WORKSPACE_EXPLORER",
   history: "HISTORY",
   tokens: "TOKENS",
 };
@@ -824,8 +824,8 @@ function App() {
       setActiveTab('cron');
     } else if (path === '/agents') {
       setActiveTab('agents');
-    } else if (path === '/workspace') {
-      setActiveTab('workspace');
+    } else if (path === '/workspaces') {
+      setActiveTab('workspaces');
     } else if (path === '/history') {
       setActiveTab('history');
     } else if (path === '/tokens') {
@@ -852,7 +852,7 @@ function App() {
       extensions: '/extensions',
       cron: '/cron',
       agents: '/agents',
-      workspace: '/workspace',
+      workspaces: '/workspaces',
       history: '/history',
       tokens: '/tokens',
       knowledge: '/knowledge',
@@ -957,8 +957,8 @@ function App() {
               <span>AGENTS</span>
             </button>
             <button
-              className={`nav-item ${activeTab === "workspace" ? "active" : ""}`}
-              onClick={() => handleNavClick("workspace")}
+              className={`nav-item ${activeTab === "workspaces" ? "active" : ""}`}
+              onClick={() => handleNavClick("workspaces")}
             >
               <FolderOpen size={18} />
               <span>WORKSPACE</span>
@@ -1029,7 +1029,7 @@ function App() {
             <Route path="/extensions" element={
               <ExtensionsPanel sendWSMessage={sendWSMessage} ws={ws.current} />
             } />
-            <Route path="/workspace" element={
+            <Route path="/workspaces" element={
               <WorkspacePanel sendWSMessage={sendWSMessage} />
             } />
             <Route path="/history" element={

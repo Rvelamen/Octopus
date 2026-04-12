@@ -3,6 +3,7 @@
 import base64
 import io
 import json
+import shutil
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -127,7 +128,10 @@ class KnowledgeDeleteHandler(_KnowledgeHandlerMixin, MessageHandler):
                 return
 
             if full_path.exists():
-                full_path.unlink()
+                if full_path.is_dir():
+                    shutil.rmtree(full_path)
+                else:
+                    full_path.unlink()
             if path.endswith(".md"):
                 self.engine.db.execute("DELETE FROM knowledge_nodes WHERE path = ?", (path,))
                 self.engine.db.commit()
@@ -227,7 +231,11 @@ class KnowledgeDistillListHandler(_KnowledgeHandlerMixin, MessageHandler):
 
 
 class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
-    """Handle knowledge distillation requests."""
+    """Handle knowledge distillation requests (async queue mode).
+    
+    This handler now uses the task queue for asynchronous execution,
+    supporting both file write mode and preview mode.
+    """
 
     def __init__(self, bus, queue: KnowledgeTaskQueue):
         super().__init__(bus)
@@ -235,16 +243,24 @@ class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         try:
+            from backend.utils.helpers import get_workspace_path
+
             source_path = message.data["source_path"]
             prompt = message.data.get("prompt", "")
+            template = message.data.get("template", "custom")
+            # Use frontend-provided task_id for progress tracking
+            task_id = message.data.get("task_id") or message.request_id
+
+            # Determine output_path
+            # - If provided, use it (write to file)
+            # - If not provided, auto-generate (write to file)
             output_path = message.data.get("output_path")
             if not output_path:
                 output_path = f"knowledge/notes/{Path(source_path).stem}_extracted.md"
-            template = message.data.get("template", "custom")
-            request_id = message.request_id
 
+            # Enqueue task for async execution
             job_id = self.queue.enqueue(
-                request_id=request_id,
+                request_id=task_id,
                 source_path=source_path,
                 prompt=prompt,
                 output_path=output_path,
@@ -253,61 +269,17 @@ class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
 
             await self.send_response(websocket, WSMessage(
                 type=MessageType.KNOWLEDGE_DISTILL_RESULT,
-                request_id=request_id,
-                data={"status": "queued", "job_id": job_id, "source_path": source_path}
-            ))
-        except Exception as e:
-            logger.error(f"Failed to queue distillation: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to queue distillation: {e}")
-
-
-class KnowledgeDistillPreviewHandler(_KnowledgeHandlerMixin, MessageHandler):
-    """Handle knowledge distillation preview requests (no write).
-    
-    Instead of running synchronously, this now enqueues a preview task
-    and returns immediately. The client polls for progress.
-    """
-
-    def __init__(self, bus, task_queue):
-        super().__init__(bus)
-        self._task_queue = task_queue
-
-    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        try:
-            from backend.utils.helpers import get_workspace_path
-            
-            source_path = message.data["source_path"]
-            prompt = message.data.get("prompt", "")
-            template = message.data.get("template", "custom")
-            
-            # 动态获取当前 workspace
-            try:
-                workspace_root = get_workspace_path()
-            except Exception as e:
-                logger.warning(f"Failed to get workspace path: {e}")
-                workspace_root = message.data.get("workspace_root")
-
-            # 异步入队，避免阻塞
-            job_id = self._task_queue.enqueue(
-                request_id=message.request_id,
-                source_path=source_path,
-                prompt=prompt,
-                output_path=None,  # preview 不写入文件
-                template=template,
-            )
-            
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_DISTILL_PREVIEW_RESULT,
                 request_id=message.request_id,
                 data={
                     "job_id": job_id,
                     "status": "queued",
-                    "message": "Preview task queued. Progress will be pushed via knowledge_distill_progress events.",
+                    "message": "Task queued. Progress will be pushed via knowledge_distill_progress events.",
+                    "output_path": output_path,
                 }
             ))
         except Exception as e:
-            logger.error(f"Failed to queue preview distillation: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to queue preview distillation: {e}")
+            logger.error(f"Failed to queue distillation: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to queue distillation: {e}")
 
 
 class KnowledgeDistillDetailHandler(_KnowledgeHandlerMixin, MessageHandler):
@@ -339,7 +311,14 @@ class KnowledgeDistillDetailHandler(_KnowledgeHandlerMixin, MessageHandler):
                 (json.loads(it.get("token_usage") or "{}")).get("completion_tokens", 0)
                 for it in iterations
             )
-            total_duration = sum(it.get("duration", 0) for it in iterations if it.get("duration"))
+            # Calculate duration from task created_at and updated_at
+            try:
+                from datetime import datetime
+                created_at = datetime.fromisoformat(task["created_at"])
+                updated_at = datetime.fromisoformat(task["updated_at"])
+                total_duration = (updated_at - created_at).total_seconds()
+            except Exception:
+                total_duration = 0
 
             # Extract actual markdown from the last iteration's reasoning (not the prompt)
             summary = ""
