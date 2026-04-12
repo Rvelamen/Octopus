@@ -635,8 +635,8 @@ ${MEASURER_SCRIPT}
         onMouseDown={onMouseDown}
         style={{
           width: '100%',
-          height: '100%',
-          overflow: fitMode ? 'hidden' : 'auto',
+          overflowX: 'hidden',
+          overflowY: 'auto',
           position: 'relative',
         }}
       >

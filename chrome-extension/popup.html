@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <img src="icons/icon128.png" alt="Octopus" class="header-logo" />
+    <div class="header-text">
+      <div class="logo">Octopus Clip</div>
+      <div class="subtitle">将网页保存到知识库</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-action="clip">收藏</button>
+    <button class="tab-btn" data-action="clip_and_distill">收藏+提取</button>
+    <button class="tab-btn" data-action="note">写笔记</button>
+  </div>
+
+  <div class="form">
+    <div class="field">
+      <label>页面标题</label>
+      <input type="text" id="title" placeholder="页面标题">
+    </div>
+
+    <div class="field">
+      <label>标签 <span class="hint">（用空格分隔，自动加 #）</span></label>
+      <input type="text" id="tags" placeholder="frontend react">
+    </div>
+
+    <div id="tab-hint" class="tab-hint"></div>
+
+    <div class="field">
+      <label id="note-label">备注 / 感想</label>
+      <textarea id="user-note" rows="3" placeholder="这篇讲得很清楚，特别是..."></textarea>
+    </div>
+
+    <div class="field info-row" id="preview-row">
+      <span id="extract-method">正在提取页面内容...</span>
+      <button id="toggle-preview" class="link-btn">查看内容</button>
+    </div>
+
+    <div id="preview-box" class="preview hidden">
+      <pre id="preview-content"></pre>
+    </div>
+
+    <button id="save-btn" class="save-btn">保存到 Octopus</button>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

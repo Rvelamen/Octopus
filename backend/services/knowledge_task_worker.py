@@ -101,6 +101,7 @@ class KnowledgeTaskWorker:
 3. Optionally use `kb_search` to find related notes in the knowledge base
 4. Use the `write` tool to save the extracted note as Markdown
    - Include YAML front-matter with source, extracted_at, and extraction_prompt
+   - **IMPORTANT: If the source document's frontmatter contains a `source` field that is a web URL (e.g. from a web clip), preserve that exact URL as the `source` in your output frontmatter, and add `archive` pointing to the local file path**
    - Use proper Markdown headings, lists, and tables
    - Add wiki-style links like [[Related Concept]] where appropriate
 5. When done, report the output path in your final response
@@ -172,7 +173,24 @@ Be concise but complete. If information is not found in the document, state it e
                 #         2) result["summary"]（fallback，对话式回复）
                 markdown_content: str | None = None
                 source_path_for_frontmatter = task.source_path
+                archive_path = task.source_path
                 extracted_at = datetime.now().isoformat()
+
+                # 🔗 如果 source 是 web_clip，穿透其 frontmatter 中的 source URL
+                try:
+                    source_full = Path(current_workspace) / task.source_path
+                    if source_full.exists() and source_full.suffix == ".md":
+                        source_text = source_full.read_text(encoding="utf-8", errors="ignore")[:5000]
+                        fm_match = re.search(r"^---\n(.*?)\n---", source_text, re.DOTALL)
+                        if fm_match:
+                            import yaml
+                            fm = yaml.safe_load(fm_match.group(1)) or {}
+                            if fm.get("document_type") == "web_clip" and fm.get("source"):
+                                source_path_for_frontmatter = fm["source"]
+                                archive_path = task.source_path
+                                logger.info(f"Task {task.id}: Detected web_clip, using source URL {source_path_for_frontmatter}")
+                except Exception:
+                    pass
 
                 if result and "iterations" in result and result["iterations"]:
                     # 从最后一个包含 reasoning 的 iteration 中提取 markdown
@@ -247,9 +265,12 @@ Be concise but complete. If information is not found in the document, state it e
 
                     # 添加 frontmatter（如果没有的话）
                     if not markdown_content.startswith("---"):
+                        archive_line = ""
+                        if source_path_for_frontmatter != task.source_path:
+                            archive_line = f'archive: "{archive_path}"\n'
                         frontmatter = f"""---
 source: {source_path_for_frontmatter}
-extracted_at: {extracted_at}
+{archive_line}extracted_at: {extracted_at}
 extraction_prompt: |
   {task.prompt}
 ---

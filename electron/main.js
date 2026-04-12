@@ -264,6 +264,7 @@ async function createWindow() {
         contextIsolation: true,
         preload: path.join(__dirname, 'preload.js'),
         webSecurity: false, // 允许跨域请求到本地API
+        webviewTag: true,   // 允许使用 <webview> 标签内嵌网页预览
       },
       titleBarStyle: 'hidden', // 隐藏原生标题栏
       show: false, // 先不显示，等加载完成

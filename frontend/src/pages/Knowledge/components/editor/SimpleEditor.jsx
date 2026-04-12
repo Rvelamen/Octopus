@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Edit3, Save, Columns, Share2, ChevronRight, FileText } from 'lucide-react';
+import { Edit3, Save, Columns, Share2, ChevronRight, FileText, ExternalLink } from 'lucide-react';
 import './SimpleEditor.css';
 
 // Markdown 预览组件
@@ -201,9 +201,55 @@ export default function SimpleEditor({
 
   const isMarkdown = file.name?.endsWith('.md');
   const language = getLanguage(file.name);
+  const sourceUrl = file.meta?.source;
+  const archivePath = file.meta?.archive;
+  const hasSource = sourceUrl && typeof sourceUrl === 'string' && sourceUrl.startsWith('http');
 
   return (
     <div className="simple-editor">
+      {/* Source link banner */}
+      {hasSource && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '8px 16px',
+            background: 'var(--accent-soft)',
+            borderBottom: '1px solid var(--border)',
+            fontSize: 12,
+          }}
+        >
+          <span style={{ color: 'var(--text-2)' }}>🔗 来源：</span>
+          <a
+            href={sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              color: 'var(--accent)',
+              textDecoration: 'none',
+              fontWeight: 500,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            title={sourceUrl}
+          >
+            {sourceUrl.length > 60 ? sourceUrl.slice(0, 60) + '...' : sourceUrl}
+            <ExternalLink size={12} />
+          </a>
+          {archivePath && (
+            <>
+              <span style={{ color: 'var(--text-3)' }}>|</span>
+              <span style={{ color: 'var(--text-3)' }}>📄 本地存档: {archivePath}</span>
+            </>
+          )}
+        </div>
+      )}
+
       {/* 头部工具栏 */}
       <div className="simple-editor-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden' }}>

@@ -644,7 +644,16 @@ export default function DocumentGridView({
                   alt=""
                   style={{ width: 18, height: 18, flexShrink: 0 }}
                 />
-                <span style={{ flex: 1, fontSize: 12, color: 'var(--text)' }}>{item.name}</span>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.meta?.title || item.name}
+                  </span>
+                  {item.meta?.source && (
+                    <span style={{ fontSize: 10, color: 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {new URL(item.meta.source).hostname}
+                    </span>
+                  )}
+                </div>
                 <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
                   {item.size != null ? formatSize(item.size) : ''}
                 </span>

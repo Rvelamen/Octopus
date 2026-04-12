@@ -78,6 +78,19 @@ class KnowledgeGraphEngine:
             raise PermissionError("Access denied: path outside workspace")
         return full_path
 
+    def _extract_frontmatter(self, content: str) -> dict[str, Any] | None:
+        """Extract YAML frontmatter from markdown content."""
+        if not content.startswith("---"):
+            return None
+        match = re.search(r"^---\n(.*?)\n---", content, re.DOTALL)
+        if not match:
+            return None
+        try:
+            import yaml
+            return yaml.safe_load(match.group(1)) or None
+        except Exception:
+            return None
+
     def _extract_title(self, content: str, fallback_path: str) -> str:
         """Extract the first level-1 markdown heading as title, or use the filename."""
         for line in content.splitlines():
@@ -186,15 +199,24 @@ class KnowledgeGraphEngine:
         items: list[dict[str, Any]] = []
         for entry in sorted(full_path.iterdir(), key=lambda e: (e.is_file(), e.name.lower())):
             stat = entry.stat()
-            items.append(
-                {
-                    "name": entry.name,
-                    "path": str(entry.relative_to(self.workspace_root)),
-                    "is_directory": entry.is_dir(),
-                    "size": stat.st_size if entry.is_file() else 0,
-                    "mtime": stat.st_mtime,
-                }
-            )
+            item: dict[str, Any] = {
+                "name": entry.name,
+                "path": str(entry.relative_to(self.workspace_root)),
+                "is_directory": entry.is_dir(),
+                "size": stat.st_size if entry.is_file() else 0,
+                "mtime": stat.st_mtime,
+                "meta": None,
+            }
+
+            # Parse frontmatter for markdown files
+            if not entry.is_dir() and entry.suffix == ".md":
+                try:
+                    content = entry.read_text(encoding="utf-8", errors="ignore")[:4096]
+                    item["meta"] = self._extract_frontmatter(content)
+                except Exception:
+                    pass
+
+            items.append(item)
         return items
 
     def read_note(self, relative_path: str) -> str:

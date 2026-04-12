@@ -159,25 +159,49 @@ export default function GridItem({
           }}
         />
       ) : (
-        <span
+        <div
           style={{
-            fontSize: 12,
-            lineHeight: 1.4,
-            textAlign: 'center',
-            color: isSelected ? 'var(--accent)' : 'var(--text)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
             maxWidth: '100%',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            wordBreak: 'break-word',
-            fontWeight: isSelected ? 600 : 400,
           }}
           title={item.name}
         >
-          {item.name}
-        </span>
+          <span
+            style={{
+              fontSize: 12,
+              lineHeight: 1.4,
+              textAlign: 'center',
+              color: isSelected ? 'var(--accent)' : 'var(--text)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              wordBreak: 'break-word',
+              fontWeight: isSelected ? 600 : 500,
+            }}
+          >
+            {item.meta?.title || item.name}
+          </span>
+          {item.meta?.source && (
+            <span
+              style={{
+                fontSize: 10,
+                color: 'var(--text-3)',
+                marginTop: 2,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: '100%',
+              }}
+              title={item.meta.source}
+            >
+              {new URL(item.meta.source).hostname}
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

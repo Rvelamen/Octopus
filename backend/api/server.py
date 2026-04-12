@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
@@ -205,6 +205,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# Register Chrome Extension clip API
+from backend.api.routes import knowledge_clip
+app.include_router(knowledge_clip.router)
+
 # CORS configuration - restricted to known origins for security
 # Desktop app uses file:// protocol, development uses localhost
 ALLOWED_ORIGINS = [
@@ -221,6 +225,27 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Extra CORS middleware for Chrome Extension (origin varies by installation)
+@app.middleware("http")
+async def chrome_extension_cors(request, call_next):
+    origin = request.headers.get("origin", "")
+    if origin.startswith("chrome-extension://"):
+        if request.method == "OPTIONS":
+            return Response(
+                status_code=200,
+                headers={
+                    "Access-Control-Allow-Origin": origin,
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+                    "Access-Control-Allow-Headers": "*",
+                },
+            )
+        response = await call_next(request)
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        return response
+    return await call_next(request)
 
 # Mount wechat qrcodes directory upfront
 from fastapi.staticfiles import StaticFiles

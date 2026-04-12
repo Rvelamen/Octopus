@@ -12,6 +12,7 @@ import UploadDropzone from './components/upload/UploadDropzone';
 import NewNoteModal from './note/NewNoteModal';
 import DocumentGridView from './document/DocumentGridView';
 import TaskDetailModal from '@components/TaskIndicator/TaskDetailModal';
+import PreviewDrawer from './components/preview/PreviewDrawer';
 
 const TABS = [
   { key: 'documents', label: 'DOCUMENTS', icon: FileText },
@@ -37,6 +38,11 @@ export default function KnowledgePanel({ sendWSMessage }) {
   const [currentDocPath, setCurrentDocPath] = useState('knowledge/raw');
   const [selectedDocItem, setSelectedDocItem] = useState(null);
   const [docPreviewFile, setDocPreviewFile] = useState(null);
+
+  // 预览抽屉状态
+  const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [previewContent, setPreviewContent] = useState('');
 
   // 分页状态
   const [pagination, setPagination] = useState({
@@ -154,7 +160,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
     [expandedPaths, treeItems, loadDirectory]
   );
 
-  // 打开文件
+  // 打开文件 - Documents 标签页使用 PreviewDrawer
   const handleOpenFile = useCallback(
     async (item) => {
       if (item.is_directory) {
@@ -162,13 +168,53 @@ export default function KnowledgePanel({ sendWSMessage }) {
         return;
       }
 
+      // web_clip 也使用 PreviewDrawer 内部 webview 预览，不再直接弹外部浏览器
+      const sourceUrl = item.meta?.source;
+      const isWebClip = item.meta?.document_type === 'web_clip';
+      if (isWebClip && sourceUrl && typeof sourceUrl === 'string' && sourceUrl.startsWith('http')) {
+        setPreviewFile({
+          path: item.path,
+          name: item.meta?.title || item.name,
+          encoding: 'utf-8',
+          meta: item.meta || null,
+        });
+        setPreviewContent('');
+        setPreviewDrawerOpen(true);
+        return;
+      }
+
+      // 使用预览抽屉打开文件
+      const fileData = await readFile(item.path);
+      if (fileData) {
+        setPreviewFile({
+          path: item.path,
+          name: item.name,
+          encoding: fileData.encoding,
+          meta: item.meta || null,
+        });
+        setPreviewContent(fileData.content);
+        setPreviewDrawerOpen(true);
+      }
+    },
+    [readFile, handleToggle]
+  );
+
+  // 打开文件 - Notes 标签页使用 SimpleEditor
+  const handleOpenNoteFile = useCallback(
+    async (item) => {
+      if (item.is_directory) {
+        handleToggle(item.path);
+        return;
+      }
+
+      // 使用编辑器打开文件
       const fileData = await readFile(item.path);
       if (fileData) {
         setCurrentFile({
           path: item.path,
           name: item.name,
-          content: fileData.content,
           encoding: fileData.encoding,
+          content: fileData.content,
         });
       }
     },
@@ -178,6 +224,14 @@ export default function KnowledgePanel({ sendWSMessage }) {
   // 关闭文件
   const handleCloseFile = useCallback(() => {
     setCurrentFile(null);
+  }, []);
+
+  // 关闭预览抽屉
+  const handleClosePreviewDrawer = useCallback(() => {
+    setPreviewDrawerOpen(false);
+    setPreviewFile(null);
+    setPreviewContent('');
+    setDocPreviewFile(null);
   }, []);
 
   // 创建文件
@@ -222,7 +276,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
             await sendWSMessage('knowledge_write', { path: newPath, content: '' });
             message.success(`Created file: ${safeName}`);
             await loadDirectory(dirPath);
-            handleOpenFile({ path: newPath, name: safeName, is_directory: false });
+            handleOpenNoteFile({ path: newPath, name: safeName, is_directory: false });
           } catch (err) {
             message.error('Failed to create file: ' + (err.message || String(err)));
             return Promise.reject();
@@ -230,7 +284,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
         },
       });
     },
-    [loadDirectory, sendWSMessage, handleOpenFile]
+    [loadDirectory, sendWSMessage, handleOpenNoteFile]
   );
 
   // 创建文件夹
@@ -504,7 +558,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
       if (stage === 'completed' && output_path) {
         message.success('Distillation complete!');
         setActiveTab('notes');
-        handleOpenFile({ path: output_path, name: output_path.split('/').pop(), is_directory: false });
+        handleOpenNoteFile({ path: output_path, name: output_path.split('/').pop(), is_directory: false });
         loadDistillTasks();
       } else if (stage === 'failed') {
         message.error('Distillation failed: ' + msg);
@@ -513,7 +567,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
     };
     window.addEventListener('knowledge-distill-progress', handler);
     return () => window.removeEventListener('knowledge-distill-progress', handler);
-  }, [handleOpenFile, loadDistillTasks]);
+  }, [handleOpenNoteFile, loadDistillTasks]);
 
   const uploadFile = async (file, targetDir = null) => {
     if (!file) return;
@@ -666,7 +720,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
         next.add(rootPath);
         return next;
       });
-      handleOpenFile({ path, name: `${safeName}.md`, is_directory: false });
+      handleOpenNoteFile({ path, name: `${safeName}.md`, is_directory: false });
     } catch (err) {
       message.error('Failed to create note: ' + (err.message || String(err)));
     }
@@ -820,64 +874,23 @@ export default function KnowledgePanel({ sendWSMessage }) {
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
         {activeTab === 'documents' ? (
-          docPreviewFile ? (
-            <>
-              {/* Documents Sidebar - narrower */}
-              <div
-                style={{
-                  width: 200,
-                  flexShrink: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  background: 'var(--surface-2)',
-                  borderRight: '1px solid var(--border)',
-                }}
-              >
-                <DocumentGridView
-                  items={treeItems[currentDocPath] || []}
-                  currentPath={currentDocPath}
-                  rootPath="knowledge/raw"
-                  selectedItem={selectedDocItem}
-                  loadDirectory={loadDirectory}
-                  onSelect={handleDocSelect}
-                  onNavigate={handleDocNavigate}
-                  onFileOpen={handleDocFileOpen}
-                  onCreateFolder={handleCreateFolder}
-                  onUploadFile={handleUploadFileFromMenu}
-                  onRenameFile={handleRename}
-                  onDeleteFile={handleDelete}
-                  treeItems={treeItems}
-                />
-              </div>
-              {/* Editor Area */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--bg)' }}>
-                <SimpleEditor
-                  file={currentFile}
-                  onSave={writeFile}
-                  sendWSMessage={sendWSMessage}
-                  onViewInGraph={() => setActiveTab('graph')}
-                />
-              </div>
-            </>
-          ) : (
-            <div style={{ flex: 1, display: 'flex', minWidth: 0, overflow: 'hidden' }}>
-              <DocumentGridView
-                items={treeItems[currentDocPath] || []}
-                currentPath={currentDocPath}
-                rootPath="knowledge/raw"
-                selectedItem={selectedDocItem}
-                loadDirectory={loadDirectory}
-                onSelect={handleDocSelect}
-                onNavigate={handleDocNavigate}
-                onFileOpen={handleDocFileOpen}
-                onCreateFolder={handleCreateFolder}
-                onUploadFile={handleUploadFileFromMenu}
-                onRenameFile={handleRename}
-                onDeleteFile={handleDelete}
-                treeItems={treeItems}
-              />
-            </div>
-          )
+          <div style={{ flex: 1, display: 'flex', minWidth: 0, overflow: 'hidden' }}>
+            <DocumentGridView
+              items={treeItems[currentDocPath] || []}
+              currentPath={currentDocPath}
+              rootPath="knowledge/raw"
+              selectedItem={selectedDocItem}
+              loadDirectory={loadDirectory}
+              onSelect={handleDocSelect}
+              onNavigate={handleDocNavigate}
+              onFileOpen={handleDocFileOpen}
+              onCreateFolder={handleCreateFolder}
+              onUploadFile={handleUploadFileFromMenu}
+              onRenameFile={handleRename}
+              onDeleteFile={handleDelete}
+              treeItems={treeItems}
+            />
+          </div>
         ) : activeTab === 'graph' ? (
           /* Graph Tab - Full screen, no sidebar, global graph */
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--bg)' }}>
@@ -920,7 +933,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
                   treeItems={treeItems}
                   selectedPath={currentFile?.path}
                   expandedPaths={expandedPaths}
-                  onSelect={handleOpenFile}
+                  onSelect={handleOpenNoteFile}
                   onToggle={handleToggle}
                   onCreateFile={handleCreateFile}
                   onCreateFolder={handleCreateFolder}
@@ -1063,6 +1076,15 @@ export default function KnowledgePanel({ sendWSMessage }) {
         task={selectedTask}
         visible={taskDetailModalVisible}
         onClose={() => setTaskDetailModalVisible(false)}
+        sendWSMessage={sendWSMessage}
+      />
+
+      {/* 文件预览抽屉 */}
+      <PreviewDrawer
+        file={previewFile}
+        content={previewContent}
+        isOpen={previewDrawerOpen}
+        onClose={handleClosePreviewDrawer}
         sendWSMessage={sendWSMessage}
       />
     </div>

@@ -6013,10 +6013,12 @@ hr {
 /* ===== PPTX Vertical Scroll Mode ===== */
 .pptx-scroll-mode {
   flex-direction: row;
+  height: 100%;
 }
 
 .pptx-sidebar {
   width: 140px;
+  height: 100%;
   background: var(--surface);
   border-right: 1px solid var(--board);
   display: flex;
@@ -6122,10 +6124,12 @@ hr {
 /* ===== PDF Vertical Scroll Mode ===== */
 .pdf-scroll-mode {
   flex-direction: row;
+  height: 100%;
 }
 
 .pdf-sidebar {
   width: 140px;
+  height: 100%;
   background: var(--surface);
   border-right: 1px solid var(--board);
   display: flex;
