@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { message } from 'antd';
-import { Search as SearchIcon, X, ZoomIn, ZoomOut, RotateCcw, Maximize, Minimize, Tag, Settings2, Play, Pause } from 'lucide-react';
+import { Search as SearchIcon, X, ZoomIn, ZoomOut, RotateCcw, Maximize, Minimize, Tag, Settings2, Play, Pause, Filter } from 'lucide-react';
 import PixiGraph from './PixiGraph';
 
 const CLUSTER_COLORS = [
@@ -47,6 +47,8 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
   
   // Physics control state
   const [showPhysicsControls, setShowPhysicsControls] = useState(false);
+  const [showSearchPanel, setShowSearchPanel] = useState(false);
+  const [showTagPanel, setShowTagPanel] = useState(false);
   const [simulationRunning, setSimulationRunning] = useState(true);
   const [physicsParams, setPhysicsParams] = useState({
     centerStrength: 0.05,
@@ -235,8 +237,11 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
       setSelectedNode(node);
       applyHighlight(hoverNode, node);
       focusNode(node.id);
+      if (onNodeNavigate) {
+        onNodeNavigate(node.id);
+      }
     },
-    [focusNode, hoverNode, applyHighlight]
+    [focusNode, hoverNode, applyHighlight, onNodeNavigate]
   );
 
   const handleNodeDoubleClick = useCallback(
@@ -359,170 +364,103 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
 
   return (
     <div ref={wrapperRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', background: isFullscreen ? 'var(--bg)' : undefined }}>
-      <div
+      {/* Header - Legend & Zoom Info Only */}
+      {/* <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '12px 16px',
+          padding: '10px 16px',
           background: 'var(--surface-2)',
           borderBottom: '1px solid var(--border)',
           gap: 12,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative' }}>
-            <input
-              type="text"
-              placeholder="Search note in graph..."
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearch(searchValue);
-                }
-              }}
-              disabled={loading}
-              style={{
-                width: 260,
-                padding: '7px 34px 7px 12px',
-                borderRadius: 'var(--r-sm)',
-                border: '1px solid var(--border)',
-                background: 'var(--surface)',
-                color: 'var(--text)',
-                fontSize: 13,
-                outline: 'none',
-                transition: 'border-color 0.2s, box-shadow 0.2s',
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'var(--accent)';
-                e.target.style.boxShadow = '0 0 0 2px var(--accent-soft)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'var(--border)';
-                e.target.style.boxShadow = 'none';
-              }}
-            />
-            <button
-              onClick={() => handleSearch(searchValue)}
-              disabled={loading}
-              style={{
-                position: 'absolute',
-                right: 4,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'transparent',
-                border: 'none',
-                padding: 5,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                color: loading ? 'var(--text-3)' : 'var(--text-2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 4,
-              }}
-              onMouseEnter={(e) => {
-                if (!loading) e.currentTarget.style.color = 'var(--accent)';
-              }}
-              onMouseLeave={(e) => {
-                if (!loading) e.currentTarget.style.color = 'var(--text-2)';
-              }}
-            >
-              <SearchIcon size={16} />
-            </button>
-          </div>
-          {searchValue && (
-            <button
-              onClick={() => {
-                setSearchValue('');
-                fetchGraph(currentCenterRef.current, 1, selectedTag);
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: '6px 10px',
-                borderRadius: 'var(--r-sm)',
-                border: '1px solid var(--border)',
-                background: 'var(--surface)',
-                color: 'var(--text-2)',
-                cursor: 'pointer',
-                fontSize: 12,
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--accent)';
-                e.currentTarget.style.color = 'var(--accent)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border)';
-                e.currentTarget.style.color = 'var(--text-2)';
-              }}
-            >
-              <X size={14} />
-              <span>Reset</span>
-            </button>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <LegendItem color='rgba(131,94,228,1)' label="Center" />
+          <LegendItem color='var(--text-2)' label="Linked" />
+          <LegendItem color="#707070" label="Edge" />
+          <LegendItem color="#22d3ee" label="Search" dashed />
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          {/* Tag filter */}
-          {tags.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <Tag size={14} style={{ color: 'var(--text-2)' }} />
-              {selectedTag && (
-                <button
-                  onClick={() => setSelectedTag(null)}
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: 4,
-                    border: '1px solid var(--border)',
-                    background: 'var(--surface)',
-                    color: 'var(--text-2)',
-                    fontSize: 11,
-                    cursor: 'pointer',
-                  }}
-                >
-                  All
-                </button>
-              )}
-              {tags.slice(0, 8).map((t) => (
-                <button
-                  key={t.name}
-                  onClick={() => setSelectedTag(t.name === selectedTag ? null : t.name)}
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: 4,
-                    border: '1px solid',
-                    borderColor: t.name === selectedTag ? 'var(--accent)' : 'var(--border)',
-                    background: t.name === selectedTag ? 'var(--accent-soft)' : 'var(--surface)',
-                    color: t.name === selectedTag ? 'var(--accent)' : 'var(--text)',
-                    fontSize: 11,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                  }}
-                >
-                  #{t.name}
-                  <span style={{ opacity: 0.7 }}>({t.count})</span>
-                </button>
-              ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {selectedTag && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px',
+                borderRadius: 4,
+                background: 'var(--accent-soft)',
+                border: '1px solid var(--accent)',
+                fontSize: 12,
+                color: 'var(--accent)',
+              }}
+            >
+              <Tag size={12} />
+              <span>#{selectedTag}</span>
+              <button
+                onClick={() => setSelectedTag(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 0,
+                  marginLeft: 4,
+                  cursor: 'pointer',
+                  color: 'var(--accent)',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <X size={12} />
+              </button>
             </div>
           )}
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <LegendItem color='rgba(131,94,228,1)' label="Center" />
-            <LegendItem color='var(--text-2)' label="Linked" />
-            <LegendItem color="#707070" label="Edge" />
-            <LegendItem color="#22d3ee" label="Search" dashed />
-            <div style={{ width: 1, height: 16, background: 'var(--border)' }} />
-            <span style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'monospace' }}>
-              {Math.round(graphZoom * 100)}%
-            </span>
-          </div>
+          {searchValue && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px',
+                borderRadius: 4,
+                background: 'rgba(34, 211, 238, 0.1)',
+                border: '1px solid rgba(34, 211, 238, 0.3)',
+                fontSize: 12,
+                color: '#22d3ee',
+              }}
+            >
+              <SearchIcon size={12} />
+              <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {searchValue}
+              </span>
+              <button
+                onClick={() => {
+                  setSearchValue('');
+                  setSearchResultIds(new Set());
+                  fetchGraph(currentCenterRef.current, 1, selectedTag);
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 0,
+                  marginLeft: 4,
+                  cursor: 'pointer',
+                  color: '#22d3ee',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
+          <div style={{ width: 1, height: 16, background: 'var(--border)' }} />
+          <span style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'monospace' }}>
+            {Math.round(graphZoom * 100)}%
+          </span>
         </div>
-      </div>
+      </div> */}
 
       <div
         ref={graphContainerRef}
@@ -530,8 +468,8 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
           flex: 1,
           position: 'relative',
           background: '#111827',
-          borderRadius: 8,
-          margin: 16,
+          // borderRadius: 8,
+          // margin: 16,
           overflow: 'hidden',
           border: '1px solid rgba(255,255,255,0.08)',
         }}
@@ -571,15 +509,203 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
             backdropFilter: 'blur(4px)',
           }}
         >
+          <ToolButton onClick={() => { setShowSearchPanel(!showSearchPanel); setShowTagPanel(false); setShowPhysicsControls(false); }} title="Search notes" icon={<SearchIcon size={18} />} active={showSearchPanel} />
+          <ToolButton onClick={() => { setShowTagPanel(!showTagPanel); setShowSearchPanel(false); setShowPhysicsControls(false); }} title="Filter by tag" icon={<Filter size={18} />} active={showTagPanel || selectedTag} />
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '2px 0' }} />
           <ToolButton onClick={zoomIn} title="Zoom in" icon={<ZoomIn size={18} />} />
           <ToolButton onClick={zoomOut} title="Zoom out" icon={<ZoomOut size={18} />} />
           <ToolButton onClick={resetView} title="Reset view" icon={<RotateCcw size={18} />} />
           <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '2px 0' }} />
           <ToolButton onClick={toggleSimulation} title={simulationRunning ? 'Pause simulation' : 'Resume simulation'} icon={simulationRunning ? <Pause size={18} /> : <Play size={18} />} />
-          <ToolButton onClick={() => setShowPhysicsControls(!showPhysicsControls)} title="Physics settings" icon={<Settings2 size={18} />} active={showPhysicsControls} />
+          <ToolButton onClick={() => { setShowPhysicsControls(!showPhysicsControls); setShowSearchPanel(false); setShowTagPanel(false); }} title="Physics settings" icon={<Settings2 size={18} />} active={showPhysicsControls} />
           <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '2px 0' }} />
           <ToolButton onClick={toggleFullscreen} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'} icon={isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />} />
         </div>
+
+        {/* Search Panel */}
+        {showSearchPanel && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 12,
+              right: 56,
+              width: 280,
+              background: 'rgba(17,24,39,0.9)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 10,
+              padding: 12,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              backdropFilter: 'blur(16px)',
+              zIndex: 100,
+            }}
+          >
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <SearchIcon size={14} />
+              Search Notes
+            </div>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                placeholder="Type to search..."
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch(searchValue);
+                  }
+                }}
+                disabled={loading}
+                autoFocus
+                style={{
+                  width: '100%',
+                  padding: '8px 32px 8px 12px',
+                  borderRadius: 6,
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  background: 'rgba(255,255,255,0.05)',
+                  color: '#e2e8f0',
+                  fontSize: 13,
+                  outline: 'none',
+                  transition: 'all 0.2s',
+                  boxSizing: 'border-box',
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = 'rgba(131,94,228,0.8)';
+                  e.target.style.background = 'rgba(255,255,255,0.08)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(255,255,255,0.15)';
+                  e.target.style.background = 'rgba(255,255,255,0.05)';
+                }}
+              />
+              <button
+                onClick={() => handleSearch(searchValue)}
+                disabled={loading}
+                style={{
+                  position: 'absolute',
+                  right: 6,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 4,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  color: loading ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.6)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 4,
+                }}
+              >
+                <SearchIcon size={16} />
+              </button>
+            </div>
+            {searchValue && (
+              <button
+                onClick={() => {
+                  setSearchValue('');
+                  setSearchResultIds(new Set());
+                  fetchGraph(currentCenterRef.current, 1, selectedTag);
+                }}
+                style={{
+                  marginTop: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 4,
+                  padding: '6px 12px',
+                  borderRadius: 6,
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.05)',
+                  color: 'rgba(255,255,255,0.7)',
+                  cursor: 'pointer',
+                  fontSize: 11,
+                  width: '100%',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                  e.currentTarget.style.color = '#fff';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                }}
+              >
+                <X size={12} />
+                <span>Clear Search</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Tag Filter Panel */}
+        {showTagPanel && tags.length > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 56,
+              right: 56,
+              width: 220,
+              maxHeight: 320,
+              overflow: 'auto',
+              background: 'rgba(17,24,39,0.9)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 10,
+              padding: 12,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              backdropFilter: 'blur(16px)',
+              zIndex: 100,
+            }}
+          >
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Tag size={14} />
+              Filter by Tag
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <button
+                onClick={() => setSelectedTag(null)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 6,
+                  border: '1px solid',
+                  borderColor: selectedTag === null ? 'rgba(131,94,228,0.8)' : 'rgba(255,255,255,0.1)',
+                  background: selectedTag === null ? 'rgba(131,94,228,0.2)' : 'rgba(255,255,255,0.05)',
+                  color: selectedTag === null ? '#a78bfa' : 'rgba(255,255,255,0.8)',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.15s',
+                }}
+              >
+                All Tags
+              </button>
+              {tags.map((t) => (
+                <button
+                  key={t.name}
+                  onClick={() => setSelectedTag(t.name === selectedTag ? null : t.name)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 6,
+                    border: '1px solid',
+                    borderColor: t.name === selectedTag ? 'rgba(131,94,228,0.8)' : 'rgba(255,255,255,0.1)',
+                    background: t.name === selectedTag ? 'rgba(131,94,228,0.2)' : 'rgba(255,255,255,0.05)',
+                    color: t.name === selectedTag ? '#a78bfa' : 'rgba(255,255,255,0.8)',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <span>#{t.name}</span>
+                  <span style={{ opacity: 0.5, fontSize: 11 }}>{t.count}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Physics Controls Panel */}
         {showPhysicsControls && (

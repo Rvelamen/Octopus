@@ -4,7 +4,7 @@ import asyncio
 import json
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from loguru import logger
 
@@ -412,6 +412,7 @@ When you have completed the task, provide a clear summary of your findings or ac
         agent_role: str | None = None,
         session_instance_id: int | None = None,
         parent_tool_call_id: str | None = None,
+        on_iteration: Callable[[dict[str, Any]], Any] | None = None,
     ) -> tuple[str, asyncio.Future]:
         """
         创建一个同步子代理任务，返回 (task_id, future)。
@@ -465,7 +466,7 @@ When you have completed the task, provide a clear summary of your findings or ac
         bg_future = loop.run_in_executor(
             None,
             lambda: asyncio.run(self._run_subagent_and_set_future(
-                task_id, task, display_label, origin, agent_config, future
+                task_id, task, display_label, origin, agent_config, future, on_iteration=on_iteration
             ))
         )
         
@@ -480,6 +481,7 @@ When you have completed the task, provide a clear summary of your findings or ac
         origin: dict[str, str],
         agent_config: SubAgentConfig | None,
         future: asyncio.Future,
+        on_iteration: Callable[[dict[str, Any]], Any] | None = None,
     ) -> None:
         """执行子代理，完成后设置 future 结果"""
         import time
@@ -646,9 +648,23 @@ When you have completed the task, provide a clear summary of your findings or ac
                 else:
                     final_result = full_content
                     iterations.append(iter_record)
+                    if on_iteration:
+                        try:
+                            result = on_iteration(iter_record)
+                            if asyncio.iscoroutine(result):
+                                await result
+                        except Exception as e:
+                            logger.warning(f"[Subagent:sync:{task_id}] on_iteration callback failed: {e}")
                     break
 
                 iterations.append(iter_record)
+                if on_iteration:
+                    try:
+                        result = on_iteration(iter_record)
+                        if asyncio.iscoroutine(result):
+                            await result
+                    except Exception as e:
+                        logger.warning(f"[Subagent:sync:{task_id}] on_iteration callback failed: {e}")
 
             if final_result is None:
                 final_result = "Task completed but no final response was generated."

@@ -229,7 +229,8 @@ def _migration_001_create_distill_queue(conn: sqlite3.Connection) -> None:
             token_usage TEXT,
             duration REAL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (task_id) REFERENCES knowledge_distill_tasks(id) ON DELETE CASCADE
+            FOREIGN KEY (task_id) REFERENCES knowledge_distill_tasks(id) ON DELETE CASCADE,
+            UNIQUE(task_id, iteration_num)
         );
 
         CREATE INDEX IF NOT EXISTS idx_iter_task ON knowledge_distill_task_iterations(task_id);
@@ -238,7 +239,17 @@ def _migration_001_create_distill_queue(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migration_002_add_unique_iteration_constraint(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_iter_task_num_unique
+        ON knowledge_distill_task_iterations(task_id, iteration_num)
+        """
+    )
+
+
 def run_distill_queue_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_distill_queue", _migration_001_create_distill_queue)
+    runner.register(2, "add_unique_iteration_constraint", _migration_002_add_unique_iteration_constraint)
     runner.run()

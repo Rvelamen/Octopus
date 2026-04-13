@@ -192,7 +192,8 @@ export function DistillTaskProvider({ children }) {
       message.error(`Distillation failed: ${existingTask.sourceFile}`);
     }
 
-    updateTask(taskId, updates);
+    // Use existingTask.id (number) to ensure updateTask matches correctly
+    updateTask(existingTask.id, updates);
   }, [updateTask]);
 
   useEffect(() => {

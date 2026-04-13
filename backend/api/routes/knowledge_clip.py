@@ -68,14 +68,15 @@ async def knowledge_clip(request: ClipRequest):
     filename = f"{timestamp}_{slug}.md"
 
     # ───────────────────────────────────────────────────────────────
-    # Action: note（直接写 Notes）
+    # Action: note（直接写 Documents / raw，作为随笔不进入知识图谱）
     # ───────────────────────────────────────────────────────────────
     if request.action == "note":
-        note_path = f"knowledge/notes/quick_notes/{filename}"
+        note_path = f"knowledge/raw/quick_notes/{filename}"
 
         fm_data = {
             "source": request.url,
             "title": request.title or slug,
+            "document_type": "quick_note",
             "created_at": datetime.now().isoformat(),
             "tags": request.tags,
             "extracted_by": "chrome_extension",
@@ -91,13 +92,13 @@ async def knowledge_clip(request: ClipRequest):
 
         full_content = _build_frontmatter(fm_data) + "\n".join(body_parts)
         engine.write_note(note_path, full_content)
-        engine.update_note(note_path)
+        # 随笔不进入知识图谱，因此不调用 update_note 建立索引
 
         return {
             "success": True,
             "saved_path": note_path,
             "task_id": None,
-            "message": "已保存到 Notes",
+            "message": "已保存到 Documents",
         }
 
     # ───────────────────────────────────────────────────────────────

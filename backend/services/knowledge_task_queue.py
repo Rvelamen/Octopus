@@ -183,8 +183,12 @@ class KnowledgeTaskQueue:
             return self._row_to_task(row) if row else None
 
     def save_iterations(self, task_id: int, iterations: list[dict]) -> None:
-        """Save ReAct flow iterations to database."""
+        """Save ReAct flow iterations to database (replaces any existing)."""
         with self._connection() as conn:
+            conn.execute(
+                "DELETE FROM knowledge_distill_task_iterations WHERE task_id = ?",
+                (task_id,),
+            )
             for iter_data in iterations:
                 conn.execute(
                     """INSERT INTO knowledge_distill_task_iterations
@@ -199,6 +203,28 @@ class KnowledgeTaskQueue:
                         iter_data.get("duration"),
                     )
                 )
+            conn.commit()
+
+    def append_iteration(self, task_id: int, iter_data: dict) -> None:
+        """Upsert a single iteration so running tasks can stream their ReAct flow."""
+        with self._connection() as conn:
+            conn.execute(
+                "DELETE FROM knowledge_distill_task_iterations WHERE task_id = ? AND iteration_num = ?",
+                (task_id, iter_data.get("iteration")),
+            )
+            conn.execute(
+                """INSERT INTO knowledge_distill_task_iterations
+                   (task_id, iteration_num, reasoning, tools, token_usage, duration)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    task_id,
+                    iter_data.get("iteration"),
+                    iter_data.get("reasoning"),
+                    json.dumps(iter_data.get("tools", [])),
+                    json.dumps(iter_data.get("token_usage")) if iter_data.get("token_usage") else None,
+                    iter_data.get("duration"),
+                )
+            )
             conn.commit()
 
     def get_task_with_iterations(self, task_id: int) -> Optional[dict]:

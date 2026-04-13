@@ -9,13 +9,24 @@ export default function TaskDetailModal({ task, visible, onClose, sendWSMessage 
 
   useEffect(() => {
     if (visible && task?.id) {
-      loadTaskDetail();
+      loadTaskDetail(true);
     }
   }, [visible, task?.id]);
 
-  const loadTaskDetail = async () => {
+  useEffect(() => {
+    if (!visible || !task?.id) return;
+    if (task.status !== 'running' && task.status !== 'queued') return;
+
+    const interval = setInterval(() => {
+      loadTaskDetail(false);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [visible, task?.id, task?.status]);
+
+  const loadTaskDetail = async (showLoading = true) => {
     if (!task?.id) return;
-    setLoading(true);
+    if (showLoading) setLoading(true);
     try {
       const response = await sendWSMessage('knowledge_distill_detail', { task_id: task.id });
       // 后端返回的数据结构是 { task: {...}, result: { iterations, token_usage, duration, ... } }
@@ -24,7 +35,7 @@ export default function TaskDetailModal({ task, visible, onClose, sendWSMessage 
     } catch (err) {
       console.error('Failed to load task detail:', err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -66,6 +77,7 @@ export default function TaskDetailModal({ task, visible, onClose, sendWSMessage 
     <div
       className="dialog-overlay"
       onClick={onClose}
+      onMouseDown={(e) => e.stopPropagation()}
       style={{
         position: 'fixed',
         top: 0,

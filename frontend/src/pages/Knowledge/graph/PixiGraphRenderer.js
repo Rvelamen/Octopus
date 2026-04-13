@@ -9,12 +9,12 @@ import * as PIXI from 'pixi.js';
 
 // Color palette (matching HTML version)
 const COLORS = {
-  node: 0xaaaab2,
+  node: 0xb3b3b3,
   hover: 0x835ee4,
   drag: 0x835ee4,
   line: 0x3f3f3f,
-  activeLine: 0x7a55e4,
-  label: 0xaaaab2,
+  activeLine: 0x835ee4,
+  label: 0xb3b3b3,
 };
 
 const LABEL_FONT_SIZE = 12;
@@ -37,6 +37,10 @@ export class PixiGraphRenderer {
     this.onDragEnd = onDragEnd || (() => {});
     this.onDragStart = (() => {});
     this.onDragMove = (() => {});
+
+    this._clickStartPos = null;
+    this._clickStartTime = 0;
+    this._hasDragged = false;
 
     // Viewport transform state (matching HTML version)
     this.scale = 1;
@@ -150,7 +154,7 @@ export class PixiGraphRenderer {
 
     // Global pointer events for drag
     window.addEventListener('pointermove', (e) => this._onPointerMove(e));
-    window.addEventListener('pointerup', () => this._onPointerUp());
+    window.addEventListener('pointerup', (e) => this._onPointerUp(e));
 
     // Context menu
     this.container.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -198,6 +202,9 @@ export class PixiGraphRenderer {
 
     if (hitNode) {
       this.draggedId = hitNode.id;
+      this._clickStartPos = { x: e.clientX, y: e.clientY };
+      this._clickStartTime = Date.now();
+      this._hasDragged = false;
       const sprite = this.nodeSprites[hitNode.id];
       if (sprite) {
         sprite.setNodeTint(COLORS.drag);
@@ -225,6 +232,14 @@ export class PixiGraphRenderer {
       const t = this.labelSprites[this.draggedId];
       if (s) { s.x = worldPos.x; s.y = worldPos.y; }
       if (t) { t.x = worldPos.x; t.y = worldPos.y + (t.yOffset || 0) * this._getBaseNodeScale(); }
+
+      if (this._clickStartPos) {
+        const dx = e.clientX - this._clickStartPos.x;
+        const dy = e.clientY - this._clickStartPos.y;
+        if (Math.sqrt(dx * dx + dy * dy) > 5) {
+          this._hasDragged = true;
+        }
+      }
 
       this.onDragMove(this.draggedId, worldPos.x, worldPos.y);
     } else if (this.isPanning && this.lastPan) {
@@ -255,8 +270,23 @@ export class PixiGraphRenderer {
     }
   }
 
-  _onPointerUp() {
+  _onPointerUp(e) {
     if (this.draggedId) {
+      const duration = Date.now() - (this._clickStartTime || 0);
+      let distance = 0;
+      if (this._clickStartPos && e) {
+        const dx = e.clientX - this._clickStartPos.x;
+        const dy = e.clientY - this._clickStartPos.y;
+        distance = Math.sqrt(dx * dx + dy * dy);
+      }
+
+      if (!this._hasDragged && duration < 300 && distance < 5) {
+        const node = this.nodes.get(this.draggedId);
+        if (node) {
+          this.onNodeClick(node.data, e);
+        }
+      }
+
       const s = this.nodeSprites[this.draggedId];
       if (s) {
         s.setNodeTint(COLORS.node);
@@ -271,14 +301,17 @@ export class PixiGraphRenderer {
     }
     this.isPanning = false;
     this.lastPan = null;
+    this._clickStartPos = null;
+    this._hasDragged = false;
   }
 
   _onDblClick(e) {
-    const worldPos = this._getWorldPos(e);
-    const hitNode = this._hitTest(worldPos.x, worldPos.y);
-    if (hitNode) {
-      this.onNodeDoubleClick(hitNode.data, e);
-    }
+    // Double-click handler disabled: previewer now opens on single click
+    // const worldPos = this._getWorldPos(e);
+    // const hitNode = this._hitTest(worldPos.x, worldPos.y);
+    // if (hitNode) {
+    //   this.onNodeDoubleClick(hitNode.data, e);
+    // }
   }
 
   _hitTest(x, y) {
@@ -349,7 +382,7 @@ export class PixiGraphRenderer {
       const degree = degreeCounts[n.id] || 0;
       const ratio = degree / maxDegree;
       // radius formula: min 6, max 12 (isolated nodes: 6, high degree: 6+6)
-      const radius = 6 + ratio * 6;
+      const radius = 6 + ratio * 9;
 
       if (this.nodeSprites[n.id]) {
         // Update existing node
@@ -510,10 +543,7 @@ export class PixiGraphRenderer {
         sprite.setNodeTint(isActive ? COLORS.hover : COLORS.node);
 
         const rScale = sprite.baseRadius / 50;
-        let targetScale;
-        if (isActive) targetScale = rScale * baseNodeScale * 1.35;
-        else if (isNeighbor) targetScale = rScale * baseNodeScale * 1.15;
-        else targetScale = rScale * baseNodeScale;
+        const targetScale = rScale * baseNodeScale;
         sprite.scale.set(targetScale);
 
         sprite.borderGraphics.visible = isActive;

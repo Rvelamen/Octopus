@@ -146,12 +146,20 @@ Be concise but complete. If information is not found in the document, state it e
                 )
 
                 # 调用 subagent（同步模式，等待完成）
+                def on_iteration(iter_data: dict) -> None:
+                    try:
+                        self.queue.append_iteration(task.id, iter_data)
+                        logger.debug(f"Saved iteration {iter_data.get('iteration')} for task {task.id}")
+                    except Exception as e:
+                        logger.warning(f"Failed to save iteration for task {task.id}: {e}")
+
                 task_id, future = await self.subagents.spawn_sync_task(
                     task=distill_task_desc,
                     label=f"Distill: {task.source_path}",
                     agent_role="knowledge-distiller",
                     origin_channel="desktop",
                     parent_tool_call_id=task.request_id,
+                    on_iteration=on_iteration,
                 )
 
                 await on_progress(

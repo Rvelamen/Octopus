@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { message } from 'antd';
 import { X, Eye, Edit3, ExternalLink } from 'lucide-react';
 import FileIcon from '../file-icon/FileIcon';
 import {
@@ -15,15 +16,92 @@ import Editor from '@monaco-editor/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+const WIKI_LINK_RE = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+
+function preprocessWikiLinks(content) {
+  return content.replace(WIKI_LINK_RE, (match, title, alias) => {
+    const display = (alias || title).trim();
+    return `[${display}](wiki://${encodeURIComponent(title.trim())})`;
+  });
+}
+
+function WikiLink({ href, children, sendWSMessage }) {
+  const title = decodeURIComponent(href.replace('wiki://', ''));
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async (e) => {
+    e.preventDefault();
+    if (loading) return;
+    setLoading(true);
+    try {
+      const response = await sendWSMessage('knowledge_search', { query: title });
+      const results = response.data?.results || [];
+      const match =
+        results.find(
+          (r) =>
+            r.title?.replace(/\s+/g, '').toLowerCase() ===
+            title.replace(/\s+/g, '').toLowerCase()
+        ) || results[0];
+      if (match) {
+        window.dispatchEvent(
+          new CustomEvent('knowledge-open-file', {
+            detail: {
+              path: match.path,
+              name: match.path.split('/').pop(),
+              is_directory: false,
+            },
+          })
+        );
+      } else {
+        message.warning(`未找到笔记: ${title}`);
+      }
+    } catch (err) {
+      console.error('Wiki link resolve failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <span
+      onClick={handleClick}
+      style={{
+        color: 'var(--accent)',
+        cursor: loading ? 'wait' : 'pointer',
+        textDecoration: 'underline',
+        opacity: loading ? 0.6 : 1,
+      }}
+      title={`打开: ${title}`}
+    >
+      {children}
+    </span>
+  );
+}
+
 /**
  * Markdown 预览组件
  */
-const MarkdownPreview = ({ content, file }) => {
+const MarkdownPreview = ({ content, file, sendWSMessage }) => {
   const safeContent = typeof content === 'string' ? content : '';
+  const processed = preprocessWikiLinks(safeContent);
   return (
     <div className="markdown-preview">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-        {safeContent}
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          a: (props) => {
+            if (props.href?.startsWith('wiki://')) {
+              return (
+                <WikiLink href={props.href} sendWSMessage={sendWSMessage}>
+                  {props.children}
+                </WikiLink>
+              );
+            }
+            return <a {...props} />;
+          },
+        }}
+      >
+        {processed}
       </ReactMarkdown>
     </div>
   );
@@ -120,7 +198,7 @@ export default function PreviewDrawer({
       return <HtmlViewer content={safeContent} />;
     }
     if (isMarkdown && isPreviewMode) {
-      return <MarkdownPreview content={safeContent} file={file} />;
+      return <MarkdownPreview content={safeContent} file={file} sendWSMessage={sendWSMessage} />;
     }
     if (isBinary) {
       return <BinaryViewer file={file} content={content} />;

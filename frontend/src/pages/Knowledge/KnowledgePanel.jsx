@@ -554,11 +554,9 @@ export default function KnowledgePanel({ sendWSMessage }) {
 
   useEffect(() => {
     const handler = (e) => {
-      const { stage, message: msg, output_path } = e.detail;
-      if (stage === 'completed' && output_path) {
+      const { stage, message: msg } = e.detail;
+      if (stage === 'completed') {
         message.success('Distillation complete!');
-        setActiveTab('notes');
-        handleOpenNoteFile({ path: output_path, name: output_path.split('/').pop(), is_directory: false });
         loadDistillTasks();
       } else if (stage === 'failed') {
         message.error('Distillation failed: ' + msg);
@@ -567,7 +565,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
     };
     window.addEventListener('knowledge-distill-progress', handler);
     return () => window.removeEventListener('knowledge-distill-progress', handler);
-  }, [handleOpenNoteFile, loadDistillTasks]);
+  }, [loadDistillTasks]);
 
   const uploadFile = async (file, targetDir = null) => {
     if (!file) return;
@@ -861,7 +859,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
           display: 'flex',
           alignItems: 'center',
           gap: 16,
-          padding: '10px 16px',
+          // padding: '10px 16px',
           borderBottom: '1px solid var(--board)',
         }}
       >

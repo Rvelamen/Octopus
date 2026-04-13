@@ -123,34 +123,6 @@ function TaskItem({ task, onViewDetail }) {
           </div>
         </div>
       )}
-
-      {(task.status === 'completed' || task.status === 'failed') && task.completedAt && (
-        <div style={{ fontSize: 10, color: 'var(--text-2)' }}>
-          {task.status === 'completed' ? 'Completed' : 'Failed'} {formatTime(task.completedAt)}
-        </div>
-      )}
-
-      {task.status === 'completed' && task.result?.output_path && (
-        <button
-          onClick={() => onViewDetail?.(task)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            padding: '4px 8px',
-            borderRadius: 4,
-            border: 'none',
-            background: 'var(--surface-2)',
-            color: 'var(--accent)',
-            fontSize: 11,
-            cursor: 'pointer',
-            alignSelf: 'flex-start',
-          }}
-        >
-          <ExternalLink size={12} />
-          Open Result
-        </button>
-      )}
     </div>
   );
 }
