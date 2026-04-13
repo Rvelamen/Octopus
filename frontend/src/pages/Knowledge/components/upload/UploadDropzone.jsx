@@ -9,10 +9,12 @@ export default function UploadDropzone({
   onNewNoteClick,
   onExport,
   onImport,
+  onImportObsidian,
   compact = false,
 }) {
   const fileInputRef = useRef(null);
   const importZipRef = useRef(null);
+  const importObsidianRef = useRef(null);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -44,6 +46,14 @@ export default function UploadDropzone({
     const file = e.target.files?.[0];
     if (file) {
       onImport(file);
+    }
+    e.target.value = null;
+  };
+
+  const handleImportObsidianChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onImportObsidian?.(file);
     }
     e.target.value = null;
   };
@@ -102,6 +112,13 @@ export default function UploadDropzone({
         ref={importZipRef}
         style={{ display: 'none' }}
         onChange={handleImportChange}
+      />
+      <input
+        type="file"
+        accept=".zip"
+        ref={importObsidianRef}
+        style={{ display: 'none' }}
+        onChange={handleImportObsidianChange}
       />
       <div style={{ margin: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {activeTab === 'documents' ? (
@@ -163,40 +180,58 @@ export default function UploadDropzone({
               <Plus size={20} />
               <span>New Note</span>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={onExport}
+                  disabled={isUploading}
+                  style={{
+                    flex: 1,
+                    padding: '8px 10px',
+                    borderRadius: 6,
+                    border: '1px solid var(--border)',
+                    background: 'var(--surface)',
+                    color: 'var(--text)',
+                    fontSize: 12,
+                    cursor: isUploading ? 'not-allowed' : 'pointer',
+                    opacity: isUploading ? 0.6 : 1,
+                  }}
+                >
+                  Export
+                </button>
+                <button
+                  onClick={() => importZipRef.current?.click()}
+                  disabled={isUploading}
+                  style={{
+                    flex: 1,
+                    padding: '8px 10px',
+                    borderRadius: 6,
+                    border: '1px solid var(--border)',
+                    background: 'var(--surface)',
+                    color: 'var(--text)',
+                    fontSize: 12,
+                    cursor: isUploading ? 'not-allowed' : 'pointer',
+                    opacity: isUploading ? 0.6 : 1,
+                  }}
+                >
+                  {isUploading ? 'Importing...' : 'Import'}
+                </button>
+              </div>
               <button
-                onClick={onExport}
+                onClick={() => importObsidianRef.current?.click()}
                 disabled={isUploading}
                 style={{
-                  flex: 1,
                   padding: '8px 10px',
                   borderRadius: 6,
-                  border: '1px solid var(--border)',
+                  border: '1px dashed var(--accent)',
                   background: 'var(--surface)',
-                  color: 'var(--text)',
+                  color: 'var(--accent)',
                   fontSize: 12,
                   cursor: isUploading ? 'not-allowed' : 'pointer',
                   opacity: isUploading ? 0.6 : 1,
                 }}
               >
-                Export
-              </button>
-              <button
-                onClick={() => importZipRef.current?.click()}
-                disabled={isUploading}
-                style={{
-                  flex: 1,
-                  padding: '8px 10px',
-                  borderRadius: 6,
-                  border: '1px solid var(--border)',
-                  background: 'var(--surface)',
-                  color: 'var(--text)',
-                  fontSize: 12,
-                  cursor: isUploading ? 'not-allowed' : 'pointer',
-                  opacity: isUploading ? 0.6 : 1,
-                }}
-              >
-                {isUploading ? 'Importing...' : 'Import'}
+                Import Obsidian Vault
               </button>
             </div>
           </>

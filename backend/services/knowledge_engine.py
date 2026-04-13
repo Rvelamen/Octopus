@@ -64,11 +64,13 @@ class KnowledgeGraphEngine:
             "PRAGMA cache_size = -64000;",
             "PRAGMA temp_store = MEMORY;",
             "PRAGMA mmap_size = 268435456;",
+            "PRAGMA foreign_keys = ON;",
         ]
         for pragma in pragmas:
             self.db.execute(pragma)
 
         run_knowledge_index_migrations(self.db_path)
+        self._ensure_fts_populated()
 
     def _resolve_path(self, relative_path: str) -> Path:
         """Resolve a relative path and ensure it stays within the workspace."""
@@ -108,10 +110,20 @@ class KnowledgeGraphEngine:
         return tags
 
     def _resolve_title(self, title: str) -> Optional[str]:
-        """Case-insensitive title match; returns the most recently modified path."""
+        """Case-insensitive title match; falls back to path stem match."""
+        clean = title.strip().rstrip("\\")
+        # 1. Exact title match
         row = self.db.execute(
             "SELECT path FROM knowledge_nodes WHERE LOWER(title) = LOWER(?) ORDER BY mtime DESC LIMIT 1",
-            (title.strip(),),
+            (clean,),
+        ).fetchone()
+        if row:
+            return row["path"]
+        # 2. Path stem match (Obsidian links often reference file names)
+        stem = Path(clean).stem
+        row = self.db.execute(
+            "SELECT path FROM knowledge_nodes WHERE LOWER(path) LIKE LOWER(?) ORDER BY mtime DESC LIMIT 1",
+            (f"%/{stem}.md",),
         ).fetchone()
         return row["path"] if row else None
 
@@ -119,7 +131,7 @@ class KnowledgeGraphEngine:
         """Mark the graph cache as dirty."""
         self._cache_dirty = True
 
-    def update_note(self, relative_path: str) -> None:
+    def update_note(self, relative_path: str, force: bool = False) -> None:
         """Read a markdown file, extract title and [[links]], and update the index.
 
         Skips if mtime has not changed. Cleans up DB records if the file is gone.
@@ -138,20 +150,21 @@ class KnowledgeGraphEngine:
             "SELECT mtime FROM knowledge_nodes WHERE path = ?", (relative_path,)
         ).fetchone()
 
-        if row and abs(row["mtime"] - current_mtime) < 0.001:
+        if not force and row and abs(row["mtime"] - current_mtime) < 0.001:
             return  # No change
 
         content = full_path.read_text(encoding="utf-8")
         title = self._extract_title(content, relative_path)
-        links = re.findall(r"\[\[(.*?)\]\]", content)
+        raw_links = re.findall(r"\[\[(.*?)\]\]", content)
+        links = [re.split(r"\\?\|", link, maxsplit=1)[0].strip().rstrip("\\") for link in raw_links]
         tags = self._extract_tags(content)
 
         with self.db:
             self.db.execute(
                 """
                 INSERT OR REPLACE INTO knowledge_nodes
-                (path, title, type, mtime, word_count, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                (path, title, type, mtime, word_count, updated_at, content)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     relative_path,
@@ -160,6 +173,7 @@ class KnowledgeGraphEngine:
                     current_mtime,
                     len(content.split()),
                     datetime.now().isoformat(),
+                    content,
                 ),
             )
             self.db.execute(
@@ -249,6 +263,70 @@ class KnowledgeGraphEngine:
             (pattern, pattern, limit),
         ).fetchall()
         return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"]} for r in rows]
+
+    def search_notes_fts(self, query: str, limit: int = 20) -> list[dict[str, Any]]:
+        """Full-text search using SQLite FTS5 with BM25 ranking.
+
+        Falls back to path/title search if FTS5 is unavailable or returns no results.
+        """
+        try:
+            # Use FTS5 match with BM25 ranking (lower rank = more relevant)
+            rows = self.db.execute(
+                """
+                SELECT n.path, n.title, n.mtime, rank
+                FROM knowledge_nodes_fts
+                JOIN knowledge_nodes n ON knowledge_nodes_fts.rowid = n.rowid
+                WHERE knowledge_nodes_fts MATCH ?
+                ORDER BY rank
+                LIMIT ?
+                """,
+                (query, limit),
+            ).fetchall()
+            if rows:
+                return [
+                    {
+                        "path": r["path"],
+                        "title": r["title"],
+                        "mtime": r["mtime"],
+                        "rank": round(r["rank"], 4),
+                        "source": "fts5",
+                    }
+                    for r in rows
+                ]
+        except sqlite3.OperationalError as e:
+            logger.warning(f"FTS5 search failed: {e}")
+        return []
+
+    def rebuild_fts_index(self) -> None:
+        """Rebuild the FTS5 index from scratch."""
+        try:
+            self.db.execute("DELETE FROM knowledge_nodes_fts")
+            self.db.execute(
+                """
+                INSERT INTO knowledge_nodes_fts(rowid, title, content)
+                SELECT rowid, title, content FROM knowledge_nodes
+                WHERE content IS NOT NULL
+                """
+            )
+            self.db.commit()
+            logger.info("Rebuilt FTS5 index")
+        except sqlite3.OperationalError as e:
+            logger.warning(f"Failed to rebuild FTS5 index: {e}")
+
+    def _ensure_fts_populated(self) -> None:
+        """Ensure FTS5 index is populated if table exists but is empty."""
+        try:
+            fts_count = self.db.execute(
+                "SELECT COUNT(*) FROM knowledge_nodes_fts"
+            ).fetchone()[0]
+            node_count = self.db.execute(
+                "SELECT COUNT(*) FROM knowledge_nodes"
+            ).fetchone()[0]
+            if fts_count == 0 and node_count > 0:
+                logger.info("FTS5 index empty, rebuilding from existing nodes")
+                self.rebuild_fts_index()
+        except sqlite3.OperationalError:
+            pass
 
     def get_tags(self) -> list[dict[str, Any]]:
         """Return all tags with usage counts."""
@@ -384,11 +462,20 @@ class KnowledgeGraphEngine:
         edges: list[dict[str, Any]] = []
         adj_out: dict[str, list[str]] = {}
         adj_in: dict[str, list[str]] = {}
+        stem_to_path: dict[str, str] = {}
+        for path in nodes:
+            stem = Path(path).stem.lower()
+            stem_to_path[stem] = path
+
         for row in self.db.execute(
             "SELECT from_path, to_title, to_path FROM knowledge_links"
         ).fetchall():
             src = row["from_path"]
-            tgt = row["to_path"] or title_to_path.get(row["to_title"].lower())
+            to_title = row["to_title"].strip().rstrip("\\")
+            tgt = row["to_path"] or title_to_path.get(to_title.lower())
+            if not tgt:
+                stem = Path(to_title).stem.lower()
+                tgt = stem_to_path.get(stem)
             if src in nodes and tgt in nodes:
                 edges.append({"source": src, "target": tgt})
                 adj_out.setdefault(src, []).append(tgt)
@@ -405,11 +492,12 @@ class KnowledgeGraphEngine:
         self._cache = {"nodes": nodes, "edges": edges, "adj_out": adj_out, "adj_in": adj_in, "node_tags": node_tags}
         self._cache_dirty = False
 
-    def delete_note(self, relative_path: str) -> None:
+    def delete_note(self, relative_path: str, delete_file: bool = True) -> None:
         """Delete the note file and clean up its index entries."""
-        full_path = self._resolve_path(relative_path)
-        if full_path.exists():
-            full_path.unlink()
+        if delete_file:
+            full_path = self._resolve_path(relative_path)
+            if full_path.exists():
+                full_path.unlink()
 
         self.db.execute("DELETE FROM knowledge_nodes WHERE path = ?", (relative_path,))
         self.db.commit()

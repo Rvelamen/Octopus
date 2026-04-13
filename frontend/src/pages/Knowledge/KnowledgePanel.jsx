@@ -693,6 +693,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
         template,
         task_id: taskId,
       });
+      loadDistillTasks(0);
       return response.data || {};
     } catch (err) {
       message.error('Failed to start distillation: ' + (err.message || String(err)));
@@ -787,7 +788,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
         { path: targetPath, content: hex, encoding: 'hex' },
         60000
       );
-      await sendWSMessage('knowledge_import', { zip_path: targetPath });
+      await sendWSMessage('knowledge_import', { zip_path: targetPath, source: 'octopus' });
       message.success('Imported successfully');
       await loadDirectory(rootPath);
       setExpandedPaths((prev) => {
@@ -797,6 +798,42 @@ export default function KnowledgePanel({ sendWSMessage }) {
       });
     } catch (err) {
       message.error('Import failed: ' + (err.message || String(err)));
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleImportObsidian = async (file) => {
+    if (!file) return;
+    if (!file.name.endsWith('.zip')) {
+      message.error('Please select a .zip file');
+      return;
+    }
+    const targetPath = `knowledge/.import_obsidian_${Date.now()}.zip`;
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      const hex = Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      await sendWSMessage(
+        'workspace_write',
+        { path: targetPath, content: hex, encoding: 'hex' },
+        60000
+      );
+      await sendWSMessage('knowledge_import', { zip_path: targetPath, source: 'obsidian' });
+      message.success('Obsidian vault imported successfully');
+      await loadDirectory(rootPath);
+      setExpandedPaths((prev) => {
+        const next = new Set(prev);
+        next.add(rootPath);
+        return next;
+      });
+    } catch (err) {
+      message.error('Obsidian import failed: ' + (err.message || String(err)));
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -926,6 +963,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
                 onNewNoteClick={() => setIsNewNoteModalOpen(true)}
                 onExport={handleExport}
                 onImport={handleImport}
+                onImportObsidian={handleImportObsidian}
               />
               <div style={{ flex: 1, overflow: 'auto' }}>
                 <SimpleFileTree

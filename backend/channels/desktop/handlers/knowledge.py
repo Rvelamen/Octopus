@@ -3,7 +3,9 @@
 import base64
 import io
 import json
+import os
 import shutil
+import time
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -129,13 +131,18 @@ class KnowledgeDeleteHandler(_KnowledgeHandlerMixin, MessageHandler):
 
             if full_path.exists():
                 if full_path.is_dir():
+                    # Clean up index entries for all markdown files before removing directory
+                    for md_path in full_path.rglob("*.md"):
+                        rel_md = str(md_path.relative_to(self.engine.workspace_root))
+                        self.engine.delete_note(rel_md, delete_file=False)
                     shutil.rmtree(full_path)
                 else:
+                    if path.endswith(".md"):
+                        self.engine.delete_note(path, delete_file=False)
                     full_path.unlink()
-            if path.endswith(".md"):
-                self.engine.db.execute("DELETE FROM knowledge_nodes WHERE path = ?", (path,))
-                self.engine.db.commit()
-                self.engine._invalidate_cache()
+            elif path.endswith(".md"):
+                # File already gone but index still exists
+                self.engine.delete_note(path, delete_file=False)
 
             await self.send_response(websocket, WSMessage(
                 type=MessageType.KNOWLEDGE_DELETE_RESULT,
@@ -453,9 +460,41 @@ class KnowledgeImportHandler(_KnowledgeHandlerMixin, MessageHandler):
         super().__init__(bus)
         self.engine = engine
 
+    @staticmethod
+    def _detect_zip_root_prefix(namelist: list[str]) -> str:
+        """If zip has a single root folder containing vault data, return its prefix."""
+        top_dirs = {name.split("/")[0] for name in namelist if "/" in name}
+        if len(top_dirs) != 1:
+            return ""
+        prefix = top_dirs.pop() + "/"
+        has_obsidian = any(name.startswith(prefix + ".obsidian/") for name in namelist)
+        has_md = any(name.startswith(prefix) and name.endswith(".md") for name in namelist)
+        return prefix if (has_obsidian or has_md) else ""
+
+    @staticmethod
+    def _decode_zip_name(info: zipfile.ZipInfo) -> str:
+        """Decode zip entry filename handling non-UTF-8 encodings (gbk, utf-8, etc.)."""
+        name = info.filename
+        if info.flag_bits & 0x800:
+            return name  # UTF-8 flag set; Python already decoded correctly
+        # Try to recover from cp437 mis-decoding
+        try:
+            raw = name.encode("cp437")
+        except UnicodeEncodeError:
+            return name
+        for encoding in ("utf-8", "gbk", "gb18030", "big5", "shift_jis"):
+            try:
+                decoded = raw.decode(encoding)
+                if "\ufffd" not in decoded and decoded != name:
+                    return decoded
+            except (UnicodeDecodeError, LookupError):
+                continue
+        return name
+
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         try:
             zip_path_rel = message.data.get("zip_path")
+            source = message.data.get("source", "octopus")
             if not zip_path_rel:
                 await self._send_error(websocket, message.request_id, "zip_path is required")
                 return
@@ -473,33 +512,73 @@ class KnowledgeImportHandler(_KnowledgeHandlerMixin, MessageHandler):
                 await self._send_error(websocket, message.request_id, "Access denied: path outside workspace")
                 return
 
-            with zipfile.ZipFile(zip_path, "r") as zf:
-                # Validate manifest
-                manifest_bytes = zf.read("manifest.json")
-                manifest = json.loads(manifest_bytes)
-                if manifest.get("version") != "1.0":
-                    await self._send_error(websocket, message.request_id, "Unsupported export version")
-                    return
+            skip_prefixes = (
+                ".obsidian/",
+                ".git/",
+                "__MACOSX/",
+                ".trash/",
+                "node_modules/",
+            )
+            skip_names = {".DS_Store"}
 
-                for member in zf.namelist():
+            with zipfile.ZipFile(zip_path, "r") as zf:
+                if source == "octopus":
+                    # Validate manifest
+                    manifest_bytes = zf.read("manifest.json")
+                    manifest = json.loads(manifest_bytes)
+                    if manifest.get("version") != "1.0":
+                        await self._send_error(websocket, message.request_id, "Unsupported export version")
+                        return
+                    extract_base = workspace
+                    root_prefix = ""
+                else:
+                    # Obsidian vault import
+                    decoded_names = [self._decode_zip_name(i) for i in zf.infolist()]
+                    extract_base = workspace / "knowledge" / "notes" / f"obsidian_import_{int(time.time())}"
+                    root_prefix = self._detect_zip_root_prefix(decoded_names)
+
+                for info in zf.infolist():
+                    member = self._decode_zip_name(info)
                     if member.endswith("/"):
                         continue
+
+                    rel_path = member[len(root_prefix):] if root_prefix and member.startswith(root_prefix) else member
+                    if not rel_path:
+                        continue
+
+                    basename = os.path.basename(rel_path)
+                    if basename in skip_names:
+                        continue
+                    if any(rel_path.startswith(p) for p in skip_prefixes):
+                        continue
+
+                    target = extract_base / rel_path
                     # Prevent directory traversal
-                    target = workspace / member
-                    if not str(target.resolve()).startswith(str(resolved_workspace)):
+                    if not str(target.resolve()).startswith(str(extract_base.resolve())):
                         continue
                     target.parent.mkdir(parents=True, exist_ok=True)
-                    with zf.open(member) as src, open(target, "wb") as dst:
+                    with zf.open(info.filename) as src, open(target, "wb") as dst:
                         dst.write(src.read())
 
-            # Reindex all markdown notes
+            # Reindex all markdown notes in two passes:
+            # 1) Index all node content so titles are available for link resolution
+            # 2) Force-update links so cross-references resolve correctly
             notes_dir = workspace / "knowledge" / "notes"
+            note_paths: list[Path] = []
             if notes_dir.exists():
-                for fp in notes_dir.rglob("*.md"):
+                note_paths = list(notes_dir.rglob("*.md"))
+                for fp in note_paths:
                     rel = str(fp.relative_to(workspace))
                     self.engine.update_note(rel)
+                for fp in note_paths:
+                    rel = str(fp.relative_to(workspace))
+                    self.engine.update_note(rel, force=True)
 
+            self.engine.rebuild_fts_index()
             self.engine._invalidate_cache()
+
+            # Clean up uploaded zip
+            zip_path.unlink(missing_ok=True)
 
             await self.send_response(websocket, WSMessage(
                 type=MessageType.KNOWLEDGE_IMPORT_RESULT,

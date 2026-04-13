@@ -96,14 +96,20 @@ class KnowledgeTaskWorker:
 {output_instruction}
 
 ## Instructions
-1. Use the `read` tool to read the source document
-2. Analyse the content and extract key information based on the user's request
-3. Optionally use `kb_search` to find related notes in the knowledge base
-4. Use the `write` tool to save the extracted note as Markdown
+1. Use the `read` tool to read the source document.
+2. Use `kb_search` to find related notes in the knowledge base. **Do this at least 2 times with different keywords** covering:
+   - Core concepts or frameworks mentioned in the document
+   - Technologies, tools, or methodologies
+   - Key people, companies, or projects
+   - Related domains or fields
+3. For the most relevant notes found, use `kb_read_note` to read their content and identify precise connection points.
+4. Use the `write` tool to save the extracted note as Markdown with the following requirements:
    - Include YAML front-matter with source, extracted_at, and extraction_prompt
    - **IMPORTANT: If the source document's frontmatter contains a `source` field that is a web URL (e.g. from a web clip), preserve that exact URL as the `source` in your output frontmatter, and add `archive` pointing to the local file path**
    - Use proper Markdown headings, lists, and tables
-   - Add wiki-style links like [[Related Concept]] where appropriate
+   - **CRITICAL: Add at least 2-5 wiki-style links [[Exact Note Title]] to existing related notes in the knowledge base.**
+     Only use [[...]] when the exact title was returned by kb_search/kb_read_note. If no strong connection exists, do not force it.
+   - Add 2-4 relevant #tags (e.g. #ai, #productivity) in the content to improve discoverability
 5. When done, report the output path in your final response
 
 Be concise but complete. If information is not found in the document, state it explicitly.

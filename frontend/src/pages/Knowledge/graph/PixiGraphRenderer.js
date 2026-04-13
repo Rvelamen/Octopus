@@ -17,7 +17,7 @@ const COLORS = {
   label: 0xdadada,
 };
 
-const LABEL_FONT_SIZE = 10;
+const LABEL_FONT_SIZE = 12;
 
 export class PixiGraphRenderer {
   constructor(container, {
@@ -291,7 +291,7 @@ export class PixiGraphRenderer {
       const degree = node.data.degree || 0;
       const maxDegree = node.data.maxDegree || 1;
       const ratio = degree / maxDegree;
-      const baseRadius = 2.5 + ratio * 7 + (ratio > 0.6 ? 2 : 0);
+      const baseRadius = 8 + ratio * 6;
       const radius = Math.max(1, baseRadius * baseNodeScale);
       const hitRadius = radius + 3;
 
@@ -480,7 +480,13 @@ export class PixiGraphRenderer {
     }
 
     const activeId = this.hoveredId || this.draggedId;
-    const labelScale = Math.min(2.2, Math.max(0.35, 0.9 / Math.max(0.1, this.scale)));
+    // Smooth label scale: grows with zoom, peaks around scale=2.3, then tapers off
+    const peakScale = 2.3;
+    const baseScale = 0.35;
+    const peakExtra = 0.5;
+    const ratio = this.scale / peakScale;
+    const taper = Math.pow(ratio <= 1 ? ratio : 1 / ratio, 0.7);
+    const labelScale = baseScale + peakExtra * taper;
 
     // Calculate label alpha based on zoom
     let labelAlpha;
@@ -513,9 +519,11 @@ export class PixiGraphRenderer {
         sprite.borderGraphics.visible = isActive;
       }
 
-      for (const label of Object.values(this.labelSprites)) {
+      for (const [id, label] of Object.entries(this.labelSprites)) {
         label.visible = labelAlpha > 0;
-        label.scale.set(labelScale);
+        const sprite = this.nodeSprites[id];
+        const nodeLabelScale = sprite ? labelScale * Math.max(0.7, sprite.baseRadius / 7.5) : labelScale;
+        label.scale.set(nodeLabelScale);
         label.alpha = labelAlpha;
       }
     } else {
@@ -527,9 +535,11 @@ export class PixiGraphRenderer {
         sprite.borderGraphics.visible = false;
       }
 
-      for (const label of Object.values(this.labelSprites)) {
+      for (const [id, label] of Object.entries(this.labelSprites)) {
         label.visible = labelAlpha > 0;
-        label.scale.set(labelScale);
+        const sprite = this.nodeSprites[id];
+        const nodeLabelScale = sprite ? labelScale * Math.max(0.85, sprite.baseRadius / 7.5) : labelScale;
+        label.scale.set(nodeLabelScale);
         label.alpha = labelAlpha;
       }
     }

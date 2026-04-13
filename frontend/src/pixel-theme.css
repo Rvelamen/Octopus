@@ -5736,7 +5736,6 @@ hr {
   position: relative;
   user-select: none;
   /* 仅上下留白，左右贴边让 DOCX/HTML 预览横向铺满可视区 */
-  padding: var(--s-4) 0;
   box-sizing: border-box;
 }
 

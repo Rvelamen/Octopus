@@ -89,7 +89,8 @@ def _migration_001_create_initial_schema(conn: sqlite3.Connection) -> None:
             source_path TEXT,
             mtime REAL NOT NULL,
             word_count INTEGER DEFAULT 0,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            content TEXT
         );
 
         CREATE TABLE IF NOT EXISTS knowledge_links (
@@ -105,14 +106,6 @@ def _migration_001_create_initial_schema(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_links_to ON knowledge_links(to_path);
         CREATE INDEX IF NOT EXISTS idx_links_resolved ON knowledge_links(to_path) WHERE to_path IS NOT NULL;
 
-        INSERT OR REPLACE INTO _schema_version (key, version) VALUES ('knowledge_index', 1);
-        """
-    )
-
-
-def _migration_002_add_tags(conn: sqlite3.Connection) -> None:
-    conn.executescript(
-        """
         CREATE TABLE IF NOT EXISTS knowledge_tags (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE NOT NULL
@@ -129,22 +122,73 @@ def _migration_002_add_tags(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_node_tags_path ON knowledge_node_tags(node_path);
         CREATE INDEX IF NOT EXISTS idx_node_tags_tag ON knowledge_node_tags(tag_id);
 
-        INSERT OR REPLACE INTO _schema_version (key, version) VALUES ('knowledge_index', 2);
+        -- FTS5 full-text search for knowledge nodes
+        CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_nodes_fts USING fts5(
+            title,
+            content,
+            content='knowledge_nodes',
+            content_rowid='rowid',
+            tokenize='unicode61 remove_diacritics 1'
+        );
+
+        CREATE TRIGGER IF NOT EXISTS knowledge_nodes_fts_insert
+        AFTER INSERT ON knowledge_nodes
+        BEGIN
+            INSERT INTO knowledge_nodes_fts(rowid, title, content)
+            VALUES (new.rowid, new.title, new.content);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS knowledge_nodes_fts_delete
+        AFTER DELETE ON knowledge_nodes
+        BEGIN
+            INSERT INTO knowledge_nodes_fts(knowledge_nodes_fts, rowid, title, content)
+            VALUES ('delete', old.rowid, old.title, old.content);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS knowledge_nodes_fts_update
+        AFTER UPDATE ON knowledge_nodes
+        BEGIN
+            INSERT INTO knowledge_nodes_fts(knowledge_nodes_fts, rowid, title, content)
+            VALUES ('delete', old.rowid, old.title, old.content);
+            INSERT INTO knowledge_nodes_fts(rowid, title, content)
+            VALUES (new.rowid, new.title, new.content);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS trg_cleanup_orphan_tags
+        AFTER DELETE ON knowledge_node_tags
+        BEGIN
+            DELETE FROM knowledge_tags
+            WHERE id = OLD.tag_id
+              AND NOT EXISTS (
+                  SELECT 1 FROM knowledge_node_tags WHERE tag_id = OLD.tag_id
+              );
+        END;
+
+        INSERT OR REPLACE INTO _schema_version (key, version) VALUES ('knowledge_index', 1);
         """
     )
 
 
-KNOWLEDGE_INDEX_MIGRATIONS = (
-    MigrationRunner.register
-    .__get__(None, MigrationRunner)
-    # We assign a runner and register migrations in the helper below
-)
+def _migration_002_add_orphan_tag_trigger(conn: sqlite3.Connection) -> None:
+    conn.executescript(
+        """
+        CREATE TRIGGER IF NOT EXISTS trg_cleanup_orphan_tags
+        AFTER DELETE ON knowledge_node_tags
+        BEGIN
+            DELETE FROM knowledge_tags
+            WHERE id = OLD.tag_id
+              AND NOT EXISTS (
+                  SELECT 1 FROM knowledge_node_tags WHERE tag_id = OLD.tag_id
+              );
+        END;
+        """
+    )
 
 
 def run_knowledge_index_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_initial_schema", _migration_001_create_initial_schema)
-    runner.register(2, "add_tags", _migration_002_add_tags)
+    runner.register(2, "add_orphan_tag_trigger", _migration_002_add_orphan_tag_trigger)
     runner.run()
 
 
@@ -175,21 +219,7 @@ def _migration_001_create_distill_queue(conn: sqlite3.Connection) -> None:
 
         CREATE INDEX IF NOT EXISTS idx_distill_status ON knowledge_distill_tasks(status);
         CREATE INDEX IF NOT EXISTS idx_distill_created ON knowledge_distill_tasks(created_at DESC);
-        """
-    )
 
-
-def run_distill_queue_migrations(db_path: Path) -> None:
-    runner = MigrationRunner(db_path)
-    runner.register(1, "create_distill_queue", _migration_001_create_distill_queue)
-    runner.register(2, "add_task_iterations", _migration_002_add_task_iterations)
-    runner.run()
-
-
-def _migration_002_add_task_iterations(conn: sqlite3.Connection) -> None:
-    """Create table for storing detailed ReAct flow of distill tasks."""
-    conn.executescript(
-        """
         CREATE TABLE IF NOT EXISTS knowledge_distill_task_iterations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             task_id INTEGER NOT NULL,
@@ -206,3 +236,9 @@ def _migration_002_add_task_iterations(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_iter_task_num ON knowledge_distill_task_iterations(task_id, iteration_num);
         """
     )
+
+
+def run_distill_queue_migrations(db_path: Path) -> None:
+    runner = MigrationRunner(db_path)
+    runner.register(1, "create_distill_queue", _migration_001_create_distill_queue)
+    runner.run()

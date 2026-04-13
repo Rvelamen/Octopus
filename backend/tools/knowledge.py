@@ -17,9 +17,10 @@ class KBSearchTool(Tool):
     def description(self) -> str:
         return (
             "Search the user's knowledge base for markdown notes that match a query. "
+            "Uses full-text search (FTS5) across titles and note contents, ranked by relevance. "
             "Returns a list of note paths and titles. Use this when the user asks about "
             "a topic that might be covered in their notes, or when you need to find a "
-            "specific note before reading it."
+            "specific note before reading it. Prefer this over guessing note titles."
         )
 
     @property
@@ -45,12 +46,18 @@ class KBSearchTool(Tool):
     async def execute(self, query: str, limit: int = 10, **kwargs: Any) -> str:
         from backend.utils.helpers import get_workspace_path
         engine = KnowledgeGraphEngine(str(get_workspace_path()))
-        results = engine.search_notes(query, limit=limit)
+
+        # Prefer FTS5 full-text search
+        results = engine.search_notes_fts(query, limit=limit)
+        if not results:
+            results = engine.search_notes(query, limit=limit)
+
         if not results:
             return "No matching notes found."
         lines = [f"Found {len(results)} note(s):"]
         for r in results:
-            lines.append(f'- {r["path"]} (title: {r["title"]})')
+            rank_info = f", relevance: {r['rank']}" if "rank" in r else ""
+            lines.append(f'- {r["path"]} (title: {r["title"]}{rank_info})')
         return "\n".join(lines)
 
 
