@@ -77,12 +77,18 @@ export function DistillTaskProvider({ children }) {
 
   const syncTasksFromBackend = useCallback((backendTasks) => {
     setTasks((prevTasks) => {
-      // 创建一个 Map 存储现有任务
+      // 创建 Map：同时用 id 和 request_id 索引现有任务
       const existingTasksMap = new Map(prevTasks.map(t => [t.id, t]));
+      prevTasks.forEach(t => {
+        if (t.request_id && !existingTasksMap.has(t.request_id)) {
+          existingTasksMap.set(t.request_id, t);
+        }
+      });
 
       // 处理后端返回的任务
       const mergedTasks = backendTasks.map((backendTask) => {
-        const existingTask = existingTasksMap.get(backendTask.id);
+        const lookupId = backendTask.request_id || backendTask.id;
+        const existingTask = existingTasksMap.get(lookupId) || existingTasksMap.get(backendTask.id);
 
         // 解析后端返回的时间
         const backendCompletedAt = parseTime(backendTask.completed_at);
@@ -91,6 +97,8 @@ export function DistillTaskProvider({ children }) {
           // 如果任务已存在，合并更新（保留前端的本地状态如 createdAt）
           return {
             ...existingTask,
+            id: backendTask.id,
+            request_id: backendTask.request_id,
             status: backendTask.status || existingTask.status,
             progress: backendTask.progress !== undefined ? backendTask.progress : existingTask.progress,
             message: backendTask.message || existingTask.message,
@@ -101,6 +109,7 @@ export function DistillTaskProvider({ children }) {
           // 如果是新任务，创建新的任务对象
           return {
             id: backendTask.id,
+            request_id: backendTask.request_id,
             sourceFile: backendTask.source_path,
             template: backendTask.template || 'custom',
             prompt: backendTask.prompt || '',
@@ -161,7 +170,7 @@ export function DistillTaskProvider({ children }) {
     const taskId = job_id || request_id;
     if (!taskId) return;
 
-    const existingTask = tasksRef.current.find((t) => t.id === taskId);
+    const existingTask = tasksRef.current.find((t) => t.id === taskId || t.request_id === taskId);
 
     if (!existingTask) {
       return;

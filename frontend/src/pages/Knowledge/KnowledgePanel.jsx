@@ -693,7 +693,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
         template,
         task_id: taskId,
       });
-      loadDistillTasks(0);
+      await loadDistillTasks(0);
       return response.data || {};
     } catch (err) {
       message.error('Failed to start distillation: ' + (err.message || String(err)));

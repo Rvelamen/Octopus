@@ -89,9 +89,24 @@ class KnowledgeGraphEngine:
             return None
         try:
             import yaml
-            return yaml.safe_load(match.group(1)) or None
+            return self._make_json_safe(yaml.safe_load(match.group(1))) or None
         except Exception:
             return None
+
+    @staticmethod
+    def _make_json_safe(value: Any) -> Any:
+        """Recursively convert datetime/date objects to ISO strings for JSON serialization."""
+        from datetime import date, datetime
+
+        if isinstance(value, datetime):
+            return value.isoformat()
+        if isinstance(value, date):
+            return value.isoformat()
+        if isinstance(value, dict):
+            return {k: KnowledgeGraphEngine._make_json_safe(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [KnowledgeGraphEngine._make_json_safe(v) for v in value]
+        return value
 
     def _extract_title(self, content: str, fallback_path: str) -> str:
         """Extract the first level-1 markdown heading as title, or use the filename."""

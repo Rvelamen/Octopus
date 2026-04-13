@@ -14,7 +14,7 @@ const COLORS = {
   drag: 0x835ee4,
   line: 0x3f3f3f,
   activeLine: 0x7a55e4,
-  label: 0xdadada,
+  label: 0xaaaab2,
 };
 
 const LABEL_FONT_SIZE = 12;
@@ -291,7 +291,7 @@ export class PixiGraphRenderer {
       const degree = node.data.degree || 0;
       const maxDegree = node.data.maxDegree || 1;
       const ratio = degree / maxDegree;
-      const baseRadius = 8 + ratio * 6;
+      const baseRadius = 8 + ratio * 10;
       const radius = Math.max(1, baseRadius * baseNodeScale);
       const hitRadius = radius + 3;
 
@@ -348,8 +348,8 @@ export class PixiGraphRenderer {
     newNodes.forEach((n) => {
       const degree = degreeCounts[n.id] || 0;
       const ratio = degree / maxDegree;
-      // radius formula: min 6, max 9 (isolated nodes: 6, high degree: 6+3)
-      const radius = 6 + ratio * 3;
+      // radius formula: min 6, max 12 (isolated nodes: 6, high degree: 6+6)
+      const radius = 6 + ratio * 6;
 
       if (this.nodeSprites[n.id]) {
         // Update existing node

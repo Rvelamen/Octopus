@@ -14,10 +14,14 @@ export default function TaskIndicator({
   hasNextPage,
   onRefresh,
 }) {
-  const { isMenuOpen, setIsMenuOpen, activeTaskCount } = useDistillTasks();
+  const { isMenuOpen, setIsMenuOpen, activeTaskCount, syncWithBackend } = useDistillTasks();
 
-  const handleClick = () => {
-    setIsMenuOpen(!isMenuOpen);
+  const handleClick = async () => {
+    const willOpen = !isMenuOpen;
+    setIsMenuOpen(willOpen);
+    if (willOpen) {
+      await syncWithBackend();
+    }
   };
 
   const handleCloseMenu = () => {
