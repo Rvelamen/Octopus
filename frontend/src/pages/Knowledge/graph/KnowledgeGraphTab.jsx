@@ -162,10 +162,11 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
       isCenter: node.id === graphData.center,
     }));
 
-    // cross-link and compute degree
+    // cross-link and compute degree (O(m) using Map instead of O(n*m))
+    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
     links.forEach((link) => {
-      const a = nodes.find((n) => n.id === link.source);
-      const b = nodes.find((n) => n.id === link.target);
+      const a = nodeMap.get(link.source);
+      const b = nodeMap.get(link.target);
       if (a && b) {
         a.neighbors.push(b);
         b.neighbors.push(a);

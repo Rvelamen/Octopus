@@ -144,25 +144,44 @@ export class PixiGraphRenderer {
 
   _bindEvents() {
     const canvas = this.app.canvas;
+    // Cache canvas element to avoid accessing Pixi getter after destroy
+    this._canvasEl = canvas;
+
+    // Store bound listeners so we can remove them later
+    this._boundOnWheel = (e) => this._onWheel(e);
+    this._boundOnPointerDown = (e) => this._onPointerDown(e);
+    this._boundOnDblClick = (e) => this._onDblClick(e);
+    this._boundOnPointerMove = (e) => this._onPointerMove(e);
+    this._boundOnPointerUp = (e) => this._onPointerUp(e);
+    this._boundOnContextMenu = (e) => e.preventDefault();
 
     // Wheel for zoom
-    canvas.addEventListener('wheel', (e) => this._onWheel(e), { passive: false });
+    canvas.addEventListener('wheel', this._boundOnWheel, { passive: false });
 
     // Pointer events
-    canvas.addEventListener('pointerdown', (e) => this._onPointerDown(e));
-    canvas.addEventListener('dblclick', (e) => this._onDblClick(e));
+    canvas.addEventListener('pointerdown', this._boundOnPointerDown);
+    canvas.addEventListener('dblclick', this._boundOnDblClick);
 
     // Global pointer events for drag
-    window.addEventListener('pointermove', (e) => this._onPointerMove(e));
-    window.addEventListener('pointerup', (e) => this._onPointerUp(e));
+    window.addEventListener('pointermove', this._boundOnPointerMove);
+    window.addEventListener('pointerup', this._boundOnPointerUp);
 
     // Context menu
-    this.container.addEventListener('contextmenu', (e) => e.preventDefault());
+    this.container.addEventListener('contextmenu', this._boundOnContextMenu);
   }
 
   _unbindEvents() {
-    window.removeEventListener('pointermove', this._onPointerMove);
-    window.removeEventListener('pointerup', this._onPointerUp);
+    const canvas = this._canvasEl;
+    if (canvas) {
+      canvas.removeEventListener('wheel', this._boundOnWheel);
+      canvas.removeEventListener('pointerdown', this._boundOnPointerDown);
+      canvas.removeEventListener('dblclick', this._boundOnDblClick);
+    }
+    window.removeEventListener('pointermove', this._boundOnPointerMove);
+    window.removeEventListener('pointerup', this._boundOnPointerUp);
+    if (this.container) {
+      this.container.removeEventListener('contextmenu', this._boundOnContextMenu);
+    }
   }
 
   _getWorldPos(ev) {
@@ -328,8 +347,12 @@ export class PixiGraphRenderer {
       const radius = Math.max(1, baseRadius * baseNodeScale);
       const hitRadius = radius + 3;
 
+      // AABB quick reject
       const dx = sprite.x - x;
+      if (Math.abs(dx) > hitRadius) continue;
       const dy = sprite.y - y;
+      if (Math.abs(dy) > hitRadius) continue;
+
       if (dx * dx + dy * dy < hitRadius * hitRadius) {
         return { id, data: node.data };
       }
