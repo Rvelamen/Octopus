@@ -17,7 +17,7 @@ const COLORS = {
   label: 0xb3b3b3,
 };
 
-const LABEL_FONT_SIZE = 12;
+const LABEL_FONT_SIZE = 14;
 
 export class PixiGraphRenderer {
   constructor(container, {
@@ -77,6 +77,13 @@ export class PixiGraphRenderer {
     // Frame counter
     this.frame = 0;
 
+    // Dirty flag for render optimization
+    this._dirty = true;
+    this._lastVersion = -1;
+    this._lastActiveId = null;
+    this._lastScale = null;
+    this._nodeSpriteEntries = [];
+
     // Abort controller for cancelable initialization
     this._abortController = null;
 
@@ -126,6 +133,14 @@ export class PixiGraphRenderer {
 
     this.labelLayer = new PIXI.Container();
     this.viewport.addChild(this.labelLayer);
+
+    // Generate shared circle texture for nodes (reduces draw calls)
+    const tempG = new PIXI.Graphics();
+    tempG.beginFill(0xffffff, 1);
+    tempG.drawCircle(0, 0, 50);
+    tempG.endFill();
+    this._nodeTexture = this.app.renderer.generateTexture(tempG);
+    tempG.destroy();
 
     this._bindEvents();
     this.app.ticker.add(() => this._render());
@@ -212,6 +227,7 @@ export class PixiGraphRenderer {
     this.viewport.x += (after.x - before.x) * this.scale;
     this.viewport.y += (after.y - before.y) * this.scale;
 
+    this._dirty = true;
     this.onZoom({ k: this.scale, x: this.viewport.x, y: this.viewport.y });
   }
 
@@ -237,6 +253,7 @@ export class PixiGraphRenderer {
       const t = this.labelSprites[hitNode.id];
       if (s) { s.x = worldPos.x; s.y = worldPos.y; }
       if (t) { t.x = worldPos.x; t.y = worldPos.y + (t.yOffset || 0) * this._getBaseNodeScale(); }
+      this._dirty = true;
     } else if (e.target === this.app.canvas) {
       this.isPanning = true;
       this.lastPan = { x: e.clientX, y: e.clientY };
@@ -261,11 +278,13 @@ export class PixiGraphRenderer {
       }
 
       this.onDragMove(this.draggedId, worldPos.x, worldPos.y);
+      this._dirty = true;
     } else if (this.isPanning && this.lastPan) {
       this.viewport.x += e.clientX - this.lastPan.x;
       this.viewport.y += e.clientY - this.lastPan.y;
       this.lastPan = { x: e.clientX, y: e.clientY };
       this.onZoom({ k: this.scale, x: this.viewport.x, y: this.viewport.y });
+      this._dirty = true;
     }
 
     // Hover detection
@@ -278,6 +297,7 @@ export class PixiGraphRenderer {
         sprite.borderGraphics.visible = true;
       }
       this.onNodeHover(hitNode);
+      this._dirty = true;
     } else if (!hitNode && this.hoveredId) {
       const prevSprite = this.nodeSprites[this.hoveredId];
       if (prevSprite && this.hoveredId !== this.draggedId) {
@@ -286,6 +306,7 @@ export class PixiGraphRenderer {
       }
       this.hoveredId = null;
       this.onNodeHover(null);
+      this._dirty = true;
     }
   }
 
@@ -317,6 +338,7 @@ export class PixiGraphRenderer {
 
       this.draggedId = null;
       this.hoveredId = null;
+      this._dirty = true;
     }
     this.isPanning = false;
     this.lastPan = null;
@@ -421,6 +443,9 @@ export class PixiGraphRenderer {
       }
     });
 
+    // Cache entries to avoid per-frame Object.entries garbage
+    this._nodeSpriteEntries = Object.entries(this.nodeSprites);
+
     // Build link indices
     const idToIndex = new Map();
     newNodes.forEach((n, i) => idToIndex.set(n.id, i));
@@ -442,6 +467,8 @@ export class PixiGraphRenderer {
       const targetId = typeof l.target === 'object' ? l.target.id : l.target;
       this.links.set(`${sourceId}_${targetId}`, { data: l });
     });
+
+    this._dirty = true;
   }
 
   _createNode(n, radius, degree, maxDegree) {
@@ -458,10 +485,9 @@ export class PixiGraphRenderer {
     border.visible = false;
     container.addChild(border);
 
-    const fill = new PIXI.Graphics();
-    fill.beginFill(0xffffff, 1);
-    fill.drawCircle(0, 0, 50);
-    fill.endFill();
+    // Use shared texture sprite for the node fill to reduce draw calls
+    const fill = new PIXI.Sprite(this._nodeTexture);
+    fill.anchor.set(0.5);
     container.addChild(fill);
 
     const scale = radius / 50;
@@ -484,11 +510,7 @@ export class PixiGraphRenderer {
         fontFamily: 'var(--font-interface), system-ui, sans-serif',
         fontSize: LABEL_FONT_SIZE,
         fill: COLORS.label,
-        resolution: 2,
-        dropShadow: true,
-        dropShadowColor: 0x000000,
-        dropShadowDistance: 0,
-        dropShadowBlur: 3,
+        resolution: 1,
         wordWrap: true,
         wordWrapWidth: 120,
         breakWords: true,
@@ -512,6 +534,7 @@ export class PixiGraphRenderer {
     const baseNodeScale = this._getBaseNodeScale();
 
     // Update node positions from Worker (if available)
+    let positionsChanged = false;
     if (this.coordBuffer && this.idMapping) {
       for (let i = 0; i < this.idMapping.length; i++) {
         const id = this.idMapping[i];
@@ -523,8 +546,21 @@ export class PixiGraphRenderer {
         const s = this.nodeSprites[id];
         const t = this.labelSprites[id];
 
-        if (s) { s.x = x; s.y = y; }
-        if (t) { t.x = x; t.y = y + (t.yOffset || 0) * baseNodeScale; }
+        if (s) {
+          if (s.x !== x || s.y !== y) {
+            s.x = x;
+            s.y = y;
+            positionsChanged = true;
+          }
+        }
+        if (t) {
+          const ty = y + (t.yOffset || 0) * baseNodeScale;
+          if (t.x !== x || t.y !== ty) {
+            t.x = x;
+            t.y = ty;
+            positionsChanged = true;
+          }
+        }
 
         // Update stored position
         const node = this.nodes.get(id);
@@ -536,6 +572,23 @@ export class PixiGraphRenderer {
     }
 
     const activeId = this.hoveredId || this.draggedId;
+
+    // Dirty check: skip render if nothing changed
+    if (
+      !this._dirty &&
+      !positionsChanged &&
+      this._lastVersion === this.version &&
+      this._lastActiveId === activeId &&
+      this._lastScale === this.scale
+    ) {
+      return;
+    }
+
+    this._dirty = false;
+    this._lastVersion = this.version;
+    this._lastActiveId = activeId;
+    this._lastScale = this.scale;
+
     // Smooth label scale: grows with zoom, peaks around scale=2.3, then tapers off
     const peakScale = 2.3;
     const baseScale = 0.35;
@@ -550,7 +603,8 @@ export class PixiGraphRenderer {
     else if (this.scale >= 0.6) labelAlpha = 1;
     else labelAlpha = Math.pow((this.scale - 0.25) / 0.35, 6);
 
-    // Update visual states
+    // Update visual states using cached entries
+    const nodeEntries = this._nodeSpriteEntries;
     if (activeId) {
       const neighborSet = new Set([activeId]);
       for (const link of this.linkIndices) {
@@ -558,7 +612,8 @@ export class PixiGraphRenderer {
         if (link.targetId === activeId) neighborSet.add(link.sourceId);
       }
 
-      for (const [id, sprite] of Object.entries(this.nodeSprites)) {
+      for (let i = 0; i < nodeEntries.length; i++) {
+        const [id, sprite] = nodeEntries[i];
         const isNeighbor = neighborSet.has(id);
         const isActive = id === activeId;
 
@@ -572,15 +627,19 @@ export class PixiGraphRenderer {
         sprite.borderGraphics.visible = isActive;
       }
 
-      for (const [id, label] of Object.entries(this.labelSprites)) {
-        label.visible = labelAlpha > 0;
+      for (let i = 0; i < nodeEntries.length; i++) {
+        const [id] = nodeEntries[i];
+        const labelSprite = this.labelSprites[id];
+        if (!labelSprite) continue;
+        labelSprite.visible = labelAlpha > 0;
         const sprite = this.nodeSprites[id];
         const nodeLabelScale = sprite ? labelScale * Math.max(0.7, sprite.baseRadius / 7.5) : labelScale;
-        label.scale.set(nodeLabelScale);
-        label.alpha = labelAlpha;
+        labelSprite.scale.set(nodeLabelScale);
+        labelSprite.alpha = labelAlpha;
       }
     } else {
-      for (const [id, sprite] of Object.entries(this.nodeSprites)) {
+      for (let i = 0; i < nodeEntries.length; i++) {
+        const [id, sprite] = nodeEntries[i];
         sprite.alpha = 1;
         sprite.setNodeTint(COLORS.node);
         const rScale = sprite.baseRadius / 50;
@@ -588,12 +647,15 @@ export class PixiGraphRenderer {
         sprite.borderGraphics.visible = false;
       }
 
-      for (const [id, label] of Object.entries(this.labelSprites)) {
-        label.visible = labelAlpha > 0;
+      for (let i = 0; i < nodeEntries.length; i++) {
+        const [id] = nodeEntries[i];
+        const labelSprite = this.labelSprites[id];
+        if (!labelSprite) continue;
+        labelSprite.visible = labelAlpha > 0;
         const sprite = this.nodeSprites[id];
         const nodeLabelScale = sprite ? labelScale * Math.max(0.85, sprite.baseRadius / 7.5) : labelScale;
-        label.scale.set(nodeLabelScale);
-        label.alpha = labelAlpha;
+        labelSprite.scale.set(nodeLabelScale);
+        labelSprite.alpha = labelAlpha;
       }
     }
 
@@ -601,6 +663,14 @@ export class PixiGraphRenderer {
     if (this.frame % 2 === 0) {
       this._drawLinks(activeId, labelAlpha);
     }
+  }
+
+  _getNodePos(id) {
+    const sprite = this.nodeSprites[id];
+    if (sprite) return { x: sprite.x, y: sprite.y };
+    const node = this.nodes.get(id);
+    if (node) return { x: node.data.x || 0, y: node.data.y || 0 };
+    return { x: 0, y: 0 };
   }
 
   _drawLinks(activeId, labelAlpha) {
@@ -618,13 +688,19 @@ export class PixiGraphRenderer {
     const screenLineWidth = this.scale < 0.4 ? 1.3 : 0.8;
     const lw = screenLineWidth / Math.max(0.05, this.scale);
 
-    // Get positions from node sprites (not from coordBuffer)
-    const getPos = (id) => {
-      const sprite = this.nodeSprites[id];
-      if (sprite) return { x: sprite.x, y: sprite.y };
-      const node = this.nodes.get(id);
-      if (node) return { x: node.data.x || 0, y: node.data.y || 0 };
-      return { x: 0, y: 0 };
+    // Cache lookups to avoid repeated property access
+    const { nodeSprites, nodes } = this;
+    const getX = (id) => {
+      const sprite = nodeSprites[id];
+      if (sprite) return sprite.x;
+      const node = nodes.get(id);
+      return node ? node.data.x || 0 : 0;
+    };
+    const getY = (id) => {
+      const sprite = nodeSprites[id];
+      if (sprite) return sprite.y;
+      const node = nodes.get(id);
+      return node ? node.data.y || 0 : 0;
     };
 
     if (activeId) {
@@ -632,11 +708,13 @@ export class PixiGraphRenderer {
       for (const link of this.linkIndices) {
         if (link.sourceId === activeId || link.targetId === activeId) continue;
 
-        const s = getPos(link.sourceId);
-        const t = getPos(link.targetId);
+        const sx = getX(link.sourceId);
+        const sy = getY(link.sourceId);
+        const tx = getX(link.targetId);
+        const ty = getY(link.targetId);
 
-        this.linkGraphics.moveTo(s.x, s.y);
-        this.linkGraphics.lineTo(t.x, t.y);
+        this.linkGraphics.moveTo(sx, sy);
+        this.linkGraphics.lineTo(tx, ty);
         this.linkGraphics.stroke({ width: lw, color: COLORS.line, alpha: baseLineAlpha * 0.5 });
       }
 
@@ -644,21 +722,25 @@ export class PixiGraphRenderer {
       for (const link of this.linkIndices) {
         if (link.sourceId !== activeId && link.targetId !== activeId) continue;
 
-        const s = getPos(link.sourceId);
-        const t = getPos(link.targetId);
+        const sx = getX(link.sourceId);
+        const sy = getY(link.sourceId);
+        const tx = getX(link.targetId);
+        const ty = getY(link.targetId);
 
-        this.linkGraphics.moveTo(s.x, s.y);
-        this.linkGraphics.lineTo(t.x, t.y);
+        this.linkGraphics.moveTo(sx, sy);
+        this.linkGraphics.lineTo(tx, ty);
         this.linkGraphics.stroke({ width: lw, color: COLORS.activeLine, alpha: 0.9 });
       }
     } else {
       // Draw all links normally
       for (const link of this.linkIndices) {
-        const s = getPos(link.sourceId);
-        const t = getPos(link.targetId);
+        const sx = getX(link.sourceId);
+        const sy = getY(link.sourceId);
+        const tx = getX(link.targetId);
+        const ty = getY(link.targetId);
 
-        this.linkGraphics.moveTo(s.x, s.y);
-        this.linkGraphics.lineTo(t.x, t.y);
+        this.linkGraphics.moveTo(sx, sy);
+        this.linkGraphics.lineTo(tx, ty);
         this.linkGraphics.stroke({ width: lw, color: COLORS.line, alpha: baseLineAlpha });
       }
     }
@@ -673,18 +755,25 @@ export class PixiGraphRenderer {
     this.version = version;
   }
 
+  _markDirty() {
+    this._dirty = true;
+  }
+
   // ── Highlight ───────────────────────────────────────────────────────────────
 
   setHighlightNodes(set) {
     this.highlightNodes = set;
+    this._dirty = true;
   }
 
   setHighlightLinks(set) {
     this.highlightLinks = set;
+    this._dirty = true;
   }
 
   setSearchResults(ids) {
     this.searchResultIds = ids;
+    this._dirty = true;
   }
 
   // ── Camera Controls ─────────────────────────────────────────────────────────
@@ -699,6 +788,7 @@ export class PixiGraphRenderer {
     const after = this.viewport.toLocal(new PIXI.Point(cx, cy));
     this.viewport.x += (after.x - before.x) * this.scale;
     this.viewport.y += (after.y - before.y) * this.scale;
+    this._dirty = true;
     this.onZoom({ k: this.scale, x: this.viewport.x, y: this.viewport.y });
   }
 
@@ -712,6 +802,7 @@ export class PixiGraphRenderer {
     const after = this.viewport.toLocal(new PIXI.Point(cx, cy));
     this.viewport.x += (after.x - before.x) * this.scale;
     this.viewport.y += (after.y - before.y) * this.scale;
+    this._dirty = true;
     this.onZoom({ k: this.scale, x: this.viewport.x, y: this.viewport.y });
   }
 
@@ -719,6 +810,7 @@ export class PixiGraphRenderer {
     if (!this.app) return;
     this.viewport.x = this.app.canvas.clientWidth / 2 - x * this.scale;
     this.viewport.y = this.app.canvas.clientHeight / 2 - y * this.scale;
+    this._dirty = true;
     this.onZoom({ k: this.scale, x: this.viewport.x, y: this.viewport.y });
   }
 
@@ -764,6 +856,7 @@ export class PixiGraphRenderer {
         this.viewport.scale.set(this.scale);
         this.viewport.x = targetX;
         this.viewport.y = targetY;
+        this._dirty = true;
         this.onZoom({ k: this.scale, x: this.viewport.x, y: this.viewport.y });
         return;
       }
@@ -772,6 +865,7 @@ export class PixiGraphRenderer {
       this.viewport.scale.set(this.scale);
       this.viewport.x = startX + (targetX - startX) * t;
       this.viewport.y = startY + (targetY - startY) * t;
+      this._dirty = true;
       this.onZoom({ k: this.scale, x: this.viewport.x, y: this.viewport.y });
       requestAnimationFrame(animate);
     };
@@ -802,9 +896,15 @@ export class PixiGraphRenderer {
     this._unbindEvents();
     this._destroyApp();
 
+    if (this._nodeTexture) {
+      this._nodeTexture.destroy(true);
+      this._nodeTexture = null;
+    }
+
     this.nodes.clear();
     this.links.clear();
     this.nodeSprites = {};
     this.labelSprites = {};
+    this._nodeSpriteEntries = [];
   }
 }
