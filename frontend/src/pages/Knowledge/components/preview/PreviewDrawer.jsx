@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { message } from 'antd';
-import { X, Eye, Edit3, ExternalLink } from 'lucide-react';
+import { X, Eye, Edit3, ExternalLink, ChevronLeft } from 'lucide-react';
 import FileIcon from '../file-icon/FileIcon';
 import {
   ImageViewer,
@@ -14,14 +14,16 @@ import {
 } from '@components/FileViewers';
 import Editor from '@monaco-editor/react';
 import ReactMarkdown from 'react-markdown';
+import { uriTransformer } from 'react-markdown/lib/uri-transformer';
 import remarkGfm from 'remark-gfm';
 
 const WIKI_LINK_RE = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 
 function preprocessWikiLinks(content) {
   return content.replace(WIKI_LINK_RE, (match, title, alias) => {
-    const display = (alias || title).trim();
-    return `[${display}](wiki://${encodeURIComponent(title.trim())})`;
+    const cleanTitle = (title || '').replace(/\\$/, '').trim();
+    const display = (alias || cleanTitle).trim();
+    return `[${display}](wiki://${encodeURIComponent(cleanTitle)})`;
   });
 }
 
@@ -34,8 +36,10 @@ function WikiLink({ href, children, sendWSMessage }) {
     if (loading) return;
     setLoading(true);
     try {
+      console.log('[WikiLink] resolving:', title);
       const response = await sendWSMessage('knowledge_search', { query: title });
       const results = response.data?.results || [];
+      console.log('[WikiLink] search results:', results);
       const match =
         results.find(
           (r) =>
@@ -43,6 +47,7 @@ function WikiLink({ href, children, sendWSMessage }) {
             title.replace(/\s+/g, '').toLowerCase()
         ) || results[0];
       if (match) {
+        console.log('[WikiLink] matched:', match.path);
         window.dispatchEvent(
           new CustomEvent('knowledge-open-file', {
             detail: {
@@ -57,6 +62,7 @@ function WikiLink({ href, children, sendWSMessage }) {
       }
     } catch (err) {
       console.error('Wiki link resolve failed:', err);
+      message.error('打开链接失败: ' + (err.message || '未知错误'));
     } finally {
       setLoading(false);
     }
@@ -88,6 +94,10 @@ const MarkdownPreview = ({ content, file, sendWSMessage }) => {
     <div className="markdown-preview">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        transformLinkUri={(href) => {
+          if (href.startsWith('wiki://')) return href;
+          return uriTransformer(href);
+        }}
         components={{
           a: (props) => {
             if (props.href?.startsWith('wiki://')) {
@@ -117,6 +127,8 @@ export default function PreviewDrawer({
   isOpen,
   onClose,
   sendWSMessage,
+  onBack,
+  canGoBack,
 }) {
   const [isPreviewMode, setIsPreviewMode] = useState(true);
 
@@ -280,6 +292,37 @@ export default function PreviewDrawer({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden', flex: 1 }}>
+            {canGoBack && (
+              <button
+                onClick={onBack}
+                title="返回上一篇"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 28,
+                  height: 28,
+                  borderRadius: 6,
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface-2)',
+                  color: 'var(--text-2)',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--accent-soft)';
+                  e.currentTarget.style.color = 'var(--accent)';
+                  e.currentTarget.style.borderColor = 'var(--accent)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'var(--surface-2)';
+                  e.currentTarget.style.color = 'var(--text-2)';
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                }}
+              >
+                <ChevronLeft size={16} />
+              </button>
+            )}
             <div style={{ flexShrink: 0 }}>
               <FileIcon name={fileName} isDirectory={false} size={36} />
             </div>

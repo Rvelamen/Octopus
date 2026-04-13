@@ -267,7 +267,46 @@ class KnowledgeGraphEngine:
 
     def search_notes(self, query: str, limit: int = 20) -> list[dict[str, Any]]:
         """Fuzzy search notes by path or title."""
-        pattern = f"%{query}%"
+        stripped = query.strip()
+        if not stripped:
+            return []
+
+        # 1. Exact title match
+        row = self.db.execute(
+            "SELECT path, title, mtime FROM knowledge_nodes WHERE title = ? LIMIT 1",
+            (stripped,),
+        ).fetchone()
+        if row:
+            return [{"path": row["path"], "title": row["title"], "mtime": row["mtime"]}]
+
+        # 2. Path stem match (e.g. "Foo" -> ".../Foo.md")
+        row = self.db.execute(
+            "SELECT path, title, mtime FROM knowledge_nodes WHERE path LIKE ? LIMIT 1",
+            (f"%/{stripped}.md",),
+        ).fetchone()
+        if row:
+            return [{"path": row["path"], "title": row["title"], "mtime": row["mtime"]}]
+
+        # 3. FTS5 match (more intelligent for long titles / phrases)
+        try:
+            rows = self.db.execute(
+                """
+                SELECT n.path, n.title, n.mtime, rank
+                FROM knowledge_nodes_fts
+                JOIN knowledge_nodes n ON knowledge_nodes_fts.rowid = n.rowid
+                WHERE knowledge_nodes_fts MATCH ?
+                ORDER BY rank
+                LIMIT ?
+                """,
+                (stripped, limit),
+            ).fetchall()
+            if rows:
+                return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"]} for r in rows]
+        except Exception:
+            pass
+
+        # 4. Fallback LIKE on path or title
+        pattern = f"%{stripped}%"
         rows = self.db.execute(
             """
             SELECT path, title, mtime FROM knowledge_nodes

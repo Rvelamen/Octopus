@@ -43,6 +43,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
   const [previewContent, setPreviewContent] = useState('');
+  const [previewHistory, setPreviewHistory] = useState([]);
 
   // 分页状态
   const [pagination, setPagination] = useState({
@@ -168,6 +169,11 @@ export default function KnowledgePanel({ sendWSMessage }) {
         return;
       }
 
+      // 如果当前已有预览文件，先压入历史栈
+      if (previewDrawerOpen && previewFile) {
+        setPreviewHistory((prev) => [...prev, { file: previewFile, content: previewContent }]);
+      }
+
       // web_clip 也使用 PreviewDrawer 内部 webview 预览，不再直接弹外部浏览器
       const sourceUrl = item.meta?.source;
       const isWebClip = item.meta?.document_type === 'web_clip';
@@ -196,7 +202,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
         setPreviewDrawerOpen(true);
       }
     },
-    [readFile, handleToggle]
+    [readFile, handleToggle, previewDrawerOpen, previewFile, previewContent]
   );
 
   // 打开文件 - Notes 标签页使用 SimpleEditor
@@ -232,6 +238,18 @@ export default function KnowledgePanel({ sendWSMessage }) {
     setPreviewFile(null);
     setPreviewContent('');
     setDocPreviewFile(null);
+    setPreviewHistory([]);
+  }, []);
+
+  // 预览抽屉返回上一篇
+  const handlePreviewBack = useCallback(() => {
+    setPreviewHistory((prev) => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      setPreviewFile(last.file);
+      setPreviewContent(last.content);
+      return prev.slice(0, -1);
+    });
   }, []);
 
   // 创建文件
@@ -566,6 +584,18 @@ export default function KnowledgePanel({ sendWSMessage }) {
     window.addEventListener('knowledge-distill-progress', handler);
     return () => window.removeEventListener('knowledge-distill-progress', handler);
   }, [loadDistillTasks]);
+
+  // 监听 knowledge-open-file 事件（用于 wiki-link 跳转、TaskDetail 打开输出文件等）
+  useEffect(() => {
+    const handler = (e) => {
+      const { path, name, is_directory } = e.detail || {};
+      console.log('[KnowledgePanel] knowledge-open-file:', path);
+      if (!path) return;
+      handleOpenFile({ path, name: name || path.split('/').pop(), is_directory: !!is_directory });
+    };
+    window.addEventListener('knowledge-open-file', handler);
+    return () => window.removeEventListener('knowledge-open-file', handler);
+  }, [handleOpenFile]);
 
   const uploadFile = async (file, targetDir = null) => {
     if (!file) return;
@@ -1122,6 +1152,8 @@ export default function KnowledgePanel({ sendWSMessage }) {
         isOpen={previewDrawerOpen}
         onClose={handleClosePreviewDrawer}
         sendWSMessage={sendWSMessage}
+        onBack={handlePreviewBack}
+        canGoBack={previewHistory.length > 0}
       />
     </div>
   );
