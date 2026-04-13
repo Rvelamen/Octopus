@@ -16,6 +16,15 @@ const COLORS = {
   activeLine: 0x835ee4,
   label: 0xb3b3b3,
 };
+// const COLORS = {
+//   node: 0xa8a29e,        // 暖灰（石灰色）
+//   hover: 0xb46a57,       // 赭石色（主accent）
+//   drag: 0x9a5848,        // 深赭石
+//   line: 0xe5e1de,        // 浅暖灰
+//   activeLine: 0xb46a57,  // 赭石色
+//   label: 0x4a4540,       // 深棕灰
+//   border: 0xc9856d,      // 浅赭石边框
+// };
 
 const LABEL_FONT_SIZE = 14;
 
@@ -134,13 +143,8 @@ export class PixiGraphRenderer {
     this.labelLayer = new PIXI.Container();
     this.viewport.addChild(this.labelLayer);
 
-    // Generate shared circle texture for nodes (reduces draw calls)
-    const tempG = new PIXI.Graphics();
-    tempG.beginFill(0xffffff, 1);
-    tempG.drawCircle(0, 0, 50);
-    tempG.endFill();
-    this._nodeTexture = this.app.renderer.generateTexture(tempG);
-    tempG.destroy();
+    // Shared circle texture generated lazily if needed
+    this._nodeTexture = null;
 
     this._bindEvents();
     this.app.ticker.add(() => this._render());
@@ -485,9 +489,10 @@ export class PixiGraphRenderer {
     border.visible = false;
     container.addChild(border);
 
-    // Use shared texture sprite for the node fill to reduce draw calls
-    const fill = new PIXI.Sprite(this._nodeTexture);
-    fill.anchor.set(0.5);
+    const fill = new PIXI.Graphics();
+    fill.beginFill(0xffffff, 1);
+    fill.drawCircle(0, 0, 50);
+    fill.endFill();
     container.addChild(fill);
 
     const scale = radius / 50;
@@ -510,7 +515,11 @@ export class PixiGraphRenderer {
         fontFamily: 'var(--font-interface), system-ui, sans-serif',
         fontSize: LABEL_FONT_SIZE,
         fill: COLORS.label,
-        resolution: 1,
+        resolution: 2,
+        dropShadow: true,
+        dropShadowColor: 0x000000,
+        dropShadowDistance: 0,
+        dropShadowBlur: 3,
         wordWrap: true,
         wordWrapWidth: 120,
         breakWords: true,
@@ -659,10 +668,7 @@ export class PixiGraphRenderer {
       }
     }
 
-    // Render links (every 2 frames)
-    if (this.frame % 2 === 0) {
-      this._drawLinks(activeId, labelAlpha);
-    }
+    this._drawLinks(activeId, labelAlpha);
   }
 
   _getNodePos(id) {
@@ -679,7 +685,6 @@ export class PixiGraphRenderer {
 
     this.linkGraphics.clear();
 
-    // Calculate line alpha based on zoom
     let baseLineAlpha;
     if (this.scale <= 0.25) baseLineAlpha = 0.65;
     else if (this.scale >= 0.9) baseLineAlpha = 0.38;
@@ -688,7 +693,6 @@ export class PixiGraphRenderer {
     const screenLineWidth = this.scale < 0.4 ? 1.3 : 0.8;
     const lw = screenLineWidth / Math.max(0.05, this.scale);
 
-    // Cache lookups to avoid repeated property access
     const { nodeSprites, nodes } = this;
     const getX = (id) => {
       const sprite = nodeSprites[id];
@@ -704,43 +708,22 @@ export class PixiGraphRenderer {
     };
 
     if (activeId) {
-      // Draw non-active links dimmed
       for (const link of this.linkIndices) {
         if (link.sourceId === activeId || link.targetId === activeId) continue;
-
-        const sx = getX(link.sourceId);
-        const sy = getY(link.sourceId);
-        const tx = getX(link.targetId);
-        const ty = getY(link.targetId);
-
-        this.linkGraphics.moveTo(sx, sy);
-        this.linkGraphics.lineTo(tx, ty);
+        this.linkGraphics.moveTo(getX(link.sourceId), getY(link.sourceId));
+        this.linkGraphics.lineTo(getX(link.targetId), getY(link.targetId));
         this.linkGraphics.stroke({ width: lw, color: COLORS.line, alpha: baseLineAlpha * 0.5 });
       }
-
-      // Draw active links highlighted
       for (const link of this.linkIndices) {
         if (link.sourceId !== activeId && link.targetId !== activeId) continue;
-
-        const sx = getX(link.sourceId);
-        const sy = getY(link.sourceId);
-        const tx = getX(link.targetId);
-        const ty = getY(link.targetId);
-
-        this.linkGraphics.moveTo(sx, sy);
-        this.linkGraphics.lineTo(tx, ty);
+        this.linkGraphics.moveTo(getX(link.sourceId), getY(link.sourceId));
+        this.linkGraphics.lineTo(getX(link.targetId), getY(link.targetId));
         this.linkGraphics.stroke({ width: lw, color: COLORS.activeLine, alpha: 0.9 });
       }
     } else {
-      // Draw all links normally
       for (const link of this.linkIndices) {
-        const sx = getX(link.sourceId);
-        const sy = getY(link.sourceId);
-        const tx = getX(link.targetId);
-        const ty = getY(link.targetId);
-
-        this.linkGraphics.moveTo(sx, sy);
-        this.linkGraphics.lineTo(tx, ty);
+        this.linkGraphics.moveTo(getX(link.sourceId), getY(link.sourceId));
+        this.linkGraphics.lineTo(getX(link.targetId), getY(link.targetId));
         this.linkGraphics.stroke({ width: lw, color: COLORS.line, alpha: baseLineAlpha });
       }
     }
