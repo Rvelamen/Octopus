@@ -4,7 +4,6 @@ import asyncio
 import base64
 import json
 import time
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +16,7 @@ from backend.core.providers.factory import create_provider
 from backend.agent.config_service import AgentConfigService
 from backend.agent.context import ContextBuilder, set_agent_loop
 from backend.agent.compressor import ContextCompressor
+from backend.agent.shared import PreparedContext, _extract_cached_tokens, _extract_prompt_tokens_with_cache
 from backend.tools.registry import ToolRegistry
 from backend.tools.filesystem import ReadFileTool, WriteFileTool, EditFileTool, ListDirTool
 from backend.tools.shell import ExecTool
@@ -36,49 +36,12 @@ from backend.data.commands import handle_session_command
 from backend.data.token_store import TokenUsageRepository
 from backend.extensions.loader import ExtensionLoader
 
-
-@dataclass
-class PreparedContext:
-    """Shared context prepared before LLM call (used by both streaming and non-streaming paths)."""
-    session: Any
-    messages: list
-    session_instance_id: int | None
-    current_session: str
-    session_key: str
-
-
-def _extract_cached_tokens(usage: dict) -> int:
-    """Extract cache hit tokens from provider-specific usage fields."""
-    if not usage:
-        return 0
-    # DeepSeek style
-    if "prompt_cache_hit_tokens" in usage:
-        return usage.get("prompt_cache_hit_tokens", 0)
-    # OpenAI style
-    details = usage.get("prompt_tokens_details")
-    if details and isinstance(details, dict):
-        return details.get("cached_tokens", 0)
-    # Generic fallback
-    return usage.get("cached_tokens", 0) or usage.get("cache_read_input_tokens", 0)
-
-
-def _extract_prompt_tokens_with_cache(usage: dict) -> int:
-    """Get real prompt/input tokens including cache hits.
-
-    Provider behavior:
-    - DeepSeek: prompt_tokens does NOT include prompt_cache_hit_tokens, so we add them.
-    - OpenAI/Anthropic: prompt_tokens / input_tokens already include cached tokens.
-    """
-    if not usage:
-        return 0
-    # DeepSeek style: need to add cache hits
-    if "prompt_cache_hit_tokens" in usage:
-        return usage.get("prompt_tokens", 0) + usage.get("prompt_cache_hit_tokens", 0)
-    # Anthropic style
-    if "input_tokens" in usage:
-        return usage.get("input_tokens", 0)
-    # OpenAI / generic style
-    return usage.get("prompt_tokens", 0)
+from backend.agent.processors import (
+    LongtaskMessageProcessor,
+    SystemMessageProcessor,
+    NonStreamingMessageProcessor,
+    StreamingMessageProcessor,
+)
 
 
 class AgentLoop:
@@ -148,34 +111,38 @@ class AgentLoop:
         self._running = False
         self._stop_current_task = False
         # Instance-level stop flags: { instance_id: stop_flag }
-        self._instance_stop_flags = {}
+        self._instance_stop_flags: dict[int, bool] = {}
+
+        # Initialize processors
+        self._processors = [
+            LongtaskMessageProcessor(self),
+            SystemMessageProcessor(self),
+            StreamingMessageProcessor(self),
+            NonStreamingMessageProcessor(self),
+        ]
+
+        # Register default tools
         self._register_default_tools()
-        self._tts_service = None
 
     @property
     def tts_service(self):
-        """Lazy load TTS service using SessionManager's database."""
-        if self._tts_service is None:
-            from backend.services.tts_service import TTSService
-            from backend.data.provider_store import ProviderRepository, SettingsRepository
-            
-            provider_repo = ProviderRepository(self.db)
-            settings_repo = SettingsRepository(self.db)
-            self._tts_service = TTSService(
-                self.sessions.db, 
-                provider_repo, 
-                settings_repo
-            )
+        """Lazy-load TTS service to avoid circular imports."""
+        from backend.services.tts_service import TTSServiceFactory
+        if not hasattr(self, '_tts_service'):
+            self._tts_service = TTSServiceFactory.create_service(self.db)
         return self._tts_service
 
     @property
     def max_iterations(self) -> int:
-        """Get max_iterations from database dynamically."""
+        """Get max iterations from config or default."""
         try:
             config_service = AgentConfigService(self.db)
-            return config_service.get_max_iterations()
-        except Exception:
-            return self._default_max_iterations
+            defaults = config_service.get_agent_defaults()
+            if defaults and defaults.max_iterations is not None:
+                return defaults.max_iterations
+        except Exception as e:
+            logger.warning(f"Failed to get max_iterations from config: {e}")
+        return self._default_max_iterations
 
     def _get_current_provider_and_model(self) -> tuple[LLMProvider, str, str, int, float]:
         """Get current provider, model, provider_type, max_tokens, and temperature from database."""
@@ -183,87 +150,57 @@ class AgentLoop:
         return config_service.get_default_provider_and_model()
 
     async def _emit(self, event_type: str, data: dict, channel: str = ""):
-        """Helper to emit events to the bus."""
-        if hasattr(self.bus, 'publish_event'):
-            session = data.get("session", "unknown")
-            await self.bus.publish_event(AgentEvent(
-                event_type=event_type,
-                data=data,
-                channel=channel
-            ))
-    
+        """Emit an agent event to the bus."""
+        await self.bus.publish_event(AgentEvent(
+            event_type=event_type,
+            data=data,
+            channel=channel
+        ))
+
     async def _send_stream_chunks(self, content: str, session: str, channel: str, session_instance_id: int | None = None, chunk_size: int = 10):
-        """Send content in chunks for streaming effect."""
+        """Send content as a series of stream chunks to simulate streaming for non-desktop channels."""
         if not content:
             return
-
+        
         for i in range(0, len(content), chunk_size):
-            chunk = content[i:i+chunk_size]
-            await self.bus.publish_event(AgentEvent(
-                event_type="agent_chunk",
-                data={"content": chunk, "session": session, "session_instance_id": session_instance_id},
-                channel=channel
-            ))
-            await asyncio.sleep(0.05)
+            chunk = content[i:i + chunk_size]
+            await self._emit("agent_chunk", {
+                "content": chunk,
+                "session": session,
+                "session_instance_id": session_instance_id
+            }, channel=channel)
 
     def _register_default_tools(self) -> None:
-        """Register the default set of tools."""
-        # File tools
+        """Register the built-in tool set."""
         self.tools.register(ReadFileTool())
         self.tools.register(WriteFileTool())
         self.tools.register(EditFileTool())
         self.tools.register(ListDirTool())
-        
-        # Shell tool
         self.tools.register(ExecTool(
             working_dir=str(self.workspace),
             timeout=self.exec_config.timeout,
             restrict_to_workspace=self.exec_config.restrict_to_workspace,
         ))
-        
-        # Message tool
-        message_tool = MessageTool(send_callback=self.bus.publish_outbound)
-        self.tools.register(message_tool)
-        
-        # Spawn tool (for subagents)
-        spawn_tool = SpawnTool(manager=self.subagents, aggregator=self.aggregator)
-        self.tools.register(spawn_tool)
-        
-        # Cron tool (for scheduling)
-        if self.cron_service:
-            self.tools.register(CronTool(self.cron_service))
-        
-        # Unified Action tool (plugin + channel + page)
-        self.tools.register(ActionTool())
-
-        # Image tools
-        self.tools.register(ImageUnderstandTool())
-        self.tools.register(ImageGenerateTool())
-
-        # Web fetch tool
+        self.tools.register(MessageTool(send_callback=self.bus.publish_outbound))
+        self.tools.register(SpawnTool(manager=self.subagents, aggregator=self.aggregator))
         self.tools.register(WebFetchTool())
-
-        # Knowledge base tools
         self.tools.register(KBSearchTool())
         self.tools.register(KBReadNoteTool())
         self.tools.register(KBListLinksTool())
-
-        # Browser tools
-        try:
-            register_browser_tools(self.tools, workspace=self.workspace)
-        except Exception as e:
-            logger.warning(f"Failed to register browser tools: {e}")
+        self.tools.register(ImageUnderstandTool())
+        self.tools.register(ImageGenerateTool())
+        self.tools.register(CronTool(cron_service=self.cron_service))
+        self.tools.register(ActionTool())
+        register_browser_tools(self.tools)
+        logger.info("Default tools registered")
 
     async def load_extensions(self) -> dict[str, bool]:
-        """Load all discovered extensions (plugins, skills, workers)."""
-        logger.info("Loading extensions...")
+        """Load all extensions from workspace/extensions."""
         extensions = self.extension_loader.load_all()
         loaded = len(extensions)
         logger.info(f"Loaded {loaded} extensions")
         return {ext.name: True for ext in extensions}
 
-
-    
     async def run(self) -> None:
         """Run the agent loop, processing messages from the bus."""
         self._running = True
@@ -325,7 +262,7 @@ class AgentLoop:
                 self._instance_stop_flags[instance_id_int] = False
         else:
             self._stop_current_task = False
-    
+
     def _should_stop(self, instance_id=None) -> bool:
         """Check if task should stop for a specific instance or globally."""
         if self._stop_current_task:
@@ -376,30 +313,18 @@ class AgentLoop:
                 )
             except Exception as e:
                 logger.warning(f"Failed to update stopped_by_user metadata: {e}")
-    
+
     async def _process_message(
         self,
         msg: InboundMessage,
         session_key: str | None = None
     ) -> OutboundMessage | None:
-        """
-        Process a single inbound message.
-
-        Args:
-            msg: The inbound message to process.
-            session_key: Optional session key override. If provided, uses this instead of msg.session_key.
-
-        Returns:
-            The response message, or None if no response needed.
-        """
-        
-        # Determine if streaming should be enabled (only for desktop channel)
-        enable_streaming = msg.channel == "desktop"
-        
-        if enable_streaming:
-            return await self._process_streaming_message(msg, session_key)
-        else:
-            return await self._process_non_streaming_message(msg, session_key)
+        """Process a single inbound message by delegating to the appropriate processor."""
+        for processor in self._processors:
+            if processor.can_process(msg):
+                return await processor.process(msg, session_key)
+        logger.warning(f"No processor found for message type {msg.message_type} on channel {msg.channel}")
+        return None
 
     async def _prepare_session_and_context(
         self,
@@ -418,14 +343,9 @@ class AgentLoop:
             (None, None) for longtask_auth (no response needed, caller should return None)
         """
 
-        if msg.message_type in ("longtask_auth", "longtask_complete"):
+        # longtask_complete is handled here as a side-effect before normal processing
+        if msg.message_type == "longtask_complete":
             await self._process_longtask_message(msg)
-            if msg.message_type == "longtask_auth":
-                return None, None
-
-        if msg.channel == "system":
-            resp = await self._process_system_message(msg, session_key=session_key)
-            return None, resp
 
         logger.info(f"Processing message from {msg.channel}:{msg.sender_id}")
 
@@ -534,1192 +454,54 @@ class AgentLoop:
             session_key=session_key,
         ), None
 
-    async def _process_non_streaming_message(
-        self,
-        msg: InboundMessage,
-        session_key: str | None = None
-    ) -> OutboundMessage | None:
-        """
-        Process message without streaming (original logic).
-        
-        This method preserves the original non-streaming behavior for non-desktop channels.
-        """
+    # Keep backward-compatible delegations for any external callers
+    async def _process_longtask_message(self, msg: InboundMessage) -> OutboundMessage | None:
+        processor = LongtaskMessageProcessor(self)
+        return await processor.process(msg)
 
-        ctx, early_response = await self._prepare_session_and_context(msg, session_key)
-        if ctx is None:
-            return early_response
-
-        session = ctx.session
-        messages = ctx.messages
-        session_instance_id = ctx.session_instance_id
-        current_session = ctx.current_session
-
-        # Agent loop
-        iteration = 0
-        final_content = None
-        last_prompt_tokens = 0  # Track prompt tokens for compression trigger
-        
-        # Track total token usage for this run
-        total_prompt_tokens = 0
-        total_completion_tokens = 0
-        total_cached_tokens = 0
-
-        should_stop = False  # Flag to stop the outer loop
-
-        # Reset stop flags for new task
-        self._stop_current_task = False
-        instance_id_int = int(session_instance_id) if session_instance_id else None
-        if instance_id_int:
-            self._instance_stop_flags[instance_id_int] = False
-
-        # Track elapsed time for this agent run
-        start_time = time.time()
-
-        while iteration < self.max_iterations and not should_stop and not self._should_stop(instance_id_int):
-            iteration += 1
-
-            # Emit "thinking" event
-            await self._emit("agent_thinking", {"iteration": iteration, "session": session.key, "session_instance_id": session_instance_id}, channel=msg.channel)
-
-            # Call LLM - get fresh provider and model from config
-            provider, model, provider_type, max_tokens, temperature = self._get_current_provider_and_model()
-            # logger.info(f"Message: {messages}")
-            response = await provider.chat(
-                messages=messages,
-                tools=self.tools.get_definitions(),
-                model=model,
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
-            logger.info(f"LLM Response: {response}")
-            
-            # Record token usage and track prompt_tokens for compression
-            if response.usage:
-                last_prompt_tokens = _extract_prompt_tokens_with_cache(response.usage)
-                total_prompt_tokens += _extract_prompt_tokens_with_cache(response.usage)
-                total_completion_tokens += response.usage.get("completion_tokens", 0)
-                total_cached_tokens += _extract_cached_tokens(response.usage)
-                self._record_token_usage(
-                    session_instance_id=session_instance_id,
-                    provider_name=provider_type,
-                    model_id=model,
-                    usage=response.usage
-                )
-            
-            # Handle tool calls
-            if response.has_tool_calls:
-                # Build tool_calls data
-                tool_calls_data = [
-                    {
-                        "id": tc.id,
-                        "type": "function",
-                        "function": {
-                            "name": tc.name,
-                            "arguments": json.dumps(tc.arguments, ensure_ascii=False)
-                        }
-                    }
-                    for tc in response.tool_calls
-                ]
-
-                # Save assistant message with tool calls immediately
-                session.add_message("assistant", response.content or "",
-                                  message_type="tool_call",
-                                  tool_calls=tool_calls_data,
-                                  metadata={
-                                      "session_instance_id": session_instance_id,
-                                      "usage": {
-                                          "prompt_tokens": total_prompt_tokens,
-                                          "completion_tokens": total_completion_tokens,
-                                          "total_tokens": total_prompt_tokens + total_completion_tokens,
-                                          "cached_tokens": total_cached_tokens
-                                      }
-                                  } if session_instance_id else {
-                                      "usage": {
-                                          "prompt_tokens": total_prompt_tokens,
-                                          "completion_tokens": total_completion_tokens,
-                                          "total_tokens": total_prompt_tokens + total_completion_tokens,
-                                          "cached_tokens": total_cached_tokens
-                                      }
-                                  })
-                self.sessions.save(session)
-
-                # Add assistant message with tool calls to messages
-                tool_call_dicts = [
-                    {
-                        "id": tc.id,
-                        "type": "function",
-                        "function": {
-                            "name": tc.name,
-                            "arguments": json.dumps(tc.arguments, ensure_ascii=False)  # Must be JSON string
-                        }
-                    }
-                    for tc in response.tool_calls
-                ]
-                messages = self.context.add_assistant_message(
-                    messages, response.content, tool_call_dicts, provider_type
-                )
-
-                # Execute tools with error handling
-                saved_tool_ids: set[str] = set()
-                for tool_call in response.tool_calls:
-                    # Check if task should stop
-                    if self._should_stop(instance_id_int):
-                        logger.info("Task stopped by user request")
-                        break
-                    
-                    result = None
-                    try:
-                        args_str = json.dumps(tool_call.arguments, ensure_ascii=False)
-                        logger.debug(f"Executing tool: {tool_call.name} with arguments: {args_str}")
-
-                        # Emit tool call start (include assistant content if any)
-                        try:
-                            await self._emit("agent_tool_call", {
-                                "tool": tool_call.name,
-                                "args": tool_call.arguments,
-                                "content": response.content if response.content else None,
-                                "iteration": iteration,
-                                "tool_call_id": tool_call.id,
-                                "session_instance_id": session_instance_id
-                            }, channel=msg.channel)
-                        except Exception as emit_err:
-                            logger.warning(f"Failed to emit tool call event: {emit_err}")
-
-                        # Inject channel, chat_id, and session_instance_id for action tools
-                        tool_args = tool_call.arguments.copy()
-                        if tool_call.name == "action":
-                            tool_args["_channel"] = msg.channel
-                            tool_args["_chat_id"] = msg.chat_id
-                            tool_args["_session_instance_id"] = session.active_instance.id
-                        
-                        # Inject parent_tool_call_id for spawn tool
-                        if tool_call.name == "spawn":
-                            tool_args["parent_tool_call_id"] = tool_call.id
-
-                        # Execute tool with error handling
-                        try:
-                            result = await self.tools.execute(tool_call.name, tool_args)
-                        except Exception as e:
-                            import traceback
-                            traceback.print_exc()
-                            logger.error(f"Tool execution error: {tool_call.name} - {e}")
-                            result = f"Error executing tool {tool_call.name}: {str(e)}"
-
-                        # Check if this is a longtask auth action - if so, return simple confirmation
-                        is_longtask_auth = (
-                            tool_call.name == "action" and
-                            tool_args.get("type") == "plugin" and
-                            tool_args.get("action") == "auth"
-                        )
-
-                        if is_longtask_auth and "success" in result:
-                            # For longtask auth actions, return simple confirmation without LLM processing
-                            plugin_name = tool_args.get("name", "longtask")
-                            final_content = f"✅ 授权已发送，{plugin_name} 将继续执行任务。任务完成后我会通知您。"
-                            # Add tool result to messages
-                            messages = self.context.add_tool_result(
-                                messages, tool_call.id, tool_call.name, result, provider_type
-                            )
-
-                            # Save tool result immediately
-                            session.add_message("tool", result,
-                                              message_type="tool_result",
-                                              name=tool_call.name,
-                                              tool_call_id=tool_call.id,
-                                              metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
-                            self.sessions.save(session)
-                            saved_tool_ids.add(str(tool_call.id))
-
-                            should_stop = True  # Stop the outer loop
-                            break  # Exit tool execution loop
-
-                        # 如果是 spawn 工具，累加 subagent 的 token 到主 agent 的统计
-                        if tool_call.name == "spawn" and result:
-                            try:
-                                parsed_result = json.loads(result)
-                                if parsed_result.get("type") == "subagent_sync" and parsed_result.get("token_usage"):
-                                    subagent_usage = parsed_result["token_usage"]
-                                    total_prompt_tokens += subagent_usage.get("prompt_tokens", 0)
-                                    total_completion_tokens += subagent_usage.get("completion_tokens", 0)
-                                    logger.info(f"[AgentLoop] Added subagent tokens: prompt={subagent_usage.get('prompt_tokens', 0)}, completion={subagent_usage.get('completion_tokens', 0)}")
-                            except json.JSONDecodeError:
-                                pass  # 不是 JSON 格式，忽略
-
-                        # Emit tool call result (truncated for log; preserve full result for spawn so subagent_sync JSON is parseable)
-                        try:
-                            result_preview = result if tool_call.name == "spawn" else (result[:500] + "..." if len(result) > 500 else result)
-                            await self._emit("agent_tool_result", {
-                                "tool": tool_call.name,
-                                "result": result_preview,
-                                "tool_call_id": tool_call.id,
-                                "iteration": iteration,
-                                "session_instance_id": session_instance_id
-                            }, channel=msg.channel)
-                        except Exception as e:
-                            logger.warning(f"Failed to emit tool result event: {e}")
-
-                    except Exception as outer_e:
-                        import traceback
-                        traceback.print_exc()
-                        logger.error(f"Unexpected error in tool call processing: {tool_call.name} - {outer_e}")
-                        result = f"Unexpected error processing tool {tool_call.name}: {str(outer_e)}"
-
-                    # Always save tool result to database, even if errors occurred
-                    if result is not None:
-                        try:
-                            session.add_message("tool", result,
-                                              message_type="tool_result",
-                                              name=tool_call.name,
-                                              tool_call_id=tool_call.id,
-                                              metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
-                            self.sessions.save(session)
-                        except Exception as save_err:
-                            logger.error(f"Failed to save tool result to database: {save_err}")
-
-                        try:
-                            messages = self.context.add_tool_result(
-                                messages, tool_call.id, tool_call.name, result, provider_type
-                            )
-                        except Exception as add_err:
-                            logger.error(f"Failed to add tool result to messages: {add_err}")
-
-                        saved_tool_ids.add(str(tool_call.id))
-
-                if response.tool_calls and self._should_stop(instance_id_int):
-                    entries = [(str(tc.id), tc.name) for tc in response.tool_calls]
-                    self._save_cancelled_tool_results_and_mark_stopped(
-                        session,
-                        tool_call_entries=entries,
-                        saved_ids=saved_tool_ids,
-                        session_instance_id=session_instance_id,
-                        start_time=start_time,
-                    )
-
-                # Emit iteration complete event after all tool calls executed (non-streaming)
-                if not should_stop and not self._should_stop(instance_id_int):
-                    await self._emit("agent_iteration_complete", {
-                        "iteration": iteration,
-                        "final_content": response.content or "",
-                        "status": "completed",
-                        "session_instance_id": session_instance_id,
-                        "token_usage": {
-                            "prompt_tokens": total_prompt_tokens,
-                            "completion_tokens": total_completion_tokens,
-                            "total_tokens": total_prompt_tokens + total_completion_tokens,
-                            "cached_tokens": total_cached_tokens
-                        },
-                        "messages": session.messages[-20:]
-                    }, channel=msg.channel)
-            else:
-                # No tool calls, we're done
-                final_content = response.content
-                # Save final assistant response immediately with token usage
-                session.add_message("assistant", final_content or "",
-                                  message_type=msg.message_type,
-                                  metadata={
-                                      "session_instance_id": session_instance_id,
-                                      "usage": {
-                                          "prompt_tokens": total_prompt_tokens,
-                                          "completion_tokens": total_completion_tokens,
-                                          "total_tokens": total_prompt_tokens + total_completion_tokens,
-                                          "cached_tokens": total_cached_tokens
-                                      }
-                                  } if session_instance_id else {
-                                      "usage": {
-                                          "prompt_tokens": total_prompt_tokens,
-                                          "completion_tokens": total_completion_tokens,
-                                          "total_tokens": total_prompt_tokens + total_completion_tokens,
-                                          "cached_tokens": total_cached_tokens
-                                      }
-                                  })
-                self.sessions.save(session)
-                # Emit iteration complete event
-                await self._emit("agent_iteration_complete", {
-                    "iteration": iteration,
-                    "final_content": final_content or "",
-                    "status": "completed",
-                    "session_instance_id": session_instance_id,
-                    "token_usage": {
-                        "prompt_tokens": total_prompt_tokens,
-                        "completion_tokens": total_completion_tokens,
-                        "total_tokens": total_prompt_tokens + total_completion_tokens,
-                        "cached_tokens": total_cached_tokens
-                    },
-                    "messages": session.messages[-20:]
-                }, channel=msg.channel)
-                break
-
-        # Check if stopped by user request
-        if self._should_stop(instance_id_int) and final_content is None:
-            final_content = "任务已被用户暂停。"
-
-        if final_content is None:
-            final_content = "I've completed processing but have no response to give."
-
-        # Get model context window for smart compression trigger
-        model_context_window = self.compressor.sessions.db.get_model_context_window() if hasattr(self.compressor.sessions.db, 'get_model_context_window') else 0
-        await self.compressor.maybe_compress(session, prompt_tokens=last_prompt_tokens, model_context_window=model_context_window)
-
-        logger.info(f"[AgentLoop] Sending final response with {len(final_content)} chars")
-        await self._send_stream_chunks(final_content, current_session, msg.channel, session_instance_id)
-
-        elapsed_ms = int((time.time() - start_time) * 1000)
-
-        # Get TTS config for metadata (channel will handle TTS)
-        tts_enabled = False
-        tts_config = {}
-        if session_instance_id:
-            try:
-                tts_result = self.tts_service.get_instance_tts_config(session_instance_id)
-                tts_enabled = tts_result.get("enabled", False)
-                tts_config = tts_result.get("config", {})
-            except Exception as tts_err:
-                logger.warning(f"Failed to check TTS config: {tts_err}")
-
-        # Persist elapsed_ms BEFORE agent_finish so clients that immediately refetch see correct metadata
-        if session_instance_id and final_content is not None:
-            try:
-                self.sessions.update_last_message_metadata(
-                    session_instance_id,
-                    {
-                        "elapsed_ms": elapsed_ms,
-                        "usage": {
-                            "prompt_tokens": total_prompt_tokens,
-                            "completion_tokens": total_completion_tokens,
-                            "total_tokens": total_prompt_tokens + total_completion_tokens,
-                            "cached_tokens": total_cached_tokens
-                        }
-                    }
-                )
-            except Exception as update_err:
-                logger.warning(f"Failed to update message metadata with elapsed_ms: {update_err}")
-
-        logger.info(f"[AgentLoop] Publishing agent_finish event")
-        logger.info(f"[AgentLoop] Token usage for this run: prompt={total_prompt_tokens}, completion={total_completion_tokens}, cached={total_cached_tokens}")
-        await self.bus.publish_event(AgentEvent(
-            event_type="agent_finish",
-            data={
-                "content": final_content,
-                "session": msg.chat_id,
-                "elapsed_ms": elapsed_ms,
-                "token_usage": {
-                    "prompt_tokens": total_prompt_tokens,
-                    "completion_tokens": total_completion_tokens,
-                    "total_tokens": total_prompt_tokens + total_completion_tokens,
-                    "cached_tokens": total_cached_tokens
-                },
-                "session_instance_id": session_instance_id,
-                "messages": session.messages[-20:]
-            },
-            channel=msg.channel
-        ))
-        logger.info(f"[AgentLoop] agent_finish event published")
-
-        return OutboundMessage(
-            channel=msg.channel,
-            chat_id=msg.chat_id,
-            content=final_content,
-            metadata={
-                "session_instance_id": session_instance_id,
-                "tts_enabled": tts_enabled,
-                "tts_config": tts_config,
-                "elapsed_ms": elapsed_ms
-            }
-        )
-
-    async def _process_system_message(
-        self,
-        msg: InboundMessage,
-        session_key: str | None = None
-    ) -> OutboundMessage | None:
-        """
-        Process a system message (e.g., subagent announce).
-        
-        The chat_id field contains "original_channel:original_chat_id" to route
-        the response back to the correct destination.
-        
-        Args:
-            msg: The inbound message to process.
-            session_key: Optional session key override. If provided, uses this instead of parsing from msg.chat_id.
-        """
-        logger.info(f"Processing system message from {msg.sender_id}")
-        
-        # Check for aggregate summary message type
-        msg_type = msg.metadata.get("type") if msg.metadata else None
-        is_aggregate_summary = msg_type == "aggregate_summary"
-        
-        # Get session_instance_id from metadata if available
-        session_instance_id = msg.metadata.get("session_instance_id") if msg.metadata else None
-        
-        if session_key:
-            parts = session_key.split(":", 1)
-            origin_channel = parts[0] if len(parts) > 0 else "cli"
-            origin_chat_id = parts[1] if len(parts) > 1 else msg.chat_id
-        else:
-            # Parse origin from chat_id (format: "channel:chat_id")
-            if ":" in msg.chat_id:
-                parts = msg.chat_id.split(":", 1)
-                origin_channel = parts[0]
-                origin_chat_id = parts[1]
-            else:
-                # Fallback
-                origin_channel = "cli"
-                origin_chat_id = msg.chat_id
-            session_key = f"{origin_channel}:{origin_chat_id}"
-        
-        session = self.sessions.get_or_create(session_key)
-        
-        # If session_instance_id is provided, ensure we're using the correct instance
-        if session_instance_id and session.active_instance:
-            if session.active_instance.id != session_instance_id:
-                logger.warning(f"Session instance mismatch: active={session.active_instance.id}, "
-                              f"expected={session_instance_id}. Using provided instance_id for routing.")
-        
-        # Update tool contexts with session instance ID
-        active_instance_id = session.active_instance.id if session.active_instance else None
-        # Use provided session_instance_id if available, otherwise use active instance
-        target_instance_id = session_instance_id or active_instance_id
-        
-        message_tool = self.tools.get("message")
-        if isinstance(message_tool, MessageTool):
-            message_tool.set_context(origin_channel, origin_chat_id)
-        
-        spawn_tool = self.tools.get("spawn")
-        if isinstance(spawn_tool, SpawnTool):
-            spawn_tool.set_context(origin_channel, origin_chat_id, target_instance_id)
-        
-        cron_tool = self.tools.get("cron")
-        if isinstance(cron_tool, CronTool):
-            cron_tool.set_context(origin_channel, origin_chat_id, target_instance_id)
-        
-        # Build messages with the announce content
-        messages = self.context.build_messages(
-            history=session.get_history(),
-            current_message=msg.content,
-            channel=origin_channel,
-            chat_id=origin_chat_id,
-        )
-        
-        # Agent loop (limited for announce handling)
-        iteration = 0
-        final_content = None
-
-        # Save input message immediately
-        msg_role = "system" if is_aggregate_summary else "user"
-        session.add_message(msg_role, f"[{msg.sender_id}] {msg.content}",
-                          message_type=msg_type or msg.message_type,
-                          metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
-        self.sessions.save(session)
-
-        while iteration < self.max_iterations:
-            iteration += 1
-
-            # Call LLM - get fresh provider and model from config
-            provider, model, provider_type, max_tokens, temperature = self._get_current_provider_and_model()
-            response = await provider.chat(
-                messages=messages,
-                tools=self.tools.get_definitions(),
-                model=model,
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
-
-            # Record token usage
-            if response.usage:
-                self._record_token_usage(
-                    session_instance_id=session_instance_id,
-                    provider_name=provider_type,
-                    model_id=model,
-                    usage=response.usage
-                )
-
-            if response.has_tool_calls:
-                # Build tool_calls data
-                tool_calls_data = [
-                    {
-                        "id": tc.id,
-                        "type": "function",
-                        "function": {
-                            "name": tc.name,
-                            "arguments": json.dumps(tc.arguments, ensure_ascii=False)
-                        }
-                    }
-                    for tc in response.tool_calls
-                ]
-
-                # Save assistant message with tool calls immediately
-                session.add_message("assistant", response.content or "",
-                                  message_type="tool_call",
-                                  tool_calls=tool_calls_data,
-                                  metadata={
-                                      "session_instance_id": session_instance_id,
-                                      "usage": {
-                                          "prompt_tokens": total_prompt_tokens,
-                                          "completion_tokens": total_completion_tokens,
-                                          "total_tokens": total_prompt_tokens + total_completion_tokens,
-                                          "cached_tokens": total_cached_tokens
-                                      }
-                                  } if session_instance_id else {
-                                      "usage": {
-                                          "prompt_tokens": total_prompt_tokens,
-                                          "completion_tokens": total_completion_tokens,
-                                          "total_tokens": total_prompt_tokens + total_completion_tokens,
-                                          "cached_tokens": total_cached_tokens
-                                      }
-                                  })
-                self.sessions.save(session)
-
-                tool_call_dicts = [
-                    {
-                        "id": tc.id,
-                        "type": "function",
-                        "function": {
-                            "name": tc.name,
-                            "arguments": json.dumps(tc.arguments, ensure_ascii=False)
-                        }
-                    }
-                    for tc in response.tool_calls
-                ]
-                messages = self.context.add_assistant_message(
-                    messages, response.content, tool_call_dicts, provider_type
-                )
-
-                for tool_call in response.tool_calls:
-                    result = None
-                    try:
-                        args_str = json.dumps(tool_call.arguments, ensure_ascii=False)
-                        logger.debug(f"Executing tool: {tool_call.name} with arguments: {args_str}")
-
-                        # Emit tool call start
-                        try:
-                            await self._emit("agent_tool_call", {
-                                "tool": tool_call.name,
-                                "args": tool_call.arguments,
-                                "session_instance_id": session_instance_id
-                            }, channel=origin_channel)
-                        except Exception as e:
-                            logger.warning(f"Failed to emit tool call event: {e}")
-
-                        # Execute tool with error handling
-                        try:
-                            result = await self.tools.execute(tool_call.name, tool_call.arguments)
-                        except Exception as e:
-                            import traceback
-                            traceback.print_exc()
-                            logger.error(f"Tool execution error: {tool_call.name} - {e}")
-                            result = f"Error executing tool {tool_call.name}: {str(e)}"
-
-                        # Emit tool call result
-                        try:
-                            result_preview = result[:500] + "..." if len(result) > 500 else result
-                            await self._emit("agent_tool_result", {
-                                "tool": tool_call.name,
-                                "result": result_preview,
-                                "session_instance_id": session_instance_id
-                            }, channel=origin_channel)
-                        except Exception as e:
-                            logger.warning(f"Failed to emit tool result event: {e}")
-
-                    except Exception as outer_e:
-                        import traceback
-                        traceback.print_exc()
-                        logger.error(f"Unexpected error in tool call processing: {tool_call.name} - {outer_e}")
-                        result = f"Unexpected error processing tool {tool_call.name}: {str(outer_e)}"
-
-                    # Always save tool result to database, even if errors occurred
-                    if result is not None:
-                        try:
-                            session.add_message("tool", result,
-                                              message_type="tool_result",
-                                              name=tool_call.name,
-                                              tool_call_id=tool_call.id,
-                                              metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
-                            self.sessions.save(session)
-                        except Exception as save_err:
-                            logger.error(f"Failed to save tool result to database: {save_err}")
-
-                        try:
-                            messages = self.context.add_tool_result(
-                                messages, tool_call.id, tool_call.name, result, provider_type
-                            )
-                        except Exception as add_err:
-                            logger.error(f"Failed to add tool result to messages: {add_err}")
-
-                # Emit iteration complete event for system message processing
-                await self._emit("agent_iteration_complete", {
-                    "iteration": iteration,
-                    "final_content": response.content or "",
-                    "status": "completed",
-                    "session_instance_id": session_instance_id,
-                    "token_usage": {
-                        "prompt_tokens": total_prompt_tokens,
-                        "completion_tokens": total_completion_tokens,
-                        "total_tokens": total_prompt_tokens + total_completion_tokens,
-                        "cached_tokens": total_cached_tokens
-                    },
-                    "messages": session.messages[-20:]
-                }, channel=origin_channel)
-            else:
-                final_content = response.content
-                # Save final assistant response immediately
-                session.add_message("assistant", final_content or "",
-                                  message_type=msg_type or msg.message_type,
-                                  metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
-                self.sessions.save(session)
-                break
-
-        if final_content is None:
-            final_content = "Background task completed."
-
-        return OutboundMessage(
-            channel=origin_channel,
-            chat_id=origin_chat_id,
-            content=final_content,
-            metadata={"session_instance_id": session_instance_id} if session_instance_id else {}
-        )
-
-    async def _process_longtask_message(
-        self,
-        msg: InboundMessage,
-    ) -> OutboundMessage | None:
-        """
-        Process a longtask message (auth request or completion notification).
-
-        These messages are created by hooks from CLI tools and need to be
-        handled by the Agent to notify the user or request authorization.
-
-        Args:
-            msg: The inbound message with message_type "longtask_auth" or "longtask_complete"
-
-        Returns:
-            The response message to send to the user.
-        """
-        logger.info(f"Processing longtask message: {msg.message_type}")
-
-        # Get session and save the message for context
-        session = self.sessions.get_or_create(msg.session_key)
-
-        # For auth requests, we need to ask the user for authorization
-        if msg.message_type == "longtask_auth":
-            # The message content already contains the instructions
-            # Just forward it to the user
-            content = f"🔔 {msg.content}"
-            # Save to session for context
-            session.add_message("assistant", content, message_type="longtask_auth")
-            self.sessions.save(session)
-            logger.info(f"[_process_longtask_message] Saved longtask_auth message to session {session.key}")
-            instance_id = session.active_instance.id if session.active_instance else None
-            return OutboundMessage(
-                channel=msg.channel,
-                chat_id=msg.chat_id,
-                content=content,
-                metadata={"session_instance_id": instance_id} if instance_id else {}
-            )
-
-        # For completion notifications, just notify the user
-        elif msg.message_type == "longtask_complete":
-            content = f"✅ {msg.content}"
-            # Save to session for context
-            session.add_message("assistant", content, message_type="longtask_complete")
-            self.sessions.save(session)
-            logger.info(f"[_process_longtask_message] Saved longtask_complete message to session {session.key}")
-            instance_id = session.active_instance.id if session.active_instance else None
-            return OutboundMessage(
-                channel=msg.channel,
-                chat_id=msg.chat_id,
-                content=content,
-                metadata={"session_instance_id": instance_id} if instance_id else {}
-            )
-
-        return None
+    async def _process_system_message(self, msg: InboundMessage, session_key: str | None = None) -> OutboundMessage | None:
+        processor = SystemMessageProcessor(self)
+        return await processor.process(msg, session_key)
 
     async def process_direct(
         self,
         content: str,
         session_key: str = "cli:direct",
-        channel: str = "cli",
-        chat_id: str = "direct",
-        message_type: str = "normal",
     ) -> str:
-        """
-        Process a message directly (for CLI or cron usage).
+        """Process a message directly without going through the bus."""
+        from backend.core.events.types import InboundMessage
 
-        Args:
-            content: The message content.
-            session_key: Session identifier.
-            channel: Source channel (for context).
-            chat_id: Source chat ID (for context).
-            message_type: Message type for routing/filtering.
-
-        Returns:
-            The agent's response.
-        """
         msg = InboundMessage(
-            channel=channel,
+            channel="cli",
             sender_id="user",
-            chat_id=chat_id,
             content=content,
-            message_type=message_type,
+            session_key=session_key,
         )
-
-        response = await self._process_message(msg, session_key=session_key)
+        response = await self._process_message(msg)
         return response.content if response else ""
 
-    def _build_multimodal_content(
-        self,
-        content_items: list[MessageContentItem]
-    ) -> list[dict[str, Any]]:
-        """Build multi-modal content for LLM from MessageContentItem list.
-
-        Args:
-            content_items: List of message content items.
-
-        Returns:
-            List of content dicts in OpenAI format.
-        """
-        from pathlib import Path
-        import base64
-        import mimetypes
-        from backend.utils.helpers import get_workspace_path
-
-        logger.info(f"[_build_multimodal_content] Building content for {len(content_items)} items")
-        result = []
-        workspace = get_workspace_path()
-        logger.info(f"[_build_multimodal_content] Workspace: {workspace}")
-
+    def _build_multimodal_content(self, content_items: list[MessageContentItem]) -> str:
+        """Build a multimodal message content string from content items."""
+        parts = []
         for item in content_items:
-            if item.type == "text" and item.text:
-                logger.info(f"[_build_multimodal_content] Adding text: {item.text[:50]}...")
-                result.append({"type": "text", "text": item.text})
-            elif item.type == "image" and item.image_path:
-                path = Path(item.image_path)
-                logger.info(f"[_build_multimodal_content] Processing image path: {item.image_path}")
-                if not path.is_absolute():
-                    path = workspace / item.image_path
-
-                logger.info(f"[_build_multimodal_content] Full image path: {path}, exists: {path.exists()}")
-                if path.exists():
-                    mime, _ = mimetypes.guess_type(str(path))
-                    logger.info(f"[_build_multimodal_content] MIME type: {mime}")
-                    if mime and mime.startswith("image/"):
-                        b64 = base64.b64encode(path.read_bytes()).decode()
-                        result.append({
-                            "type": "image_url",
-                            "image_url": {"url": f"data:{mime};base64,{b64}"}
-                        })
-                else:
-                    logger.error(f"[_build_multimodal_content] Image file not found: {path}")
-            elif item.type == "image_url" and item.image_url:
-                logger.info(f"[_build_multimodal_content] Adding image_url: {item.image_url}")
-                result.append({
-                    "type": "image_url",
-                    "image_url": {"url": item.image_url}
-                })
-            elif item.type == "file" and item.file_path:
-                file_info = f"\n[用户上传了文件]\n- 文件名: {item.file_name or '未知'}\n- 路径: {item.file_path}\n- 类型: {item.mime_type or '未知'}\n- 大小: {item.file_size or 0} 字节\n"
-                if result and result[0].get("type") == "text":
-                    result[0]["text"] += file_info
-                else:
-                    result.append({"type": "text", "text": file_info})
-                logger.info(f"[_build_multimodal_content] Added file info: {item.file_name}")
-
-        logger.info(f"[_build_multimodal_content] Built {len(result)} content items")
-        return result
-
-    async def _process_streaming_message(
-        self,
-        msg: InboundMessage,
-        session_key: str | None = None
-    ) -> OutboundMessage | None:
-        """
-        Process message with streaming for desktop channel.
+            if item.type == "text":
+                parts.append(item.text)
+            elif item.type == "image":
+                # Read image and encode as base64
+                try:
+                    image_path = Path(item.image_path)
+                    if image_path.exists():
+                        with open(image_path, "rb") as f:
+                            image_data = base64.b64encode(f.read()).decode("utf-8")
+                        parts.append(f"<image>{image_data}</image>")
+                    else:
+                        parts.append(f"[Image not found: {item.image_path}]")
+                except Exception as e:
+                    parts.append(f"[Error reading image: {e}]")
+            elif item.type == "file":
+                parts.append(f"[File: {item.file_name or item.file_path}]")
         
-        This method implements real-time streaming of tokens and tool call status updates.
-        """
-
-        ctx, early_response = await self._prepare_session_and_context(msg, session_key)
-        if ctx is None:
-            return early_response
-
-        session = ctx.session
-        messages = ctx.messages
-        session_instance_id = ctx.session_instance_id
-        current_session = ctx.current_session
-
-        # Agent loop with streaming
-        iteration = 0
-        final_content = None
-        last_prompt_tokens = 0
-        
-        # Track total token usage for this run
-        total_prompt_tokens = 0
-        total_completion_tokens = 0
-        total_cached_tokens = 0
-
-        should_stop = False
-
-        # Reset stop flags for new task
-        self._stop_current_task = False
-        instance_id_int = int(session_instance_id) if session_instance_id else None
-        if instance_id_int:
-            self._instance_stop_flags[instance_id_int] = False
-
-        # Track elapsed time for this agent run
-        start_time = time.time()
-
-        while iteration < self.max_iterations and not should_stop and not self._should_stop(instance_id_int):
-            iteration += 1
-
-            # Emit "thinking" event
-            await self._emit("agent_thinking", {"iteration": iteration, "session": session.key, "session_instance_id": session_instance_id}, channel=msg.channel)
-
-            # Call LLM with streaming
-            provider, model, provider_type, max_tokens, temperature = self._get_current_provider_and_model()
-
-            full_content = ""
-            tool_calls_buffer = {}
-            
-            try:
-                # Use streaming API
-                async for chunk in provider.chat_stream(
-                    messages=messages,
-                    tools=self.tools.get_definitions(),
-                    model=model,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                ):
-                    # Send content token
-                    if chunk.content:
-                        full_content += chunk.content
-                        await self._emit("agent_token", {
-                            "content": chunk.content,
-                            "session": current_session,
-                            "session_instance_id": session_instance_id
-                        }, channel=msg.channel)
-                    
-                    # Handle tool calls (streaming)
-                    if chunk.tool_calls:
-                        for tc in chunk.tool_calls:
-                            # Cache tool call
-                            if tc.id not in tool_calls_buffer:
-                                tool_calls_buffer[tc.id] = {
-                                    "id": tc.id,
-                                    "name": tc.name,
-                                    "arguments": tc.arguments
-                                }
-                                # Send tool call start event
-                                await self._emit("agent_tool_call_start", {
-                                    "tool_call_id": tc.id,
-                                    "tool": tc.name,
-                                    "args": tc.arguments,
-                                    "partial_args": tc.arguments,
-                                    "content": full_content if full_content else None,
-                                    "iteration": iteration,
-                                    "status": "pending",
-                                    "session_instance_id": session_instance_id
-                                }, channel=msg.channel)
-                            else:
-                                # Update arguments (streaming)
-                                tool_calls_buffer[tc.id]["arguments"].update(tc.arguments)
-                                await self._emit("agent_tool_call_streaming", {
-                                    "tool_call_id": tc.id,
-                                    "tool": tc.name,
-                                    "partial_args": tool_calls_buffer[tc.id]["arguments"],
-                                    "status": "streaming",
-                                    "session_instance_id": session_instance_id
-                                }, channel=msg.channel)
-                    
-                    # Final chunk
-                    if chunk.is_final:
-                        # Record token usage
-                        if chunk.usage:
-                            last_prompt_tokens = _extract_prompt_tokens_with_cache(chunk.usage)
-                            total_prompt_tokens += _extract_prompt_tokens_with_cache(chunk.usage)
-                            total_completion_tokens += chunk.usage.get("completion_tokens", 0)
-                            total_cached_tokens += _extract_cached_tokens(chunk.usage)
-                            self._record_token_usage(
-                                session_instance_id=session_instance_id,
-                                provider_name=provider_type,
-                                model_id=model,
-                                usage=chunk.usage
-                            )
-                
-                # Save assistant message with tool calls
-                if tool_calls_buffer:
-                    tool_calls_data = [
-                        {
-                            "id": tc_data["id"],
-                            "type": "function",
-                            "function": {
-                                "name": tc_data["name"],
-                                "arguments": json.dumps(tc_data["arguments"], ensure_ascii=False)
-                            }
-                        }
-                        for tc_data in tool_calls_buffer.values()
-                    ]
-                    
-                    session.add_message("assistant", full_content or "",
-                                      message_type="tool_call",
-                                      tool_calls=tool_calls_data,
-                                      metadata={
-                                          "session_instance_id": session_instance_id,
-                                          "usage": {
-                                              "prompt_tokens": total_prompt_tokens,
-                                              "completion_tokens": total_completion_tokens,
-                                              "total_tokens": total_prompt_tokens + total_completion_tokens,
-                                              "cached_tokens": total_cached_tokens
-                                          }
-                                      } if session_instance_id else {
-                                          "usage": {
-                                              "prompt_tokens": total_prompt_tokens,
-                                              "completion_tokens": total_completion_tokens,
-                                              "total_tokens": total_prompt_tokens + total_completion_tokens,
-                                              "cached_tokens": total_cached_tokens
-                                          }
-                                      })
-                    self.sessions.save(session)
-                    
-                    # Add assistant message to messages
-                    tool_call_dicts = [
-                        {
-                            "id": tc_data["id"],
-                            "type": "function",
-                            "function": {
-                                "name": tc_data["name"],
-                                "arguments": json.dumps(tc_data["arguments"], ensure_ascii=False)
-                            }
-                        }
-                        for tc_data in tool_calls_buffer.values()
-                    ]
-                    messages = self.context.add_assistant_message(
-                        messages, full_content, tool_call_dicts, provider_type
-                    )
-                    
-                    # Execute tools
-                    saved_stream_tool_ids: set[str] = set()
-                    for tc_id, tc_data in tool_calls_buffer.items():
-                        if self._should_stop(instance_id_int):
-                            logger.info("Task stopped by user request")
-                            break
-                        
-                        # Update status to invoking
-                        await self._emit("agent_tool_call_invoking", {
-                            "tool_call_id": tc_id,
-                            "tool": tc_data["name"],
-                            "status": "invoking",
-                            "session_instance_id": session_instance_id
-                        }, channel=msg.channel)
-                        
-                        result = None
-                        try:
-                            # Inject channel, chat_id, and session_instance_id for action tools
-                            tool_args = tc_data["arguments"].copy()
-                            if tc_data["name"] == "action":
-                                tool_args["_channel"] = msg.channel
-                                tool_args["_chat_id"] = msg.chat_id
-                                tool_args["_session_instance_id"] = session.active_instance.id
-                            
-                            # Inject parent_tool_call_id for spawn tool
-                            if tc_data["name"] == "spawn":
-                                tool_args["parent_tool_call_id"] = tc_id
-                            
-                            # Execute tool
-                            result = await self.tools.execute(tc_data["name"], tool_args)
-                            
-                            # 如果是 spawn 工具，累加 subagent 的 token 到主 agent 的统计
-                            if tc_data["name"] == "spawn" and result:
-                                try:
-                                    parsed_result = json.loads(result)
-                                    if parsed_result.get("type") == "subagent_sync" and parsed_result.get("token_usage"):
-                                        subagent_usage = parsed_result["token_usage"]
-                                        total_prompt_tokens += subagent_usage.get("prompt_tokens", 0)
-                                        total_completion_tokens += subagent_usage.get("completion_tokens", 0)
-                                        logger.info(f"[AgentLoop:stream] Added subagent tokens: prompt={subagent_usage.get('prompt_tokens', 0)}, completion={subagent_usage.get('completion_tokens', 0)}")
-                                except json.JSONDecodeError:
-                                    pass  # 不是 JSON 格式，忽略
-                            
-                            # Send completion event (preserve full result for spawn so subagent_sync JSON is parseable)
-                            await self._emit("agent_tool_call_complete", {
-                                "tool_call_id": tc_id,
-                                "tool": tc_data["name"],
-                                "args": tc_data["arguments"],
-                                "result": result if tc_data["name"] == "spawn" else (result[:500] + "..." if len(result) > 500 else result),
-                                "status": "completed",
-                                "session_instance_id": session_instance_id
-                            }, channel=msg.channel)
-                            
-                        except Exception as e:
-                            import traceback
-                            traceback.print_exc()
-                            logger.error(f"Tool execution error: {tc_data['name']} - {e}")
-                            result = f"Error executing tool {tc_data['name']}: {str(e)}"
-                            
-                            # Send error event
-                            await self._emit("agent_tool_call_error", {
-                                "tool_call_id": tc_id,
-                                "tool": tc_data["name"],
-                                "args": tc_data["arguments"],
-                                "error": str(e),
-                                "status": "error",
-                                "session_instance_id": session_instance_id
-                            }, channel=msg.channel)
-                        
-                        # Save tool result
-                        if result is not None:
-                            session.add_message("tool", result,
-                                              message_type="tool_result",
-                                              name=tc_data["name"],
-                                              tool_call_id=tc_id,
-                                              metadata={"session_instance_id": session_instance_id} if session_instance_id else {})
-                            self.sessions.save(session)
-                            
-                            messages = self.context.add_tool_result(
-                                messages, tc_id, tc_data["name"], result, provider_type
-                            )
-                            saved_stream_tool_ids.add(str(tc_id))
-                    
-                    if tool_calls_buffer and self._should_stop(instance_id_int):
-                        entries = [(str(tid), tc_data["name"]) for tid, tc_data in tool_calls_buffer.items()]
-                        self._save_cancelled_tool_results_and_mark_stopped(
-                            session,
-                            tool_call_entries=entries,
-                            saved_ids=saved_stream_tool_ids,
-                            session_instance_id=session_instance_id,
-                            start_time=start_time,
-                        )
-
-                    # Emit iteration complete event after all tool calls executed (streaming)
-                    if not self._should_stop(instance_id_int):
-                        await self._emit("agent_iteration_complete", {
-                            "iteration": iteration,
-                            "final_content": full_content or "",
-                            "status": "completed",
-                            "session_instance_id": session_instance_id,
-                            "token_usage": {
-                                "prompt_tokens": total_prompt_tokens,
-                                "completion_tokens": total_completion_tokens,
-                                "total_tokens": total_prompt_tokens + total_completion_tokens,
-                                "cached_tokens": total_cached_tokens
-                            },
-                            "messages": session.messages[-20:]
-                        }, channel=msg.channel)
-                else:
-                    # No tool calls, we're done
-                    final_content = full_content
-                    # Save final assistant response with token usage
-                    current_usage = {
-                        "prompt_tokens": total_prompt_tokens,
-                        "completion_tokens": total_completion_tokens,
-                        "total_tokens": total_prompt_tokens + total_completion_tokens,
-                        "cached_tokens": total_cached_tokens
-                    }
-                    session.add_message("assistant", final_content or "",
-                                      message_type=msg.message_type,
-                                      metadata={
-                                          "session_instance_id": session_instance_id,
-                                          "usage": current_usage
-                                      } if session_instance_id else {"usage": current_usage})
-                    self.sessions.save(session)
-                    # Emit iteration complete event
-                    await self._emit("agent_iteration_complete", {
-                        "iteration": iteration,
-                        "final_content": final_content or "",
-                        "status": "completed",
-                        "session_instance_id": session_instance_id,
-                        "token_usage": {
-                            "prompt_tokens": total_prompt_tokens,
-                            "completion_tokens": total_completion_tokens,
-                            "total_tokens": total_prompt_tokens + total_completion_tokens,
-                            "cached_tokens": total_cached_tokens
-                        },
-                        "messages": session.messages[-20:]
-                    }, channel=msg.channel)
-                    break
-                    
-            except Exception as e:
-                import traceback
-                logger.error(f"[Stream] Error in streaming: {e}")
-                logger.error(traceback.format_exc())
-                final_content = f"Error: {str(e)}"
-                break
-
-        # Check if stopped by user request
-        if self._should_stop(instance_id_int) and final_content is None:
-            final_content = "任务已被用户暂停。"
-
-        if final_content is None:
-            final_content = "I've completed processing but have no response to give."
-
-        # Get model context window for smart compression trigger
-        model_context_window = self.compressor.sessions.db.get_model_context_window() if hasattr(self.compressor.sessions.db, 'get_model_context_window') else 0
-        await self.compressor.maybe_compress(session, prompt_tokens=last_prompt_tokens, model_context_window=model_context_window)
-
-        elapsed_ms = int((time.time() - start_time) * 1000)
-
-        logger.info(f"[Stream] Sending final response with {len(final_content)} chars")
-
-        token_usage_data = {
-            "prompt_tokens": total_prompt_tokens,
-            "completion_tokens": total_completion_tokens,
-            "total_tokens": total_prompt_tokens + total_completion_tokens,
-            "cached_tokens": total_cached_tokens
-        }
-        logger.info(f"[Stream] Token usage for this run: {token_usage_data}")
-
-        # Get TTS config for metadata
-        tts_enabled = False
-        tts_config = {}
-        if session_instance_id:
-            try:
-                tts_result = self.tts_service.get_instance_tts_config(session_instance_id)
-                tts_enabled = tts_result.get("enabled", False)
-                tts_config = tts_result.get("config", {})
-            except Exception as tts_err:
-                logger.warning(f"Failed to check TTS config: {tts_err}")
-
-        # Persist elapsed_ms BEFORE agent_finish so immediate refetch includes it (stop/complete race)
-        if session_instance_id and final_content is not None:
-            try:
-                self.sessions.update_last_message_metadata(
-                    session_instance_id,
-                    {
-                        "elapsed_ms": elapsed_ms,
-                        "usage": token_usage_data
-                    }
-                )
-            except Exception as update_err:
-                logger.warning(f"Failed to update message metadata with elapsed_ms: {update_err}")
-
-        try:
-            await self.bus.publish_event(AgentEvent(
-                event_type="agent_finish",
-                data={
-                    "content": final_content,
-                    "session": msg.chat_id,
-                    "elapsed_ms": elapsed_ms,
-                    "token_usage": token_usage_data,
-                    "session_instance_id": session_instance_id,
-                    "messages": session.messages[-20:]
-                },
-                channel=msg.channel
-            ))
-            logger.info(f"[Stream] agent_finish event published successfully")
-        except Exception as e:
-            logger.error(f"[Stream] Failed to publish agent_finish event: {e}")
-            import traceback
-            traceback.print_exc()
-
-        return OutboundMessage(
-            channel=msg.channel,
-            chat_id=msg.chat_id,
-            content=final_content,
-            metadata={
-                "session_instance_id": session_instance_id,
-                "tts_enabled": tts_enabled,
-                "tts_config": tts_config,
-                "elapsed_ms": elapsed_ms
-            }
-        )
+        return "\n".join(parts)
 
     def _record_token_usage(
         self,
@@ -1729,15 +511,7 @@ class AgentLoop:
         usage: dict,
         request_type: str = "chat"
     ) -> None:
-        """Record token usage to database.
-        
-        Args:
-            session_instance_id: The session instance ID
-            provider_name: Provider name (e.g., openai, anthropic)
-            model_id: Model ID (e.g., gpt-4, claude-3-opus)
-            usage: Usage dict with prompt_tokens, completion_tokens, total_tokens
-            request_type: Type of request (chat, compression, etc.)
-        """
+        """Record token usage to database."""
         try:
             prompt_tokens = _extract_prompt_tokens_with_cache(usage)
             completion_tokens = usage.get("completion_tokens", 0)
@@ -1757,5 +531,3 @@ class AgentLoop:
                         f"prompt={prompt_tokens}, completion={completion_tokens}, cached={cached_tokens}")
         except Exception as e:
             logger.error(f"Failed to record token usage: {e}")
-
-

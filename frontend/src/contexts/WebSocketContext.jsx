@@ -6,6 +6,7 @@ const WS_BASE = "ws://127.0.0.1:18791";
 export function WebSocketProvider({ children }) {
   const ws = useRef(null);
   const pendingRequests = useRef(new Map());
+  const listeners = useRef(new Map());
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(true);
   const overlayShowTimeRef = useRef(Date.now());
@@ -13,6 +14,20 @@ export function WebSocketProvider({ children }) {
   const generateRequestId = () => {
     return `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
+
+  const subscribe = useCallback((eventType, callback) => {
+    if (!listeners.current.has(eventType)) {
+      listeners.current.set(eventType, new Set());
+    }
+    listeners.current.get(eventType).add(callback);
+    return () => {
+      listeners.current.get(eventType)?.delete(callback);
+    };
+  }, []);
+
+  const unsubscribe = useCallback((eventType, callback) => {
+    listeners.current.get(eventType)?.delete(callback);
+  }, []);
 
   const sendMessage = useCallback((type, data, timeout = 10000, retryCount = 0) => {
     return new Promise((resolve, reject) => {
@@ -46,7 +61,6 @@ export function WebSocketProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    // 检查是否在 Electron 环境中
     if (window.electronAPI) {
       window.electronAPI.onBackendReady((port) => {
         console.log('[App] Backend ready on port:', port);
@@ -93,8 +107,23 @@ export function WebSocketProvider({ children }) {
           return;
         }
 
-        // 广播消息到所有监听器
+        // 分发到订阅者
+        const typeListeners = listeners.current.get(type);
+        if (typeListeners) {
+          typeListeners.forEach((cb) => {
+            try {
+              cb(data, payload);
+            } catch (e) {
+              console.error(`[WebSocket] Listener error for ${type}:`, e);
+            }
+          });
+        }
+
+        // 向后兼容：广播通用 ws-message 事件和特定自定义事件
         window.dispatchEvent(new CustomEvent('ws-message', { detail: payload }));
+        if (type === 'knowledge_distill_progress') {
+          window.dispatchEvent(new CustomEvent('knowledge-distill-progress', { detail: data }));
+        }
       };
 
       ws.current.onclose = (event) => {
@@ -130,6 +159,8 @@ export function WebSocketProvider({ children }) {
   return (
     <WebSocketContext.Provider value={{ 
       sendMessage, 
+      subscribe,
+      unsubscribe,
       connectionStatus, 
       showLoadingOverlay,
       ws 

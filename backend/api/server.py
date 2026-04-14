@@ -199,6 +199,12 @@ async def lifespan(app: FastAPI):
     if event_dispatch_task:
         bus.stop()
         event_dispatch_task.cancel()
+    
+    # Checkpoint WAL before exit
+    try:
+        db.checkpoint("PASSIVE")
+    except Exception:
+        pass
         
     logger.info("Service stopped.")
 

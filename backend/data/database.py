@@ -39,6 +39,11 @@ class Database:
         conn.row_factory = sqlite3.Row
         # Enable foreign key constraints for cascade delete to work
         conn.execute("PRAGMA foreign_keys = ON")
+        # Enable WAL mode for better concurrency; gracefully degrade on old sqlite
+        try:
+            conn.execute("PRAGMA journal_mode=WAL")
+        except Exception as e:
+            logger.warning(f"Failed to enable WAL mode: {e}")
         try:
             yield conn
             conn.commit()
@@ -47,6 +52,19 @@ class Database:
             raise
         finally:
             conn.close()
+    
+    def checkpoint(self, mode: str = "PASSIVE") -> None:
+        """Run a WAL checkpoint to consolidate wal/shm files into the main db.
+        
+        Args:
+            mode: Checkpoint mode (PASSIVE, FULL, RESTART, TRUNCATE).
+        """
+        try:
+            with self._get_connection() as conn:
+                conn.execute(f"PRAGMA wal_checkpoint({mode})")
+                logger.info(f"SQLite WAL checkpoint ({mode}) completed")
+        except Exception as e:
+            logger.warning(f"SQLite WAL checkpoint failed: {e}")
     
     def _init_database(self) -> None:
         """Initialize all database tables."""
@@ -62,6 +80,12 @@ class Database:
                 logger.warning(f"Using new database file: {self.db_path}")
         
         with self._get_connection() as conn:
+            # Ensure WAL mode is enabled at creation time
+            try:
+                conn.execute("PRAGMA journal_mode=WAL")
+            except Exception as e:
+                logger.warning(f"Failed to enable WAL mode during init: {e}")
+            
             # ========== MCP Tables ==========
             
             # MCP servers table

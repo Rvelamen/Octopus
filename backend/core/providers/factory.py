@@ -32,6 +32,27 @@ class MockProvider(LLMProvider):
             finish_reason="stop",
         )
 
+    async def chat_stream(
+        self,
+        messages: list[dict],
+        tools: list[dict] | None = None,
+        model: str | None = None,
+        max_tokens: int = 8192,
+        temperature: float = 0.7,
+    ):
+        from backend.core.providers.base import StreamChunk
+        yield StreamChunk(
+            content="⚠️ **LLM Not Configured**\n\n"
+                    "Please configure one of the following API keys to enable LLM functionality:\n\n"
+                    "- `OPENROUTER_API_KEY`\n"
+                    "- `ANTHROPIC_API_KEY`\n"
+                    "- `OPENAI_API_KEY`\n"
+                    "- `DEEPSEEK_API_KEY`\n\n"
+                    "You can set these as environment variables or configure them in the settings.",
+            is_final=True,
+            usage={"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+        )
+
     def get_default_model(self) -> str:
         return "none"
 

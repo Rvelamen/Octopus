@@ -37,8 +37,8 @@ import Cron from "./pages/Cron";
 import Agents from "./pages/Agents";
 import Tokens from "./pages/Tokens";
 import Knowledge from "./pages/Knowledge";
-
-const WS_BASE = "ws://127.0.0.1:18791";
+import { useWebSocket } from "./contexts/WebSocketContext";
+import { useChatState } from "./hooks/useChatState";
 
 const APP_TITLE_BY_TAB = {
   chat: "TERMINAL_SESSION",
@@ -50,13 +50,6 @@ const APP_TITLE_BY_TAB = {
   workspaces: "WORKSPACE_EXPLORER",
   history: "HISTORY",
   tokens: "TOKENS",
-};
-
-/**
- * 生成唯一请求 ID
- */
-const generateRequestId = () => {
-  return `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 };
 
 /**
@@ -158,7 +151,7 @@ function TTSPlayer({ audioData, format, text, durationMs, onClose }) {
         )}
         
         <button className="tts-player-close" onClick={onClose}>
-          <X size={14} />
+          ×
         </button>
       </div>
     </div>
@@ -169,6 +162,9 @@ function TTSPlayer({ audioData, format, text, durationMs, onClose }) {
  * App 主组件
  */
 function App() {
+  const { sendMessage, connectionStatus, showLoadingOverlay, ws } = useWebSocket();
+  const chat = useChatState();
+
   // ===== 状态 =====
   const [activeTab, setActiveTab] = useState("chat");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -178,614 +174,38 @@ function App() {
     tools: {},
     channels: {},
   });
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [streamingContent, setStreamingContent] = useState("");
-  const streamingContentRef = useRef("");
-  const streamingFlushTimerRef = useRef(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isRestarting, setIsRestarting] = useState(false);
 
   // 窗口焦点状态 - 用于控制交通灯颜色（失焦时变为灰色）
   const [isWindowFocused, setIsWindowFocused] = useState(true);
 
-  const resetStreamingContent = useCallback(() => {
-    if (streamingFlushTimerRef.current) {
-      clearTimeout(streamingFlushTimerRef.current);
-      streamingFlushTimerRef.current = null;
-    }
-    streamingContentRef.current = "";
-    setStreamingContent("");
-  }, []);
-
-  const activeTabRef = useRef(activeTab);
-  activeTabRef.current = activeTab;
-
-  const appendStreamingContent = useCallback((text) => {
-    streamingContentRef.current += text || "";
-    if (!streamingFlushTimerRef.current) {
-      streamingFlushTimerRef.current = setTimeout(() => {
-        streamingFlushTimerRef.current = null;
-        if (activeTabRef.current === 'chat') {
-          setStreamingContent(streamingContentRef.current);
-        }
-      }, 80);
-    }
-  }, []);
-
-  const [currentChatInstanceId, setCurrentChatInstanceId] = useState(null);
-  const [connectionStatus, setConnectionStatus] = useState("connecting");
-  const [showLoadingOverlay, setShowLoadingOverlay] = useState(true);
-  const overlayShowTimeRef = useRef(Date.now()); // 记录遮罩显示时间
-  const [isSaving, setIsSaving] = useState(false);
-  const [toolCalls, _setToolCalls] = useState([]); // 实时工具调用（仅当前 instance）
-  const [toolCallAssistantContents, _setToolCallAssistantContents] = useState({}); // 按 iteration 存储的 assistant content（仅当前 instance）
-  const toolCallsByInstanceRef = useRef({}); // { [instanceId]: ToolCall[] }，全量缓存
-  const assistantContentsByInstanceRef = useRef({}); // { [instanceId]: { [iteration]: content } }
-  const currentChatInstanceIdRef = useRef(null);
-  currentChatInstanceIdRef.current = currentChatInstanceId;
-  const prevToolCallInstanceRef = useRef(null); // 切换前保存 toolCalls
-
-  // 统一的 setter：同时写 ref（所有 instance 的数据）和 state（仅当前可见 instance 的数据）
-  const setToolCalls = useCallback((updater) => {
-    _setToolCalls((prev) => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      const id = currentChatInstanceIdRef.current;
-      if (id != null) toolCallsByInstanceRef.current[id] = next;
-      return next;
-    });
-  }, []);
-
-  const setToolCallAssistantContents = useCallback((updater) => {
-    _setToolCallAssistantContents((prev) => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      const id = currentChatInstanceIdRef.current;
-      if (id != null) assistantContentsByInstanceRef.current[id] = next;
-      return next;
-    });
-  }, []);
-
-  // 切换 instance 时保存/恢复 toolCalls（与 useMessages 完全一致的模式）
   useEffect(() => {
-    const newId = currentChatInstanceId;
-    const prevId = prevToolCallInstanceRef.current;
-
-    // 保存切出 instance 的 toolCalls
-    if (prevId !== undefined && prevId !== null && prevId !== newId) {
-      toolCallsByInstanceRef.current[prevId] = toolCallsByInstanceRef.current[prevId] || [];
-    }
-    prevToolCallInstanceRef.current = newId;
-
-    // 恢复目标 instance 的 toolCalls（可能为 undefined，此时用空数组）
-    if (newId !== null) {
-      const restored = toolCallsByInstanceRef.current[newId];
-      _setToolCalls(restored ?? []);
-      _setToolCallAssistantContents(assistantContentsByInstanceRef.current[newId] ?? {});
-    } else {
-      _setToolCalls([]);
-      _setToolCallAssistantContents({});
-    }
-  }, [currentChatInstanceId]);
-
-  const [isRestarting, setIsRestarting] = useState(false);
-  const [tokenUsage, setTokenUsage] = useState({
-    global: { total_prompt_tokens: 0, total_completion_tokens: 0, total_tokens: 0, request_count: 0 },
-    currentSession: { total_prompt_tokens: 0, total_completion_tokens: 0, total_tokens: 0, request_count: 0 },
-  });
-  const [ttsAudio, setTtsAudio] = useState(null); // { audioData, format, text, durationMs, instanceId, messageId }
-  const [ttsAudioMap, setTtsAudioMap] = useState({}); // { messageId: { audioData, format, text, durationMs } }
-  const [lastElapsedMs, setLastElapsedMs] = useState(null); // 最近一次 agent 运行的耗时（毫秒）
-  const [lastTokenUsage, setLastTokenUsage] = useState(null); // 最近一次 agent 运行的 token 消耗
-  const [liveTokenUsage, setLiveTokenUsage] = useState(null); // 当前运行中累计的 token 消耗（随 agent_iteration_complete 累加）
-  const [refreshInstanceId, setRefreshInstanceId] = useState(null); // 需要刷新的 instance ID
-  const [hasToolCallsInCurrentRun, setHasToolCallsInCurrentRun] = useState(false); // 当前 agent run 是否产生过 tool call
-
-  // ===== Refs =====
-  const ws = useRef(null);
-  const pendingRequests = useRef(new Map());
-
-  // ===== WebSocket 消息发送 =====
-  const sendWSMessage = useCallback((type, data, timeout = 10000, retryCount = 0) => {
-    return new Promise((resolve, reject) => {
-      // 如果 WebSocket 未连接，且重试次数小于3次，则延迟重试
-      if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
-        if (retryCount < 3) {
-          console.log(`[WebSocket] Not connected, retrying ${type} (attempt ${retryCount + 1})`);
-          setTimeout(() => {
-            sendWSMessage(type, data, timeout, retryCount + 1)
-              .then(resolve)
-              .catch(reject);
-          }, 1000 * (retryCount + 1)); // 递增延迟：1s, 2s, 3s
-          return;
-        }
-        reject(new Error("WebSocket not connected"));
-        return;
-      }
-
-      const requestId = generateRequestId();
-      const message = { type, request_id: requestId, data };
-
-      pendingRequests.current.set(requestId, { resolve, reject });
-      ws.current.send(JSON.stringify(message));
-
-      setTimeout(() => {
-        if (pendingRequests.current.has(requestId)) {
-          pendingRequests.current.delete(requestId);
-          reject(new Error("Request timeout"));
-        }
-      }, timeout);
-    });
-  }, []);
-
-  // ===== 监听后端启动状态 =====
-  useEffect(() => {
-    // 检查是否在 Electron 环境中
-    if (window.electronAPI) {
-      // 监听后端启动完成
-      window.electronAPI.onBackendReady((port) => {
-        console.log('[App] Backend ready on port:', port);
-        // 后端已启动，但还要等待 WebSocket 连接
-        // 这里不隐藏遮罩，等待 WebSocket onopen 时统一处理
-      });
-
-      // 监听后端启动错误
-      window.electronAPI.onBackendError((error) => {
-        console.error('[App] Backend error:', error);
-        // 后端启动失败，但仍然尝试连接（可能后端已经启动了）
-      });
-    }
-    // 非 Electron 环境（如浏览器），直接等待 WebSocket 连接
-  }, []);
-
-  // ===== WebSocket 连接 =====
-  useEffect(() => {
-    let reconnectTimer = null;
-    let isComponentMounted = true;
-
-    const updateToolCallsForInstance = (instanceId, updater) => {
-      if (instanceId == null) return;
-      const prev = toolCallsByInstanceRef.current[instanceId] ?? [];
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      toolCallsByInstanceRef.current[instanceId] = next;
-    };
-
-    const updateAssistantContentsForInstance = (instanceId, updater) => {
-      if (instanceId == null) return;
-      const prev = assistantContentsByInstanceRef.current[instanceId] ?? {};
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      assistantContentsByInstanceRef.current[instanceId] = next;
-    };
-
-    const connectWS = () => {
-      if (
-        ws.current &&
-        (ws.current.readyState === WebSocket.OPEN ||
-          ws.current.readyState === WebSocket.CONNECTING)
-      ) {
-        return;
-      }
-
-      ws.current = new WebSocket(`${WS_BASE}/ws`);
-
-      ws.current.onopen = () => {
-        if (isComponentMounted) {
-          setConnectionStatus("connected");
-          // 计算遮罩已经显示的时间
-          const elapsed = Date.now() - overlayShowTimeRef.current;
-          const minShowTime = 2000; // 最小显示2秒
-          const remaining = Math.max(0, minShowTime - elapsed);
-          
-          // 延迟隐藏遮罩，确保至少显示2秒
-          setTimeout(() => {
-            if (isComponentMounted) {
-              setShowLoadingOverlay(false);
-            }
-          }, remaining);
-        }
-      };
-
-      ws.current.onmessage = (event) => {
-        const payload = JSON.parse(event.data);
-        const { type, request_id, data } = payload;
-
-        console.log('[WebSocket] Received message:', { type, request_id, data });
-
-        // 处理待处理请求
-        if (request_id && pendingRequests.current.has(request_id)) {
-          const { resolve, reject } = pendingRequests.current.get(request_id);
-          pendingRequests.current.delete(request_id);
-          type === "error"
-            ? reject(new Error(data?.error || "Unknown error"))
-            : resolve({ type, data });
-          return;
-        }
-
-        // 处理聊天相关事件
-        if (!isComponentMounted) return;
-
-        console.log('[WebSocket] Processing event:', type);
-
-        const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
-        const isCurrentInstance = eventInstanceId == null || eventInstanceId === currentChatInstanceIdRef.current;
-
-        switch (type) {
-          case "agent_token":
-            if (!isCurrentInstance) return;
-            appendStreamingContent(data.content || "");
-            break;
-          case "agent_chunk":
-            if (!isCurrentInstance) return;
-            console.log('[WebSocket] Agent chunk received:', data?.content?.substring(0, 50));
-            appendStreamingContent(data.content || "");
-            break;
-          case "agent_start":
-            if (!isCurrentInstance) {
-              updateToolCallsForInstance(eventInstanceId, () => []);
-              updateAssistantContentsForInstance(eventInstanceId, () => ({}));
-              return;
-            }
-            resetStreamingContent();
-            setToolCalls(() => []);
-            setToolCallAssistantContents(() => ({}));
-            setLiveTokenUsage(null);
-            setHasToolCallsInCurrentRun(false);
-            break;
-          case "agent_thinking":
-            if (!isCurrentInstance) return;
-            setIsProcessing(true);
-            resetStreamingContent();
-            setToolCallAssistantContents((prev) => prev || {});
-            break;
-          case "chat_response":
-            if (!isCurrentInstance) {
-              updateToolCallsForInstance(eventInstanceId, () => []);
-              updateAssistantContentsForInstance(eventInstanceId, () => ({}));
-              return;
-            }
-            resetStreamingContent();
-            setIsProcessing(false);
-            setToolCalls(() => []);
-            setToolCallAssistantContents(() => ({}));
-            setLiveTokenUsage(null);
-            break;
-          case "error":
-            if (!isCurrentInstance) {
-              updateToolCallsForInstance(eventInstanceId, () => []);
-              updateAssistantContentsForInstance(eventInstanceId, () => ({}));
-              return;
-            }
-            resetStreamingContent();
-            setIsProcessing(false);
-            setToolCalls(() => []);
-            setToolCallAssistantContents(() => ({}));
-            setLiveTokenUsage(null);
-            break;
-          case "agent_finish":
-            if (!isCurrentInstance) {
-              updateToolCallsForInstance(eventInstanceId, () => []);
-              updateAssistantContentsForInstance(eventInstanceId, () => ({}));
-              return;
-            }
-            console.log('[WebSocket] Agent finish received:', data);
-            console.log('[Debug] token_usage in data:', data.token_usage);
-            resetStreamingContent();
-            setIsProcessing(false);
-            if (data.elapsed_ms != null) {
-              setLastElapsedMs(data.elapsed_ms);
-            }
-            if (data.token_usage) {
-              console.log('[Debug] Setting lastTokenUsage:', data.token_usage);
-              setLastTokenUsage(data.token_usage);
-              setLiveTokenUsage(data.token_usage);
-            }
-            setToolCalls(() => []);
-            setToolCallAssistantContents(() => ({}));
-            break;
-          case "agent_tool_call_start": {
-            const addToolCall = (prev) => [...prev, {
-              id: data.tool_call_id || Date.now(),
-              tool: data.tool,
-              args: data.args || {},
-              partialArgs: data.partial_args || data.args || {},
-              status: 'pending',
-              result: null,
-              iteration: data.iteration || 1
-            }];
-            if (data.content) {
-              const setContent = (prev) => ({ ...prev, [data.iteration]: data.content });
-              if (isCurrentInstance) {
-                setToolCallAssistantContents(setContent);
-                resetStreamingContent();
-              } else {
-                updateAssistantContentsForInstance(eventInstanceId, setContent);
-              }
-            }
-            if (isCurrentInstance) {
-              setToolCalls(addToolCall);
-              setHasToolCallsInCurrentRun(true);
-            } else {
-              updateToolCallsForInstance(eventInstanceId, addToolCall);
-            }
-            break;
-          }
-          case "agent_tool_call_streaming": {
-            const updater = (prev) => prev.map(tc =>
-              tc.id === data.tool_call_id
-                ? { ...tc, partialArgs: data.partial_args, status: 'streaming' }
-                : tc
-            );
-            if (isCurrentInstance) setToolCalls(updater);
-            else updateToolCallsForInstance(eventInstanceId, updater);
-            break;
-          }
-          case "agent_tool_call_invoking": {
-            const updater = (prev) => prev.map(tc =>
-              tc.id === data.tool_call_id
-                ? { ...tc, args: tc.partialArgs || tc.args, status: 'invoking' }
-                : tc
-            );
-            if (isCurrentInstance) setToolCalls(updater);
-            else updateToolCallsForInstance(eventInstanceId, updater);
-            break;
-          }
-          case "agent_tool_call_complete": {
-            const updater = (prev) => prev.map(tc =>
-              tc.id === data.tool_call_id
-                ? { ...tc, args: data.args || tc.partialArgs || tc.args, result: data.result, status: 'completed' }
-                : tc
-            );
-            if (isCurrentInstance) setToolCalls(updater);
-            else updateToolCallsForInstance(eventInstanceId, updater);
-            break;
-          }
-          case "agent_tool_call_error": {
-            const updater = (prev) => prev.map(tc =>
-              tc.id === data.tool_call_id
-                ? { ...tc, args: data.args || tc.partialArgs || tc.args, error: data.error, status: 'error' }
-                : tc
-            );
-            if (isCurrentInstance) setToolCalls(updater);
-            else updateToolCallsForInstance(eventInstanceId, updater);
-            break;
-          }
-          case "agent_tool_call": {
-            const addToolCall = (prev) => [...prev, {
-              id: data.tool_call_id || Date.now(),
-              tool: data.tool,
-              args: data.args,
-              status: 'running',
-              result: null,
-              iteration: data.iteration
-            }];
-            if (data.content) {
-              const setContent = (prev) => ({ ...prev, [data.iteration]: data.content });
-              if (isCurrentInstance) setToolCallAssistantContents(setContent);
-              else updateAssistantContentsForInstance(eventInstanceId, setContent);
-            }
-            if (isCurrentInstance) setToolCalls(addToolCall);
-            else updateToolCallsForInstance(eventInstanceId, addToolCall);
-            break;
-          }
-          case "agent_tool_result": {
-            const updater = (prev) => prev.map(tc =>
-              tc.id === data.tool_call_id
-                ? { ...tc, status: 'completed', result: data.result }
-                : tc
-            );
-            if (isCurrentInstance) setToolCalls(updater);
-            else updateToolCallsForInstance(eventInstanceId, updater);
-            break;
-          }
-          case "subagent_tool_call": {
-            console.log('[WebSocket] subagent_tool_call received:', JSON.stringify(data, null, 2));
-            console.log('[WebSocket] Current toolCalls:', JSON.parse(JSON.stringify(toolCalls)));
-            console.log('[WebSocket] isCurrentInstance:', isCurrentInstance, 'eventInstanceId:', eventInstanceId);
-            const parentToolCallId = data.parent_tool_call_id;
-            console.log('[WebSocket] parentToolCallId:', parentToolCallId);
-            
-            // 如果 parentToolCallId 不存在，创建一个新的 subagent container
-            const subagentUpdater = (prev) => {
-              const targetTc = prev.find(tc => tc.id === parentToolCallId);
-              console.log('[WebSocket] Finding target toolCall with id:', parentToolCallId, 'found:', !!targetTc);
-              
-              if (targetTc) {
-                return prev.map(tc =>
-                  tc.id === parentToolCallId
-                    ? {
-                        ...tc,
-                        subagentCalls: [...(tc.subagentCalls || []), {
-                          id: data.tool_call_id,
-                          tool: data.tool,
-                          args: data.args,
-                          status: 'running',
-                          subagentId: data.subagent_id,
-                          subagentLabel: data.subagent_label,
-                        }]
-                      }
-                    : tc
-                );
-              }
-              
-              // 如果找不到父 toolCall，也添加到列表中
-              console.log('[WebSocket] Parent toolCall not found, adding as standalone subagent');
-              return [...prev, {
-                id: parentToolCallId || `subagent-${Date.now()}`,
-                tool: 'spawn',
-                args: { task: 'subagent' },
-                status: 'running',
-                subagentCalls: [{
-                  id: data.tool_call_id,
-                  tool: data.tool,
-                  args: data.args,
-                  status: 'running',
-                  subagentId: data.subagent_id,
-                  subagentLabel: data.subagent_label,
-                }],
-                isSubagentContainer: true,
-              }];
-            };
-            
-            if (isCurrentInstance) setToolCalls(subagentUpdater);
-            else updateToolCallsForInstance(eventInstanceId, subagentUpdater);
-            break;
-          }
-          case "subagent_tool_result": {
-            console.log('[WebSocket] subagent_tool_result received:', JSON.stringify(data, null, 2));
-            console.log('[WebSocket] Current toolCalls:', JSON.parse(JSON.stringify(toolCalls)));
-            const parentToolCallId = data.parent_tool_call_id;
-            console.log('[WebSocket] parentToolCallId for result:', parentToolCallId);
-            
-            const subagentResultUpdater = (prev) => {
-              // 尝试找到父 toolCall 并更新 subagentCalls
-              const updated = prev.map(tc =>
-                tc.id === parentToolCallId && tc.subagentCalls
-                  ? {
-                      ...tc,
-                      subagentCalls: tc.subagentCalls?.map(sc =>
-                        sc.id === data.tool_call_id
-                          ? { ...sc, status: 'completed', result: data.result }
-                          : sc
-                      )
-                    }
-                  : tc
-              );
-              
-              // 如果没有找到父 toolCall，检查是否有 standalone subagent
-              const hasTarget = updated.some(tc => tc.id === parentToolCallId);
-              if (!hasTarget) {
-                // 添加一个包含 subagent 结果的容器
-                return [...updated, {
-                  id: parentToolCallId || `subagent-${Date.now()}`,
-                  tool: 'spawn',
-                  args: { task: 'subagent' },
-                  status: 'completed',
-                  subagentCalls: [{
-                    id: data.tool_call_id,
-                    tool: data.tool,
-                    status: 'completed',
-                    result: data.result,
-                  }],
-                  isSubagentContainer: true,
-                }];
-              }
-              return updated;
-            };
-            
-            if (isCurrentInstance) setToolCalls(subagentResultUpdater);
-            else updateToolCallsForInstance(eventInstanceId, subagentResultUpdater);
-            break;
-          }
-          case "subagent_token": {
-            const parentToolCallId = data.parent_tool_call_id;
-            const tokenUpdater = (prev) => prev.map((tc) =>
-              tc.id === parentToolCallId
-                ? { ...tc, subagentStreamingContent: (tc.subagentStreamingContent || '') + (data.content || '') }
-                : tc
-            );
-            if (isCurrentInstance) setToolCalls(tokenUpdater);
-            else updateToolCallsForInstance(eventInstanceId, tokenUpdater);
-            break;
-          }
-          case "agent_iteration_complete": {
-            const targetId = data?.session_instance_id ?? currentChatInstanceIdRef.current;
-            if (targetId) {
-              setRefreshInstanceId(targetId);
-            }
-            if (isCurrentInstance && data?.token_usage) {
-              setLiveTokenUsage(data.token_usage);
-            }
-            break;
-          }
-          case "mcp_state_change":
-            // MCP state change event - can be used to update UI in real-time
-            console.log("MCP state change:", data);
-            break;
-          case "token_usage":
-            // Token usage response
-            if (data.scope === "global") {
-              setTokenUsage(prev => ({
-                ...prev,
-                global: data.summary || prev.global,
-              }));
-            } else if (data.scope === "instance") {
-              setTokenUsage(prev => ({
-                ...prev,
-                currentSession: data.summary || prev.currentSession,
-              }));
-            }
-            break;
-          case "token_usage_update":
-            // Real-time token usage update
-            console.log("Token usage update:", data);
-            break;
-          case "tts_auto_reply":
-            // TTS audio auto reply - store for player to display
-            console.log("TTS auto reply received:", data?.instanceId);
-            if (data?.audio && data?.format) {
-              setTtsAudio({
-                audioData: data.audio,
-                format: data.format,
-                text: data.text,
-                durationMs: data.duration_ms,
-                instanceId: data.instanceId
-              });
-            }
-            break;
-          case "knowledge_distill_progress":
-            window.dispatchEvent(new CustomEvent("knowledge-distill-progress", { detail: data }));
-            break;
-
-        }
-      };
-
-      ws.current.onclose = (event) => {
-        if (isComponentMounted) {
-          setConnectionStatus("disconnected");
-          setShowLoadingOverlay(true); // 断开连接时重新显示遮罩
-          overlayShowTimeRef.current = Date.now(); // 重置显示时间
-          if (event.code !== 1000 && event.code !== 1001) {
-            reconnectTimer = setTimeout(() => {
-              if (isComponentMounted) connectWS();
-            }, 3000);
-          }
-        }
-      };
-
-      ws.current.onerror = () => {
-        if (isComponentMounted) {
-          setConnectionStatus("disconnected");
-          setShowLoadingOverlay(true); // 连接错误时显示遮罩
-          overlayShowTimeRef.current = Date.now(); // 重置显示时间
-        }
-      };
-    };
-
-    connectWS();
-
+    const onFocus = () => setIsWindowFocused(true);
+    const onBlur = () => setIsWindowFocused(false);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("blur", onBlur);
     return () => {
-      isComponentMounted = false;
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (streamingFlushTimerRef.current) {
-        clearTimeout(streamingFlushTimerRef.current);
-        streamingFlushTimerRef.current = null;
-      }
-      if (ws.current) {
-        ws.current.close(1000, "Component unmounting");
-        ws.current = null;
-      }
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("blur", onBlur);
     };
   }, []);
+
+  // 切回 chat tab 时，把 ref 中累积的 streamingContent 同步到 state
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      chat.syncStreamingContent();
+    }
+  }, [activeTab, chat.syncStreamingContent]);
 
   // ===== 发送消息 =====
   const handleSendMessage = async (messageData, instanceId = null) => {
-    setIsProcessing(true);
-    resetStreamingContent();
-    setLiveTokenUsage(null);
-    // 同步更新 ref，确保 WS 事件到达时 currentChatInstanceIdRef 是发送时的 instance_id
-    currentChatInstanceIdRef.current = instanceId;
-    setCurrentChatInstanceId(instanceId);
+    chat.setIsProcessing(true);
+    chat.resetStreamingContent();
+    chat.setLiveTokenUsage(null);
+    chat.setCurrentChatInstanceId(instanceId);
 
     try {
-      // 支持两种调用方式：
-      // 1. 旧方式: handleSendMessage("文本内容", instanceId)
-      // 2. 新方式: handleSendMessage({ content: "文本", images: [...] }, instanceId)
       let payload;
       if (typeof messageData === 'string') {
         payload = { content: messageData };
@@ -800,10 +220,10 @@ function App() {
       if (instanceId) {
         payload.instance_id = instanceId;
       }
-      await sendWSMessage("chat", payload, 5000);
+      await sendMessage("chat", payload, 5000);
     } catch (err) {
-      setIsProcessing(false);
-      setCurrentChatInstanceId(null);
+      chat.setIsProcessing(false);
+      chat.setCurrentChatInstanceId(null);
       console.error("Failed to send message:", err);
     }
   };
@@ -811,18 +231,17 @@ function App() {
   // ===== 停止生成 =====
   const handleStopGeneration = async () => {
     try {
-      // 传递当前正在处理的 instance_id，以便后端精准停止对应任务
-      await sendWSMessage("stop_agents", { 
-        instance_id: currentChatInstanceId 
+      await sendMessage("stop_agents", { 
+        instance_id: chat.currentChatInstanceId 
       }, 5000);
-      setIsProcessing(false);
-      resetStreamingContent();
-      setToolCalls([]);
-      setToolCallAssistantContents({});
-      setLiveTokenUsage(null);
+      chat.setIsProcessing(false);
+      chat.resetStreamingContent();
+      chat.setToolCalls([]);
+      chat.setToolCallAssistantContents({});
+      chat.setLiveTokenUsage(null);
     } catch (err) {
       console.error("Failed to stop generation:", err);
-      setIsProcessing(false);
+      chat.setIsProcessing(false);
     }
   };
 
@@ -830,7 +249,7 @@ function App() {
   const handleSaveConfig = async (configToSave) => {
     setIsSaving(true);
     try {
-      await sendWSMessage("save_config", { config: configToSave }, 5000);
+      await sendMessage("save_config", { config: configToSave }, 5000);
       alert("Configuration saved successfully!");
     } finally {
       setIsSaving(false);
@@ -844,7 +263,7 @@ function App() {
     }
     setIsRestarting(true);
     try {
-      await sendWSMessage("restart_service", {}, 5000);
+      await sendMessage("restart_service", {}, 5000);
       alert("重启指令已发送，服务正在重启...");
     } catch (err) {
       console.error("Failed to restart service:", err);
@@ -861,35 +280,20 @@ function App() {
   // 同步 activeTab 与路由
   useEffect(() => {
     const path = location.pathname;
-    if (path === '/chat') {
-      setActiveTab('chat');
-    } else if (path === '/config') {
-      setActiveTab('config');
-    } else if (path === '/mcp') {
-      setActiveTab('mcp');
-    } else if (path === '/extensions') {
-      setActiveTab('extensions');
-    } else if (path === '/cron') {
-      setActiveTab('cron');
-    } else if (path === '/agents') {
-      setActiveTab('agents');
-    } else if (path === '/workspaces') {
-      setActiveTab('workspaces');
-    } else if (path === '/history') {
-      setActiveTab('history');
-    } else if (path === '/tokens') {
-      setActiveTab('tokens');
-    } else if (path === '/knowledge') {
-      setActiveTab('knowledge');
-    }
+    const tabMap = {
+      '/chat': 'chat',
+      '/config': 'config',
+      '/mcp': 'mcp',
+      '/extensions': 'extensions',
+      '/cron': 'cron',
+      '/agents': 'agents',
+      '/workspaces': 'workspaces',
+      '/history': 'history',
+      '/tokens': 'tokens',
+      '/knowledge': 'knowledge',
+    };
+    setActiveTab(tabMap[path] || 'chat');
   }, [location.pathname]);
-
-  // 切回 chat tab 时，把 ref 中累积的 streamingContent 同步到 state
-  useEffect(() => {
-    if (activeTab === 'chat') {
-      setStreamingContent(streamingContentRef.current);
-    }
-  }, [activeTab]);
 
   // 处理导航
   const handleNavClick = (tab) => {
@@ -983,17 +387,16 @@ function App() {
       </div>
     );
 
-    // 使用 Portal 渲染到 body，确保在最上层
     return createPortal(overlayContent, document.body);
   };
 
   // ===== 渲染 =====
   return (
     <div className="app-container">
-
       {/* WebSocket 未连接时显示全局 Loading */}
       {showLoadingOverlay && <GlobalLoadingOverlay />}
-      {/* 整窗顶栏：品牌区（Logo+折叠）宽度与侧栏一致，右侧为当前页标题 */}
+      
+      {/* 整窗顶栏 */}
       <header className="app-titlebar">
         <div className="app-titlebar-brand">
           <div className="app-titlebar-logo-pill">
@@ -1038,160 +441,122 @@ function App() {
       </header>
 
       <div className={`app-body ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
-      {/* Sidebar：仅导航，顶栏已上提 */}
-      <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
-        <div className="sidebar-nav">
-          <nav>
-            <button
-              className={`nav-item ${activeTab === "chat" ? "active" : ""}`}
-              onClick={() => handleNavClick("chat")}
-            >
-              <Bot size={18} />
-              <span>CHAT</span>
-            </button>
-            <button
-              className={`nav-item ${activeTab === "config" ? "active" : ""}`}
-              onClick={() => handleNavClick("config")}
-            >
-              <Settings size={18} />
-              <span>SYSTEM</span>
-            </button>
-            <button
-              className={`nav-item ${activeTab === "mcp" ? "active" : ""}`}
-              onClick={() => handleNavClick("mcp")}
-            >
-              <Server size={18} />
-              <span>SERVERS</span>
-            </button>
-            <button
-              className={`nav-item ${activeTab === "extensions" ? "active" : ""}`}
-              onClick={() => handleNavClick("extensions")}
-            >
-              <Package size={18} />
-              <span>EXTENSIONS</span>
-            </button>
-            <button
-              className={`nav-item ${activeTab === "cron" ? "active" : ""}`}
-              onClick={() => handleNavClick("cron")}
-            >
-              <Clock size={18} />
-              <span>CRON</span>
-            </button>
-            <button
-              className={`nav-item ${activeTab === "agents" ? "active" : ""}`}
-              onClick={() => handleNavClick("agents")}
-            >
-              <Users size={18} />
-              <span>AGENTS</span>
-            </button>
-            <button
-              className={`nav-item ${activeTab === "workspaces" ? "active" : ""}`}
-              onClick={() => handleNavClick("workspaces")}
-            >
-              <FolderOpen size={18} />
-              <span>WORKSPACE</span>
-            </button>
-            <button
-              className={`nav-item ${activeTab === "knowledge" ? "active" : ""}`}
-              onClick={() => handleNavClick("knowledge")}
-            >
-              <BookOpen size={18} />
-              <span>KNOWLEDGE</span>
-            </button>
-            <button
-              className={`nav-item ${activeTab === "history" ? "active" : ""}`}
-              onClick={() => handleNavClick("history")}
-            >
-              <HistoryIcon size={18} />
-              <span>HISTORY</span>
-            </button>
-            <button
-              className={`nav-item ${activeTab === "tokens" ? "active" : ""}`}
-              onClick={() => handleNavClick("tokens")}
-            >
-              <Zap size={18} />
-              <span>TOKENS</span>
-            </button>
-          </nav>
-          <div className="status-panel">
-            <div className="status-line">VER: 1.0.0</div>
+        {/* Sidebar */}
+        <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
+          <div className="sidebar-nav">
+            <nav>
+              {[
+                { key: 'chat', icon: Bot, label: 'CHAT' },
+                { key: 'config', icon: Settings, label: 'SYSTEM' },
+                { key: 'mcp', icon: Server, label: 'SERVERS' },
+                { key: 'extensions', icon: Package, label: 'EXTENSIONS' },
+                { key: 'cron', icon: Clock, label: 'CRON' },
+                { key: 'agents', icon: Users, label: 'AGENTS' },
+                { key: 'workspaces', icon: FolderOpen, label: 'WORKSPACE' },
+                { key: 'knowledge', icon: BookOpen, label: 'KNOWLEDGE' },
+                { key: 'history', icon: HistoryIcon, label: 'HISTORY' },
+                { key: 'tokens', icon: Zap, label: 'TOKENS' },
+              ].map(({ key, icon: Icon, label }) => (
+                <button
+                  key={key}
+                  className={`nav-item ${activeTab === key ? "active" : ""}`}
+                  onClick={() => handleNavClick(key)}
+                >
+                  <Icon size={18} />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </nav>
+            <div className="status-panel">
+              <div className="status-line">VER: 1.0.0</div>
+            </div>
           </div>
-        </div>
-      </aside>
+        </aside>
 
-      <main className="main-content">
-        <div className="content-area">
-          <Routes>
-            <Route path="/chat" element={
-              <Chat
-                sendWSMessage={sendWSMessage}
-                onSendMessage={handleSendMessage}
-                onStopGeneration={handleStopGeneration}
-                isProcessing={isProcessing}
-                streamingContent={streamingContent}
-                currentChatInstanceId={currentChatInstanceId}
-                toolCalls={toolCalls}
-                toolCallAssistantContents={toolCallAssistantContents}
-                ttsAudio={ttsAudio}
-                onTtsPlayed={() => setTtsAudio(null)}
-                lastElapsedMs={lastElapsedMs}
-                lastTokenUsage={lastTokenUsage}
-                liveTokenUsage={liveTokenUsage}
-                onElapsedMsUpdate={setLastElapsedMs}
-                onTokenUsageUpdate={setLastTokenUsage}
-                refreshInstanceId={refreshInstanceId}
-                onInstanceIdUpdate={setCurrentChatInstanceId}
-                hasToolCallsInCurrentRun={hasToolCallsInCurrentRun}
-              />
-            } />
-            <Route path="/config" element={
-              <Config
-                config={config}
-                setConfig={setConfig}
-                onSave={handleSaveConfig}
-                isSaving={isSaving}
-                sendWSMessage={sendWSMessage}
-              />
-            } />
-            <Route path="/mcp" element={<MCP sendWSMessage={sendWSMessage} />} />
-            <Route path="/extensions" element={
-              <Extensions sendWSMessage={sendWSMessage} ws={ws.current} />
-            } />
-            <Route path="/workspaces" element={
-              <Workspace sendWSMessage={sendWSMessage} />
-            } />
-            <Route path="/history" element={
-              <History sendWSMessage={sendWSMessage} />
-            } />
-            <Route path="/cron" element={<Cron sendWSMessage={sendWSMessage} />} />
-            <Route path="/agents" element={<Agents sendWSMessage={sendWSMessage} />} />
-            <Route path="/tokens" element={<Tokens sendWSMessage={sendWSMessage} />} />
-            <Route path="/knowledge" element={<Knowledge sendWSMessage={sendWSMessage} />} />
-            <Route path="/" element={
-              <Chat
-                sendWSMessage={sendWSMessage}
-                onSendMessage={handleSendMessage}
-                onStopGeneration={handleStopGeneration}
-                isProcessing={isProcessing}
-                streamingContent={streamingContent}
-                currentChatInstanceId={currentChatInstanceId}
-                toolCalls={toolCalls}
-                toolCallAssistantContents={toolCallAssistantContents}
-                ttsAudio={ttsAudio}
-                onTtsPlayed={() => setTtsAudio(null)}
-                lastElapsedMs={lastElapsedMs}
-                lastTokenUsage={lastTokenUsage}
-                liveTokenUsage={liveTokenUsage}
-                onElapsedMsUpdate={setLastElapsedMs}
-                onTokenUsageUpdate={setLastTokenUsage}
-                refreshInstanceId={refreshInstanceId}
-                hasToolCallsInCurrentRun={hasToolCallsInCurrentRun}
-              />
-            } />
-          </Routes>
-        </div>
-      </main>
+        <main className="main-content">
+          <div className="content-area">
+            <Routes>
+              <Route path="/chat" element={
+                <Chat
+                  sendWSMessage={sendMessage}
+                  onSendMessage={handleSendMessage}
+                  onStopGeneration={handleStopGeneration}
+                  isProcessing={chat.isProcessing}
+                  streamingContent={chat.streamingContent}
+                  currentChatInstanceId={chat.currentChatInstanceId}
+                  toolCalls={chat.toolCalls}
+                  toolCallAssistantContents={chat.toolCallAssistantContents}
+                  ttsAudio={chat.ttsAudio}
+                  onTtsPlayed={() => chat.setTtsAudio(null)}
+                  lastElapsedMs={chat.lastElapsedMs}
+                  lastTokenUsage={chat.lastTokenUsage}
+                  liveTokenUsage={chat.liveTokenUsage}
+                  onElapsedMsUpdate={chat.setLastElapsedMs}
+                  onTokenUsageUpdate={chat.setLastTokenUsage}
+                  refreshInstanceId={chat.refreshInstanceId}
+                  onInstanceIdUpdate={chat.setCurrentChatInstanceId}
+                  hasToolCallsInCurrentRun={chat.hasToolCallsInCurrentRun}
+                />
+              } />
+              <Route path="/config" element={
+                <Config
+                  config={config}
+                  setConfig={setConfig}
+                  onSave={handleSaveConfig}
+                  isSaving={isSaving}
+                  sendWSMessage={sendMessage}
+                />
+              } />
+              <Route path="/mcp" element={<MCP sendWSMessage={sendMessage} />} />
+              <Route path="/extensions" element={
+                <Extensions sendWSMessage={sendMessage} ws={ws.current} />
+              } />
+              <Route path="/workspaces" element={
+                <Workspace sendWSMessage={sendMessage} />
+              } />
+              <Route path="/history" element={
+                <History sendWSMessage={sendMessage} />
+              } />
+              <Route path="/cron" element={<Cron sendWSMessage={sendMessage} />} />
+              <Route path="/agents" element={<Agents sendWSMessage={sendMessage} />} />
+              <Route path="/tokens" element={<Tokens sendWSMessage={sendMessage} />} />
+              <Route path="/knowledge" element={<Knowledge sendWSMessage={sendMessage} />} />
+              <Route path="/" element={
+                <Chat
+                  sendWSMessage={sendMessage}
+                  onSendMessage={handleSendMessage}
+                  onStopGeneration={handleStopGeneration}
+                  isProcessing={chat.isProcessing}
+                  streamingContent={chat.streamingContent}
+                  currentChatInstanceId={chat.currentChatInstanceId}
+                  toolCalls={chat.toolCalls}
+                  toolCallAssistantContents={chat.toolCallAssistantContents}
+                  ttsAudio={chat.ttsAudio}
+                  onTtsPlayed={() => chat.setTtsAudio(null)}
+                  lastElapsedMs={chat.lastElapsedMs}
+                  lastTokenUsage={chat.lastTokenUsage}
+                  liveTokenUsage={chat.liveTokenUsage}
+                  onElapsedMsUpdate={chat.setLastElapsedMs}
+                  onTokenUsageUpdate={chat.setLastTokenUsage}
+                  refreshInstanceId={chat.refreshInstanceId}
+                  onInstanceIdUpdate={chat.setCurrentChatInstanceId}
+                  hasToolCallsInCurrentRun={chat.hasToolCallsInCurrentRun}
+                />
+              } />
+            </Routes>
+          </div>
+        </main>
       </div>
+
+      {chat.ttsAudio && (
+        <TTSPlayer
+          audioData={chat.ttsAudio.audioData}
+          format={chat.ttsAudio.format}
+          text={chat.ttsAudio.text}
+          durationMs={chat.ttsAudio.durationMs}
+          onClose={() => chat.setTtsAudio(null)}
+        />
+      )}
     </div>
   );
 }
