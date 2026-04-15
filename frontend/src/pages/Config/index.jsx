@@ -27,6 +27,9 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
   const [enabledModels, setEnabledModels] = useState([]);
   const [isLoadingAgentDefaults, setIsLoadingAgentDefaults] = useState(false);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [availableTools, setAvailableTools] = useState([]);
+  const [isLoadingAvailableTools, setIsLoadingAvailableTools] = useState(false);
+  const [showToolsDropdown, setShowToolsDropdown] = useState(false);
   const hasLoadedAgentDefaults = useRef(false);
 
   // Channel Configs State (from database)
@@ -91,6 +94,21 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
     }
   }, [sendWSMessage]);
 
+  // Load available tools for agent defaults
+  const loadAvailableTools = useCallback(async () => {
+    setIsLoadingAvailableTools(true);
+    try {
+      const response = await sendWSMessage('subagent_get_available_tools', {}, 5000);
+      const tools = response.data?.tools || [];
+      setAvailableTools(tools);
+    } catch (err) {
+      console.error("Failed to load available tools", err);
+      setAvailableTools([]);
+    } finally {
+      setIsLoadingAvailableTools(false);
+    }
+  }, [sendWSMessage]);
+
   // Load channel configs from database
   const loadChannelConfigs = useCallback(async () => {
     setIsLoadingChannels(true);
@@ -126,6 +144,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
     loadConfig();
     loadAgentDefaults();
     loadEnabledModels();
+    loadAvailableTools();
     loadChannelConfigs();
     loadToolConfigs();
   }, []);
@@ -141,6 +160,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
       case 'agents':
         loadAgentDefaults();
         loadEnabledModels();
+        loadAvailableTools();
         break;
       case 'channels':
         loadChannelConfigs();
@@ -151,7 +171,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
       default:
         break;
     }
-  }, [loadAgentDefaults, loadEnabledModels, loadChannelConfigs]);
+  }, [loadAgentDefaults, loadEnabledModels, loadAvailableTools, loadChannelConfigs]);
 
   const handleSave = async () => {
     try {
@@ -170,6 +190,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
           contextCompressionEnabled: agentDefaults.contextCompressionEnabled,
           contextCompressionTurns: agentDefaults.contextCompressionTurns,
           contextCompressionTokenThreshold: agentDefaults.contextCompressionTokenThreshold,
+          tools: agentDefaults.tools || [],
         }, 5000);
       }
 
@@ -183,6 +204,18 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
   // Update agent defaults field
   const updateAgentDefaultField = (field, value) => {
     setAgentDefaults(prev => prev ? { ...prev, [field]: value } : null);
+  };
+
+  // Toggle tool selection for agent defaults
+  const toggleTool = (toolName) => {
+    setAgentDefaults(prev => {
+      if (!prev) return null;
+      const currentTools = prev.tools || [];
+      const newTools = currentTools.includes(toolName)
+        ? currentTools.filter(t => t !== toolName)
+        : [...currentTools, toolName];
+      return { ...prev, tools: newTools };
+    });
   };
 
   // Handle model selection - updates both provider and model
@@ -369,6 +402,44 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
             />
           </>
         )}
+
+        {/* Tools Selection */}
+        <div className="form-group" style={{ marginTop: '10px' }}>
+          <label>Enabled Tools ({(agentDefaults.tools || []).length} selected)</label>
+          <div className="dropdown-container">
+            <button
+              className="dropdown-trigger"
+              onClick={() => setShowToolsDropdown(!showToolsDropdown)}
+              disabled={isLoadingAvailableTools || availableTools.length === 0}
+            >
+              <span>
+                {(agentDefaults.tools || []).length > 0
+                  ? (agentDefaults.tools || []).slice(0, 3).join(', ') + ((agentDefaults.tools || []).length > 3 ? '...' : '')
+                  : 'All default tools (backward compatible)'}
+              </span>
+              <ChevronDown size={14} />
+            </button>
+            {showToolsDropdown && (
+              <div className="dropdown-menu">
+                {availableTools.map(tool => (
+                  <div
+                    key={tool.name}
+                    className={`dropdown-item ${(agentDefaults.tools || []).includes(tool.name) ? 'selected' : ''}`}
+                    onClick={() => toggleTool(tool.name)}
+                  >
+                    <span className="check">{(agentDefaults.tools || []).includes(tool.name) && <Check size={12} />}</span>
+                    <span>{tool.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {availableTools.length === 0 && !isLoadingAvailableTools && (
+            <div className="form-hint" style={{ color: '#ff6b6b', marginTop: '4px' }}>
+              No available tools found.
+            </div>
+          )}
+        </div>
       </ConfigCard>
     );
   };

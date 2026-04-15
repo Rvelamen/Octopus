@@ -476,6 +476,7 @@ class Database:
                     context_compression_enabled BOOLEAN DEFAULT 0,
                     context_compression_turns INTEGER DEFAULT 10,
                     context_compression_token_threshold INTEGER DEFAULT 200000,
+                    tools TEXT DEFAULT '[]',
                     config_json TEXT DEFAULT '{}',
                     created_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
                     updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
@@ -685,6 +686,9 @@ class Database:
                 ("exec", "Execute Command", "Run shell commands", "shell", 7),
                 ("action", "Action", "Perform actions and operations", "action", 8),
                 ("message", "Message", "Send messages to users", "communication", 9),
+                ("kb_search", "KB Search", "Search the knowledge base for notes by path or title", "knowledge", 10),
+                ("kb_read_note", "KB Read Note", "Read the full content of a knowledge base note", "knowledge", 11),
+                ("kb_list_links", "KB List Links", "List bidirectional links for a given note path", "knowledge", 12),
             ]
             for name, display_name, description, category, sort_order in default_tools:
                 conn.execute("""
@@ -815,6 +819,10 @@ class Database:
             if agent_columns and 'llm_retry_max_delay' not in agent_columns:
                 conn.execute("ALTER TABLE agent_defaults ADD COLUMN llm_retry_max_delay REAL DEFAULT 30.0")
                 logger.info("Migration: Added llm_retry_max_delay column to agent_defaults table")
+
+            if agent_columns and 'tools' not in agent_columns:
+                conn.execute("ALTER TABLE agent_defaults ADD COLUMN tools TEXT DEFAULT '[]'")
+                logger.info("Migration: Added tools column to agent_defaults table")
             
             # Migration for session_instances table - TTS fields
             cursor = conn.execute("PRAGMA table_info(session_instances)")

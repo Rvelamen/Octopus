@@ -63,6 +63,42 @@ extraction_prompt: <user request>
 """
 
 
+DEFAULT_AVAILABLE_TOOLS = [
+    ("read", "Read File", "Read file contents from the filesystem", "filesystem", 1),
+    ("write", "Write File", "Write content to a file", "filesystem", 2),
+    ("edit", "Edit File", "Edit file using search and replace", "filesystem", 3),
+    ("list", "List Directory", "List directory contents", "filesystem", 4),
+    ("glob", "Glob Pattern", "Find files matching a pattern", "filesystem", 5),
+    ("grep", "Grep Search", "Search for patterns in files", "filesystem", 6),
+    ("exec", "Execute Command", "Run shell commands", "shell", 7),
+    ("action", "Action", "Perform actions and operations", "action", 8),
+    ("message", "Message", "Send messages to users", "communication", 9),
+    ("kb_search", "KB Search", "Search the knowledge base for notes by path or title", "knowledge", 10),
+    ("kb_read_note", "KB Read Note", "Read the full content of a knowledge base note", "knowledge", 11),
+    ("kb_list_links", "KB List Links", "List bidirectional links for a given note path", "knowledge", 12),
+]
+
+
+def seed_available_tools(db) -> None:
+    """Ensure all built-in tools are present in the available_tools table.
+
+    Called during application startup so that newly-added tools appear in
+    the frontend subagent configuration without manual database edits.
+    """
+    try:
+        with db._get_connection() as conn:
+            for name, display_name, description, category, sort_order in DEFAULT_AVAILABLE_TOOLS:
+                conn.execute("""
+                    INSERT OR IGNORE INTO available_tools
+                    (name, display_name, description, category, enabled, sort_order)
+                    VALUES (?, ?, ?, ?, 1, ?)
+                """, (name, display_name, description, category, sort_order))
+            conn.commit()
+        logger.info("Seeded available_tools with defaults")
+    except Exception as e:
+        logger.warning(f"Failed to seed available_tools: {e}")
+
+
 def seed_builtin_subagents(subagent_repo) -> None:
     """Ensure built-in subagent configurations exist in the database.
 

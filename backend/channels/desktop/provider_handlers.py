@@ -560,6 +560,7 @@ class AgentDefaultsHandler:
                 "contextCompressionEnabled": defaults.context_compression_enabled,
                 "contextCompressionTurns": defaults.context_compression_turns,
                 "contextCompressionTokenThreshold": getattr(defaults, 'context_compression_token_threshold', 8000) or 8000,
+                "tools": defaults.tools,
                 "config": defaults.config_json,
             }
         })
@@ -584,6 +585,7 @@ class AgentDefaultsHandler:
             context_compression_enabled=data.get("contextCompressionEnabled"),
             context_compression_turns=data.get("contextCompressionTurns"),
             context_compression_token_threshold=data.get("contextCompressionTokenThreshold"),
+            tools=data.get("tools"),
             config_json=data.get("config"),
         )
 

@@ -575,6 +575,7 @@ class AgentDefaultsRecord:
     llm_max_retries: int
     llm_retry_base_delay: float
     llm_retry_max_delay: float
+    tools: list[str]
     config_json: dict[str, Any]
     created_at: datetime
     updated_at: datetime
@@ -598,9 +599,9 @@ class AgentDefaultsRepository:
                 """INSERT INTO agent_defaults
                    (workspace_path, max_tokens, temperature, max_iterations,
                     context_compression_enabled, context_compression_turns,
-                    config_json, created_at, updated_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
-                ("", 8192, 0.7, 20, False, 10, "{}")
+                    tools, config_json, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
+                ("", 8192, 0.7, 20, False, 10, "[]", "{}")
             )
 
             row = conn.execute(
@@ -626,6 +627,7 @@ class AgentDefaultsRepository:
         context_compression_enabled: bool | None = None,
         context_compression_turns: int | None = None,
         context_compression_token_threshold: int | None = None,
+        tools: list[str] | None = None,
         config_json: dict[str, Any] | None = None,
     ) -> bool:
         """Update agent defaults."""
@@ -659,6 +661,9 @@ class AgentDefaultsRepository:
         if context_compression_token_threshold is not None:
             updates.append("context_compression_token_threshold = ?")
             params.append(context_compression_token_threshold)
+        if tools is not None:
+            updates.append("tools = ?")
+            params.append(json.dumps(tools))
         if config_json is not None:
             updates.append("config_json = ?")
             params.append(json.dumps(config_json))
@@ -725,6 +730,7 @@ class AgentDefaultsRepository:
             llm_max_retries=row["llm_max_retries"] if "llm_max_retries" in row.keys() and row["llm_max_retries"] is not None else 3,
             llm_retry_base_delay=row["llm_retry_base_delay"] if "llm_retry_base_delay" in row.keys() and row["llm_retry_base_delay"] is not None else 1.0,
             llm_retry_max_delay=row["llm_retry_max_delay"] if "llm_retry_max_delay" in row.keys() and row["llm_retry_max_delay"] is not None else 30.0,
+            tools=json.loads(row["tools"] or "[]") if "tools" in row.keys() else [],
             config_json=json.loads(row["config_json"] or "{}"),
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),

@@ -171,28 +171,61 @@ class AgentLoop:
             }, channel=channel)
 
     def _register_default_tools(self) -> None:
-        """Register the built-in tool set."""
-        self.tools.register(ReadFileTool())
-        self.tools.register(WriteFileTool())
-        self.tools.register(EditFileTool())
-        self.tools.register(ListDirTool())
-        self.tools.register(ExecTool(
-            working_dir=str(self.workspace),
-            timeout=self.exec_config.timeout,
-            restrict_to_workspace=self.exec_config.restrict_to_workspace,
-        ))
-        self.tools.register(MessageTool(send_callback=self.bus.publish_outbound))
-        self.tools.register(SpawnTool(manager=self.subagents, aggregator=self.aggregator))
-        self.tools.register(WebFetchTool())
-        self.tools.register(KBSearchTool())
-        self.tools.register(KBReadNoteTool())
-        self.tools.register(KBListLinksTool())
-        self.tools.register(ImageUnderstandTool())
-        self.tools.register(ImageGenerateTool())
-        self.tools.register(CronTool(cron_service=self.cron_service))
-        self.tools.register(ActionTool())
-        register_browser_tools(self.tools)
-        logger.info("Default tools registered")
+        """Register the built-in tool set, respecting agent defaults configuration."""
+        # Load enabled tools from agent defaults (if configured)
+        enabled_tools = set()
+        try:
+            from backend.data.provider_store import AgentDefaultsRepository
+            repo = AgentDefaultsRepository(self.db)
+            defaults = repo.get_agent_defaults()
+            if defaults and defaults.tools:
+                enabled_tools = set(defaults.tools)
+        except Exception as e:
+            logger.warning(f"Failed to load agent default tools: {e}")
+
+        # If no tools are configured, enable all defaults for backward compatibility
+        use_all = not enabled_tools
+
+        def should_register(name: str) -> bool:
+            return use_all or name in enabled_tools
+
+        if should_register("read"):
+            self.tools.register(ReadFileTool())
+        if should_register("write"):
+            self.tools.register(WriteFileTool())
+        if should_register("edit"):
+            self.tools.register(EditFileTool())
+        if should_register("list"):
+            self.tools.register(ListDirTool())
+        if should_register("exec"):
+            self.tools.register(ExecTool(
+                working_dir=str(self.workspace),
+                timeout=self.exec_config.timeout,
+                restrict_to_workspace=self.exec_config.restrict_to_workspace,
+            ))
+        if should_register("message"):
+            self.tools.register(MessageTool(send_callback=self.bus.publish_outbound))
+        if should_register("spawn"):
+            self.tools.register(SpawnTool(manager=self.subagents, aggregator=self.aggregator))
+        if should_register("web_fetch"):
+            self.tools.register(WebFetchTool())
+        if should_register("kb_search"):
+            self.tools.register(KBSearchTool())
+        if should_register("kb_read_note"):
+            self.tools.register(KBReadNoteTool())
+        if should_register("kb_list_links"):
+            self.tools.register(KBListLinksTool())
+        if should_register("image_understand"):
+            self.tools.register(ImageUnderstandTool())
+        if should_register("image_generate"):
+            self.tools.register(ImageGenerateTool())
+        if should_register("cron"):
+            self.tools.register(CronTool(cron_service=self.cron_service))
+        if should_register("action"):
+            self.tools.register(ActionTool())
+        if use_all or any(t in enabled_tools for t in ["browser_snapshot", "browser_click", "browser_type", "browser_navigate"]):
+            register_browser_tools(self.tools)
+        logger.info(f"Default tools registered (enabled: {len(self.tools)} tools)")
 
     async def load_extensions(self) -> dict[str, bool]:
         """Load all extensions from workspace/extensions."""
