@@ -245,6 +245,18 @@ class KnowledgeGraphEngine:
                 except Exception:
                     pass
 
+            # Compute sha256 for common document files (PDF, etc.) for metadata binding
+            if not entry.is_dir() and entry.suffix.lower() in (".pdf", ".docx", ".pptx", ".xlsx"):
+                try:
+                    import hashlib
+                    h = hashlib.sha256()
+                    with open(entry, "rb") as f:
+                        for chunk in iter(lambda: f.read(65536), b""):
+                            h.update(chunk)
+                    item["sha256"] = h.hexdigest()
+                except Exception:
+                    pass
+
             items.append(item)
         return items
 
@@ -265,6 +277,97 @@ class KnowledgeGraphEngine:
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.write_text(content, encoding="utf-8")
 
+    # ------------------------------------------------------------------
+    # Document metadata
+    # ------------------------------------------------------------------
+
+    def upsert_document_meta(self, sha256: str, data: dict[str, Any]) -> None:
+        """Insert or update metadata for a document identified by sha256."""
+        import json
+        self.db.execute(
+            """
+            INSERT INTO knowledge_documents_meta (
+                sha256, source_type, title, authors, year, venue, doi, url,
+                summary, page_count, metadata_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(sha256) DO UPDATE SET
+                source_type = excluded.source_type,
+                title = excluded.title,
+                authors = excluded.authors,
+                year = excluded.year,
+                venue = excluded.venue,
+                doi = excluded.doi,
+                url = excluded.url,
+                summary = excluded.summary,
+                page_count = excluded.page_count,
+                metadata_json = excluded.metadata_json,
+                extracted_at = CURRENT_TIMESTAMP
+            """,
+            (
+                sha256,
+                data.get("source_type"),
+                data.get("title"),
+                json.dumps(data.get("authors", [])) if isinstance(data.get("authors"), list) else data.get("authors"),
+                data.get("year"),
+                data.get("venue"),
+                data.get("doi"),
+                data.get("url"),
+                data.get("summary"),
+                data.get("page_count"),
+                json.dumps(data.get("metadata_json", {})) if isinstance(data.get("metadata_json"), dict) else data.get("metadata_json"),
+            ),
+        )
+        self.db.commit()
+
+    def get_document_meta(self, sha256: str) -> dict[str, Any] | None:
+        """Retrieve metadata for a document by sha256."""
+        import json
+        row = self.db.execute(
+            "SELECT * FROM knowledge_documents_meta WHERE sha256 = ?", (sha256,)
+        ).fetchone()
+        if not row:
+            return None
+        result = dict(row)
+        for field in ("authors",):
+            if result.get(field):
+                try:
+                    result[field] = json.loads(result[field])
+                except Exception:
+                    pass
+        if result.get("metadata_json"):
+            try:
+                result["metadata_json"] = json.loads(result["metadata_json"])
+            except Exception:
+                pass
+        return result
+
+    def get_document_metas_batch(self, sha256s: list[str]) -> dict[str, dict[str, Any]]:
+        """Batch retrieve metadata by sha256 list."""
+        import json
+        if not sha256s:
+            return {}
+        placeholders = ",".join(["?"] * len(sha256s))
+        rows = self.db.execute(
+            f"SELECT * FROM knowledge_documents_meta WHERE sha256 IN ({placeholders})",
+            tuple(sha256s),
+        ).fetchall()
+        result = {}
+        for row in rows:
+            item = dict(row)
+            for field in ("authors",):
+                if item.get(field):
+                    try:
+                        item[field] = json.loads(item[field])
+                    except Exception:
+                        pass
+            if item.get("metadata_json"):
+                try:
+                    item["metadata_json"] = json.loads(item["metadata_json"])
+                except Exception:
+                    pass
+            result[item["sha256"]] = item
+        return result
+
     def search_notes(self, query: str, limit: int = 20) -> list[dict[str, Any]]:
         """Fuzzy search notes by path or title."""
         stripped = query.strip()
@@ -273,25 +376,25 @@ class KnowledgeGraphEngine:
 
         # 1. Exact title match
         row = self.db.execute(
-            "SELECT path, title, mtime FROM knowledge_nodes WHERE title = ? LIMIT 1",
+            "SELECT path, title, mtime, word_count FROM knowledge_nodes WHERE title = ? LIMIT 1",
             (stripped,),
         ).fetchone()
         if row:
-            return [{"path": row["path"], "title": row["title"], "mtime": row["mtime"]}]
+            return [{"path": row["path"], "title": row["title"], "mtime": row["mtime"], "word_count": row["word_count"]}]
 
         # 2. Path stem match (e.g. "Foo" -> ".../Foo.md")
         row = self.db.execute(
-            "SELECT path, title, mtime FROM knowledge_nodes WHERE path LIKE ? LIMIT 1",
+            "SELECT path, title, mtime, word_count FROM knowledge_nodes WHERE path LIKE ? LIMIT 1",
             (f"%/{stripped}.md",),
         ).fetchone()
         if row:
-            return [{"path": row["path"], "title": row["title"], "mtime": row["mtime"]}]
+            return [{"path": row["path"], "title": row["title"], "mtime": row["mtime"], "word_count": row["word_count"]}]
 
         # 3. FTS5 match (more intelligent for long titles / phrases)
         try:
             rows = self.db.execute(
                 """
-                SELECT n.path, n.title, n.mtime, rank
+                SELECT n.path, n.title, n.mtime, n.word_count, rank
                 FROM knowledge_nodes_fts
                 JOIN knowledge_nodes n ON knowledge_nodes_fts.rowid = n.rowid
                 WHERE knowledge_nodes_fts MATCH ?
@@ -301,7 +404,7 @@ class KnowledgeGraphEngine:
                 (stripped, limit),
             ).fetchall()
             if rows:
-                return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"]} for r in rows]
+                return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"], "word_count": r["word_count"], "rank": r["rank"]} for r in rows]
         except Exception:
             pass
 
@@ -309,14 +412,14 @@ class KnowledgeGraphEngine:
         pattern = f"%{stripped}%"
         rows = self.db.execute(
             """
-            SELECT path, title, mtime FROM knowledge_nodes
+            SELECT path, title, mtime, word_count FROM knowledge_nodes
             WHERE path LIKE ? OR title LIKE ?
             ORDER BY mtime DESC
             LIMIT ?
             """,
             (pattern, pattern, limit),
         ).fetchall()
-        return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"]} for r in rows]
+        return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"], "word_count": r["word_count"]} for r in rows]
 
     def search_notes_fts(self, query: str, limit: int = 20) -> list[dict[str, Any]]:
         """Full-text search using SQLite FTS5 with BM25 ranking.
@@ -327,7 +430,7 @@ class KnowledgeGraphEngine:
             # Use FTS5 match with BM25 ranking (lower rank = more relevant)
             rows = self.db.execute(
                 """
-                SELECT n.path, n.title, n.mtime, rank
+                SELECT n.path, n.title, n.mtime, n.word_count, rank
                 FROM knowledge_nodes_fts
                 JOIN knowledge_nodes n ON knowledge_nodes_fts.rowid = n.rowid
                 WHERE knowledge_nodes_fts MATCH ?
@@ -342,6 +445,7 @@ class KnowledgeGraphEngine:
                         "path": r["path"],
                         "title": r["title"],
                         "mtime": r["mtime"],
+                        "word_count": r["word_count"],
                         "rank": round(r["rank"], 4),
                         "source": "fts5",
                     }
@@ -545,6 +649,88 @@ class KnowledgeGraphEngine:
 
         self._cache = {"nodes": nodes, "edges": edges, "adj_out": adj_out, "adj_in": adj_in, "node_tags": node_tags}
         self._cache_dirty = False
+
+    def get_timeline(self, relative_path: str) -> dict[str, Any]:
+        """Return contextual timeline and metadata for a note.
+
+        Includes: basic info, outgoing/incoming links, tags, and recently
+        modified related notes (linked by graph or tags).
+        """
+        row = self.db.execute(
+            "SELECT path, title, mtime, word_count, updated_at FROM knowledge_nodes WHERE path = ?",
+            (relative_path,),
+        ).fetchone()
+        if not row:
+            raise FileNotFoundError(f"Note not found: {relative_path}")
+
+        # Links
+        outgoing_rows = self.db.execute(
+            "SELECT to_title, to_path FROM knowledge_links WHERE from_path = ?",
+            (relative_path,),
+        ).fetchall()
+        incoming_rows = self.db.execute(
+            "SELECT from_path FROM knowledge_links WHERE to_path = ?",
+            (relative_path,),
+        ).fetchall()
+
+        outgoing = []
+        for r in outgoing_rows:
+            outgoing.append({"title": r["to_title"], "path": r["to_path"]})
+
+        incoming = [{"path": r["from_path"]} for r in incoming_rows]
+
+        # Tags
+        tags = self.get_node_tags(relative_path)
+
+        # Related notes: notes linked to or from this note, or sharing tags
+        related_paths: set[str] = set()
+        for o in outgoing:
+            if o["path"]:
+                related_paths.add(o["path"])
+        for i in incoming:
+            related_paths.add(i["path"])
+
+        if tags:
+            placeholders = ",".join("?" * len(tags))
+            tag_rows = self.db.execute(
+                f"""
+                SELECT DISTINCT node_path FROM knowledge_node_tags nt
+                JOIN knowledge_tags t ON nt.tag_id = t.id
+                WHERE t.name IN ({placeholders}) AND nt.node_path != ?
+                """,
+                (*tags, relative_path),
+            ).fetchall()
+            for tr in tag_rows:
+                related_paths.add(tr["node_path"])
+
+        related = []
+        if related_paths:
+            placeholders = ",".join("?" * len(related_paths))
+            rel_rows = self.db.execute(
+                f"""
+                SELECT path, title, mtime, word_count FROM knowledge_nodes
+                WHERE path IN ({placeholders})
+                ORDER BY mtime DESC
+                LIMIT 10
+                """,
+                tuple(related_paths),
+            ).fetchall()
+            related = [
+                {"path": r["path"], "title": r["title"], "mtime": r["mtime"], "word_count": r["word_count"]}
+                for r in rel_rows
+            ]
+
+        return {
+            "path": row["path"],
+            "title": row["title"],
+            "mtime": row["mtime"],
+            "word_count": row["word_count"],
+            "updated_at": row["updated_at"],
+            "tags": tags,
+            "outgoing_links": outgoing,
+            "incoming_links": incoming,
+            "related_notes": related,
+        }
 
     def delete_note(self, relative_path: str, delete_file: bool = True) -> None:
         """Delete the note file and clean up its index entries."""

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Bot, Clock, Coins, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import IterationFold from '@pages/Chat/ChatPanel/components/MessageList/IterationFold.jsx';
+import IterationFold from '@components/MessageList/IterationFold.jsx';
 
 export default function TaskDetailModal({ task, visible, onClose, sendWSMessage }) {
   const [detail, setDetail] = useState(null);

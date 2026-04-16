@@ -7,6 +7,7 @@ from backend.core.events.types import InboundMessage, OutboundMessage
 from backend.tools.message import MessageTool
 from backend.tools.spawn import SpawnTool
 from backend.tools.cron import CronTool
+from backend.agent.shared import _normalize_usage
 from .base import MessageProcessor
 
 
@@ -100,7 +101,7 @@ class SystemMessageProcessor(MessageProcessor):
 
             # Call LLM - get fresh provider and model from config
             provider, model, provider_type, max_tokens, temperature = self.agent_loop._get_current_provider_and_model()
-            response = await provider.chat_streaming_complete(
+            response = await provider.chat(
                 messages=messages,
                 tools=self.agent_loop.tools.get_definitions(),
                 model=model,
@@ -109,13 +110,13 @@ class SystemMessageProcessor(MessageProcessor):
             )
 
             # Record token usage
-            if response.usage:
-                self.agent_loop._record_token_usage(
-                    session_instance_id=session_instance_id,
-                    provider_name=provider_type,
-                    model_id=model,
-                    usage=response.usage
-                )
+            normalized = _normalize_usage(response.usage, messages, response.content or "", model)
+            self.agent_loop._record_token_usage(
+                session_instance_id=session_instance_id,
+                provider_name=provider_type,
+                model_id=model,
+                usage=normalized
+            )
 
             if response.has_tool_calls:
                 # Build tool_calls data

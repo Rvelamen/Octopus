@@ -47,6 +47,8 @@ from backend.channels.desktop.handlers.session import (
     SessionCreateHandler,
     SessionSetActiveHandler,
     SessionGetInstancesHandler,
+    SessionCompressContextHandler,
+    SessionGetContextStatsHandler,
 )
 
 # Workspace handlers

@@ -57,7 +57,10 @@ class KBSearchTool(Tool):
         lines = [f"Found {len(results)} note(s):"]
         for r in results:
             rank_info = f", relevance: {r['rank']}" if "rank" in r else ""
-            lines.append(f'- {r["path"]} (title: {r["title"]}{rank_info})')
+            estimated_tokens = int((r.get("word_count") or 0) * 1.5)
+            lines.append(
+                f'- {r["path"]} (title: {r["title"]}{rank_info}, estimated_tokens: ~{estimated_tokens})'
+            )
         return "\n".join(lines)
 
 
@@ -99,6 +102,76 @@ class KBReadNoteTool(Tool):
             return content
         except FileNotFoundError:
             return f"Note not found: {path}"
+
+
+class KBTimelineTool(Tool):
+    """Preview a note's context before reading: links, tags, and related notes."""
+
+    @property
+    def name(self) -> str:
+        return "kb_timeline"
+
+    @property
+    def description(self) -> str:
+        return (
+            "Get a contextual preview of a knowledge base note before reading it. "
+            "Returns the note's metadata, outgoing/incoming wiki-links, tags, and "
+            "recently modified related notes. Use this after kb_search to decide "
+            "which notes are worth reading with kb_read_note."
+        )
+
+    @property
+    def parameters(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": (
+                        "Relative path of the note inside the workspace "
+                        "(e.g., 'knowledge/notes/my_note.md')."
+                    ),
+                },
+            },
+            "required": ["path"],
+        }
+
+    async def execute(self, path: str, **kwargs: Any) -> str:
+        from backend.utils.helpers import get_workspace_path
+        engine = KnowledgeGraphEngine(str(get_workspace_path()))
+        try:
+            timeline = engine.get_timeline(path)
+        except FileNotFoundError:
+            return f"Note not found: {path}"
+
+        lines = [
+            f"Note: {timeline['path']}",
+            f"Title: {timeline['title']}",
+            f"Words: {timeline['word_count']} (estimated_tokens: ~{int(timeline['word_count'] * 1.5)})",
+            f"Last modified: {timeline['mtime']}",
+        ]
+
+        if timeline["tags"]:
+            lines.append(f"Tags: {', '.join(timeline['tags'])}")
+
+        if timeline["outgoing_links"]:
+            lines.append("Outgoing links:")
+            for link in timeline["outgoing_links"]:
+                target = link.get("path") or link["title"]
+                lines.append(f"- {target}")
+
+        if timeline["incoming_links"]:
+            lines.append("Incoming links:")
+            for link in timeline["incoming_links"]:
+                lines.append(f"- {link['path']}")
+
+        if timeline["related_notes"]:
+            lines.append("Recently modified related notes:")
+            for note in timeline["related_notes"]:
+                est = int((note.get("word_count") or 0) * 1.5)
+                lines.append(f"- {note['path']} (title: {note['title']}, estimated_tokens: ~{est})")
+
+        return "\n".join(lines)
 
 
 class KBListLinksTool(Tool):

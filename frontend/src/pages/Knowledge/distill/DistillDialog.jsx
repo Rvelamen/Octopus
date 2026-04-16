@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sparkles, Check, X } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Sparkles, Check, X, Folder, ChevronDown, ChevronRight } from 'lucide-react';
 import { useDistillTasks } from '@contexts/DistillTaskContext';
 
 const TEMPLATES = [
@@ -10,26 +10,126 @@ const TEMPLATES = [
   { key: 'custom', label: 'Custom', desc: 'Tell the AI exactly what to extract' },
 ];
 
+function DirectoryTree({ treeItems, expandedPaths, selectedDir, onToggle, onSelect, loadDirectory, rootPath }) {
+  useEffect(() => {
+    if (!treeItems[rootPath]) {
+      loadDirectory(rootPath);
+    }
+  }, [rootPath, treeItems, loadDirectory]);
+
+  const renderNode = (path, level = 0) => {
+    const items = treeItems[path] || [];
+    const dirs = items.filter((i) => i.is_directory);
+    const isExpanded = expandedPaths.has(path);
+    const isSelected = selectedDir === path;
+
+    return (
+      <div key={path}>
+        <button
+          onClick={() => onSelect(path)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            width: '100%',
+            padding: '5px 8px',
+            paddingLeft: `${8 + level * 16}px`,
+            border: 'none',
+            borderRadius: 4,
+            background: isSelected ? 'var(--accent-soft)' : 'transparent',
+            color: isSelected ? 'var(--accent)' : 'var(--text)',
+            cursor: 'pointer',
+            fontSize: 12,
+            textAlign: 'left',
+          }}
+        >
+          {dirs.length > 0 && (
+            <span
+              onClick={(e) => { e.stopPropagation(); onToggle(path); }}
+              style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+            >
+              {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            </span>
+          )}
+          {dirs.length === 0 && <span style={{ width: 14 }} />}
+          <Folder size={13} style={{ color: isSelected ? 'var(--accent)' : '#FFBF2B' }} />
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {path === rootPath ? 'notes' : path.split('/').pop()}
+          </span>
+          {isSelected && <Check size={12} />}
+        </button>
+        {isExpanded && dirs.map((d) => renderNode(d.path, level + 1))}
+      </div>
+    );
+  };
+
+  return <div style={{ maxHeight: 220, overflowY: 'auto', padding: '4px 0' }}>{renderNode(rootPath)}</div>;
+}
+
+function slugify(name) {
+  return name
+    .toLowerCase()
+    .replace(/[^\w\u4e00-\u9fa5\-]+/g, '_')
+    .replace(/_+/g, '_')
+    .slice(0, 60) || 'untitled';
+}
+
 export default function DistillDialog({
   visible,
   sourceFile,
+  sourceTitle,
   onCancel,
   onStartDistill,
+  sendWSMessage,
 }) {
   const [template, setTemplate] = useState('summary');
   const [prompt, setPrompt] = useState('');
   const [isStarting, setIsStarting] = useState(false);
+  const [selectedDir, setSelectedDir] = useState('knowledge/notes');
+  const [expandedPaths, setExpandedPaths] = useState(new Set(['knowledge/notes']));
+  const [treeItems, setTreeItems] = useState({});
   const { addTask } = useDistillTasks();
 
   const reset = () => {
     setTemplate('summary');
     setPrompt('');
     setIsStarting(false);
+    setSelectedDir('knowledge/notes');
+    setExpandedPaths(new Set(['knowledge/notes']));
   };
 
   const handleCancel = () => {
     reset();
     onCancel();
+  };
+
+  const loadDirectory = useCallback(
+    async (path) => {
+      try {
+        const response = await sendWSMessage('knowledge_list', { path });
+        if (response.data?.items) {
+          setTreeItems((prev) => ({ ...prev, [path]: response.data.items }));
+        }
+      } catch (err) {
+        console.error('Failed to load directory:', err);
+      }
+    },
+    [sendWSMessage]
+  );
+
+  const handleToggle = (path) => {
+    setExpandedPaths((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+        if (!treeItems[path]) {
+          loadDirectory(path);
+        }
+      }
+      return next;
+    });
   };
 
   const handleStart = async () => {
@@ -38,6 +138,10 @@ export default function DistillDialog({
     setIsStarting(true);
 
     try {
+      const timestamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+      const safe = slugify(sourceTitle || sourceFile.split('/').pop() || 'distilled');
+      const targetPath = `${selectedDir}/${timestamp}_${safe}.md`;
+
       // 添加任务到全局任务列表
       const taskId = addTask({
         sourceFile,
@@ -46,13 +150,7 @@ export default function DistillDialog({
       });
 
       // 调用 onStartDistill 发送任务到后台
-      const result = await onStartDistill({ prompt, template, taskId });
-
-      // 如果后端返回了 job_id，更新任务 ID
-      if (result?.job_id) {
-        // 任务已在 addTask 时创建，这里可以更新 job_id 映射
-        // 实际更新会通过 WebSocket 事件处理
-      }
+      const result = await onStartDistill({ prompt, template, taskId, targetPath });
 
       // 关闭 Modal
       reset();
@@ -70,8 +168,8 @@ export default function DistillDialog({
       <div
         className="dialog-content"
         style={{
-          minWidth: 520,
-          maxWidth: '90vw',
+          minWidth: 560,
+          maxWidth: '92vw',
           maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
@@ -100,6 +198,34 @@ export default function DistillDialog({
         </div>
 
         <div style={{ padding: '16px 20px', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Output location */}
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>
+              Save to (click to select folder)
+            </label>
+            <div
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--r-sm)',
+                background: 'var(--surface)',
+                padding: '8px 10px',
+              }}
+            >
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 6 }}>
+                Selected: <strong style={{ color: 'var(--text)' }}>{selectedDir}</strong>
+              </div>
+              <DirectoryTree
+                treeItems={treeItems}
+                expandedPaths={expandedPaths}
+                selectedDir={selectedDir}
+                onToggle={handleToggle}
+                onSelect={setSelectedDir}
+                loadDirectory={loadDirectory}
+                rootPath="knowledge/notes"
+              />
+            </div>
+          </div>
+
           {/* Template selector */}
           <div>
             <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>

@@ -5,6 +5,7 @@ import { ConfigCard, DynamicItemCard, AddItemDialog } from '@components/config';
 import WindowDots from '@components/layout/WindowDots';
 import MultimodalPanel from '@components/MultimodalPanel';
 import { ProviderSetting } from './components/ProviderSetting';
+import './ConfigPanel.css';
 
 const CONFIG_TABS = [
   { key: 'providers', label: 'PROVIDERS', Icon: Brain },

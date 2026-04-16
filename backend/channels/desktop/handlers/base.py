@@ -48,6 +48,14 @@ class MessageHandler:
         """Handle a message. Must be implemented by subclasses."""
         raise NotImplementedError
 
+    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: Any) -> None:
+        """Handle a validated Pydantic model.
+
+        Subclasses should override this to consume typed payloads.
+        Default implementation raises so that the registry falls back to `handle`.
+        """
+        raise NotImplementedError
+
     async def send_response(self, websocket: WebSocket, message: WSMessage) -> None:
         """Send a response back to the client."""
         try:

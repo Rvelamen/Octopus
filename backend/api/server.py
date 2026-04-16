@@ -84,6 +84,7 @@ async def lifespan(app: FastAPI):
 
     # 4. Initialize Agent Loop (Lazy import to avoid circular deps)
     from backend.agent.loop import AgentLoop
+    from backend.agent.container import AgentContainer
     from backend.channels.manager import ChannelManager
     
     from backend.mcp.manager import MCPManager
@@ -121,7 +122,7 @@ async def lifespan(app: FastAPI):
     )
     await cron_service.start()
 
-    agent_loop = AgentLoop(
+    agent_container = AgentContainer(
         bus=bus,
         workspace=workspace,
         max_iterations=20,
@@ -131,6 +132,7 @@ async def lifespan(app: FastAPI):
         subagent_manager=subagent_manager,
         mcp_bridge=mcp_bridge,
     )
+    agent_loop = AgentLoop(agent_container)
     
     # 4. Initialize Desktop Channel
     from backend.channels.desktop.channel import DesktopChannel
@@ -215,6 +217,10 @@ app = FastAPI(lifespan=lifespan)
 # Register Chrome Extension clip API
 from backend.api.routes import knowledge_clip
 app.include_router(knowledge_clip.router)
+
+# Register file preview conversion API
+from backend.api.routes import file_preview
+app.include_router(file_preview.router)
 
 # CORS configuration - restricted to known origins for security
 # Desktop app uses file:// protocol, development uses localhost

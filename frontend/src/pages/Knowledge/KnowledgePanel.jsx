@@ -97,12 +97,34 @@ export default function KnowledgePanel({ sendWSMessage }) {
     };
   }, [handleResizeMove, handleResizeEnd]);
 
+  // Document metadata cache: sha256 -> meta object
+  const [docMetas, setDocMetas] = useState({});
+
+  const fetchDocumentMetas = useCallback(
+    async (items) => {
+      const sha256s = items.filter((i) => i.sha256).map((i) => i.sha256);
+      if (sha256s.length === 0) return;
+      try {
+        const res = await sendWSMessage('knowledge_get_document_meta', { sha256s });
+        if (res.data?.metas) {
+          setDocMetas((prev) => ({ ...prev, ...res.data.metas }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch document metas:', err);
+      }
+    },
+    [sendWSMessage]
+  );
+
   const loadDirectory = useCallback(
     async (path) => {
       try {
         const response = await sendWSMessage('knowledge_list', { path });
         if (response.data?.items) {
           setTreeItems((prev) => ({ ...prev, [path]: response.data.items }));
+          if (path.startsWith('knowledge/raw')) {
+            await fetchDocumentMetas(response.data.items);
+          }
           return response.data.items;
         }
         return [];
@@ -111,7 +133,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
         return [];
       }
     },
-    [sendWSMessage]
+    [sendWSMessage, fetchDocumentMetas]
   );
 
   const readFile = useCallback(
@@ -183,6 +205,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
           name: item.meta?.title || item.name,
           encoding: 'utf-8',
           meta: item.meta || null,
+          sha256: item.sha256 || null,
         });
         setPreviewContent('');
         setPreviewDrawerOpen(true);
@@ -197,6 +220,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
           name: item.name,
           encoding: fileData.encoding,
           meta: item.meta || null,
+          sha256: item.sha256 || null,
         });
         setPreviewContent(fileData.content);
         setPreviewDrawerOpen(true);
@@ -209,7 +233,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
   const handleOpenNoteFile = useCallback(
     async (item) => {
       if (item.is_directory) {
-        handleToggle(item.path);
+        loadDirectory(item.path);
         return;
       }
 
@@ -224,7 +248,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
         });
       }
     },
-    [readFile, handleToggle]
+    [readFile, loadDirectory]
   );
 
   // 关闭文件
@@ -599,9 +623,9 @@ export default function KnowledgePanel({ sendWSMessage }) {
 
   const uploadFile = async (file, targetDir = null) => {
     if (!file) return;
-    const MAX_SIZE = 20 * 1024 * 1024;
+    const MAX_SIZE = 500 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      message.error('File too large (max 20MB)');
+      message.error('File too large (max 500MB)');
       return;
     }
     setIsUploading(true);
@@ -637,17 +661,17 @@ export default function KnowledgePanel({ sendWSMessage }) {
           60000
         );
       } else {
-        const arrayBuffer = await file.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
-        const CHUNK_SIZE = 256 * 1024;
-        const totalChunks = Math.ceil(bytes.length / CHUNK_SIZE);
+        const CHUNK_SIZE = 2 * 1024 * 1024;
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
         const uploadId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random()}`;
 
         for (let i = 0; i < totalChunks; i++) {
           const start = i * CHUNK_SIZE;
-          const end = Math.min(start + CHUNK_SIZE, bytes.length);
-          const slice = bytes.subarray(start, end);
-          const hex = Array.from(slice)
+          const end = Math.min(start + CHUNK_SIZE, file.size);
+          const slice = file.slice(start, end);
+          const arrayBuffer = await slice.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          const hex = Array.from(bytes)
             .map((b) => b.toString(16).padStart(2, '0'))
             .join('');
           await sendWSMessage(
@@ -711,15 +735,18 @@ export default function KnowledgePanel({ sendWSMessage }) {
     [uploadFile]
   );
 
-  const handleStartDistill = async ({ prompt, template, taskId }) => {
+  const handleStartDistill = async ({ prompt, template, taskId, targetPath }) => {
     const source = effectiveSelectedPath;
     if (!source) return '';
     try {
       const response = await sendWSMessage('knowledge_distill', {
         source_path: source,
-        prompt,
-        template,
-        task_id: taskId,
+        options: {
+          prompt,
+          template,
+          task_id: taskId,
+        },
+        target_path: targetPath,
       });
       await loadDistillTasks(0);
       return response.data || {};
@@ -954,6 +981,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
               onRenameFile={handleRename}
               onDeleteFile={handleDelete}
               treeItems={treeItems}
+              docMetas={docMetas}
             />
           </div>
         ) : activeTab === 'graph' ? (
@@ -1134,8 +1162,14 @@ export default function KnowledgePanel({ sendWSMessage }) {
       <DistillDialog
         visible={distillDialogVisible}
         sourceFile={effectiveSelectedPath || ''}
+        sourceTitle={
+          activeTab === 'documents'
+            ? (docMetas[selectedDocItem?.sha256]?.title || selectedDocItem?.name || '')
+            : (currentFile?.name || '')
+        }
         onCancel={() => setDistillDialogVisible(false)}
         onStartDistill={handleStartDistill}
+        sendWSMessage={sendWSMessage}
       />
 
       <TaskDetailModal
@@ -1154,6 +1188,8 @@ export default function KnowledgePanel({ sendWSMessage }) {
         sendWSMessage={sendWSMessage}
         onBack={handlePreviewBack}
         canGoBack={previewHistory.length > 0}
+        onDistill={canDistill ? () => setDistillDialogVisible(true) : undefined}
+        docMeta={previewFile?.sha256 ? docMetas[previewFile.sha256] : null}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 """Context compression for managing conversation history length."""
 
+import json
 import os
 from pathlib import Path
 from typing import Any, Callable
@@ -9,6 +10,7 @@ from loguru import logger
 from backend.agent.config_service import AgentConfigService
 from backend.data.session_manager import SessionManager
 from backend.data.token_store import TokenUsageRepository
+
 
 # 配置压缩日志输出到独立文件
 _log_dir = Path(__file__).parent.parent.parent / "logs"
@@ -62,6 +64,25 @@ STRUCTURED_SUMMARY_SYSTEM_PROMPT = """你是一个对话摘要助手。请按照
 如果某些部分不适用，可以省略。请确保摘要简洁明了，便于后续对话快速参考。"""
 
 
+def _estimate_single_message_tokens(msg: dict[str, Any]) -> int:
+    """估算单条消息的字符数（排除 subagent react 部分）。"""
+    content = msg.get("content", "")
+    content_str = str(content)
+
+    # 如果是 spawn 的同步 subagent 结果，只计算 summary 部分
+    # iterations（ReAct 流程）仅用于前端展示，不计入上下文 token
+    if msg.get("role") == "tool" and content_str.strip().startswith("{"):
+        try:
+            parsed = json.loads(content_str)
+            if isinstance(parsed, dict) and parsed.get("type") == "subagent_sync":
+                summary = parsed.get("summary", "")
+                return len(summary)
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    return len(content_str)
+
+
 def estimate_message_tokens(messages: list[dict[str, Any]]) -> int:
     """
     快速估算消息列表的 token 数量 (基于字符数 / 4 + 固定开销)。
@@ -72,7 +93,7 @@ def estimate_message_tokens(messages: list[dict[str, Any]]) -> int:
     Returns:
         估算的 token 数量
     """
-    total_chars = sum(len(str(m.get("content", ""))) for m in messages)
+    total_chars = sum(_estimate_single_message_tokens(m) for m in messages)
     return (total_chars // _CHARS_PER_TOKEN) + (len(messages) * _TOKEN_OVERHEAD_PER_MESSAGE)
 
 
@@ -207,6 +228,7 @@ class ContextCompressor:
         token_usage: TokenUsageRepository,
         get_provider_and_model: Callable[[], tuple],
         record_token_usage: Callable,
+        observation_manager=None,
     ):
         """
         Initialize the context compressor.
@@ -223,6 +245,7 @@ class ContextCompressor:
         self.token_usage = token_usage
         self._get_provider_and_model = get_provider_and_model
         self._record_token_usage = record_token_usage
+        self.observation_manager = observation_manager
 
     @property
     def compression_enabled(self) -> bool:
@@ -454,6 +477,18 @@ Please generate a complete structured summary that integrates both the previous 
         message_ids = [m.get('id') for m in to_compress if m.get('id')]
         if instance_id and message_ids:
             self.sessions.db.mark_messages_compressed(instance_id, message_ids)
+
+        # 触发 observation 提取（通过独立的 ObservationManager）
+        if instance_id and self.observation_manager:
+            try:
+                saved_count = await self.observation_manager.extract_from_messages(
+                    session_instance_id=instance_id,
+                    messages=to_compress,
+                )
+                if saved_count:
+                    compression_logger.info(f"Extracted and saved {saved_count} observations")
+            except Exception as e:
+                compression_logger.warning(f"Observation extraction after compression failed: {e}")
 
         # 重建消息列表：系统消息 + 保留的尾部消息
         system_messages = [m for m in session.messages if m.get("role") == "system"]

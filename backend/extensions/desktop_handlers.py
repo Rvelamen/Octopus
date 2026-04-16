@@ -22,6 +22,8 @@ from loguru import logger
 from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.core.events.types import InboundMessage
 from backend.utils import get_extensions_path, get_plugins_path
+from pydantic import ValidationError
+from backend.channels.desktop.schemas import MESSAGE_TYPE_TO_SCHEMA
 
 if TYPE_CHECKING:
     from backend.core.events.bus import MessageBus
@@ -45,6 +47,19 @@ class SkillInstallHandler:
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Install an extension from Extension Market API."""
+        # Validate inbound payload
+        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+        if schema is not None:
+            try:
+                schema.model_validate(message.data)
+            except ValidationError as ve:
+                logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                return
+        else:
+            msg_data = message.data
+
         try:
             extension_id = message.data.get("skill_id") or message.data.get("extension_id")
             extension_name = message.data.get("name")  # extension name from frontend
@@ -387,6 +402,19 @@ class ExtensionGetListHandler:
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Return list of extensions (installed or from market)."""
+        # Validate inbound payload
+        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+        if schema is not None:
+            try:
+                schema.model_validate(message.data)
+            except ValidationError as ve:
+                logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                return
+        else:
+            msg_data = message.data
+
         try:
             list_type = message.data.get("type", "installed")  # "installed" or "market"
             extension_type = message.data.get("extension_type")  # "skill", "plugin", "worker", or None for all
@@ -530,6 +558,19 @@ class ExtensionInstallHandler:
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Install an extension from Extension Market API."""
+        # Validate inbound payload
+        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+        if schema is not None:
+            try:
+                schema.model_validate(message.data)
+            except ValidationError as ve:
+                logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                return
+        else:
+            msg_data = message.data
+
         try:
             extension_id = message.data.get("extension_id")
             extension_name = message.data.get("name")
@@ -917,6 +958,19 @@ class ExtensionUninstallHandler:
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Remove an installed extension."""
+        # Validate inbound payload
+        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+        if schema is not None:
+            try:
+                schema.model_validate(message.data)
+            except ValidationError as ve:
+                logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                return
+        else:
+            msg_data = message.data
+
         try:
             extension_id = message.data.get("extension_id")
             extension_name = message.data.get("name")
@@ -999,6 +1053,19 @@ class ExtensionRunHandler:
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Run an extension by sending its documentation to the agent."""
+        # Validate inbound payload
+        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+        if schema is not None:
+            try:
+                schema.model_validate(message.data)
+            except ValidationError as ve:
+                logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                return
+        else:
+            msg_data = message.data
+
         try:
             extension_id = message.data.get("extension_id") or message.data.get("name")
             user_query = message.data.get("query", "")
@@ -1130,6 +1197,19 @@ class SkillGetInstalledHandler:
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Return list of installed extensions."""
+        # Validate inbound payload
+        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+        if schema is not None:
+            try:
+                schema.model_validate(message.data)
+            except ValidationError as ve:
+                logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                return
+        else:
+            msg_data = message.data
+
         try:
             extensions = []
 
@@ -1216,6 +1296,19 @@ class SkillRemoveHandler:
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Remove an installed extension."""
+        # Validate inbound payload
+        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+        if schema is not None:
+            try:
+                schema.model_validate(message.data)
+            except ValidationError as ve:
+                logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                return
+        else:
+            msg_data = message.data
+
         try:
             # Support both 'name' and 'skill_id'/'extension_id' for backward compatibility
             extension_name = message.data.get("name") or message.data.get("skill_id") or message.data.get("extension_id")
@@ -1269,6 +1362,19 @@ class SkillRunHandler:
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Run an extension by sending its documentation to the agent."""
+        # Validate inbound payload
+        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+        if schema is not None:
+            try:
+                schema.model_validate(message.data)
+            except ValidationError as ve:
+                logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                return
+        else:
+            msg_data = message.data
+
         try:
             extension_name = message.data.get("name")
             user_query = message.data.get("query", "")
@@ -1390,6 +1496,19 @@ class PluginInstallHandler:
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Install a plugin from Plugin Market API."""
+        # Validate inbound payload
+        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+        if schema is not None:
+            try:
+                schema.model_validate(message.data)
+            except ValidationError as ve:
+                logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                return
+        else:
+            msg_data = message.data
+
         try:
             plugin_id = message.data.get("plugin_id") or message.data.get("skill_id")
             plugin_name = message.data.get("name")
@@ -1681,6 +1800,19 @@ class PluginGetInstalledHandler:
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Return list of installed plugins."""
+        # Validate inbound payload
+        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+        if schema is not None:
+            try:
+                schema.model_validate(message.data)
+            except ValidationError as ve:
+                logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                return
+        else:
+            msg_data = message.data
+
         try:
             plugins = []
 
@@ -1763,6 +1895,19 @@ class PluginRemoveHandler:
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Remove an installed plugin."""
+        # Validate inbound payload
+        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+        if schema is not None:
+            try:
+                schema.model_validate(message.data)
+            except ValidationError as ve:
+                logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                return
+        else:
+            msg_data = message.data
+
         try:
             # Support both 'name' and 'plugin_id' for backward compatibility
             plugin_name = message.data.get("name") or message.data.get("plugin_id")
@@ -1815,6 +1960,19 @@ class ExtensionConfigHandler:
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Save extension configuration (environment variables)."""
+        # Validate inbound payload
+        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+        if schema is not None:
+            try:
+                schema.model_validate(message.data)
+            except ValidationError as ve:
+                logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                return
+        else:
+            msg_data = message.data
+
         try:
             extension_id = message.data.get("extension_id")
             extension_name = message.data.get("name")
@@ -1913,6 +2071,19 @@ class PluginRunHandler:
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Run a plugin by sending its documentation to the agent."""
+        # Validate inbound payload
+        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+        if schema is not None:
+            try:
+                schema.model_validate(message.data)
+            except ValidationError as ve:
+                logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                return
+        else:
+            msg_data = message.data
+
         try:
             plugin_name = message.data.get("name")
             user_query = message.data.get("query", "")

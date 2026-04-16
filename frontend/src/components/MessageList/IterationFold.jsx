@@ -662,7 +662,7 @@ function SpawnDetailButton({ result, subagentCalls, subagentLabel: propLabel, st
         }
         width={720}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <div 
           style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}

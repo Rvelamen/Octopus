@@ -185,10 +185,36 @@ def _migration_002_add_orphan_tag_trigger(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migration_003_add_document_meta(conn: sqlite3.Connection) -> None:
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS knowledge_documents_meta (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sha256 TEXT UNIQUE NOT NULL,
+            source_type TEXT,
+            title TEXT,
+            authors TEXT,
+            year INTEGER,
+            venue TEXT,
+            doi TEXT,
+            url TEXT,
+            summary TEXT,
+            page_count INTEGER,
+            extracted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            metadata_json TEXT
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_doc_meta_sha256 ON knowledge_documents_meta(sha256);
+        CREATE INDEX IF NOT EXISTS idx_doc_meta_title ON knowledge_documents_meta(title);
+        """
+    )
+
+
 def run_knowledge_index_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_initial_schema", _migration_001_create_initial_schema)
     runner.register(2, "add_orphan_tag_trigger", _migration_002_add_orphan_tag_trigger)
+    runner.register(3, "add_document_meta", _migration_003_add_document_meta)
     runner.run()
 
 

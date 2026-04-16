@@ -15,6 +15,7 @@ from loguru import logger
 
 from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.channels.desktop.handlers.base import MessageHandler
+from backend.channels.desktop.schemas import GetModelsRequest
 from backend.data import Database
 from backend.data.provider_store import ProviderRepository
 
@@ -30,6 +31,29 @@ class GetModelsHandler(MessageHandler):
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Return available models for a provider."""
         provider_name = message.data.get("provider")
+
+        if not provider_name:
+            await self._send_error(websocket, message.request_id, "Provider name is required")
+            return
+
+        try:
+            models = await self._fetch_models_from_provider(provider_name)
+        except Exception as e:
+            logger.error(f"Failed to fetch models for {provider_name}: {e}")
+            models = []
+
+        await self.send_response(websocket, WSMessage(
+            type=MessageType.MODELS,
+            request_id=message.request_id,
+            data={
+                "provider": provider_name,
+                "models": models
+            }
+        ))
+
+    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: GetModelsRequest) -> None:
+        """Return available models for a provider."""
+        provider_name = validated.provider
 
         if not provider_name:
             await self._send_error(websocket, message.request_id, "Provider name is required")

@@ -24,14 +24,17 @@ import {
   PanelLeftClose,
   PanelRight,
   BookOpen,
+  Brain,
 } from "lucide-react";
 import octopusLogo from "./assets/octopus-logo.png";
 import WindowDots from "./components/layout/WindowDots";
 import Chat from "./pages/Chat/ChatPanel";
 import Config from "./pages/Config";
+import "./components/ui/TTSPlayer.css";
 import MCP from "./pages/MCP";
 import Extensions from "./pages/Extensions";
 import History from "./pages/History";
+import Memory from "./pages/Memory";
 import Workspace from "./pages/Workspace";
 import Cron from "./pages/Cron";
 import Agents from "./pages/Agents";
@@ -49,6 +52,7 @@ const APP_TITLE_BY_TAB = {
   agents: "AGENTS",
   workspaces: "WORKSPACE_EXPLORER",
   history: "HISTORY",
+  memory: "MEMORY_STREAM",
   tokens: "TOKENS",
 };
 
@@ -289,6 +293,7 @@ function App() {
       '/agents': 'agents',
       '/workspaces': 'workspaces',
       '/history': 'history',
+      '/memory': 'memory',
       '/tokens': 'tokens',
       '/knowledge': 'knowledge',
     };
@@ -307,6 +312,7 @@ function App() {
       agents: '/agents',
       workspaces: '/workspaces',
       history: '/history',
+      memory: '/memory',
       tokens: '/tokens',
       knowledge: '/knowledge',
     };
@@ -455,6 +461,7 @@ function App() {
                 { key: 'workspaces', icon: FolderOpen, label: 'WORKSPACE' },
                 { key: 'knowledge', icon: BookOpen, label: 'KNOWLEDGE' },
                 { key: 'history', icon: HistoryIcon, label: 'HISTORY' },
+                { key: 'memory', icon: Brain, label: 'MEMORY' },
                 { key: 'tokens', icon: Zap, label: 'TOKENS' },
               ].map(({ key, icon: Icon, label }) => (
                 <button
@@ -516,6 +523,9 @@ function App() {
               } />
               <Route path="/history" element={
                 <History sendWSMessage={sendMessage} />
+              } />
+              <Route path="/memory" element={
+                <Memory sendWSMessage={sendMessage} />
               } />
               <Route path="/cron" element={<Cron sendWSMessage={sendMessage} />} />
               <Route path="/agents" element={<Agents sendWSMessage={sendMessage} />} />

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, Play, Pause, Trash2, RefreshCw, Plus, X, Check, AlertCircle, Calendar } from 'lucide-react';
 import WindowDots from '@components/layout/WindowDots';
 import Toast from '@components/ui/Toast';
+import './CronPanel.css';
 
 /**
  * CronPanel Component - 定时任务管理面板

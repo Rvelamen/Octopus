@@ -19,7 +19,9 @@ function createWindow() {
     win.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 
-  win.webContents.openDevTools()
+  if (!app.isPackaged) {
+    win.webContents.openDevTools()
+  }
 }
 
 app.whenReady().then(createWindow)

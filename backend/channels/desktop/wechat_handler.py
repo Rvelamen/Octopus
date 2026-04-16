@@ -15,6 +15,8 @@ from loguru import logger
 from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.data.provider_store import ChannelConfigRepository
 from backend.utils.helpers import get_data_path
+from pydantic import ValidationError
+from backend.channels.desktop.schemas import MESSAGE_TYPE_TO_SCHEMA
 
 WECHAT_API_BASE = "https://ilinkai.weixin.qq.com"
 DEFAULT_BOT_TYPE = "3"
@@ -38,18 +40,23 @@ class WechatConfigHandler:
         self._temp_dir = temp_dir
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        # Validate inbound payload
+        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+        if schema is not None:
+            try:
+                validated = schema.model_validate(message.data)
+                msg_data = validated.model_dump(mode="json", by_alias=True)
+            except ValidationError as ve:
+                logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                return
+        else:
+            msg_data = message.data
+
         msg_type = message.type
         if hasattr(msg_type, 'value'):
             msg_type = msg_type.value
-
-        msg_data = message.data
-        if isinstance(msg_data, str):
-            try:
-                msg_data = json.loads(msg_data) if msg_data else {}
-            except:
-                msg_data = {}
-        elif not isinstance(msg_data, dict):
-            msg_data = {}
 
         request_id = message.request_id
 

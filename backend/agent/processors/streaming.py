@@ -5,7 +5,7 @@ import time
 from loguru import logger
 
 from backend.core.events.types import InboundMessage, OutboundMessage, AgentEvent
-from backend.agent.shared import _extract_cached_tokens, _extract_prompt_tokens_with_cache
+from backend.agent.shared import _normalize_usage
 from .base import MessageProcessor
 
 
@@ -116,17 +116,17 @@ class StreamingMessageProcessor(MessageProcessor):
                                 )
 
                     if chunk.is_final:
-                        if chunk.usage:
-                            last_prompt_tokens = _extract_prompt_tokens_with_cache(chunk.usage)
-                            total_prompt_tokens += _extract_prompt_tokens_with_cache(chunk.usage)
-                            total_completion_tokens += chunk.usage.get("completion_tokens", 0)
-                            total_cached_tokens += _extract_cached_tokens(chunk.usage)
-                            self.agent_loop._record_token_usage(
-                                session_instance_id=session_instance_id,
-                                provider_name=provider_type,
-                                model_id=model,
-                                usage=chunk.usage
-                            )
+                        normalized = _normalize_usage(chunk.usage, messages, full_content or "", model)
+                        last_prompt_tokens = normalized["prompt_tokens"] + normalized["cached_tokens"]
+                        total_prompt_tokens += normalized["prompt_tokens"] + normalized["cached_tokens"]
+                        total_completion_tokens += normalized["completion_tokens"]
+                        total_cached_tokens += normalized["cached_tokens"]
+                        self.agent_loop._record_token_usage(
+                            session_instance_id=session_instance_id,
+                            provider_name=provider_type,
+                            model_id=model,
+                            usage=normalized
+                        )
 
                 if tool_calls_buffer:
                     tool_calls_data = [
@@ -210,20 +210,8 @@ class StreamingMessageProcessor(MessageProcessor):
 
                             result = await self.agent_loop.tools.execute(tc_data["name"], tool_args)
 
-                            if tc_data["name"] == "spawn" and result:
-                                try:
-                                    parsed_result = json.loads(result)
-                                    if parsed_result.get("type") == "subagent_sync" and parsed_result.get("token_usage"):
-                                        subagent_usage = parsed_result["token_usage"]
-                                        total_prompt_tokens += subagent_usage.get("prompt_tokens", 0)
-                                        total_completion_tokens += subagent_usage.get("completion_tokens", 0)
-                                        logger.info(
-                                            f"[AgentLoop:stream] Added subagent tokens: prompt={subagent_usage.get('prompt_tokens', 0)}, "
-                                            f"completion={subagent_usage.get('completion_tokens', 0)}"
-                                        )
-                                except json.JSONDecodeError:
-                                    pass
-
+                            # 注意：subagent 的 token 不累计到主 agent 的 usage 中，
+                            # 因为 subagent 的完整 react 不会出现在主上下文中
                             await self.agent_loop._emit(
                                 "agent_tool_call_complete",
                                 {
@@ -360,6 +348,13 @@ class StreamingMessageProcessor(MessageProcessor):
         await self.agent_loop.compressor.maybe_compress(
             session, prompt_tokens=last_prompt_tokens, model_context_window=model_context_window
         )
+
+        if self.agent_loop.memory_manager:
+            await self.agent_loop.memory_manager.sync_turn(
+                user_msg=msg.content,
+                assistant_msg=final_content or "",
+                session_instance_id=session_instance_id,
+            )
 
         elapsed_ms = int((time.time() - start_time) * 1000)
 

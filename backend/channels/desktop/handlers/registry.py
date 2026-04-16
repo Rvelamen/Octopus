@@ -8,6 +8,8 @@ from loguru import logger
 
 from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.channels.desktop.handlers.base import MessageHandler
+from backend.channels.desktop.schemas import MESSAGE_TYPE_TO_SCHEMA
+from pydantic import ValidationError
 from backend.channels.desktop.provider_handlers import (
     ProviderHandler, ModelHandler, SettingsHandler, AgentDefaultsHandler,
     ChannelConfigHandler, ToolConfigHandler, ImageProviderConfigHandler
@@ -50,7 +52,15 @@ from backend.channels.desktop.handlers.session import (
     SessionGetChannelsHandler, SessionGetChannelSessionsHandler,
     SessionGetSessionDetailHandler, SessionGetMessagesHandler,
     SessionDeleteInstanceHandler, SessionCreateHandler,
-    SessionSetActiveHandler, SessionGetInstancesHandler
+    SessionSetActiveHandler, SessionGetInstancesHandler,
+    SessionCompressContextHandler, SessionGetContextStatsHandler
+)
+
+# Import memory handlers
+from backend.channels.desktop.handlers.memory import (
+    MemoryListHandler, MemorySearchHandler, MemoryReadHandler,
+    MemoryTimelineHandler, MemoryDeleteHandler, MemoryExtractHandler,
+    MemoryPromoteHandler
 )
 
 # Import workspace handlers
@@ -94,8 +104,10 @@ from backend.channels.desktop.handlers.knowledge import (
     KnowledgeListHandler, KnowledgeReadHandler, KnowledgeWriteHandler,
     KnowledgeDeleteHandler, KnowledgeSearchHandler, KnowledgeGraphHandler,
     KnowledgeDistillHandler, KnowledgeDistillListHandler,
-    KnowledgeDistillDetailHandler, KnowledgeGetTagsHandler, KnowledgeExportHandler, KnowledgeImportHandler
+    KnowledgeDistillDetailHandler, KnowledgeGetTagsHandler, KnowledgeExportHandler, KnowledgeImportHandler,
+    KnowledgeGetDocumentMetaHandler,
 )
+from backend.channels.desktop.handlers.file_preview import FilePreviewPDFHandler
 
 from backend.services.knowledge_engine import KnowledgeGraphEngine
 from backend.services.knowledge_task_queue import KnowledgeTaskQueue
@@ -189,9 +201,22 @@ class HandlerRegistry:
             MessageType.SESSION_GET_SESSION_DETAIL: SessionGetSessionDetailHandler(bus),
             MessageType.SESSION_GET_MESSAGES: SessionGetMessagesHandler(bus),
             MessageType.SESSION_DELETE_INSTANCE: SessionDeleteInstanceHandler(bus),
-            MessageType.SESSION_CREATE: SessionCreateHandler(bus),
-            MessageType.SESSION_SET_ACTIVE: SessionSetActiveHandler(bus),
+            MessageType.SESSION_CREATE: SessionCreateHandler(bus, self.agent_loop),
+            MessageType.SESSION_SET_ACTIVE: SessionSetActiveHandler(bus, self.agent_loop),
             MessageType.SESSION_GET_INSTANCES: SessionGetInstancesHandler(bus),
+            MessageType.SESSION_COMPRESS_CONTEXT: SessionCompressContextHandler(bus, self.agent_loop),
+            MessageType.SESSION_GET_CONTEXT_STATS: SessionGetContextStatsHandler(bus),
+        })
+
+        # Register Memory Stream handlers
+        self.handlers.update({
+            MessageType.MEMORY_LIST: MemoryListHandler(bus),
+            MessageType.MEMORY_SEARCH: MemorySearchHandler(bus),
+            MessageType.MEMORY_READ: MemoryReadHandler(bus),
+            MessageType.MEMORY_TIMELINE: MemoryTimelineHandler(bus),
+            MessageType.MEMORY_DELETE: MemoryDeleteHandler(bus),
+            MessageType.MEMORY_EXTRACT: MemoryExtractHandler(bus, self.agent_loop),
+            MessageType.MEMORY_PROMOTE: MemoryPromoteHandler(bus, self.agent_loop),
         })
 
         # Register Workspace File System handlers
@@ -283,10 +308,12 @@ class HandlerRegistry:
             MessageType.KNOWLEDGE_GET_TAGS: KnowledgeGetTagsHandler(bus, knowledge_engine),
             MessageType.KNOWLEDGE_EXPORT: KnowledgeExportHandler(bus, knowledge_engine, self.knowledge_task_queue),
             MessageType.KNOWLEDGE_IMPORT: KnowledgeImportHandler(bus, knowledge_engine),
+            MessageType.KNOWLEDGE_GET_DOCUMENT_META: KnowledgeGetDocumentMetaHandler(bus, knowledge_engine),
+            MessageType.FILE_PREVIEW_PDF: FilePreviewPDFHandler(bus),
         })
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        """Route message to appropriate handler with timing and structured logging."""
+        """Route message to appropriate handler with timing, structured logging, and Pydantic validation."""
         handler = self.handlers.get(message.type)
         msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         request_id = message.request_id
@@ -294,8 +321,33 @@ class HandlerRegistry:
         error_info: str | None = None
 
         if handler:
+            # Try Pydantic validation + handle_validated
+            schema = MESSAGE_TYPE_TO_SCHEMA.get(message.type) or MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
+            validated = None
+            if schema is not None:
+                try:
+                    validated = schema.model_validate(message.data)
+                except ValidationError as ve:
+                    error_info = f"Validation error: {ve}"
+                    logger.warning(f"Validation error for {msg_type_str}: {ve}")
+                    await websocket.send_json(WSMessage(
+                        type=MessageType.ERROR,
+                        request_id=request_id,
+                        data={"error": "Invalid request data", "details": ve.errors()}
+                    ).to_dict())
+                    duration_ms = round((time.perf_counter() - start) * 1000, 2)
+                    logger.bind(event="ws_handler_metric", message_type=msg_type_str, request_id=request_id,
+                                duration_ms=duration_ms, success=False, error=error_info)
+                    return
+
             try:
-                await handler.handle(websocket, message)
+                if validated is not None:
+                    try:
+                        await handler.handle_validated(websocket, message, validated)
+                    except (NotImplementedError, AttributeError):
+                        await handler.handle(websocket, message)
+                else:
+                    await handler.handle(websocket, message)
             except Exception as e:
                 error_info = str(e)
                 logger.error(f"Handler error for {message.type}: {e}")

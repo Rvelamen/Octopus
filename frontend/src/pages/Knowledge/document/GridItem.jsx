@@ -19,6 +19,7 @@ export default function GridItem({
   onDragOver,
   onDrop,
   isDragOver = false,
+  docMeta,
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -166,7 +167,18 @@ export default function GridItem({
             alignItems: 'center',
             maxWidth: '100%',
           }}
-          title={item.name}
+          title={
+            docMeta
+              ? [
+                  docMeta.title,
+                  docMeta.authors?.length ? `Authors: ${docMeta.authors.join(', ')}` : null,
+                  docMeta.year ? `Year: ${docMeta.year}` : null,
+                  docMeta.venue ? `Venue: ${docMeta.venue}` : null,
+                  docMeta.doi ? `DOI: ${docMeta.doi}` : null,
+                  docMeta.summary,
+                ].filter(Boolean).join('\n')
+              : item.name
+          }
         >
           <span
             style={{
@@ -183,7 +195,7 @@ export default function GridItem({
               fontWeight: isSelected ? 600 : 500,
             }}
           >
-            {item.meta?.title || item.name}
+            {item.name}
           </span>
           {item.meta?.source && (
             <span

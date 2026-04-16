@@ -12,7 +12,7 @@ export default function KnowledgeBinaryPreview({ fileName, content, encoding }) 
   const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
   const fileObj = { name: fileName, path: '', encoding };
   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(fileExt);
-  const isPptx = ['pptx', 'ppt'].includes(fileExt);
+  const isPptx = ['pptx', 'ppt', 'pptm', 'ppsx', 'ppsm', 'potx', 'potm', 'thmx'].includes(fileExt);
   const isDocx = ['docx', 'doc'].includes(fileExt);
 
   if (isImage) return <ImageViewer file={fileObj} content={content} fileExt={fileExt} />;

@@ -93,15 +93,8 @@ function buildDisplayList(messages) {
       try {
         const parsed = JSON.parse(msg.content || '{}');
         if (parsed.type === 'subagent_sync') {
-          // 累加 subagent 的 token 消耗到主 agent
-          if (parsed.token_usage) {
-            if (!lastAssistantUsage) {
-              lastAssistantUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
-            }
-            lastAssistantUsage.prompt_tokens += parsed.token_usage.prompt_tokens || 0;
-            lastAssistantUsage.completion_tokens += parsed.token_usage.completion_tokens || 0;
-            lastAssistantUsage.total_tokens += (parsed.token_usage.prompt_tokens || 0) + (parsed.token_usage.completion_tokens || 0);
-          }
+          // subagent 的 token 不累计到主 agent 的 message usage 中，
+          // 因为 subagent 的 iterations 不会出现在主上下文中
           flushThought();
           out.push({
             type: 'subagent_sync',

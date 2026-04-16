@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { History, MessageSquare, ChevronRight, ChevronDown, RefreshCw, Hash, Trash2, Wrench, ChevronUp } from 'lucide-react';
+import { History, MessageSquare, ChevronRight, ChevronDown, RefreshCw, Hash, Trash2 } from 'lucide-react';
 import WindowDots from '@components/layout/WindowDots';
-import { parseLinks } from '@utils/linkUtils';
+import MessageList from '@components/MessageList/index.jsx';
+import ImageModal from '../Chat/ChatPanel/components/Modals/ImageModal.jsx';
+import WorkspaceFilePreviewModal from '../Chat/ChatPanel/components/Modals/WorkspaceFilePreviewModal.jsx';
+import { useMessageRenderer } from '@hooks/useMessageRenderer.jsx';
+import './HistoryPanel.css';
 
 /**
  * HistoryPanel 组件 - 查看所有 Channel 的消息历史
@@ -18,7 +22,7 @@ function HistoryPanel({ sendWSMessage }) {
   const [expandedChannels, setExpandedChannels] = useState(new Set());
   const [expandedSessions, setExpandedSessions] = useState(new Set());
   const [filterType, setFilterType] = useState('all'); // "all", "normal"
-  const [expandedTools, setExpandedTools] = useState(new Set()); // 展开的工具消息
+  const [modalImage, setModalImage] = useState(null);
   const messagesEndRef = useRef(null);
   const isComponentMounted = useRef(true);
 
@@ -137,6 +141,8 @@ function HistoryPanel({ sendWSMessage }) {
     }
   }, [messages]);
 
+  const { renderMessageContent, workspacePreviewPath, setWorkspacePreviewPath } = useMessageRenderer();
+
   // 切换 Channel 展开状态
   const toggleChannel = (channel) => {
     const newExpanded = new Set(expandedChannels);
@@ -215,157 +221,7 @@ function HistoryPanel({ sendWSMessage }) {
     await refreshExpandedSessions();
   }, [fetchChannels, refreshExpandedSessions]);
 
-  // 渲染带链接的消息内容
-  const renderMessageContent = (content) => {
-    if (!content) return null;
-    return content.split('\n').map((line, lineIdx) => {
-      const parts = parseLinks(line);
-      return (
-        <div key={lineIdx}>
-          {parts.map((part, partIdx) => {
-            if (part.type === 'link') {
-              return (
-                <a
-                  key={partIdx}
-                  href={part.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="message-link"
-                >
-                  {part.displayText}
-                </a>
-              );
-            }
-            return <span key={partIdx}>{part.content}</span>;
-          })}
-        </div>
-      );
-    });
-  };
-
-  // 切换工具消息展开状态
-  const toggleToolExpand = (toolCallId) => {
-    const newExpanded = new Set(expandedTools);
-    if (newExpanded.has(toolCallId)) {
-      newExpanded.delete(toolCallId);
-    } else {
-      newExpanded.add(toolCallId);
-    }
-    setExpandedTools(newExpanded);
-  };
-
-  // 将消息列表中的 tool_call 和 tool_result 配对
-  const pairToolMessages = (messages) => {
-    const pairs = [];
-    const toolResults = new Map();
-    
-    // 先收集所有 tool result
-    messages.forEach(msg => {
-      const toolCallId = msg.metadata?.tool_call_id || msg.tool_call_id;
-      if (toolCallId && (msg.role === 'tool' || msg.message_type === 'tool_result')) {
-        toolResults.set(toolCallId, msg);
-      }
-    });
-    
-    // 然后配对
-    messages.forEach(msg => {
-      const toolCalls = msg.metadata?.tool_calls || msg.tool_calls;
-      if (toolCalls && toolCalls.length > 0) {
-        // 这是一个 tool call 消息，找到对应的 result
-        const callId = toolCalls[0]?.id;
-        const result = toolResults.get(callId);
-        pairs.push({
-          type: 'tool_pair',
-          call: msg,
-          result: result,
-          toolCallId: callId,
-          toolName: toolCalls[0]?.function?.name
-        });
-      } else if (!msg.metadata?.tool_call_id && !msg.tool_call_id) {
-        // 普通消息
-        pairs.push({ type: 'normal', message: msg });
-      }
-      // tool result 已经被配对，跳过
-    });
-    
-    return pairs;
-  };
-
-  // 渲染配对的 tool 消息（call + result）
-  const renderPairedToolMessage = (pair) => {
-    const { call, result, toolCallId, toolName } = pair;
-    const isExpanded = expandedTools.has(toolCallId);
-    const toolCalls = call.metadata?.tool_calls || call.tool_calls;
-    const tc = toolCalls?.[0];
-
-    return (
-      <div className="tool-pair">
-        {/* Header: 工具名称 */}
-        <div 
-          className="tool-pair-header" 
-          onClick={() => toggleToolExpand(toolCallId)}
-        >
-          <Wrench size={14} className="tool-icon" />
-          <span className="tool-pair-name">{toolName || 'unknown'}</span>
-          <span className="tool-pair-id">({toolCallId?.substring(0, 8)}...)</span>
-          {result ? (
-            <span className="tool-pair-status success">✓</span>
-          ) : (
-            <span className="tool-pair-status pending">⏳</span>
-          )}
-          {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </div>
-
-        {/* Details: 展开显示 param 和 result */}
-        {isExpanded && (
-          <div className="tool-pair-details">
-            {/* Parameters */}
-            <div className="tool-section">
-              <div className="tool-section-title">Parameters</div>
-              <pre className="tool-code">
-                {(() => {
-                  try {
-                    return JSON.stringify(JSON.parse(tc?.function?.arguments || '{}'), null, 2);
-                  } catch {
-                    return tc?.function?.arguments || '{}';
-                  }
-                })()}
-              </pre>
-            </div>
-
-            {/* Result */}
-            {result ? (
-              <div className="tool-section">
-                <div className="tool-section-title">Result</div>
-                <pre className="tool-code">
-                  {(() => {
-                    try {
-                      const parsed = JSON.parse(result.content);
-                      return JSON.stringify(parsed, null, 2);
-                    } catch {
-                      return result.content;
-                    }
-                  })()}
-                </pre>
-              </div>
-            ) : (
-              <div className="tool-section tool-section-pending">
-                <div className="tool-section-title">Result</div>
-                <div className="tool-pending-text">Waiting for result...</div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // 格式化时间
-  const formatTime = (timestamp) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    return date.toLocaleString();
-  };
+  // Message rendering is delegated to MessageList; no inline tool pairing needed.
 
   // 获取当前选中的session
   const selectedSession = selectedChannel && channelSessions[selectedChannel]?.find(
@@ -527,62 +383,32 @@ function HistoryPanel({ sendWSMessage }) {
               <p>No messages in this session</p>
             </div>
           ) : (
-            <div className="messages-list">
-              {pairToolMessages(messages
-                .filter(msg => {
-                  if (filterType === 'all') return true;
-                  const msgType = msg.metadata?.message_type || 'normal';
-                  return msgType === filterType;
-                }))
-                .map((pair, idx) => {
-                  if (pair.type === 'tool_pair') {
-                    // Tool call + result 配对显示
-                    const { call, result, toolCallId } = pair;
-                    return (
-                      <div
-                        key={toolCallId || idx}
-                        className="message-row-history tool-pair-row"
-                      >
-                        <div className="message-bubble-history pixel-border tool-pair-bubble">
-                          <div className="msg-header">
-                            TOOL @ {formatTime(call.timestamp)}
-                            {result ? (
-                              <span className="tool-pair-badge completed">COMPLETED</span>
-                            ) : (
-                              <span className="tool-pair-badge pending">PENDING</span>
-                            )}
-                          </div>
-                          <div className="msg-content">
-                            {renderPairedToolMessage(pair)}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  } else {
-                    // 普通消息
-                    const msg = pair.message;
-                    return (
-                      <div
-                        key={msg.id || idx}
-                        className={`message-row-history ${msg.role === 'user' ? 'user-align' : 'ai-align'} ${msg.metadata?.message_type === 'heartbeat' ? 'heartbeat-msg' : ''}`}
-                      >
-                        <div className={`message-bubble-history pixel-border ${msg.role === 'user' ? 'user-msg' : 'ai-msg'}`}>
-                          <div className="msg-header">
-                            {msg.role === 'user' ? 'USER' : 'ASSISTANT'} @ {formatTime(msg.timestamp)}
-                            {msg.metadata?.message_type === 'heartbeat' && <span className="heartbeat-badge">HEARTBEAT</span>}
-                          </div>
-                          <div className="msg-content">
-                            {renderMessageContent(msg.content)}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-                })}
-            </div>
+            <MessageList
+              messages={messages.filter((msg) => {
+                if (filterType === 'all') return true;
+                const msgType = msg.metadata?.message_type || 'normal';
+                return msgType === filterType;
+              })}
+              messageTtsMap={{}}
+              onImageClick={setModalImage}
+              renderMessageContent={renderMessageContent}
+              selectedInstance={selectedInstance}
+            />
           )}
         </div>
       </div>
+
+      {modalImage && (
+        <ImageModal image={modalImage} onClose={() => setModalImage(null)} />
+      )}
+
+      {workspacePreviewPath && (
+        <WorkspaceFilePreviewModal
+          sendWSMessage={sendWSMessage}
+          pathInput={workspacePreviewPath}
+          onClose={() => setWorkspacePreviewPath(null)}
+        />
+      )}
     </div>
   );
 }

@@ -7,7 +7,6 @@ from typing import Any
 
 from loguru import logger
 
-from backend.agent.memory import MemoryStore
 from backend.extensions.loader import SkillsLoader
 from backend.agent.loader import SubAgentLoader
 from backend.core.providers.message_adapter import MessageAdapter
@@ -38,9 +37,9 @@ class ContextBuilder:
 
     BOOTSTRAP_FILES = ["AGENTS.md", "SOUL.md", "USER.md", "IDENTITY.md", "BOOTSTRAP.md"]
 
-    def __init__(self, workspace: Path):
+    def __init__(self, workspace: Path, memory_manager=None):
         self.workspace = workspace
-        self.memory = MemoryStore(workspace)
+        self.memory_manager = memory_manager
         self.skills = SkillsLoader(workspace)
         self.subagent_loader = SubAgentLoader(workspace)
 
@@ -53,12 +52,17 @@ class ContextBuilder:
         # Agents directory is at the same level as workspace
         return self.workspace.parent / "agents"
     
-    def build_system_prompt(self, skill_names: list[str] | None = None) -> str:
+    def build_system_prompt(
+        self,
+        skill_names: list[str] | None = None,
+        session_instance_id: int | None = None,
+    ) -> str:
         """
         Build the system prompt from bootstrap files, memory, skills, and subagents.
         
         Args:
             skill_names: Optional list of skills to include.
+            session_instance_id: Optional session instance ID for loading observation index.
         
         Returns:
             Complete system prompt.
@@ -80,20 +84,30 @@ class ContextBuilder:
             parts.append(bootstrap)
 
         # Memory context (with fenced injection to prevent model confusion)
-        memory = self.memory.get_memory_context()
-        if memory:
-            # Clean any existing fence tags to prevent nesting
-            memory = memory.replace("<memory-context>", "").replace("</memory-context>", "")
-            
-            # Use fenced injection with system note
+        # Hot-load curated memory from disk every turn so memory_write changes are immediate
+        memory_parts = []
+        observation_index = None
+        if self.memory_manager and self.memory_manager.observation_manager:
+            observation_index = self.memory_manager.observation_manager.build_index_markdown(session_instance_id)
+        if observation_index:
+            memory_parts.append(observation_index)
+        if self.memory_manager:
+            memory_block = self.memory_manager.builtin.format_for_system_prompt("memory")
+            user_block = self.memory_manager.builtin.format_for_system_prompt("user")
+            if memory_block:
+                memory_parts.append(memory_block)
+            if user_block:
+                memory_parts.append(user_block)
+        
+        if memory_parts:
             memory_block = (
                 "<memory-context>\n"
                 "[System note: The following is recalled memory from previous conversations. "
                 "This is background information to help you understand the user's context and preferences. "
                 "DO NOT respond to this as if it were a new user message. "
                 "Use this information to provide more relevant and personalized responses.]\n\n"
-                f"{memory}\n"
-                "</memory-context>"
+                + "\n\n".join(memory_parts)
+                + "\n</memory-context>"
             )
             parts.append(memory_block)
         
@@ -168,6 +182,7 @@ When the user asks about a topic, prefer searching the knowledge base before ans
         media: list[str] | None = None,
         channel: str | None = None,
         chat_id: str | None = None,
+        session_instance_id: int | None = None,
     ) -> list[dict[str, Any]]:
         """
         Build the complete message list for an LLM call.
@@ -179,6 +194,7 @@ When the user asks about a topic, prefer searching the knowledge base before ans
             media: Optional list of local file paths for images/media.
             channel: Current channel (feishu, desktop, etc.).
             chat_id: Current chat/user ID.
+            session_instance_id: Optional session instance ID for observation index injection.
 
         Returns:
             List of messages including system prompt.
@@ -187,7 +203,7 @@ When the user asks about a topic, prefer searching the knowledge base before ans
         messages = []
 
         # System prompt
-        system_prompt = self.build_system_prompt(skill_names)
+        system_prompt = self.build_system_prompt(skill_names, session_instance_id=session_instance_id)
         # logger.info(f"System prompt: {system_prompt}")
         if channel and chat_id:
             system_prompt += f"\n\n## Current Session\nChannel: {channel}\nChat ID: {chat_id}"

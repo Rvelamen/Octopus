@@ -25,6 +25,7 @@ chrome.commands.onCommand.addListener(async (command) => {
         tags: ["quick-clip"],
         user_note: "",
         action: "clip",
+        is_pdf: data?.method === "pdf",
       };
 
       const apiUrl = await getApiUrl();

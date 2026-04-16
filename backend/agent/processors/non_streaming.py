@@ -5,7 +5,7 @@ import time
 from loguru import logger
 
 from backend.core.events.types import InboundMessage, OutboundMessage, AgentEvent
-from backend.agent.shared import _extract_cached_tokens, _extract_prompt_tokens_with_cache
+from backend.agent.shared import _normalize_usage
 from .base import MessageProcessor
 
 
@@ -55,7 +55,7 @@ class NonStreamingMessageProcessor(MessageProcessor):
             )
 
             provider, model, provider_type, max_tokens, temperature = self.agent_loop._get_current_provider_and_model()
-            response = await provider.chat_streaming_complete(
+            response = await provider.chat(
                 messages=messages,
                 tools=self.agent_loop.tools.get_definitions(),
                 model=model,
@@ -64,17 +64,17 @@ class NonStreamingMessageProcessor(MessageProcessor):
             )
             logger.info(f"LLM Response: {response}")
 
-            if response.usage:
-                last_prompt_tokens = _extract_prompt_tokens_with_cache(response.usage)
-                total_prompt_tokens += _extract_prompt_tokens_with_cache(response.usage)
-                total_completion_tokens += response.usage.get("completion_tokens", 0)
-                total_cached_tokens += _extract_cached_tokens(response.usage)
-                self.agent_loop._record_token_usage(
-                    session_instance_id=session_instance_id,
-                    provider_name=provider_type,
-                    model_id=model,
-                    usage=response.usage
-                )
+            normalized = _normalize_usage(response.usage, messages, response.content or "", model)
+            last_prompt_tokens = normalized["prompt_tokens"] + normalized["cached_tokens"]
+            total_prompt_tokens += normalized["prompt_tokens"] + normalized["cached_tokens"]
+            total_completion_tokens += normalized["completion_tokens"]
+            total_cached_tokens += normalized["cached_tokens"]
+            self.agent_loop._record_token_usage(
+                session_instance_id=session_instance_id,
+                provider_name=provider_type,
+                model_id=model,
+                usage=normalized
+            )
 
             if response.has_tool_calls:
                 tool_calls_data = [
@@ -197,20 +197,8 @@ class NonStreamingMessageProcessor(MessageProcessor):
                             should_stop = True
                             break
 
-                        if tool_call.name == "spawn" and result:
-                            try:
-                                parsed_result = json.loads(result)
-                                if parsed_result.get("type") == "subagent_sync" and parsed_result.get("token_usage"):
-                                    subagent_usage = parsed_result["token_usage"]
-                                    total_prompt_tokens += subagent_usage.get("prompt_tokens", 0)
-                                    total_completion_tokens += subagent_usage.get("completion_tokens", 0)
-                                    logger.info(
-                                        f"[AgentLoop] Added subagent tokens: prompt={subagent_usage.get('prompt_tokens', 0)}, "
-                                        f"completion={subagent_usage.get('completion_tokens', 0)}"
-                                    )
-                            except json.JSONDecodeError:
-                                pass
-
+                        # 注意：subagent 的 token 不累计到主 agent 的 usage 中，
+                        # 因为 subagent 的完整 react 不会出现在主上下文中
                         try:
                             result_preview = result if tool_call.name == "spawn" else (
                                 result[:500] + "..." if len(result) > 500 else result
@@ -342,6 +330,13 @@ class NonStreamingMessageProcessor(MessageProcessor):
         await self.agent_loop.compressor.maybe_compress(
             session, prompt_tokens=last_prompt_tokens, model_context_window=model_context_window
         )
+
+        if self.agent_loop.memory_manager:
+            await self.agent_loop.memory_manager.sync_turn(
+                user_msg=msg.content,
+                assistant_msg=final_content or "",
+                session_instance_id=session_instance_id,
+            )
 
         logger.info(f"[AgentLoop] Sending final response with {len(final_content)} chars")
         await self.agent_loop._send_stream_chunks(final_content, current_session, msg.channel, session_instance_id)

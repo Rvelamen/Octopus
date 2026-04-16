@@ -3,6 +3,7 @@ import { Search, Download, User, Package, Filter, ChevronDown, ChevronUp, X, Sta
 import { Modal } from 'antd';
 import WindowDots from '@components/layout/WindowDots';
 import Toast from '@components/ui/Toast';
+import './ExtensionsPanel.css';
 import EnvConfigModal from '@components/modals/EnvConfigModal';
 
 const API_BASE_URL = 'https://fanquanpintuan.cn/octopus';

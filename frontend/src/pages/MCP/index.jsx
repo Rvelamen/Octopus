@@ -5,6 +5,7 @@ import { ConfigCard, DynamicItemCard } from '@components/config';
 import { SwitchField, InputField } from '@components/forms';
 import { ToastContainer } from '@components/ui/Toast';
 import WindowDots from '@components/layout/WindowDots';
+import './MCPPanel.css';
 
 /**
  * MCPPanel 组件 - MCP管理面板

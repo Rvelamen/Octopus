@@ -74,8 +74,13 @@ DEFAULT_AVAILABLE_TOOLS = [
     ("action", "Action", "Perform actions and operations", "action", 8),
     ("message", "Message", "Send messages to users", "communication", 9),
     ("kb_search", "KB Search", "Search the knowledge base for notes by path or title", "knowledge", 10),
-    ("kb_read_note", "KB Read Note", "Read the full content of a knowledge base note", "knowledge", 11),
-    ("kb_list_links", "KB List Links", "List bidirectional links for a given note path", "knowledge", 12),
+    ("kb_timeline", "KB Timeline", "Preview a note's context before reading", "knowledge", 11),
+    ("kb_read_note", "KB Read Note", "Read the full content of a knowledge base note", "knowledge", 12),
+    ("kb_list_links", "KB List Links", "List bidirectional links for a given note path", "knowledge", 13),
+    ("memory_write", "Memory Write", "Add, replace, or remove curated memory entries", "memory", 14),
+    ("memory_search", "Memory Search", "Search observations and memory by keyword", "memory", 15),
+    ("memory_read", "Memory Read", "Read curated memory or user profile", "memory", 16),
+    ("memory_timeline", "Memory Timeline", "Get memory timeline for a session instance", "memory", 17),
 ]
 
 

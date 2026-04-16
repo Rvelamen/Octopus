@@ -1,20 +1,19 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageSquare } from 'lucide-react';
 import WindowDots from '@components/layout/WindowDots';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import InstanceList from './components/InstanceList/index.jsx';
-import MessageList from './components/MessageList/index.jsx';
+import MessageList from '@components/MessageList/index.jsx';
 import ChatInput from './components/ChatInput/index.jsx';
 import ImageModal from './components/Modals/ImageModal.jsx';
 import GenerateImageModal from './components/Modals/GenerateImageModal.jsx';
 import WorkspaceFilePreviewModal from './components/Modals/WorkspaceFilePreviewModal.jsx';
-import { looksLikeWorkspaceFilePath } from './utils/workspacePathUtils';
+import { useMessageRenderer } from '@hooks/useMessageRenderer.jsx';
 import { useInstances } from './hooks/useInstances';
 import { useMessages } from './hooks/useMessages';
 import { useFileUpload } from './hooks/useFileUpload';
 import { useTTS } from './hooks/useTTS';
 import './ChatPanel.css';
+import '../../../components/ui/ImageModal.css';
 
 function ChatPanel({
   sendWSMessage,
@@ -40,12 +39,14 @@ function ChatPanel({
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [modalImage, setModalImage] = useState(null);
-  const [workspacePreviewPath, setWorkspacePreviewPath] = useState(null);
+  const { renderMessageContent, renderPlainContent, workspacePreviewPath, setWorkspacePreviewPath } = useMessageRenderer();
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generatePrompt, setGeneratePrompt] = useState('');
   const [generateSize, setGenerateSize] = useState('1024x1024');
   const [generateQuality, setGenerateQuality] = useState('standard');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [contextStats, setContextStats] = useState(null);
 
   const messagesEndRef = useRef(null);
   const prevStreamingContentRef = useRef('');
@@ -172,6 +173,22 @@ function ChatPanel({
     }
   }, [refreshInstanceId, fetchInstanceMessages, fetchInstanceTokenUsage]);
 
+  // 获取/刷新当前 instance 的 context 统计
+  useEffect(() => {
+    if (selectedInstance?.id) {
+      fetchContextStats(selectedInstance.id);
+    } else {
+      setContextStats(null);
+    }
+  }, [selectedInstance?.id]);
+
+  // 消息变化后 also refresh context stats
+  useEffect(() => {
+    if (selectedInstance?.id && !isProcessing && !isCompressing) {
+      fetchContextStats(selectedInstance.id);
+    }
+  }, [messages.length]);
+
   // 同步 selectedInstance 到 App 层，让 App 层正确跟踪当前聊天的 instance ID
   useEffect(() => {
     onInstanceIdUpdate?.(selectedInstance?.id ?? null);
@@ -270,6 +287,34 @@ function ChatPanel({
     if (success && selectedInstance?.id === instanceId) {
       setSelectedInstance(null);
       clearMessages();
+    }
+  };
+
+  const fetchContextStats = useCallback(async (instanceId) => {
+    if (!sendWSMessage || !instanceId) return;
+    try {
+      const res = await sendWSMessage('session_get_context_stats', { instance_id: instanceId }, 5000);
+      if (res.data) {
+        setContextStats(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch context stats:', err);
+    }
+  }, [sendWSMessage]);
+
+  const handleCompress = async () => {
+    if (!sendWSMessage || !selectedInstance) return;
+    const instanceId = selectedInstance.id;
+    setIsCompressing(true);
+    try {
+      await sendWSMessage('session_compress_context', { instance_id: instanceId }, 120000);
+      await fetchInstanceMessages(instanceId);
+      await fetchContextStats(instanceId);
+    } catch (err) {
+      console.error('Failed to compress context:', err);
+      alert('压缩上下文失败: ' + err.message);
+    } finally {
+      setIsCompressing(false);
     }
   };
 
@@ -386,105 +431,7 @@ function ChatPanel({
     }
   };
 
-  const renderMessageContent = useCallback((content) => {
-    if (!content) return null;
-    return (
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          a: ({ href, children }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="md-link"
-            >
-              {children}
-            </a>
-          ),
-          p({ children }) {
-            const hasBlock = React.Children.toArray(children).some((child) => {
-              if (typeof child === 'object' && child?.type) {
-                const tag = typeof child.type === 'string' ? child.type : child.type?.name;
-                if (['pre', 'div', 'table', 'ul', 'ol', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) {
-                  return true;
-                }
-                if (tag === 'code' && child.props?.inline === false) {
-                  return true;
-                }
-              }
-              return false;
-            });
-            if (hasBlock) {
-              return <div className="md-paragraph">{children}</div>;
-            }
-            return <p>{children}</p>;
-          },
-          code({ inline, className, children, ...props }) {
-            if (inline) {
-              const inlineText = String(children).trim();
-              if (looksLikeWorkspaceFilePath(inlineText)) {
-                return (
-                  <button
-                    type="button"
-                    className="md-inline-workspace-path"
-                    onClick={() => setWorkspacePreviewPath(inlineText)}
-                    title="点击预览工作区文件"
-                  >
-                    {inlineText}
-                  </button>
-                );
-              }
-              return (
-                <code className="md-inline-code" {...props}>
-                  {children}
-                </code>
-              );
-            }
-            const text = String(children).replace(/\n$/, '').trim();
-            if (looksLikeWorkspaceFilePath(text)) {
-              return (
-                <button
-                  type="button"
-                  className="md-code-block md-workspace-path-btn"
-                  onClick={() => setWorkspacePreviewPath(text)}
-                  title="点击预览工作区文件"
-                >
-                  <pre {...props}>
-                    <code className={className}>{children}</code>
-                  </pre>
-                </button>
-              );
-            }
-            return (
-              <div className="md-code-block">
-                <pre {...props}>
-                  <code className={className}>{children}</code>
-                </pre>
-              </div>
-            );
-          },
-          pre({ children }) {
-            return <>{children}</>;
-          },
-          table({ children }) {
-            return (
-              <div className="md-table-wrapper">
-                <table className="md-table">{children}</table>
-              </div>
-            );
-          }
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    );
-  }, []);
-
-  const renderPlainContent = (content) => {
-    if (!content) return null;
-    return <span className="plain-text-content">{content}</span>;
-  };
+  // renderMessageContent / workspacePreviewPath provided by useMessageRenderer
 
   return (
     <div className="chat-layout">
@@ -516,6 +463,13 @@ function ChatPanel({
                 : 'SELECT A CHAT'}
           </span>
         </div>
+
+        {isCompressing && (
+          <div className="compressing-banner">
+            <div className="compressing-spinner" />
+            <span>正在压缩上下文，请稍候...</span>
+          </div>
+        )}
 
         <div
           className="chat-messages"
@@ -574,6 +528,9 @@ function ChatPanel({
           onSelectFile={addPendingFile}
           onGenerateImage={() => setShowGenerateModal(true)}
           placeholder={isCreatingNew || selectedInstance ? "输入消息... (Shift+Enter 换行，支持粘贴图片)" : "选择一个对话开始聊天..."}
+          onCompress={handleCompress}
+          isCompressing={isCompressing}
+          contextStats={contextStats}
         />
       </div>
 

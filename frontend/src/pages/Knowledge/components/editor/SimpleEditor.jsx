@@ -1,35 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Editor from '@monaco-editor/react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import MarkdownRenderer from '@components/MarkdownRenderer';
 import { Edit3, Save, Columns, Share2, ChevronRight, FileText, ExternalLink } from 'lucide-react';
 import './SimpleEditor.css';
-
-// Markdown 预览组件
-const MarkdownViewer = ({ content }) => {
-  if (!content) {
-    return (
-      <div style={{ padding: 24, color: 'var(--text-2)', textAlign: 'center' }}>
-        No content to preview
-      </div>
-    );
-  }
-  return (
-    <div
-      style={{
-        padding: 24,
-        color: 'var(--text)',
-        fontSize: 14,
-        lineHeight: 1.6,
-        overflowY: 'auto',
-        height: '100%',
-      }}
-      className="markdown-preview"
-    >
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-    </div>
-  );
-};
 
 // 获取语言
 const getLanguage = (filename) => {
@@ -337,7 +310,7 @@ export default function SimpleEditor({
                 height: '100%',
               }}
             >
-              <MarkdownViewer content={content} />
+              <MarkdownRenderer content={content} sendWSMessage={sendWSMessage} />
             </div>
           )}
         </div>

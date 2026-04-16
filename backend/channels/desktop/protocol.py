@@ -2,7 +2,8 @@
 
 from enum import Enum
 from typing import Any, Optional
-from dataclasses import dataclass, field
+
+from pydantic import BaseModel, ConfigDict
 
 
 class MessageType(Enum):
@@ -47,6 +48,8 @@ class MessageType(Enum):
     SESSION_CREATE = "session_create"                              # Create a new session with instance
     SESSION_SET_ACTIVE = "session_set_active"                      # Set an instance as active
     SESSION_GET_INSTANCES = "session_get_instances"                # Get instances list with pagination
+    SESSION_COMPRESS_CONTEXT = "session_compress_context"          # Compress context for an instance
+    SESSION_GET_CONTEXT_STATS = "session_get_context_stats"        # Get context usage stats for an instance
 
     # Knowledge Base - Client -> Server
     KNOWLEDGE_LIST = "knowledge_list"                    # List knowledge directory contents
@@ -55,6 +58,25 @@ class MessageType(Enum):
     KNOWLEDGE_DELETE = "knowledge_delete"                # Delete knowledge file or directory
     KNOWLEDGE_SEARCH = "knowledge_search"                # Search knowledge notes
     KNOWLEDGE_GRAPH = "knowledge_graph"                  # Get knowledge graph data
+    KNOWLEDGE_DISTILL = "knowledge_distill"                 # Distill document to note
+    KNOWLEDGE_DISTILL_PREVIEW = "knowledge_distill_preview" # Preview distillation without writing
+    KNOWLEDGE_DISTILL_LIST = "knowledge_distill_list"       # List distillation tasks
+    KNOWLEDGE_GET_TAGS = "knowledge_get_tags"               # Get all tags
+    KNOWLEDGE_EXPORT = "knowledge_export"                   # Export knowledge base as zip
+    KNOWLEDGE_IMPORT = "knowledge_import"                   # Import knowledge base from zip
+    KNOWLEDGE_GET_DOCUMENT_META = "knowledge_get_document_meta"  # Get metadata for documents by sha256
+
+    # File Preview - Client -> Server
+    FILE_PREVIEW_PDF = "file_preview_pdf"                   # Convert file to PDF for preview
+
+    # Memory Stream - Client -> Server
+    MEMORY_LIST = "memory_list"                          # List observations
+    MEMORY_SEARCH = "memory_search"                      # Search observations (frontend)
+    MEMORY_READ = "memory_read"                          # Read single observation
+    MEMORY_TIMELINE = "memory_timeline"                  # Get observation timeline
+    MEMORY_DELETE = "memory_delete"                      # Delete observation
+    MEMORY_EXTRACT = "memory_extract"                    # Client -> Server: manually trigger observation extraction
+    MEMORY_PROMOTE = "memory_promote"                    # Client -> Server: promote observation to curated memory
 
     # Workspace File System - Client -> Server
     WORKSPACE_LIST = "workspace_list"                    # List directory contents
@@ -158,6 +180,8 @@ class MessageType(Enum):
     SESSION_CREATED = "session_created"                # Session created confirmation
     SESSION_ACTIVE_SET = "session_active_set"          # Active instance set confirmation
     SESSION_INSTANCES = "session_instances"            # Instances list with pagination
+    SESSION_CONTEXT_COMPRESSED = "session_context_compressed"  # Context compressed confirmation
+    SESSION_CONTEXT_STATS = "session_context_stats"            # Context usage stats response
 
     # Knowledge Base - Server -> Client
     KNOWLEDGE_LIST_RESULT = "knowledge_list_result"    # Knowledge directory listing result
@@ -166,8 +190,28 @@ class MessageType(Enum):
     KNOWLEDGE_DELETE_RESULT = "knowledge_delete_result"  # Knowledge delete success confirmation
     KNOWLEDGE_SEARCH_RESULT = "knowledge_search_result"  # Knowledge search results
     KNOWLEDGE_GRAPH_RESULT = "knowledge_graph_result"  # Knowledge graph data
+    KNOWLEDGE_DISTILL_RESULT = "knowledge_distill_result"   # Distill result
+    KNOWLEDGE_DISTILL_PREVIEW_RESULT = "knowledge_distill_preview_result"  # Preview result
+    KNOWLEDGE_DISTILL_PROGRESS = "knowledge_distill_progress"  # Distill progress
+    KNOWLEDGE_DISTILL_LIST_RESULT = "knowledge_distill_list_result"  # Task list result
+    KNOWLEDGE_DISTILL_DETAIL = "knowledge_distill_detail"  # Request task detail
+    KNOWLEDGE_DISTILL_DETAIL_RESULT = "knowledge_distill_detail_result"  # Task detail with iterations
+    KNOWLEDGE_GET_TAGS_RESULT = "knowledge_get_tags_result"  # Tags list result
+    KNOWLEDGE_EXPORT_RESULT = "knowledge_export_result"      # Export zip data
+    KNOWLEDGE_IMPORT_RESULT = "knowledge_import_result"      # Import success/failure
+    KNOWLEDGE_GET_DOCUMENT_META_RESULT = "knowledge_get_document_meta_result"  # Document metadata result
 
-    # Workspace File System - Server -> Client
+    # File Preview - Server -> Client
+    FILE_PREVIEW_PDF_RESULT = "file_preview_pdf_result"    # PDF conversion result
+
+    # Memory Stream - Server -> Client
+    MEMORY_LIST_RESULT = "memory_list_result"          # Observations list result
+    MEMORY_SEARCH_RESULT = "memory_search_result"      # Observation search results
+    MEMORY_READ_RESULT = "memory_read_result"          # Single observation result
+    MEMORY_TIMELINE_RESULT = "memory_timeline_result"  # Timeline result
+    MEMORY_DELETED = "memory_deleted"                  # Observation deleted confirmation
+    MEMORY_EXTRACT_RESULT = "memory_extract_result"    # Server -> Client: extraction completed
+    MEMORY_PROMOTED = "memory_promoted"                  # Server -> Client: promotion completed
     WORKSPACE_LIST_RESULT = "workspace_list_result"    # Directory listing result
     WORKSPACE_READ_RESULT = "workspace_read_result"    # File content result
     WORKSPACE_WRITE_RESULT = "workspace_write_result"  # Write success confirmation
@@ -334,33 +378,15 @@ class MessageType(Enum):
     TTS_ERROR = "tts_error"                                 # TTS error
     TTS_AUTO_REPLY = "tts_auto_reply"                       # Auto TTS reply from agent
 
-    # Knowledge - Client -> Server
-    KNOWLEDGE_DISTILL = "knowledge_distill"                 # Distill document to note
-    KNOWLEDGE_DISTILL_PREVIEW = "knowledge_distill_preview" # Preview distillation without writing
-    KNOWLEDGE_DISTILL_LIST = "knowledge_distill_list"       # List distillation tasks
-    KNOWLEDGE_GET_TAGS = "knowledge_get_tags"               # Get all tags
-    KNOWLEDGE_EXPORT = "knowledge_export"                   # Export knowledge base as zip
-    KNOWLEDGE_IMPORT = "knowledge_import"                   # Import knowledge base from zip
 
-    # Knowledge - Server -> Client
-    KNOWLEDGE_DISTILL_RESULT = "knowledge_distill_result"   # Distill result
-    KNOWLEDGE_DISTILL_PREVIEW_RESULT = "knowledge_distill_preview_result"  # Preview result
-    KNOWLEDGE_DISTILL_PROGRESS = "knowledge_distill_progress"  # Distill progress
-    KNOWLEDGE_DISTILL_LIST_RESULT = "knowledge_distill_list_result"  # Task list result
-    KNOWLEDGE_DISTILL_DETAIL = "knowledge_distill_detail"  # Request task detail
-    KNOWLEDGE_DISTILL_DETAIL_RESULT = "knowledge_distill_detail_result"  # Task detail with iterations
-    KNOWLEDGE_GET_TAGS_RESULT = "knowledge_get_tags_result"  # Tags list result
-    KNOWLEDGE_EXPORT_RESULT = "knowledge_export_result"      # Export zip data
-    KNOWLEDGE_IMPORT_RESULT = "knowledge_import_result"      # Import success/failure
-
-
-@dataclass
-class WSMessage:
+class WSMessage(BaseModel):
     """WebSocket message structure."""
-    type: MessageType
+    model_config = ConfigDict(extra="ignore")
+
+    type: MessageType | str
     request_id: Optional[str] = None
-    data: dict[str, Any] = field(default_factory=dict)
-    
+    data: dict[str, Any] = {}
+
     def to_dict(self) -> dict[str, Any]:
         """Convert message to dictionary for JSON serialization."""
         return {
@@ -368,7 +394,7 @@ class WSMessage:
             "request_id": self.request_id,
             "data": self.data
         }
-    
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "WSMessage":
         """Create message from dictionary."""
@@ -379,7 +405,7 @@ class WSMessage:
                 msg_type = MessageType(msg_type)
             except ValueError:
                 msg_type = msg_type  # Keep as string if not in enum
-        
+
         return cls(
             type=msg_type,
             request_id=data.get("request_id"),
@@ -421,12 +447,22 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.SESSION_CREATE,
     MessageType.SESSION_SET_ACTIVE,
     MessageType.SESSION_GET_INSTANCES,
+    MessageType.SESSION_COMPRESS_CONTEXT,
+    MessageType.SESSION_GET_CONTEXT_STATS,
     MessageType.KNOWLEDGE_LIST,
     MessageType.KNOWLEDGE_READ,
     MessageType.KNOWLEDGE_WRITE,
     MessageType.KNOWLEDGE_DELETE,
     MessageType.KNOWLEDGE_SEARCH,
     MessageType.KNOWLEDGE_GRAPH,
+    MessageType.KNOWLEDGE_DISTILL,
+    MessageType.KNOWLEDGE_DISTILL_PREVIEW,
+    MessageType.KNOWLEDGE_DISTILL_LIST,
+    MessageType.KNOWLEDGE_GET_TAGS,
+    MessageType.KNOWLEDGE_EXPORT,
+    MessageType.KNOWLEDGE_IMPORT,
+    MessageType.KNOWLEDGE_GET_DOCUMENT_META,
+    MessageType.FILE_PREVIEW_PDF,
     MessageType.WORKSPACE_LIST,
     MessageType.WORKSPACE_READ,
     MessageType.WORKSPACE_WRITE,
@@ -488,6 +524,7 @@ CLIENT_MESSAGE_TYPES = {
     # WeChat
     MessageType.WECHAT_GET_QRCODE,
     MessageType.WECHAT_CHECK_STATUS,
+    MessageType.WECHAT_CLEAR_TOKEN,
     # Tool
     MessageType.TOOL_GET_CONFIG,
     MessageType.TOOL_UPDATE_CONFIG,
@@ -509,19 +546,14 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.TTS_SYNTHESIZE,
     MessageType.TTS_GET_PROVIDERS,
     MessageType.TTS_GET_STYLES,
-    # Knowledge
-    MessageType.KNOWLEDGE_LIST,
-    MessageType.KNOWLEDGE_READ,
-    MessageType.KNOWLEDGE_WRITE,
-    MessageType.KNOWLEDGE_DELETE,
-    MessageType.KNOWLEDGE_SEARCH,
-    MessageType.KNOWLEDGE_GRAPH,
-    MessageType.KNOWLEDGE_DISTILL,
-    MessageType.KNOWLEDGE_DISTILL_PREVIEW,
-    MessageType.KNOWLEDGE_DISTILL_LIST,
-    MessageType.KNOWLEDGE_GET_TAGS,
-    MessageType.KNOWLEDGE_EXPORT,
-    MessageType.KNOWLEDGE_IMPORT,
+    # Memory
+    MessageType.MEMORY_LIST,
+    MessageType.MEMORY_SEARCH,
+    MessageType.MEMORY_READ,
+    MessageType.MEMORY_TIMELINE,
+    MessageType.MEMORY_DELETE,
+    MessageType.MEMORY_EXTRACT,
+    MessageType.MEMORY_PROMOTE,
 }
 
 SERVER_MESSAGE_TYPES = {
@@ -571,6 +603,8 @@ SERVER_MESSAGE_TYPES = {
     MessageType.SESSION_CREATED,
     MessageType.SESSION_ACTIVE_SET,
     MessageType.SESSION_INSTANCES,
+    MessageType.SESSION_CONTEXT_COMPRESSED,
+    MessageType.SESSION_CONTEXT_STATS,
     MessageType.WORKSPACE_LIST_RESULT,
     MessageType.WORKSPACE_READ_RESULT,
     MessageType.WORKSPACE_WRITE_RESULT,
@@ -656,4 +690,13 @@ SERVER_MESSAGE_TYPES = {
     MessageType.KNOWLEDGE_GET_TAGS_RESULT,
     MessageType.KNOWLEDGE_EXPORT_RESULT,
     MessageType.KNOWLEDGE_IMPORT_RESULT,
+    MessageType.KNOWLEDGE_GET_DOCUMENT_META_RESULT,
+    MessageType.FILE_PREVIEW_PDF_RESULT,
+    MessageType.MEMORY_LIST_RESULT,
+    MessageType.MEMORY_SEARCH_RESULT,
+    MessageType.MEMORY_READ_RESULT,
+    MessageType.MEMORY_TIMELINE_RESULT,
+    MessageType.MEMORY_DELETED,
+    MessageType.MEMORY_EXTRACT_RESULT,
+    MessageType.MEMORY_PROMOTED,
 }

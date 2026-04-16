@@ -157,7 +157,7 @@ Be concise but complete. If information is not found in the document, state it e
                     task=distill_task_desc,
                     label=f"Distill: {task.source_path}",
                     agent_role="knowledge-distiller",
-                    origin_channel="desktop",
+                    origin_channel="knowledge",
                     parent_tool_call_id=task.request_id,
                     on_iteration=on_iteration,
                 )

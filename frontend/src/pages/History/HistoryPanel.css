@@ -1,0 +1,257 @@
+/* ========== History Panel Styles ========== */
+
+.history-layout {
+  display: flex;
+  gap: var(--s-3);
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+/* Left Sidebar: Channel & Session Tree */
+.history-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--board);
+  border-radius: var(--r-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.history-sidebar .window-header {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-1) var(--s-4);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--board);
+}
+
+.history-sidebar .window-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: 1px solid var(--board);
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+  background: var(--surface);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.history-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s-2);
+}
+
+/* History Tree Node - 使用更具体的选择器避免冲突 */
+.history-tree .tree-node {
+  margin-bottom: var(--s-1);
+  display: block;
+}
+
+.history-tree .tree-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: var(--s-1) var(--s-2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 12px;
+}
+
+.history-tree .tree-item:hover {
+  background: var(--surface-2);
+}
+
+.history-tree .tree-item.selected {
+  background: rgba(180, 106, 87, 0.1);
+  color: var(--accent);
+}
+
+.history-tree .channel-item {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.history-tree .channel-item .icon-channel {
+  color: var(--accent);
+}
+
+.history-tree .session-item {
+  padding-left: var(--s-5);
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.history-tree .session-item .icon-session {
+  color: var(--text-3);
+}
+
+.history-tree .instance-item {
+  padding-left: var(--s-8);
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.history-tree .instance-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+
+.history-tree .instance-item.selected .instance-indicator {
+  background: var(--accent);
+}
+
+.history-tree .instance-name {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.history-tree .active-badge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  background: rgba(34, 197, 84, 0.15);
+  color: #22c55e;
+  border-radius: 3px;
+}
+
+/* History Tree Children - 确保在 tree-node 下方显示 */
+.history-tree .tree-children {
+  margin-top: var(--s-1);
+  display: block;
+  width: 100%;
+}
+
+.empty-state-small {
+  padding: var(--s-4);
+  text-align: center;
+  color: var(--text-3);
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* Right: Message History Content */
+.history-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--board);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.history-content .window-header {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-1) var(--s-4);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--board);
+}
+
+.history-content .window-header .window-title {
+  flex: 1;
+}
+
+.history-content .filter-select {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--board);
+  border-radius: var(--r-md);
+  padding: var(--s-1) var(--s-3);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.history-content .filter-select:hover {
+  border-color: var(--primary);
+}
+
+.history-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s-5);
+}
+
+.history-messages .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-4);
+  padding: var(--s-10);
+  color: var(--text-3);
+  text-align: center;
+}
+
+.history-messages .empty-icon {
+  opacity: 0.5;
+}
+
+/* Delete Instance Button */
+.delete-instance-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+  margin-left: auto;
+  border-radius: var(--r-sm);
+}
+
+.tree-item:hover .delete-instance-btn {
+  opacity: 1;
+}
+
+.delete-instance-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.instance-item {
+  position: relative;
+}
+
+.instance-item .instance-name {
+  flex: 1;
+}
+

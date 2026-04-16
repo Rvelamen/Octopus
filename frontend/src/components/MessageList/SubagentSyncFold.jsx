@@ -156,7 +156,7 @@ function SubagentSyncFold({ result }) {
         width={720}
         footer={null}
         className="subagent-detail-modal"
-        destroyOnClose
+        destroyOnHidden
       >
         <div className="subagent-detail-content">
           {detailSegments.length > 0 ? (

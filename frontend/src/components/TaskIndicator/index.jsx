@@ -30,9 +30,17 @@ export default function TaskIndicator({
 
   // 使用总任务数作为徽章显示
   const totalTaskCount = pagination?.total || 0;
+  const isPulsing = activeTaskCount > 0;
 
   return (
     <div style={{ position: 'relative' }}>
+      <style>{`
+        @keyframes task-pulse {
+          0% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.55; transform: scale(1.12); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
       <button
         onClick={handleClick}
         style={{
@@ -51,7 +59,9 @@ export default function TaskIndicator({
         }}
         title="Distill Tasks"
       >
-        <Bot size={16} />
+        <span style={{ display: 'inline-flex', animation: isPulsing ? 'task-pulse 1.6s infinite ease-in-out' : 'none' }}>
+          <Bot size={16} />
+        </span>
         {totalTaskCount > 0 && (
           <span
             style={{

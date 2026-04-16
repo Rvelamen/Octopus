@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Bot, Plus, Save, Trash2, RefreshCw, FileText, Folder, Settings, Code, ChevronDown, Check } from 'lucide-react';
 import WindowDots from '@components/layout/WindowDots';
+import './AgentsPanel.css';
 
 function AgentsPanel({ sendWSMessage }) {
   const [agents, setAgents] = useState([]);

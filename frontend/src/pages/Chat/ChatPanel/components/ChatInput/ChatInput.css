@@ -241,6 +241,32 @@
   border-radius: 3px;
 }
 
+.inputbar-context-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 3px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+.inputbar-context-badge:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--bg-secondary);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
 .inputbar-send-btn {
   display: flex;
   align-items: center;

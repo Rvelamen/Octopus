@@ -25,7 +25,7 @@ function extractPage() {
       url: window.location.href,
       markdown: "",
       excerpt: "PDF 文档",
-      method: "fallback",
+      method: "pdf",
     };
   }
 

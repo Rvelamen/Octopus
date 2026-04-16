@@ -3,7 +3,7 @@ import { File, Image, RefreshCw, Download } from 'lucide-react';
 import { Table } from 'antd';
 import * as XLSX from 'xlsx';
 import * as mammoth from 'mammoth';
-import JSZip from 'jszip';
+
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -446,9 +446,12 @@ const PdfViewer = ({ file, content }) => {
   );
 };
 
+const PPT_EXTS = new Set(['ppt', 'pptx', 'pptm', 'ppsx', 'ppsm', 'potx', 'potm', 'thmx']);
+
 const BinaryViewer = ({ file, content }) => {
   const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
   const isDoc = ['doc', 'docx'].includes(fileExt);
+  const isPpt = PPT_EXTS.has(fileExt);
 
   const handleDownload = () => {
     const binaryData = file.encoding === 'hex' ? hexToBase64(content) : content;
@@ -476,14 +479,17 @@ const BinaryViewer = ({ file, content }) => {
       <p className="binary-size">{formatSize(file.size)}</p>
       <p className="binary-type">
         {isDoc && '📝 Word Document'}
-        {!isDoc && '🔒 Binary File'}
+        {isPpt && '📊 PowerPoint'}
+        {!isDoc && !isPpt && '🔒 Binary File'}
       </p>
       <button className="binary-download-btn" onClick={handleDownload}>
         <Download size={16} />
         Download File
       </button>
       <p className="binary-hint">
-        This file type cannot be previewed. Please download to view.
+        {isPpt
+          ? 'Legacy .ppt (OLE) or macro-enabled PowerPoint files cannot be previewed in browser. Please download to view.'
+          : 'This file type cannot be previewed. Please download to view.'}
       </p>
     </div>
   );
@@ -783,376 +789,89 @@ const decodeXmlEntities = (str) => {
     .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
 };
 
-const escapeHtml = (str) =>
-  str
+const escapeHtml = (str) => {
+  if (typeof str !== 'string') return '';
+  return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
-
-const PPTX_WEB_IMAGE_EXT = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg']);
-
-const pptxMimeFromExt = (ext) => {
-  const e = (ext || '').toLowerCase();
-  if (e === 'png') return 'image/png';
-  if (e === 'jpg' || e === 'jpeg') return 'image/jpeg';
-  if (e === 'gif') return 'image/gif';
-  if (e === 'webp') return 'image/webp';
-  if (e === 'bmp') return 'image/bmp';
-  if (e === 'svg') return 'image/svg+xml';
-  return null;
 };
 
-const zipEntryInsensitive = (zip, pathNorm) => {
-  const n = pathNorm.replace(/\\/g, '/');
-  const lower = n.toLowerCase();
-  const key = Object.keys(zip.files).find(
-    (k) => !zip.files[k].dir && k.replace(/\\/g, '/').toLowerCase() === lower
-  );
-  return key ? zip.file(key) : null;
-};
-
-const resolvePptxRelTarget = (partPath, target) => {
-  const norm = partPath.replace(/\\/g, '/');
-  const idx = norm.lastIndexOf('/');
-  const dir = idx >= 0 ? norm.slice(0, idx) : '';
-  const parts = dir.split('/').filter(Boolean);
-  const segs = target.replace(/\\/g, '/').split('/').filter((x) => x && x !== '.');
-  for (const p of segs) {
-    if (p === '..') parts.pop();
-    else parts.push(p);
+const hexToUint8Array = (hex) => {
+  const s = hex.replace(/\s/g, '');
+  if (s.length % 2 !== 0) throw new Error('Invalid hex content');
+  const len = s.length / 2;
+  const u8 = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    u8[i] = parseInt(s.substr(i * 2, 2), 16);
   }
-  return parts.join('/');
+  return u8;
 };
 
-const parsePptxRelationshipElements = (relsXml) => {
-  const rows = [];
-  if (!relsXml) return rows;
-  const re = /<Relationship\b([^>]*)>/gi;
-  let m;
-  while ((m = re.exec(relsXml)) !== null) {
-    const attrs = m[1];
-    const id = /Id\s*=\s*"([^"]+)"/i.exec(attrs)?.[1];
-    const type = /Type\s*=\s*"([^"]+)"/i.exec(attrs)?.[1];
-    const target = /Target\s*=\s*"([^"]+)"/i.exec(attrs)?.[1];
-    const targetMode = /TargetMode\s*=\s*"([^"]+)"/i.exec(attrs)?.[1];
-    if (id && target) rows.push({ id, type: type || '', target, targetMode });
-  }
-  return rows;
+const looksLikeHex = (str) => {
+  if (!str || str.length % 2 !== 0) return false;
+  return /^[0-9a-fA-F\s]+$/.test(str);
 };
 
-const collectOrderedPptxEmbedIds = (slideXml) => {
-  const ids = [];
-  const seen = new Set();
-  const re = /\br:embed="([^"]+)"/g;
-  let m;
-  while ((m = re.exec(slideXml)) !== null) {
-    const id = m[1];
-    if (!seen.has(id)) {
-      seen.add(id);
-      ids.push(id);
-    }
-  }
-  return ids;
-};
-
-const PPTX_MAX_IMAGE_BYTES = 12 * 1024 * 1024;
-
-const loadPptxSlideImageDataUrls = async (zip, slidePath, slideXml) => {
-  const slideNorm = slidePath.replace(/\\/g, '/');
-  const fileName = slideNorm.split('/').pop();
-  const dir = slideNorm.includes('/') ? slideNorm.slice(0, slideNorm.lastIndexOf('/') + 1) : '';
-  const relsPath = `${dir}_rels/${fileName}.rels`;
-  const relFile = zip.file(relsPath) || zipEntryInsensitive(zip, relsPath);
-
-  const idToImagePath = new Map();
-  if (relFile) {
-    const relsXml = await relFile.async('string');
-    for (const row of parsePptxRelationshipElements(relsXml)) {
-      if (row.targetMode === 'External') continue;
-      if (!row.type.toLowerCase().includes('relationships/image')) continue;
-      const t = row.target.replace(/\\/g, '/');
-      const resolved = t.startsWith('/')
-        ? t.replace(/^\/+/, '')
-        : resolvePptxRelTarget(slideNorm, row.target);
-      idToImagePath.set(row.id, resolved);
-    }
-  }
-
-  const embedIds = collectOrderedPptxEmbedIds(slideXml);
-  const dataUrls = [];
-
-  for (const rid of embedIds) {
-    const imgPath = idToImagePath.get(rid);
-    if (!imgPath) continue;
-    const ext = (imgPath.split('.').pop() || '').split('?')[0];
-    const mime = pptxMimeFromExt(ext);
-    if (!mime || !PPTX_WEB_IMAGE_EXT.has(ext.toLowerCase())) continue;
-    const f = zip.file(imgPath) || zipEntryInsensitive(zip, imgPath);
-    if (!f) continue;
-    const u8 = await f.async('uint8array');
-    if (u8.length > PPTX_MAX_IMAGE_BYTES) continue;
-    let binary = '';
-    const chunk = 0x8000;
-    for (let i = 0; i < u8.length; i += chunk) {
-      binary += String.fromCharCode.apply(null, u8.subarray(i, Math.min(i + chunk, u8.length)));
-    }
-    dataUrls.push(`data:${mime};base64,${btoa(binary)}`);
-  }
-
-  return dataUrls;
-};
-
-const extractPptxSlideTexts = (slideXml) => {
-  if (!slideXml) return [];
-  const texts = [];
-
-  const pushText = (raw) => {
-    const t = decodeXmlEntities(raw).replace(/\s+/g, ' ').trim();
-    if (t) texts.push(t);
-  };
-
-  const reAT = /<a:t[^>]*>([\s\S]*?)<\/a:t>/gi;
-  let m;
-  while ((m = reAT.exec(slideXml)) !== null) {
-    pushText(m[1]);
-  }
-
-  if (texts.length === 0) {
-    const reAnyT = /<[^:>\s]+:t[^>]*>([\s\S]*?)<\/[^:>\s]+:t>/gi;
-    while ((m = reAnyT.exec(slideXml)) !== null) {
-      pushText(m[1]);
-    }
-  }
-
-  return texts;
-};
-
-const buildSlidePreviewHtml = (slideXml, slideIndex, imageDataUrls = []) => {
-  const texts = extractPptxSlideTexts(slideXml);
-  const textBlock =
-    texts.length > 0 ? texts.map((t) => `<p>${escapeHtml(t)}</p>`).join('') : '';
-  const imgs =
-    imageDataUrls.length > 0
-      ? imageDataUrls
-          .map(
-            (src) =>
-              `<div class="pptx-slide-img-wrap"><img class="pptx-slide-img" src="${src}" alt="" /></div>`
-          )
-          .join('')
-      : '';
-  const emptyHint =
-    !textBlock && !imgs
-      ? '<p class="pptx-empty-hint">此页未解析到文本或图片（可能为图表、视频或特殊版式）。</p>'
-      : '';
-  return `
-      <div class="pptx-slide-inner" data-slide="${slideIndex}">
-        <div class="slide-texts">${textBlock}${emptyHint}</div>
-        ${imgs ? `<div class="slide-images">${imgs}</div>` : ''}
-      </div>
-    `;
-};
-
-const PptxViewer = ({ file, content }) => {
-  const [slides, setSlides] = useState([]);
-  const [currentSlide, setCurrentSlide] = useState(0);
+const PptxViewer = ({ file, content, sendWSMessage }) => {
+  const [pdfContent, setPdfContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const scrollContainerRef = useRef(null);
-  const slideRefs = useRef([]);
 
   useEffect(() => {
-    const loadPptx = async () => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setPdfContent(null);
+
+    const init = async () => {
       try {
-        setLoading(true);
-        setError(null);
-
-        let byteArray;
-        if (file.encoding === 'hex') {
-          const hexString = (content || '').replace(/\s/g, '');
-          const pairs = hexString.match(/.{1,2}/g);
-          if (!pairs) throw new Error('Invalid hex content');
-          byteArray = new Uint8Array(pairs.map((byte) => parseInt(byte, 16)));
-        } else if (file.encoding === 'base64') {
-          const binaryData = atob(content);
-          byteArray = new Uint8Array(binaryData.length);
-          for (let i = 0; i < binaryData.length; i++) {
-            byteArray[i] = binaryData.charCodeAt(i);
-          }
-        } else {
-          const binaryData = atob(content);
-          byteArray = new Uint8Array(binaryData.length);
-          for (let i = 0; i < binaryData.length; i++) {
-            byteArray[i] = binaryData.charCodeAt(i);
-          }
+        if (!file.path) {
+          throw new Error('File path is required for PDF preview conversion');
         }
-
-        const zip = await JSZip.loadAsync(byteArray);
-
-        const slideRefsList = [];
-        const contentTypes = await zip.file('[Content_Types].xml')?.async('string');
-
-        if (contentTypes) {
-          const slideMatches = contentTypes.match(/PartName="\/ppt\/slides\/slide\d+\.xml"/g) || [];
-          for (const match of slideMatches) {
-            const slideNum = match.match(/slide(\d+)\.xml/)[1];
-            slideRefsList.push(`ppt/slides/slide${slideNum}.xml`);
-          }
+        if (!sendWSMessage) {
+          throw new Error('sendWSMessage is required for PDF preview conversion');
         }
-
-        if (slideRefsList.length === 0) {
-          const allFiles = Object.keys(zip.files);
-          for (const fileName of allFiles) {
-            if (fileName.match(/ppt\/slides\/slide\d+\.xml$/)) {
-              slideRefsList.push(fileName);
-            }
-          }
+        const response = await sendWSMessage('file_preview_pdf', { path: file.path }, 120000);
+        const data = response.data || {};
+        if (!data.success || !data.content) {
+          throw new Error(data.error || 'PDF conversion failed');
         }
-
-        slideRefsList.sort((a, b) => {
-          const numA = parseInt(a.match(/slide(\d+)/)[1], 10);
-          const numB = parseInt(b.match(/slide(\d+)/)[1], 10);
-          return numA - numB;
-        });
-
-        const slidesData = [];
-        for (const slidePath of slideRefsList) {
-          const slideXml = await zip.file(slidePath)?.async('string');
-          if (slideXml) {
-            const imageDataUrls = await loadPptxSlideImageDataUrls(zip, slidePath, slideXml);
-            slidesData.push({ path: slidePath, xml: slideXml, imageDataUrls });
-          }
-        }
-
-        setSlides(slidesData);
-        setCurrentSlide(0);
+        if (!cancelled) setPdfContent(data.content);
       } catch (err) {
-        console.error('Failed to load pptx:', err);
-        setError('Failed to load PowerPoint file: ' + err.message);
+        console.error('Failed to load pptx preview:', err);
+        if (!cancelled) setError(err.message || 'Failed to load PowerPoint file');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    loadPptx();
-  }, [content, file.encoding]);
-
-  const thumbHtml = useMemo(() => {
-    return slides.map((s, i) => buildSlidePreviewHtml(s.xml, i, s.imageDataUrls || []));
-  }, [slides]);
-
-  const scrollToSlide = useCallback((index) => {
-    const slideElement = slideRefs.current[index];
-    if (slideElement && scrollContainerRef.current) {
-      slideElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, []);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container || slides.length === 0) return;
-
-    const handleScroll = () => {
-      const containerRect = container.getBoundingClientRect();
-      const containerTop = containerRect.top;
-      const containerHeight = containerRect.height;
-
-      let closestSlide = 0;
-      let minDistance = Infinity;
-
-      slideRefs.current.forEach((slideEl, index) => {
-        if (!slideEl) return;
-        const slideRect = slideEl.getBoundingClientRect();
-        const slideTop = slideRect.top - containerTop;
-        const distance = Math.abs(slideTop);
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestSlide = index;
-        }
-      });
-
-      setCurrentSlide(closestSlide);
+    init();
+    return () => {
+      cancelled = true;
     };
+  }, [file.path, sendWSMessage]);
 
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [slides.length]);
+  if (error) {
+    // Fallback to binary download viewer when PDF conversion fails (e.g. LibreOffice missing)
+    return <BinaryViewer file={file} content={content} />;
+  }
 
   if (loading) {
     return (
       <div className="pptx-preview loading">
         <RefreshCw size={32} className="spin" />
-        <p>Loading PowerPoint file...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="pptx-preview error">
-        <File size={48} />
-        <p>{error}</p>
-        <p style={{ fontSize: '12px', color: '#666' }}>{file.name}</p>
-      </div>
-    );
-  }
-
-  if (slides.length === 0) {
-    return (
-      <div className="pptx-preview error">
-        <File size={48} />
-        <p>No slides found in this file</p>
-        <p style={{ fontSize: '12px', color: '#666' }}>{file.name}</p>
+        <p>Converting PowerPoint to PDF for preview...</p>
       </div>
     );
   }
 
   return (
-    <div className="pptx-preview pptx-scroll-mode">
-      <div className="pptx-sidebar">
-        <div className="pptx-sidebar-header">
-          <span className="pptx-sidebar-title">Slides ({slides.length})</span>
-        </div>
-        <div className="pptx-thumbnails-scroll">
-          {slides.map((slide, index) => (
-            <div
-              key={slide.path || index}
-              className={`pptx-thumb ${currentSlide === index ? 'active' : ''}`}
-              onClick={() => scrollToSlide(index)}
-            >
-              <div className="thumb-number">{index + 1}</div>
-              <div className="thumb-content">
-                {thumbHtml[index] ? (
-                  <div dangerouslySetInnerHTML={{ __html: thumbHtml[index] }} />
-                ) : (
-                  <div className="thumb-placeholder">Slide {index + 1}</div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="pptx-content-scroll" ref={scrollContainerRef}>
-        {slides.map((slide, index) => {
-          const slideHtml = buildSlidePreviewHtml(slide.xml, index, slide.imageDataUrls || []);
-          return (
-            <div
-              key={slide.path || index}
-              ref={(el) => (slideRefs.current[index] = el)}
-              className="pptx-slide-card"
-            >
-              <div
-                className="pptx-slide-html"
-                dangerouslySetInnerHTML={{
-                  __html: slideHtml || '<div class="pptx-empty-hint">Loading…</div>',
-                }}
-              />
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <PdfViewer
+      file={{ ...file, encoding: 'base64' }}
+      content={pdfContent}
+    />
   );
 };
 

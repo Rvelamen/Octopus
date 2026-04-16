@@ -2,7 +2,6 @@
 
 import asyncio
 import base64
-import json
 import time
 from pathlib import Path
 from typing import Any
@@ -11,30 +10,12 @@ from loguru import logger
 
 from backend.core.events.types import InboundMessage, OutboundMessage, AgentEvent, MessageContentItem
 from backend.core.events.bus import MessageBus
-from backend.core.providers.base import LLMProvider
-from backend.core.providers.factory import create_provider
-from backend.agent.config_service import AgentConfigService
-from backend.agent.context import ContextBuilder, set_agent_loop
-from backend.agent.compressor import ContextCompressor
-from backend.agent.shared import PreparedContext, _extract_cached_tokens, _extract_prompt_tokens_with_cache
-from backend.tools.registry import ToolRegistry
-from backend.tools.filesystem import ReadFileTool, WriteFileTool, EditFileTool, ListDirTool
-from backend.tools.shell import ExecTool
-
+from backend.agent.context import set_agent_loop
+from backend.agent.shared import PreparedContext
+from backend.data.commands import handle_session_command
 from backend.tools.message import MessageTool
 from backend.tools.spawn import SpawnTool
 from backend.tools.cron import CronTool
-from backend.tools.action import ActionTool
-from backend.tools.image import ImageUnderstandTool, ImageGenerateTool
-from backend.tools.web_fetch import WebFetchTool
-from backend.tools.knowledge import KBSearchTool, KBReadNoteTool, KBListLinksTool
-from backend.tools.browser.registration import register_browser_tools, cleanup_browser_tools
-from backend.agent.subagent import SubagentManager
-from backend.agent.aggregator import SubagentAggregator
-from backend.data.session_manager import SessionManager
-from backend.data.commands import handle_session_command
-from backend.data.token_store import TokenUsageRepository
-from backend.extensions.loader import ExtensionLoader
 
 from backend.agent.processors import (
     LongtaskMessageProcessor,
@@ -43,11 +24,13 @@ from backend.agent.processors import (
     StreamingMessageProcessor,
 )
 
+from backend.agent.container import AgentContainer
+
 
 class AgentLoop:
     """
     The agent loop is the core processing engine.
-    
+
     It:
     1. Receives messages from the bus
     2. Builds context with history, memory, skills
@@ -56,64 +39,15 @@ class AgentLoop:
     5. Sends responses back
     """
 
-    def __init__(
-        self,
-        bus: MessageBus,
-        workspace: Path,
-        max_iterations: int = 20,
-        exec_config: "ExecToolConfig | None" = None,
-        cron_service: "CronService | None" = None,
-        db: "Database | None" = None,
-        subagent_manager: "SubagentManager | None" = None,
-        mcp_bridge=None,
-    ):
-        from backend.core.config.schema import ExecToolConfig
-        from backend.data import Database
-
-        self.bus = bus
-        self.workspace = workspace
-        self._default_max_iterations = max_iterations
-        self.exec_config = exec_config or ExecToolConfig()
-        self.cron_service = cron_service
-        self.db = db or Database()
-
-        self.context = ContextBuilder(workspace)
-        self.sessions = SessionManager(workspace, db=self.db)
-        self.tools = ToolRegistry(mcp_bridge=mcp_bridge)
-        self.token_usage = TokenUsageRepository(self.db)
-
-        self.compressor = ContextCompressor(
-            db=self.db,
-            sessions=self.sessions,
-            token_usage=self.token_usage,
-            get_provider_and_model=self._get_current_provider_and_model,
-            record_token_usage=self._record_token_usage,
-        )
-
-        # Initialize aggregator for multi-subagent support
-        self.aggregator = SubagentAggregator(bus)
-        
-        # Create subagent manager with aggregator
-        if subagent_manager:
-            self.subagents = subagent_manager
-        else:
-            self.subagents = SubagentManager(
-                workspace=workspace,
-                bus=bus,
-                exec_config=self.exec_config,
-                aggregator=self.aggregator
-            )
+    def __init__(self, container: AgentContainer):
+        self._container = container
 
         set_agent_loop(self)
 
-        self.extension_loader = ExtensionLoader(workspace=workspace)
-
         self._running = False
         self._stop_current_task = False
-        # Instance-level stop flags: { instance_id: stop_flag }
         self._instance_stop_flags: dict[int, bool] = {}
 
-        # Initialize processors
         self._processors = [
             LongtaskMessageProcessor(self),
             SystemMessageProcessor(self),
@@ -121,20 +55,70 @@ class AgentLoop:
             NonStreamingMessageProcessor(self),
         ]
 
-        # Register default tools
-        self._register_default_tools()
+    @property
+    def bus(self) -> MessageBus:
+        return self._container.bus
 
     @property
-    def tts_service(self):
-        """Lazy-load TTS service to avoid circular imports."""
-        from backend.services.tts_service import TTSServiceFactory
-        if not hasattr(self, '_tts_service'):
-            self._tts_service = TTSServiceFactory.create_service(self.db)
-        return self._tts_service
+    def workspace(self) -> Path:
+        return self._container.workspace
+
+    @property
+    def db(self) -> Any:
+        return self._container.db
+
+    @property
+    def exec_config(self) -> Any:
+        return self._container.exec_config
+
+    @property
+    def cron_service(self) -> Any:
+        return self._container.cron_service
+
+    @property
+    def context(self) -> Any:
+        return self._container.context
+
+    @property
+    def memory_manager(self) -> Any:
+        return self._container.memory_manager
+
+    @property
+    def sessions(self) -> Any:
+        return self._container.sessions
+
+    @property
+    def tools(self) -> Any:
+        return self._container.tools
+
+    @property
+    def token_usage(self) -> Any:
+        return self._container.token_usage
+
+    @property
+    def compressor(self) -> Any:
+        return self._container.compressor
+
+    @property
+    def aggregator(self) -> Any:
+        return self._container.aggregator
+
+    @property
+    def subagents(self) -> Any:
+        return self._container.subagents
+
+    @property
+    def extension_loader(self) -> Any:
+        return self._container.extension_loader
+
+    @property
+    def tts_service(self) -> Any:
+        return self._container.tts_service
 
     @property
     def max_iterations(self) -> int:
         """Get max iterations from config or default."""
+        from backend.agent.config_service import AgentConfigService
         try:
             config_service = AgentConfigService(self.db)
             defaults = config_service.get_agent_defaults()
@@ -142,12 +126,22 @@ class AgentLoop:
                 return defaults.max_iterations
         except Exception as e:
             logger.warning(f"Failed to get max_iterations from config: {e}")
-        return self._default_max_iterations
+        return self._container.max_iterations
 
-    def _get_current_provider_and_model(self) -> tuple[LLMProvider, str, str, int, float]:
-        """Get current provider, model, provider_type, max_tokens, and temperature from database."""
-        config_service = AgentConfigService(self.db)
-        return config_service.get_default_provider_and_model()
+    def _get_current_provider_and_model(self) -> tuple[Any, str, str, int, float]:
+        return self._container._get_current_provider_and_model()
+
+    def _record_token_usage(
+        self,
+        session_instance_id: int | None,
+        provider_name: str,
+        model_id: str,
+        usage: dict,
+        request_type: str = "chat"
+    ) -> None:
+        self._container._record_token_usage(
+            session_instance_id, provider_name, model_id, usage, request_type
+        )
 
     async def _emit(self, event_type: str, data: dict, channel: str = ""):
         """Emit an agent event to the bus."""
@@ -161,7 +155,7 @@ class AgentLoop:
         """Send content as a series of stream chunks to simulate streaming for non-desktop channels."""
         if not content:
             return
-        
+
         for i in range(0, len(content), chunk_size):
             chunk = content[i:i + chunk_size]
             await self._emit("agent_chunk", {
@@ -169,63 +163,6 @@ class AgentLoop:
                 "session": session,
                 "session_instance_id": session_instance_id
             }, channel=channel)
-
-    def _register_default_tools(self) -> None:
-        """Register the built-in tool set, respecting agent defaults configuration."""
-        # Load enabled tools from agent defaults (if configured)
-        enabled_tools = set()
-        try:
-            from backend.data.provider_store import AgentDefaultsRepository
-            repo = AgentDefaultsRepository(self.db)
-            defaults = repo.get_agent_defaults()
-            if defaults and defaults.tools:
-                enabled_tools = set(defaults.tools)
-        except Exception as e:
-            logger.warning(f"Failed to load agent default tools: {e}")
-
-        # If no tools are configured, enable all defaults for backward compatibility
-        use_all = not enabled_tools
-
-        def should_register(name: str) -> bool:
-            return use_all or name in enabled_tools
-
-        if should_register("read"):
-            self.tools.register(ReadFileTool())
-        if should_register("write"):
-            self.tools.register(WriteFileTool())
-        if should_register("edit"):
-            self.tools.register(EditFileTool())
-        if should_register("list"):
-            self.tools.register(ListDirTool())
-        if should_register("exec"):
-            self.tools.register(ExecTool(
-                working_dir=str(self.workspace),
-                timeout=self.exec_config.timeout,
-                restrict_to_workspace=self.exec_config.restrict_to_workspace,
-            ))
-        if should_register("message"):
-            self.tools.register(MessageTool(send_callback=self.bus.publish_outbound))
-        if should_register("spawn"):
-            self.tools.register(SpawnTool(manager=self.subagents, aggregator=self.aggregator))
-        if should_register("web_fetch"):
-            self.tools.register(WebFetchTool())
-        if should_register("kb_search"):
-            self.tools.register(KBSearchTool())
-        if should_register("kb_read_note"):
-            self.tools.register(KBReadNoteTool())
-        if should_register("kb_list_links"):
-            self.tools.register(KBListLinksTool())
-        if should_register("image_understand"):
-            self.tools.register(ImageUnderstandTool())
-        if should_register("image_generate"):
-            self.tools.register(ImageGenerateTool())
-        if should_register("cron"):
-            self.tools.register(CronTool(cron_service=self.cron_service))
-        if should_register("action"):
-            self.tools.register(ActionTool())
-        if use_all or any(t in enabled_tools for t in ["browser_snapshot", "browser_click", "browser_type", "browser_navigate"]):
-            register_browser_tools(self.tools)
-        logger.info(f"Default tools registered (enabled: {len(self.tools)} tools)")
 
     async def load_extensions(self) -> dict[str, bool]:
         """Load all extensions from workspace/extensions."""
@@ -240,14 +177,14 @@ class AgentLoop:
         logger.info("Agent loop started")
 
         await self.load_extensions()
-        
+
         while self._running:
             try:
                 msg = await asyncio.wait_for(
                     self.bus.consume_inbound(),
                     timeout=1.0
                 )
-                
+
                 try:
                     response = await self._process_message(msg)
                     if response:
@@ -261,32 +198,29 @@ class AgentLoop:
                     ))
             except asyncio.TimeoutError:
                 continue
-    
+
     def stop(self) -> None:
         """Stop the agent loop."""
         self._running = False
         logger.info("Agent loop stopping")
-    
+
     def stop_current_task(self) -> None:
         """Stop the current running task (all instances)."""
         self._stop_current_task = True
-        # Stop all instance-specific tasks as well
         for instance_id in list(self._instance_stop_flags.keys()):
             self._instance_stop_flags[instance_id] = True
         logger.info("Agent current task stopping (all instances)")
-    
+
     def stop_instance_task(self, instance_id) -> None:
         """Stop the running task for a specific instance."""
-        # Convert to int if string
         instance_id_int = int(instance_id) if instance_id else None
         if instance_id_int:
             self._instance_stop_flags[instance_id_int] = True
             logger.info(f"Agent task stop signal sent for instance: {instance_id_int}")
         else:
-            # Fallback to global stop
             self._stop_current_task = True
             logger.info("Agent task stop signal sent (no instance_id, using global stop)")
-    
+
     def reset_stop_flag(self, instance_id=None) -> None:
         """Reset the stop flag for new task."""
         if instance_id:
@@ -366,24 +300,18 @@ class AgentLoop:
     ) -> tuple[PreparedContext | None, OutboundMessage | None]:
         """
         Common preparation logic shared by streaming and non-streaming paths.
-        
-        Handles: message type filtering → session init → instance switching → 
-        command processing → tool context injection → multimodal content building → message saving.
-        
+
         Returns:
             (PreparedContext, None) when ready for LLM call
-            (None, OutboundMessage) for early returns (command result, system message, etc.)
-            (None, None) for longtask_auth (no response needed, caller should return None)
+            (None, OutboundMessage) for early returns
+            (None, None) for longtask_auth
         """
-
-        # longtask_complete is handled here as a side-effect before normal processing
         if msg.message_type == "longtask_complete":
             await self._process_longtask_message(msg)
 
         logger.info(f"Processing message from {msg.channel}:{msg.sender_id}")
 
         current_session = session_key or msg.session_key
-
         event_content = msg.text_content if msg.is_multimodal else msg.content
 
         session_key = msg.session_key
@@ -445,6 +373,7 @@ class AgentLoop:
                 media=None,
                 channel=msg.channel,
                 chat_id=msg.chat_id,
+                session_instance_id=session_instance_id,
             )
             images = msg.get_images()
             image_list = [{"path": img.image_path, "name": img.image_path.split('/').pop()} for img in images] if images else []
@@ -475,6 +404,7 @@ class AgentLoop:
                 media=msg.media if msg.media else None,
                 channel=msg.channel,
                 chat_id=msg.chat_id,
+                session_instance_id=session_instance_id,
             )
             session.add_message("user", msg.content, message_type=msg.message_type)
         self.sessions.save(session)
@@ -487,7 +417,6 @@ class AgentLoop:
             session_key=session_key,
         ), None
 
-    # Keep backward-compatible delegations for any external callers
     async def _process_longtask_message(self, msg: InboundMessage) -> OutboundMessage | None:
         processor = LongtaskMessageProcessor(self)
         return await processor.process(msg)
@@ -520,7 +449,6 @@ class AgentLoop:
             if item.type == "text":
                 parts.append(item.text)
             elif item.type == "image":
-                # Read image and encode as base64
                 try:
                     image_path = Path(item.image_path)
                     if image_path.exists():
@@ -533,34 +461,5 @@ class AgentLoop:
                     parts.append(f"[Error reading image: {e}]")
             elif item.type == "file":
                 parts.append(f"[File: {item.file_name or item.file_path}]")
-        
+
         return "\n".join(parts)
-
-    def _record_token_usage(
-        self,
-        session_instance_id: int | None,
-        provider_name: str,
-        model_id: str,
-        usage: dict,
-        request_type: str = "chat"
-    ) -> None:
-        """Record token usage to database."""
-        try:
-            prompt_tokens = _extract_prompt_tokens_with_cache(usage)
-            completion_tokens = usage.get("completion_tokens", 0)
-            cached_tokens = _extract_cached_tokens(usage)
-
-            self.token_usage.record_usage(
-                session_instance_id=session_instance_id,
-                provider_name=provider_name,
-                model_id=model_id,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                cached_tokens=cached_tokens,
-                request_type=request_type
-            )
-
-            logger.debug(f"Token usage recorded: {provider_name}/{model_id} - "
-                        f"prompt={prompt_tokens}, completion={completion_tokens}, cached={cached_tokens}")
-        except Exception as e:
-            logger.error(f"Failed to record token usage: {e}")

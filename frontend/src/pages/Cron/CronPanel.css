@@ -1,0 +1,421 @@
+/* ========== Cron Panel Styles ========== */
+
+.cron-panel-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* Cron Toolbar */
+.cron-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--s-2) var(--s-4);
+  background: var(--surface);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  border: 1px solid var(--board);
+  border-bottom: none;
+  gap: var(--s-2);
+}
+
+.cron-toolbar .toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.cron-toolbar .toolbar-icon {
+  color: var(--accent);
+}
+
+.cron-toolbar .toolbar-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+.cron-toolbar .job-count {
+  font-size: 11px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+.cron-toolbar .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+/* Cron Content */
+.cron-content {
+  flex: 1;
+  overflow: hidden;
+  padding: var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--board);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  overflow-y: auto;
+}
+
+.cron-loading,
+.cron-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-4);
+  padding: var(--s-10);
+  color: var(--text-3);
+  height: 100%;
+}
+
+.cron-empty svg {
+  opacity: 0.5;
+}
+
+/* Jobs List */
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+/* Job Card */
+.job-card {
+  background: var(--surface-2);
+  border: 1px solid var(--board);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.job-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-2);
+}
+
+.job-card.disabled {
+  opacity: 0.6;
+}
+
+.job-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--board);
+}
+
+.job-status {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+
+.status-dot.active {
+  background: var(--success);
+}
+
+.status-dot.inactive {
+  background: var(--danger);
+}
+
+.job-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+.job-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.job-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--surface-2);
+  border: 1px solid var(--board);
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.job-action-btn:hover {
+  background: var(--surface-3);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.job-action-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.job-card-body {
+  padding: var(--s-4) var(--s-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.job-schedule,
+.job-next-run {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: 13px;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+}
+
+.job-schedule svg,
+.job-next-run svg {
+  color: var(--accent);
+}
+
+.job-message {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--border);
+  margin-top: var(--s-2);
+}
+
+.message-label,
+.delivery-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.message-content,
+.delivery-content {
+  font-size: 13px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  word-break: break-word;
+}
+
+.job-delivery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+/* Cron Dialog */
+.cron-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.cron-dialog {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cron-dialog .dialog-header {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--board);
+}
+
+.cron-dialog .dialog-header .window-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+.dialog-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: var(--r-sm);
+}
+
+.dialog-close:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.cron-dialog .dialog-body {
+  padding: var(--s-5);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.cron-dialog .dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface-2);
+  border-top: 1px solid var(--board);
+}
+
+/* Form Styles */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.form-group .form-hint {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Schedule Type Selector */
+.schedule-type-selector {
+  display: flex;
+  gap: var(--s-2);
+}
+
+.type-btn {
+  flex: 1;
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-2);
+  border: 1px solid var(--board);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.type-btn:hover {
+  background: var(--surface-3);
+}
+
+.type-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-invert);
+}
+
+/* Interval Inputs */
+.interval-inputs {
+  display: flex;
+  gap: var(--s-3);
+}
+
+.interval-inputs .pixel-input {
+  flex: 1;
+}
+
+.interval-inputs .pixel-select {
+  width: 120px;
+}
+
+/* Pixel Textarea */
+.pixel-textarea {
+  background: var(--surface-2);
+  border: 1px solid var(--board);
+  border-radius: var(--r-md);
+  padding: var(--s-3) var(--s-4);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: all 0.2s;
+  resize: vertical;
+}
+
+.pixel-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: var(--focus);
+}
+
+.pixel-textarea::placeholder {
+  color: var(--text-3);
+}
+
+/* Pixel Select */
+.pixel-select {
+  background: var(--surface-2);
+  border: 1px solid var(--board);
+  border-radius: var(--r-md);
+  padding: var(--s-3) var(--s-4);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+}
+
+.pixel-select:focus {
+  border-color: var(--accent);
+  box-shadow: var(--focus);
+}
+
+

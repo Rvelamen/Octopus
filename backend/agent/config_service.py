@@ -148,6 +148,10 @@ class AgentConfigService:
         if defaults.default_provider_id:
             provider_record = self._get_provider_repo().get_provider_by_id(defaults.default_provider_id)
 
+        # If specified provider is disabled, fallback to first enabled provider
+        if provider_record and not getattr(provider_record, 'enabled', True):
+            provider_record = None
+
         # If no provider configured, use first available enabled provider
         if not provider_record:
             providers = self._get_provider_repo().get_enabled_providers()
@@ -233,15 +237,15 @@ class AgentConfigService:
         
         # Get provider from database
         provider_record = self._get_provider_repo().get_provider_by_name(provider_name)
-        
-        # If not found, use first available
-        if not provider_record:
+
+        # If not found or disabled, use first available enabled provider
+        if not provider_record or not getattr(provider_record, 'enabled', True):
             providers = self._get_provider_repo().get_enabled_providers()
             if providers:
                 provider_record = providers[0]
-        
+
         if not provider_record:
-            raise ValueError(f"Provider '{provider_name}' not found")
+            raise ValueError(f"Provider '{provider_name}' not found or disabled")
         
         # Get model
         if model_name:

@@ -374,6 +374,7 @@ export default function DocumentGridView({
   onRenameFile,
   onDeleteFile,
   treeItems,
+  docMetas,
 }) {
   const [viewMode, setViewMode] = useState('grid');
   const [containerWidth, setContainerWidth] = useState(800);
@@ -616,6 +617,7 @@ export default function DocumentGridView({
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 isDragOver={dragOverItem === item.path}
+                docMeta={docMetas?.[item.sha256]}
               />
             ))}
           </div>
@@ -645,8 +647,22 @@ export default function DocumentGridView({
                   style={{ width: 18, height: 18, flexShrink: 0 }}
                 />
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                  <span style={{ fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.meta?.title || item.name}
+                  <span
+                    style={{ fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    title={
+                      docMetas?.[item.sha256]
+                        ? [
+                            docMetas[item.sha256].title,
+                            docMetas[item.sha256].authors?.length ? `Authors: ${docMetas[item.sha256].authors.join(', ')}` : null,
+                            docMetas[item.sha256].year ? `Year: ${docMetas[item.sha256].year}` : null,
+                            docMetas[item.sha256].venue ? `Venue: ${docMetas[item.sha256].venue}` : null,
+                            docMetas[item.sha256].doi ? `DOI: ${docMetas[item.sha256].doi}` : null,
+                            docMetas[item.sha256].summary,
+                          ].filter(Boolean).join('\n')
+                        : item.name
+                    }
+                  >
+                    {item.name}
                   </span>
                   {item.meta?.source && (
                     <span style={{ fontSize: 10, color: 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

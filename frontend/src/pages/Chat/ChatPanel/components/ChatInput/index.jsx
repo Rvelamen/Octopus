@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { 
   Image, FileText, Maximize2, Minimize2, Send, CirclePause, 
-  Paperclip, GripVertical 
+  Paperclip, GripVertical
 } from 'lucide-react';
 import PendingImages from './PendingImages.jsx';
 import PendingFiles from './PendingFiles.jsx';
@@ -23,7 +23,10 @@ function ChatInput({
   onSelectFile,
   onSelectImage,
   onGenerateImage,
-  placeholder
+  placeholder,
+  onCompress,
+  isCompressing,
+  contextStats
 }) {
   const [isInputExpanded, setIsInputExpanded] = useState(false);
   const [inputHeight, setInputHeight] = useState(200);
@@ -110,7 +113,7 @@ function ChatInput({
             onPaste={handlePaste}
             placeholder={placeholder}
             className="inputbar-textarea"
-            disabled={isProcessing || isUploading || disabled}
+            disabled={isProcessing || isUploading || disabled || isCompressing}
             autoFocus
             style={{ height: isInputExpanded ? inputHeight : 48 }}
           />
@@ -182,9 +185,28 @@ function ChatInput({
             >
               <FileText size={14} />
             </button>
+
+            <button
+              className="inputbar-tool-btn"
+              onClick={onCompress}
+              disabled={isProcessing || isUploading || disabled || isCompressing}
+              title={isCompressing ? "压缩中..." : "压缩上下文"}
+            >
+              <Minimize2 size={14} className={isCompressing ? 'spin' : ''} />
+            </button>
           </div>
           
           <div className="inputbar-right-tools">
+            <span
+              className="inputbar-context-badge"
+              title={
+                contextStats
+                  ? `context: ${contextStats.percentage}% (${(contextStats.current_tokens / 1000).toFixed(1)}k / ${(contextStats.max_tokens / 1000).toFixed(1)}k)`
+                  : 'context: loading...'
+              }
+            >
+              Context: {contextStats ? `${contextStats.percentage}%` : '--%'}
+            </span>
             {inputValue.length > 0 && (
               <span className="inputbar-char-count">{inputValue.length}</span>
             )}
@@ -201,7 +223,7 @@ function ChatInput({
               <button
                 className="inputbar-send-btn"
                 onClick={onSend}
-                disabled={isUploading || disabled || (!inputValue.trim() && pendingImages.length === 0 && pendingFiles.length === 0)}
+                disabled={isUploading || disabled || isCompressing || (!inputValue.trim() && pendingImages.length === 0 && pendingFiles.length === 0)}
                 title="发送消息"
               >
                 <Send size={15} />

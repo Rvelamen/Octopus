@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { message } from 'antd';
-import { X, Eye, Edit3, ExternalLink, ChevronLeft } from 'lucide-react';
+import { X, Eye, Edit3, ExternalLink, ChevronLeft, Sparkles } from 'lucide-react';
 import FileIcon from '../file-icon/FileIcon';
 import {
   ImageViewer,
@@ -13,109 +12,9 @@ import {
   getLanguage,
 } from '@components/FileViewers';
 import Editor from '@monaco-editor/react';
-import ReactMarkdown from 'react-markdown';
-import { uriTransformer } from 'react-markdown/lib/uri-transformer';
-import remarkGfm from 'remark-gfm';
+import MarkdownRenderer from '@components/MarkdownRenderer';
 
-const WIKI_LINK_RE = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 
-function preprocessWikiLinks(content) {
-  return content.replace(WIKI_LINK_RE, (match, title, alias) => {
-    const cleanTitle = (title || '').replace(/\\$/, '').trim();
-    const display = (alias || cleanTitle).trim();
-    return `[${display}](wiki://${encodeURIComponent(cleanTitle)})`;
-  });
-}
-
-function WikiLink({ href, children, sendWSMessage }) {
-  const title = decodeURIComponent(href.replace('wiki://', ''));
-  const [loading, setLoading] = useState(false);
-
-  const handleClick = async (e) => {
-    e.preventDefault();
-    if (loading) return;
-    setLoading(true);
-    try {
-      console.log('[WikiLink] resolving:', title);
-      const response = await sendWSMessage('knowledge_search', { query: title });
-      const results = response.data?.results || [];
-      console.log('[WikiLink] search results:', results);
-      const match =
-        results.find(
-          (r) =>
-            r.title?.replace(/\s+/g, '').toLowerCase() ===
-            title.replace(/\s+/g, '').toLowerCase()
-        ) || results[0];
-      if (match) {
-        console.log('[WikiLink] matched:', match.path);
-        window.dispatchEvent(
-          new CustomEvent('knowledge-open-file', {
-            detail: {
-              path: match.path,
-              name: match.path.split('/').pop(),
-              is_directory: false,
-            },
-          })
-        );
-      } else {
-        message.warning(`未找到笔记: ${title}`);
-      }
-    } catch (err) {
-      console.error('Wiki link resolve failed:', err);
-      message.error('打开链接失败: ' + (err.message || '未知错误'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <span
-      onClick={handleClick}
-      style={{
-        color: 'var(--accent)',
-        cursor: loading ? 'wait' : 'pointer',
-        textDecoration: 'underline',
-        opacity: loading ? 0.6 : 1,
-      }}
-      title={`打开: ${title}`}
-    >
-      {children}
-    </span>
-  );
-}
-
-/**
- * Markdown 预览组件
- */
-const MarkdownPreview = ({ content, file, sendWSMessage }) => {
-  const safeContent = typeof content === 'string' ? content : '';
-  const processed = preprocessWikiLinks(safeContent);
-  return (
-    <div className="markdown-preview">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        transformLinkUri={(href) => {
-          if (href.startsWith('wiki://')) return href;
-          return uriTransformer(href);
-        }}
-        components={{
-          a: (props) => {
-            if (props.href?.startsWith('wiki://')) {
-              return (
-                <WikiLink href={props.href} sendWSMessage={sendWSMessage}>
-                  {props.children}
-                </WikiLink>
-              );
-            }
-            return <a {...props} />;
-          },
-        }}
-      >
-        {processed}
-      </ReactMarkdown>
-    </div>
-  );
-};
 
 /**
  * 预览抽屉组件
@@ -129,6 +28,8 @@ export default function PreviewDrawer({
   sendWSMessage,
   onBack,
   canGoBack,
+  onDistill,
+  docMeta,
 }) {
   const [isPreviewMode, setIsPreviewMode] = useState(true);
 
@@ -149,7 +50,7 @@ export default function PreviewDrawer({
   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(fileExt);
   const isPdf = fileExt === 'pdf';
   const isExcel = ['xlsx', 'xls'].includes(fileExt);
-  const isPptx = ['pptx', 'ppt'].includes(fileExt);
+  const isPptx = ['pptx', 'ppt', 'pptm', 'ppsx', 'ppsm', 'potx', 'potm', 'thmx'].includes(fileExt);
   const isDocx = ['docx', 'doc'].includes(fileExt);
   const isHtml = ['html', 'htm'].includes(fileExt);
   const isMarkdown = ['md', 'markdown'].includes(fileExt);
@@ -201,7 +102,7 @@ export default function PreviewDrawer({
       return <XlsxViewer file={file} content={content} />;
     }
     if (isPptx) {
-      return <PptxViewer file={file} content={content} />;
+      return <PptxViewer file={file} content={content} sendWSMessage={sendWSMessage} />;
     }
     if (isDocx) {
       return <DocxViewer file={file} content={content} />;
@@ -210,7 +111,7 @@ export default function PreviewDrawer({
       return <HtmlViewer content={safeContent} />;
     }
     if (isMarkdown && isPreviewMode) {
-      return <MarkdownPreview content={safeContent} file={file} sendWSMessage={sendWSMessage} />;
+      return <MarkdownRenderer content={safeContent} sendWSMessage={sendWSMessage} />;
     }
     if (isBinary) {
       return <BinaryViewer file={file} content={content} />;
@@ -356,6 +257,32 @@ export default function PreviewDrawer({
                   ? new URL(sourceUrl).hostname
                   : file.path}
               </span>
+              {docMeta && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: 'var(--accent)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    lineHeight: 1.3,
+                    marginTop: 2,
+                  }}
+                  title={[
+                    docMeta.title,
+                    docMeta.authors?.length ? docMeta.authors.join(', ') : null,
+                    docMeta.year,
+                    docMeta.venue,
+                    docMeta.summary,
+                  ].filter(Boolean).join(' · ')}
+                >
+                  {[
+                    docMeta.year,
+                    docMeta.venue,
+                    docMeta.authors?.length ? `${docMeta.authors[0]}${docMeta.authors.length > 1 ? ' et al.' : ''}` : null,
+                  ].filter(Boolean).join(' · ')}
+                </span>
+              )}
             </div>
           </div>
 
@@ -395,6 +322,39 @@ export default function PreviewDrawer({
                 <ExternalLink size={13} />
                 <span>打开</span>
               </a>
+            )}
+
+            {/* Distill 按钮 */}
+            {onDistill && (
+              <button
+                onClick={onDistill}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '5px 10px',
+                  borderRadius: 6,
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface-2)',
+                  color: 'var(--text-2)',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--accent-soft)';
+                  e.currentTarget.style.color = 'var(--accent)';
+                  e.currentTarget.style.borderColor = 'var(--accent)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'var(--surface-2)';
+                  e.currentTarget.style.color = 'var(--text-2)';
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                }}
+              >
+                <Sparkles size={13} />
+                <span>Distill</span>
+              </button>
             )}
 
             {/* 预览/编辑切换按钮 - 仅对 Markdown 和文本文件显示 */}

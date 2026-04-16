@@ -120,7 +120,7 @@ function SubagentDetailModal({ open, onClose, result }) {
       }
       width={720}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
     >
       <div style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>
         {detailSegments.length > 0 ? (

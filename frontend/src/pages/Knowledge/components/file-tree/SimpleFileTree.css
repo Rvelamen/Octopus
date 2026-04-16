@@ -55,6 +55,34 @@
   flex-shrink: 0;
 }
 
+.simple-tree-icon-folder {
+  color: var(--warn);
+}
+
+.simple-tree-icon-code {
+  color: var(--info);
+}
+
+.simple-tree-icon-json {
+  color: var(--accent-green);
+}
+
+.simple-tree-icon-md {
+  color: var(--accent);
+}
+
+.simple-tree-icon-image {
+  color: var(--accent-purple);
+}
+
+.simple-tree-icon-style {
+  color: var(--info);
+}
+
+.simple-tree-icon-default {
+  color: var(--text-3);
+}
+
 /* 文件名 */
 .simple-tree-name {
   flex: 1;

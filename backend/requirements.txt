@@ -24,6 +24,7 @@ lark-oapi>=1.0.0
 
 # Data & Config
 pyyaml>=6.0.1
+aiosqlite>=0.20.0
 
 # Logging
 loguru>=0.7.0
@@ -33,4 +34,9 @@ qrcode>=7.4.2
 pypdf==6.9.2
 python-docx>=1.2.0
 openpyxl>=3.1.0
+
+# Security
+cryptography>=42.0.0
+
 playwright>=1.58.0
+yoyo-migrations>=8.2.0

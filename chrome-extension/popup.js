@@ -8,6 +8,8 @@ let extractedData = null;
 // DOM refs
 const els = {
   title: document.getElementById("title"),
+  fileName: document.getElementById("file-name"),
+  fileNameRow: document.getElementById("file-name-row"),
   tags: document.getElementById("tags"),
   userNote: document.getElementById("user-note"),
   noteLabel: document.getElementById("note-label"),
@@ -121,11 +123,19 @@ async function extractPage() {
 
     // Populate UI
     els.title.value = extractedData.title || "";
+    const isPdf = extractedData.method === "pdf";
+    if (isPdf) {
+      els.fileNameRow.classList.remove("hidden");
+      els.fileName.value = extractedData.title ? extractedData.title.replace(/[^\w\u4e00-\u9fa5\-]+/g, "_").slice(0, 60) : "";
+    } else {
+      els.fileNameRow.classList.add("hidden");
+    }
     const methodText = {
       selection: "已提取：用户选中内容",
       readability: "已提取：正文内容",
       innerText: "已提取：页面文本（备用模式）",
       fallback: "已提取：页面文本（内容较少）",
+      pdf: "已识别：PDF 文档",
     };
     els.extractMethod.textContent = methodText[extractedData.method] || "已提取页面内容";
 
@@ -163,6 +173,8 @@ async function saveClip() {
     tags: formatTags(els.tags.value),
     user_note: els.userNote.value.trim(),
     action: action,
+    is_pdf: extractedData?.method === "pdf",
+    file_name: els.fileName.value.trim() || undefined,
   };
 
   els.saveBtn.disabled = true;

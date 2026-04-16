@@ -3,7 +3,8 @@
 from loguru import logger
 
 from backend.core.providers.base import LLMProvider, LLMResponse
-from backend.core.providers.provider import UnifiedProvider
+from backend.core.providers.openai_provider import OpenAIProvider
+from backend.core.providers.anthropic_provider import AnthropicProvider
 from backend.core.config.schema import AgentDefaults, ProviderConfig
 
 
@@ -86,7 +87,7 @@ def create_provider(
         agent_defaults: The agent defaults configuration.
 
     Returns:
-        An LLMProvider instance (UnifiedProvider or MockProvider).
+        An LLMProvider instance (OpenAIProvider, AnthropicProvider, or MockProvider).
     """
     provider_config: ProviderConfig | None = None
     provider_type: str = "openai"
@@ -100,16 +101,19 @@ def create_provider(
         if requested_provider in providers_dict:
             provider_config = providers_dict[requested_provider]
             provider_name = requested_provider
-            if provider_config.api_key:
+            if provider_config.api_key and getattr(provider_config, "enabled", True):
                 provider_type = provider_config.type or "openai"
                 logger.info(f"Using requested provider: {requested_provider} (type: {provider_type})")
             else:
-                logger.warning(f"Requested provider '{requested_provider}' has no API key configured")
+                if not provider_config.api_key:
+                    logger.warning(f"Requested provider '{requested_provider}' has no API key configured")
+                if not getattr(provider_config, "enabled", True):
+                    logger.warning(f"Requested provider '{requested_provider}' is disabled")
                 provider_config = None
 
     if provider_config is None:
         for name, config in providers_dict.items():
-            if config.api_key:
+            if config.api_key and getattr(config, "enabled", True):
                 provider_config = config
                 provider_name = name
                 provider_type = config.type or "openai"
@@ -127,7 +131,7 @@ def create_provider(
 
     internal_type = TYPE_TO_INTERNAL.get(provider_type, "openai")
 
-    return UnifiedProvider(
+    common_kwargs = dict(
         default_model=agent_defaults.model or "gpt-4",
         api_key=provider_config.api_key,
         api_base=provider_config.api_base,
@@ -136,3 +140,7 @@ def create_provider(
         retry_base_delay=agent_defaults.llm_retry_base_delay,
         retry_max_delay=agent_defaults.llm_retry_max_delay,
     )
+
+    if internal_type == "anthropic":
+        return AnthropicProvider(**common_kwargs)
+    return OpenAIProvider(**common_kwargs)

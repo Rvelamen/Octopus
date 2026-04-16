@@ -1,0 +1,1 @@
+"""Yoyo database migrations."""

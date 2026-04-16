@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bot, Clock, Coins, Eye } from 'lucide-react';
-import IterationFold from '../ChatPanel/components/MessageList/IterationFold';
+import IterationFold from '@components/MessageList/IterationFold';
 
 export default function DistillTaskDetail({ result, sendWSMessage }) {
   if (!result) return null;

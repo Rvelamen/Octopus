@@ -11,13 +11,16 @@ import {
 } from 'lucide-react';
 import './SimpleFileTree.css';
 
-// 文件图标映射
-const getFileIcon = (fileName, isDirectory, isExpanded) => {
-  if (isDirectory) {
+// 兼容两种数据格式：item.is_directory 或 item.type === 'directory'
+const isDirectory = (item) => item?.is_directory || item?.type === 'directory';
+
+// 文件图标映射 - 使用主题色 CSS 变量
+const getFileIcon = (fileName, isDirectoryFlag, isExpanded) => {
+  if (isDirectoryFlag) {
     return isExpanded ? (
-      <FolderOpen size={16} color="#dcb67a" />
+      <FolderOpen size={16} className="simple-tree-icon-folder" />
     ) : (
-      <Folder size={16} color="#dcb67a" />
+      <Folder size={16} className="simple-tree-icon-folder" />
     );
   }
 
@@ -27,23 +30,23 @@ const getFileIcon = (fileName, isDirectory, isExpanded) => {
     case 'jsx':
     case 'ts':
     case 'tsx':
-      return <FileCode size={16} color="#519aba" />;
+      return <FileCode size={16} className="simple-tree-icon-code" />;
     case 'json':
-      return <FileJson size={16} color="#cbcb41" />;
+      return <FileJson size={16} className="simple-tree-icon-json" />;
     case 'md':
-      return <FileText size={16} color="#519aba" />;
+      return <FileText size={16} className="simple-tree-icon-md" />;
     case 'png':
     case 'jpg':
     case 'jpeg':
     case 'gif':
     case 'svg':
-      return <FileImage size={16} color="#a074c4" />;
+      return <FileImage size={16} className="simple-tree-icon-image" />;
     case 'css':
     case 'scss':
     case 'less':
-      return <FileType size={16} color="#42a5f5" />;
+      return <FileType size={16} className="simple-tree-icon-style" />;
     default:
-      return <FileText size={16} color="#7f7f7f" />;
+      return <FileText size={16} className="simple-tree-icon-default" />;
   }
 };
 
@@ -102,13 +105,17 @@ const TreeNode = ({
   const isExpanded = expandedPaths.has(item.path);
   const isSelected = selectedPath === item.path;
   const children = treeItems?.[item.path] || [];
-  const hasChildren = item.is_directory && children.length > 0;
+  const hasChildren = isDirectory(item) && children.length > 0;
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleClick = (e) => {
     // 如果点击的是箭头，不触发选择
     if (e.target.closest('.simple-tree-arrow')) return;
     onSelect(item);
+    // 目录项点击整行也触发 toggle（展开/折叠）
+    if (isDirectory(item)) {
+      onToggle(item.path);
+    }
   };
 
   const handleArrowClick = (e) => {
@@ -132,7 +139,7 @@ const TreeNode = ({
   const handleDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (item.is_directory) {
+    if (isDirectory(item)) {
       e.dataTransfer.dropEffect = 'move';
       setIsDragOver(true);
       onDragOver?.(item);
@@ -170,13 +177,13 @@ const TreeNode = ({
       >
         <span
           className={`simple-tree-arrow ${isExpanded ? 'expanded' : ''}`}
-          onClick={hasChildren ? handleArrowClick : undefined}
-          style={{ visibility: hasChildren ? 'visible' : 'hidden' }}
+          onClick={isDirectory(item) ? handleArrowClick : undefined}
+          style={{ visibility: isDirectory(item) ? 'visible' : 'hidden' }}
         >
           <ChevronRight size={14} />
         </span>
         <span className="simple-tree-icon">
-          {getFileIcon(item.name, item.is_directory, isExpanded)}
+          {getFileIcon(item.name, isDirectory(item), isExpanded)}
         </span>
         <span className="simple-tree-name">{item.name}</span>
       </div>
@@ -266,7 +273,7 @@ export default function SimpleFileTree({
   }, []);
 
   const handleDrop = useCallback((draggedPath, targetItem) => {
-    if (!targetItem.is_directory) return;
+    if (!isDirectory(targetItem)) return;
     if (draggedPath === targetItem.path) return;
     
     // 检查是否拖入自己的子目录
@@ -280,10 +287,10 @@ export default function SimpleFileTree({
   const buildContextMenuItems = useCallback(() => {
     if (!focusedItem) return [];
 
-    const isDirectory = focusedItem.is_directory;
+    const isDir = isDirectory(focusedItem);
     const items = [];
 
-    if (isDirectory) {
+    if (isDir) {
       items.push(
         {
           label: 'New File',
@@ -318,7 +325,7 @@ export default function SimpleFileTree({
       }
     );
 
-    if (isDirectory) {
+    if (isDir) {
       items.push(
         { divider: true },
         {

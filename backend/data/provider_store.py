@@ -8,6 +8,7 @@ from typing import Any, Optional
 from loguru import logger
 
 from backend.data.database import Database
+from backend.utils.encryption import decrypt_value, encrypt_value
 
 
 @dataclass
@@ -125,7 +126,7 @@ class ProviderRepository:
                    (name, display_name, provider_type, api_key, api_host, api_version,
                     enabled, is_system, sort_order, config_json, created_at, updated_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
-                (name, display_name, provider_type, api_key, api_host, api_version,
+                (name, display_name, provider_type, encrypt_value(api_key), api_host, api_version,
                  enabled, is_system, sort_order, json.dumps(config_json))
             )
 
@@ -153,7 +154,7 @@ class ProviderRepository:
 
         if api_key is not None:
             updates.append("api_key = ?")
-            params.append(api_key)
+            params.append(encrypt_value(api_key))
         if api_host is not None:
             updates.append("api_host = ?")
             params.append(api_host)
@@ -214,7 +215,7 @@ class ProviderRepository:
             name=row["name"],
             display_name=row["display_name"],
             provider_type=row["provider_type"],
-            api_key=row["api_key"] or "",
+            api_key=decrypt_value(row["api_key"] or ""),
             api_host=row["api_host"] or "",
             api_version=row["api_version"] or "",
             enabled=bool(row["enabled"]),

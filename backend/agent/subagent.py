@@ -13,13 +13,17 @@ from backend.core.events.bus import MessageBus
 from backend.core.providers.base import LLMProvider
 from backend.core.providers.factory import create_provider
 from backend.agent.config_service import AgentConfigService
+from backend.agent.shared import _normalize_usage
 from backend.tools.registry import ToolRegistry
 from backend.tools.filesystem import ReadFileTool, WriteFileTool, ListDirTool, EditFileTool
 from backend.tools.shell import ExecTool
 
 from backend.tools.action import ActionTool
 from backend.tools.message import MessageTool
-from backend.tools.knowledge import KBSearchTool, KBReadNoteTool, KBListLinksTool
+from backend.tools.knowledge import KBSearchTool, KBReadNoteTool, KBListLinksTool, KBTimelineTool
+from backend.tools.memory_write import MemoryWriteTool
+from backend.tools.memory import MemorySearchTool, MemoryReadTool, MemoryTimelineTool
+from backend.agent.memory import MemoryStore
 from backend.extensions.loader import SkillsLoader
 from backend.agent.loader import SubAgentLoader, SubAgentConfig
 from backend.agent.aggregator import SubagentAggregator
@@ -195,8 +199,13 @@ class SubagentManager:
             "action": ActionTool,
             "message": lambda: MessageTool(send_callback=self.bus.publish_outbound),
             "kb_search": KBSearchTool,
+            "kb_timeline": KBTimelineTool,
             "kb_read_note": KBReadNoteTool,
             "kb_list_links": KBListLinksTool,
+            "memory_write": lambda: MemoryWriteTool(store=MemoryStore(self.workspace)),
+            "memory_search": MemorySearchTool,
+            "memory_read": MemoryReadTool,
+            "memory_timeline": MemoryTimelineTool,
         }
         
         # Register requested tools
@@ -236,8 +245,13 @@ class SubagentManager:
         ))
         tools.register(ActionTool())
         tools.register(KBSearchTool())
+        tools.register(KBTimelineTool())
         tools.register(KBReadNoteTool())
         tools.register(KBListLinksTool())
+        tools.register(MemoryWriteTool(store=MemoryStore(self.workspace)))
+        tools.register(MemorySearchTool())
+        tools.register(MemoryReadTool())
+        tools.register(MemoryTimelineTool())
         message_tool = MessageTool(send_callback=self.bus.publish_outbound)
         message_tool.set_context(origin.get("channel", ""), origin.get("chat_id", ""))
         tools.register(message_tool)
@@ -806,7 +820,7 @@ When you have completed the task, provide a clear summary of your findings or ac
                                 logger.info(f"[Subagent:{task_id}] Context compressed")
                 
                 try:
-                    response = await provider.chat_streaming_complete(
+                    response = await provider.chat(
                         messages=messages,
                         tools=tools.get_definitions(),
                         model=model,
@@ -815,15 +829,15 @@ When you have completed the task, provide a clear summary of your findings or ac
                     )
                     logger.info(f"[Subagent:{task_id}] LLM response received, has_tool_calls={response.has_tool_calls}")
                     
-                    if response.usage:
-                        last_prompt_tokens = response.usage.get("prompt_tokens", 0)
-                        self._record_token_usage(
-                            session_instance_id=session_instance_id,
-                            provider_name=provider_type,
-                            model_id=model,
-                            usage=response.usage,
-                            request_type="subagent"
-                        )
+                    normalized = _normalize_usage(response.usage, messages, response.content or "", model)
+                    last_prompt_tokens = normalized["prompt_tokens"]
+                    self._record_token_usage(
+                        session_instance_id=session_instance_id,
+                        provider_name=provider_type,
+                        model_id=model,
+                        usage=normalized,
+                        request_type="subagent"
+                    )
                 except Exception as e:
                     logger.error(f"[Subagent:{task_id}] LLM call failed: {e}")
                     raise
