@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Brain, Bot, Radio, Plus, Image, Search, Settings, Trash2, Edit, Check, X, ChevronDown, ChevronRight, RefreshCw, QrCode, Clock, CheckCircle, AlertCircle, Volume2, Layers, Save } from 'lucide-react';
+import { Brain, Bot, Radio, Plus, Image, Search, Settings, Trash2, Edit, Check, X, ChevronDown, ChevronRight, RefreshCw, QrCode, Clock, CheckCircle, AlertCircle, Volume2, Layers, Save, Send, MessageCircle, Mail, Hash, Gamepad2, Bell } from 'lucide-react';
 import { InputField, PasswordField, SelectField, SwitchField } from '@components/forms';
 import { ConfigCard, DynamicItemCard, AddItemDialog } from '@components/config';
 import WindowDots from '@components/layout/WindowDots';
@@ -256,6 +256,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         encryptKey: updates.encryptKey !== undefined ? updates.encryptKey : channel.encryptKey,
         verificationToken: updates.verificationToken !== undefined ? updates.verificationToken : channel.verificationToken,
         allowFrom: updates.allowFrom !== undefined ? updates.allowFrom : channel.allowFrom,
+        configJson: updates.configJson !== undefined ? updates.configJson : (channel.configJson || {}),
       }, 5000);
     } catch (err) {
       console.error("Failed to update channel config", err);
@@ -308,6 +309,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
           encryptKey: '',
           verificationToken: '',
           allowFrom: [],
+          configJson: {},
         }, 5000).then(() => loadChannelConfigs());
         break;
     }
@@ -407,7 +409,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         {/* Tools Selection */}
         <div className="form-group" style={{ marginTop: '10px' }}>
           <label>Enabled Tools ({(agentDefaults.tools || []).length} selected)</label>
-          <div className="dropdown-container">
+          <div className="dropdown-container dropdown-up">
             <button
               className="dropdown-trigger"
               onClick={() => setShowToolsDropdown(!showToolsDropdown)}
@@ -481,17 +483,30 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         <div className="form-field">
           <label className="form-label">Allow From (JSON Array)</label>
           <textarea
-            value={JSON.stringify(channel.allowFrom || [], null, 2)}
-            onChange={(e) => {
+            key={`allow-${channel.channelName}`}
+            defaultValue={JSON.stringify(channel.allowFrom || [], null, 2)}
+            onBlur={(e) => {
               try {
                 const parsed = JSON.parse(e.target.value);
                 updateChannelConfig(channel.channelName, { allowFrom: parsed });
-              } catch (err) {}
+              } catch (err) {
+                alert('Invalid JSON format');
+                e.target.value = JSON.stringify(channel.allowFrom || [], null, 2);
+              }
             }}
             className="pixel-input form-input json-textarea"
             rows={3}
             spellCheck={false}
           />
+        </div>
+        <div className="form-field">
+          <button
+            className="pixel-button"
+            onClick={() => deleteChannel(channel.channelName)}
+            style={{ width: '100%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+          >
+            删除 Channel
+          </button>
         </div>
       </>
     );
@@ -544,6 +559,17 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
     } catch (err) {
       console.error('Reconnect WeChat error:', err);
       alert('重新连接失败: ' + err.message);
+    }
+  };
+
+  const deleteChannel = async (channelName) => {
+    if (!window.confirm(`确定要删除 Channel "${channelName}" 吗？`)) return;
+    try {
+      await sendWSMessage('channel_delete', { channelName }, 5000);
+      await loadChannelConfigs();
+    } catch (err) {
+      console.error('Delete channel error:', err);
+      alert('删除失败: ' + err.message);
     }
   };
 
@@ -658,7 +684,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
 
   const renderWechatConfig = (channel) => {
     const isEnabled = channel.enabled === true;
-    const isConnected = !!channel.appSecret;
+    const isConnected = channel.running === true;
     
     return (
       <>
@@ -810,6 +836,347 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
             )}
           </>
         )}
+        <div className="form-field">
+          <button
+            className="pixel-button"
+            onClick={() => deleteChannel(channel.channelName)}
+            style={{ width: '100%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+          >
+            删除 Channel
+          </button>
+        </div>
+      </>
+    );
+  };
+
+  const renderTelegramConfig = (channel) => {
+    const config = channel.configJson || {};
+    const isEnabled = channel.enabled === true;
+
+    return (
+      <>
+        <SwitchField
+          label="Enabled"
+          checked={isEnabled}
+          onChange={(v) => updateChannelConfig(channel.channelName, { enabled: v })}
+        />
+        <PasswordField
+          label="Bot Token"
+          value={config.token || ''}
+          onChange={(v) => updateChannelConfig(channel.channelName, {
+            configJson: { ...config, token: v }
+          })}
+          placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+        />
+        <div className="form-field">
+          <label className="form-label">Allow From (JSON Array)</label>
+          <textarea
+            key={`allow-${channel.channelName}`}
+            defaultValue={JSON.stringify(config.allowFrom || [], null, 2)}
+            onBlur={(e) => {
+              try {
+                const parsed = JSON.parse(e.target.value);
+                updateChannelConfig(channel.channelName, {
+                  configJson: { ...config, allowFrom: parsed }
+                });
+              } catch (err) {
+                alert('Invalid JSON format');
+                e.target.value = JSON.stringify(config.allowFrom || [], null, 2);
+              }
+            }}
+            className="pixel-input form-input json-textarea"
+            rows={3}
+            spellCheck={false}
+          />
+        </div>
+        <div className="form-field">
+          <button
+            className="pixel-button"
+            onClick={() => deleteChannel(channel.channelName)}
+            style={{ width: '100%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+          >
+            删除 Channel
+          </button>
+        </div>
+      </>
+    );
+  };
+
+  const renderDingTalkConfig = (channel) => {
+    const config = channel.configJson || {};
+    const isEnabled = channel.enabled === true;
+
+    return (
+      <>
+        <SwitchField
+          label="Enabled"
+          checked={isEnabled}
+          onChange={(v) => updateChannelConfig(channel.channelName, { enabled: v })}
+        />
+        <InputField
+          label="Client ID"
+          value={config.clientId || ''}
+          onChange={(v) => updateChannelConfig(channel.channelName, {
+            configJson: { ...config, clientId: v }
+          })}
+          placeholder="dingxxxxxxxxxxxxxxxx"
+        />
+        <PasswordField
+          label="Client Secret"
+          value={config.clientSecret || ''}
+          onChange={(v) => updateChannelConfig(channel.channelName, {
+            configJson: { ...config, clientSecret: v }
+          })}
+          placeholder="xxxxxxxxxxxxxxxx"
+        />
+        <div className="form-field">
+          <label className="form-label">Allow From (JSON Array)</label>
+          <textarea
+            key={`allow-${channel.channelName}`}
+            defaultValue={JSON.stringify(config.allowFrom || [], null, 2)}
+            onBlur={(e) => {
+              try {
+                const parsed = JSON.parse(e.target.value);
+                updateChannelConfig(channel.channelName, {
+                  configJson: { ...config, allowFrom: parsed }
+                });
+              } catch (err) {
+                alert('Invalid JSON format');
+                e.target.value = JSON.stringify(config.allowFrom || [], null, 2);
+              }
+            }}
+            className="pixel-input form-input json-textarea"
+            rows={3}
+            spellCheck={false}
+          />
+        </div>
+        <div className="form-field">
+          <button
+            className="pixel-button"
+            onClick={() => deleteChannel(channel.channelName)}
+            style={{ width: '100%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+          >
+            删除 Channel
+          </button>
+        </div>
+      </>
+    );
+  };
+
+  const renderSlackConfig = (channel) => {
+    const config = channel.configJson || {};
+    const isEnabled = channel.enabled === true;
+
+    return (
+      <>
+        <SwitchField
+          label="Enabled"
+          checked={isEnabled}
+          onChange={(v) => updateChannelConfig(channel.channelName, { enabled: v })}
+        />
+        <PasswordField
+          label="Bot Token"
+          value={config.botToken || ''}
+          onChange={(v) => updateChannelConfig(channel.channelName, {
+            configJson: { ...config, botToken: v }
+          })}
+          placeholder="xoxb-..."
+        />
+        <PasswordField
+          label="App Token"
+          value={config.appToken || ''}
+          onChange={(v) => updateChannelConfig(channel.channelName, {
+            configJson: { ...config, appToken: v }
+          })}
+          placeholder="xapp-... (optional)"
+        />
+        <div className="form-field">
+          <label className="form-label">Allow From (JSON Array)</label>
+          <textarea
+            key={`allow-${channel.channelName}`}
+            defaultValue={JSON.stringify(config.allowFrom || [], null, 2)}
+            onBlur={(e) => {
+              try {
+                const parsed = JSON.parse(e.target.value);
+                updateChannelConfig(channel.channelName, {
+                  configJson: { ...config, allowFrom: parsed }
+                });
+              } catch (err) {
+                alert('Invalid JSON format');
+                e.target.value = JSON.stringify(config.allowFrom || [], null, 2);
+              }
+            }}
+            className="pixel-input form-input json-textarea"
+            rows={3}
+            spellCheck={false}
+          />
+        </div>
+        <div className="form-field">
+          <button
+            className="pixel-button"
+            onClick={() => deleteChannel(channel.channelName)}
+            style={{ width: '100%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+          >
+            删除 Channel
+          </button>
+        </div>
+      </>
+    );
+  };
+
+  const renderDiscordConfig = (channel) => {
+    const config = channel.configJson || {};
+    const isEnabled = channel.enabled === true;
+
+    return (
+      <>
+        <SwitchField
+          label="Enabled"
+          checked={isEnabled}
+          onChange={(v) => updateChannelConfig(channel.channelName, { enabled: v })}
+        />
+        <PasswordField
+          label="Bot Token"
+          value={config.token || ''}
+          onChange={(v) => updateChannelConfig(channel.channelName, {
+            configJson: { ...config, token: v }
+          })}
+          placeholder="xxxxxxxxxxxxxxxxxxxxxxxx.xxxxxx"
+        />
+        <div className="form-field">
+          <label className="form-label">Allow From (JSON Array)</label>
+          <textarea
+            key={`allow-${channel.channelName}`}
+            defaultValue={JSON.stringify(config.allowFrom || [], null, 2)}
+            onBlur={(e) => {
+              try {
+                const parsed = JSON.parse(e.target.value);
+                updateChannelConfig(channel.channelName, {
+                  configJson: { ...config, allowFrom: parsed }
+                });
+              } catch (err) {
+                alert('Invalid JSON format');
+                e.target.value = JSON.stringify(config.allowFrom || [], null, 2);
+              }
+            }}
+            className="pixel-input form-input json-textarea"
+            rows={3}
+            spellCheck={false}
+          />
+        </div>
+        <div className="form-field">
+          <button
+            className="pixel-button"
+            onClick={() => deleteChannel(channel.channelName)}
+            style={{ width: '100%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+          >
+            删除 Channel
+          </button>
+        </div>
+      </>
+    );
+  };
+
+  const renderEmailConfig = (channel) => {
+    const config = channel.configJson || {};
+    const isEnabled = channel.enabled === true;
+
+    return (
+      <>
+        <SwitchField
+          label="Enabled"
+          checked={isEnabled}
+          onChange={(v) => updateChannelConfig(channel.channelName, { enabled: v })}
+        />
+        <InputField
+          label="IMAP Host"
+          value={config.imapHost || 'imap.gmail.com'}
+          onChange={(v) => updateChannelConfig(channel.channelName, {
+            configJson: { ...config, imapHost: v }
+          })}
+          placeholder="imap.gmail.com"
+        />
+        <InputField
+          label="IMAP Port"
+          type="number"
+          value={config.imapPort || 993}
+          onChange={(v) => updateChannelConfig(channel.channelName, {
+            configJson: { ...config, imapPort: parseInt(v) || 993 }
+          })}
+          placeholder="993"
+        />
+        <InputField
+          label="SMTP Host"
+          value={config.smtpHost || 'smtp.gmail.com'}
+          onChange={(v) => updateChannelConfig(channel.channelName, {
+            configJson: { ...config, smtpHost: v }
+          })}
+          placeholder="smtp.gmail.com"
+        />
+        <InputField
+          label="SMTP Port"
+          type="number"
+          value={config.smtpPort || 587}
+          onChange={(v) => updateChannelConfig(channel.channelName, {
+            configJson: { ...config, smtpPort: parseInt(v) || 587 }
+          })}
+          placeholder="587"
+        />
+        <InputField
+          label="Email Address"
+          value={config.address || ''}
+          onChange={(v) => updateChannelConfig(channel.channelName, {
+            configJson: { ...config, address: v }
+          })}
+          placeholder="your-email@gmail.com"
+        />
+        <PasswordField
+          label="Password / App Password"
+          value={config.password || ''}
+          onChange={(v) => updateChannelConfig(channel.channelName, {
+            configJson: { ...config, password: v }
+          })}
+          placeholder="xxxxxxxx"
+        />
+        <InputField
+          label="Poll Interval (minutes)"
+          type="number"
+          value={config.pollInterval || 15}
+          onChange={(v) => updateChannelConfig(channel.channelName, {
+            configJson: { ...config, pollInterval: parseInt(v) || 15 }
+          })}
+          placeholder="15"
+        />
+        <div className="form-field">
+          <label className="form-label">Allow From (JSON Array)</label>
+          <textarea
+            key={`allow-${channel.channelName}`}
+            defaultValue={JSON.stringify(config.allowFrom || [], null, 2)}
+            onBlur={(e) => {
+              try {
+                const parsed = JSON.parse(e.target.value);
+                updateChannelConfig(channel.channelName, {
+                  configJson: { ...config, allowFrom: parsed }
+                });
+              } catch (err) {
+                alert('Invalid JSON format');
+                e.target.value = JSON.stringify(config.allowFrom || [], null, 2);
+              }
+            }}
+            className="pixel-input form-input json-textarea"
+            rows={3}
+            spellCheck={false}
+          />
+        </div>
+        <div className="form-field">
+          <button
+            className="pixel-button"
+            onClick={() => deleteChannel(channel.channelName)}
+            style={{ width: '100%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+          >
+            删除 Channel
+          </button>
+        </div>
       </>
     );
   };
@@ -824,17 +1191,30 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
       <div className="form-field">
         <label className="form-label">Config (JSON)</label>
         <textarea
-          value={JSON.stringify(channel.configJson || {}, null, 2)}
-          onChange={(e) => {
+          key={`cfg-${channel.channelName}`}
+          defaultValue={JSON.stringify(channel.configJson || {}, null, 2)}
+          onBlur={(e) => {
             try {
               const parsed = JSON.parse(e.target.value);
               updateChannelConfig(channel.channelName, { configJson: parsed });
-            } catch (err) {}
+            } catch (err) {
+              alert('Invalid JSON format');
+              e.target.value = JSON.stringify(channel.configJson || {}, null, 2);
+            }
           }}
           className="pixel-input form-input json-textarea"
           rows={6}
           spellCheck={false}
         />
+      </div>
+      <div className="form-field">
+        <button
+          className="pixel-button"
+          onClick={() => deleteChannel(channel.channelName)}
+          style={{ width: '100%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+        >
+          删除 Channel
+        </button>
       </div>
     </>
   );
@@ -849,6 +1229,16 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         </ConfigCard>
       );
     }
+
+    const channelIcons = {
+      feishu: <Send size={16} />,
+      wechat: <MessageCircle size={16} />,
+      telegram: <Send size={16} />,
+      dingtalk: <Bell size={16} />,
+      slack: <Hash size={16} />,
+      discord: <Gamepad2 size={16} />,
+      email: <Mail size={16} />,
+    };
 
     return (
       <ConfigCard
@@ -867,12 +1257,24 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
                 title={channel.channelName}
                 itemKey={channel.channelName}
                 defaultExpanded={expandedChannels[channel.channelName] || false}
+                onDelete={deleteChannel}
+                icon={channelIcons[channel.channelName] || <Radio size={16} />}
               >
                 {channel.channelName === 'feishu'
                   ? renderFeishuConfig(channel)
                   : channel.channelName === 'wechat'
                     ? renderWechatConfig(channel)
-                    : renderGenericChannelConfig(channel)
+                    : channel.channelName === 'telegram'
+                      ? renderTelegramConfig(channel)
+                      : channel.channelName === 'dingtalk'
+                        ? renderDingTalkConfig(channel)
+                        : channel.channelName === 'slack'
+                            ? renderSlackConfig(channel)
+                            : channel.channelName === 'discord'
+                              ? renderDiscordConfig(channel)
+                              : channel.channelName === 'email'
+                                ? renderEmailConfig(channel)
+                                : renderGenericChannelConfig(channel)
                 }
               </DynamicItemCard>
             ))}

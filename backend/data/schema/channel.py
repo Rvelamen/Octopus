@@ -28,13 +28,18 @@ def create_indexes(conn: sqlite3.Connection) -> None:
 
 
 def seed_data(conn: sqlite3.Connection) -> None:
-    conn.execute("""
-        INSERT OR IGNORE INTO channel_configs
-        (channel_name, channel_type, enabled, app_id, app_secret, encrypt_key, verification_token, allow_from, config_json)
-        VALUES ('feishu', 'feishu', 0, '', '', '', '', '[]', '{}')
-    """)
-    conn.execute("""
-        INSERT OR IGNORE INTO channel_configs
-        (channel_name, channel_type, enabled, app_id, app_secret, encrypt_key, verification_token, allow_from, config_json)
-        VALUES ('wechat', 'wechat', 0, '', '', '', '', '[]', '{}')
-    """)
+    _CHANNELS = [
+        ('feishu', 'feishu'),
+        ('wechat', 'wechat'),
+        ('telegram', 'telegram'),
+        ('dingtalk', 'dingtalk'),
+        ('slack', 'slack'),
+        ('discord', 'discord'),
+        ('email', 'email'),
+    ]
+    for name, ctype in _CHANNELS:
+        conn.execute("""
+            INSERT OR IGNORE INTO channel_configs
+            (channel_name, channel_type, enabled, app_id, app_secret, encrypt_key, verification_token, allow_from, config_json)
+            VALUES (?, ?, 0, '', '', '', '', '[]', '{}')
+        """, (name, ctype))

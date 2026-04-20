@@ -175,7 +175,14 @@ class Database:
         """Apply pending yoyo migrations."""
         try:
             from yoyo import get_backend, read_migrations
+        except ImportError as e:
+            # yoyo-migrations not installed, skip silently
+            return
+        except Exception as e:
+            logger.warning(f"Yoyo import failed: {e}")
+            return
 
+        try:
             backend = get_backend(f"sqlite:///{self.db_path}")
             migrations_dir = Path(__file__).parent / "migrations"
             migrations = read_migrations(str(migrations_dir))
@@ -184,7 +191,7 @@ class Database:
                 backend.apply_migrations(to_apply)
                 logger.info(f"Applied {len(to_apply)} database migration(s)")
         except Exception as e:
-            logger.warning(f"Yoyo migration run failed (may be expected): {e}")
+            logger.warning(f"Yoyo migration run failed: {e}")
 
     def execute(self, query: str, params: tuple = ()) -> list[sqlite3.Row]:
         """Execute a query and return results."""

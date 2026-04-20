@@ -13,7 +13,8 @@ function DynamicItemCard({
   showDots = true,
   enabled = true,
   onToggleEnabled = null,
-  showEnabledSwitch = false
+  showEnabledSwitch = false,
+  icon = null
 }) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [isEnabled, setIsEnabled] = useState(enabled);
@@ -67,6 +68,7 @@ function DynamicItemCard({
           >
             {isExpanded ? '[−]' : '[+]'}
           </button>
+          {icon && <span className="dynamic-item-icon" style={{ display: 'inline-flex', alignItems: 'center', marginRight: '8px', color: 'var(--text-2)' }}>{icon}</span>}
           <span className="dynamic-item-title">{title}</span>
           {!isEnabled && <span className="disabled-badge">DISABLED</span>}
         </div>

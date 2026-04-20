@@ -186,6 +186,7 @@ class SessionGetContextStatsRequest(BaseRequest):
 # ============================================================================
 class KnowledgeListRequest(BaseRequest):
     path: str = "knowledge/notes"
+    vault: str | None = None
 
 
 class KnowledgeReadRequest(BaseRequest):
@@ -203,6 +204,7 @@ class KnowledgeDeleteRequest(BaseRequest):
 
 class KnowledgeSearchRequest(BaseRequest):
     query: str = ""
+    vault: str | None = None
 
 
 class KnowledgeGraphRequest(BaseRequest):
@@ -210,11 +212,13 @@ class KnowledgeGraphRequest(BaseRequest):
     depth: int = 1
     limit: int = 200
     tag: str | None = None
+    vault: str | None = None
 
 
 class KnowledgeDistillRequest(BaseRequest):
     source_path: str = ""
     target_path: str | None = None
+    vault: str | None = None
     options: dict[str, Any] = {}
 
 
@@ -233,7 +237,7 @@ class KnowledgeDistillDetailRequest(BaseRequest):
 
 
 class KnowledgeGetTagsRequest(BaseRequest):
-    pass
+    vault: str | None = None
 
 
 class KnowledgeExportRequest(BaseRequest):
@@ -242,6 +246,11 @@ class KnowledgeExportRequest(BaseRequest):
 
 class KnowledgeImportRequest(BaseRequest):
     zip_data: str = ""
+    vault: str | None = None  # optional vault name override for obsidian imports
+
+
+class KnowledgeListVaultsRequest(BaseRequest):
+    pass
 
 
 class KnowledgeGetDocumentMetaRequest(BaseRequest):
@@ -296,6 +305,7 @@ class WorkspaceReadRequest(BaseRequest):
 class WorkspaceWriteRequest(BaseRequest):
     path: str = ""
     content: str = ""
+    encoding: str = "utf-8"
 
 
 class WorkspaceWriteChunkRequest(BaseRequest):
@@ -600,12 +610,19 @@ class ChannelGetListRequest(BaseRequest):
 
 
 class ChannelUpdateRequest(BaseRequest):
-    channel_name: str = ""
-    config: dict[str, Any] = {}
+    channelName: str = ""
+    channelType: str = ""
+    enabled: bool = False
+    appId: str = ""
+    appSecret: str = ""
+    encryptKey: str = ""
+    verificationToken: str = ""
+    allowFrom: list[str] = []
+    configJson: dict[str, Any] = {}
 
 
 class ChannelDeleteRequest(BaseRequest):
-    channel_name: str = ""
+    channelName: str = ""
 
 
 class ToolGetConfigRequest(BaseRequest):

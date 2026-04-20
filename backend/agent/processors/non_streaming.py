@@ -319,9 +319,34 @@ class NonStreamingMessageProcessor(MessageProcessor):
 
         if self.agent_loop._should_stop(instance_id_int) and final_content is None:
             final_content = "任务已被用户暂停。"
+            # 保存暂停状态到数据库
+            session.add_message(
+                "assistant",
+                final_content,
+                message_type="stopped",
+                metadata={
+                    "session_instance_id": session_instance_id,
+                    "stopped_by_user": True,
+                } if session_instance_id else {"stopped_by_user": True}
+            )
+            self.agent_loop.sessions.save(session)
+            # 向前端 emit 明确的暂停事件
+            await self.agent_loop._emit(
+                "agent_stopped",
+                {
+                    "content": final_content,
+                    "session": current_session,
+                    "session_instance_id": session_instance_id,
+                    "status": "stopped"
+                },
+                channel=msg.channel
+            )
 
         if final_content is None:
-            final_content = "I've completed processing but have no response to give."
+            final_content = (
+                f"⚠️ 当前任务已达到最大迭代次数限制（{self.agent_loop.max_iterations} 次），未能完成所有操作。"
+                f"\n\n您可以回复 **\"继续\"** 让 Agent 接着处理剩余步骤。"
+            )
 
         # Get model context window for smart compression trigger
         model_context_window = 0

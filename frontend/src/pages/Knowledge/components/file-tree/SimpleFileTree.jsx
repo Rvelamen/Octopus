@@ -8,6 +8,11 @@ import {
   FileImage,
   FileJson,
   FileType,
+  FilePlus,
+  Upload,
+  Pencil,
+  Trash2,
+  RefreshCw,
 } from 'lucide-react';
 import './SimpleFileTree.css';
 
@@ -294,7 +299,7 @@ export default function SimpleFileTree({
       items.push(
         {
           label: 'New File',
-          icon: <FileText size={14} />,
+          icon: <FilePlus size={14} />,
           onClick: () => onCreateFile?.(focusedItem.path),
         },
         {
@@ -304,7 +309,7 @@ export default function SimpleFileTree({
         },
         {
           label: 'Upload File',
-          icon: <FileText size={14} />,
+          icon: <Upload size={14} />,
           onClick: () => onUploadFile?.(focusedItem.path),
         },
         { divider: true }
@@ -314,12 +319,12 @@ export default function SimpleFileTree({
     items.push(
       {
         label: 'Rename',
-        icon: <FileText size={14} />,
+        icon: <Pencil size={14} />,
         onClick: () => onRename?.(focusedItem),
       },
       {
         label: 'Delete',
-        icon: <FileText size={14} />,
+        icon: <Trash2 size={14} />,
         danger: true,
         onClick: () => onDelete?.(focusedItem),
       }
@@ -330,7 +335,7 @@ export default function SimpleFileTree({
         { divider: true },
         {
           label: 'Refresh',
-          icon: <FileText size={14} />,
+          icon: <RefreshCw size={14} />,
           onClick: () => onRefresh?.(focusedItem.path),
         }
       );

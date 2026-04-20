@@ -81,21 +81,26 @@ export default function DistillDialog({
   onCancel,
   onStartDistill,
   sendWSMessage,
+  vaults = [],
 }) {
   const [template, setTemplate] = useState('summary');
   const [prompt, setPrompt] = useState('');
   const [isStarting, setIsStarting] = useState(false);
+  const [selectedVault, setSelectedVault] = useState('');
   const [selectedDir, setSelectedDir] = useState('knowledge/notes');
   const [expandedPaths, setExpandedPaths] = useState(new Set(['knowledge/notes']));
   const [treeItems, setTreeItems] = useState({});
   const { addTask } = useDistillTasks();
 
+  const rootPath = selectedVault ? `knowledge/notes/${selectedVault}` : 'knowledge/notes';
+
   const reset = () => {
     setTemplate('summary');
     setPrompt('');
     setIsStarting(false);
-    setSelectedDir('knowledge/notes');
-    setExpandedPaths(new Set(['knowledge/notes']));
+    setSelectedVault('');
+    setSelectedDir(rootPath);
+    setExpandedPaths(new Set([rootPath]));
   };
 
   const handleCancel = () => {
@@ -132,6 +137,8 @@ export default function DistillDialog({
     });
   };
 
+  const effectiveRoot = selectedVault && selectedVault !== 'default' ? `knowledge/notes/${selectedVault}` : 'knowledge/notes';
+
   const handleStart = async () => {
     if (!sourceFile) return;
 
@@ -149,8 +156,8 @@ export default function DistillDialog({
         prompt,
       });
 
-      // 调用 onStartDistill 发送任务到后台
-      const result = await onStartDistill({ prompt, template, taskId, targetPath });
+      // 调用 onStartDistill 发送任务到后台（包含 vault）
+      const result = await onStartDistill({ prompt, template, taskId, targetPath, vault: selectedVault || 'default' });
 
       // 关闭 Modal
       reset();
@@ -198,6 +205,39 @@ export default function DistillDialog({
         </div>
 
         <div style={{ padding: '16px 20px', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Vault selector */}
+          {vaults.length > 0 && (
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>
+                Target Vault
+              </label>
+              <select
+                value={selectedVault}
+                onChange={(e) => {
+                  const vault = e.target.value;
+                  setSelectedVault(vault);
+                  const newRoot = vault ? `knowledge/notes/${vault}` : 'knowledge/notes';
+                  setSelectedDir(newRoot);
+                  setExpandedPaths(new Set([newRoot]));
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  fontSize: 13,
+                  borderRadius: 'var(--r-sm)',
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface)',
+                  color: 'var(--text)',
+                }}
+              >
+                <option value="">default</option>
+                {vaults.map((v) => (
+                  <option key={v.name} value={v.name}>{v.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Output location */}
           <div>
             <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>
@@ -221,7 +261,7 @@ export default function DistillDialog({
                 onToggle={handleToggle}
                 onSelect={setSelectedDir}
                 loadDirectory={loadDirectory}
-                rootPath="knowledge/notes"
+                rootPath={effectiveRoot}
               />
             </div>
           </div>

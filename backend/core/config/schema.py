@@ -42,10 +42,78 @@ class WechatConfig(BaseModel):
     config: WechatInnerConfig = Field(default_factory=WechatInnerConfig)
 
 
+class TelegramInnerConfig(BaseModel):
+    """Inner config for Telegram channel."""
+    token: str = ""
+    allow_from: list[str] = Field(default_factory=list, alias="allowFrom")
+    class Config:
+        populate_by_name = True
+
+class TelegramConfig(BaseModel):
+    enabled: bool = False
+    config: TelegramInnerConfig = Field(default_factory=TelegramInnerConfig)
+
+class DingTalkInnerConfig(BaseModel):
+    """Inner config for DingTalk channel."""
+    client_id: str = Field(default="", alias="clientId")
+    client_secret: str = Field(default="", alias="clientSecret")
+    allow_from: list[str] = Field(default_factory=list, alias="allowFrom")
+    class Config:
+        populate_by_name = True
+
+class DingTalkConfig(BaseModel):
+    enabled: bool = False
+    config: DingTalkInnerConfig = Field(default_factory=DingTalkInnerConfig)
+
+class SlackInnerConfig(BaseModel):
+    """Inner config for Slack channel."""
+    bot_token: str = Field(default="", alias="botToken")
+    app_token: str = Field(default="", alias="appToken")
+    allow_from: list[str] = Field(default_factory=list, alias="allowFrom")
+    class Config:
+        populate_by_name = True
+
+class SlackConfig(BaseModel):
+    enabled: bool = False
+    config: SlackInnerConfig = Field(default_factory=SlackInnerConfig)
+
+class DiscordInnerConfig(BaseModel):
+    """Inner config for Discord channel."""
+    token: str = ""
+    allow_from: list[str] = Field(default_factory=list, alias="allowFrom")
+    class Config:
+        populate_by_name = True
+
+class DiscordConfig(BaseModel):
+    enabled: bool = False
+    config: DiscordInnerConfig = Field(default_factory=DiscordInnerConfig)
+
+class EmailInnerConfig(BaseModel):
+    """Inner config for Email channel."""
+    imap_host: str = Field(default="imap.gmail.com", alias="imapHost")
+    imap_port: int = Field(default=993, alias="imapPort")
+    smtp_host: str = Field(default="smtp.gmail.com", alias="smtpHost")
+    smtp_port: int = Field(default=587, alias="smtpPort")
+    address: str = ""
+    password: str = ""
+    poll_interval: int = Field(default=15, alias="pollInterval")
+    allow_from: list[str] = Field(default_factory=list, alias="allowFrom")
+    class Config:
+        populate_by_name = True
+
+class EmailConfig(BaseModel):
+    enabled: bool = False
+    config: EmailInnerConfig = Field(default_factory=EmailInnerConfig)
+
 class ChannelsConfig(BaseModel):
     """Configuration for chat channels."""
     feishu: FeishuConfig = Field(default_factory=FeishuConfig)
     wechat: WechatConfig = Field(default_factory=WechatConfig)
+    telegram: TelegramConfig = Field(default_factory=TelegramConfig)
+    dingtalk: DingTalkConfig = Field(default_factory=DingTalkConfig)
+    slack: SlackConfig = Field(default_factory=SlackConfig)
+    discord: DiscordConfig = Field(default_factory=DiscordConfig)
+    email: EmailConfig = Field(default_factory=EmailConfig)
 
 
 class AgentDefaults(BaseModel):

@@ -210,11 +210,18 @@ def _migration_003_add_document_meta(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migration_004_add_vault_column(conn: sqlite3.Connection) -> None:
+    conn.execute("ALTER TABLE knowledge_nodes ADD COLUMN vault TEXT DEFAULT 'default'")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_nodes_vault ON knowledge_nodes(vault)")
+    conn.commit()
+
+
 def run_knowledge_index_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_initial_schema", _migration_001_create_initial_schema)
     runner.register(2, "add_orphan_tag_trigger", _migration_002_add_orphan_tag_trigger)
     runner.register(3, "add_document_meta", _migration_003_add_document_meta)
+    runner.register(4, "add_vault_column", _migration_004_add_vault_column)
     runner.run()
 
 
@@ -274,8 +281,15 @@ def _migration_002_add_unique_iteration_constraint(conn: sqlite3.Connection) -> 
     )
 
 
+def _migration_003_add_vault_column_to_distill_tasks(conn: sqlite3.Connection) -> None:
+    conn.execute("ALTER TABLE knowledge_distill_tasks ADD COLUMN vault TEXT DEFAULT 'default'")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_distill_vault ON knowledge_distill_tasks(vault)")
+    conn.commit()
+
+
 def run_distill_queue_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_distill_queue", _migration_001_create_distill_queue)
     runner.register(2, "add_unique_iteration_constraint", _migration_002_add_unique_iteration_constraint)
+    runner.register(3, "add_vault_column_to_distill_tasks", _migration_003_add_vault_column_to_distill_tasks)
     runner.run()

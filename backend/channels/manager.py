@@ -100,6 +100,45 @@ class ChannelManager:
             except ImportError as e:
                 logger.warning(f"WeChat channel not available: {e}")
 
+        # --- New channels initialized from config_json ---
+        self._init_generic_channel(db_channel_configs, "telegram", "backend.channels.telegram.channel", "TelegramChannel", "backend.core.config.schema", "TelegramConfig", "TelegramInnerConfig")
+        self._init_generic_channel(db_channel_configs, "dingtalk", "backend.channels.dingtalk.channel", "DingTalkChannel", "backend.core.config.schema", "DingTalkConfig", "DingTalkInnerConfig")
+        self._init_generic_channel(db_channel_configs, "slack", "backend.channels.slack.channel", "SlackChannel", "backend.core.config.schema", "SlackConfig", "SlackInnerConfig")
+        self._init_generic_channel(db_channel_configs, "discord", "backend.channels.discord.channel", "DiscordChannel", "backend.core.config.schema", "DiscordConfig", "DiscordInnerConfig")
+        self._init_generic_channel(db_channel_configs, "email", "backend.channels.email.channel", "EmailChannel", "backend.core.config.schema", "EmailConfig", "EmailInnerConfig")
+
+    def _init_generic_channel(
+        self,
+        db_channel_configs: dict,
+        channel_name: str,
+        module_path: str,
+        class_name: str,
+        schema_module: str,
+        config_class: str,
+        inner_class: str,
+    ) -> None:
+        """Initialize a generic channel from DB config using config_json."""
+        cfg = db_channel_configs.get(channel_name)
+        if not cfg or not cfg.enabled:
+            return
+        try:
+            channel_module = __import__(module_path, fromlist=[class_name])
+            ChannelClass = getattr(channel_module, class_name)
+            schema_mod = __import__(schema_module, fromlist=[config_class, inner_class])
+            ConfigClass = getattr(schema_mod, config_class)
+            InnerClass = getattr(schema_mod, inner_class)
+
+            config_json = cfg.config_json if isinstance(cfg.config_json, dict) else {}
+            inner = InnerClass(**config_json, allow_from=cfg.allow_from)
+            channel_config = ConfigClass(enabled=True, config=inner)
+
+            self.channels[channel_name] = ChannelClass(channel_config, self.bus)
+            logger.info(f"{channel_name.capitalize()} channel initialized")
+        except ImportError as e:
+            logger.warning(f"{channel_name} channel not available: {e}")
+        except Exception as e:
+            logger.error(f"Failed to initialize {channel_name} channel: {e}")
+
     def ensure_channel(self, channel_name: str) -> bool:
         """Ensure a channel is initialized and ready to start."""
         if channel_name in self.channels:
@@ -128,6 +167,41 @@ class ChannelManager:
                 )
                 channel_config = WechatConfig(enabled=True, config=inner)
                 self.channels[channel_name] = WechatChannel(channel_config, self.bus)
+                logger.info(f"Channel {channel_name} dynamically added")
+                return True
+
+            # Generic channel ensure for new channels
+            generic_channels = {
+                "telegram": ("backend.channels.telegram.channel", "TelegramChannel", "TelegramConfig", "TelegramInnerConfig"),
+                "dingtalk": ("backend.channels.dingtalk.channel", "DingTalkChannel", "DingTalkConfig", "DingTalkInnerConfig"),
+                "slack": ("backend.channels.slack.channel", "SlackChannel", "SlackConfig", "SlackInnerConfig"),
+                "discord": ("backend.channels.discord.channel", "DiscordChannel", "DiscordConfig", "DiscordInnerConfig"),
+                "email": ("backend.channels.email.channel", "EmailChannel", "EmailConfig", "EmailInnerConfig"),
+            }
+
+            if channel_name in generic_channels:
+                mod_path, cls_name, cfg_name, inner_name = generic_channels[channel_name]
+                channel_module = __import__(mod_path, fromlist=[cls_name])
+                ChannelClass = getattr(channel_module, cls_name)
+                from backend.core.config.schema import (
+                    TelegramConfig, TelegramInnerConfig,
+                    DingTalkConfig, DingTalkInnerConfig,
+                    SlackConfig, SlackInnerConfig,
+                    DiscordConfig, DiscordInnerConfig,
+                    EmailConfig, EmailInnerConfig,
+                )
+                schema_map = {
+                    "telegram": (TelegramConfig, TelegramInnerConfig),
+                    "dingtalk": (DingTalkConfig, DingTalkInnerConfig),
+                    "slack": (SlackConfig, SlackInnerConfig),
+                    "discord": (DiscordConfig, DiscordInnerConfig),
+                    "email": (EmailConfig, EmailInnerConfig),
+                }
+                ConfigClass, InnerClass = schema_map[channel_name]
+                config_json = config.config_json if isinstance(config.config_json, dict) else {}
+                inner = InnerClass(**config_json, allow_from=config.allow_from)
+                channel_config = ConfigClass(enabled=True, config=inner)
+                self.channels[channel_name] = ChannelClass(channel_config, self.bus)
                 logger.info(f"Channel {channel_name} dynamically added")
                 return True
 

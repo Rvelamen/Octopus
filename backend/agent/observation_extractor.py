@@ -35,15 +35,15 @@ OBSERVATION_TYPE_ICON = {
 EXTRACTION_SYSTEM_PROMPT = """You are an expert knowledge curator. Your job is to distill conversation snippets into high-signal, reusable observations.
 
 Rules:
-- ONLY extract observations that are genuinely novel, non-obvious, or actionable.
-- Prefer empty array [] over low-value fluff.
+- Extract observations that capture meaningful work, decisions, findings, or changes.
 - Titles must be specific, keyword-rich, and searchable.
 - Narratives should explain the WHAT and the WHY in 1-3 sentences.
+- When in doubt, extract rather than skip - empty results should be rare.
 """
 
-EXTRACTION_PROMPT_TEMPLATE = """Analyze the conversation snippet below and extract up to 3 structured observations.
+EXTRACTION_PROMPT_TEMPLATE = """Analyze the conversation snippet below and extract up to 5 structured observations.
 
-Return a JSON array. If nothing notable was discussed, return [] exactly.
+Return a JSON array. Even modest but useful observations should be included.
 
 --- Observation Types ---
 - gotcha: A hidden trap, edge case, or counter-intuitive behavior that could bite someone later.
@@ -54,7 +54,7 @@ Return a JSON array. If nothing notable was discussed, return [] exactly.
 - how-it-works: An explanation of a mechanism or system behavior.
 - discovery: A surprising finding or newly learned fact.
 - why-it-exists: The rationale behind a feature, rule, or pattern.
-- general: Fallback only if none of the above fit.
+- general: Fallback for any notable information that doesn't fit above.
 
 --- Field Schema ---
 - type: one of the types above
@@ -64,30 +64,24 @@ Return a JSON array. If nothing notable was discussed, return [] exactly.
 - concepts: array of key technical terms or domain concepts (empty if none)
 - token_count: rough integer estimate of narrative length in tokens
 
---- Quality Criteria ---
-DO extract:
-- Fixes with clear root causes
-- Configuration changes with rationale
-- Surprising API behavior or limits
-- Decisions that affect future work
-
-DO NOT extract:
-- Generic greetings or status updates
-- Vague summaries like "we discussed the project"
-- Purely procedural steps without insight
-- Obvious facts that need no explanation
+--- What to Extract ---
+- File modifications and their purpose
+- Configuration changes and their rationale
+- Tool usage patterns and outcomes
+- Task completions and their results
+- Any work that was done during the conversation
+- Decisions made and why
+- Problems encountered and solutions found
+- API behaviors or limits discovered
 
 --- Examples ---
-Bad title (too vague): "About the code change"
-Good title: "Increase npm install hook timeout from 60s to 300s"
-
-Bad observation (no insight): {{"type": "general", "title": "We talked about the bug", "narrative": "We discussed a bug in the app.", ...}}
-Good observation: {{"type": "gotcha", "title": "SQLite FTS5 auto-sync triggers fail on ALTER TABLE", "narrative": "Adding an ALTER TABLE after creating FTS5 triggers caused the triggers to reference the old schema, leading to silent insert failures. Recreate triggers after schema changes.", "files": ["backend/data/database.py"], "concepts": ["SQLite", "FTS5", "triggers"], "token_count": 45}}
+Good observation: {{"type": "what-changed", "title": "Modified observation_extractor.py to improve extraction", "narrative": "Made changes to the observation extraction logic to capture more meaningful work from the conversation.", "files": ["backend/agent/observation_extractor.py"], "concepts": ["observation", "extraction"], "token_count": 35}}
+Good observation: {{"type": "problem-solution", "title": "Fixed memory page not showing data after compression", "narrative": "The memory page was not displaying extracted observations after context compression. Root cause was the LLM returning empty results due to overly strict extraction criteria.", "files": [], "concepts": ["memory", "compression", "LLM"], "token_count": 45}}
 
 Conversation snippet:
 {conversation_text}
 
-JSON array only:"""
+JSON array:"""
 
 
 def _conversation_text_from_messages(messages: list[dict[str, Any]]) -> str:
@@ -106,21 +100,31 @@ def _conversation_text_from_messages(messages: list[dict[str, Any]]) -> str:
 
 def _parse_observations(raw: str) -> list[dict[str, Any]]:
     """Parse JSON array of observations from LLM response."""
+    if not raw:
+        logger.warning("Observation extraction: empty raw response")
+        return []
+
     # Strip markdown code fences if present
     text = raw.strip()
     if text.startswith("```"):
         # Remove first fence line and last fence line
         lines = text.splitlines()
-        if lines[0].startswith("```"):
+        if lines and lines[0].startswith("```"):
             lines = lines[1:]
         if lines and lines[-1].startswith("```"):
             lines = lines[:-1]
         text = "\n".join(lines).strip()
+
+    if not text:
+        logger.warning("Observation extraction: empty text after stripping fences")
+        return []
+
     try:
         data = json.loads(text)
         if not isinstance(data, list):
-            logger.warning(f"Observation extraction returned non-list: {type(data)}")
+            logger.warning(f"Observation extraction returned non-list: {type(data)}, content: {text[:200]}")
             return []
+        logger.debug(f"Observation extraction parsed {len(data)} observations from LLM response")
         return data
     except json.JSONDecodeError as e:
         logger.warning(f"Failed to parse observation JSON: {e}\nRaw: {raw[:500]}")
@@ -193,7 +197,9 @@ async def extract_observations_from_messages(
                 "concepts": list(obs.get("concepts", [])) if isinstance(obs.get("concepts"), list) else [],
                 "token_count": int(obs.get("token_count", 0)) or 100,
             })
-        logger.info(f"Extracted {len(valid)} observations from {len(messages)} messages")
+        logger.info(f"Extracted {len(valid)} observations from {len(messages)} messages (raw count: {len(observations)})")
+        if not valid and raw:
+            logger.warning(f"LLM returned empty observations. Raw response ({len(raw)} chars): {raw[:500]}")
         return valid
     except Exception as e:
         logger.error(f"Observation extraction failed: {e}")

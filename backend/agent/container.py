@@ -203,6 +203,6 @@ class AgentContainer:
         if should_register("memory_write"):
             from backend.tools.memory_write import MemoryWriteTool
             self.tools.register(MemoryWriteTool(store=self.memory_manager.builtin))
-        if use_all or any(t in enabled_tools for t in ["browser_snapshot", "browser_click", "browser_type", "browser_navigate"]):
+        if should_register("browser"):
             register_browser_tools(self.tools)
         logger.info(f"Default tools registered (enabled: {len(self.tools)} tools)")

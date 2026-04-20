@@ -126,6 +126,7 @@ class ContextBuilder:
             parts.append(f"""# Skills
 
 The following skills extend your capabilities. To use a skill, read its SKILL.md file using the read_file tool.
+Each skill includes a `<skill_doc>` tag with the absolute path to its SKILL.md — use this exact absolute path with the read_file tool.
 Skills with available="false" need dependencies installed first - you can try installing them with apt/brew.
 
 ```

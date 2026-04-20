@@ -105,7 +105,7 @@ from backend.channels.desktop.handlers.knowledge import (
     KnowledgeDeleteHandler, KnowledgeSearchHandler, KnowledgeGraphHandler,
     KnowledgeDistillHandler, KnowledgeDistillListHandler,
     KnowledgeDistillDetailHandler, KnowledgeGetTagsHandler, KnowledgeExportHandler, KnowledgeImportHandler,
-    KnowledgeGetDocumentMetaHandler,
+    KnowledgeGetDocumentMetaHandler, KnowledgeListVaultsHandler,
 )
 from backend.channels.desktop.handlers.file_preview import FilePreviewPDFHandler
 
@@ -309,6 +309,7 @@ class HandlerRegistry:
             MessageType.KNOWLEDGE_EXPORT: KnowledgeExportHandler(bus, knowledge_engine, self.knowledge_task_queue),
             MessageType.KNOWLEDGE_IMPORT: KnowledgeImportHandler(bus, knowledge_engine),
             MessageType.KNOWLEDGE_GET_DOCUMENT_META: KnowledgeGetDocumentMetaHandler(bus, knowledge_engine),
+            MessageType.KNOWLEDGE_LIST_VAULTS: KnowledgeListVaultsHandler(bus, knowledge_engine),
             MessageType.FILE_PREVIEW_PDF: FilePreviewPDFHandler(bus),
         })
 

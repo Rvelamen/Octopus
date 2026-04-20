@@ -15,7 +15,7 @@ class ReadFileTool(Tool):
     
     @property
     def description(self) -> str:
-        return "Read the contents of a file at the given path. Supports txt, pdf, docx, xlsx, xls formats."
+        return "Read the contents of a file at the given path. Supports txt, pdf, docx, xlsx, xls formats. You may use absolute paths or relative paths. Relative paths are resolved against the workspace directory. Using absolute paths is recommended to avoid ambiguity."
     
     @property
     def parameters(self) -> dict[str, Any]:
@@ -118,7 +118,7 @@ class WriteFileTool(Tool):
     
     @property
     def description(self) -> str:
-        return "Write content to a file at the given path. Creates parent directories if needed."
+        return "Write content to a file at the given path. Creates parent directories if needed. You may use absolute paths or relative paths. Relative paths are resolved against the workspace directory. Using absolute paths is recommended to avoid ambiguity."
     
     @property
     def parameters(self) -> dict[str, Any]:
@@ -161,7 +161,7 @@ class EditFileTool(Tool):
     
     @property
     def description(self) -> str:
-        return "Edit a file by replacing old_text with new_text. The old_text must exist exactly in the file."
+        return "Edit a file by replacing old_text with new_text. The old_text must exist exactly in the file. You may use absolute paths or relative paths. Relative paths are resolved against the workspace directory. Using absolute paths is recommended to avoid ambiguity."
     
     @property
     def parameters(self) -> dict[str, Any]:

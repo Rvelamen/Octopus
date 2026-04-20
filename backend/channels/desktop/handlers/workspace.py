@@ -393,7 +393,7 @@ class WorkspaceWriteHandler(MessageHandler):
         try:
             path = validated.path
             content = validated.content
-            encoding = "utf-8"
+            encoding = validated.encoding
 
             if not path:
                 await self._send_error(websocket, message.request_id, "Path is required")

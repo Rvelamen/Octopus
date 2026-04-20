@@ -208,6 +208,8 @@ class ExtensionRegistry:
             lines.append(f'    <name>{escape_xml(ext.name)}</name>')
             lines.append(f'    <description>{escape_xml(ext.description)}</description>')
             lines.append(f'    <location>{escape_xml(str(ext.directory))}</location>')
+            skill_doc = ext.directory / "SKILL.md"
+            lines.append(f'    <skill_doc>{escape_xml(str(skill_doc))}</skill_doc>')
             lines.append('  </skill>')
 
         lines.append("</skills>")

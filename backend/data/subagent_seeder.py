@@ -81,6 +81,12 @@ DEFAULT_AVAILABLE_TOOLS = [
     ("memory_search", "Memory Search", "Search observations and memory by keyword", "memory", 15),
     ("memory_read", "Memory Read", "Read curated memory or user profile", "memory", 16),
     ("memory_timeline", "Memory Timeline", "Get memory timeline for a session instance", "memory", 17),
+    ("browser", "Browser", "Automate browser navigation, interaction, and screenshots", "browser", 18),
+    ("web_fetch", "Web Fetch", "Fetch web page content via HTTP", "web", 19),
+    ("image_understand", "Image Understand", "Analyze and describe images", "image", 20),
+    ("image_generate", "Image Generate", "Generate images from text descriptions", "image", 21),
+    ("spawn", "Spawn", "Spawn subagents for background tasks", "agent", 22),
+    ("cron", "Cron", "Schedule recurring tasks", "scheduler", 23),
 ]
 
 

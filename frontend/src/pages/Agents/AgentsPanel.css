@@ -530,6 +530,14 @@
   z-index: 100;
 }
 
+.dropdown-container.dropdown-up .dropdown-menu {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: var(--s-1);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+}
+
 .dropdown-item {
   display: flex;
   align-items: center;

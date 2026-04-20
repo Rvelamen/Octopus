@@ -30,6 +30,7 @@ from backend.channels.desktop.schemas import (
     KnowledgeGetTagsRequest,
     KnowledgeExportRequest,
     KnowledgeImportRequest,
+    KnowledgeListVaultsRequest,
 )
 from backend.services.knowledge_engine import KnowledgeGraphEngine
 from backend.services.knowledge_task_queue import KnowledgeTaskQueue
@@ -295,7 +296,8 @@ class KnowledgeSearchHandler(_KnowledgeHandlerMixin, MessageHandler):
     async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeSearchRequest) -> None:
         try:
             query = validated.query
-            results = self.engine.search_notes(query)
+            vault = validated.vault
+            results = self.engine.search_notes(query, vault_filter=vault)
             await self.send_response(websocket, WSMessage(
                 type=MessageType.KNOWLEDGE_SEARCH_RESULT,
                 request_id=message.request_id,
@@ -335,7 +337,8 @@ class KnowledgeGraphHandler(_KnowledgeHandlerMixin, MessageHandler):
             depth = validated.depth
             limit = validated.limit
             tag_filter = validated.tag
-            graph = self.engine.get_graph(center_path=center, depth=depth, limit=limit, tag_filter=tag_filter)
+            vault_filter = validated.vault
+            graph = self.engine.get_graph(center_path=center, depth=depth, limit=limit, tag_filter=tag_filter, vault_filter=vault_filter)
             await self.send_response(websocket, WSMessage(
                 type=MessageType.KNOWLEDGE_GRAPH_RESULT,
                 request_id=message.request_id,
@@ -373,6 +376,7 @@ class KnowledgeDistillListHandler(_KnowledgeHandlerMixin, MessageHandler):
                             "progress": t.progress,
                             "result_path": t.result_path,
                             "error": t.error,
+                            "vault": t.vault,
                             "created_at": t.created_at,
                             "updated_at": t.updated_at,
                         }
@@ -409,6 +413,7 @@ class KnowledgeDistillListHandler(_KnowledgeHandlerMixin, MessageHandler):
                             "progress": t.progress,
                             "result_path": t.result_path,
                             "error": t.error,
+                            "vault": t.vault,
                             "created_at": t.created_at,
                             "updated_at": t.updated_at,
                         }
@@ -446,10 +451,11 @@ class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
             template = message.data.get("template", "custom")
             # Use frontend-provided task_id for progress tracking
             task_id = message.data.get("task_id") or message.request_id
+            vault = message.data.get("vault", "default")
 
             # Determine output_path
             # - If provided, use it (write to file)
-            # - If not provided, auto-generate (write to file)
+            # - If not provided, auto-generate under vault prefix
             output_path = message.data.get("target_path") or message.data.get("output_path")
             if not output_path:
                 output_path = f"knowledge/notes/{Path(source_path).stem}_extracted.md"
@@ -461,6 +467,7 @@ class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
                 prompt=prompt,
                 output_path=output_path,
                 template=template,
+                vault=vault,
             )
 
             await self.send_response(websocket, WSMessage(
@@ -471,6 +478,7 @@ class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
                     "status": "queued",
                     "message": "Task queued. Progress will be pushed via knowledge_distill_progress events.",
                     "output_path": output_path,
+                    "vault": vault,
                 }
             ))
         except Exception as e:
@@ -486,10 +494,11 @@ class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
             template = validated.options.get("template", "custom")
             # Use frontend-provided task_id for progress tracking
             task_id = validated.options.get("task_id") or message.request_id
+            vault = validated.vault or "default"
 
             # Determine output_path
             # - If provided, use it (write to file)
-            # - If not provided, auto-generate (write to file)
+            # - If not provided, auto-generate under vault prefix
             output_path = validated.target_path
             if not output_path:
                 output_path = f"knowledge/notes/{Path(source_path).stem}_extracted.md"
@@ -501,6 +510,7 @@ class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
                 prompt=prompt,
                 output_path=output_path,
                 template=template,
+                vault=vault,
             )
 
             await self.send_response(websocket, WSMessage(
@@ -511,6 +521,7 @@ class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
                     "status": "queued",
                     "message": "Task queued. Progress will be pushed via knowledge_distill_progress events.",
                     "output_path": output_path,
+                    "vault": vault,
                 }
             ))
         except Exception as e:
@@ -577,6 +588,7 @@ class KnowledgeDistillDetailHandler(_KnowledgeHandlerMixin, MessageHandler):
                 "label": f"Distill: {task['source_path'].split('/')[-1]}",
                 "summary": summary or task.get("prompt", ""),
                 "output_path": task.get("result_path"),
+                "vault": task.get("vault", "default"),
                 "token_usage": {
                     "prompt_tokens": total_prompt_tokens,
                     "completion_tokens": total_completion_tokens,
@@ -646,6 +658,7 @@ class KnowledgeDistillDetailHandler(_KnowledgeHandlerMixin, MessageHandler):
                 "label": f"Distill: {task['source_path'].split('/')[-1]}",
                 "summary": summary or task.get("prompt", ""),
                 "output_path": task.get("result_path"),
+                "vault": task.get("vault", "default"),
                 "token_usage": {
                     "prompt_tokens": total_prompt_tokens,
                     "completion_tokens": total_completion_tokens,
@@ -685,7 +698,7 @@ class KnowledgeGetTagsHandler(_KnowledgeHandlerMixin, MessageHandler):
 
     async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeGetTagsRequest) -> None:
         try:
-            tags = self.engine.get_tags()
+            tags = self.engine.get_tags(vault_filter=validated.vault)
             await self.send_response(websocket, WSMessage(
                 type=MessageType.KNOWLEDGE_GET_TAGS_RESULT,
                 request_id=message.request_id,
@@ -694,6 +707,63 @@ class KnowledgeGetTagsHandler(_KnowledgeHandlerMixin, MessageHandler):
         except Exception as e:
             logger.error(f"Failed to get tags: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to get tags: {e}")
+
+
+class KnowledgeListVaultsHandler(_KnowledgeHandlerMixin, MessageHandler):
+    """Handle list all vaults request."""
+
+    def __init__(self, bus, engine: KnowledgeGraphEngine):
+        super().__init__(bus)
+        self.engine = engine
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        try:
+            vaults = self._collect_vaults()
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.KNOWLEDGE_LIST_VAULTS_RESULT,
+                request_id=message.request_id,
+                data={"vaults": vaults}
+            ))
+        except Exception as e:
+            logger.error(f"Failed to list vaults: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to list vaults: {e}")
+
+    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeListVaultsRequest) -> None:
+        try:
+            vaults = self._collect_vaults()
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.KNOWLEDGE_LIST_VAULTS_RESULT,
+                request_id=message.request_id,
+                data={"vaults": vaults}
+            ))
+        except Exception as e:
+            logger.error(f"Failed to list vaults: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to list vaults: {e}")
+
+    def _collect_vaults(self) -> list[dict[str, Any]]:
+        """Merge indexed vaults with filesystem-based vault directories."""
+        from backend.utils.helpers import get_workspace_path
+        workspace_root = str(get_workspace_path())
+        notes_dir = Path(workspace_root) / "knowledge" / "notes"
+
+        # Get indexed vaults from database
+        indexed: dict[str, dict] = {}
+        for row in self.engine.list_vaults():
+            name = row.get("name", "")
+            if name and name != "default":
+                indexed[name] = row
+
+        # Also scan filesystem for vault directories (may not be indexed yet)
+        if notes_dir.exists() and notes_dir.is_dir():
+            for item in notes_dir.iterdir():
+                if item.is_dir() and item.name != "__pycache__":
+                    if item.name not in indexed:
+                        indexed[item.name] = {"name": item.name, "note_count": 0}
+
+        # Sort by name
+        result = list(indexed.values())
+        result.sort(key=lambda x: x.get("name", ""))
+        return result
 
 
 class KnowledgeExportHandler(_KnowledgeHandlerMixin, MessageHandler):
@@ -851,6 +921,7 @@ class KnowledgeImportHandler(_KnowledgeHandlerMixin, MessageHandler):
         try:
             zip_path_rel = message.data.get("zip_path")
             source = message.data.get("source", "octopus")
+            vault = message.data.get("vault")
             if not zip_path_rel:
                 await self._send_error(websocket, message.request_id, "zip_path is required")
                 return
@@ -890,7 +961,8 @@ class KnowledgeImportHandler(_KnowledgeHandlerMixin, MessageHandler):
                 else:
                     # Obsidian vault import
                     decoded_names = [self._decode_zip_name(i) for i in zf.infolist()]
-                    extract_base = workspace / "knowledge" / "notes" / f"obsidian_import_{int(time.time())}"
+                    vault_name = vault or f"obsidian_import_{int(time.time())}"
+                    extract_base = workspace / "knowledge" / "notes" / vault_name
                     root_prefix = self._detect_zip_root_prefix(decoded_names)
 
                 for info in zf.infolist():
@@ -916,13 +988,15 @@ class KnowledgeImportHandler(_KnowledgeHandlerMixin, MessageHandler):
                     with zf.open(info.filename) as src, open(target, "wb") as dst:
                         dst.write(src.read())
 
-            # Reindex all markdown notes in two passes:
-            # 1) Index all node content so titles are available for link resolution
-            # 2) Force-update links so cross-references resolve correctly
-            notes_dir = workspace / "knowledge" / "notes"
+            # Reindex only the newly imported vault (not all vaults)
+            if source == "octopus":
+                import_vault = "default"
+            else:
+                import_vault = vault or f"obsidian_import_{int(time.time())}"
+            imported_vault_dir = workspace / "knowledge" / "notes" / import_vault
             note_paths: list[Path] = []
-            if notes_dir.exists():
-                note_paths = list(notes_dir.rglob("*.md"))
+            if imported_vault_dir.exists():
+                note_paths = list(imported_vault_dir.rglob("*.md"))
                 for fp in note_paths:
                     rel = str(fp.relative_to(workspace))
                     self.engine.update_note(rel)
@@ -939,11 +1013,18 @@ class KnowledgeImportHandler(_KnowledgeHandlerMixin, MessageHandler):
             await self.send_response(websocket, WSMessage(
                 type=MessageType.KNOWLEDGE_IMPORT_RESULT,
                 request_id=message.request_id,
-                data={"success": True}
+                data={"success": True, "vault": vault or ("obsidian_import_" + str(int(time.time()))) if source != "octopus" else "default"}
             ))
         except Exception as e:
             logger.error(f"Failed to import knowledge base: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to import knowledge base: {e}")
+
+    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated) -> None:
+        """Validated handler delegates to handle() with vault injected into message.data."""
+        # Forward vault from validated model into message.data so handle() picks it up
+        if validated.vault:
+            message.data["vault"] = validated.vault
+        await self.handle(websocket, message)
 
 
 class KnowledgeGetDocumentMetaHandler(_KnowledgeHandlerMixin, MessageHandler):

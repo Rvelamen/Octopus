@@ -121,7 +121,7 @@ class AgentLoop:
         from backend.agent.config_service import AgentConfigService
         try:
             config_service = AgentConfigService(self.db)
-            defaults = config_service.get_agent_defaults()
+            defaults = config_service._get_agent_defaults_repo().get_or_create_defaults()
             if defaults and defaults.max_iterations is not None:
                 return defaults.max_iterations
         except Exception as e:
@@ -460,6 +460,6 @@ class AgentLoop:
                 except Exception as e:
                     parts.append(f"[Error reading image: {e}]")
             elif item.type == "file":
-                parts.append(f"[File: {item.file_name or item.file_path}]")
+                parts.append(f"[File: {item.file_path}]")
 
         return "\n".join(parts)

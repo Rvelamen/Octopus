@@ -790,7 +790,7 @@ class MCPGetServerToolsHandler(MessageHandler):
     async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: MCPGetServerToolsRequest) -> None:
         """Return tools for a specific server."""
         try:
-            server_name = validated.server_name
+            server_name = validated.server_name or message.data.get("name")
             if not server_name:
                 await self._send_error(websocket, message.request_id, "Server name required")
                 return
@@ -964,14 +964,16 @@ class MCPAddServerHandler(MessageHandler):
         try:
             name = validated.name
             config = validated.config
+            # Fallback to top-level fields for backward compatibility with flat payload
+            raw_data = message.data
             # stdio protocol fields
-            command = config.get("command")
-            args = config.get("args", [])
-            env = config.get("env", {})
+            command = config.get("command") or raw_data.get("command")
+            args = config.get("args", []) or raw_data.get("args", [])
+            env = config.get("env", {}) or raw_data.get("env", {})
             # HTTP protocol fields
-            url = validated.url
-            protocol = validated.protocol
-            headers = config.get("headers", {})
+            url = validated.url or raw_data.get("url")
+            protocol = validated.protocol or raw_data.get("protocol", "stdio")
+            headers = config.get("headers", {}) or raw_data.get("headers", {})
 
             if not name:
                 await self._send_error(websocket, message.request_id, "Server name required")
@@ -1130,7 +1132,7 @@ class MCPDeleteServerHandler(MessageHandler):
     async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: MCPDeleteServerRequest) -> None:
         """Delete an MCP server."""
         try:
-            name = validated.server_name
+            name = validated.server_name or message.data.get("name")
             if not name:
                 await self._send_error(websocket, message.request_id, "Server name required")
                 return
@@ -1231,7 +1233,7 @@ class MCPUpdateServerHandler(MessageHandler):
     async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: MCPUpdateServerRequest) -> None:
         """Update server configuration."""
         try:
-            server_name = validated.server_name
+            server_name = validated.server_name or message.data.get("name")
             if not server_name:
                 await self._send_error(websocket, message.request_id, "Server name required")
                 return
@@ -1423,7 +1425,7 @@ class MCPDiscoverToolsHandler(MessageHandler):
     async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: MCPDiscoverToolsRequest) -> None:
         """Discover tools from a server."""
         try:
-            server_name = validated.server_name
+            server_name = validated.server_name or message.data.get("name")
             if not server_name:
                 await self._send_error(websocket, message.request_id, "Server name required")
                 return
@@ -1504,7 +1506,7 @@ class MCPConnectServerHandler(MessageHandler):
     async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: MCPConnectServerRequest) -> None:
         """Connect to an MCP server."""
         try:
-            server_name = validated.server_name
+            server_name = validated.server_name or message.data.get("name")
             if not server_name:
                 await self._send_error(websocket, message.request_id, "Server name required")
                 return
@@ -1581,7 +1583,7 @@ class MCPDisconnectServerHandler(MessageHandler):
     async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: MCPDisconnectServerRequest) -> None:
         """Disconnect from an MCP server."""
         try:
-            server_name = validated.server_name
+            server_name = validated.server_name or message.data.get("name")
             if not server_name:
                 await self._send_error(websocket, message.request_id, "Server name required")
                 return
@@ -1659,7 +1661,7 @@ class MCPReconnectServerHandler(MessageHandler):
     async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: MCPReconnectServerRequest) -> None:
         """Reconnect to an MCP server."""
         try:
-            server_name = validated.server_name
+            server_name = validated.server_name or message.data.get("name")
             if not server_name:
                 await self._send_error(websocket, message.request_id, "Server name required")
                 return
@@ -1742,7 +1744,7 @@ class MCPCallToolHandler(MessageHandler):
         try:
             tool_name = validated.tool_name
             params = validated.arguments
-            server_name = validated.server_name
+            server_name = validated.server_name or message.data.get("name")
 
             if not tool_name:
                 await self._send_error(websocket, message.request_id, "Tool name required")

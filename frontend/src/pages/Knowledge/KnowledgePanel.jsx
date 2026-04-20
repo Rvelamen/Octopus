@@ -13,6 +13,8 @@ import NewNoteModal from './note/NewNoteModal';
 import DocumentGridView from './document/DocumentGridView';
 import TaskDetailModal from '@components/TaskIndicator/TaskDetailModal';
 import PreviewDrawer from './components/preview/PreviewDrawer';
+import ImportObsidianModal from './components/import/ImportObsidianModal';
+import CreateVaultModal from './components/vault/CreateVaultModal';
 
 const TABS = [
   { key: 'documents', label: 'DOCUMENTS', icon: FileText },
@@ -38,6 +40,11 @@ export default function KnowledgePanel({ sendWSMessage }) {
   const [currentDocPath, setCurrentDocPath] = useState('knowledge/raw');
   const [selectedDocItem, setSelectedDocItem] = useState(null);
   const [docPreviewFile, setDocPreviewFile] = useState(null);
+  const [vaults, setVaults] = useState([]);
+  const [selectedVault, setSelectedVault] = useState(null); // null = all vaults
+  const [importObsidianModalVisible, setImportObsidianModalVisible] = useState(false);
+  const [importingFile, setImportingFile] = useState(null); // { file, vault } to import
+  const [createVaultModalVisible, setCreateVaultModalVisible] = useState(false);
 
   // 预览抽屉状态
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false);
@@ -60,7 +67,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
   const isResizingRef = useRef(false);
   const sidebarRef = useRef(null);
 
-  const rootPath = activeTab === 'documents' ? 'knowledge/raw' : 'knowledge/notes';
+  const rootPath = activeTab === 'documents' ? 'knowledge/raw' : selectedVault && selectedVault !== 'default' ? `knowledge/notes/${selectedVault}` : 'knowledge/notes';
 
   // Sidebar 拖拽调整宽度
   const startXRef = useRef(0);
@@ -134,6 +141,20 @@ export default function KnowledgePanel({ sendWSMessage }) {
       }
     },
     [sendWSMessage, fetchDocumentMetas]
+  );
+
+  // Load vault list (filter out 'default' which represents root-level notes)
+  const loadVaults = useCallback(
+    async () => {
+      try {
+        const response = await sendWSMessage('knowledge_list_vaults', {});
+        const all = response.data?.vaults || [];
+        setVaults(all.filter((v) => v.name && v.name !== 'default'));
+      } catch {
+        // ignore - vaults are optional
+      }
+    },
+    [sendWSMessage]
   );
 
   const readFile = useCallback(
@@ -528,8 +549,9 @@ export default function KnowledgePanel({ sendWSMessage }) {
       setDocPreviewFile(null);
     }
     loadDirectory(rootPath);
+    loadVaults();
     setExpandedPaths(new Set([rootPath]));
-  }, [rootPath, loadDirectory, activeTab]);
+  }, [rootPath, loadDirectory, activeTab, loadVaults]);
 
   const loadDistillTasks = useCallback(async (offset = 0) => {
     try {
@@ -735,7 +757,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
     [uploadFile]
   );
 
-  const handleStartDistill = async ({ prompt, template, taskId, targetPath }) => {
+  const handleStartDistill = async ({ prompt, template, taskId, targetPath, vault = 'default' }) => {
     const source = effectiveSelectedPath;
     if (!source) return '';
     try {
@@ -747,6 +769,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
           task_id: taskId,
         },
         target_path: targetPath,
+        vault,
       });
       await loadDistillTasks(0);
       return response.data || {};
@@ -865,6 +888,15 @@ export default function KnowledgePanel({ sendWSMessage }) {
       message.error('Please select a .zip file');
       return;
     }
+    // Show modal to ask for vault name, passing the file along
+    setImportingFile({ file, vault: null });
+    setImportObsidianModalVisible(true);
+  };
+
+  const confirmImportObsidian = async (vault) => {
+    if (!importingFile?.file) return;
+    const file = importingFile.file;
+    setImportObsidianModalVisible(false);
     const targetPath = `knowledge/.import_obsidian_${Date.now()}.zip`;
     try {
       setIsUploading(true);
@@ -879,8 +911,9 @@ export default function KnowledgePanel({ sendWSMessage }) {
         { path: targetPath, content: hex, encoding: 'hex' },
         60000
       );
-      await sendWSMessage('knowledge_import', { zip_path: targetPath, source: 'obsidian' });
+      await sendWSMessage('knowledge_import', { zip_path: targetPath, source: 'obsidian', vault: vault || undefined });
       message.success('Obsidian vault imported successfully');
+      await loadVaults();
       await loadDirectory(rootPath);
       setExpandedPaths((prev) => {
         const next = new Set(prev);
@@ -892,6 +925,26 @@ export default function KnowledgePanel({ sendWSMessage }) {
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
+      setImportingFile(null);
+    }
+  };
+
+  const handleCreateVault = async (vaultName) => {
+    setCreateVaultModalVisible(false);
+    const vaultPath = `knowledge/notes/${vaultName}`;
+    try {
+      const result = await sendWSMessage('workspace_mkdir', { path: vaultPath });
+      message.success(`Vault "${vaultName}" created`);
+      setSelectedVault(vaultName);
+      await loadVaults();
+      await loadDirectory(vaultPath);
+      setExpandedPaths((prev) => {
+        const next = new Set(prev);
+        next.add(vaultPath);
+        return next;
+      });
+    } catch (err) {
+      message.error('Failed to create vault: ' + (err.message || String(err)));
     }
   };
 
@@ -977,6 +1030,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
               onNavigate={handleDocNavigate}
               onFileOpen={handleDocFileOpen}
               onCreateFolder={handleCreateFolder}
+              onCreateFile={handleCreateFile}
               onUploadFile={handleUploadFileFromMenu}
               onRenameFile={handleRename}
               onDeleteFile={handleDelete}
@@ -991,6 +1045,8 @@ export default function KnowledgePanel({ sendWSMessage }) {
               sendWSMessage={sendWSMessage}
               centerPath={null}
               filterTag={graphTagFilter}
+              filterVault={selectedVault}
+              vaults={vaults}
               onNodeNavigate={(path) => {
                 handleOpenFile({ path, name: path.split('/').pop(), is_directory: false });
               }}
@@ -1021,6 +1077,86 @@ export default function KnowledgePanel({ sendWSMessage }) {
                 onImport={handleImport}
                 onImportObsidian={handleImportObsidian}
               />
+              {/* Vault selector - shown on Notes tab */}
+              {activeTab === 'notes' && (
+                <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: vaults.length > 0 ? 4 : 0 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Vault</div>
+                    {vaults.length > 0 && (
+                      <button
+                        onClick={() => setCreateVaultModalVisible(true)}
+                        title="Create new vault"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'var(--text-3)',
+                          cursor: 'pointer',
+                          padding: '1px 4px',
+                          borderRadius: 3,
+                          display: 'flex',
+                          alignItems: 'center',
+                          fontSize: 14,
+                          lineHeight: 1,
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-3)')}
+                      >
+                        +
+                      </button>
+                    )}
+                  </div>
+                  {vaults.length > 0 ? (
+                    <select
+                      value={selectedVault || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedVault(val || null);
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '4px 6px',
+                        fontSize: 12,
+                        borderRadius: 4,
+                        border: '1px solid var(--border)',
+                        background: 'var(--surface)',
+                        color: 'var(--text)',
+                      }}
+                    >
+                      <option value="">All vaults</option>
+                      {vaults.map((v) => (
+                        <option key={v.name} value={v.name}>
+                          {v.name} ({v.note_count})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <button
+                      onClick={() => setCreateVaultModalVisible(true)}
+                      style={{
+                        width: '100%',
+                        padding: '6px 8px',
+                        fontSize: 12,
+                        borderRadius: 4,
+                        border: '1px dashed var(--border)',
+                        background: 'var(--surface)',
+                        color: 'var(--text-3)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--accent)';
+                        e.currentTarget.style.color = 'var(--accent)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--border)';
+                        e.currentTarget.style.color = 'var(--text-3)';
+                      }}
+                    >
+                      + Create your first vault
+                    </button>
+                  )}
+                </div>
+              )}
               <div style={{ flex: 1, overflow: 'auto' }}>
                 <SimpleFileTree
                   rootPath={rootPath}
@@ -1170,6 +1306,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
         onCancel={() => setDistillDialogVisible(false)}
         onStartDistill={handleStartDistill}
         sendWSMessage={sendWSMessage}
+        vaults={vaults}
       />
 
       <TaskDetailModal
@@ -1190,6 +1327,23 @@ export default function KnowledgePanel({ sendWSMessage }) {
         canGoBack={previewHistory.length > 0}
         onDistill={canDistill ? () => setDistillDialogVisible(true) : undefined}
         docMeta={previewFile?.sha256 ? docMetas[previewFile.sha256] : null}
+      />
+
+      <ImportObsidianModal
+        visible={importObsidianModalVisible}
+        file={importingFile?.file}
+        vaults={vaults.map((v) => v.name)}
+        onCancel={() => {
+          setImportObsidianModalVisible(false);
+          setImportingFile(null);
+        }}
+        onConfirm={confirmImportObsidian}
+      />
+
+      <CreateVaultModal
+        visible={createVaultModalVisible}
+        onCancel={() => setCreateVaultModalVisible(false)}
+        onConfirm={handleCreateVault}
       />
     </div>
   );

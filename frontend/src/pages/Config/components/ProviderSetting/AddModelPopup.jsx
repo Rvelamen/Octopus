@@ -17,6 +17,7 @@ const AddModelPopup = ({ isOpen, onClose, onAdd, provider }) => {
     displayName: '',
     modelTypes: ['chat'],
     groupName: 'Chat Models',
+    contextWindow: 128,
     enabled: true,
   });
   const [errors, setErrors] = useState({});
@@ -29,6 +30,7 @@ const AddModelPopup = ({ isOpen, onClose, onAdd, provider }) => {
         displayName: '',
         modelTypes: ['chat'],
         groupName: 'Chat Models',
+        contextWindow: 128,
         enabled: true,
       });
       setErrors({});
@@ -75,6 +77,7 @@ const AddModelPopup = ({ isOpen, onClose, onAdd, provider }) => {
         modelType: formData.modelTypes[0], // Primary type
         modelTypes: formData.modelTypes, // All selected types
         groupName: formData.groupName.trim(),
+        contextWindow: (Number(formData.contextWindow) >= 1000 ? Number(formData.contextWindow) : Number(formData.contextWindow) * 1000) || 128000,
         enabled: formData.enabled,
       });
       onClose();
@@ -205,6 +208,21 @@ const AddModelPopup = ({ isOpen, onClose, onAdd, provider }) => {
             />
             {errors.groupName && <span className="form-error">{errors.groupName}</span>}
             <span className="form-hint">Used to organize models into categories</span>
+          </div>
+
+          <div className="form-item">
+            <label className="form-label">Context Window (K)</label>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={formData.contextWindow}
+              onChange={(e) => handleChange('contextWindow', e.target.value)}
+              placeholder="128"
+              className="form-input"
+              disabled={isSubmitting}
+            />
+            <span className="form-hint">Model context window in thousands of tokens (e.g. 128 = 128000)</span>
           </div>
           
           <div className="form-item">

@@ -26,6 +26,7 @@ class DistillTask:
     progress: float
     result_path: Optional[str]
     error: Optional[str]
+    vault: str
     created_at: str
     updated_at: str
 
@@ -53,18 +54,19 @@ class KnowledgeTaskQueue:
         prompt: str,
         output_path: Optional[str] = None,
         template: str = "custom",
+        vault: str = "default",
     ) -> int:
         with self._connection() as conn:
             cursor = conn.execute(
                 """
                 INSERT INTO knowledge_distill_tasks
-                (request_id, source_path, prompt, output_path, template, status, stage, message, progress)
-                VALUES (?, ?, ?, ?, ?, 'pending', 'pending', 'Waiting in queue...', 0.0)
+                (request_id, source_path, prompt, output_path, template, vault, status, stage, message, progress)
+                VALUES (?, ?, ?, ?, ?, ?, 'pending', 'pending', 'Waiting in queue...', 0.0)
                 """,
-                (request_id, source_path, prompt, output_path, template),
+                (request_id, source_path, prompt, output_path, template, vault),
             )
             conn.commit()
-            logger.info(f"Enqueued distill task {request_id} for {source_path}")
+            logger.info(f"Enqueued distill task {request_id} for {source_path} (vault={vault})")
             return cursor.lastrowid
 
     def dequeue_for_run(self) -> Optional[DistillTask]:
@@ -254,6 +256,7 @@ class KnowledgeTaskQueue:
                 "progress": task_row["progress"],
                 "result_path": task_row["result_path"],
                 "error": task_row["error"],
+                "vault": task_row["vault"] or "default",
                 "created_at": task_row["created_at"],
                 "updated_at": task_row["updated_at"],
                 "iterations": [
@@ -283,6 +286,7 @@ class KnowledgeTaskQueue:
             progress=row["progress"],
             result_path=row["result_path"],
             error=row["error"],
+            vault=row["vault"] or "default",
             created_at=row["created_at"],
             updated_at=row["updated_at"],
         )

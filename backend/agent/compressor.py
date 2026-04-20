@@ -138,6 +138,34 @@ def prune_old_tool_results(
     return list(reversed(result))
 
 
+async def _chat_stream_to_content(
+    provider: Any,
+    messages: list[dict[str, Any]],
+    model: str,
+    max_tokens: int | None = None,
+    temperature: float | None = None,
+) -> tuple[str, dict[str, Any]]:
+    """Consume provider.chat_stream() and return (accumulated_content, usage).
+
+    Uses streaming to avoid Anthropic SDK's 10-minute non-streaming limit.
+    """
+    kwargs: dict[str, Any] = dict(messages=messages, tools=[], model=model)
+    if max_tokens is not None:
+        kwargs["max_tokens"] = max_tokens
+    if temperature is not None:
+        kwargs["temperature"] = temperature
+
+    full_content = ""
+    usage = {}
+    async for chunk in provider.chat_stream(**kwargs):
+        if chunk.content:
+            full_content += chunk.content
+        if chunk.is_final and chunk.usage:
+            usage = chunk.usage
+
+    return full_content, usage
+
+
 async def compress_messages(
     messages: list[dict[str, Any]],
     provider: Any,
@@ -185,22 +213,20 @@ Conversation to summarize:
     ]
     
     try:
-        response = await provider.chat(
-            messages=compression_messages,
-            tools=[],
-            model=model
+        full_content, usage = await _chat_stream_to_content(
+            provider, compression_messages, model
         )
         
-        if response.usage and record_token_usage:
+        if usage and record_token_usage:
             record_token_usage(
                 session_instance_id=session_instance_id,
                 provider_name=provider_type,
                 model_id=model,
-                usage=response.usage,
+                usage=usage,
                 request_type=request_type
             )
         
-        summary = response.content or ""
+        summary = full_content or ""
         compression_logger.info(f"Context compressed to {len(summary)} characters")
         return summary
     except Exception as e:
@@ -330,25 +356,22 @@ Conversation to summarize:
         ]
 
         try:
-            response = await provider.chat(
-                messages=compression_messages,
-                tools=[],
-                model=model,
-                max_tokens=max_tokens,
-                temperature=temperature,
+            full_content, usage = await _chat_stream_to_content(
+                provider, compression_messages, model,
+                max_tokens=max_tokens, temperature=temperature,
             )
             
-            if response.usage:
+            if usage:
                 session_instance_id = session.active_instance.id if session.active_instance else None
                 self._record_token_usage(
                     session_instance_id=session_instance_id,
                     provider_name=provider_type,
                     model_id=model,
-                    usage=response.usage,
+                    usage=usage,
                     request_type="compression"
                 )
             
-            summary = response.content or ""
+            summary = full_content or ""
             compression_logger.info(f"Context compressed to {len(summary)} characters")
             return summary
         except Exception as e:
@@ -392,31 +415,28 @@ Please generate a complete structured summary that integrates both the previous 
         ]
 
         try:
-            response = await provider.chat(
-                messages=compression_messages,
-                tools=[],
-                model=model,
-                max_tokens=max_tokens,
-                temperature=temperature,
+            full_content, usage = await _chat_stream_to_content(
+                provider, compression_messages, model,
+                max_tokens=max_tokens, temperature=temperature,
             )
             
-            if response.usage:
+            if usage:
                 self._record_token_usage(
                     session_instance_id=None,
                     provider_name=provider_type,
                     model_id=model,
-                    usage=response.usage,
+                    usage=usage,
                     request_type="compression"
                 )
             
-            summary = response.content or last_summary
+            summary = full_content or last_summary
             compression_logger.info(f"Incremental compression: {len(last_summary)} -> {len(summary)} characters")
             return summary
         except Exception as e:
             compression_logger.error(f"Incremental compression failed: {e}")
             return last_summary
 
-    async def do_compress(self, session, current_turns: int, model_context_window: int = 0) -> None:
+    async def do_compress(self, session, current_turns: int, model_context_window: int = 0, force: bool = False) -> None:
         """
         Perform context compression with dynamic tail protection.
 
@@ -427,6 +447,8 @@ Please generate a complete structured summary that integrates both the previous 
             session: The current session.
             current_turns: Current turn count.
             model_context_window: 模型的上下文窗口大小 (用于动态触发)
+            force: If True, force compression even when total messages are within budget.
+                   Used for manual compression requests.
         """
         instance_id = session.active_instance.id if session.active_instance else None
         
@@ -438,11 +460,15 @@ Please generate a complete structured summary that integrates both the previous 
         # 方案3: 动态尾部保护 - 使用 Token 预算而非固定数量
         tail_messages = []
         tokens_in_tail = 0
+        MAX_TAIL_MESSAGES = 12  # 最多保留12条消息（约6轮对话），防止消息少时不压缩
         
         # 从后向前累加，确定保留区域 (跳过 system 消息)
         non_system_messages = [m for m in session.messages if m.get("role") != "system"]
         for msg in reversed(non_system_messages):
             token_est = len(str(msg.get("content", ""))) // _CHARS_PER_TOKEN
+            # 强制模式：最多保留固定条数，确保有可压缩内容
+            if force and len(tail_messages) >= MAX_TAIL_MESSAGES:
+                break
             # 至少保留 3 条消息，即使超出预算
             if tokens_in_tail + token_est > tail_budget and len(tail_messages) >= 3:
                 break
@@ -450,8 +476,32 @@ Please generate a complete structured summary that integrates both the previous 
             tokens_in_tail += token_est
         
         tail_messages = list(reversed(tail_messages))
-        to_compress = [m for m in session.messages if m.get("role") != "system"]
-        to_compress = to_compress[:-len(tail_messages)] if tail_messages else to_compress
+        
+        # 确保 tail_messages 以 user 消息开头，保留完整的对话轮次。
+        # 如果截断点落在 assistant/tool 消息中间，会导致上下文缺失对应的 user 消息，
+        # 甚至让 tool result 找不到对应的 tool_call，引发 API 报错。
+        if tail_messages and tail_messages[0].get("role") != "user":
+            first_tail_idx = None
+            for idx, msg in enumerate(non_system_messages):
+                if msg is tail_messages[0]:
+                    first_tail_idx = idx
+                    break
+            if first_tail_idx is not None and first_tail_idx > 0:
+                # 往前扩展到最近的 user 消息（或消息列表开头）
+                prepend_msgs = []
+                for idx in range(first_tail_idx - 1, -1, -1):
+                    msg = non_system_messages[idx]
+                    prepend_msgs.insert(0, msg)
+                    if msg.get("role") == "user":
+                        break
+                if prepend_msgs:
+                    tail_messages = prepend_msgs + tail_messages
+                    compression_logger.info(
+                        f"Extended tail by {len(prepend_msgs)} messages to preserve complete turn, "
+                        f"tail now starts with role={tail_messages[0].get('role')}"
+                    )
+        
+        to_compress = [m for m in non_system_messages if m not in tail_messages]
         
         if len(to_compress) < 4:
             compression_logger.info(f"Not enough messages to compress: {len(to_compress)}")

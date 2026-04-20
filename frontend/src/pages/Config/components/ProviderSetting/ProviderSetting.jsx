@@ -155,6 +155,7 @@ const ProviderSetting = ({ sendWSMessage }) => {
         displayName: modelData.displayName,
         modelType: modelData.modelType || 'chat',
         groupName: modelData.groupName || 'Chat Models',
+        contextWindow: modelData.contextWindow ?? 128000,
         enabled: modelData.enabled !== false
       }, 5000);
       await loadModels(selectedProvider.id);

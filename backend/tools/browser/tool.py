@@ -128,25 +128,28 @@ class BrowserTool:
         
         Args:
             url: URL to navigate to
-            session_id: Session ID (auto-generated if empty)
+            session_id: Session ID (auto-generated if empty or invalid)
             
         Returns:
-            JSON result string
+            JSON result string including session_id
         """
         import json
         
         try:
             await self._ensure_initialized()
             
-            # Create session if needed
+            # Create session if needed (including when session_id is empty or not found)
             if not session_id:
                 session_id = f"browser_{int(time.time())}"
+            if not self._session_manager.get_session(session_id):
                 self._session_manager.create_session(session_id)
                 await self._backend.create_session(session_id)
             
             self._session_manager.update_activity(session_id)
             
             result = await self._backend.navigate(session_id, url)
+            # Include session_id in the result so LLM can use it for subsequent operations
+            result["session_id"] = session_id
             return json.dumps(result, ensure_ascii=False, indent=2)
             
         except Exception as e:
@@ -418,7 +421,7 @@ class BrowserTool:
                 "type": "function",
                 "function": {
                     "name": "browser_navigate",
-                    "description": "Navigate to a URL in the browser. Creates a new session if session_id is not provided.",
+                    "description": "Navigate to a URL in the browser. Creates a new session if session_id is not provided or invalid. Returns a session_id that MUST be used for all subsequent browser operations.",
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -428,7 +431,7 @@ class BrowserTool:
                             },
                             "session_id": {
                                 "type": "string",
-                                "description": "Session ID (optional, auto-generated if empty)"
+                                "description": "Session ID (optional, auto-generated if empty or invalid). Use the session_id returned by this tool for all subsequent browser operations."
                             }
                         },
                         "required": ["url"]
@@ -439,13 +442,13 @@ class BrowserTool:
                 "type": "function",
                 "function": {
                     "name": "browser_snapshot",
-                    "description": "Get page snapshot (accessibility tree). Returns text-based representation of the page with interactive elements.",
+                    "description": "Get page snapshot (accessibility tree). Returns text-based representation of the page with interactive elements. Must use the session_id returned by browser_navigate.",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "session_id": {
                                 "type": "string",
-                                "description": "Active session ID"
+                                "description": "Active session ID (use the value returned by browser_navigate)"
                             }
                         },
                         "required": ["session_id"]
@@ -466,7 +469,7 @@ class BrowserTool:
                             },
                             "session_id": {
                                 "type": "string",
-                                "description": "Active session ID"
+                                "description": "Active session ID (use the value returned by browser_navigate)"
                             }
                         },
                         "required": ["element_ref", "session_id"]
@@ -491,7 +494,7 @@ class BrowserTool:
                             },
                             "session_id": {
                                 "type": "string",
-                                "description": "Active session ID"
+                                "description": "Active session ID (use the value returned by browser_navigate)"
                             }
                         },
                         "required": ["element_ref", "text", "session_id"]
@@ -512,7 +515,7 @@ class BrowserTool:
                             },
                             "session_id": {
                                 "type": "string",
-                                "description": "Active session ID"
+                                "description": "Active session ID (use the value returned by browser_navigate)"
                             }
                         },
                         "required": ["element_ref", "session_id"]
@@ -533,7 +536,7 @@ class BrowserTool:
                             },
                             "session_id": {
                                 "type": "string",
-                                "description": "Active session ID"
+                                "description": "Active session ID (use the value returned by browser_navigate)"
                             }
                         },
                         "required": ["script", "session_id"]
@@ -550,7 +553,7 @@ class BrowserTool:
                         "properties": {
                             "session_id": {
                                 "type": "string",
-                                "description": "Active session ID"
+                                "description": "Active session ID (use the value returned by browser_navigate)"
                             },
                             "full_page": {
                                 "type": "boolean",
@@ -571,7 +574,7 @@ class BrowserTool:
                         "properties": {
                             "session_id": {
                                 "type": "string",
-                                "description": "Session ID to close"
+                                "description": "Session ID to close (use the value returned by browser_navigate)"
                             }
                         },
                         "required": ["session_id"]

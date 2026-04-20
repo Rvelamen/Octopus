@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { message } from 'antd';
-import { Search as SearchIcon, X, ZoomIn, ZoomOut, RotateCcw, Maximize, Minimize, Tag, Settings2, Play, Pause, Filter } from 'lucide-react';
+import { Search as SearchIcon, X, ZoomIn, ZoomOut, RotateCcw, Maximize, Minimize, Tag, Settings2, Play, Pause, Filter, FolderOpen } from 'lucide-react';
 import PixiGraph from './PixiGraph';
 
 const CLUSTER_COLORS = [
@@ -30,13 +30,14 @@ function getClusterColor(nodeId) {
   return CLUSTER_COLORS[idx];
 }
 
-export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNavigate, filterTag }) {
+export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNavigate, filterTag, filterVault, vaults = [] }) {
   const [graphData, setGraphData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [tags, setTags] = useState([]);
   const [selectedTag, setSelectedTag] = useState(null);
+  const [selectedVault, setSelectedVault] = useState(filterVault || null);
   const [dims, setDims] = useState({ width: 0, height: 0 });
   const [highlightNodes, setHighlightNodes] = useState(new Set());
   const [highlightLinks, setHighlightLinks] = useState(new Set());
@@ -49,6 +50,7 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
   const [showPhysicsControls, setShowPhysicsControls] = useState(false);
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [showTagPanel, setShowTagPanel] = useState(false);
+  const [showVaultPanel, setShowVaultPanel] = useState(false);
   const [simulationRunning, setSimulationRunning] = useState(true);
   const [physicsParams, setPhysicsParams] = useState({
     centerStrength: 0.05,
@@ -62,7 +64,7 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
   const fgRef = useRef(null);
   const currentCenterRef = useRef(centerPath);
 
-  const fetchGraph = async (center = null, depth = 1, tag = null) => {
+  const fetchGraph = async (center = null, depth = 1, tag = null, vault = null) => {
     setLoading(true);
     try {
       const response = await sendWSMessage('knowledge_graph', {
@@ -70,6 +72,7 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
         depth,
         limit: 200,
         tag,
+        vault,
       });
       const data = response.data || {};
       const edges = (data.edges || []).map((e) =>
@@ -91,9 +94,9 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
     }
   };
 
-  const fetchTags = async () => {
+  const fetchTags = async (vault = null) => {
     try {
-      const response = await sendWSMessage('knowledge_get_tags', {});
+      const response = await sendWSMessage('knowledge_get_tags', { vault: vault || undefined });
       setTags(response.data?.tags || []);
     } catch {
       // ignore
@@ -102,8 +105,8 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
 
   useEffect(() => {
     currentCenterRef.current = centerPath;
-    fetchGraph(centerPath, 1, selectedTag);
-  }, [centerPath, selectedTag]);
+    fetchGraph(centerPath, 1, selectedTag, selectedVault);
+  }, [centerPath, selectedTag, selectedVault]);
 
   useEffect(() => {
     if (filterTag !== undefined && filterTag !== selectedTag) {
@@ -112,8 +115,12 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
   }, [filterTag]);
 
   useEffect(() => {
-    fetchTags();
-  }, []);
+    setSelectedVault(filterVault || null);
+  }, [filterVault]);
+
+  useEffect(() => {
+    fetchTags(selectedVault);
+  }, [selectedVault]);
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -335,7 +342,7 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
     if (!q || !q.trim()) {
       setSearchValue('');
       setSearchResultIds(new Set());
-      fetchGraph(currentCenterRef.current, 1, selectedTag);
+      fetchGraph(currentCenterRef.current, 1, selectedTag, selectedVault);
       return;
     }
     try {
@@ -348,7 +355,7 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
         const resultIds = new Set(results.map((r) => r.path || r.id));
         setSearchResultIds(resultIds);
         if (path) {
-          fetchGraph(path, 1, selectedTag);
+          fetchGraph(path, 1, selectedTag, selectedVault);
           setTimeout(() => focusNode(path), 350);
         } else {
           message.info('No valid path found in search result');
@@ -439,7 +446,7 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
                 onClick={() => {
                   setSearchValue('');
                   setSearchResultIds(new Set());
-                  fetchGraph(currentCenterRef.current, 1, selectedTag);
+                  fetchGraph(currentCenterRef.current, 1, selectedTag, selectedVault);
                 }}
                 style={{
                   background: 'transparent',
@@ -511,7 +518,8 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
           }}
         >
           <ToolButton onClick={() => { setShowSearchPanel(!showSearchPanel); setShowTagPanel(false); setShowPhysicsControls(false); }} title="Search notes" icon={<SearchIcon size={18} />} active={showSearchPanel} />
-          <ToolButton onClick={() => { setShowTagPanel(!showTagPanel); setShowSearchPanel(false); setShowPhysicsControls(false); }} title="Filter by tag" icon={<Filter size={18} />} active={showTagPanel || selectedTag} />
+          <ToolButton onClick={() => { setShowTagPanel(!showTagPanel); setShowSearchPanel(false); setShowPhysicsControls(false); setShowVaultPanel(false); }} title="Filter by tag" icon={<Filter size={18} />} active={showTagPanel || selectedTag} />
+          <ToolButton onClick={() => { setShowVaultPanel(!showVaultPanel); setShowSearchPanel(false); setShowTagPanel(false); setShowPhysicsControls(false); }} title="Filter by vault" icon={<FolderOpen size={18} />} active={showVaultPanel || !!selectedVault} />
           <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '2px 0' }} />
           <ToolButton onClick={zoomIn} title="Zoom in" icon={<ZoomIn size={18} />} />
           <ToolButton onClick={zoomOut} title="Zoom out" icon={<ZoomOut size={18} />} />
@@ -605,7 +613,7 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
                 onClick={() => {
                   setSearchValue('');
                   setSearchResultIds(new Set());
-                  fetchGraph(currentCenterRef.current, 1, selectedTag);
+                  fetchGraph(currentCenterRef.current, 1, selectedTag, selectedVault);
                 }}
                 style={{
                   marginTop: 8,
@@ -702,6 +710,75 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
                 >
                   <span>#{t.name}</span>
                   <span style={{ opacity: 0.5, fontSize: 11 }}>{t.count}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Vault Filter Panel */}
+        {showVaultPanel && vaults.length > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 56,
+              right: 56,
+              width: 220,
+              maxHeight: 320,
+              overflow: 'auto',
+              background: 'rgba(17,24,39,0.9)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 10,
+              padding: 12,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              backdropFilter: 'blur(16px)',
+              zIndex: 100,
+            }}
+          >
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <FolderOpen size={14} />
+              Filter by Vault
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <button
+                onClick={() => setSelectedVault(null)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 6,
+                  border: '1px solid',
+                  borderColor: selectedVault === null ? 'rgba(131,94,228,0.8)' : 'rgba(255,255,255,0.1)',
+                  background: selectedVault === null ? 'rgba(131,94,228,0.2)' : 'rgba(255,255,255,0.05)',
+                  color: selectedVault === null ? '#a78bfa' : 'rgba(255,255,255,0.8)',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.15s',
+                }}
+              >
+                All Vaults
+              </button>
+              {vaults.map((v) => (
+                <button
+                  key={v.name}
+                  onClick={() => setSelectedVault(v.name === selectedVault ? null : v.name)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 6,
+                    border: '1px solid',
+                    borderColor: v.name === selectedVault ? 'rgba(131,94,228,0.8)' : 'rgba(255,255,255,0.1)',
+                    background: v.name === selectedVault ? 'rgba(131,94,228,0.2)' : 'rgba(255,255,255,0.05)',
+                    color: v.name === selectedVault ? '#a78bfa' : 'rgba(255,255,255,0.8)',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <span>{v.name}</span>
+                  <span style={{ opacity: 0.5, fontSize: 11 }}>{v.note_count}</span>
                 </button>
               ))}
             </div>

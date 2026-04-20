@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { uriTransformer } from 'react-markdown/lib/uri-transformer';
 import remarkGfm from 'remark-gfm';
+import { Copy, Check } from 'lucide-react';
 
 const WIKI_LINK_RE = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 
@@ -188,6 +189,62 @@ function FrontmatterCard({ data }) {
  */
 export default function MarkdownRenderer({ content, sendWSMessage }) {
   const safeContent = typeof content === 'string' ? content : '';
+  const [copied, setCopied] = useState(false);
+  const previewRef = useRef(null);
+
+  const handleCopy = async () => {
+    if (!previewRef.current) return;
+    try {
+      const clone = previewRef.current.cloneNode(true);
+      const images = clone.querySelectorAll('img');
+
+      await Promise.all(
+        Array.from(images).map(async (img) => {
+          const src = img.getAttribute('src');
+          if (!src || src.startsWith('data:')) return;
+          try {
+            let blob;
+            if (src.startsWith('blob:')) {
+              const res = await fetch(src);
+              blob = await res.blob();
+            } else {
+              const res = await fetch(src, { mode: 'cors' });
+              if (!res.ok) return;
+              blob = await res.blob();
+            }
+            const dataUrl = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+            img.setAttribute('src', dataUrl);
+          } catch (e) {
+            console.warn('Failed to inline image for copy:', src, e);
+          }
+        })
+      );
+
+      const htmlContent = clone.innerHTML;
+      const clipboardItem = new ClipboardItem({
+        'text/html': new Blob([htmlContent], { type: 'text/html' }),
+        'text/plain': new Blob([safeContent], { type: 'text/plain' }),
+      });
+      await navigator.clipboard.write([clipboardItem]);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      try {
+        await navigator.clipboard.writeText(safeContent);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err2) {
+        console.error('Fallback copy failed:', err2);
+      }
+    }
+  };
+
   if (!safeContent.trim()) {
     return (
       <div className="markdown-preview" style={{ padding: 24, color: 'var(--text-2)', textAlign: 'center' }}>
@@ -201,10 +258,47 @@ export default function MarkdownRenderer({ content, sendWSMessage }) {
   return (
     <div
       className="markdown-preview"
-      style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'auto' }}
+      style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'auto', position: 'relative' }}
     >
+      <button
+        onClick={handleCopy}
+        title={copied ? '已复制' : '复制格式文本'}
+        style={{
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          padding: '4px 10px',
+          fontSize: 12,
+          color: 'var(--text-2)',
+          background: 'var(--surface-2)',
+          border: '1px solid var(--border)',
+          borderRadius: 6,
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          opacity: 0.7,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.opacity = '1';
+          e.currentTarget.style.color = 'var(--text)';
+          e.currentTarget.style.background = 'var(--surface-3)';
+          e.currentTarget.style.borderColor = 'var(--accent)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.opacity = '0.7';
+          e.currentTarget.style.color = 'var(--text-2)';
+          e.currentTarget.style.background = 'var(--surface-2)';
+          e.currentTarget.style.borderColor = 'var(--border)';
+        }}
+      >
+        {copied ? <Check size={14} /> : <Copy size={14} />}
+        {copied ? '已复制' : '复制'}
+      </button>
       {frontmatter && <FrontmatterCard data={frontmatter} />}
-      <div style={{ flex: 1, padding: '0 16px 16px' }}>
+      <div ref={previewRef} style={{ flex: 1, padding: '0 16px 16px' }}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           transformLinkUri={(href) => {

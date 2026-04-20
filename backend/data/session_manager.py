@@ -165,11 +165,18 @@ class SessionManager:
         message_records = self.db.get_uncompressed_messages(instance.id, limit=1000)
         for msg in message_records:
             msg_dict = {
+                "id": msg.id,
                 "role": msg.role,
                 "content": msg.content,
                 "timestamp": msg.timestamp.isoformat(),
-                "metadata": msg.metadata if msg.metadata else {}
             }
+            # 提升 metadata 中的关键字段到顶层，供 LLM 格式使用
+            metadata = msg.metadata if msg.metadata else {}
+            for key in ("tool_call_id", "tool_use_id", "tool_calls", "tool_use", "name", "message_type"):
+                if key in metadata:
+                    msg_dict[key] = metadata.pop(key)
+            if metadata:
+                msg_dict["metadata"] = metadata
             messages.append(msg_dict)
         
         # Load compressed context from database
@@ -232,16 +239,42 @@ class SessionManager:
 
         logger.info(f"[_save_messages_to_instance] Session {session.key}, instance {instance_id}: existing={existing_count}, session={session_message_count}")
 
-        # Only add new messages
+        new_messages = []
+
         if session_message_count > existing_count:
+            # 正常情况：session 中有新消息
             new_messages = session.messages[existing_count:]
+        elif session_message_count <= existing_count and session.messages:
+            # 可能发生了压缩（session.messages 被截断），需要按时间戳找出真正的新消息
+            if existing_records:
+                from datetime import datetime
+                last_db_ts = existing_records[-1].timestamp
+                # 只检查 session.messages 的最后部分（性能考虑）
+                for msg in session.messages[-min(session_message_count, 30):]:
+                    msg_ts = msg.get("timestamp")
+                    if msg_ts:
+                        try:
+                            msg_dt = datetime.fromisoformat(msg_ts)
+                            if msg_dt > last_db_ts:
+                                new_messages.append(msg)
+                        except (ValueError, TypeError):
+                            pass
+                    else:
+                        # 没有时间戳的消息也当作新消息处理
+                        new_messages.append(msg)
+            else:
+                # 数据库为空，全部是新消息
+                new_messages = session.messages
+
+        if new_messages:
             logger.info(f"[_save_messages_to_instance] Saving {len(new_messages)} new messages to instance {instance_id}")
             for msg in new_messages:
                 role = msg.get("role", "user")
                 content = msg.get("content", "")
                 metadata = {k: v for k, v in msg.items()
-                           if k not in ("role", "content", "timestamp")}
-                self.db.add_message(instance_id, role, content, metadata)
+                           if k not in ("role", "content", "timestamp", "id")}
+                record = self.db.add_message(instance_id, role, content, metadata)
+                msg["id"] = record.id
                 logger.info(f"[_save_messages_to_instance] Added message with role={role}, metadata={metadata}")
 
             logger.info(f"Saved {len(new_messages)} new messages to database for session {session.key}, instance {instance_id}")

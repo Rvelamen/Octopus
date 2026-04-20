@@ -407,7 +407,7 @@ function AgentsPanel({ sendWSMessage }) {
 
                   <div className="form-group">
                     <label>Tools ({formData.tools.length} selected)</label>
-                    <div className="dropdown-container">
+                    <div className="dropdown-container dropdown-up">
                       <button className="dropdown-trigger" onClick={() => setShowToolsDropdown(!showToolsDropdown)}>
                         <span>{formData.tools.length > 0 ? formData.tools.slice(0, 3).join(', ') + (formData.tools.length > 3 ? '...' : '') : 'Select tools'}</span>
                         <ChevronDown size={14} />
@@ -427,7 +427,7 @@ function AgentsPanel({ sendWSMessage }) {
 
                   <div className="form-group">
                     <label>Extensions ({formData.extensions.length} selected)</label>
-                    <div className="dropdown-container">
+                    <div className="dropdown-container dropdown-up">
                       <button className="dropdown-trigger" onClick={() => setShowExtensionsDropdown(!showExtensionsDropdown)}>
                         <span>{formData.extensions.length > 0 ? formData.extensions.join(', ') : 'Select extensions'}</span>
                         <ChevronDown size={14} />

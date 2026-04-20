@@ -10,7 +10,7 @@ from loguru import logger
 
 from backend.core.events.types import InboundMessage, AgentEvent
 from backend.core.events.bus import MessageBus
-from backend.core.providers.base import LLMProvider
+from backend.core.providers.base import LLMProvider, LLMResponse
 from backend.core.providers.factory import create_provider
 from backend.agent.config_service import AgentConfigService
 from backend.agent.shared import _normalize_usage
@@ -209,8 +209,12 @@ class SubagentManager:
         }
         
         # Register requested tools
+        has_browser = False
         for tool_name in config.tools:
             tool_name_lower = tool_name.lower()
+            if tool_name_lower == "browser":
+                has_browser = True
+                continue
             if tool_name_lower in tool_mapping:
                 try:
                     tool = tool_mapping[tool_name_lower]()
@@ -222,6 +226,12 @@ class SubagentManager:
                     logger.warning(f"Failed to register tool '{tool_name}': {e}")
             else:
                 logger.warning(f"Unknown tool '{tool_name}' requested by subagent '{config.name}'")
+        
+        # Register browser tools if requested
+        if has_browser:
+            from backend.tools.browser.registration import register_browser_tools
+            register_browser_tools(tools)
+            logger.debug(f"Registered browser tools for subagent '{config.name}'")
         
         # Always include message tool if not already added
         if "message" not in [t.lower() for t in config.tools]:
@@ -252,6 +262,8 @@ class SubagentManager:
         tools.register(MemorySearchTool())
         tools.register(MemoryReadTool())
         tools.register(MemoryTimelineTool())
+        from backend.tools.browser.registration import register_browser_tools
+        register_browser_tools(tools)
         message_tool = MessageTool(send_callback=self.bus.publish_outbound)
         message_tool.set_context(origin.get("channel", ""), origin.get("chat_id", ""))
         tools.register(message_tool)
@@ -820,15 +832,36 @@ When you have completed the task, provide a clear summary of your findings or ac
                                 logger.info(f"[Subagent:{task_id}] Context compressed")
                 
                 try:
-                    response = await provider.chat(
+                    # 使用 chat_stream 进行伪流式调用，避免 Anthropic 等 provider 的 10 分钟非流式限制
+                    full_content = ""
+                    tool_calls_buffer = {}
+                    usage = {}
+
+                    async for chunk in provider.chat_stream(
                         messages=messages,
                         tools=tools.get_definitions(),
                         model=model,
                         max_tokens=max_tokens,
                         temperature=temperature,
+                    ):
+                        if chunk.content:
+                            full_content += chunk.content
+                        if chunk.tool_calls:
+                            for tc in chunk.tool_calls:
+                                if tc.id not in tool_calls_buffer:
+                                    tool_calls_buffer[tc.id] = tc
+                                else:
+                                    tool_calls_buffer[tc.id].arguments.update(tc.arguments)
+                        if chunk.is_final and chunk.usage:
+                            usage = chunk.usage
+
+                    response = LLMResponse(
+                        content=full_content,
+                        tool_calls=list(tool_calls_buffer.values()),
+                        usage=usage,
                     )
-                    logger.info(f"[Subagent:{task_id}] LLM response received, has_tool_calls={response.has_tool_calls}")
-                    
+                    logger.info(f"[Subagent:{task_id}] LLM response received via pseudo-stream, has_tool_calls={response.has_tool_calls}")
+
                     normalized = _normalize_usage(response.usage, messages, response.content or "", model)
                     last_prompt_tokens = normalized["prompt_tokens"]
                     self._record_token_usage(

@@ -135,7 +135,7 @@ const MCP_TABS = [
     
     try {
       addToast(`${enabled ? 'Enabling' : 'Disabling'} server "${serverName}"...`, 'info', 2000);
-      const response = await sendWSMessage('mcp_update_server', { name: serverName, enabled }, 5000);
+      const response = await sendWSMessage('mcp_update_server', { server_name: serverName, enabled }, 5000);
       
       if (response.data?.success) {
         await loadServers();
@@ -154,7 +154,7 @@ const MCP_TABS = [
   // 删除服务器
   const deleteServer = async (serverName) => {
     try {
-      await sendWSMessage('mcp_delete_server', { name: serverName }, 5000);
+      await sendWSMessage('mcp_delete_server', { server_name: serverName }, 5000);
       await loadServers();
       await loadMCPStatus();
       if (selectedServer?.name === serverName) {
@@ -273,7 +273,14 @@ const MCP_TABS = [
         
         serverData = {
           name: serverName,
-          ...serverConfig
+          protocol: serverConfig.protocol || detectServerType(serverConfig),
+          config: {
+            command: serverConfig.command,
+            args: serverConfig.args,
+            env: serverConfig.env,
+            url: serverConfig.url,
+            headers: serverConfig.headers
+          }
         };
       } catch (err) {
         setError('Invalid JSON: ' + err.message);
@@ -286,9 +293,12 @@ const MCP_TABS = [
       }
       serverData = {
         name: newServer.name,
-        command: newServer.command,
-        args: parseArgs(newServer.args),
-        env: parseEnv(newServer.env)
+        protocol: 'stdio',
+        config: {
+          command: newServer.command,
+          args: parseArgs(newServer.args),
+          env: parseEnv(newServer.env)
+        }
       };
     }
 
@@ -324,7 +334,7 @@ const MCP_TABS = [
     try {
       if (isEditMode && editingServerName) {
         // 编辑模式：先删除旧服务器，再添加新配置
-        await sendWSMessage('mcp_delete_server', { name: editingServerName }, 5000);
+        await sendWSMessage('mcp_delete_server', { server_name: editingServerName }, 5000);
       }
       const response = await sendWSMessage('mcp_add_server', serverData, 30000);
       const result = response.data || {};
@@ -362,7 +372,7 @@ const MCP_TABS = [
   const reconnectServer = async (serverName) => {
     addToast(`Reconnecting to "${serverName}"...`, 'info', 2000);
     try {
-      const response = await sendWSMessage('mcp_reconnect_server', { name: serverName }, 30000);
+      const response = await sendWSMessage('mcp_reconnect_server', { server_name: serverName }, 30000);
       if (response.data?.success) {
         addToast(`Successfully reconnected to "${serverName}"`, 'success', 3000);
         await loadServers();

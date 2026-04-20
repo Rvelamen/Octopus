@@ -243,10 +243,19 @@ function MessageList({
     ].sort((a, b) => a - b);
 
     const segments = [];
+    const lastIter = iterKeys.length > 0 ? iterKeys[iterKeys.length - 1] : 1;
     iterKeys.forEach((iter) => {
-      const text = toolCallAssistantContents?.[iter];
-      if (text && String(text).trim()) {
-        segments.push({ type: 'reasoning', text: String(text).trim() });
+      const savedText = toolCallAssistantContents?.[iter];
+      // 若当前是最后一轮且 savedText 为空，尝试用 streamingContent 兜底
+      const isLastIter = iter === lastIter;
+      const liveText = isLastIter ? streamingContent : null;
+      const text = (savedText && String(savedText).trim())
+        ? String(savedText).trim()
+        : (liveText && String(liveText).trim())
+          ? String(liveText).trim()
+          : null;
+      if (text) {
+        segments.push({ type: 'reasoning', text });
       }
       toolCalls
         .filter((tc) => (tc.iteration || 1) === iter)
@@ -266,17 +275,8 @@ function MessageList({
         });
     });
 
-    // Follow-up / 多轮场景：toolCallAssistantContents 只有第一轮的推理内容，
-    // 后续轮次的推理内容通过 streamingContent 实时追加，
-    // 需从 toolCalls 反推当前是第几轮，再拼上 streamingContent
-    const lastIter = iterKeys.length > 0 ? iterKeys[iterKeys.length - 1] : 1;
-    const liveIter = lastIter + 1;
-    const prevContent = toolCallAssistantContents?.[liveIter] || '';
-    const hasStreamingForNewIter =
-      !!streamingContent &&
-      selectedInstance?.id === currentChatInstanceId &&
-      !prevContent;
-    if (hasStreamingForNewIter && String(streamingContent).trim()) {
+    // 当还没有任何 tool call 时（iterKeys 为空），若存在 streamingContent 直接展示为 reasoning
+    if (iterKeys.length === 0 && streamingContent && String(streamingContent).trim()) {
       segments.push({ type: 'reasoning', text: String(streamingContent).trim() });
     }
 

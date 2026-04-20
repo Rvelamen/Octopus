@@ -342,7 +342,6 @@
   flex: 1;
   overflow-y: auto;
   background: var(--surface);
-  border: 1px solid var(--board);
   border-radius: 0 0 var(--r-lg) var(--r-lg);
 }
 

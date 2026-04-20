@@ -688,6 +688,12 @@ class ChannelConfigHandler:
         """Get all channel configs."""
         channels = self.channel_repo.get_all_channel_configs()
 
+        from backend.channels.manager import ChannelManager
+        cm = ChannelManager._get_global_instance()
+        running_status = {}
+        if cm:
+            running_status = cm.get_status()
+
         await websocket.send_json({
             "type": MessageType.CHANNEL_LIST.value,
             "request_id": request_id,
@@ -703,6 +709,8 @@ class ChannelConfigHandler:
                         "encryptKey": c.encrypt_key,
                         "verificationToken": c.verification_token,
                         "allowFrom": c.allow_from,
+                        "configJson": c.config_json,
+                        "running": running_status.get(c.channel_name, {}).get("running", False),
                     }
                     for c in channels
                 ]
@@ -720,6 +728,7 @@ class ChannelConfigHandler:
             encrypt_key=data.get("encryptKey", ""),
             verification_token=data.get("verificationToken", ""),
             allow_from=data.get("allowFrom", []),
+            config_json=data.get("configJson", {}),
         )
 
         if success:

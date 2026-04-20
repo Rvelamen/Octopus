@@ -222,8 +222,11 @@ export function useChatState() {
         iteration: data.iteration || 1
       }];
 
-      if (data.content) {
-        const setContent = (prev) => ({ ...prev, [data.iteration]: data.content });
+      // 优先使用事件携带的 content，若为空则回退到已累积的 streamingContent
+      const reasoningText = data.content || streamingContentRef.current || '';
+      const trimmedReasoning = reasoningText.trim();
+      if (trimmedReasoning) {
+        const setContent = (prev) => ({ ...prev, [data.iteration]: trimmedReasoning });
         if (isCurrentInstance) {
           setToolCallAssistantContents(setContent);
           resetStreamingContent();

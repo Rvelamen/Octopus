@@ -884,7 +884,7 @@ class SessionCompressContextHandler(MessageHandler):
             session = session_manager.get_or_create(session_record.session_key)
 
             current_turns = session.get_turn_count()
-            await self.agent_loop.compressor.do_compress(session, current_turns)
+            await self.agent_loop.compressor.do_compress(session, current_turns, force=True)
 
             # Refresh to get updated compression info
             compressed_info = repo.get_compressed_context(instance_id)

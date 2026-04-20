@@ -40,8 +40,9 @@ class ActionTool(Tool):
 
 ### How to Get Skill Documentation
 
-1. Use `read_file` tool to read `workspace/extensions/<name>/SKILL.md`
-2. Example: Read `workspace/extensions/weather/SKILL.md` to understand available actions and parameters for the weather plugin
+1. Find the `<skill_doc>` path in the skills summary (absolute path to SKILL.md).
+2. Use `read_file` tool with the absolute `<skill_doc>` path to read the documentation.
+3. Example: If `<skill_doc>/Users/.../workspace/extensions/search_aggregator/SKILL.md</skill_doc>`, call `read_file` with that exact absolute path.
 
 ### Why Reading Skill Documentation is [Critical]
 
@@ -58,7 +59,7 @@ class ActionTool(Tool):
 
 ## [Critical] Correct Calling Process
 
-1. **[Critical] Step 1**: Use `read_file` to read `workspace/extensions/<name>/SKILL.md`
+1. **[Critical] Step 1**: Use `read_file` to read the absolute `<skill_doc>` path from the skills summary
 2. **[Critical] Step 2**: Understand the available actions and parameters described in the documentation
 3. **[Critical] Step 3**: Call this tool according to the documentation
 
@@ -66,8 +67,9 @@ class ActionTool(Tool):
 
 **[Critical] Read documentation first:**
 ```
-read_file: workspace/extensions/search_aggregator/SKILL.md
+read_file: /Users/.../workspace/extensions/search_aggregator/SKILL.md
 ```
+(Use the exact absolute `<skill_doc>` path from the skills summary, not a relative path.)
 
 **Then call according to documentation:**
 ```json
@@ -83,6 +85,8 @@ read_file: workspace/extensions/search_aggregator/SKILL.md
 ## [Critical] Warning
 
 **[Critical] Calling this tool directly without reading SKILL.md will result in call failure or parameter errors!**
+
+**[Critical] ALWAYS use the absolute `<skill_doc>` path. Do NOT use relative paths like `workspace/extensions/...` or `extensions/...`.**
 
 """
 

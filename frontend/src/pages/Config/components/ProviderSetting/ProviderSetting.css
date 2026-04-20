@@ -1163,6 +1163,14 @@
   z-index: 100;
 }
 
+.dropdown-container.dropdown-up .dropdown-menu {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 4px;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+}
+
 .dropdown-item {
   padding: 10px 12px;
   font-size: 13px;
@@ -1575,6 +1583,17 @@
 
 .add-model-form .form-item {
   margin-bottom: 20px;
+}
+
+.add-model-form .form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.add-model-form .form-row .form-item {
+  flex: 1;
+  margin-bottom: 0;
 }
 
 .add-model-form .form-label {

@@ -124,27 +124,51 @@ class KnowledgeGraphEngine:
                 tags.append(tag)
         return tags
 
-    def _resolve_title(self, title: str) -> Optional[str]:
-        """Case-insensitive title match; falls back to path stem match."""
+    def _resolve_title(self, title: str, vault: str | None = None) -> Optional[str]:
+        """Case-insensitive title match within a vault; falls back to path stem match."""
         clean = title.strip().rstrip("\\")
-        # 1. Exact title match
-        row = self.db.execute(
-            "SELECT path FROM knowledge_nodes WHERE LOWER(title) = LOWER(?) ORDER BY mtime DESC LIMIT 1",
-            (clean,),
-        ).fetchone()
-        if row:
-            return row["path"]
+        # 1. Exact title match within the same vault
+        if vault is not None:
+            rows = self.db.execute(
+                "SELECT path FROM knowledge_nodes WHERE LOWER(title) = LOWER(?) AND vault = ? ORDER BY mtime DESC LIMIT 1",
+                (clean, vault),
+            ).fetchall()
+        else:
+            rows = self.db.execute(
+                "SELECT path FROM knowledge_nodes WHERE LOWER(title) = LOWER(?) ORDER BY mtime DESC LIMIT 1",
+                (clean,),
+            ).fetchall()
+        if rows:
+            return rows[0]["path"]
         # 2. Path stem match (Obsidian links often reference file names)
         stem = Path(clean).stem
-        row = self.db.execute(
-            "SELECT path FROM knowledge_nodes WHERE LOWER(path) LIKE LOWER(?) ORDER BY mtime DESC LIMIT 1",
-            (f"%/{stem}.md",),
-        ).fetchone()
-        return row["path"] if row else None
+        if vault is not None:
+            rows = self.db.execute(
+                "SELECT path FROM knowledge_nodes WHERE LOWER(path) LIKE LOWER(?) AND vault = ? ORDER BY mtime DESC LIMIT 1",
+                (f"%/{stem}.md", vault),
+            ).fetchall()
+        else:
+            rows = self.db.execute(
+                "SELECT path FROM knowledge_nodes WHERE LOWER(path) LIKE LOWER(?) ORDER BY mtime DESC LIMIT 1",
+                (f"%/{stem}.md",),
+            ).fetchall()
+        return rows[0]["path"] if rows else None
 
     def _invalidate_cache(self) -> None:
         """Mark the graph cache as dirty."""
         self._cache_dirty = True
+
+    def _resolve_vault_from_path(self, relative_path: str) -> str:
+        """Infer vault name from note path.
+
+        knowledge/notes/                → 'default'
+        knowledge/notes/paper/        → 'paper'
+        knowledge/notes/obsidian_xxx/ → 'obsidian_xxx'
+        """
+        parts = Path(relative_path).parts
+        if len(parts) >= 3 and parts[0] == "knowledge" and parts[1] == "notes":
+            return parts[2]
+        return "default"
 
     def update_note(self, relative_path: str, force: bool = False) -> None:
         """Read a markdown file, extract title and [[links]], and update the index.
@@ -174,12 +198,14 @@ class KnowledgeGraphEngine:
         links = [re.split(r"\\?\|", link, maxsplit=1)[0].strip().rstrip("\\") for link in raw_links]
         tags = self._extract_tags(content)
 
+        vault = self._resolve_vault_from_path(relative_path)
+
         with self.db:
             self.db.execute(
                 """
                 INSERT OR REPLACE INTO knowledge_nodes
-                (path, title, type, mtime, word_count, updated_at, content)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (path, title, type, mtime, word_count, updated_at, content, vault)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     relative_path,
@@ -189,19 +215,36 @@ class KnowledgeGraphEngine:
                     len(content.split()),
                     datetime.now().isoformat(),
                     content,
+                    vault,
                 ),
             )
-            self.db.execute(
-                "DELETE FROM knowledge_links WHERE from_path = ?",
-                (relative_path,),
-            )
+            # Preserve links that were unresolved (to_path=NULL) before this reindex.
+            # If they still exist in the file they will be re-inserted; if the user
+            # removed the [[wikilink]] from the file they remain orphaned (harmless).
+            existing_unresolved = {
+                row["to_title"]
+                for row in self.db.execute(
+                    "SELECT to_title FROM knowledge_links WHERE from_path = ? AND to_path IS NULL",
+                    (relative_path,),
+                ).fetchall()
+            }
+            self.db.execute("DELETE FROM knowledge_links WHERE from_path = ?", (relative_path,))
+            inserted_titles: set[str] = set()
             for raw_title in links:
                 clean_title = raw_title.strip()
-                to_path = self._resolve_title(clean_title)
+                to_path = self._resolve_title(clean_title, vault)
                 self.db.execute(
                     "INSERT INTO knowledge_links (from_path, to_title, to_path) VALUES (?, ?, ?)",
                     (relative_path, clean_title, to_path),
                 )
+                inserted_titles.add(clean_title)
+            # Restore unresolved links that are no longer in the file
+            for title in existing_unresolved:
+                if title not in inserted_titles:
+                    self.db.execute(
+                        "INSERT INTO knowledge_links (from_path, to_title, to_path) VALUES (?, ?, NULL)",
+                        (relative_path, title),
+                    )
 
             # Update tags
             self.db.execute("DELETE FROM knowledge_node_tags WHERE node_path = ?", (relative_path,))
@@ -368,40 +411,44 @@ class KnowledgeGraphEngine:
             result[item["sha256"]] = item
         return result
 
-    def search_notes(self, query: str, limit: int = 20) -> list[dict[str, Any]]:
-        """Fuzzy search notes by path or title."""
+    def search_notes(self, query: str, limit: int = 20, vault_filter: Optional[str] = None) -> list[dict[str, Any]]:
+        """Fuzzy search notes by path or title, optionally scoped to a vault."""
         stripped = query.strip()
         if not stripped:
             return []
 
+        vault_cond = " AND vault = ?" if vault_filter else ""
+        vault_args: tuple = (vault_filter,) if vault_filter else ()
+
         # 1. Exact title match
         row = self.db.execute(
-            "SELECT path, title, mtime, word_count FROM knowledge_nodes WHERE title = ? LIMIT 1",
-            (stripped,),
+            f"SELECT path, title, mtime, word_count FROM knowledge_nodes WHERE title = ?{vault_cond} LIMIT 1",
+            (stripped,) + vault_args,
         ).fetchone()
         if row:
             return [{"path": row["path"], "title": row["title"], "mtime": row["mtime"], "word_count": row["word_count"]}]
 
         # 2. Path stem match (e.g. "Foo" -> ".../Foo.md")
         row = self.db.execute(
-            "SELECT path, title, mtime, word_count FROM knowledge_nodes WHERE path LIKE ? LIMIT 1",
-            (f"%/{stripped}.md",),
+            f"SELECT path, title, mtime, word_count FROM knowledge_nodes WHERE path LIKE ?{vault_cond} LIMIT 1",
+            (f"%/{stripped}.md",) + vault_args,
         ).fetchone()
         if row:
             return [{"path": row["path"], "title": row["title"], "mtime": row["mtime"], "word_count": row["word_count"]}]
 
         # 3. FTS5 match (more intelligent for long titles / phrases)
         try:
+            vault_join = f" AND n.vault = ?" if vault_filter else ""
             rows = self.db.execute(
-                """
+                f"""
                 SELECT n.path, n.title, n.mtime, n.word_count, rank
                 FROM knowledge_nodes_fts
                 JOIN knowledge_nodes n ON knowledge_nodes_fts.rowid = n.rowid
-                WHERE knowledge_nodes_fts MATCH ?
+                WHERE knowledge_nodes_fts MATCH ?{vault_join}
                 ORDER BY rank
                 LIMIT ?
                 """,
-                (stripped, limit),
+                (stripped,) + (vault_filter,) * bool(vault_filter) + (limit,),
             ).fetchall()
             if rows:
                 return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"], "word_count": r["word_count"], "rank": r["rank"]} for r in rows]
@@ -411,33 +458,46 @@ class KnowledgeGraphEngine:
         # 4. Fallback LIKE on path or title
         pattern = f"%{stripped}%"
         rows = self.db.execute(
-            """
+            f"""
             SELECT path, title, mtime, word_count FROM knowledge_nodes
-            WHERE path LIKE ? OR title LIKE ?
+            WHERE (path LIKE ? OR title LIKE ?){vault_cond}
             ORDER BY mtime DESC
             LIMIT ?
             """,
-            (pattern, pattern, limit),
+            (pattern, pattern) + vault_args + (limit,),
         ).fetchall()
         return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"], "word_count": r["word_count"]} for r in rows]
 
-    def search_notes_fts(self, query: str, limit: int = 20) -> list[dict[str, Any]]:
+    def list_vaults(self) -> list[dict[str, Any]]:
+        """Return all vaults with note counts."""
+        rows = self.db.execute(
+            """
+            SELECT vault, COUNT(*) as note_count
+            FROM knowledge_nodes
+            GROUP BY vault
+            ORDER BY vault ASC
+            """
+        ).fetchall()
+        return [{"name": r["vault"], "note_count": r["note_count"]} for r in rows]
+
+    def search_notes_fts(self, query: str, limit: int = 20, vault_filter: Optional[str] = None) -> list[dict[str, Any]]:
         """Full-text search using SQLite FTS5 with BM25 ranking.
 
         Falls back to path/title search if FTS5 is unavailable or returns no results.
+        Optionally scoped to a vault.
         """
         try:
-            # Use FTS5 match with BM25 ranking (lower rank = more relevant)
+            vault_join = f" AND n.vault = ?" if vault_filter else ""
             rows = self.db.execute(
-                """
+                f"""
                 SELECT n.path, n.title, n.mtime, n.word_count, rank
                 FROM knowledge_nodes_fts
                 JOIN knowledge_nodes n ON knowledge_nodes_fts.rowid = n.rowid
-                WHERE knowledge_nodes_fts MATCH ?
+                WHERE knowledge_nodes_fts MATCH ?{vault_join}
                 ORDER BY rank
                 LIMIT ?
                 """,
-                (query, limit),
+                (query,) + (vault_filter,) * bool(vault_filter) + (limit,),
             ).fetchall()
             if rows:
                 return [
@@ -486,17 +546,31 @@ class KnowledgeGraphEngine:
         except sqlite3.OperationalError:
             pass
 
-    def get_tags(self) -> list[dict[str, Any]]:
-        """Return all tags with usage counts."""
-        rows = self.db.execute(
-            """
-            SELECT t.name, COUNT(nt.node_path) as count
-            FROM knowledge_tags t
-            LEFT JOIN knowledge_node_tags nt ON t.id = nt.tag_id
-            GROUP BY t.id
-            ORDER BY count DESC, t.name ASC
-            """
-        ).fetchall()
+    def get_tags(self, vault_filter: Optional[str] = None) -> list[dict[str, Any]]:
+        """Return all tags (optionally scoped to a vault) with usage counts."""
+        if vault_filter:
+            rows = self.db.execute(
+                """
+                SELECT t.name, COUNT(nt.node_path) as count
+                FROM knowledge_tags t
+                JOIN knowledge_node_tags nt ON t.id = nt.tag_id
+                JOIN knowledge_nodes n ON nt.node_path = n.path
+                WHERE n.vault = ?
+                GROUP BY t.id
+                ORDER BY count DESC, t.name ASC
+                """,
+                (vault_filter,),
+            ).fetchall()
+        else:
+            rows = self.db.execute(
+                """
+                SELECT t.name, COUNT(nt.node_path) as count
+                FROM knowledge_tags t
+                LEFT JOIN knowledge_node_tags nt ON t.id = nt.tag_id
+                GROUP BY t.id
+                ORDER BY count DESC, t.name ASC
+                """
+            ).fetchall()
         return [{"name": r["name"], "count": r["count"]} for r in rows]
 
     def get_node_tags(self, path: str) -> list[str]:
@@ -528,7 +602,8 @@ class KnowledgeGraphEngine:
         return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"]} for r in rows]
 
     def get_graph(
-        self, center_path: Optional[str] = None, depth: int = 1, limit: int = 200, tag_filter: Optional[str] = None
+        self, center_path: Optional[str] = None, depth: int = 1, limit: int = 200, tag_filter: Optional[str] = None,
+        vault_filter: Optional[str] = None,
     ) -> dict[str, Any]:
         """Return a subgraph as {nodes, edges}.
 
@@ -536,6 +611,7 @@ class KnowledgeGraphEngine:
         outgoing and incoming links. Otherwise return the whole graph up to
         `limit` nodes.
         If tag_filter is given, only include nodes that have the tag.
+        If vault_filter is given, only include nodes in that vault.
         """
         if self._cache_dirty or self._cache is None:
             self._rebuild_cache()
@@ -547,6 +623,8 @@ class KnowledgeGraphEngine:
         all_edges: list[dict[str, Any]] = []
 
         def _include_node(key: str) -> bool:
+            if vault_filter is not None and cache["node_vaults"].get(key) != vault_filter:
+                return False
             if tag_filter is None:
                 return True
             return tag_filter.lower() in cache["node_tags"].get(key, [])
@@ -644,10 +722,16 @@ class KnowledgeGraphEngine:
             "SELECT nt.node_path, t.name FROM knowledge_node_tags nt JOIN knowledge_tags t ON nt.tag_id = t.id"
         ).fetchall():
             node_tags.setdefault(row["node_path"], []).append(row["name"])
+
+        node_vaults: dict[str, str] = {}
+        for row in self.db.execute("SELECT path, vault FROM knowledge_nodes").fetchall():
+            node_vaults[row["path"]] = row["vault"]
+
         for node_path in nodes:
             nodes[node_path]["tags"] = node_tags.get(node_path, [])
+            nodes[node_path]["vault"] = node_vaults.get(node_path, "default")
 
-        self._cache = {"nodes": nodes, "edges": edges, "adj_out": adj_out, "adj_in": adj_in, "node_tags": node_tags}
+        self._cache = {"nodes": nodes, "edges": edges, "adj_out": adj_out, "adj_in": adj_in, "node_tags": node_tags, "node_vaults": node_vaults}
         self._cache_dirty = False
 
     def get_timeline(self, relative_path: str) -> dict[str, Any]:

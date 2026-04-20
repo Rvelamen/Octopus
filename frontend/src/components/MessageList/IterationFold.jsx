@@ -34,11 +34,17 @@ const formatTotalTime = (ms) => {
   return `${seconds}s`;
 };
 
-// 格式化为 xxxK 显示（如 124.3k）
+// 格式化为 xxxK / x.xM 显示（如 124.3k、5.3M）
 const formatTokenNumber = (num) => {
   if (!num && num !== 0) return '0';
   const n = Number(num);
   if (Number.isNaN(n)) return '0';
+  if (n >= 1_000_000_000) {
+    return `${(n / 1_000_000_000).toFixed(1)}G`;
+  }
+  if (n >= 1_000_000) {
+    return `${(n / 1_000_000).toFixed(1)}M`;
+  }
   if (n >= 1000) {
     return `${(n / 1000).toFixed(1)}k`;
   }

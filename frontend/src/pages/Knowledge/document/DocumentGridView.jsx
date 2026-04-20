@@ -5,6 +5,7 @@ import {
   List,
   ChevronRight,
   FolderPlus,
+  FilePlus,
   Upload,
   Pencil,
   Trash2,
@@ -87,7 +88,7 @@ function BreadcrumbNav({ currentPath, rootPath, onNavigate }) {
   );
 }
 
-function ContextMenu({ x, y, item, onClose, onNewFolder, onUpload, onRename, onDelete, onMove }) {
+function ContextMenu({ x, y, item, onClose, onNewFolder, onNewFile, onUpload, onRename, onDelete, onMove }) {
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -136,6 +137,10 @@ function ContextMenu({ x, y, item, onClose, onNewFolder, onUpload, onRename, onD
           <MenuItem onClick={() => { onNewFolder(); onClose(); }}>
             <FolderPlus size={14} />
             <span>New Folder</span>
+          </MenuItem>
+          <MenuItem onClick={() => { onNewFile(); onClose(); }}>
+            <FilePlus size={14} />
+            <span>New File</span>
           </MenuItem>
           <MenuItem onClick={() => { onUpload(); onClose(); }}>
             <Upload size={14} />
@@ -370,6 +375,7 @@ export default function DocumentGridView({
   onNavigate,
   onFileOpen,
   onCreateFolder,
+  onCreateFile,
   onUploadFile,
   onRenameFile,
   onDeleteFile,
@@ -567,6 +573,23 @@ export default function DocumentGridView({
                 <FolderPlus size={13} /> New Folder
               </button>
               <button
+                onClick={() => onCreateFile && onCreateFile()}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 6,
+                  border: '1.5px dashed var(--border)',
+                  background: 'transparent',
+                  color: 'var(--text-2)',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                }}
+              >
+                <FilePlus size={13} /> New File
+              </button>
+              <button
                 onClick={() => onUploadFile && onUploadFile()}
                 style={{
                   padding: '6px 14px',
@@ -686,6 +709,7 @@ export default function DocumentGridView({
           item={contextMenu.item}
           onClose={() => setContextMenu(null)}
           onNewFolder={() => onCreateFolder && onCreateFolder()}
+          onNewFile={() => onCreateFile && onCreateFile()}
           onUpload={() => onUploadFile && onUploadFile()}
           onRename={(item) => {
             setRenamingItem(item);

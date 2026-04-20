@@ -187,6 +187,7 @@ class DesktopChannel(BaseChannel):
             "agent_token": MessageType.AGENT_TOKEN,
             "agent_chunk": MessageType.AGENT_CHUNK,
             "agent_finish": MessageType.AGENT_FINISH,
+            "agent_stopped": MessageType.AGENT_STOPPED,
             # Tool call events
             "agent_tool_call_start": MessageType.AGENT_TOOL_CALL_START,
             "agent_tool_call_streaming": MessageType.AGENT_TOOL_CALL_STREAMING,

@@ -65,6 +65,7 @@ class MessageType(Enum):
     KNOWLEDGE_EXPORT = "knowledge_export"                   # Export knowledge base as zip
     KNOWLEDGE_IMPORT = "knowledge_import"                   # Import knowledge base from zip
     KNOWLEDGE_GET_DOCUMENT_META = "knowledge_get_document_meta"  # Get metadata for documents by sha256
+    KNOWLEDGE_LIST_VAULTS = "knowledge_list_vaults"  # List all vaults
 
     # File Preview - Client -> Server
     FILE_PREVIEW_PDF = "file_preview_pdf"                   # Convert file to PDF for preview
@@ -129,6 +130,7 @@ class MessageType(Enum):
     AGENT_TOKEN = "agent_token"      # Streaming token (new)
     AGENT_CHUNK = "agent_chunk"      # Streaming chunk
     AGENT_FINISH = "agent_finish"    # Agent finished
+    AGENT_STOPPED = "agent_stopped"  # Agent stopped by user
     CONFIG = "config"                # Configuration data
     ERROR = "error"                  # Error message
     PONG = "pong"                    # Keep-alive pong
@@ -200,6 +202,7 @@ class MessageType(Enum):
     KNOWLEDGE_EXPORT_RESULT = "knowledge_export_result"      # Export zip data
     KNOWLEDGE_IMPORT_RESULT = "knowledge_import_result"      # Import success/failure
     KNOWLEDGE_GET_DOCUMENT_META_RESULT = "knowledge_get_document_meta_result"  # Document metadata result
+    KNOWLEDGE_LIST_VAULTS_RESULT = "knowledge_list_vaults_result"  # Vault list result
 
     # File Preview - Server -> Client
     FILE_PREVIEW_PDF_RESULT = "file_preview_pdf_result"    # PDF conversion result
@@ -462,6 +465,7 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.KNOWLEDGE_EXPORT,
     MessageType.KNOWLEDGE_IMPORT,
     MessageType.KNOWLEDGE_GET_DOCUMENT_META,
+    MessageType.KNOWLEDGE_LIST_VAULTS,
     MessageType.FILE_PREVIEW_PDF,
     MessageType.WORKSPACE_LIST,
     MessageType.WORKSPACE_READ,
@@ -691,6 +695,7 @@ SERVER_MESSAGE_TYPES = {
     MessageType.KNOWLEDGE_EXPORT_RESULT,
     MessageType.KNOWLEDGE_IMPORT_RESULT,
     MessageType.KNOWLEDGE_GET_DOCUMENT_META_RESULT,
+    MessageType.KNOWLEDGE_LIST_VAULTS_RESULT,
     MessageType.FILE_PREVIEW_PDF_RESULT,
     MessageType.MEMORY_LIST_RESULT,
     MessageType.MEMORY_SEARCH_RESULT,
