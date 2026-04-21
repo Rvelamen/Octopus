@@ -45,6 +45,11 @@ class StreamingMessageProcessor(MessageProcessor):
 
         start_time = time.time()
 
+        # Track the last iteration's tool state so we can mark the thought fold
+        # as stopped even when the final iteration had no tool calls.
+        last_tool_calls_buffer = {}
+        last_saved_tool_ids: set[str] = set()
+
         while iteration < self.agent_loop.max_iterations and not should_stop and not self.agent_loop._should_stop(instance_id_int):
             iteration += 1
 
@@ -181,6 +186,8 @@ class StreamingMessageProcessor(MessageProcessor):
                     )
 
                     saved_stream_tool_ids: set[str] = set()
+                    last_tool_calls_buffer = tool_calls_buffer
+                    last_saved_tool_ids = saved_stream_tool_ids
                     for tc_id, tc_data in tool_calls_buffer.items():
                         if self.agent_loop._should_stop(instance_id_int):
                             logger.info("Task stopped by user request")
@@ -263,16 +270,6 @@ class StreamingMessageProcessor(MessageProcessor):
 
                         saved_stream_tool_ids.add(str(tc_id))
 
-                    if tool_calls_buffer and self.agent_loop._should_stop(instance_id_int):
-                        entries = [(str(tid), tc_data["name"]) for tid, tc_data in tool_calls_buffer.items()]
-                        self.agent_loop._save_cancelled_tool_results_and_mark_stopped(
-                            session,
-                            tool_call_entries=entries,
-                            saved_ids=saved_stream_tool_ids,
-                            session_instance_id=session_instance_id,
-                            start_time=start_time,
-                        )
-
                     if not self.agent_loop._should_stop(instance_id_int):
                         await self.agent_loop._emit(
                             "agent_iteration_complete",
@@ -335,30 +332,43 @@ class StreamingMessageProcessor(MessageProcessor):
                 final_content = f"Error: {str(e)}"
                 break
 
-        if self.agent_loop._should_stop(instance_id_int) and final_content is None:
-            final_content = "任务已被用户暂停。"
-            # 保存暂停状态到数据库
-            session.add_message(
-                "assistant",
-                final_content,
-                message_type="stopped",
-                metadata={
-                    "session_instance_id": session_instance_id,
-                    "stopped_by_user": True,
-                } if session_instance_id else {"stopped_by_user": True}
+        if self.agent_loop._should_stop(instance_id_int):
+            # Persist cancelled placeholders and mark the last assistant message
+            # with tool_calls as stopped, regardless of whether the final
+            # iteration had tool calls.
+            entries = [(str(tid), tc_data["name"]) for tid, tc_data in last_tool_calls_buffer.items()]
+            self.agent_loop._save_cancelled_tool_results_and_mark_stopped(
+                session,
+                tool_call_entries=entries,
+                saved_ids=last_saved_tool_ids,
+                session_instance_id=session_instance_id,
+                start_time=start_time,
             )
-            self.agent_loop.sessions.save(session)
-            # 向前端 emit 明确的暂停事件
-            await self.agent_loop._emit(
-                "agent_stopped",
-                {
-                    "content": final_content,
-                    "session": current_session,
-                    "session_instance_id": session_instance_id,
-                    "status": "stopped"
-                },
-                channel=msg.channel
-            )
+
+            if final_content is None:
+                final_content = "任务已被用户暂停。"
+                # 保存暂停状态到数据库
+                session.add_message(
+                    "assistant",
+                    final_content,
+                    message_type="stopped",
+                    metadata={
+                        "session_instance_id": session_instance_id,
+                        "stopped_by_user": True,
+                    } if session_instance_id else {"stopped_by_user": True}
+                )
+                self.agent_loop.sessions.save(session)
+                # 向前端 emit 明确的暂停事件
+                await self.agent_loop._emit(
+                    "agent_stopped",
+                    {
+                        "content": final_content,
+                        "session": current_session,
+                        "session_instance_id": session_instance_id,
+                        "status": "stopped"
+                    },
+                    channel=msg.channel
+                )
 
         if final_content is None:
             final_content = (

@@ -207,6 +207,24 @@ export function useChatState() {
       setToolCallAssistantContents(() => ({}));
     };
 
+    const handleAgentStopped = (data) => {
+      const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
+      if (eventInstanceId == null) return;
+      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      if (!isCurrentInstance) {
+        updateToolCallsForInstance(eventInstanceId, () => []);
+        updateAssistantContentsForInstance(eventInstanceId, () => ({}));
+        return;
+      }
+      resetStreamingContent();
+      setIsProcessing(false);
+      setToolCalls(() => []);
+      setToolCallAssistantContents(() => ({}));
+      setLiveTokenUsage(null);
+      // Trigger a message refresh so the historical thought fold shows "paused"
+      setRefreshInstanceId(eventInstanceId);
+    };
+
     const handleAgentToolCallStart = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
@@ -465,6 +483,7 @@ export function useChatState() {
     subscribe('chat_response', handleChatResponse);
     subscribe('error', handleError);
     subscribe('agent_finish', handleAgentFinish);
+    subscribe('agent_stopped', handleAgentStopped);
     subscribe('agent_tool_call_start', handleAgentToolCallStart);
     subscribe('agent_tool_call_streaming', handleAgentToolCallStreaming);
     subscribe('agent_tool_call_invoking', handleAgentToolCallInvoking);
@@ -486,6 +505,7 @@ export function useChatState() {
       unsubscribe('chat_response', handleChatResponse);
       unsubscribe('error', handleError);
       unsubscribe('agent_finish', handleAgentFinish);
+      unsubscribe('agent_stopped', handleAgentStopped);
       unsubscribe('agent_tool_call_start', handleAgentToolCallStart);
       unsubscribe('agent_tool_call_streaming', handleAgentToolCallStreaming);
       unsubscribe('agent_tool_call_invoking', handleAgentToolCallInvoking);

@@ -272,6 +272,18 @@ class AgentLoop:
             logger.error(f"Failed to save session after cancelled tool placeholders: {e}")
 
         elapsed_ms = int((time.time() - start_time) * 1000)
+
+        # Always mark the in-memory assistant message with tool_calls so that
+        # historical rendering can detect the paused state even when
+        # session_instance_id is None or update_last_message_metadata hits the
+        # wrong message.
+        for msg in reversed(session.messages):
+            if msg.get("role") == "assistant" and msg.get("tool_calls"):
+                msg.setdefault("metadata", {})
+                msg["metadata"]["stopped_by_user"] = True
+                msg["metadata"]["elapsed_ms"] = elapsed_ms
+                break
+
         if session_instance_id:
             try:
                 self.sessions.update_last_message_metadata(

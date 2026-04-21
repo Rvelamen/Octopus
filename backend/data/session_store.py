@@ -438,6 +438,9 @@ class SessionRepository:
     ) -> bool:
         """Update the latest assistant message's metadata with additional data.
         
+        Skips 'stopped' summary messages so that elapsed_ms/usage are written
+        to the actual assistant message containing tool_calls.
+        
         Args:
             session_instance_id: The session instance ID
             update_data: Dict of metadata fields to update/merge
@@ -446,19 +449,30 @@ class SessionRepository:
             True if updated successfully
         """
         with self.db._get_connection() as conn:
-            row = conn.execute(
+            rows = conn.execute(
                 """SELECT id, metadata FROM messages 
                    WHERE session_instance_id = ? AND role = 'assistant'
-                   ORDER BY timestamp DESC LIMIT 1""",
+                   ORDER BY timestamp DESC""",
                 (session_instance_id,)
-            ).fetchone()
+            ).fetchall()
             
-            if not row:
+            target_row = None
+            for row in rows:
+                metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+                if metadata.get("message_type") != "stopped":
+                    target_row = row
+                    break
+            
+            # Fallback to the latest assistant message if all are stopped
+            if target_row is None and rows:
+                target_row = rows[0]
+            
+            if not target_row:
                 logger.warning(f"No assistant message found for instance {session_instance_id}")
                 return False
             
-            message_id = row["id"]
-            metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+            message_id = target_row["id"]
+            metadata = json.loads(target_row["metadata"]) if target_row["metadata"] else {}
             # Merge update data into existing metadata
             metadata = {**metadata, **update_data}
             

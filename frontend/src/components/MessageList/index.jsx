@@ -140,6 +140,12 @@ function buildDisplayList(messages) {
 
     // For regular assistant messages without tools, flush pending thought
     if (msg.role === 'assistant') {
+      // If this message carries stopped_by_user (e.g. the 'stopped' summary
+      // message), propagate the paused state to any pending thought fold
+      // that belongs to a previous tool-call iteration.
+      if (msg.metadata?.stopped_by_user && pendingSegments.length > 0) {
+        pendingThoughtStoppedByUser = true;
+      }
       // This is a final assistant message without tool calls
       // It should be displayed as a normal message, but we can include usage
       flushThought();
