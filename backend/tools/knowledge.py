@@ -64,6 +64,63 @@ class KBSearchTool(Tool):
         return "\n".join(lines)
 
 
+class KBWriteNoteTool(Tool):
+    """Write or overwrite a knowledge base note, automatically indexing it."""
+
+    @property
+    def name(self) -> str:
+        return "kb_write_note"
+
+    @property
+    def description(self) -> str:
+        return (
+            "Write or overwrite a knowledge base note. If the note already exists, "
+            "it will be overwritten with the new content. The note is automatically "
+            "indexed: [[wiki-links]], #tags, and the title (from the first # heading) "
+            "are extracted and registered in the knowledge graph. "
+            "Use this to create new notes or update existing ones."
+        )
+
+    @property
+    def parameters(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": (
+                        "Relative path of the note inside the workspace "
+                        "(e.g., 'knowledge/notes/my_note.md'). "
+                        "Parent directories are created automatically if needed."
+                    ),
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Full markdown content of the note.",
+                },
+            },
+            "required": ["path", "content"],
+        }
+
+    async def execute(self, path: str, content: str, **kwargs: Any) -> str:
+        from backend.utils.helpers import get_workspace_path
+
+        if not path.endswith(".md"):
+            return f"Error: note path must end with .md, got: {path}"
+
+        engine = KnowledgeGraphEngine(str(get_workspace_path()))
+        engine.write_note(path, content)
+        engine.update_note(path, force=True)
+
+        word_count = len(content.split())
+        title = engine._extract_title(content, path)
+        return (
+            f"Note written and indexed: {path}\n"
+            f"Title: {title}\n"
+            f"Words: {word_count} (estimated_tokens: ~{int(word_count * 1.5)})"
+        )
+
+
 class KBReadNoteTool(Tool):
     """Read the full content of a knowledge base note."""
 

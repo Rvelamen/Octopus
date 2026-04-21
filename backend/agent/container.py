@@ -29,7 +29,7 @@ from backend.tools.cron import CronTool
 from backend.tools.action import ActionTool
 from backend.tools.image import ImageUnderstandTool, ImageGenerateTool
 from backend.tools.web_fetch import WebFetchTool
-from backend.tools.knowledge import KBSearchTool, KBReadNoteTool, KBListLinksTool, KBTimelineTool
+from backend.tools.knowledge import KBSearchTool, KBReadNoteTool, KBWriteNoteTool, KBListLinksTool, KBTimelineTool
 from backend.tools.memory import MemorySearchTool, MemoryReadTool, MemoryTimelineTool
 from backend.tools.browser.registration import register_browser_tools
 
@@ -186,6 +186,8 @@ class AgentContainer:
             self.tools.register(KBListLinksTool())
         if should_register("kb_timeline"):
             self.tools.register(KBTimelineTool())
+        if should_register("kb_write_note"):
+            self.tools.register(KBWriteNoteTool())
         if should_register("image_understand"):
             self.tools.register(ImageUnderstandTool())
         if should_register("image_generate"):

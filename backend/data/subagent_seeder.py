@@ -76,17 +76,18 @@ DEFAULT_AVAILABLE_TOOLS = [
     ("kb_search", "KB Search", "Search the knowledge base for notes by path or title", "knowledge", 10),
     ("kb_timeline", "KB Timeline", "Preview a note's context before reading", "knowledge", 11),
     ("kb_read_note", "KB Read Note", "Read the full content of a knowledge base note", "knowledge", 12),
-    ("kb_list_links", "KB List Links", "List bidirectional links for a given note path", "knowledge", 13),
-    ("memory_write", "Memory Write", "Add, replace, or remove curated memory entries", "memory", 14),
-    ("memory_search", "Memory Search", "Search observations and memory by keyword", "memory", 15),
-    ("memory_read", "Memory Read", "Read curated memory or user profile", "memory", 16),
-    ("memory_timeline", "Memory Timeline", "Get memory timeline for a session instance", "memory", 17),
-    ("browser", "Browser", "Automate browser navigation, interaction, and screenshots", "browser", 18),
-    ("web_fetch", "Web Fetch", "Fetch web page content via HTTP", "web", 19),
-    ("image_understand", "Image Understand", "Analyze and describe images", "image", 20),
-    ("image_generate", "Image Generate", "Generate images from text descriptions", "image", 21),
-    ("spawn", "Spawn", "Spawn subagents for background tasks", "agent", 22),
-    ("cron", "Cron", "Schedule recurring tasks", "scheduler", 23),
+    ("kb_write_note", "KB Write Note", "Write or overwrite a knowledge base note with automatic indexing", "knowledge", 13),
+    ("kb_list_links", "KB List Links", "List bidirectional links for a given note path", "knowledge", 14),
+    ("memory_write", "Memory Write", "Add, replace, or remove curated memory entries", "memory", 15),
+    ("memory_search", "Memory Search", "Search observations and memory by keyword", "memory", 16),
+    ("memory_read", "Memory Read", "Read curated memory or user profile", "memory", 17),
+    ("memory_timeline", "Memory Timeline", "Get memory timeline for a session instance", "memory", 18),
+    ("browser", "Browser", "Automate browser navigation, interaction, and screenshots", "browser", 19),
+    ("web_fetch", "Web Fetch", "Fetch web page content via HTTP", "web", 20),
+    ("image_understand", "Image Understand", "Analyze and describe images", "image", 21),
+    ("image_generate", "Image Generate", "Generate images from text descriptions", "image", 22),
+    ("spawn", "Spawn", "Spawn subagents for background tasks", "agent", 23),
+    ("cron", "Cron", "Schedule recurring tasks", "scheduler", 24),
 ]
 
 
@@ -124,7 +125,7 @@ def seed_builtin_subagents(subagent_repo) -> None:
                 "A document distillation expert that extracts key information "
                 "from PDFs, DOCX, and text files into structured Markdown notes."
             ),
-            "tools": ["read", "write", "kb_search", "kb_read_note", "kb_list_links"],
+            "tools": ["read", "write", "kb_search", "kb_read_note", "kb_write_note", "kb_list_links"],
             "extensions": [],
             "max_iterations": 30,
             "temperature": 0.3,
