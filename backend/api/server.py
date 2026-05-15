@@ -186,29 +186,33 @@ async def lifespan(app: FastAPI):
     # Stop cron service
     if cron_service:
         cron_service.stop()
-    
+
+    # Stop MCP manager (must be before channels to avoid orphaned heartbeat tasks)
+    if mcp_manager:
+        await mcp_manager.shutdown()
+
     # Stop channels via ChannelManager
     if channel_manager:
         await channel_manager.stop_all()
     if channel_manager_task:
         channel_manager_task.cancel()
-    
+
     # Stop agent loop
     if agent_loop:
         agent_loop.stop()
     if agent_task:
         agent_task.cancel()
-        
+
     if event_dispatch_task:
         bus.stop()
         event_dispatch_task.cancel()
-    
+
     # Checkpoint WAL before exit
     try:
         db.checkpoint("PASSIVE")
     except Exception:
         pass
-        
+
     logger.info("Service stopped.")
 
 

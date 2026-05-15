@@ -99,6 +99,9 @@ from backend.channels.desktop.handlers.image import (
     ImageGetGenerationProvidersHandler
 )
 
+# Import workflow handler
+from backend.channels.desktop.handlers.workflow import WorkflowHandler
+
 # Import knowledge handlers
 from backend.channels.desktop.handlers.knowledge import (
     KnowledgeListHandler, KnowledgeReadHandler, KnowledgeWriteHandler,
@@ -106,6 +109,7 @@ from backend.channels.desktop.handlers.knowledge import (
     KnowledgeDistillHandler, KnowledgeDistillListHandler,
     KnowledgeDistillDetailHandler, KnowledgeGetTagsHandler, KnowledgeExportHandler, KnowledgeImportHandler,
     KnowledgeGetDocumentMetaHandler, KnowledgeListVaultsHandler,
+    KnowledgeUpdateReferencesHandler,
 )
 from backend.channels.desktop.handlers.file_preview import FilePreviewPDFHandler
 
@@ -139,6 +143,39 @@ class HandlerRegistry:
             MessageType.STOP_AGENTS: StopAgentsHandler(bus, agent_loop, subagent_manager),
         }
 
+        # Register Provider/Model/Settings handlers (always available)
+        self.handlers.update({
+            MessageType.PROVIDER_GET_ALL: ProviderHandler(bus, self.provider_handler_db),
+            MessageType.PROVIDER_GET: ProviderHandler(bus, self.provider_handler_db),
+            MessageType.PROVIDER_ADD: ProviderHandler(bus, self.provider_handler_db),
+            MessageType.PROVIDER_UPDATE: ProviderHandler(bus, self.provider_handler_db),
+            MessageType.PROVIDER_DELETE: ProviderHandler(bus, self.provider_handler_db),
+            MessageType.PROVIDER_ENABLE: ProviderHandler(bus, self.provider_handler_db),
+            MessageType.MODEL_GET_ALL: ModelHandler(bus, self.model_handler_db),
+            MessageType.MODEL_ADD: ModelHandler(bus, self.model_handler_db),
+            MessageType.MODEL_UPDATE: ModelHandler(bus, self.model_handler_db),
+            MessageType.MODEL_DELETE: ModelHandler(bus, self.model_handler_db),
+            MessageType.MODEL_SET_DEFAULT: ModelHandler(bus, self.model_handler_db),
+            MessageType.MODEL_GET_PROVIDERS: ModelHandler(bus, self.model_handler_db),
+            MessageType.MODEL_GET_MODELS: ModelHandler(bus, self.model_handler_db),
+            MessageType.SETTINGS_GET: SettingsHandler(bus, self.settings_handler_db),
+            MessageType.SETTINGS_SET: SettingsHandler(bus, self.settings_handler_db),
+            MessageType.AGENT_DEFAULTS_GET: AgentDefaultsHandler(bus, self.db),
+            MessageType.AGENT_DEFAULTS_UPDATE: AgentDefaultsHandler(bus, self.db),
+            MessageType.GET_ENABLED_MODELS: AgentDefaultsHandler(bus, self.db),
+            MessageType.CHANNEL_GET_LIST: ChannelConfigHandler(bus, self.db),
+            MessageType.CHANNEL_UPDATE: ChannelConfigHandler(bus, self.db),
+            MessageType.CHANNEL_DELETE: ChannelConfigHandler(bus, self.db),
+            MessageType.WECHAT_GET_QRCODE: WechatConfigHandler(bus, self.db),
+            MessageType.WECHAT_CHECK_STATUS: WechatConfigHandler(bus, self.db),
+            MessageType.WECHAT_CLEAR_TOKEN: WechatConfigHandler(bus, self.db),
+            MessageType.TOOL_GET_CONFIG: ToolConfigHandler(bus, self.db),
+            MessageType.TOOL_UPDATE_CONFIG: ToolConfigHandler(bus, self.db),
+            MessageType.IMAGE_GET_PROVIDERS: ImageProviderConfigHandler(bus, self.db),
+            MessageType.IMAGE_SET_DEFAULT_PROVIDER: ImageProviderConfigHandler(bus, self.db),
+            MessageType.TOKEN_GET_USAGE: TokenUsageHandler(bus, self.db),
+        })
+
         # Register MCP handlers if manager is available
         if mcp_manager:
             self.handlers.update({
@@ -156,33 +193,6 @@ class HandlerRegistry:
                 MessageType.MCP_CALL_TOOL: MCPCallToolHandler(bus, mcp_manager),
                 MessageType.MCP_GET_CONFIG: MCPGetConfigHandler(bus, mcp_manager),
                 MessageType.MCP_UPDATE_CONFIG: MCPUpdateConfigHandler(bus, mcp_manager),
-                MessageType.PROVIDER_GET_ALL: ProviderHandler(bus, self.provider_handler_db),
-                MessageType.PROVIDER_GET: ProviderHandler(bus, self.provider_handler_db),
-                MessageType.PROVIDER_ADD: ProviderHandler(bus, self.provider_handler_db),
-                MessageType.PROVIDER_UPDATE: ProviderHandler(bus, self.provider_handler_db),
-                MessageType.PROVIDER_DELETE: ProviderHandler(bus, self.provider_handler_db),
-                MessageType.PROVIDER_ENABLE: ProviderHandler(bus, self.provider_handler_db),
-                MessageType.MODEL_GET_ALL: ModelHandler(bus, self.model_handler_db),
-                MessageType.MODEL_ADD: ModelHandler(bus, self.model_handler_db),
-                MessageType.MODEL_UPDATE: ModelHandler(bus, self.model_handler_db),
-                MessageType.MODEL_DELETE: ModelHandler(bus, self.model_handler_db),
-                MessageType.MODEL_SET_DEFAULT: ModelHandler(bus, self.model_handler_db),
-                MessageType.SETTINGS_GET: SettingsHandler(bus, self.settings_handler_db),
-                MessageType.SETTINGS_SET: SettingsHandler(bus, self.settings_handler_db),
-                MessageType.AGENT_DEFAULTS_GET: AgentDefaultsHandler(bus, self.db),
-                MessageType.AGENT_DEFAULTS_UPDATE: AgentDefaultsHandler(bus, self.db),
-                MessageType.GET_ENABLED_MODELS: AgentDefaultsHandler(bus, self.db),
-                MessageType.CHANNEL_GET_LIST: ChannelConfigHandler(bus, self.db),
-                MessageType.CHANNEL_UPDATE: ChannelConfigHandler(bus, self.db),
-                MessageType.CHANNEL_DELETE: ChannelConfigHandler(bus, self.db),
-                MessageType.WECHAT_GET_QRCODE: WechatConfigHandler(bus, self.db),
-                MessageType.WECHAT_CHECK_STATUS: WechatConfigHandler(bus, self.db),
-                MessageType.WECHAT_CLEAR_TOKEN: WechatConfigHandler(bus, self.db),
-                MessageType.TOOL_GET_CONFIG: ToolConfigHandler(bus, self.db),
-                MessageType.TOOL_UPDATE_CONFIG: ToolConfigHandler(bus, self.db),
-                MessageType.IMAGE_GET_PROVIDERS: ImageProviderConfigHandler(bus, self.db),
-                MessageType.IMAGE_SET_DEFAULT_PROVIDER: ImageProviderConfigHandler(bus, self.db),
-                MessageType.TOKEN_GET_USAGE: TokenUsageHandler(bus, self.db),
             })
 
         # Register Extension handlers (unified)
@@ -310,7 +320,33 @@ class HandlerRegistry:
             MessageType.KNOWLEDGE_IMPORT: KnowledgeImportHandler(bus, knowledge_engine),
             MessageType.KNOWLEDGE_GET_DOCUMENT_META: KnowledgeGetDocumentMetaHandler(bus, knowledge_engine),
             MessageType.KNOWLEDGE_LIST_VAULTS: KnowledgeListVaultsHandler(bus, knowledge_engine),
+            MessageType.KNOWLEDGE_UPDATE_REFERENCES: KnowledgeUpdateReferencesHandler(bus, knowledge_engine),
             MessageType.FILE_PREVIEW_PDF: FilePreviewPDFHandler(bus),
+        })
+
+        # Register Workflow handlers
+        workflow_handler = WorkflowHandler(bus)
+        self.handlers.update({
+            MessageType.WORKFLOW_LIST: workflow_handler,
+            MessageType.WORKFLOW_GET: workflow_handler,
+            MessageType.WORKFLOW_SAVE: workflow_handler,
+            MessageType.WORKFLOW_PUBLISH: workflow_handler,
+            MessageType.WORKFLOW_DELETE: workflow_handler,
+            MessageType.WORKFLOW_DEFINITION_GET: workflow_handler,
+            MessageType.WORKFLOW_DEFINITION_SAVE: workflow_handler,
+            MessageType.WORKFLOW_RUN: workflow_handler,
+            MessageType.WORKFLOW_RUN_STATUS: workflow_handler,
+            MessageType.WORKFLOW_RUN_CANCEL: workflow_handler,
+            MessageType.WORKFLOW_RUN_LIST: workflow_handler,
+            MessageType.WORKFLOW_RUN_DETAIL: workflow_handler,
+            MessageType.WORKFLOW_APPROVE: workflow_handler,
+            MessageType.WORKFLOW_GET_MODELS: workflow_handler,
+            MessageType.WORKFLOW_GET_TOOLS: workflow_handler,
+            MessageType.WORKFLOW_GET_SUBAGENTS: workflow_handler,
+            MessageType.WORKFLOW_GET_VARIABLES: workflow_handler,
+            MessageType.WORKFLOW_GET_NODE_REGISTRY: workflow_handler,
+            MessageType.WORKFLOW_VERSION_CREATE: workflow_handler,
+            MessageType.WORKFLOW_VERSION_LIST: workflow_handler,
         })
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:

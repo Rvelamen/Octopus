@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { Check } from 'lucide-react';
 import FileIcon from '../components/file-icon/FileIcon';
 
 export default function GridItem({
@@ -35,7 +36,7 @@ export default function GridItem({
     } else {
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
-        if (onSelect) onSelect(item);
+        if (onSelect) onSelect(item, e);
       }, 220);
     }
   }, [item, onSelect, onDoubleClick, renaming]);
@@ -115,6 +116,7 @@ export default function GridItem({
         borderRadius: 12,
         cursor: renaming ? 'text' : 'pointer',
         userSelect: 'none',
+        position: 'relative',
         background: isSelected
           ? 'var(--accent-soft)'
           : isDragOver
@@ -135,7 +137,28 @@ export default function GridItem({
       onKeyDown={handleKeyDown}
       data-index={index}
     >
-      <FileIcon name={item.name} isDirectory={item.is_directory} size={56} />
+      <div style={{ position: 'relative' }}>
+        <FileIcon name={item.name} isDirectory={item.is_directory} size={56} />
+        {isSelected && (
+          <div
+            style={{
+              position: 'absolute',
+              top: -4,
+              right: -4,
+              width: 20,
+              height: 20,
+              borderRadius: '50%',
+              background: 'var(--accent)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+            }}
+          >
+            <Check size={12} color="#fff" strokeWidth={3} />
+          </div>
+        )}
+      </div>
       {renaming ? (
         <input
           ref={renameInputRef}

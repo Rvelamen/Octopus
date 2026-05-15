@@ -140,11 +140,27 @@ class WriteFileTool(Tool):
     async def execute(self, path: str, content: str, **kwargs: Any) -> str:
         from backend.utils.helpers import get_workspace_path
         file_path = Path(path).expanduser()
+        workspace = get_workspace_path()
         if not file_path.is_absolute():
-            file_path = get_workspace_path() / file_path
+            file_path = workspace / file_path
         try:
             file_path.parent.mkdir(parents=True, exist_ok=True)
             file_path.write_text(content, encoding="utf-8")
+
+            # Auto-index markdown notes written to the knowledge directory
+            rel_path = file_path.relative_to(workspace)
+            if str(rel_path).startswith("knowledge/") and str(rel_path).endswith(".md"):
+                try:
+                    from backend.services.knowledge_engine import KnowledgeGraphEngine
+                    engine = KnowledgeGraphEngine(str(workspace))
+                    engine.update_note(str(rel_path), force=True)
+                except Exception as idx_err:
+                    # Indexing failure should not block the write operation
+                    return (
+                        f"Successfully wrote {len(content)} bytes to {path}\n"
+                        f"Warning: failed to update knowledge index: {idx_err}"
+                    )
+
             return f"Successfully wrote {len(content)} bytes to {path}"
         except PermissionError:
             return f"Error: Permission denied: {path}"

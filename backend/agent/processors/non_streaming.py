@@ -358,24 +358,6 @@ class NonStreamingMessageProcessor(MessageProcessor):
                 f"\n\n您可以回复 **\"继续\"** 让 Agent 接着处理剩余步骤。"
             )
 
-        # Get model context window for smart compression trigger
-        model_context_window = 0
-        if hasattr(self.agent_loop.compressor.sessions.db, 'get_model_context_window'):
-            model_context_window = self.agent_loop.compressor.sessions.db.get_model_context_window()
-        await self.agent_loop.compressor.maybe_compress(
-            session, prompt_tokens=last_prompt_tokens, model_context_window=model_context_window
-        )
-
-        if self.agent_loop.memory_manager:
-            await self.agent_loop.memory_manager.sync_turn(
-                user_msg=msg.content,
-                assistant_msg=final_content or "",
-                session_instance_id=session_instance_id,
-            )
-
-        logger.info(f"[AgentLoop] Sending final response with {len(final_content)} chars")
-        await self.agent_loop._send_stream_chunks(final_content, current_session, msg.channel, session_instance_id)
-
         elapsed_ms = int((time.time() - start_time) * 1000)
 
         tts_enabled = False
@@ -388,23 +370,8 @@ class NonStreamingMessageProcessor(MessageProcessor):
             except Exception as tts_err:
                 logger.warning(f"Failed to check TTS config: {tts_err}")
 
-        if session_instance_id and final_content is not None:
-            try:
-                self.agent_loop.sessions.update_last_message_metadata(
-                    session_instance_id,
-                    {
-                        "elapsed_ms": elapsed_ms,
-                        "usage": {
-                            "prompt_tokens": total_prompt_tokens,
-                            "completion_tokens": total_completion_tokens,
-                            "total_tokens": total_prompt_tokens + total_completion_tokens,
-                            "cached_tokens": total_cached_tokens
-                        }
-                    }
-                )
-            except Exception as update_err:
-                logger.warning(f"Failed to update message metadata with elapsed_ms: {update_err}")
-
+        # Publish agent_finish immediately so the frontend can stop showing "running"
+        # without waiting for cleanup tasks (compress, memory, stream chunks, DB update).
         logger.info("[AgentLoop] Publishing agent_finish event")
         logger.info(
             f"[AgentLoop] Token usage for this run: prompt={total_prompt_tokens}, "
@@ -428,6 +395,42 @@ class NonStreamingMessageProcessor(MessageProcessor):
             channel=msg.channel
         ))
         logger.info("[AgentLoop] agent_finish event published")
+
+        # Cleanup tasks that may be slow — run after agent_finish so they don't delay the UI.
+        # Get model context window for smart compression trigger
+        model_context_window = 0
+        if hasattr(self.agent_loop.compressor.sessions.db, 'get_model_context_window'):
+            model_context_window = self.agent_loop.compressor.sessions.db.get_model_context_window()
+        await self.agent_loop.compressor.maybe_compress(
+            session, prompt_tokens=last_prompt_tokens, model_context_window=model_context_window
+        )
+
+        if self.agent_loop.memory_manager:
+            await self.agent_loop.memory_manager.sync_turn(
+                user_msg=msg.content,
+                assistant_msg=final_content or "",
+                session_instance_id=session_instance_id,
+            )
+
+        logger.info(f"[AgentLoop] Sending final response with {len(final_content)} chars")
+        await self.agent_loop._send_stream_chunks(final_content, current_session, msg.channel, session_instance_id)
+
+        if session_instance_id and final_content is not None:
+            try:
+                self.agent_loop.sessions.update_last_message_metadata(
+                    session_instance_id,
+                    {
+                        "elapsed_ms": elapsed_ms,
+                        "usage": {
+                            "prompt_tokens": total_prompt_tokens,
+                            "completion_tokens": total_completion_tokens,
+                            "total_tokens": total_prompt_tokens + total_completion_tokens,
+                            "cached_tokens": total_cached_tokens
+                        }
+                    }
+                )
+            except Exception as update_err:
+                logger.warning(f"Failed to update message metadata with elapsed_ms: {update_err}")
 
         return OutboundMessage(
             channel=msg.channel,

@@ -1534,15 +1534,17 @@
 }
 
 /* Inline Code */
+.message-bubble-content .md-inline-code,
 .md-inline-code {
-  background: rgba(0, 0, 0, 0.05);
-  color: #c92a2a;
-  padding: 1px 4px;
-  border-radius: 3px;
-  font-size: 12px;
-  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  word-break: break-word;
+  display: inline !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #c92a2a !important;
+  padding: 1px 4px !important;
+  border-radius: 3px !important;
+  font-size: 12px !important;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  word-break: break-word !important;
 }
 
 /* Code Block */

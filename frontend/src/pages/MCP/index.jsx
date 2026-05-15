@@ -274,13 +274,11 @@ const MCP_TABS = [
         serverData = {
           name: serverName,
           protocol: serverConfig.protocol || detectServerType(serverConfig),
-          config: {
-            command: serverConfig.command,
-            args: serverConfig.args,
-            env: serverConfig.env,
-            url: serverConfig.url,
-            headers: serverConfig.headers
-          }
+          command: serverConfig.command,
+          args: serverConfig.args,
+          env: serverConfig.env,
+          url: serverConfig.url,
+          headers: serverConfig.headers
         };
       } catch (err) {
         setError('Invalid JSON: ' + err.message);
@@ -294,11 +292,9 @@ const MCP_TABS = [
       serverData = {
         name: newServer.name,
         protocol: 'stdio',
-        config: {
-          command: newServer.command,
-          args: parseArgs(newServer.args),
-          env: parseEnv(newServer.env)
-        }
+        command: newServer.command,
+        args: parseArgs(newServer.args),
+        env: parseEnv(newServer.env)
       };
     }
 

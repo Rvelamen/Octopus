@@ -33,7 +33,8 @@ export function useMessageRenderer() {
                 if (['pre', 'div', 'table', 'ul', 'ol', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) {
                   return true;
                 }
-                if (tag === 'code' && child.props?.inline === false) {
+                // react-markdown v9: 代码块的 code 有 className，行内代码没有
+                if (tag === 'code' && child.props?.className) {
                   return true;
                 }
               }
@@ -44,8 +45,12 @@ export function useMessageRenderer() {
             }
             return <p>{children}</p>;
           },
-          code({ inline, className, children, ...props }) {
-            if (inline) {
+          code({ className, children, ...props }) {
+            // react-markdown v9: 行内代码没有 className，代码块有 className (如 "language-js")
+            // 行内代码直接由 code 组件渲染，代码块由 pre > code 渲染
+            const isInlineCode = !className;
+            
+            if (isInlineCode) {
               const inlineText = String(children).trim();
               if (looksLikeWorkspaceFilePath(inlineText)) {
                 return (
@@ -65,31 +70,41 @@ export function useMessageRenderer() {
                 </code>
               );
             }
-            const text = String(children).replace(/\n$/, '').trim();
-            if (looksLikeWorkspaceFilePath(text)) {
-              return (
-                <button
-                  type="button"
-                  className="md-code-block md-workspace-path-btn"
-                  onClick={() => setWorkspacePreviewPath(text)}
-                  title="点击预览工作区文件"
-                >
-                  <pre {...props}>
-                    <code className={className}>{children}</code>
-                  </pre>
-                </button>
-              );
-            }
+            
+            // 代码块 - 由 pre 组件处理，这里只返回 code 内容
             return (
-              <div className="md-code-block">
-                <pre {...props}>
-                  <code className={className}>{children}</code>
-                </pre>
-              </div>
+              <code className={className} {...props}>
+                {children}
+              </code>
             );
           },
           pre({ children }) {
-            return <>{children}</>;
+            // 代码块 (```) - 包裹在 md-code-block div 中
+            const childArray = React.Children.toArray(children);
+            const codeChild = childArray.find(child => child?.type === 'code');
+            
+            if (codeChild) {
+              const text = String(codeChild.props.children).replace(/\n$/, '').trim();
+              if (looksLikeWorkspaceFilePath(text)) {
+                return (
+                  <button
+                    type="button"
+                    className="md-code-block md-workspace-path-btn"
+                    onClick={() => setWorkspacePreviewPath(text)}
+                    title="点击预览工作区文件"
+                  >
+                    <pre>{children}</pre>
+                  </button>
+                );
+              }
+              return (
+                <div className="md-code-block">
+                  <pre>{children}</pre>
+                </div>
+              );
+            }
+            
+            return <pre>{children}</pre>;
           },
           table({ children }) {
             return (

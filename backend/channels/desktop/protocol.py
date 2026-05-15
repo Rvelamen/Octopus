@@ -66,9 +66,32 @@ class MessageType(Enum):
     KNOWLEDGE_IMPORT = "knowledge_import"                   # Import knowledge base from zip
     KNOWLEDGE_GET_DOCUMENT_META = "knowledge_get_document_meta"  # Get metadata for documents by sha256
     KNOWLEDGE_LIST_VAULTS = "knowledge_list_vaults"  # List all vaults
+    KNOWLEDGE_UPDATE_REFERENCES = "knowledge_update_references"  # Update references after file move
 
     # File Preview - Client -> Server
     FILE_PREVIEW_PDF = "file_preview_pdf"                   # Convert file to PDF for preview
+
+    # Workflow - Client -> Server
+    WORKFLOW_LIST = "workflow_list"
+    WORKFLOW_GET = "workflow_get"
+    WORKFLOW_SAVE = "workflow_save"
+    WORKFLOW_PUBLISH = "workflow_publish"
+    WORKFLOW_DELETE = "workflow_delete"
+    WORKFLOW_DEFINITION_GET = "workflow_definition_get"
+    WORKFLOW_DEFINITION_SAVE = "workflow_definition_save"
+    WORKFLOW_RUN = "workflow_run"
+    WORKFLOW_RUN_STATUS = "workflow_run_status"
+    WORKFLOW_RUN_CANCEL = "workflow_run_cancel"
+    WORKFLOW_RUN_LIST = "workflow_run_list"
+    WORKFLOW_RUN_DETAIL = "workflow_run_detail"
+    WORKFLOW_APPROVE = "workflow_approve"
+    WORKFLOW_GET_MODELS = "workflow_get_models"
+    WORKFLOW_GET_TOOLS = "workflow_get_tools"
+    WORKFLOW_GET_SUBAGENTS = "workflow_get_subagents"
+    WORKFLOW_GET_VARIABLES = "workflow_get_variables"
+    WORKFLOW_GET_NODE_REGISTRY = "workflow_get_node_registry"
+    WORKFLOW_VERSION_CREATE = "workflow_version_create"
+    WORKFLOW_VERSION_LIST = "workflow_version_list"
 
     # Memory Stream - Client -> Server
     MEMORY_LIST = "memory_list"                          # List observations
@@ -203,6 +226,7 @@ class MessageType(Enum):
     KNOWLEDGE_IMPORT_RESULT = "knowledge_import_result"      # Import success/failure
     KNOWLEDGE_GET_DOCUMENT_META_RESULT = "knowledge_get_document_meta_result"  # Document metadata result
     KNOWLEDGE_LIST_VAULTS_RESULT = "knowledge_list_vaults_result"  # Vault list result
+    KNOWLEDGE_UPDATE_REFERENCES_RESULT = "knowledge_update_references_result"  # Reference update result
 
     # File Preview - Server -> Client
     FILE_PREVIEW_PDF_RESULT = "file_preview_pdf_result"    # PDF conversion result
@@ -286,6 +310,8 @@ class MessageType(Enum):
     MODEL_UPDATE = "model_update"                           # Update model
     MODEL_DELETE = "model_delete"                           # Delete model
     MODEL_SET_DEFAULT = "model_set_default"                 # Set default model
+    MODEL_GET_PROVIDERS = "model_get_providers"             # Get all enabled providers for workflow
+    MODEL_GET_MODELS = "model_get_models"                   # Get enabled models by provider for workflow
 
     # Settings - Client -> Server
     SETTINGS_GET = "settings_get"                           # Get settings
@@ -304,6 +330,8 @@ class MessageType(Enum):
     MODEL_ADDED = "model_added"                             # Model added confirmation
     MODEL_UPDATED = "model_updated"                         # Model updated confirmation
     MODEL_DELETED = "model_deleted"                         # Model deleted confirmation
+    MODEL_PROVIDERS_LIST = "model_providers_list"           # Providers list for workflow
+    MODEL_MODELS_LIST = "model_models_list"                 # Models list for workflow
 
     # Settings - Server -> Client
     SETTINGS = "settings"                                   # Settings data
@@ -514,6 +542,8 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.MODEL_UPDATE,
     MessageType.MODEL_DELETE,
     MessageType.MODEL_SET_DEFAULT,
+    MessageType.MODEL_GET_PROVIDERS,
+    MessageType.MODEL_GET_MODELS,
     # Settings
     MessageType.SETTINGS_GET,
     MessageType.SETTINGS_SET,
@@ -661,6 +691,9 @@ SERVER_MESSAGE_TYPES = {
     # Token Usage
     MessageType.TOKEN_USAGE,
     MessageType.TOKEN_USAGE_UPDATE,
+    # Model workflow
+    MessageType.MODEL_PROVIDERS_LIST,
+    MessageType.MODEL_MODELS_LIST,
     # Subagent Options
     MessageType.SUBAGENT_AVAILABLE_TOOLS,
     MessageType.SUBAGENT_AVAILABLE_EXTENSIONS,
@@ -696,6 +729,7 @@ SERVER_MESSAGE_TYPES = {
     MessageType.KNOWLEDGE_IMPORT_RESULT,
     MessageType.KNOWLEDGE_GET_DOCUMENT_META_RESULT,
     MessageType.KNOWLEDGE_LIST_VAULTS_RESULT,
+    MessageType.KNOWLEDGE_UPDATE_REFERENCES_RESULT,
     MessageType.FILE_PREVIEW_PDF_RESULT,
     MessageType.MEMORY_LIST_RESULT,
     MessageType.MEMORY_SEARCH_RESULT,

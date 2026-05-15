@@ -46,6 +46,8 @@ export default function KnowledgePanel({ sendWSMessage }) {
   const [importingFile, setImportingFile] = useState(null); // { file, vault } to import
   const [createVaultModalVisible, setCreateVaultModalVisible] = useState(false);
 
+  const [batchDistillPaths, setBatchDistillPaths] = useState([]);
+
   // 预览抽屉状态
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
@@ -302,11 +304,13 @@ export default function KnowledgePanel({ sendWSMessage }) {
     async (dirPath) => {
       Modal.confirm({
         title: 'New File',
+        centered: true,
         content: (
           <input
             id="new-file-input"
             placeholder="File name"
             defaultValue="untitled.md"
+            ref={(el) => el && el.focus()}
             style={{
               width: '100%',
               padding: '8px 12px',
@@ -316,7 +320,6 @@ export default function KnowledgePanel({ sendWSMessage }) {
               color: 'var(--text)',
               fontSize: 14,
             }}
-            autoFocus
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -355,11 +358,13 @@ export default function KnowledgePanel({ sendWSMessage }) {
     async (dirPath) => {
       Modal.confirm({
         title: 'New Folder',
+        centered: true,
         content: (
           <input
             id="new-folder-input"
             placeholder="Folder name"
             defaultValue="New Folder"
+            ref={(el) => el && el.focus()}
             style={{
               width: '100%',
               padding: '8px 12px',
@@ -369,7 +374,6 @@ export default function KnowledgePanel({ sendWSMessage }) {
               color: 'var(--text)',
               fontSize: 14,
             }}
-            autoFocus
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -407,11 +411,13 @@ export default function KnowledgePanel({ sendWSMessage }) {
     async (item) => {
       Modal.confirm({
         title: 'Rename',
+        centered: true,
         content: (
           <input
             id="rename-input"
             placeholder="New name"
             defaultValue={item.name}
+            ref={(el) => el && el.focus()}
             style={{
               width: '100%',
               padding: '8px 12px',
@@ -421,7 +427,6 @@ export default function KnowledgePanel({ sendWSMessage }) {
               color: 'var(--text)',
               fontSize: 14,
             }}
-            autoFocus
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -486,6 +491,22 @@ export default function KnowledgePanel({ sendWSMessage }) {
     [sendWSMessage, loadDirectory, currentFile]
   );
 
+  const updateReferences = useCallback(
+    async (oldPath, newPath) => {
+      try {
+        const response = await sendWSMessage('knowledge_update_references', { old_path: oldPath, new_path: newPath });
+        const count = response.data?.updated_count || 0;
+        if (count > 0) {
+          message.success(`Updated references in ${count} note${count > 1 ? 's' : ''}`);
+        }
+        return count;
+      } catch {
+        // non-critical - don't block the user if reference update fails
+      }
+    },
+    [sendWSMessage]
+  );
+
   // 移动文件/文件夹
   const handleMove = useCallback(
     async (sourcePath, targetDirPath) => {
@@ -512,6 +533,9 @@ export default function KnowledgePanel({ sendWSMessage }) {
         await loadDirectory(sourceDir);
         await loadDirectory(targetDirPath);
         
+        // 更新所有笔记中的引用路径
+        updateReferences(sourcePath, targetPath);
+        
         // 如果移动的是当前打开的文件，更新路径
         if (currentFile?.path === sourcePath) {
           setCurrentFile(prev => prev ? { ...prev, path: targetPath } : null);
@@ -522,6 +546,58 @@ export default function KnowledgePanel({ sendWSMessage }) {
     },
     [sendWSMessage, loadDirectory, currentFile, treeItems]
   );
+
+  const handleBatchMove = useCallback(
+    async (sourcePaths, targetDirPath) => {
+      try {
+        const targetDirItems = treeItems[targetDirPath] || [];
+        for (const sourcePath of sourcePaths) {
+          const fileName = sourcePath.split('/').pop();
+          const targetPath = `${targetDirPath}/${fileName}`;
+          const exists = targetDirItems.some(item => item.name === fileName);
+          if (exists) {
+            message.error(`A file or folder named "${fileName}" already exists in the target directory. Skipped.`);
+            continue;
+          }
+          await sendWSMessage('workspace_rename', {
+            old_path: sourcePath,
+            new_path: targetPath,
+          });
+          targetDirItems.push({ name: fileName, path: targetPath });
+          updateReferences(sourcePath, targetPath);
+        }
+        message.success(`Moved ${sourcePaths.length} items to: ${targetDirPath}`);
+        await loadDirectory(targetDirPath);
+        const dirsToRefresh = new Set();
+        sourcePaths.forEach(p => {
+          const sd = p.substring(0, p.lastIndexOf('/'));
+          if (sd !== targetDirPath) dirsToRefresh.add(sd);
+        });
+        for (const d of dirsToRefresh) {
+          await loadDirectory(d);
+        }
+      } catch (err) {
+        message.error('Failed to move: ' + (err.message || String(err)));
+      }
+    },
+    [sendWSMessage, loadDirectory, treeItems]
+  );
+
+  const handleBatchDistill = useCallback((sourcePaths) => {
+    if (!sourcePaths || sourcePaths.length === 0) return;
+    const distillable = sourcePaths.filter(p => {
+      if (p.endsWith('/')) return false;
+      const ext = p.split('.').pop()?.toLowerCase() || '';
+      return ALLOWED_DISTILL_EXTENSIONS.includes(ext);
+    });
+    if (distillable.length === 0) {
+      message.warning('No distillable files selected');
+      return;
+    }
+    setSelectedDocItem({ path: distillable[0], name: distillable[0].split('/').pop() });
+    setBatchDistillPaths(distillable);
+    setDistillDialogVisible(true);
+  }, []);
 
   const handleDocNavigate = useCallback((path) => {
     setCurrentDocPath(path);
@@ -757,22 +833,30 @@ export default function KnowledgePanel({ sendWSMessage }) {
     [uploadFile]
   );
 
-  const handleStartDistill = async ({ prompt, template, taskId, targetPath, vault = 'default' }) => {
-    const source = effectiveSelectedPath;
-    if (!source) return '';
+  const handleStartDistill = async ({ prompt, template, taskId, targetPath, vault = 'default', sources }) => {
+    const sourcePaths = sources && sources.length > 0 ? sources : (effectiveSelectedPath ? [effectiveSelectedPath] : []);
+    if (sourcePaths.length === 0) return '';
     try {
-      const response = await sendWSMessage('knowledge_distill', {
-        source_path: source,
-        options: {
-          prompt,
-          template,
-          task_id: taskId,
-        },
-        target_path: targetPath,
-        vault,
-      });
+      const results = [];
+      for (const sourcePath of sourcePaths) {
+        const sourceName = sourcePath.split('/').pop();
+        const safe = sourceName.replace(/[^\w\u4e00-\u9fa5\-]+/g, '_').slice(0, 60) || 'untitled';
+        const timestamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+        const fileTargetPath = `${targetPath}/${timestamp}_${safe}.md`;
+        const response = await sendWSMessage('knowledge_distill', {
+          source_path: sourcePath,
+          options: {
+            prompt,
+            template,
+            task_id: taskId,
+          },
+          target_path: fileTargetPath,
+          vault,
+        });
+        results.push(response.data || {});
+      }
       await loadDistillTasks(0);
-      return response.data || {};
+      return results.length === 1 ? results[0] : { batch: true, count: results.length };
     } catch (err) {
       message.error('Failed to start distillation: ' + (err.message || String(err)));
       throw err;
@@ -1036,6 +1120,8 @@ export default function KnowledgePanel({ sendWSMessage }) {
               onDeleteFile={handleDelete}
               treeItems={treeItems}
               docMetas={docMetas}
+              onBatchMove={handleBatchMove}
+              onBatchDistill={handleBatchDistill}
             />
           </div>
         ) : activeTab === 'graph' ? (
@@ -1298,12 +1384,18 @@ export default function KnowledgePanel({ sendWSMessage }) {
       <DistillDialog
         visible={distillDialogVisible}
         sourceFile={effectiveSelectedPath || ''}
+        sourceFiles={batchDistillPaths.length > 0 ? batchDistillPaths : undefined}
         sourceTitle={
-          activeTab === 'documents'
-            ? (docMetas[selectedDocItem?.sha256]?.title || selectedDocItem?.name || '')
-            : (currentFile?.name || '')
+          batchDistillPaths.length > 1
+            ? `${batchDistillPaths.length} files`
+            : activeTab === 'documents'
+              ? (docMetas[selectedDocItem?.sha256]?.title || selectedDocItem?.name || '')
+              : (currentFile?.name || '')
         }
-        onCancel={() => setDistillDialogVisible(false)}
+        onCancel={() => {
+          setDistillDialogVisible(false);
+          setBatchDistillPaths([]);
+        }}
         onStartDistill={handleStartDistill}
         sendWSMessage={sendWSMessage}
         vaults={vaults}

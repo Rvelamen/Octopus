@@ -25,6 +25,7 @@ import {
   PanelRight,
   BookOpen,
   Brain,
+  GitBranch,
 } from "lucide-react";
 import octopusLogo from "./assets/octopus-logo.png";
 import WindowDots from "./components/layout/WindowDots";
@@ -40,6 +41,7 @@ import Cron from "./pages/Cron";
 import Agents from "./pages/Agents";
 import Tokens from "./pages/Tokens";
 import Knowledge from "./pages/Knowledge";
+import Workflow from "./pages/Workflow";
 import { useWebSocket } from "./contexts/WebSocketContext";
 import { useChatState } from "./hooks/useChatState";
 
@@ -54,6 +56,7 @@ const APP_TITLE_BY_TAB = {
   history: "HISTORY",
   memory: "MEMORY_STREAM",
   tokens: "TOKENS",
+  workflows: "WORKFLOWS",
 };
 
 /**
@@ -296,6 +299,7 @@ function App() {
       '/memory': 'memory',
       '/tokens': 'tokens',
       '/knowledge': 'knowledge',
+      '/workflows': 'workflows',
     };
     setActiveTab(tabMap[path] || 'chat');
   }, [location.pathname]);
@@ -315,6 +319,7 @@ function App() {
       memory: '/memory',
       tokens: '/tokens',
       knowledge: '/knowledge',
+      workflows: '/workflows',
     };
     navigate(routeMap[tab] || '/chat');
   };
@@ -460,6 +465,7 @@ function App() {
                 { key: 'agents', icon: Users, label: 'AGENTS' },
                 { key: 'workspaces', icon: FolderOpen, label: 'WORKSPACE' },
                 { key: 'knowledge', icon: BookOpen, label: 'KNOWLEDGE' },
+                { key: 'workflows', icon: GitBranch, label: 'WORKFLOWS' },
                 { key: 'history', icon: HistoryIcon, label: 'HISTORY' },
                 { key: 'memory', icon: Brain, label: 'MEMORY' },
                 { key: 'tokens', icon: Zap, label: 'TOKENS' },
@@ -531,6 +537,7 @@ function App() {
               <Route path="/agents" element={<Agents sendWSMessage={sendMessage} />} />
               <Route path="/tokens" element={<Tokens sendWSMessage={sendMessage} />} />
               <Route path="/knowledge" element={<Knowledge sendWSMessage={sendMessage} />} />
+              <Route path="/workflows" element={<Workflow sendWSMessage={sendMessage} />} />
               <Route path="/" element={
                 <Chat
                   sendWSMessage={sendMessage}

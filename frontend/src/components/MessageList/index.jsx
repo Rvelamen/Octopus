@@ -293,12 +293,13 @@ function MessageList({
         tc.status !== 'completed' &&
         tc.status !== 'error'
     );
-    const agentRunInProgress =
-      isProcessing && selectedInstance?.id === currentChatInstanceId;
     const streamingThisTurn =
       !!streamingContent && selectedInstance?.id === currentChatInstanceId;
-    const isThoughtRunning =
-      anyToolInFlight || agentRunInProgress || streamingThisTurn;
+    // 状态判断优化：不再强依赖 isProcessing，而是直接看是否有真正在进行的工具或流式输出。
+    // isProcessing 由 agent_finish 事件控制，但后端发送该事件前可能有一些收尾工作，
+    // 导致前端延迟收到。通过以 anyToolInFlight / streamingThisTurn 为主要判断依据，
+    // 可以在核心工作完成后立即将 liveThought 标记为 completed。
+    const isThoughtRunning = anyToolInFlight || streamingThisTurn;
     return {
       segments,
       status: isThoughtRunning ? 'active' : 'completed',

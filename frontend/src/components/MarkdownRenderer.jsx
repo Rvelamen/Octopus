@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { uriTransformer } from 'react-markdown/lib/uri-transformer';
+import { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Copy, Check } from 'lucide-react';
 
@@ -301,9 +301,9 @@ export default function MarkdownRenderer({ content, sendWSMessage }) {
       <div ref={previewRef} style={{ flex: 1, padding: '0 16px 16px' }}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
-          transformLinkUri={(href) => {
-            if (href.startsWith('wiki://')) return href;
-            return uriTransformer(href);
+          urlTransform={(url, key) => {
+            if (url.startsWith('wiki://')) return url;
+            return defaultUrlTransform(url);
           }}
           components={{
             a: (props) => {

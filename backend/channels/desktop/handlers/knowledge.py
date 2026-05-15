@@ -1061,3 +1061,71 @@ class KnowledgeGetDocumentMetaHandler(_KnowledgeHandlerMixin, MessageHandler):
             await self._send_error(websocket, message.request_id, f"Failed to get document metadata: {e}")
 
 
+class KnowledgeUpdateReferencesHandler(_KnowledgeHandlerMixin, MessageHandler):
+    """Scan all notes and update file-path references after a file is moved/renamed."""
+
+    def __init__(self, bus, engine: KnowledgeGraphEngine):
+        super().__init__(bus)
+        self.engine = engine
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        try:
+            old_path = message.data.get("old_path", "")
+            new_path = message.data.get("new_path", "")
+
+            if not old_path or not new_path:
+                await self._send_error(websocket, message.request_id, "Both old_path and new_path are required")
+                return
+
+            notes_dir = self.engine._resolve_path("knowledge/notes")
+            updated_count = 0
+            updated_paths = []
+
+            if notes_dir.exists():
+                for md_file in notes_dir.rglob("*.md"):
+                    try:
+                        content = md_file.read_text(encoding="utf-8")
+                    except Exception:
+                        continue
+
+                    if old_path not in content:
+                        continue
+
+                    new_content = content.replace(old_path, new_path)
+                    if new_content == content:
+                        continue
+
+                    try:
+                        md_file.write_text(new_content, encoding="utf-8")
+                    except Exception:
+                        logger.error(f"Failed to write updated content to {md_file}")
+                        continue
+
+                    try:
+                        rel_path = str(md_file.relative_to(self.engine.workspace_root))
+                    except ValueError:
+                        rel_path = str(md_file)
+
+                    try:
+                        self.engine.update_note(rel_path)
+                    except Exception as e:
+                        logger.warning(f"Failed to re-index note {rel_path} after reference update: {e}")
+
+                    updated_count += 1
+                    updated_paths.append(rel_path)
+
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.KNOWLEDGE_UPDATE_REFERENCES_RESULT,
+                request_id=message.request_id,
+                data={
+                    "updated_count": updated_count,
+                    "updated_paths": updated_paths,
+                    "old_path": old_path,
+                    "new_path": new_path,
+                    "success": True,
+                }
+            ))
+        except Exception as e:
+            logger.error(f"Failed to update references: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to update references: {e}")
+

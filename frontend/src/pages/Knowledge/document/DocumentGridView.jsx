@@ -14,6 +14,9 @@ import {
   Folder,
   ChevronDown,
   ChevronUp,
+  CheckSquare,
+  Square,
+  Sparkles,
 } from 'lucide-react';
 import { message } from 'antd';
 import GridItem from './GridItem';
@@ -88,7 +91,7 @@ function BreadcrumbNav({ currentPath, rootPath, onNavigate }) {
   );
 }
 
-function ContextMenu({ x, y, item, onClose, onNewFolder, onNewFile, onUpload, onRename, onDelete, onMove }) {
+function ContextMenu({ x, y, item, selectedCount, onClose, onNewFolder, onNewFile, onUpload, onRename, onDelete, onMove, onBatchMove, onBatchDistill }) {
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -115,6 +118,8 @@ function ContextMenu({ x, y, item, onClose, onNewFolder, onNewFile, onUpload, on
     }
   }, [x, y]);
 
+  const hasMulti = selectedCount > 1;
+
   return (
     <div
       ref={menuRef}
@@ -132,7 +137,7 @@ function ContextMenu({ x, y, item, onClose, onNewFolder, onNewFile, onUpload, on
         fontSize: 12,
       }}
     >
-      {!item && (
+      {!item && !hasMulti && (
         <>
           <MenuItem onClick={() => { onNewFolder(); onClose(); }}>
             <FolderPlus size={14} />
@@ -149,7 +154,30 @@ function ContextMenu({ x, y, item, onClose, onNewFolder, onNewFile, onUpload, on
           <div style={{ height: 1, margin: '4px 6px', background: 'var(--border)' }} />
         </>
       )}
-      {item && (
+      {hasMulti && (
+        <>
+          <MenuItem onClick={() => { onBatchMove(); onClose(); }}>
+            <Move size={14} />
+            <span>Move {selectedCount} items...</span>
+          </MenuItem>
+          {onBatchDistill && (
+            <MenuItem onClick={() => { onBatchDistill(); onClose(); }}>
+              <Sparkles size={14} />
+              <span>Distill {selectedCount} items</span>
+            </MenuItem>
+          )}
+          <MenuItem onClick={() => { onDelete(item); onClose(); }} danger>
+            <Trash2 size={14} />
+            <span>Delete {selectedCount} items</span>
+          </MenuItem>
+          <div style={{ height: 1, margin: '4px 6px', background: 'var(--border)' }} />
+          <MenuItem onClick={onClose}>
+            <X size={14} />
+            <span>Clear selection</span>
+          </MenuItem>
+        </>
+      )}
+      {item && !hasMulti && (
         <>
           <MenuItem onClick={() => { onMove(item); onClose(); }}>
             <Move size={14} />
@@ -381,6 +409,8 @@ export default function DocumentGridView({
   onDeleteFile,
   treeItems,
   docMetas,
+  onBatchMove,
+  onBatchDistill,
 }) {
   const [viewMode, setViewMode] = useState('grid');
   const [containerWidth, setContainerWidth] = useState(800);
@@ -389,7 +419,70 @@ export default function DocumentGridView({
   const [renameValue, setRenameValue] = useState('');
   const [dragOverItem, setDragOverItem] = useState(null);
   const [moveDialogItem, setMoveDialogItem] = useState(null);
+  const [batchMoveDialogOpen, setBatchMoveDialogOpen] = useState(false);
   const renameInputRef = useRef(null);
+
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const lastClickedIndexRef = useRef(-1);
+
+  const sortedItems = [...items].sort((a, b) => {
+    if (a.is_directory !== b.is_directory) {
+      return a.is_directory ? -1 : 1;
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  const clearSelection = useCallback(() => {
+    setSelectedItems(new Set());
+  }, []);
+
+  const handleItemSelect = useCallback((item, e) => {
+    if (!item || item.is_directory) return;
+
+    const isCtrl = e?.ctrlKey || e?.metaKey;
+    const isShift = e?.shiftKey;
+
+    if (isCtrl) {
+      setSelectedItems(prev => {
+        const next = new Set(prev);
+        if (next.has(item.path)) {
+          next.delete(item.path);
+        } else {
+          next.add(item.path);
+        }
+        return next;
+      });
+      if (onSelect) onSelect(item);
+      return;
+    }
+
+    if (isShift && lastClickedIndexRef.current >= 0) {
+      setSelectedItems(prev => {
+        const next = new Set(prev);
+        const currentIdx = sortedItems.indexOf(item);
+        if (currentIdx < 0) return next;
+
+        const start = Math.min(lastClickedIndexRef.current, currentIdx);
+        const end = Math.max(lastClickedIndexRef.current, currentIdx);
+        for (let i = start; i <= end; i++) {
+          if (!sortedItems[i].is_directory) {
+            next.add(sortedItems[i].path);
+          }
+        }
+        return next;
+      });
+      if (onSelect) onSelect(item);
+      return;
+    }
+
+    setSelectedItems(new Set());
+    lastClickedIndexRef.current = sortedItems.indexOf(item);
+    if (onSelect) onSelect(item);
+  }, [onSelect, sortedItems]);
+
+  const isItemSelected = useCallback((path) => {
+    return selectedItems.has(path) || selectedItem?.path === path;
+  }, [selectedItems, selectedItem]);
 
   const handleResize = useCallback((entries) => {
     for (const entry of entries) {
@@ -432,11 +525,13 @@ export default function DocumentGridView({
       if (item.is_directory) {
         onNavigate(item.path);
         loadDirectory(item.path);
+        clearSelection();
       } else {
+        clearSelection();
         if (onFileOpen) onFileOpen(item);
       }
     },
-    [onNavigate, loadDirectory, onFileOpen]
+    [onNavigate, loadDirectory, onFileOpen, clearSelection]
   );
 
   const handleContextMenu = useCallback((e, item) => {
@@ -444,13 +539,6 @@ export default function DocumentGridView({
     e.stopPropagation();
     setContextMenu({ x: e.clientX, y: e.clientY, item: item || null });
   }, []);
-
-  const sortedItems = [...items].sort((a, b) => {
-    if (a.is_directory !== b.is_directory) {
-      return a.is_directory ? -1 : 1;
-    }
-    return a.name.localeCompare(b.name);
-  });
 
   const handleRenameSubmit = useCallback(async () => {
     if (!renamingItem || !renameValue.trim()) return;
@@ -465,7 +553,6 @@ export default function DocumentGridView({
   }, [renamingItem, renameValue, onRenameFile, loadDirectory, currentPath]);
 
   const handleDragStart = useCallback((e, item) => {
-    // 拖拽开始
   }, []);
 
   const handleDragEnd = useCallback((e, item) => {
@@ -490,11 +577,8 @@ export default function DocumentGridView({
       if (sourceItem.path === targetItem.path) return;
       if (sourceItem.path.startsWith(targetItem.path + '/')) return;
 
-      const fileName = sourceItem.path.split('/').pop();
-      const newPath = `${targetItem.path}/${fileName}`;
-
       if (onRenameFile) {
-        await onRenameFile({ path: sourceItem.path }, fileName, targetItem.path);
+        await onRenameFile({ path: sourceItem.path }, targetItem.path.split('/').pop() || sourceItem.name, targetItem.path);
         loadDirectory(currentPath);
         message.success(`Moved to ${targetItem.name}`);
       }
@@ -503,14 +587,13 @@ export default function DocumentGridView({
     }
   }, [onRenameFile, loadDirectory, currentPath]);
 
-  const handleMove = useCallback(async (targetPath) => {
+  const handleSingleMove = useCallback(async (targetPath) => {
     if (!moveDialogItem || targetPath === currentPath) {
       setMoveDialogItem(null);
       return;
     }
-    const fileName = moveDialogItem.path.split('/').pop();
     try {
-      await onRenameFile({ path: moveDialogItem.path }, fileName, targetPath);
+      await onRenameFile({ path: moveDialogItem.path }, moveDialogItem.path.split('/').pop(), targetPath);
       await loadDirectory(currentPath);
       message.success(`Moved to ${targetPath.split('/').pop() || 'Root'}`);
       setMoveDialogItem(null);
@@ -520,6 +603,26 @@ export default function DocumentGridView({
     }
   }, [moveDialogItem, currentPath, onRenameFile, loadDirectory]);
 
+  const handleBatchMoveConfirm = useCallback(async (targetPath) => {
+    if (targetPath === currentPath || selectedItems.size === 0) {
+      setBatchMoveDialogOpen(false);
+      return;
+    }
+    const paths = [...selectedItems];
+    try {
+      if (onBatchMove) {
+        await onBatchMove(paths, targetPath);
+      }
+      setSelectedItems(new Set());
+      setBatchMoveDialogOpen(false);
+      await loadDirectory(currentPath);
+    } catch (err) {
+      message.error('Failed to move: ' + (err.message || String(err)));
+    }
+  }, [selectedItems, currentPath, onBatchMove, loadDirectory]);
+
+  const selectedCount = selectedItems.size;
+
   return (
     <div
       style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}
@@ -528,7 +631,85 @@ export default function DocumentGridView({
       <BreadcrumbNav currentPath={currentPath} rootPath={rootPath} onNavigate={(path) => {
         onNavigate(path);
         loadDirectory(path);
+        clearSelection();
       }} />
+
+      {selectedCount > 1 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '6px 14px',
+            background: 'var(--accent-soft)',
+            borderBottom: '1px solid var(--accent)',
+            fontSize: 12,
+            flexShrink: 0,
+          }}
+        >
+          <CheckSquare size={14} style={{ color: 'var(--accent)' }} />
+          <span style={{ fontWeight: 600, color: 'var(--accent)' }}>
+            {selectedCount} items selected
+          </span>
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={() => setBatchMoveDialogOpen(true)}
+            style={{
+              padding: '3px 10px',
+              borderRadius: 4,
+              border: '1px solid var(--accent)',
+              background: 'transparent',
+              color: 'var(--accent)',
+              cursor: 'pointer',
+              fontSize: 11,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <Move size={12} /> Move
+          </button>
+          {onBatchDistill && (
+            <button
+              onClick={() => {
+                onBatchDistill([...selectedItems]);
+                clearSelection();
+              }}
+              style={{
+                padding: '3px 10px',
+                borderRadius: 4,
+                border: '1px solid var(--accent)',
+                background: 'var(--accent)',
+                color: 'var(--text-invert)',
+                cursor: 'pointer',
+                fontSize: 11,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              <Sparkles size={12} /> Distill
+            </button>
+          )}
+          <button
+            onClick={clearSelection}
+            style={{
+              padding: '3px 10px',
+              borderRadius: 4,
+              border: '1px solid var(--border)',
+              background: 'transparent',
+              color: 'var(--text-2)',
+              cursor: 'pointer',
+              fontSize: 11,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <X size={12} /> Clear
+          </button>
+        </div>
+      )}
 
       <div
         id="doc-grid-container"
@@ -556,7 +737,7 @@ export default function DocumentGridView({
             <span>Empty folder</span>
             <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
               <button
-                onClick={() => onCreateFolder && onCreateFolder()}
+                onClick={() => onCreateFolder && onCreateFolder(currentPath)}
                 style={{
                   padding: '6px 14px',
                   borderRadius: 6,
@@ -573,7 +754,7 @@ export default function DocumentGridView({
                 <FolderPlus size={13} /> New Folder
               </button>
               <button
-                onClick={() => onCreateFile && onCreateFile()}
+                onClick={() => onCreateFile && onCreateFile(currentPath)}
                 style={{
                   padding: '6px 14px',
                   borderRadius: 6,
@@ -590,7 +771,7 @@ export default function DocumentGridView({
                 <FilePlus size={13} /> New File
               </button>
               <button
-                onClick={() => onUploadFile && onUploadFile()}
+                onClick={() => onUploadFile && onUploadFile(currentPath)}
                 style={{
                   padding: '6px 14px',
                   borderRadius: 6,
@@ -622,8 +803,8 @@ export default function DocumentGridView({
                 key={item.path}
                 item={item}
                 index={idx}
-                isSelected={selectedItem?.path === item.path}
-                onSelect={onSelect}
+                isSelected={isItemSelected(item.path)}
+                onSelect={handleItemSelect}
                 onDoubleClick={handleDoubleClick}
                 onContextMenu={handleContextMenu}
                 renaming={renamingItem?.path === item.path}
@@ -650,7 +831,7 @@ export default function DocumentGridView({
               <div
                 key={item.path}
                 onContextMenu={(e) => handleContextMenu(e, item)}
-                onClick={() => onSelect(item)}
+                onClick={(e) => handleItemSelect(item, e)}
                 onDoubleClick={() => handleDoubleClick(item)}
                 style={{
                   display: 'flex',
@@ -659,8 +840,8 @@ export default function DocumentGridView({
                   padding: '7px 12px',
                   borderRadius: 6,
                   cursor: 'pointer',
-                  background: selectedItem?.path === item.path ? 'var(--accent-soft)' : 'transparent',
-                  border: selectedItem?.path === item.path ? '1.5px solid var(--accent)' : '1.5px solid transparent',
+                  background: isItemSelected(item.path) ? 'var(--accent-soft)' : 'transparent',
+                  border: isItemSelected(item.path) ? '1.5px solid var(--accent)' : '1.5px solid transparent',
                   transition: 'all 0.12s ease',
                 }}
               >
@@ -707,16 +888,34 @@ export default function DocumentGridView({
           x={contextMenu.x}
           y={contextMenu.y}
           item={contextMenu.item}
+          selectedCount={selectedCount}
           onClose={() => setContextMenu(null)}
-          onNewFolder={() => onCreateFolder && onCreateFolder()}
-          onNewFile={() => onCreateFile && onCreateFile()}
-          onUpload={() => onUploadFile && onUploadFile()}
+          onNewFolder={() => onCreateFolder && onCreateFolder(currentPath)}
+          onNewFile={() => onCreateFile && onCreateFile(currentPath)}
+          onUpload={() => onUploadFile && onUploadFile(currentPath)}
           onRename={(item) => {
             setRenamingItem(item);
             setRenameValue(item.name);
           }}
-          onDelete={(item) => onDeleteFile && onDeleteFile(item)}
+          onDelete={(item) => {
+            if (selectedCount > 1) {
+              const paths = [...selectedItems];
+              const confirmed = window.confirm(`Delete ${paths.length} items? This cannot be undone.`);
+              if (confirmed) {
+                paths.forEach(p => onDeleteFile && onDeleteFile({ path: p, name: p.split('/').pop() }));
+                clearSelection();
+                loadDirectory(currentPath);
+              }
+            } else if (item) {
+              onDeleteFile && onDeleteFile(item);
+            }
+          }}
           onMove={(item) => setMoveDialogItem(item)}
+          onBatchMove={() => setBatchMoveDialogOpen(true)}
+          onBatchDistill={onBatchDistill ? () => {
+            onBatchDistill([...selectedItems]);
+            clearSelection();
+          } : undefined}
         />
       )}
 
@@ -727,9 +926,174 @@ export default function DocumentGridView({
         rootPath={rootPath}
         treeItems={treeItems}
         onClose={() => setMoveDialogItem(null)}
-        onMove={handleMove}
+        onMove={handleSingleMove}
         onNavigate={onNavigate}
       />
+
+      {batchMoveDialogOpen && (
+        <BatchMoveDialog
+          currentPath={currentPath}
+          rootPath={rootPath}
+          treeItems={treeItems}
+          selectedCount={selectedCount}
+          onClose={() => setBatchMoveDialogOpen(false)}
+          onMove={handleBatchMoveConfirm}
+          onNavigate={onNavigate}
+          loadDirectory={loadDirectory}
+        />
+      )}
+    </div>
+  );
+}
+
+function BatchMoveDialog({ currentPath, rootPath, treeItems, selectedCount, onClose, onMove, onNavigate, loadDirectory }) {
+  const [selectedPath, setSelectedPath] = useState(currentPath);
+  const [expandedPaths, setExpandedPaths] = useState(new Set([rootPath]));
+
+  useEffect(() => {
+    setSelectedPath(currentPath);
+  }, [currentPath]);
+
+  const getAllDirectories = (path) => {
+    const dirs = treeItems[path]?.filter(i => i.is_directory) || [];
+    return dirs;
+  };
+
+  const handleToggle = (path) => {
+    setExpandedPaths(prev => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+        if (!treeItems[path]) {
+          loadDirectory(path);
+        }
+      }
+      return next;
+    });
+  };
+
+  const renderTree = (path, level = 0) => {
+    const dirs = getAllDirectories(path);
+    const isExpanded = expandedPaths.has(path);
+    const isSelected = selectedPath === path;
+
+    return (
+      <div key={path}>
+        <button
+          onClick={() => setSelectedPath(path)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            width: '100%',
+            padding: '6px 10px',
+            paddingLeft: `${10 + level * 16}px`,
+            border: 'none',
+            background: isSelected ? 'var(--accent-soft)' : 'transparent',
+            color: isSelected ? 'var(--accent)' : 'var(--text)',
+            cursor: 'pointer',
+            fontSize: 12,
+            textAlign: 'left',
+            borderRadius: 4,
+          }}
+        >
+          {dirs.length > 0 && (
+            <span
+              onClick={(e) => { e.stopPropagation(); handleToggle(path); }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                padding: '2px',
+              }}
+            >
+              {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </span>
+          )}
+          {dirs.length === 0 && <span style={{ width: 16 }} />}
+          <Folder size={14} style={{ color: isSelected ? 'var(--accent)' : '#FFBF2B' }} />
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {path === rootPath ? 'Root' : path.split('/').pop()}
+          </span>
+          {isSelected && <CheckSquare size={12} style={{ color: 'var(--accent)' }} />}
+        </button>
+        {isExpanded && dirs.map(dir => renderTree(dir.path, level + 1))}
+      </div>
+    );
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(0,0,0,0.4)',
+        zIndex: 10001,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: 360,
+          maxHeight: '70vh',
+          background: 'var(--surface)',
+          borderRadius: 12,
+          border: '1px solid var(--border)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
+            Move {selectedCount} items
+          </h3>
+          <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-2)' }}>
+            Select destination folder
+          </p>
+        </div>
+
+        <div style={{ flex: 1, overflow: 'auto', padding: '8px 0' }}>
+          {renderTree(rootPath)}
+        </div>
+
+        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 6,
+              border: '1px solid var(--border)',
+              background: 'transparent',
+              color: 'var(--text)',
+              cursor: 'pointer',
+              fontSize: 13,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onMove(selectedPath)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 6,
+              border: 'none',
+              background: 'var(--accent)',
+              color: 'var(--text-invert)',
+              cursor: 'pointer',
+              fontSize: 13,
+            }}
+          >
+            Move
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

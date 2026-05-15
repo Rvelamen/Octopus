@@ -376,24 +376,7 @@ class StreamingMessageProcessor(MessageProcessor):
                 f"\n\n您可以回复 **\"继续\"** 让 Agent 接着处理剩余步骤。"
             )
 
-        # Get model context window for smart compression trigger
-        model_context_window = 0
-        if hasattr(self.agent_loop.compressor.sessions.db, 'get_model_context_window'):
-            model_context_window = self.agent_loop.compressor.sessions.db.get_model_context_window()
-        await self.agent_loop.compressor.maybe_compress(
-            session, prompt_tokens=last_prompt_tokens, model_context_window=model_context_window
-        )
-
-        if self.agent_loop.memory_manager:
-            await self.agent_loop.memory_manager.sync_turn(
-                user_msg=msg.content,
-                assistant_msg=final_content or "",
-                session_instance_id=session_instance_id,
-            )
-
         elapsed_ms = int((time.time() - start_time) * 1000)
-
-        logger.info(f"[Stream] Sending final response with {len(final_content)} chars")
 
         token_usage_data = {
             "prompt_tokens": total_prompt_tokens,
@@ -413,19 +396,8 @@ class StreamingMessageProcessor(MessageProcessor):
             except Exception as tts_err:
                 logger.warning(f"Failed to check TTS config: {tts_err}")
 
-        # Persist elapsed_ms BEFORE agent_finish so immediate refetch includes it (stop/complete race)
-        if session_instance_id and final_content is not None:
-            try:
-                self.agent_loop.sessions.update_last_message_metadata(
-                    session_instance_id,
-                    {
-                        "elapsed_ms": elapsed_ms,
-                        "usage": token_usage_data
-                    }
-                )
-            except Exception as update_err:
-                logger.warning(f"Failed to update message metadata with elapsed_ms: {update_err}")
-
+        # Publish agent_finish immediately so the frontend can stop showing "running"
+        # without waiting for cleanup tasks (compress, memory, DB update).
         try:
             await self.agent_loop.bus.publish_event(AgentEvent(
                 event_type="agent_finish",
@@ -444,6 +416,35 @@ class StreamingMessageProcessor(MessageProcessor):
             logger.error(f"[Stream] Failed to publish agent_finish event: {e}")
             import traceback
             traceback.print_exc()
+
+        # Cleanup tasks that may be slow — run after agent_finish so they don't delay the UI.
+        # Get model context window for smart compression trigger
+        model_context_window = 0
+        if hasattr(self.agent_loop.compressor.sessions.db, 'get_model_context_window'):
+            model_context_window = self.agent_loop.compressor.sessions.db.get_model_context_window()
+        await self.agent_loop.compressor.maybe_compress(
+            session, prompt_tokens=last_prompt_tokens, model_context_window=model_context_window
+        )
+
+        if self.agent_loop.memory_manager:
+            await self.agent_loop.memory_manager.sync_turn(
+                user_msg=msg.content,
+                assistant_msg=final_content or "",
+                session_instance_id=session_instance_id,
+            )
+
+        # Persist elapsed_ms AFTER agent_finish so immediate refetch includes it.
+        if session_instance_id and final_content is not None:
+            try:
+                self.agent_loop.sessions.update_last_message_metadata(
+                    session_instance_id,
+                    {
+                        "elapsed_ms": elapsed_ms,
+                        "usage": token_usage_data
+                    }
+                )
+            except Exception as update_err:
+                logger.warning(f"Failed to update message metadata with elapsed_ms: {update_err}")
 
         return OutboundMessage(
             channel=msg.channel,

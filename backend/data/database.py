@@ -23,6 +23,7 @@ from backend.data.schema import (
     tool,
     token,
     observation,
+    workflow,
 )
 
 
@@ -148,6 +149,7 @@ class Database:
             tool.create_tables(conn)
             token.create_tables(conn)
             observation.create_tables(conn)
+            workflow.create_tables(conn)
 
             # Create indexes
             apscheduler.create_indexes(conn)
@@ -162,6 +164,7 @@ class Database:
             tool.create_indexes(conn)
             token.create_indexes(conn)
             observation.create_indexes(conn)
+            workflow.create_indexes(conn)
 
             # Seed default data
             provider.seed_data(conn)

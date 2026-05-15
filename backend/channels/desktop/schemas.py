@@ -573,6 +573,14 @@ class ModelSetDefaultRequest(BaseRequest):
     id: int | None = None
 
 
+class ModelGetProvidersRequest(BaseRequest):
+    pass
+
+
+class ModelGetModelsRequest(BaseRequest):
+    provider_id: str | None = Field(default=None, alias="provider_id")
+
+
 class SettingsGetRequest(BaseRequest):
     pass
 
@@ -856,6 +864,8 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.MODEL_UPDATE: ModelUpdateRequest,
     MessageType.MODEL_DELETE: ModelDeleteRequest,
     MessageType.MODEL_SET_DEFAULT: ModelSetDefaultRequest,
+    MessageType.MODEL_GET_PROVIDERS: ModelGetProvidersRequest,
+    MessageType.MODEL_GET_MODELS: ModelGetModelsRequest,
 
     MessageType.SETTINGS_GET: SettingsGetRequest,
     MessageType.SETTINGS_SET: SettingsSetRequest,

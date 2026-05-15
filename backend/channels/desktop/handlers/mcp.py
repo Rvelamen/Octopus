@@ -1341,8 +1341,8 @@ class MCPUpdateToolHandler(MessageHandler):
     async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: MCPUpdateToolRequest) -> None:
         """Update tool configuration."""
         try:
-            tool_name = None
-            server_name = None
+            tool_name = message.data.get("name")
+            server_name = message.data.get("server_name")
 
             if not tool_name:
                 await self._send_error(websocket, message.request_id, "Tool name required")

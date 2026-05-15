@@ -77,6 +77,7 @@ function slugify(name) {
 export default function DistillDialog({
   visible,
   sourceFile,
+  sourceFiles,
   sourceTitle,
   onCancel,
   onStartDistill,
@@ -91,6 +92,9 @@ export default function DistillDialog({
   const [expandedPaths, setExpandedPaths] = useState(new Set(['knowledge/notes']));
   const [treeItems, setTreeItems] = useState({});
   const { addTask } = useDistillTasks();
+
+  const allSources = sourceFiles && sourceFiles.length > 0 ? sourceFiles : (sourceFile ? [sourceFile] : []);
+  const isBatch = allSources.length > 1;
 
   const rootPath = selectedVault ? `knowledge/notes/${selectedVault}` : 'knowledge/notes';
 
@@ -140,26 +144,25 @@ export default function DistillDialog({
   const effectiveRoot = selectedVault && selectedVault !== 'default' ? `knowledge/notes/${selectedVault}` : 'knowledge/notes';
 
   const handleStart = async () => {
-    if (!sourceFile) return;
+    if (allSources.length === 0) return;
 
     setIsStarting(true);
 
     try {
       const timestamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
-      const safe = slugify(sourceTitle || sourceFile.split('/').pop() || 'distilled');
+      const safe = slugify(sourceTitle || sourceFile?.split('/').pop() || 'distilled');
       const targetPath = `${selectedDir}/${timestamp}_${safe}.md`;
 
-      // 添加任务到全局任务列表
-      const taskId = addTask({
-        sourceFile,
+      addTask({
+        sourceFile: allSources[0],
         template,
         prompt,
+        batch: isBatch,
+        batchCount: allSources.length,
       });
 
-      // 调用 onStartDistill 发送任务到后台（包含 vault）
-      const result = await onStartDistill({ prompt, template, taskId, targetPath, vault: selectedVault || 'default' });
+      await onStartDistill({ prompt, template, taskId: undefined, targetPath: selectedDir, vault: selectedVault || 'default', sources: allSources });
 
-      // 关闭 Modal
       reset();
       onCancel();
     } catch (err) {
@@ -186,7 +189,9 @@ export default function DistillDialog({
         <div className="dialog-header">
           <div className="dialog-header-left">
             <Sparkles size={16} style={{ color: 'var(--accent)' }} />
-            <span style={{ fontWeight: 600 }}>Distill: {sourceFile?.split('/').pop() || ''}</span>
+            <span style={{ fontWeight: 600 }}>
+              {isBatch ? `Distill ${allSources.length} files` : `Distill: ${sourceFile?.split('/').pop() || ''}`}
+            </span>
           </div>
           <button
             onClick={handleCancel}
@@ -205,6 +210,24 @@ export default function DistillDialog({
         </div>
 
         <div style={{ padding: '16px 20px', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {isBatch && (
+            <div style={{
+              maxHeight: 120,
+              overflowY: 'auto',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--r-sm)',
+              background: 'var(--surface-2)',
+              padding: '8px 10px',
+              fontSize: 12,
+              color: 'var(--text-2)',
+            }}>
+              {allSources.map((src, i) => (
+                <div key={i} style={{ padding: '2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {src.split('/').pop()}
+                </div>
+              ))}
+            </div>
+          )}
           {/* Vault selector */}
           {vaults.length > 0 && (
             <div>
@@ -352,7 +375,7 @@ export default function DistillDialog({
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
             <Sparkles size={14} />
-            {isStarting ? 'Starting...' : 'Start Distillation'}
+            {isStarting ? 'Starting...' : isBatch ? `Distill ${allSources.length} files` : 'Start Distillation'}
           </button>
         </div>
       </div>

@@ -279,6 +279,10 @@ class ModelHandler:
                 await self._delete(websocket, msg_data, request_id)
             elif msg_type == "model_set_default":
                 await self._set_default(websocket, msg_data, request_id)
+            elif msg_type == "model_get_providers":
+                await self._get_providers_for_workflow(websocket, msg_data, request_id)
+            elif msg_type == "model_get_models":
+                await self._get_models_for_workflow(websocket, msg_data, request_id)
             else:
                 logger.warning(f"Unknown message type: {msg_type}")
         except Exception as e:
@@ -414,6 +418,81 @@ class ModelHandler:
             "type": MessageType.MODEL_UPDATED.value,
             "request_id": request_id,
             "data": {"id": model_id, "isDefault": True}
+        })
+
+    async def _get_providers_for_workflow(self, websocket, data: dict, request_id: str = None):
+        """Get all enabled providers for workflow model selection."""
+        providers = self.provider_repo.get_enabled_providers()
+        provider_list = []
+        for p in providers:
+            models = self.model_repo.get_enabled_models_by_provider(p.id)
+            provider_list.append({
+                "id": p.name,
+                "name": p.display_name,
+                "enabled": p.enabled,
+                "providerType": p.provider_type,
+                "modelCount": len(models),
+            })
+
+        await websocket.send_json({
+            "type": MessageType.MODEL_PROVIDERS_LIST.value,
+            "request_id": request_id,
+            "data": {"providers": provider_list}
+        })
+
+    async def _get_models_for_workflow(self, websocket, data: dict, request_id: str = None):
+        """Get enabled models for workflow model selection.
+
+        If provider_id is provided, return models for that provider.
+        Otherwise return all enabled models from all enabled providers.
+        """
+        provider_id = data.get("providerId") or data.get("provider_id")
+
+        if provider_id:
+            provider = self.provider_repo.get_provider_by_name(provider_id)
+            if not provider:
+                await websocket.send_json({
+                    "type": MessageType.MODEL_MODELS_LIST.value,
+                    "request_id": request_id,
+                    "data": {"models": []}
+                })
+                return
+            models = self.model_repo.get_enabled_models_by_provider(provider.id)
+            model_list = [{
+                "id": m.model_id,
+                "name": m.display_name,
+                "provider": provider.name,
+                "enabled": m.enabled,
+                "type": m.model_types[0] if m.model_types else "chat",
+                "contextWindow": m.context_window,
+                "description": m.description or "",
+                "supportsVision": m.supports_vision,
+                "supportsFunctionCalling": m.supports_function_calling,
+                "supportsStreaming": m.supports_streaming,
+            } for m in models]
+        else:
+            providers = self.provider_repo.get_enabled_providers()
+            model_list = []
+            for p in providers:
+                models = self.model_repo.get_enabled_models_by_provider(p.id)
+                for m in models:
+                    model_list.append({
+                        "id": m.model_id,
+                        "name": m.display_name,
+                        "provider": p.name,
+                        "enabled": m.enabled,
+                        "type": m.model_types[0] if m.model_types else "chat",
+                        "contextWindow": m.context_window,
+                        "description": m.description or "",
+                        "supportsVision": m.supports_vision,
+                        "supportsFunctionCalling": m.supports_function_calling,
+                        "supportsStreaming": m.supports_streaming,
+                    })
+
+        await websocket.send_json({
+            "type": MessageType.MODEL_MODELS_LIST.value,
+            "request_id": request_id,
+            "data": {"models": model_list}
         })
 
 

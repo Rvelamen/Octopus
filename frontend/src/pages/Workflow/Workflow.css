@@ -1,0 +1,13 @@
+/* 工作流节点执行状态高亮 —— 统一改 border-color，和节点原有 border 共用同一套样式 */
+
+.react-flow__node.workflow-node--running .workflow-node-card {
+  border-color: #f59e0b !important;
+}
+
+.react-flow__node.workflow-node--completed .workflow-node-card {
+  border-color: #22c55e !important;
+}
+
+.react-flow__node.workflow-node--failed .workflow-node-card {
+  border-color: #ef4444 !important;
+}
