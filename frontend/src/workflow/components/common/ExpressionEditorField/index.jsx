@@ -7,14 +7,15 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Variable,
-  X,
-  Search,
-  User,
-  FolderOpen,
-  Settings,
-  ChevronRight,
-} from 'lucide-react';
+    Variable,
+    X,
+    Search,
+    User,
+    FolderOpen,
+    Settings,
+    ChevronRight,
+    RefreshCw,
+  } from 'lucide-react';
 
 // 变量类型映射
 export const VARIABLE_TYPES = {
@@ -99,19 +100,102 @@ export const getVariableType = (ref, nodes) => {
 
 /**
  * 获取节点的所有上游节点（通过边连接）
+ *
+ * 变量作用域规则：
+ * - 循环体内部子节点：可见同循环体内的上游兄弟节点 + 父循环节点（仅对内变量）
+ *   + 循环节点的外部上游节点（通过循环体 IN 连接透传前置节点数据）
+ * - LoopNode 自身（配置输出）：可见循环体内所有子节点 + 外部上游节点
+ * - 外部节点：可见 LoopNode（仅对外变量），不可见循环体内部子节点
  */
 export const getUpstreamNodes = (nodeId, nodes, edges) => {
   if (!nodeId) return [];
 
+  const safeNodes = Array.isArray(nodes) ? nodes : [];
+  const safeEdges = Array.isArray(edges) ? edges : [];
+  const currentNode = safeNodes.find((n) => n.id === nodeId);
+  if (!currentNode) return [];
+
   const upstreamNodeIds = new Set();
   const visited = new Set();
+
+  const isChildNode = !!currentNode.parentId;
+  const isLoopNode = (currentNode.data?.flowNodeType || currentNode.type) === 'loop';
+
+  if (isChildNode) {
+    const parentNode = safeNodes.find((n) => n.id === currentNode.parentId);
+    if (!parentNode) return [];
+
+    const loopId = parentNode.id;
+    const siblingIds = new Set(safeNodes.filter((n) => n.parentId === loopId).map((n) => n.id));
+
+    const traverseSiblings = (currentId) => {
+      if (visited.has(currentId)) return;
+      visited.add(currentId);
+
+      safeEdges.forEach((edge) => {
+        if (edge.target === currentId && siblingIds.has(edge.source)) {
+          upstreamNodeIds.add(edge.source);
+          traverseSiblings(edge.source);
+        }
+      });
+    };
+
+    traverseSiblings(nodeId);
+
+    upstreamNodeIds.add(loopId);
+
+    const traverseExternal = (currentId) => {
+      if (visited.has(currentId)) return;
+      visited.add(currentId);
+
+      safeEdges.forEach((edge) => {
+        if (edge.target === currentId) {
+          const sourceNode = safeNodes.find((n) => n.id === edge.source);
+          if (sourceNode?.parentId === currentId) return;
+          upstreamNodeIds.add(edge.source);
+          traverseExternal(edge.source);
+        }
+      });
+    };
+    traverseExternal(loopId);
+
+    return safeNodes.filter((n) => upstreamNodeIds.has(n.id));
+  }
+
+  if (isLoopNode) {
+    const childIds = new Set(safeNodes.filter((n) => n.parentId === nodeId).map((n) => n.id));
+
+    childIds.forEach((childId) => {
+      upstreamNodeIds.add(childId);
+    });
+
+    const traverse = (currentId) => {
+      if (visited.has(currentId)) return;
+      visited.add(currentId);
+
+      safeEdges.forEach((edge) => {
+        if (edge.target === currentId) {
+          const sourceNode = safeNodes.find((n) => n.id === edge.source);
+          if (sourceNode?.parentId === currentId) return;
+          upstreamNodeIds.add(edge.source);
+          traverse(edge.source);
+        }
+      });
+    };
+
+    traverse(nodeId);
+
+    return safeNodes.filter((n) => upstreamNodeIds.has(n.id));
+  }
 
   const traverse = (currentId) => {
     if (visited.has(currentId)) return;
     visited.add(currentId);
 
-    edges.forEach((edge) => {
+    safeEdges.forEach((edge) => {
       if (edge.target === currentId) {
+        const sourceNode = safeNodes.find((n) => n.id === edge.source);
+        if (sourceNode?.parentId === currentId) return;
         upstreamNodeIds.add(edge.source);
         traverse(edge.source);
       }
@@ -119,7 +203,8 @@ export const getUpstreamNodes = (nodeId, nodes, edges) => {
   };
 
   traverse(nodeId);
-  return nodes.filter((n) => upstreamNodeIds.has(n.id));
+
+  return safeNodes.filter((n) => upstreamNodeIds.has(n.id));
 };
 
 /**
@@ -161,6 +246,8 @@ const NODE_TYPE_DEFAULT_OUTPUTS = {
     { key: 'fileContent', label: '文件内容', type: 'string' },
   ],
   loop: [
+    { key: 'item', label: '当前元素', type: 'string' },
+    { key: 'index', label: '当前索引', type: 'integer' },
     { key: 'loopResult', label: '循环结果', type: 'array' },
   ],
   agent: [
@@ -208,14 +295,23 @@ const normalizeType = (type) => {
 
 /**
  * 获取节点的输出变量
+ * @param {Object} node - 目标节点
+ * @param {Object} [options] - 选项
+ * @param {string} [options.callerNodeId] - 调用者节点 ID，用于判断变量可见性
+ * @param {Array} [options.allNodes] - 所有节点列表，用于判断调用者是否在循环体内部
  */
-export const getNodeOutputVariables = (node) => {
+export const getNodeOutputVariables = (node, options = {}) => {
   if (!node) return [];
 
+  const { callerNodeId, allNodes } = options;
   const nodeType = node.data?.flowNodeType || node.type;
   const outputs = node.data?.outputs || [];
 
-  // workflowStart 节点特殊处理：inputs 作为输出变量
+  const isCallerInsideLoop = callerNodeId && allNodes && (() => {
+    const callerNode = allNodes.find((n) => n.id === callerNodeId);
+    return callerNode?.parentId === node.id;
+  })();
+
   if (nodeType === 'workflowStart') {
     const inputs = node.data?.inputs || [];
     if (inputs.length > 0) {
@@ -223,10 +319,59 @@ export const getNodeOutputVariables = (node) => {
         key: input.name || input.key,
         label: input.name || input.label || input.key,
         type: normalizeType(input.type) || 'string',
-      })).filter((v) => v.key); // 过滤掉没有 key 的
+      })).filter((v) => v.key);
     }
-    // 如果没有自定义输入，返回默认输出
     return NODE_TYPE_DEFAULT_OUTPUTS.workflowStart.map((o) => ({ ...o }));
+  }
+
+  if (nodeType === 'loop') {
+    const intermediateVars = node.data?.intermediateVars || [];
+    const loopInputs = node.data?.inputs || [];
+    const loopOutputs = node.data?.outputs || [];
+
+    const result = [];
+
+    if (isCallerInsideLoop) {
+      const intermediateVarList = intermediateVars.length > 0
+        ? intermediateVars
+            .filter((v) => v.name)
+            .map((v) => ({
+              key: v.name,
+              label: v.desc || v.name,
+              type: normalizeType(v.type) || 'string',
+              category: 'intermediate',
+            }))
+        : [
+            { key: 'item', label: '当前元素', type: 'string', category: 'intermediate' },
+            { key: 'index', label: '当前索引', type: 'integer', category: 'intermediate' },
+          ];
+
+      const inputVars = loopInputs.length > 0
+        ? loopInputs
+            .filter((input) => input.name || input.key)
+            .map((input) => ({
+              key: input.name || input.key,
+              label: input.name || input.label || input.key,
+              type: normalizeType(input.type) || 'string',
+              category: 'input',
+            }))
+        : [];
+
+      result.push(...intermediateVarList, ...inputVars);
+    } else {
+      const outputVars = loopOutputs
+        .filter((output) => output.name)
+        .map((output) => ({
+          key: output.name,
+          label: output.name,
+          type: normalizeType(output.type) || 'string',
+          category: 'output',
+        }));
+
+      result.push(...outputVars, { key: 'loopResult', label: '循环结果', type: 'array', category: 'output' });
+    }
+
+    return result;
   }
 
   // 如果节点有显式定义的 outputs，优先使用
@@ -289,13 +434,15 @@ const VariableSelector = ({
   selectedValue,
   onSelect,
   onClose,
+  currentNodeId,
+  allNodes,
 }) => {
   const [search, setSearch] = useState('');
 
   const filteredVariables = useMemo(() => {
     const vars = [];
     availableNodes.forEach((node) => {
-      const outputs = getNodeOutputVariables(node);
+      const outputs = getNodeOutputVariables(node, { callerNodeId: currentNodeId, allNodes });
       outputs.forEach((output) => {
         const ref = formatVariableRef(node.id, output.key);
         vars.push({
@@ -317,7 +464,7 @@ const VariableSelector = ({
         v.nodeName.toLowerCase().includes(q) ||
         v.variableKey.toLowerCase().includes(q)
     );
-  }, [availableNodes, search]);
+  }, [availableNodes, search, currentNodeId, allNodes]);
 
   return (
     <div
@@ -514,6 +661,7 @@ const VariableSelector = ({
  * 下拉列表式变量选择器
  * 参考图片中的设计：分类展示变量
  * 使用 Portal 渲染到 body，避免 overflow:hidden 裁剪
+ * 支持滚动跟随、平滑定位、边界约束
  */
 const VariableDropdown = ({
   availableNodes,
@@ -521,21 +669,155 @@ const VariableDropdown = ({
   onSelect,
   onClose,
   triggerRef,
+  currentNodeId,
+  allNodes,
 }) => {
-  const [expandedNode, setExpandedNode] = useState(null);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
-  const dropdownRef = useRef(null);
+  const DROPDOWN_WIDTH = 260;
+  const DROPDOWN_MAX_HEIGHT = 320;
+  const GAP = 4;
+  const VIEWPORT_PADDING = 8;
 
-  // 计算下拉菜单位置
-  useEffect(() => {
-    if (triggerRef?.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX - 180, // 向左偏移，让菜单右侧对齐按钮
-      });
+  const [expandedNode, setExpandedNode] = useState(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, placement: 'bottom', visible: true, clampHeight: DROPDOWN_MAX_HEIGHT });
+  const dropdownRef = useRef(null);
+  const rafRef = useRef(null);
+  const posRef = useRef({ top: 0, left: 0, placement: 'bottom', visible: true, clampHeight: DROPDOWN_MAX_HEIGHT });
+
+  const recalcPosition = useCallback(() => {
+    if (!triggerRef?.current) return;
+
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    if (
+      triggerRect.bottom < -50 || triggerRect.top > vh + 50 ||
+      triggerRect.right < -50 || triggerRect.left > vw + 50
+    ) {
+      if (posRef.current.visible) {
+        const next = { ...posRef.current, visible: false };
+        posRef.current = next;
+        setDropdownPos(next);
+      }
+      return;
+    }
+
+    let left = triggerRect.right - DROPDOWN_WIDTH;
+    if (left < VIEWPORT_PADDING) {
+      left = triggerRect.left;
+    }
+    if (left + DROPDOWN_WIDTH > vw - VIEWPORT_PADDING) {
+      left = vw - DROPDOWN_WIDTH - VIEWPORT_PADDING;
+    }
+    left = Math.max(VIEWPORT_PADDING, left);
+
+    const spaceBelow = vh - triggerRect.bottom - GAP;
+    const spaceAbove = triggerRect.top - GAP;
+
+    const actualHeight = dropdownRef.current?.offsetHeight || DROPDOWN_MAX_HEIGHT;
+    const maxAvailableHeight = vh - VIEWPORT_PADDING * 2;
+    const clampHeight = Math.min(actualHeight, maxAvailableHeight, DROPDOWN_MAX_HEIGHT);
+
+    let top;
+    let placement = 'bottom';
+
+    if (spaceBelow >= clampHeight || spaceBelow >= spaceAbove) {
+      top = triggerRect.bottom + GAP;
+      placement = 'bottom';
+    } else {
+      top = triggerRect.top - clampHeight - GAP;
+      placement = 'top';
+    }
+
+    top = Math.max(VIEWPORT_PADDING, Math.min(top, vh - clampHeight - VIEWPORT_PADDING));
+
+    const next = { top, left, placement, visible: true, clampHeight };
+    if (
+      Math.abs(posRef.current.top - next.top) > 0.5 ||
+      Math.abs(posRef.current.left - next.left) > 0.5 ||
+      posRef.current.placement !== next.placement ||
+      posRef.current.visible !== next.visible
+    ) {
+      posRef.current = next;
+      setDropdownPos(next);
     }
   }, [triggerRef]);
+
+  useEffect(() => {
+    recalcPosition();
+
+    const onFrame = () => {
+      recalcPosition();
+      rafRef.current = null;
+    };
+
+    const scheduleUpdate = () => {
+      if (rafRef.current) return;
+      rafRef.current = requestAnimationFrame(onFrame);
+    };
+
+    const scrollParents = [];
+    let el = triggerRef?.current?.parentElement;
+    while (el) {
+      const overflowY = window.getComputedStyle(el).overflowY;
+      if (overflowY === 'auto' || overflowY === 'scroll') {
+        scrollParents.push(el);
+        el.addEventListener('scroll', scheduleUpdate, { passive: true });
+      }
+      el = el.parentElement;
+    }
+
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate, { passive: true });
+
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      scrollParents.forEach((el) => {
+        el.removeEventListener('scroll', scheduleUpdate);
+      });
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+    };
+  }, [recalcPosition, triggerRef]);
+
+  const renderVariableItem = useCallback((variable, selectedValue, onSelect) => {
+    const typeInfo = VARIABLE_TYPES[variable.type] || VARIABLE_TYPES.text;
+    const isSelected = selectedValue === variable.ref;
+    return (
+      <div
+        key={variable.key}
+        onClick={() => {
+          onSelect(variable.ref);
+        }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '6px 12px 6px 40px',
+          cursor: 'pointer',
+          fontSize: '12px',
+          color: isSelected ? '#6366f1' : '#374151',
+          background: isSelected ? '#eef2ff' : 'transparent',
+        }}
+      >
+        <div
+          style={{
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            background: typeInfo.color,
+            marginRight: '8px',
+          }}
+        />
+        <span>{variable.label}</span>
+        <span style={{ marginLeft: 'auto', color: '#9ca3af', fontSize: '11px' }}>
+          {typeInfo.label}
+        </span>
+      </div>
+    );
+  }, []);
 
   // 点击外部关闭
   useEffect(() => {
@@ -552,20 +834,27 @@ const VariableDropdown = ({
   // 按节点分组变量
   const nodeVariables = useMemo(() => {
     return availableNodes.map((node) => {
-      const outputs = getNodeOutputVariables(node);
+      const outputs = getNodeOutputVariables(node, { callerNodeId: currentNodeId, allNodes });
+      const nodeType = node.data?.flowNodeType || node.type;
+      const isLoop = nodeType === 'loop';
+
+      const categorizedVars = outputs.map((output) => ({
+        key: output.key,
+        label: output.label || output.key,
+        type: output.type || 'text',
+        ref: formatVariableRef(node.id, output.key),
+        category: output.category || 'default',
+      }));
+
       return {
         node,
         nodeName: node.data?.name || '未命名节点',
-        nodeType: node.data?.flowNodeType || node.type,
-        variables: outputs.map((output) => ({
-          key: output.key,
-          label: output.label || output.key,
-          type: output.type || 'text',
-          ref: formatVariableRef(node.id, output.key),
-        })),
+        nodeType,
+        isLoop,
+        variables: categorizedVars,
       };
     }).filter((group) => group.variables.length > 0);
-  }, [availableNodes]);
+  }, [availableNodes, currentNodeId, allNodes]);
 
   // 固定分类（用户变量、应用变量、系统变量）
   const categories = [
@@ -586,10 +875,12 @@ const VariableDropdown = ({
         borderRadius: '8px',
         boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
         zIndex: 10000,
-        minWidth: '200px',
-        maxWidth: '280px',
-        maxHeight: '320px',
+        width: DROPDOWN_WIDTH,
+        maxHeight: dropdownPos.clampHeight,
         overflowY: 'auto',
+        opacity: dropdownPos.visible ? 1 : 0,
+        pointerEvents: dropdownPos.visible ? 'auto' : 'none',
+        willChange: 'top, left',
       }}
       onClick={(e) => e.stopPropagation()}
     >
@@ -643,16 +934,28 @@ const VariableDropdown = ({
                 width: '20px',
                 height: '20px',
                 borderRadius: '4px',
-                background: '#6366f1',
+                background: group.isLoop ? '#06b6d4' : '#6366f1',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'white',
                 fontSize: '10px',
               }}>
-                {group.nodeName.charAt(0)}
+                {group.isLoop ? <RefreshCw size={10} /> : group.nodeName.charAt(0)}
               </span>
               <span>{group.nodeName}</span>
+              {group.isLoop && (
+                <span style={{
+                  fontSize: '9px',
+                  color: '#06b6d4',
+                  background: '#e0f2fe',
+                  padding: '1px 5px',
+                  borderRadius: '4px',
+                  fontWeight: 500,
+                }}>
+                  循环
+                </span>
+              )}
             </div>
             <ChevronRight
               size={14}
@@ -667,42 +970,36 @@ const VariableDropdown = ({
           {/* 展开的变量列表 */}
           {expandedNode === group.node.id && (
             <div style={{ background: '#f9fafb' }}>
-              {group.variables.map((variable) => {
-                const typeInfo = VARIABLE_TYPES[variable.type] || VARIABLE_TYPES.text;
-                const isSelected = selectedValue === variable.ref;
-
-                return (
-                  <div
-                    key={variable.key}
-                    onClick={() => {
-                      onSelect(variable.ref);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '6px 12px 6px 40px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      color: isSelected ? '#6366f1' : '#374151',
-                      background: isSelected ? '#eef2ff' : 'transparent',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '50%',
-                        background: typeInfo.color,
-                        marginRight: '8px',
-                      }}
-                    />
-                    <span>{variable.label}</span>
-                    <span style={{ marginLeft: 'auto', color: '#9ca3af', fontSize: '11px' }}>
-                      {typeInfo.label}
-                    </span>
-                  </div>
-                );
-              })}
+              {group.isLoop && (
+                <>
+                  {group.variables.filter((v) => v.category === 'intermediate').length > 0 && (
+                    <>
+                      <div style={{ padding: '6px 12px 2px 16px', fontSize: '10px', color: '#9ca3af', fontWeight: 600, letterSpacing: '0.5px' }}>
+                        中间变量
+                      </div>
+                      {group.variables.filter((v) => v.category === 'intermediate').map((variable) => renderVariableItem(variable, selectedValue, onSelect))}
+                    </>
+                  )}
+                  {group.variables.filter((v) => v.category === 'input').length > 0 && (
+                    <>
+                      <div style={{ padding: '6px 12px 2px 16px', fontSize: '10px', color: '#9ca3af', fontWeight: 600, letterSpacing: '0.5px' }}>
+                        输入
+                      </div>
+                      {group.variables.filter((v) => v.category === 'input').map((variable) => renderVariableItem(variable, selectedValue, onSelect))}
+                    </>
+                  )}
+                  {group.variables.filter((v) => v.category === 'output').length > 0 && (
+                    <>
+                      <div style={{ padding: '6px 12px 2px 16px', fontSize: '10px', color: '#9ca3af', fontWeight: 600, letterSpacing: '0.5px' }}>
+                        输出
+                      </div>
+                      {group.variables.filter((v) => v.category === 'output').map((variable) => renderVariableItem(variable, selectedValue, onSelect))}
+                    </>
+                  )}
+                  {group.variables.filter((v) => v.category === 'default').map((variable) => renderVariableItem(variable, selectedValue, onSelect))}
+                </>
+              )}
+              {!group.isLoop && group.variables.map((variable) => renderVariableItem(variable, selectedValue, onSelect))}
             </div>
           )}
         </div>
@@ -738,8 +1035,11 @@ const ExpressionEditorField = ({
 
   // 获取当前节点的所有上游节点
   const availableNodes = useMemo(() => {
+    console.log('[ExpressionEditorField] currentNodeId:', currentNodeId, 'nodes count:', nodes?.length, 'edges count:', edges?.length);
     if (!currentNodeId) return [];
-    return getUpstreamNodes(currentNodeId, nodes, edges);
+    const result = getUpstreamNodes(currentNodeId, nodes, edges);
+    console.log('[ExpressionEditorField] availableNodes:', result.map(n => ({ id: n.id, type: n.type, name: n.data?.name })));
+    return result;
   }, [currentNodeId, nodes, edges]);
 
   // 第一个字段的值
@@ -818,6 +1118,8 @@ const ExpressionEditorField = ({
               onSelect={handleVariableSelect}
               onClose={() => setShowVariableDropdown(false)}
               triggerRef={buttonRef}
+              currentNodeId={currentNodeId}
+              allNodes={nodes}
             />
           )}
         </div>
@@ -872,6 +1174,8 @@ const ExpressionEditorField = ({
             selectedValue={firstField.value || ''}
             onSelect={handleVariableSelect}
             onClose={() => setShowVariableSelector(false)}
+            currentNodeId={currentNodeId}
+            allNodes={nodes}
           />
         )}
       </>
@@ -935,6 +1239,8 @@ const ExpressionEditorField = ({
           selectedValue={firstField.value || ''}
           onSelect={handleVariableSelect}
           onClose={() => setShowVariableSelector(false)}
+          currentNodeId={currentNodeId}
+          allNodes={nodes}
         />
       )}
     </>

@@ -263,6 +263,7 @@ class WorkflowHandler(MessageHandler):
                     "config": n.config,
                     "timeout_seconds": n.timeout_seconds,
                     "max_retries": n.max_retries,
+                    "parent_id": n.parent_id,
                 }
                 for n in nodes
             ],

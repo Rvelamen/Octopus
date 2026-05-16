@@ -1,0 +1,193 @@
+/* 工作流标题栏 - 保持窗口拖拽 + 精美设计 */
+.wf-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  width: 100%;
+  /* 关键：默认可拖拽 */
+  -webkit-app-region: drag;
+  user-select: none;
+  position: relative;
+  z-index: 1;
+}
+
+/* ========== 名称文字 ========== */
+.wf-title-bar__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 280px;
+  cursor: text;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  line-height: 1.4;
+}
+
+.wf-title-bar__name:hover {
+  background: rgba(59, 130, 246, 0.08);
+  color: #2563eb;
+}
+
+/* ========== 编辑输入框 ========== */
+.wf-title-bar__input {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  background: #fff;
+  border: 1.5px solid #3b82f6;
+  border-radius: 6px;
+  padding: 3px 10px;
+  outline: none;
+  max-width: 280px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12), 0 1px 3px rgba(0,0,0,0.08);
+  transition: all 0.2s ease;
+  /* 输入框必须 no-drag */
+  -webkit-app-region: no-drag;
+  user-select: text;
+  line-height: 1.4;
+}
+
+.wf-title-bar__input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18), 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.wf-title-bar__input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.wf-title-bar__input:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+/* ========== 右侧操作区 ========== */
+.wf-title-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* 图标通用样式 */
+.wf-title-bar__icon {
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.wf-title-bar__icon:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* 状态圆点 */
+.wf-title-bar__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.wf-title-bar__dot--warn {
+  background: #f59e0b;
+  animation: wf-pulse-dot 2s ease-in-out infinite;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+@keyframes wf-pulse-dot {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+  50% { 
+    opacity: 0.5; 
+    transform: scale(0.85); 
+  }
+}
+
+/* 时间显示 */
+.wf-title-bar__time {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  padding: 2px 6px;
+  background: rgba(148, 163, 184, 0.08);
+  border-radius: 10px;
+  transition: all 0.15s ease;
+}
+
+.wf-title-bar__time:hover {
+  color: #64748b;
+  background: rgba(148, 163, 184, 0.14);
+}
+
+/* 编辑按钮 */
+.wf-title-bar__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.wf-title-bar__btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+}
+
+.wf-title-bar__btn:active {
+  transform: scale(0.92);
+}
+
+/* 旋转动画 */
+.wf-title-bar__spin {
+  animation: wf-spin 1s linear infinite;
+  color: #3b82f6 !important;
+}
+
+@keyframes wf-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ========== 响应式适配 ========== */
+@media (max-width: 900px) {
+  .wf-title-bar__name,
+  .wf-title-bar__input {
+    max-width: 180px;
+  }
+  
+  .wf-title-bar__time {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .wf-title-bar__name,
+  .wf-title-bar__input {
+    max-width: 120px;
+  }
+  
+  .wf-title-bar__actions {
+    gap: 2px;
+  }
+}

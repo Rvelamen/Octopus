@@ -582,7 +582,7 @@ class NodeExecutor:
     ) -> dict[str, Any]:
         """Execute loop node.
 
-        Iterates over an input array, optionally executing a sub-workflow
+        Iterates over an input array, executing the sub-workflow (child nodes)
         for each item, and collects all results.
 
         Config:
@@ -606,28 +606,146 @@ class NodeExecutor:
         results = []
         engine = getattr(self, "_engine", None)
 
-        for idx, item in enumerate(loop_input):
-            item_var = inputs.get("loopItemVariable", "item")
-            loop_context = item_var
+        # 获取循环体内部的子节点和边
+        version_id = context._version_id
+        child_nodes = []
+        child_edges = []
+        if engine and version_id:
+            all_nodes = engine._store.list_nodes(version_id)
+            all_edges = engine._store.list_edges(version_id)
+            child_nodes = [n for n in all_nodes if n.parent_id == node.id]
+            child_node_ids = {n.id for n in child_nodes}
+            child_edges = [
+                e for e in all_edges
+                if e.source_node_id in child_node_ids and e.target_node_id in child_node_ids
+            ]
 
-            if engine:
+        item_var = inputs.get("loopItemVariable", "item")
+
+        for idx, item in enumerate(loop_input):
+
+            if engine and child_nodes:
                 try:
-                    sub_result = await engine._execute_node_internal(
-                        node_id=node.id,
-                        inputs={**inputs, item_var: item, "loopIndex": idx},
-                        context=context,
-                    )
-                    results.append(sub_result)
+                    # 将当前元素和索引注入上下文
+                    context.set_variable(item_var, item)
+                    context.set_variable("loopIndex", idx)
+
+                    # 构建循环体内部的执行顺序
+                    execution_order = self._build_sub_execution_order(child_nodes, child_edges)
+
+                    # 执行循环体内部的子节点
+                    iteration_outputs = {}
+                    for child_node_id in execution_order:
+                        child_node = next((n for n in child_nodes if n.id == child_node_id), None)
+                        if not child_node:
+                            continue
+
+                        # 解析子节点的输入（使用当前上下文）
+                        child_inputs = self._resolve_node_inputs(child_node, context)
+
+                        # 执行子节点
+                        child_result = await engine._execute_node(child_node, context, child_edges)
+
+                        # 将子节点输出存入上下文
+                        for key, value in child_result.items():
+                            context.set_node_output(child_node_id, key, value)
+
+                        iteration_outputs[child_node_id] = child_result
+
+                    # 收集本次迭代的结果：取最后一个执行节点的输出作为迭代结果
+                    if execution_order:
+                        last_node_id = execution_order[-1]
+                        last_result = context.get_node_output(last_node_id, "output") or \
+                                      context.get_node_output(last_node_id, "answerText") or \
+                                      iteration_outputs.get(last_node_id, {})
+                        results.append(last_result if isinstance(last_result, dict) else {"output": last_result})
+                    else:
+                        results.append({item_var: item})
+
                 except Exception as e:
                     results.append({"error": str(e)})
             else:
-                results.append({loop_context: item})
+                results.append({item_var: item})
 
-        return {
+        # 清理循环变量
+        context._variables.pop(item_var, None)
+        context._variables.pop("loopIndex", None)
+
+        result = {
             "loopArray": results,
             "loopCount": len(results),
             "loopItems": loop_input,
+            "loopResult": results,
         }
+
+        # 将输入变量也作为循环节点的输出，供下游节点引用
+        for key, value in inputs.items():
+            if key not in result and not key.startswith("_"):
+                result[key] = value
+
+        # 解析用户自定义的输出变量，供下游节点引用
+        outputs_config = node.config.get("outputs", [])
+        if isinstance(outputs_config, list):
+            for output_def in outputs_config:
+                name = output_def.get("name")
+                value_expr = output_def.get("value")
+                if name and value_expr:
+                    result[name] = context.resolve_value(value_expr)
+
+        return result
+
+    def _build_sub_execution_order(
+        self,
+        nodes: list[WorkflowNodeRecord],
+        edges: list[WorkflowEdgeRecord],
+    ) -> list[str]:
+        """Build execution order for sub-workflow inside loop/parallel nodes."""
+        from collections import deque
+
+        node_ids = {n.id for n in nodes}
+        graph: dict[str, list[str]] = {n.id: [] for n in nodes}
+        in_degree: dict[str, int] = {n.id: 0 for n in nodes}
+
+        for edge in edges:
+            if edge.source_node_id in node_ids and edge.target_node_id in node_ids:
+                graph[edge.source_node_id].append(edge.target_node_id)
+                in_degree[edge.target_node_id] += 1
+
+        queue: deque[str] = deque(sorted(
+            (n_id for n_id, degree in in_degree.items() if degree == 0),
+            key=lambda x: x,
+        ))
+        result: list[str] = []
+
+        while queue:
+            node_id = queue.popleft()
+            result.append(node_id)
+            for neighbor in sorted(graph[node_id]):
+                in_degree[neighbor] -= 1
+                if in_degree[neighbor] == 0:
+                    queue.append(neighbor)
+
+        return result
+
+    def _resolve_node_inputs(
+        self,
+        node: WorkflowNodeRecord,
+        context: WorkflowContext,
+    ) -> dict[str, Any]:
+        """Resolve inputs for a node using the current context."""
+        inputs_config = node.config.get("inputs", [])
+        inputs: dict[str, Any] = {}
+
+        if isinstance(inputs_config, list):
+            for input_item in inputs_config:
+                key = input_item.get("name") or input_item.get("key")
+                value = input_item.get("value")
+                if key is not None:
+                    inputs[key] = context.resolve_value(value)
+        elif isinstance(inputs_config, dict):
+            inputs = context.resolve_inputs(inputs_config)
+
+        return inputs
 
     async def execute_parallel_run(
         self,

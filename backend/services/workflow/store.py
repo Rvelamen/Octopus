@@ -362,11 +362,12 @@ class WorkflowStore:
                 node_id = node_data.get("id") or self._generate_id()
                 now = datetime.now()
 
+                parent_id = node_data.get("parent_id") or node_data.get("parentId")
                 conn.execute(
                     """
                     INSERT INTO workflow_nodes
-                    (id, version_id, type, label, position_x, position_y, width, height, config, timeout_seconds, max_retries, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (id, version_id, type, label, position_x, position_y, width, height, config, timeout_seconds, max_retries, parent_id, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         node_id,
@@ -380,6 +381,7 @@ class WorkflowStore:
                         json.dumps(node_data.get("config", {})),
                         node_data.get("timeout_seconds", 60),
                         node_data.get("max_retries", 0),
+                        parent_id,
                         now,
                     ),
                 )
@@ -396,6 +398,7 @@ class WorkflowStore:
                     config=node_data.get("config", {}),
                     timeout_seconds=node_data.get("timeout_seconds", 60),
                     max_retries=node_data.get("max_retries", 0),
+                    parent_id=parent_id,
                     created_at=now,
                 ))
 
@@ -424,6 +427,7 @@ class WorkflowStore:
                     config=json.loads(row["config"]) if row["config"] else {},
                     timeout_seconds=row["timeout_seconds"],
                     max_retries=row["max_retries"],
+                    parent_id=row["parent_id"] or None,
                     created_at=_parse_dt(row["created_at"]),
                 )
                 for row in rows

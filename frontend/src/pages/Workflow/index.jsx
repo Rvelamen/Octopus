@@ -54,6 +54,7 @@ import RunDialog from '../../workflow/components/common/RunDialog';
 
 import nodeTypes from '../../workflow/components/nodes';
 import { createNodeFromTemplate } from '../../workflow/templates';
+import { validateWorkflow } from '../../workflow/utils';
 
 import { message } from 'antd';
 
@@ -143,11 +144,11 @@ const BottomToolbar = ({
     <ToolbarButton icon={Redo2} label="重做" onClick={onRedo} disabled={!canRedo} />
     <ToolbarDivider />
     <ToolbarButton
-      icon={isRunning ? AlertCircle : Play}
-      label={isRunning ? '运行中' : '运行'}
+      icon={isSaving ? Loader2 : (isRunning ? AlertCircle : Play)}
+      label={isSaving ? '保存并运行' : (isRunning ? '运行中' : '运行')}
       onClick={onRun}
-      color={isRunning ? '#f59e0b' : '#22c55e'}
-      disabled={isRunning}
+      color={isSaving ? '#3b82f6' : (isRunning ? '#f59e0b' : '#22c55e')}
+      disabled={isSaving || isRunning}
     />
     <ToolbarButton icon={Bug} label="调试" onClick={onDebug} color="#8b5cf6" />
     <ToolbarDivider />
@@ -239,7 +240,6 @@ const WorkflowEditor = () => {
   const addEdgeToStore = useWorkflowStore((state) => state.addEdge);
   const selectNode = useWorkflowStore((state) => state.selectNode);
   const removeNode = useWorkflowStore((state) => state.removeNode);
-  const moveNodeIntoLoop = useWorkflowStore((state) => state.moveNodeIntoLoop);
   const undo = useWorkflowStore((state) => state.undo);
   const redo = useWorkflowStore((state) => state.redo);
   const canUndo = useWorkflowStore((state) => state.canUndo);
@@ -286,6 +286,8 @@ const WorkflowEditor = () => {
   const [workflowId, setWorkflowId] = useState(null);
   const [versionId, setVersionId] = useState(null);
   const setWorkflowInfo = useWorkflowStore((state) => state.setWorkflowInfo);
+  const setWorkflowBasicInfo = useWorkflowStore((state) => state.setWorkflowBasicInfo);
+  const updateWorkflowNameInStore = useWorkflowStore((state) => state.updateWorkflowName);
   const [workflowName, setWorkflowName] = useState('');
   const [versions, setVersions] = useState([]);
 
@@ -316,14 +318,68 @@ const WorkflowEditor = () => {
   }, [nodes, executionStatus]);
 
   // 连接边
+  const isValidLoopConnection = useCallback(({ source, target, sourceHandle, targetHandle }) => {
+    const sourceNode = nodes.find((n) => n.id === source);
+    const targetNode = nodes.find((n) => n.id === target);
+    if (!sourceNode || !targetNode) return false;
+
+    const isSourceBodyHandle = sourceHandle?.includes('-body-start') || sourceHandle?.includes('-body-end');
+    const isTargetBodyHandle = targetHandle?.includes('-body-start') || targetHandle?.includes('-body-end');
+
+    if (isSourceBodyHandle || isTargetBodyHandle) {
+      const loopNodeId = isSourceBodyHandle ? source : target;
+      const loopNode = nodes.find((n) => n.id === loopNodeId);
+      const childId = isSourceBodyHandle ? target : source;
+      const childNode = nodes.find((n) => n.id === childId);
+
+      if (!loopNode || loopNode.type !== 'loop') return false;
+      if (!childNode || childNode.parentId !== loopNodeId) return false;
+      if (source === target) return false;
+
+      if (sourceHandle?.includes('-body-start')) {
+        if (!targetHandle?.endsWith('-target') && !targetHandle?.endsWith('-input')) return false;
+      }
+      if (targetHandle?.includes('-body-end')) {
+        if (!sourceHandle?.endsWith('-source') && !sourceHandle?.endsWith('-output')) return false;
+      }
+
+      return true;
+    }
+
+    if (sourceNode.parentId !== targetNode.parentId) {
+      if (sourceNode.parentId && !targetNode.parentId) return false;
+      if (!sourceNode.parentId && targetNode.parentId) return false;
+    }
+
+    return true;
+  }, [nodes]);
+
   const onConnect = useCallback(
     (params) => {
+      let { source, target, sourceHandle, targetHandle } = params;
+
+      if (!isValidLoopConnection({ source, target, sourceHandle, targetHandle })) {
+        console.warn('[onConnect] 连接被拒绝:', { source, target, sourceHandle, targetHandle });
+        return;
+      }
+
+      if (sourceHandle && sourceHandle.endsWith('-target')) {
+        const tmp = source;
+        source = target;
+        target = tmp;
+        const tmpHandle = sourceHandle;
+        sourceHandle = targetHandle;
+        targetHandle = tmpHandle;
+      }
+
       addEdgeToStore({
-        source: params.source,
-        target: params.target,
+        source,
+        target,
+        sourceHandle: sourceHandle || `${source}-source`,
+        targetHandle: targetHandle || `${target}-target`,
       });
     },
-    [addEdgeToStore]
+    [addEdgeToStore, isValidLoopConnection]
   );
 
   // 点击画布空白处
@@ -367,34 +423,44 @@ const WorkflowEditor = () => {
 
     setIsSaving(true);
     try {
-      // 收集所有有效节点 ID（主画布 + loop 内部子节点）
-      const collectNodeIds = (nodeList) => {
-        const ids = new Set();
-        for (const node of nodeList) {
-          ids.add(node.id);
-          const childNodes = node.data?.children?.nodes;
-          if (childNodes) {
-            for (const child of childNodes) {
-              ids.add(child.id);
-            }
+      // ⭐ parentId 方案: 保存前将所有子节点坐标转为绝对坐标
+      // 并收集所有节点 ID（parentId 子节点也是独立节点）
+      const validNodeIds = new Set(nodes.map((n) => n.id));
+
+      const nodesData = nodes.map((node) => {
+        let savePosition = node.position;
+        let saveWidth = node.width || 240;
+        let saveHeight = node.height || 120;
+
+        // 如果节点有 parentId，将相对坐标转为绝对坐标保存
+        if (node.parentId) {
+          const parentNode = nodes.find((n) => n.id === node.parentId);
+          if (parentNode) {
+            savePosition = {
+              x: parentNode.position.x + node.position.x,
+              y: parentNode.position.y + node.position.y,
+            };
           }
         }
-        return ids;
-      };
-      const validNodeIds = collectNodeIds(nodes);
 
-      // 转换节点格式以匹配后端期望
-      const nodesData = nodes.map((node) => ({
-        id: node.id,
-        type: node.type,
-        label: node.data?.name || node.data?.label || node.type,
-        position: node.position,
-        width: node.width || 240,
-        height: node.height || 120,
-        config: node.data || {},
-        timeout_seconds: node.data?.timeout_seconds || 60,
-        max_retries: node.data?.max_retries || 0,
-      }));
+        // 将 parentId 持久化到 config.__parentId（后端 schema 不支持 parentId 字段）
+        const config = {
+          ...node.data,
+          __parentId: node.parentId || undefined,
+        };
+
+        return {
+          id: node.id,
+          type: node.type,
+          label: node.data?.name || node.data?.label || node.type,
+          position: savePosition,
+          width: saveWidth,
+          height: saveHeight,
+          config,
+          timeout_seconds: node.data?.timeout_seconds || 60,
+          max_retries: node.data?.max_retries || 0,
+        };
+      });
 
       // 过滤掉 source/target 不在有效节点列表中的边（避免 FOREIGN KEY 错误）
       const edgesData = edges
@@ -429,6 +495,7 @@ const WorkflowEditor = () => {
   const handleSelectWorkflow = useCallback(async (workflow) => {
     setWorkflowId(workflow.id);
     setWorkflowName(workflow.name);
+    setWorkflowBasicInfo(workflow.name, workflow.updated_at);
 
     try {
       // 获取版本列表
@@ -448,19 +515,68 @@ const WorkflowEditor = () => {
       // 加载定义
       const definition = await api.getDefinition(targetVersion.id);
       if (definition) {
-        // 转换后端节点格式为 ReactFlow 格式
-        const loadedNodes = (definition.nodes || []).map((n) => ({
-          id: n.id,
-          type: n.type,
-          position: n.position || { x: 0, y: 0 },
-          width: n.width || 240,
-          height: n.height || 120,
-          data: {
-            ...n.config,
-            name: n.label,
-            flowNodeType: n.type,
-          },
-        }));
+        // ⭐ parentId 方案: 加载时恢复 parentId 关系并转换坐标
+        let loadedNodes = (definition.nodes || []).map((n) => {
+          const parentId = n.config?.__parentId;
+          return {
+            id: n.id,
+            type: n.type,
+            position: n.position || { x: 0, y: 0 },
+            width: n.width || 240,
+            height: n.height || 120,
+            parentId,
+            data: {
+              ...n.config,
+              name: n.label,
+              flowNodeType: n.type,
+            },
+          };
+        });
+
+        // 将 parentId 子节点的坐标从绝对转为相对
+        loadedNodes = loadedNodes.map((node) => {
+          if (!node.parentId) return node;
+          const parentNode = loadedNodes.find((n) => n.id === node.parentId);
+          if (!parentNode) return node;
+          const relX = node.position.x - parentNode.position.x;
+          const relY = node.position.y - parentNode.position.y;
+          return {
+            ...node,
+            position: { x: relX, y: relY },
+            // ⭐ 不设置 extent: 'parent'，避免子节点卡在边缘
+            // extent: undefined,
+            // expandParent: false,
+            internals: {
+              ...node.internals,
+              positionAbsolute: { x: node.position.x, y: node.position.y },
+            },
+            // ⭐ 不设置额外的 style
+          };
+        });
+
+        // ⭐ RF12 要求 parent 节点必须在 children 之前
+        loadedNodes.sort((a, b) => {
+          const aIsChild = !!a.parentId;
+          const bIsChild = !!b.parentId;
+          if (aIsChild && !bIsChild) return 1;
+          if (!aIsChild && bIsChild) return -1;
+          return 0;
+        });
+
+        // 确保 loop 节点有正确的 measured 尺寸
+        loadedNodes = loadedNodes.map((node) => {
+          if (node.type !== 'loop') return node;
+          return {
+            ...node,
+            width: node.width || 400,
+            height: node.height || 280,
+            measured: {
+              width: node.width || 400,
+              height: node.height || 280,
+            },
+            zIndex: -1,
+          };
+        });
 
         const loadedEdges = (definition.edges || []).map((e) => ({
           id: e.id,
@@ -482,6 +598,22 @@ const WorkflowEditor = () => {
     }
   }, [api, setNodes, setEdges, markSaved]);
 
+  // 更新工作流名称（供 TabTitle 组件调用）
+  const handleUpdateWorkflowName = useCallback(async (newName) => {
+    if (!workflowId) {
+      throw new Error('工作流 ID 不存在');
+    }
+
+    try {
+      await api.updateWorkflow(workflowId, { name: newName });
+      setWorkflowName(newName);
+      updateWorkflowNameInStore(newName);
+    } catch (error) {
+      console.error('[WorkflowEditor] update name error:', error);
+      throw error;
+    }
+  }, [workflowId, api, updateWorkflowNameInStore]);
+
   // 创建新工作流
   const handleCreateWorkflow = useCallback(async () => {
     try {
@@ -498,6 +630,7 @@ const WorkflowEditor = () => {
 
       setWorkflowId(newWf.id);
       setWorkflowName(newWf.name);
+      setWorkflowBasicInfo(newWf.name, new Date().toISOString());
 
       // 获取初始版本
       const versions = await api.getVersionList(newWf.id);
@@ -523,14 +656,44 @@ const WorkflowEditor = () => {
     return inputs.filter((i) => i.name && i.name.trim() !== '');
   }, [nodes]);
 
-  // 运行工作流
+  // 运行工作流（先保存，再运行）
   const handleRun = useCallback(async () => {
     if (!workflowId || !versionId) {
-      message.warning('请先保存工作流');
+      message.warning('请先创建或加载一个工作流');
+      setIsWorkflowListOpen(true);
       return;
     }
 
-    if (isRunning) return;
+    if (isRunning || isSaving) return;
+
+    try {
+      // ⭐ 先自动保存工作流
+      message.info('正在保存工作流...');
+      await handleSave();
+      message.success('保存成功，开始运行工作流...');
+    } catch (error) {
+      message.error('保存失败，无法运行: ' + (error.message || '未知错误'));
+      console.error('[handleRun] auto-save error:', error);
+      return; // 保存失败，终止运行
+    }
+
+    // ⭐ 验证工作流完整性（检测环路、孤立节点等）
+    const validation = validateWorkflow(nodes, edges);
+    if (!validation.isValid) {
+      const errorMsg = validation.errors.join('\n');
+      message.error({
+        content: '工作流验证失败，无法运行：',
+        duration: 5,
+      });
+      console.error('[handleRun] validation errors:', validation.errors);
+      
+      // 显示详细的错误信息
+      setTimeout(() => {
+        alert(`❌ 工作流验证失败：\n\n${errorMsg}\n\n请检查工作流连接，确保没有循环依赖或孤立节点。`);
+      }, 100);
+      
+      return; // 验证失败，终止运行
+    }
 
     // 检查是否有输入变量
     const inputVars = getStartNodeInputs();
@@ -542,7 +705,6 @@ const WorkflowEditor = () => {
 
     // 无输入变量,直接运行
     setIsRunning(true);
-    message.info('开始运行工作流...');
     setExecutionMode('run');
     startExecution(null);
 
@@ -581,14 +743,15 @@ const WorkflowEditor = () => {
       if (typeof unsub === 'function') unsub();
       finishExecution();
     }
-  }, [workflowId, versionId, isRunning, api, getStartNodeInputs, startExecution, updateExecutionNode, finishExecution, subscribe, setExecutionMode]);
+  }, [workflowId, versionId, isRunning, isSaving, api, getStartNodeInputs, startExecution, updateExecutionNode, finishExecution, subscribe, setExecutionMode, handleSave, nodes, edges]);
 
-  // 带输入变量的运行确认
+  // 带输入变量的运行确认（已在 handleRun 中保存过，此处直接运行）
   const handleRunWithInputs = useCallback(async (inputValues) => {
     console.log('[handleRunWithInputs] called, inputValues:', inputValues);
     setIsRunDialogOpen(false);
+
+    // ⭐ 注意：工作流已在 handleRun 中保存过，这里直接运行，无需再次保存
     setIsRunning(true);
-    message.info('开始运行工作流...');
     setExecutionMode('run');
     startExecution(null);
 
@@ -748,41 +911,20 @@ const WorkflowEditor = () => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        isValidConnection={isValidLoopConnection}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
         onNodeDragStop={(_event, node) => {
-          const loopNodes = (nodes || []).filter((n) => n.type === 'loop' && n.id !== node.id);
-          if (loopNodes.length === 0) return;
-
-          const nodeRect = {
-            x: node.position.x,
-            y: node.position.y,
-            width: node.width || 280,
-            height: node.height || 200,
-          };
-
-          for (const loopNode of loopNodes) {
-            const loopRect = {
-              x: loopNode.position.x,
-              y: loopNode.position.y,
-              width: loopNode.width || 280,
-              height: loopNode.height || 400,
-            };
-
-            const nodeCenterX = nodeRect.x + nodeRect.width / 2;
-            const nodeCenterY = nodeRect.y + nodeRect.height / 2;
-
-            if (
-              nodeCenterX >= loopRect.x &&
-              nodeCenterX <= loopRect.x + loopRect.width &&
-              nodeCenterY >= loopRect.y &&
-              nodeCenterY <= loopRect.y + loopRect.height
-            ) {
-              moveNodeIntoLoop(node.id, loopNode.id);
-              message.success(`节点已移入循环体: ${loopNode.data?.name || '循环'}`);
-              break;
+          // ⭐ 碰撞检测和移入逻辑已由 onNodesChange 原子处理（useWorkflowStore.js）
+          // 此处仅用于显示用户反馈消息
+          if (node.parentId) {
+            // 节点刚刚被移入某个循环体，显示成功提示
+            const parentNode = nodes.find((n) => n.id === node.parentId);
+            if (parentNode && parentNode.type === 'loop') {
+              message.success(`节点已移入循环体: ${parentNode.data?.name || '循环'}`);
             }
           }
+          // ⭐ 不再在此处执行碰撞检测，避免与 onNodesChange 竞态
         }}
         nodeTypes={nodeTypes}
         connectionMode="loose"
@@ -895,18 +1037,68 @@ const WorkflowEditor = () => {
           // 加载版本定义
           api.getDefinition(version.id).then((definition) => {
             if (definition) {
-              const loadedNodes = (definition.nodes || []).map((n) => ({
-                id: n.id,
-                type: n.type,
-                position: n.position || { x: 0, y: 0 },
-                width: n.width || 240,
-                height: n.height || 120,
-                data: {
-                  ...n.config,
-                  name: n.label,
-                  flowNodeType: n.type,
-                },
-              }));
+              let loadedNodes = (definition.nodes || []).map((n) => {
+                const parentId = n.config?.__parentId;
+                return {
+                  id: n.id,
+                  type: n.type,
+                  position: n.position || { x: 0, y: 0 },
+                  width: n.width || 240,
+                  height: n.height || 120,
+                  parentId,
+                  data: {
+                    ...n.config,
+                    name: n.label,
+                    flowNodeType: n.type,
+                  },
+                };
+              });
+
+              // 将 parentId 子节点的坐标从绝对转为相对
+              loadedNodes = loadedNodes.map((node) => {
+                if (!node.parentId) return node;
+                const parentNode = loadedNodes.find((n) => n.id === node.parentId);
+                if (!parentNode) return node;
+                const relX = node.position.x - parentNode.position.x;
+                const relY = node.position.y - parentNode.position.y;
+                return {
+                  ...node,
+                  position: { x: relX, y: relY },
+                  // ⭐ 不设置 extent: 'parent'，避免子节点卡在边缘
+                  // extent: undefined,
+                  // expandParent: false,
+                  internals: {
+                    ...node.internals,
+                    positionAbsolute: { x: node.position.x, y: node.position.y },
+                  },
+                  // ⭐ 不设置额外的 style
+                };
+              });
+
+              // ⭐ RF12 要求 parent 节点必须在 children 之前
+              loadedNodes.sort((a, b) => {
+                const aIsChild = !!a.parentId;
+                const bIsChild = !!b.parentId;
+                if (aIsChild && !bIsChild) return 1;
+                if (!aIsChild && bIsChild) return -1;
+                return 0;
+              });
+
+              // 确保 loop 节点有正确的 measured 尺寸
+              loadedNodes = loadedNodes.map((node) => {
+                if (node.type !== 'loop') return node;
+                return {
+                  ...node,
+                  width: node.width || 400,
+                  height: node.height || 280,
+                  measured: {
+                    width: node.width || 400,
+                    height: node.height || 280,
+                  },
+                  zIndex: -1,
+                };
+              });
+
               const loadedEdges = (definition.edges || []).map((e) => ({
                 id: e.id,
                 source: e.source,

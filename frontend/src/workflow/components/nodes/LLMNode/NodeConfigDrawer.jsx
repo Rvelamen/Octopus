@@ -368,7 +368,6 @@ const NodeConfigDrawer = ({ nodes, edges, currentNodeId, nodeData }) => {
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error('[LLMNode] Failed to load providers:', err);
       })
       .finally(() => {
         if (!cancelled) setLoadingProviders(false);
@@ -392,7 +391,6 @@ const NodeConfigDrawer = ({ nodes, edges, currentNodeId, nodeData }) => {
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error('[LLMNode] Failed to load models:', err);
       })
       .finally(() => {
         if (!cancelled) setLoadingModels(false);

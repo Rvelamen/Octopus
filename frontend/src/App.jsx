@@ -42,6 +42,7 @@ import Agents from "./pages/Agents";
 import Tokens from "./pages/Tokens";
 import Knowledge from "./pages/Knowledge";
 import Workflow from "./pages/Workflow";
+import WorkflowTabTitle from "./workflow/components/WorkflowTabTitle";
 import { useWebSocket } from "./contexts/WebSocketContext";
 import { useChatState } from "./hooks/useChatState";
 
@@ -427,7 +428,11 @@ function App() {
         </div>
         <div className="app-titlebar-sep" aria-hidden />
         <div className="tab-title">
-          <span>{appTitleBarText}</span>
+          {activeTab === 'workflows' ? (
+            <WorkflowTabTitle />
+          ) : (
+            <span>{appTitleBarText}</span>
+          )}
         </div>
         <div className="top-actions" style={{ WebkitAppRegion: 'no-drag' }}>
           <button

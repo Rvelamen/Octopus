@@ -115,6 +115,14 @@ class FeishuChannel(BaseChannel):
         def run_ws():
             try:
                 self._ws_client.start()
+            except ImportError as e:
+                if "python-socks" in str(e):
+                    logger.error(
+                        f"Feishu WebSocket failed due to SOCKS proxy: {e}. "
+                        f"Please install python-socks: pip install python-socks"
+                    )
+                else:
+                    logger.error(f"Feishu WebSocket import error: {e}")
             except Exception as e:
                 logger.error(f"Feishu WebSocket error: {e}")
         

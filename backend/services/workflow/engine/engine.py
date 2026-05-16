@@ -18,6 +18,7 @@ from backend.services.workflow.models import (
 from backend.services.workflow.engine.context import WorkflowContext
 from backend.services.workflow.engine.executor import NodeExecutor
 from backend.data.database import Database
+from loguru import logger
 
 
 class WorkflowExecutionError(Exception):
@@ -310,15 +311,66 @@ class WorkflowEngine:
     ) -> list[str]:
         """Build execution order using Kahn's algorithm (topological sort).
 
+        ⭐ 改进版：支持循环节点（Loop Node），将其视为超级节点，忽略内部连接
+
         Uses a stable queue (collections.deque) for predictable ordering
         when multiple nodes have the same in-degree.
         """
         from collections import deque
 
-        graph: dict[str, list[str]] = {n.id: [] for n in nodes}
-        in_degree: dict[str, int] = {n.id: 0 for n in nodes}
+        # 1️⃣ 识别 Loop 节点和它们的子节点
+        logger.info(f"[_build_execution_order] Total nodes: {len(nodes)}, Total edges: {len(edges)}")
+        for n in nodes:
+            node_type_val = n.type.value if hasattr(n.type, 'value') else n.type
+            logger.info(f"  Node: id={n.id}, type={node_type_val}, parent_id={n.parent_id}")
+        for e in edges:
+            logger.info(f"  Edge: {e.source_node_id} -> {e.target_node_id}, handles: {e.source_handle}/{e.target_handle}")
+        
+        loop_node_ids = {
+            n.id for n in nodes
+            if (n.type.value if hasattr(n.type, 'value') else n.type) == "loop"
+        }
+        logger.info(f"[_build_execution_order] Loop nodes found: {loop_node_ids}")
+        
+        child_node_ids = {
+            n.id for n in nodes
+            if n.parent_id and n.parent_id in loop_node_ids
+        }
+        logger.info(f"[_build_execution_order] Child nodes found: {child_node_ids}")
 
-        for edge in edges:
+        # 2️⃣ 过滤出需要参与拓扑排序的"有效节点"
+        #    - 所有非子节点的普通节点
+        #    - Loop 节点本身（作为超级节点代表整个循环体）
+        effective_nodes = [n for n in nodes if n.id not in child_node_ids]
+
+        # 3️⃣ 过滤出"有效边"
+        #    排除以下类型的边：
+        #    a) 涉及子节点的边（循环体内部连接）
+        #    b) 涉及 body-start / body-end handles 的边（循环体入口/出口）
+        def is_loop_internal_edge(edge: WorkflowEdgeRecord) -> bool:
+            # 如果 source 或 target 是子节点，这是内部连接
+            if edge.source_node_id in child_node_ids or edge.target_node_id in child_node_ids:
+                return True
+            
+            # 如果涉及 body-start 或 body-end handle，这是循环体的入口/出口连接
+            source_handle = edge.source_handle or ""
+            target_handle = edge.target_handle or ""
+            
+            if (
+                "body-start" in source_handle or "body-start" in target_handle or
+                "body-end" in source_handle or "body-end" in target_handle
+            ):
+                return True
+            
+            return False
+
+        effective_edges = [e for e in edges if not is_loop_internal_edge(e)]
+
+        # 4️⃣ 使用过滤后的节点和边构建图进行拓扑排序
+        graph: dict[str, list[str]] = {n.id: [] for n in effective_nodes}
+        in_degree: dict[str, int] = {n.id: 0 for n in effective_nodes}
+
+        for edge in effective_edges:
             if edge.source_node_id in graph and edge.target_node_id in graph:
                 graph[edge.source_node_id].append(edge.target_node_id)
                 in_degree[edge.target_node_id] += 1
@@ -339,7 +391,8 @@ class WorkflowEngine:
                 if in_degree[neighbor] == 0:
                     queue.append(neighbor)
 
-        if len(result) != len(nodes):
+        # 检查是否有环（基于有效节点的数量）
+        if len(result) != len(effective_nodes):
             raise ValueError("Workflow contains cycles")
 
         return result
@@ -356,7 +409,21 @@ class WorkflowEngine:
         inputs_config = node.config.get("inputs", [])
         inputs: dict[str, Any] = {}
 
-        if isinstance(inputs_config, list):
+        node_type = node.type.value if isinstance(node.type, NodeType) else node_type
+
+        # workflowStart inputs are self-referential ({{workflowStart.var_1}}),
+        # resolve them from context._variables (runtime input) instead
+        if node_type in ("workflowStart", "start"):
+            if isinstance(inputs_config, list):
+                for input_item in inputs_config:
+                    key = input_item.get("name") or input_item.get("key")
+                    if key is not None:
+                        inputs[key] = context._variables.get(key, "")
+            elif isinstance(inputs_config, dict):
+                for key in inputs_config:
+                    inputs[key] = context._variables.get(key, "")
+            inputs = {**inputs, **context._variables}
+        elif isinstance(inputs_config, list):
             for input_item in inputs_config:
                 key = input_item.get("name") or input_item.get("key")
                 value = input_item.get("value")
@@ -365,6 +432,31 @@ class WorkflowEngine:
         elif isinstance(inputs_config, dict):
             inputs = context.resolve_inputs(inputs_config)
 
+        # Translate loopConfig/parallelConfig into inputs format
+        if node_type in ("loop", "parallelRun"):
+            loop_config = node.config.get("loopConfig") or node.config.get("parallelConfig") or {}
+            loop_type = loop_config.get("loopType", "array")
+
+            if loop_type == "array":
+                loop_array = loop_config.get("loopArray", {})
+                var_value = loop_array.get("varValue", "")
+                if var_value:
+                    resolved = context.resolve_value(var_value)
+                    inputs["loopInputArray"] = resolved
+                var_name = loop_array.get("varName")
+                if var_name:
+                    inputs["loopItemVariable"] = var_name
+            elif loop_type == "count":
+                loop_count_cfg = loop_config.get("loopCount", {})
+                count = int(loop_count_cfg.get("value", 10))
+                inputs["loopInputArray"] = list(range(count))
+                inputs["loopMaxIterations"] = count
+            else:
+                loop_count_cfg = loop_config.get("loopCount", {})
+                count = int(loop_count_cfg.get("value", 10))
+                inputs["loopInputArray"] = list(range(count))
+                inputs["loopMaxIterations"] = count
+
         # Allow input_variables to override node inputs (for testing and runtime injection)
         for key in list(inputs.keys()):
             if key in context._variables:
@@ -372,8 +464,6 @@ class WorkflowEngine:
 
         # Record resolved inputs into the trace so the outer loop can reference them
         context.update_node_trace(node.id, input_snapshot=inputs)
-
-        node_type = node.type.value if isinstance(node.type, NodeType) else node.type
 
         executor_map = {
             "workflowStart": self._executor.execute_workflow_start,
@@ -397,9 +487,6 @@ class WorkflowEngine:
             "jsonSerialize": self._executor.execute_json_serialize,
             "jsonDeserialize": self._executor.execute_json_deserialize,
         }
-
-        if node_type in ("workflowStart", "start"):
-            inputs = {**inputs, **context._variables}
 
         executor = executor_map.get(node_type)
         if executor:

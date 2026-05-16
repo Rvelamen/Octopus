@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import re
 import time
+import logging
 from typing import Any, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -184,41 +187,74 @@ class WorkflowContext:
 
     def resolve_value(self, value: Any) -> Any:
         """Resolve a value that may contain variable references.
-        
+
         Variable references are in the format {{nodeId.outputKey}} or {{variableName}}.
+        When resolution fails, returns a clear marker instead of the raw reference string.
         """
         if isinstance(value, str):
-            # Check if it's a variable reference
             match = re.match(r'^\{\{(.+?)\}\}$', value.strip())
             if match:
                 ref = match.group(1)
                 if '.' in ref:
-                    # Node output reference: nodeId.outputKey
                     parts = ref.split('.', 1)
-                    return self.get_node_output(parts[0], parts[1], value)
+                    node_id, output_key = parts[0], parts[1]
+                    result = self.get_node_output(node_id, output_key)
+                    if result is not None:
+                        return result
+                    fallback = self.get_variable(output_key)
+                    if fallback is not None:
+                        return fallback
+                    logger.warning(
+                        f"未解析的节点输出引用: {{{ref}}}, "
+                        "节点ID=%s, 输出Key=%s, "
+                        "可用节点=%s",
+                        node_id,
+                        output_key,
+                        list(self._node_outputs.keys()),
+                    )
+                    return f"[未解析变量: {value}]"
                 else:
-                    # Global variable reference
-                    return self.get_variable(ref, value)
-            
-            # Replace all variable references in the string
+                    result = self.get_variable(ref)
+                    if result is not None:
+                        return result
+                    logger.warning(
+                        f"未解析的全局变量引用: {{{ref}}}, 可用变量=%s",
+                        list(self._variables.keys()),
+                    )
+                    return f"[未解析变量: {value}]"
+
             def replace_ref(match):
                 ref = match.group(1)
                 if '.' in ref:
                     parts = ref.split('.', 1)
-                    result = self.get_node_output(parts[0], parts[1])
-                    return str(result) if result is not None else match.group(0)
+                    node_id, output_key = parts[0], parts[1]
+                    result = self.get_node_output(node_id, output_key)
+                    if result is not None:
+                        return str(result)
+                    fallback = self.get_variable(output_key)
+                    if fallback is not None:
+                        return str(fallback)
+                    logger.warning(
+                        "字符串内嵌变量引用未解析: {{{ref}}}, 节点ID=%s, 输出Key=%s",
+                        node_id,
+                        output_key,
+                    )
+                    return f"[未解析: {match.group(0)}]"
                 else:
                     result = self.get_variable(ref)
-                    return str(result) if result is not None else match.group(0)
-            
+                    if result is not None:
+                        return str(result)
+                    logger.warning("字符串内嵌全局变量未解析: {{{ref}}}", ref=ref)
+                    return f"[未解析: {match.group(0)}]"
+
             return re.sub(r'\{\{(.+?)\}\}', replace_ref, value)
-        
+
         elif isinstance(value, dict):
             return {k: self.resolve_value(v) for k, v in value.items()}
-        
+
         elif isinstance(value, list):
             return [self.resolve_value(item) for item in value]
-        
+
         return value
 
     def resolve_inputs(self, inputs: dict[str, Any]) -> dict[str, Any]:

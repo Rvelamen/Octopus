@@ -49,6 +49,7 @@ def create_tables(conn: sqlite3.Connection) -> None:
             timeout_seconds INTEGER DEFAULT 300,
             max_retries INTEGER DEFAULT 0,
             retry_delay_seconds INTEGER DEFAULT 5,
+            parent_id TEXT REFERENCES workflow_nodes(id) ON DELETE SET NULL,
             created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
         )
     """)
@@ -157,6 +158,11 @@ def _ensure_columns(conn: sqlite3.Connection) -> None:
     existing_run_node_cols = {row[1] for row in cursor.fetchall()}
     if "created_at" not in existing_run_node_cols:
         conn.execute("ALTER TABLE workflow_run_nodes ADD COLUMN created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))")
+
+    cursor = conn.execute("PRAGMA table_info(workflow_nodes)")
+    existing_node_cols = {row[1] for row in cursor.fetchall()}
+    if "parent_id" not in existing_node_cols:
+        conn.execute("ALTER TABLE workflow_nodes ADD COLUMN parent_id TEXT REFERENCES workflow_nodes(id) ON DELETE SET NULL")
 
     # Migrate id column from INTEGER to TEXT (store.py uses UUID strings)
     col_info = {row[1]: row for row in conn.execute("PRAGMA table_info(workflow_run_nodes)").fetchall()}

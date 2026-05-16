@@ -184,6 +184,8 @@ const NodeConfigDrawer = ({ isOpen, onClose }) => {
     };
   }, [isOpen, handleKeyDown]);
 
+  const effectiveCurrentNodeId = isEditingChildNode ? selectedLoopChildNodeId : selectedNodeId;
+
   const renderNodeForm = () => {
     const formProps = {
       values: formValues,
@@ -191,7 +193,7 @@ const NodeConfigDrawer = ({ isOpen, onClose }) => {
       errors,
       nodes,
       edges,
-      currentNodeId: selectedNodeId,
+      currentNodeId: effectiveCurrentNodeId,
       nodeData: selectedNode?.data,
     };
 

@@ -11,3 +11,45 @@
 .react-flow__node.workflow-node--failed .workflow-node-card {
   border-color: #ef4444 !important;
 }
+
+/* ⭐ ReactFlow 12: 强制 SVG 边层在 HTML 节点层上方
+ * 默认情况下 SVG 边层 (z-index: 0) 在 HTML 节点层 (z-index: 2) 下方
+ * 导致 parent 节点（如循环体）的背景会完全遮挡内部子节点之间的连线
+ * 提升 SVG 边层到最上方，确保所有连线可见
+ */
+.react-flow__renderer .react-flow__edges {
+  z-index: 1000 !important;
+}
+.react-flow__renderer .react-flow__edge-labels {
+  z-index: 1001 !important;
+}
+
+/* 同时确保边的交互层也在上方 */
+.react-flow__renderer .react-flow__edge {
+  z-index: 1000 !important;
+}
+
+/* ⭐ ReactFlow 12 Parent-Child 节点关键样式修复
+ * 确保 LoopNode（parent）能正确包裹子节点
+ * 问题：子节点显示在 parent 外部，而不是内部
+ */
+.react-flow__node.loop .workflow-node-card {
+  /* 确保 parent 节点有正确的定位上下文 */
+  position: relative !important;
+  /* 不允许溢出隐藏，否则子节点被裁剪 */
+  overflow: visible !important;
+  /* 确保有明确的尺寸（不能是 auto 或 %） */
+  box-sizing: border-box !important;
+}
+
+/* ⭐ 子节点应该在 parent 内部正确渲染 */
+.react-flow__node[data-parentid] {
+  /* 确保子节点不会被意外定位到外部 */
+  position: absolute !important;
+  pointer-events: auto !important;
+}
+
+/* ⭐ 当节点在循环体内时，提升 z-index 确保可见性 */
+.react-flow__node[data-parentid] .workflow-node-card {
+  z-index: 10 !important;
+}

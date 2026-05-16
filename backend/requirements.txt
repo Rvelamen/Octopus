@@ -21,6 +21,7 @@ beautifulsoup4>=4.12.0
 
 # Feishu/Lark Integration
 lark-oapi>=1.0.0
+python-socks>=2.0.0
 
 # Data & Config
 pyyaml>=6.0.1

@@ -125,6 +125,7 @@ class WorkflowNodeRecord:
     config: dict[str, Any] = field(default_factory=dict)
     timeout_seconds: int = 60
     max_retries: int = 0
+    parent_id: Optional[str] = None
     created_at: Optional[datetime] = None
 
 

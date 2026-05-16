@@ -400,7 +400,27 @@ const ValueDisplay = memo(({ value }) => {
   if (typeof value === 'boolean') return <span style={{ color: '#f97316' }}>{String(value)}</span>;
   if (typeof value === 'number') return <span style={{ color: '#10b981' }}>{value}</span>;
   if (typeof value === 'string') {
-    // 如果字符串很长，直接显示；如果很短，加引号
+    const trimmed = value.trim();
+    const isUnresolvedRef = /^\{\{.+\..+\}\}$/.test(trimmed);
+    const isMarkedUnresolved = /^\[未解析/.test(trimmed);
+
+    if (isUnresolvedRef || isMarkedUnresolved) {
+      return (
+        <span
+          style={{
+            color: '#ef4444',
+            background: '#fef2f2',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            fontSize: '12px',
+          }}
+          title={`变量引用未能解析为实际值: ${trimmed}`}
+        >
+          ⚠️ {isMarkedUnresolved ? trimmed : '[变量未解析]'}
+        </span>
+      );
+    }
+
     return <span style={{ color: '#1f2937' }}>{value}</span>;
   }
   if (typeof value === 'object') {

@@ -274,10 +274,20 @@ export const createNodeFromTemplate = (template, position) => {
     Object.assign(data, template.defaultData);
   }
 
-  return {
+  const result = {
     id: `${template.type}-${Date.now()}`,
     type: template.type,
     position,
     data,
   };
+
+  // 循环节点需要固定尺寸作为容器，供 parentId 子节点正确渲染
+  if (template.type === 'loop') {
+    result.width = 400;
+    result.height = 280;
+    // ⭐ ReactFlow 12: parent 节点必须有 zIndex: -1，确保在子节点和边后方
+    result.zIndex = -1;
+  }
+
+  return result;
 };

@@ -84,7 +84,6 @@ const LLMNode = memo(({ id, data, selected }) => {
           border: '2px solid #6366f1',
           borderRadius: '50%',
           left: '-8px',
-          top: '28px',
           transition: 'all 0.2s',
         }}
       />
@@ -228,7 +227,6 @@ const LLMNode = memo(({ id, data, selected }) => {
           border: '2px solid #6366f1',
           borderRadius: '50%',
           right: '-8px',
-          top: '28px',
           transition: 'all 0.2s',
         }}
       />

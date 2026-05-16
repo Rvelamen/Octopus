@@ -1,0 +1,126 @@
+/**
+ * 循环节点 (LoopNode) 样式
+ * 修复循环体连接点定位问题
+ */
+
+/* ========== 循环体连接点容器 ========== */
+.loop-body-handle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+}
+
+.loop-body-handle--in {
+  left: -28px;
+}
+
+.loop-body-handle--out {
+  right: -28px;
+}
+
+/* 连接点标签 */
+.loop-body-handle__label {
+  font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.loop-body-handle--in .loop-body-handle__label {
+  color: #22c55e;
+}
+
+.loop-body-handle--out .loop-body-handle__label {
+  color: #f97316;
+}
+
+/* ========== 关键修复：覆盖 ReactFlow Handle 默认定位 ========== */
+/*
+ * ReactFlow 的 Handle 组件会自动定位到节点边缘（left: -8px 或 right: -8px）
+ * 这导致循环体的 IN/OUT 连接点显示在父节点（LoopNode）的外侧
+ * 
+ * 解决方案：
+ * 1. 父容器 (.loop-body-handle) 使用 absolute 定位到循环体容器的左右两侧
+ * 2. Handle 使用相对定位，居中显示在父容器内
+ * 3. 通过 !important 覆盖 ReactFlow 的内联样式
+ */
+
+.loop-body-handle__reactflow {
+  /* 重置 ReactFlow 的默认绝对定位 */
+  position: relative !important;
+  
+  /* 居中显示 */
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  
+  /* 确保可交互 */
+  pointer-events: all !important;
+  cursor: crosshair !important;
+}
+
+/* Handle hover 效果 */
+.loop-body-handle__reactflow:hover {
+  transform: scale(1.2) !important;
+  box-shadow: 0 0 0 3px currentColor, 0 0 12px currentColor !important;
+}
+
+/* 入口连接点 (IN) - 绿色 */
+.loop-body-handle--in .loop-body-handle__reactflow {
+  background: #22c55e !important;
+  border: 2px solid white !important;
+  width: 12px !important;
+  height: 12px !important;
+  box-shadow: 0 0 0 2px #86efac, 0 0 8px rgba(34, 197, 94, 0.3) !important;
+}
+
+/* 出口连接点 (OUT) - 橙色 */
+.loop-body-handle--out .loop-body-handle__reactflow {
+  background: #f97316 !important;
+  border: 2px solid white !important;
+  width: 12px !important;
+  height: 12px !important;
+  box-shadow: 0 0 0 2px #fdba74, 0 0 8px rgba(249, 115, 22, 0.3) !important;
+}
+
+/* 连接中状态 */
+.loop-body-handle__reactflow.connecting {
+  background: #6366f1 !important;
+  border-color: white !important;
+  animation: loop-handle-pulse 1s ease-in-out infinite;
+}
+
+@keyframes loop-handle-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+  }
+}
+
+/* 响应式：小屏幕时隐藏标签 */
+@media (max-width: 1200px) {
+  .loop-body-handle__label {
+    display: none;
+  }
+  
+  .loop-body-handle--in {
+    left: -20px;
+  }
+  
+  .loop-body-handle--out {
+    right: -20px;
+  }
+}

@@ -338,7 +338,7 @@ hr {
   flex: 1;
   min-width: 0;
   padding: 0 var(--s-4);
-  -webkit-app-region: no-drag;
+  /* 不再设置 no-drag，由子组件控制 */
   background: var(--surface);
 }
 

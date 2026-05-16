@@ -57,26 +57,69 @@ export const replaceVariableReferences = (text, nodeOutputs) => {
 
 /**
  * 拓扑排序 - 确定节点执行顺序
+ * ⭐ 改进版：支持循环节点（Loop Node），将其视为超级节点，忽略内部连接
  */
 export const topologicalSort = (nodes, edges) => {
+  // 1️⃣ 识别 Loop 节点和它们的子节点
+  const loopNodeIds = new Set(nodes.filter((n) => n.type === 'loop').map((n) => n.id));
+  const childNodeIds = new Set(
+    nodes.filter((n) => n.parentId && loopNodeIds.has(n.parentId)).map((n) => n.id)
+  );
+
+  // 2️⃣ 过滤出需要参与拓扑排序的"有效节点"
+  //    - 所有非子节点的普通节点
+  //    - Loop 节点本身（作为超级节点代表整个循环体）
+  const effectiveNodes = nodes.filter((n) => !childNodeIds.has(n.id));
+
+  // 3️⃣ 过滤出"有效边"
+  //    排除以下类型的边：
+  //    a) 涉及子节点的边（循环体内部连接）
+  //    b) 涉及 body-start / body-end handles 的边（循环体入口/出口）
+  const isLoopInternalEdge = (edge) => {
+    const { source, target, sourceHandle, targetHandle } = edge;
+
+    // 如果 source 或 target 是子节点，这是内部连接
+    if (childNodeIds.has(source) || childNodeIds.has(target)) {
+      return true;
+    }
+
+    // 如果涉及 body-start 或 body-end handle，这是循环体的入口/出口连接
+    if (
+      sourceHandle?.includes('body-start') ||
+      sourceHandle?.includes('body-end') ||
+      targetHandle?.includes('body-start') ||
+      targetHandle?.includes('body-end')
+    ) {
+      return true;
+    }
+
+    return false;
+  };
+
+  const effectiveEdges = edges.filter((edge) => !isLoopInternalEdge(edge));
+
+  // 4️⃣ 使用过滤后的节点和边进行拓扑排序
   const graph = new Map();
   const inDegree = new Map();
 
-  // 初始化
-  nodes.forEach((node) => {
+  // 初始化图
+  effectiveNodes.forEach((node) => {
     graph.set(node.id, []);
     inDegree.set(node.id, 0);
   });
 
-  // 构建图
-  edges.forEach((edge) => {
-    graph.get(edge.source).push(edge.target);
-    inDegree.set(edge.target, inDegree.get(edge.target) + 1);
+  // 构建图（只使用有效边）
+  effectiveEdges.forEach((edge) => {
+    // 确保边的两端都在有效节点中
+    if (graph.has(edge.source) && graph.has(edge.target)) {
+      graph.get(edge.source).push(edge.target);
+      inDegree.set(edge.target, inDegree.get(edge.target) + 1);
+    }
   });
 
   // 找到入度为0的节点
   const queue = [];
-  nodes.forEach((node) => {
+  effectiveNodes.forEach((node) => {
     if (inDegree.get(node.id) === 0) {
       queue.push(node.id);
     }
@@ -99,8 +142,8 @@ export const topologicalSort = (nodes, edges) => {
     });
   }
 
-  // 检查是否有环
-  if (result.length !== nodes.length) {
+  // 检查是否有环（基于有效节点的数量）
+  if (result.length !== effectiveNodes.length) {
     throw new Error('工作流中存在循环依赖');
   }
 

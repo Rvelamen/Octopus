@@ -6,7 +6,7 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 import { Plus, Trash2, Info } from 'lucide-react';
-import { Collapse, Tooltip, Select } from 'antd';
+import { Collapse, Tooltip, Select, Cascader } from 'antd';
 import { useWorkflowStore } from '../../../hooks/useWorkflowStore';
 import ExpressionEditorField from '../../common/ExpressionEditorField/index.jsx';
 
@@ -125,15 +125,22 @@ const TypeSelector = ({ value, onChange }) => {
   const cascaderValue = useMemo(() => typeToCascaderValue(value), [value]);
   const displayAbbr = useMemo(() => getDisplayAbbr(value), [value]);
 
-  const handleChange = (selectedValue) => {
-    const newType = cascaderValueToType(selectedValue);
-    onChange(newType);
-  };
-
   return (
-    <span style={{ color: '#9ca3af', fontSize: '12px' }}>
-      {displayAbbr}.
-    </span>
+    <Cascader
+      options={TYPE_CASCADER_OPTIONS}
+      value={cascaderValue}
+      onChange={(v) => onChange(cascaderValueToType(v))}
+      expandTrigger="hover"
+      changeOnSelect
+      displayRender={() => (
+        <span style={{ color: '#6b7280', fontSize: '12px' }}>{displayAbbr}.</span>
+      )}
+      dropdownStyle={{ maxHeight: 'none', overflow: 'visible' }}
+      dropdownMenuColumnStyle={{ maxHeight: 'none', height: 'auto', overflow: 'visible' }}
+      style={{ width: '100%' }}
+      size="small"
+      bordered={false}
+    />
   );
 };
 
@@ -315,6 +322,9 @@ const OutputRow = ({
   onUpdate,
   onDelete,
   canDelete,
+  nodes,
+  edges,
+  currentNodeId,
 }) => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -340,22 +350,31 @@ const OutputRow = ({
           onChange={(type) => onUpdate(index, 'type', type)}
         />
       </div>
-      <input
-        type="text"
-        value={output.value || ''}
-        onChange={(e) => onUpdate(index, 'value', e.target.value)}
-        placeholder="引用参数值"
-        style={{
-          flex: 1,
-          padding: '5px 8px',
-          border: '1px solid #e5e7eb',
-          borderRadius: '6px',
-          fontSize: '12px',
-          outline: 'none',
-          color: '#9ca3af',
-          height: '32px',
-        }}
-      />
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        border: '1px solid #e5e7eb',
+        borderRadius: '6px',
+        overflow: 'hidden',
+        background: 'white',
+        height: '32px',
+      }}>
+        <ExpressionEditorField
+          fields={[{ name: output.name, value: output.value || '' }]}
+          onChange={(newFields) => {
+            if (newFields.length > 0) {
+              onUpdate(index, 'value', newFields[0].value);
+            }
+          }}
+          nodes={nodes}
+          edges={edges}
+          currentNodeId={currentNodeId}
+          compact
+          useDropdown
+          canAdd={false}
+        />
+      </div>
       {canDelete && (
         <button
           onClick={() => onDelete(index)}
@@ -648,6 +667,9 @@ const NodeConfigDrawer = ({
               onUpdate={handleUpdateOutputField}
               onDelete={handleDeleteOutput}
               canDelete={outputs.length > 0}
+              nodes={nodes}
+              edges={edges}
+              currentNodeId={currentNodeId}
             />
           ))}
         </div>
