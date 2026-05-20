@@ -49,7 +49,7 @@ https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 
 <table align="center">
 <tr>
-<td align="center" width="260px">
+<td align="center" width="200px">
 
 **🚀 One-Click Deploy**
 *No server, no YAML*
@@ -60,7 +60,7 @@ https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 🔒 Data stays local
 
 </td>
-<td align="center" width="260px">
+<td align="center" width="200px">
 
 **💰 Cost Transparency**
 *Know what you spend*
@@ -71,7 +71,7 @@ https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 🔄 Model cost compare
 
 </td>
-<td align="center" width="260px">
+<td align="center" width="200px">
 
 **🧩 Markdown Skills**
 *Extend without coding*
@@ -82,9 +82,20 @@ https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 ♻️ Hot-reload enabled
 
 </td>
+<td align="center" width="200px">
+
+**🔄 Visual Workflow**
+*Build AI pipelines*
+
+🎨 Drag-and-drop editor
+🧩 24 node types
+📋 Version management
+🔍 Run trace & debug
+
+</td>
 </tr>
 <tr>
-<td align="center" width="260px">
+<td align="center" width="200px">
 
 **🤖 Visual SubAgent**
 *Create AI workers*
@@ -95,7 +106,29 @@ https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 🧠 Own config & memory
 
 </td>
-<td align="center" width="260px">
+<td align="center" width="200px">
+
+**📚 Knowledge Base**
+*Your second brain*
+
+📄 Multi-format documents
+📝 Markdown notes
+🕸️ Knowledge graph
+🧠 AI-powered distillation
+
+</td>
+<td align="center" width="200px">
+
+**📡 Multi-Channel**
+*Chat everywhere*
+
+💬 Desktop / WeChat
+🐦 Slack / Discord
+✈️ Telegram / DingTalk
+📧 Email / Webhook
+
+</td>
+<td align="center" width="200px">
 
 **⏰ Smart Tasks**
 *Actually run tasks*
@@ -106,7 +139,9 @@ https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 💬 Access context
 
 </td>
-<td align="center" width="260px">
+</tr>
+<tr>
+<td align="center" width="200px">
 
 **🗂️ Project Isolation**
 *Separate workspaces*
@@ -117,9 +152,7 @@ https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 💬 Never lose history
 
 </td>
-</tr>
-<tr>
-<td align="center" width="260px">
+<td align="center" width="200px">
 
 **🔊 Text-to-Speech**
 *Voice your AI*
@@ -130,30 +163,102 @@ https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 📱 Real-time playback
 
 </td>
-<td align="center" width="260px">
+<td align="center" width="200px">
 
-**💬 WeChat Channel**
-*Chat on WeChat*
+**🧠 Observation & Memory**
+*Learn from experience*
 
-📱 QR code login
-📨 Send/receive messages
-🔄 Status management
-🤖 Auto-reply support
+🔍 9 observation types
+📝 Auto-extract insights
+💾 Promote to memory
+👤 User profile tracking
 
 </td>
-<td align="center" width="260px">
+<td align="center" width="200px">
 
 **📄 Multi-format Files**
 *Read any document*
 
-📑 PDF support
-📝 DOCX parsing
-📊 Excel reading
-🔍 Smart extraction
+📑 PDF / DOCX / XLSX
+📊 PPTX preview
+🖼️ Image understanding
+🗜️ Context compression
 
 </td>
 </tr>
 </table>
+
+***
+
+## 🔄 Visual Workflow
+
+Build complex AI pipelines with a drag-and-drop editor powered by ReactFlow:
+
+### Node Types (24 kinds)
+
+| Category        | Nodes                                                                                     |
+| :-------------- | :---------------------------------------------------------------------------------------- |
+| **Flow**        | Workflow Start, Answer, Workflow End                                                      |
+| **AI**          | LLM, Question Classifier, Content Extractor                                               |
+| **Tool**        | HTTP Request, Code Execution, Read Files, JSON Serialize/Deserialize, Text Editor         |
+| **Logic**       | Condition Branch, Variable Update, Loop, Parallel Execution                               |
+| **Interaction** | User Select, Form Input, Input, Plugin Output                                             |
+| **Agent**       | Agent Node, Sub-Workflow                                                                  |
+
+### Key Capabilities
+
+- **Visual Editor**: Drag-and-drop canvas with auto-layout
+- **Node Testing**: Test individual nodes in isolation before running the full workflow
+- **Version Management**: Save, compare, and restore workflow versions
+- **Run Tracing**: Step-by-step execution trace with variable inspection
+- **Loop Support**: Nested loop nodes with dedicated inner canvas
+- **Templates**: Pre-built templates for common patterns (simple chat, conditional branch)
+- **Auto-save**: 5-second debounce with dirty state indicator
+
+***
+
+## 📚 Knowledge Base
+
+A complete knowledge management system with AI-powered capabilities:
+
+### Documents
+
+- **Multi-format upload**: PDF, DOCX, XLSX, PPTX, images, and more
+- **Chunked upload**: Files >2MB automatically split into 2MB chunks (max 500MB)
+- **AI Distillation**: Extract key insights from documents using AI
+- **Batch operations**: Batch distill, move, and manage documents
+- **Preview**: In-app preview for all supported formats
+- **Import/Export**: ZIP-based import/export, Obsidian vault import
+
+### Notes
+
+- **Markdown editor**: Full-featured editor with wiki-link navigation
+- **Vault system**: Create and manage multiple knowledge vaults
+- **Obsidian compatible**: Import existing Obsidian vaults
+
+### Knowledge Graph
+
+- **Visual exploration**: WebGL-powered graph visualization (PixiJS)
+- **Force-directed layout**: Interactive node positioning
+- **Relationship mapping**: Discover connections between knowledge nodes
+
+***
+
+## 📡 Multi-Channel Support
+
+Connect Octopus to your favorite platforms:
+
+| Channel     | Features                                           |
+| :---------- | :------------------------------------------------- |
+| 🖥️ Desktop  | Full-featured native app with WebSocket real-time  |
+| 💬 WeChat   | QR code login, send/receive, auto-reply            |
+| 🐦 Slack    | Bolt SDK integration, channel & DM support         |
+| 🎮 Discord  | Bot integration, server & channel messaging        |
+| ✈️ Telegram | Bot API, chat & group support                      |
+| 📱 DingTalk | Stream protocol, conversation messaging            |
+| 📧 Email    | SMTP/IMAP integration                              |
+| 🔗 Webhook  | Generic HTTP webhook for custom integrations       |
+| 🐦 Feishu   | Lark SDK, event subscription                       |
 
 ***
 
@@ -177,11 +282,63 @@ When reviewing code, check for:
 
 Drop it into `workspace/extensions/my-skill/SKILL.md` and restart to activate.
 
+### Extension Marketplace
+
+- Browse and install community extensions
+- Three extension types: **Skill**, **Plugin**, **Worker**
+- Search, filter by type, sort by popularity
+- One-click install with environment variable configuration
+
 ### MCP Protocol Support
 
-- Connect to any MCP server (stdio / WebSocket / SSE)
+- Connect to any MCP server (stdio / HTTP SSE)
 - Auto-discover tools, no manual configuration needed
-- Visual permission management
+- Visual permission management with enable/disable per tool
+- Real-time connection status monitoring
+
+***
+
+## 🛠️ Built-in Tools
+
+| Category      | Tools                                            | Description                  |
+| :------------ | :----------------------------------------------- | :--------------------------- |
+| 📁 Filesystem | `read`, `write`, `edit`, `list`                  | File read/write operations   |
+| 🖥️ System    | `shell`, `spawn`                                 | Command execution            |
+| 🌐 Network    | `web_fetch`                                      | Web content fetching         |
+| 🖥️ Browser   | `browser_navigate`, `browser_click`, `browser_screenshot`, ... | Playwright browser automation |
+| 🖼️ Image     | `image_understand`, `image_generate`             | AI image processing          |
+| ⏰ Schedule    | `cron_add`, `cron_list`, `cron_remove`           | Task scheduling              |
+| 💬 Message    | `send_message`                                   | Multi-channel messaging      |
+| 🧠 Memory     | `memory_read`, `memory_write`                    | Agent memory operations      |
+| 📚 Knowledge  | `knowledge_search`, `knowledge_query`            | Knowledge base retrieval     |
+| ⚡ Action      | `action`                                         | Execute extension actions    |
+
+***
+
+## 🧠 Observation & Memory
+
+Octopus automatically extracts insights from conversations:
+
+### Observation Types
+
+| Type              | Description                              |
+| :---------------- | :--------------------------------------- |
+| 🎯 Gotcha         | Key findings and aha moments             |
+| 🔧 Problem-Solution | Problem-solution pairs                  |
+| ⚙️ How-it-works   | How something works explanations          |
+| 📝 What-changed   | Change records                           |
+| 🔍 Discovery      | New discoveries                          |
+| ❓ Why-it-exists   | Rationale and reasons                    |
+| 📋 Decision       | Design decisions                         |
+| ⚖️ Trade-off      | Trade-off analysis                       |
+| 💡 General        | General observations                     |
+
+### Memory Features
+
+- **Auto-extraction**: AI identifies and extracts observations from conversations
+- **Promote to memory**: Elevate important observations to long-term memory
+- **User profiles**: Track user preferences and patterns
+- **Contextual depth**: View observations with surrounding conversation context
 
 ***
 
@@ -192,9 +349,12 @@ All configuration has a graphical interface, no YAML required:
 | Config Item         | Description                                                     |
 | :------------------ | :-------------------------------------------------------------- |
 | **Model Providers** | Add OpenAI/Anthropic/DeepSeek, support multi-provider switching |
+| **Agent Settings**  | Model, max tokens, temperature, max iterations, compression    |
+| **Channel Config**  | WeChat QR login, Telegram bot, Slack app, DingTalk, and more   |
 | **Tool Toggles**    | Enable/disable tools with one click, set timeout                |
 | **Workspace**       | Isolated workspaces with separate config and memory             |
 | **Budget Limit**    | Set monthly token limit with over-budget alerts                 |
+| **Multimodal**      | Image understanding, TTS, and other multimodal settings         |
 
 ***
 
@@ -202,10 +362,10 @@ All configuration has a graphical interface, no YAML required:
 
 Monitor the cost of every conversation in real-time:
 
-- 📊 **Real-time Stats**: Input/output tokens, cost breakdown
-- 📈 **Historical Trends**: View consumption by day/week/month
+- 📊 **Real-time Stats**: Input/output tokens, cache hits, completion tokens, sub-agent usage
+- 📈 **Historical Trends**: View consumption by day (7/14/30 days)
+- 📋 **Breakdown Tables**: Per-provider and per-model cost analysis
 - ⚠️ **Budget Alerts**: Set limits with automatic warnings
-- 🔄 **Model Comparison**: Cost efficiency across models at a glance
 
 ***
 
@@ -217,6 +377,7 @@ Not just notifications, but actual work:
 - **Flexible Scheduling**: Support ISO time, interval seconds, Cron expressions
 - **Context Inheritance**: Tasks can access session memory from creation time
 - **Persistent Storage**: Tasks saved in SQLite, survive restarts
+- **Channel Delivery**: Send task results to specific channels
 
 ***
 
@@ -237,13 +398,16 @@ workspace/
 - Switch workspace = switch complete config and memory
 - Export/import workspaces supported
 - Team sharing: export workspace, colleagues import to use
+- Built-in file browser with Monaco Editor
+- Multi-format preview: PDF, DOCX, XLSX, PPTX, images, Markdown
 
 ***
 
 ## 💬 Chat History
 
 - All conversations saved in local SQLite
-- Organized by session with search support
+- 3-level organization: Channel → Session → Instance
+- Filter by message type, search across history
 - Return to any historical session anytime
 - Support parallel multi-sessions
 
@@ -257,20 +421,7 @@ Create and manage specialized agents through the UI:
 - **One-click Creation**: Fill in name to auto-generate template config
 - **Isolated Workspace**: Each SubAgent has its own config and memory
 - **Master-Slave Dispatch**: Main agent automatically calls appropriate SubAgent
-
-***
-
-## 🛠️ Built-in Tools
-
-| Category      | Tools                                  | Description                |
-| :------------ | :------------------------------------- | :------------------------- |
-| 📁 Filesystem | `read`, `write`, `edit`, `list`        | File read/write operations |
-| 🖥️ System    | `shell`, `spawn`                       | Command execution          |
-| 🌐 Network    | `web_fetch`                            | Web content fetching       |
-| 🖼️ Image     | `image_understand`, `image_generate`   | AI image processing        |
-| ⏰ Schedule    | `cron_add`, `cron_list`, `cron_remove` | Task scheduling            |
-| 💬 Message    | `send_message`                         | Multi-channel messaging    |
-| ⚡ Action      | `action`                               | Execute extension actions  |
+- **Tool & Extension Binding**: Assign specific tools and extensions per agent
 
 ***
 
@@ -299,6 +450,7 @@ npm run dev
 >
 > - Frontend dev server (<http://localhost:3000>)
 > - Electron desktop window
+> - Python backend (auto-started by Electron)
 
 ***
 
@@ -322,11 +474,11 @@ npm run dev
 
 ### Package & Release
 
-| Command            | Description              | Output                    |
-| :----------------- | :----------------------- | :------------------------ |
-| `npm run dist`     | Package current platform | Auto-select by platform   |
-| `npm run dist:mac` | macOS package            | DMG + ZIP (x64/arm64)     |
-| `npm run dist:win` | Windows package          | NSIS installer + portable |
+| Command            | Description              | Output                                  |
+| :----------------- | :----------------------- | :-------------------------------------- |
+| `npm run dist`     | Package current platform | Auto-select by platform                 |
+| `npm run dist:mac` | macOS package            | DMG + ZIP (universal: x64/arm64)        |
+| `npm run dist:win` | Windows package          | NSIS installer + portable               |
 
 > 📂 Output: `dist-electron/`
 > 📖 Detailed guide: [README\_BUILD.md](./README_BUILD.md)
@@ -344,53 +496,133 @@ octopus/
 │       └── avatars/        Agent avatar assets
 ├── backend/                ⚡ Python backend
 │   ├── agent/              Agent core logic
+│   │   ├── processors/     Streaming / non-streaming / longtask processors
+│   │   ├── compressor.py   Context compression
+│   │   ├── subagent.py     SubAgent dispatch
+│   │   └── observation_*.py Observation extraction & management
 │   ├── api/                FastAPI service interface
-│   ├── channels/           Multi-channel support (desktop/feishu)
-│   ├── core/               Core modules (config/events/models)
+│   ├── channels/           Multi-channel support
+│   │   ├── desktop/        Desktop channel (WebSocket)
+│   │   ├── wechat/         WeChat channel
+│   │   ├── feishu/         Feishu/Lark channel
+│   │   ├── dingtalk/       DingTalk channel
+│   │   ├── slack/          Slack channel
+│   │   ├── discord/        Discord channel
+│   │   ├── telegram/       Telegram channel
+│   │   ├── email/          Email channel
+│   │   └── webhook/        Webhook channel
+│   ├── core/               Core modules
+│   │   ├── config/         Configuration & schema
+│   │   ├── events/         Event bus system
+│   │   ├── longtask/       Long-running task management
+│   │   ├── models/         Data models
+│   │   └── providers/      LLM provider adapters (OpenAI/Anthropic)
 │   ├── data/               Data storage (SQLite)
+│   │   ├── migrations/     Database migrations (11 migrations)
+│   │   └── schema/         Data schemas (agent/session/token/workflow/...)
 │   ├── extensions/         Plugin system
+│   │   ├── builtin/        Built-in extensions (cron, etc.)
+│   │   └── loader.py       Dynamic extension loader
 │   ├── mcp/                MCP protocol integration
-│   ├── services/           Service layer (cron/image)
+│   │   ├── server/         MCP server connection & tool registry
+│   │   └── llm_bridge.py   LLM-MCP bridge
+│   ├── services/           Service layer
+│   │   ├── cron/           Scheduled task service
+│   │   ├── tts/            Text-to-speech (OpenAI/MiMo engines)
+│   │   ├── workflow/       Workflow engine & executor
+│   │   ├── knowledge_*.py  Knowledge base services
+│   │   ├── image_service.py Image generation service
+│   │   └── llm_service.py  LLM invocation service
 │   ├── tools/              Built-in tools
 │   │   ├── filesystem.py   Filesystem tools
 │   │   ├── shell.py        Shell tools
 │   │   ├── web_fetch.py    Web fetch tools
+│   │   ├── browser/        Playwright browser automation
 │   │   ├── image.py        Image processing tools
 │   │   ├── cron.py         Cron task tools
-│   │   └── message.py      Message tools
+│   │   ├── message.py      Message tools
+│   │   ├── memory.py       Memory read tools
+│   │   ├── memory_write.py Memory write tools
+│   │   ├── knowledge.py    Knowledge base tools
+│   │   ├── action.py       Extension action tools
+│   │   └── spawn.py        Process spawn tools
 │   └── utils/              Utility functions
 ├── electron/               🖥️ Electron main process
-│   ├── main.js             Main entry
-│   └── preload.js          Preload script
+│   ├── main.js             Main entry (Python lifecycle, window management)
+│   └── preload.js          Preload script (IPC bridge)
 ├── frontend/               🎨 React frontend
 │   ├── src/
-│   │   ├── components/     UI components
-│   │   │   ├── config/     Config components
-│   │   │   ├── forms/      Form components
-│   │   │   ├── modals/     Modal components
-│   │   │   └── panels/     Feature panels
-│   │   ├── utils/          Utilities
-│   │   ├── App.jsx         App entry
-│   │   └── pixel-theme.css Pixel theme styles
+│   │   ├── pages/          Page components
+│   │   │   ├── Chat/       Chat interface with streaming & tool display
+│   │   │   ├── Config/     Settings (providers/agent/channels/multimodal)
+│   │   │   ├── Workflow/   Visual workflow editor (ReactFlow)
+│   │   │   ├── Knowledge/  Knowledge base (documents/notes/graph)
+│   │   │   ├── Agents/     SubAgent management
+│   │   │   ├── MCP/        MCP server & tool management
+│   │   │   ├── Extensions/ Extension marketplace
+│   │   │   ├── Cron/       Scheduled tasks
+│   │   │   ├── Tokens/     Token usage dashboard
+│   │   │   ├── History/    Chat history browser
+│   │   │   ├── Memory/     Observation & memory viewer
+│   │   │   └── Workspace/  File browser & editor
+│   │   ├── components/     Shared components
+│   │   │   ├── MessageList/ Message rendering with iteration folds
+│   │   │   ├── TTSPlayer/  Audio playback
+│   │   │   ├── TaskIndicator/ Task status indicator
+│   │   │   └── MermaidDiagram/ Mermaid chart rendering
+│   │   ├── workflow/       Workflow engine
+│   │   │   ├── components/ Node components (13 registered types)
+│   │   │   ├── hooks/      Zustand workflow store
+│   │   │   ├── types/      Type definitions
+│   │   │   └── templates/  Workflow templates
+│   │   ├── contexts/       React contexts (WebSocket, DistillTask)
+│   │   ├── hooks/          Custom hooks (useChatState, useMermaid)
+│   │   └── utils/          Utilities
 │   └── package.json
-├── workspace/              📂 Workspace data
-│   └── memory/             Agent memory storage
-├── package.json            Project config & scripts
-└── README.md               Project documentation
+├── build/                  🔧 Build resources (icons, etc.)
+├── workspace/              📂 Workspace data (runtime-generated, git-ignored)
+├── build_python.py         🐍 Python packaging script (PyInstaller)
+├── package.json            📋 Project config & scripts
+└── README.md               📖 Project documentation
 ```
 
 ### Tech Stack
 
-| Layer        | Technology             | Description                        |
-| :----------- | :--------------------- | :--------------------------------- |
-| **Frontend** | React 18 + Vite        | Modern UI framework                |
-| <br />       | Ant Design             | Component library                  |
-| <br />       | Monaco Editor          | Code editor                        |
-| <br />       | ECharts                | Data visualization                 |
-| **Backend**  | Python 3.10+ + FastAPI | High-performance async web service |
-| <br />       | SQLite                 | Local lightweight database         |
-| **Desktop**  | Electron 28            | Cross-platform desktop framework   |
-| <br />       | electron-builder       | App packaging tool                 |
+| Layer        | Technology                | Description                        |
+| :----------- | :------------------------ | :--------------------------------- |
+| **Frontend** | React 18 + Vite 5        | Modern UI framework                |
+|              | Ant Design 6              | Component library                  |
+|              | ReactFlow                 | Visual workflow editor             |
+|              | Monaco Editor             | Code editor                        |
+|              | ECharts 6                 | Data visualization                 |
+|              | PixiJS                    | Knowledge graph WebGL rendering    |
+|              | Zustand                   | Workflow state management          |
+| **Backend**  | Python 3.10+ + FastAPI    | High-performance async web service |
+|              | SQLite + SQLAlchemy       | Local lightweight database         |
+|              | Playwright                | Browser automation                 |
+|              | APScheduler               | Task scheduling                    |
+| **Desktop**  | Electron 28               | Cross-platform desktop framework   |
+|              | electron-builder          | App packaging tool                 |
+
+### Runtime Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│                Electron Main Process         │
+│  ┌──────────────────┐  ┌─────────────────┐  │
+│  │  BrowserWindow   │  │ Python Process   │  │
+│  │  (React SPA)     │  │ (octopus-server) │  │
+│  │                  │  │                  │  │
+│  │  electronAPI ────┼──┼──▶ FastAPI       │  │
+│  │  (preload bridge)│  │    (WebSocket)   │  │
+│  └──────────────────┘  └─────────────────┘  │
+└─────────────────────────────────────────────┘
+```
+
+- **Communication**: Full WebSocket between frontend and backend
+- **Request-Response**: `request_id` based correlation with timeout
+- **Event Subscription**: Pub/Sub pattern for real-time events
+- **Python Lifecycle**: Managed by Electron (auto-start/stop)
 
 ***
 
@@ -402,18 +634,19 @@ Add API keys in the app settings panel:
 
 | Provider  | Representative Models                          |
 | :-------- | :--------------------------------------------- |
-| OpenAI    | GPT-4o, GPT-4 Turbo, GPT-3.5 Turbo             |
+| OpenAI    | GPT-4o, GPT-4 Turbo, GPT-3.5 Turbo, o1        |
 | Anthropic | Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku |
 | Google    | Gemini Pro, Gemini Ultra                       |
 | DeepSeek  | DeepSeek Chat, DeepSeek Coder                  |
 | Alibaba   | Tongyi Qianwen series                          |
 | Baidu     | Wenxin Yiyan series                            |
+| Custom    | Any OpenAI-compatible API endpoint             |
 
 ### Configuration Steps
 
 1. Open app → Settings → Model Providers
 2. Add provider (select or custom)
-3. Enter API Key
+3. Enter API Key & Base URL
 4. Select model to use
 5. Save and start
 
@@ -427,12 +660,13 @@ Octopus fully supports **Model Context Protocol (MCP)**:
 - 🛠️ Use tools provided by MCP
 - 🔐 Secure permission management
 - 🔄 Real-time connection monitoring
+- 📋 Visual server management (add/edit/delete/reconnect)
+- 🔍 Auto-discovered tools with per-tool enable/disable
 
 ### Supported Transports
 
 - **stdio**: Local process communication
-- **WebSocket**: Remote real-time connection
-- **SSE**: Server-Sent Events
+- **HTTP SSE**: Server-Sent Events over HTTP
 
 ***
 
@@ -463,13 +697,14 @@ octopus/
 ├── backend/              # Python backend (FastAPI)
 ├── frontend/             # React frontend (Vite)
 ├── electron/             # Electron main process
+├── build/                # Build resources (icons, etc.)
+├── build_python.py       # Python packaging script
 ├── workspace/            # ⚠️ Runtime-generated directory (git-ignored)
 │   ├── agents/           #   - User-created agent configurations
 │   ├── extensions/       #   - Installed extensions
 │   ├── files/            #   - Workspace files
 │   ├── images/           #   - Generated images
 │   └── ...               #   - Other runtime data
-├── build/                # Build resources (icons, etc.)
 └── scripts/              # Helper scripts
 ```
 
@@ -484,6 +719,7 @@ octopus/
 - 📕 [Identity](./agents/system/IDENTITY.md) - Learn who Octopus is
 - 🧠 [Soul Core](./agents/system/SOUL.md) - Agent core principles
 - 🔌 [MCP Docs](./backend/mcp/README.md) - MCP protocol integration
+- 🌐 [Browser Tools](./backend/tools/browser/README.md) - Browser automation guide
 
 ***
 
@@ -499,6 +735,16 @@ Issues and Pull Requests welcome:
 ***
 
 ## 📋 Changelog
+
+### 2026-05
+
+| Date       | Version | Changes                                                    |
+| :--------- | :------ | :--------------------------------------------------------- |
+| 2026-05-17 | v1.0.0  | 🔄 New: Visual Workflow editor with 24 node types          |
+| 2026-05-17 | v1.0.0  | 📚 New: Knowledge Base with documents, notes, graph        |
+| 2026-05-17 | v1.0.0  | 📡 New: Multi-channel support (Slack/Discord/Telegram/...) |
+| 2026-05-17 | v1.0.0  | 🌐 New: Playwright browser automation tools                |
+| 2026-05-17 | v1.0.0  | 🧠 New: Observation & memory system                        |
 
 ### 2026-03
 
