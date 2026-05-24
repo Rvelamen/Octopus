@@ -62,6 +62,9 @@ log.transports.file.level = 'info';
 log.transports.console.level = 'debug';
 
 let mainWindow = null;
+let pdfWindow = null;
+let markdownWindow = null;
+let workflowWindow = null;
 let pythonProcess = null;
 let pythonPort = null;
 
@@ -349,40 +352,183 @@ ipcMain.handle('get-platform', () => {
   return process.platform;
 });
 
-// 窗口控制 IPC 处理
-ipcMain.handle('window-minimize', () => {
-  if (mainWindow) {
-    mainWindow.minimize();
-  }
+// 窗口控制 IPC 处理（支持任意窗口）
+ipcMain.handle('window-minimize', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) win.minimize();
 });
 
-ipcMain.handle('window-maximize', () => {
-  if (mainWindow) {
-    if (mainWindow.isMaximized()) {
-      mainWindow.unmaximize();
+ipcMain.handle('window-maximize', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    if (win.isMaximized()) {
+      win.unmaximize();
     } else {
-      mainWindow.maximize();
+      win.maximize();
     }
   }
 });
 
-ipcMain.handle('window-close', () => {
-  if (mainWindow) {
-    mainWindow.close();
-  }
+ipcMain.handle('window-close', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) win.close();
 });
 
-ipcMain.handle('window-is-maximized', () => {
-  return mainWindow ? mainWindow.isMaximized() : false;
+ipcMain.handle('window-is-maximized', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  return win ? win.isMaximized() : false;
+});
+
+// 打开 PDF 阅读器窗口
+ipcMain.handle('open-pdf-window', (event, { path: pdfPath, title, itemId }) => {
+  if (pdfWindow && !pdfWindow.isDestroyed()) {
+    pdfWindow.focus();
+    return { success: true };
+  }
+
+  pdfWindow = new BrowserWindow({
+    width: 1000,
+    height: 800,
+    minWidth: 600,
+    minHeight: 400,
+    icon: createAppIcon(),
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
+      webSecurity: false,
+    },
+    title: title || 'PDF Viewer',
+    show: false,
+  });
+
+  const encodedPath = encodeURIComponent(pdfPath || '');
+  const encodedTitle = encodeURIComponent(title || 'PDF');
+  const encodedItemId = encodeURIComponent(itemId || '');
+
+  if (isDev) {
+    pdfWindow.loadURL(`http://localhost:3000/pdf-viewer#?path=${encodedPath}&title=${encodedTitle}&itemId=${encodedItemId}`);
+  } else {
+    const indexPath = path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
+    pdfWindow.loadFile(indexPath, {
+      hash: `pdf-viewer?path=${encodedPath}&title=${encodedTitle}&itemId=${encodedItemId}`,
+    });
+  }
+
+  pdfWindow.once('ready-to-show', () => {
+    pdfWindow.show();
+  });
+
+  pdfWindow.on('closed', () => {
+    pdfWindow = null;
+  });
+
+  return { success: true };
+});
+
+// 打开 Markdown 编辑器窗口
+ipcMain.handle('open-markdown-window', (event, { path: mdPath, title }) => {
+  if (markdownWindow && !markdownWindow.isDestroyed()) {
+    markdownWindow.focus();
+    return { success: true };
+  }
+
+  markdownWindow = new BrowserWindow({
+    width: 1100,
+    height: 800,
+    minWidth: 600,
+    minHeight: 400,
+    icon: createAppIcon(),
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
+      webSecurity: false,
+    },
+    title: title || 'Markdown Editor',
+    show: false,
+  });
+
+  const encodedPath = encodeURIComponent(mdPath || '');
+  const encodedTitle = encodeURIComponent(title || 'Markdown');
+
+  if (isDev) {
+    markdownWindow.loadURL(`http://localhost:3000/markdown-editor#?path=${encodedPath}&title=${encodedTitle}`);
+  } else {
+    const indexPath = path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
+    markdownWindow.loadFile(indexPath, {
+      hash: `markdown-editor?path=${encodedPath}&title=${encodedTitle}`,
+    });
+  }
+
+  markdownWindow.once('ready-to-show', () => {
+    markdownWindow.show();
+  });
+
+  markdownWindow.on('closed', () => {
+    markdownWindow = null;
+  });
+
+  return { success: true };
+});
+
+// 打开 Workflow 编辑器窗口
+ipcMain.handle('open-workflow-window', (event, { workflowId } = {}) => {
+  if (workflowWindow && !workflowWindow.isDestroyed()) {
+    workflowWindow.focus();
+    // 可选：向窗口发送消息，让它打开指定 workflow
+    if (workflowId) {
+      workflowWindow.webContents.send('workflow-open', workflowId);
+    }
+    return { success: true };
+  }
+
+  workflowWindow = new BrowserWindow({
+    width: 1400,
+    height: 900,
+    minWidth: 1000,
+    minHeight: 700,
+    icon: createAppIcon(),
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
+      webSecurity: false,
+    },
+    title: 'Workflow Editor',
+    show: false,
+  });
+
+  const hashQuery = workflowId ? `?workflowId=${encodeURIComponent(workflowId)}` : '';
+
+  if (isDev) {
+    workflowWindow.loadURL(`http://localhost:3000/workflow-window#${hashQuery}`);
+  } else {
+    const indexPath = path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
+    workflowWindow.loadFile(indexPath, {
+      hash: `workflow-window${hashQuery}`,
+    });
+  }
+
+  workflowWindow.once('ready-to-show', () => {
+    workflowWindow.show();
+  });
+
+  workflowWindow.on('closed', () => {
+    workflowWindow = null;
+  });
+
+  return { success: true };
 });
 
 // 监听窗口最大化状态变化
 ipcMain.handle('on-window-maximize-change', (event) => {
-  if (mainWindow) {
-    mainWindow.on('maximize', () => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    win.on('maximize', () => {
       event.sender.send('window-maximize-change', true);
     });
-    mainWindow.on('unmaximize', () => {
+    win.on('unmaximize', () => {
       event.sender.send('window-maximize-change', false);
     });
   }

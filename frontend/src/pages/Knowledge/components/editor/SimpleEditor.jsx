@@ -153,6 +153,44 @@ export default function SimpleEditor({
           }
         },
       });
+
+      // 添加 @citekey 文献引用自动补全
+      monaco.languages.registerCompletionItemProvider('markdown', {
+        triggerCharacters: ['@'],
+        provideCompletionItems: async (model, position) => {
+          const lineContent = model.getLineContent(position.lineNumber);
+          const textBeforeCursor = lineContent.substring(0, position.column - 1);
+          const match = textBeforeCursor.match(/@([\w\-:]*)$/);
+          if (!match) return { suggestions: [] };
+
+          const query = match[1].trim();
+          try {
+            const resp = await sendWSMessage('library_search', { query, limit: 20 });
+            const items = resp.data?.items || [];
+            const suggestions = items.map((item) => {
+              const citekey = item.citekey || `item_${item.id}`;
+              const label = item.title || citekey;
+              const authorYear = `${item.authors?.[0]?.split(' ')?.pop() || ''} ${item.year || ''}`;
+              return {
+                label: `@${citekey} — ${label} (${authorYear.trim()})`,
+                kind: monaco.languages.CompletionItemKind.Reference,
+                insertText: `[[@${citekey}]]`,
+                detail: `${item.authors?.join(', ') || ''} · ${item.venue || ''}`,
+                documentation: item.abstract?.slice(0, 200) || '',
+                range: new monaco.Range(
+                  position.lineNumber,
+                  position.column - match[0].length,
+                  position.lineNumber,
+                  position.column
+                ),
+              };
+            });
+            return { suggestions };
+          } catch {
+            return { suggestions: [] };
+          }
+        },
+      });
     }
 
     // 绑定保存快捷键

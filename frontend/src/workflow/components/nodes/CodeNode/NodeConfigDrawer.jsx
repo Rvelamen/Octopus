@@ -550,16 +550,114 @@ const CodeEditor = ({ value, onChange }) => {
   );
 };
 
-// 默认代码模板
-const DEFAULT_CODE_TEMPLATE = `def main(params):
+const TYPE_DEFAULT_PYTHON = {
+  string: '""',
+  integer: '0',
+  number: '0.0',
+  boolean: 'False',
+  time: '""',
+  object: '{}',
+  array: '[]',
+  arrayString: '[]',
+  arrayInteger: '[]',
+  arrayNumber: '[]',
+  arrayBoolean: '[]',
+  arrayTime: '[]',
+  arrayObject: '[]',
+  arrayFile: '[]',
+  fileDefault: 'None',
+  fileImage: 'None',
+  fileSvg: 'None',
+  fileAudio: 'None',
+  fileVideo: 'None',
+  fileVoice: 'None',
+  fileDoc: 'None',
+  filePpt: 'None',
+  fileExcel: 'None',
+  fileTxt: 'None',
+  fileCode: 'None',
+  fileZip: 'None',
+};
+
+const getDefaultValueForType = (type) => {
+  return TYPE_DEFAULT_PYTHON[type] || 'None';
+};
+
+const syncCodeWithOutputs = (code, outputs, inputs) => {
+  if (!code || code.trim() === '') {
+    return getDefaultCodeTemplate(inputs, outputs);
+  }
+
+  const retPattern = /ret\s*=\s*\{/;
+  const match = retPattern.exec(code);
+  if (!match) return code;
+
+  const retStartIndex = match.index + match[0].length;
+  const codeBeforeRet = code.substring(0, retStartIndex);
+  const codeAfterRetStart = code.substring(retStartIndex);
+
+  let braceDepth = 1;
+  let retEndIndex = 0;
+  for (let i = 0; i < codeAfterRetStart.length; i++) {
+    if (codeAfterRetStart[i] === '{') braceDepth++;
+    if (codeAfterRetStart[i] === '}') {
+      braceDepth--;
+      if (braceDepth === 0) {
+        retEndIndex = i;
+        break;
+      }
+    }
+  }
+  if (retEndIndex === 0) return code;
+
+  const retBody = codeAfterRetStart.substring(0, retEndIndex);
+  const codeAfterRet = codeAfterRetStart.substring(retEndIndex + 1);
+
+  const existingKeyValues = {};
+  const linePattern = /"([^"]+)"\s*:\s*(.+)/;
+  retBody.split('\n').forEach((line) => {
+    const trimmed = line.trim().replace(/,\s*$/, '');
+    if (!trimmed) return;
+    const m = linePattern.exec(trimmed);
+    if (m) {
+      existingKeyValues[m[1]] = m[2].trim();
+    }
+  });
+
+  const newRetEntries = outputs.map((output) => {
+    if (existingKeyValues[output.name] !== undefined) {
+      return `        "${output.name}": ${existingKeyValues[output.name]}`;
+    }
+    const defaultVal = getDefaultValueForType(output.type);
+    return `        "${output.name}": ${defaultVal}`;
+  });
+
+  const newRetBody = newRetEntries.length > 0
+    ? '\n' + newRetEntries.join(',\n') + ',\n    '
+    : '';
+
+  return codeBeforeRet + newRetBody + '}' + codeAfterRet;
+};
+
+const getDefaultCodeTemplate = (_inputs, outputs) => {
+  const outputsToUse = outputs && outputs.length > 0
+    ? outputs
+    : [{ name: 'result', type: 'string' }];
+  const retEntries = outputsToUse.map((output) => {
+    const defaultVal = getDefaultValueForType(output.type);
+    return `        "${output.name}": ${defaultVal}`;
+  });
+
+  return `def main(params):
     # 在这里编写 Python 代码
     # 可以通过 params 获取输入变量
     # 通过 ret 输出结果
 
     ret = {
-        "result": params.get("input", "")
+${retEntries.join(',\n')},
     }
     return ret`;
+};
 
 const NodeConfigDrawer = ({
   nodes,
@@ -577,7 +675,7 @@ const NodeConfigDrawer = ({
   // 初始化时如果代码为空，填充默认模板
   useEffect(() => {
     if (!code || code.trim() === '') {
-      handleUpdateCode(DEFAULT_CODE_TEMPLATE);
+      handleUpdateCode(getDefaultCodeTemplate(inputs, outputs));
     }
   }, []);
 
@@ -585,9 +683,10 @@ const NodeConfigDrawer = ({
     updateNode(currentNodeId, { ...nodeData, inputs: newInputs });
   }, [currentNodeId, nodeData, updateNode]);
 
-  const handleUpdateOutputs = useCallback((newOutputs) => {
-    updateNode(currentNodeId, { ...nodeData, outputs: newOutputs });
-  }, [currentNodeId, nodeData, updateNode]);
+  const handleUpdateOutputsAndSyncCode = useCallback((newOutputs) => {
+    const newCode = syncCodeWithOutputs(code, newOutputs, inputs);
+    updateNode(currentNodeId, { ...nodeData, outputs: newOutputs, code: newCode });
+  }, [currentNodeId, nodeData, updateNode, code, inputs]);
 
   const handleUpdateCode = useCallback((newCode) => {
     updateNode(currentNodeId, { ...nodeData, code: newCode });
@@ -620,14 +719,14 @@ const NodeConfigDrawer = ({
       name: `result_${outputs.length + 1}`,
       type: 'string',
     };
-    handleUpdateOutputs([...outputs, newOutput]);
-  }, [outputs, handleUpdateOutputs]);
+    handleUpdateOutputsAndSyncCode([...outputs, newOutput]);
+  }, [outputs, handleUpdateOutputsAndSyncCode]);
 
   const handleDeleteOutput = useCallback((index, depth = 0) => {
     if (depth === 0) {
-      handleUpdateOutputs(outputs.filter((_, i) => i !== index));
+      handleUpdateOutputsAndSyncCode(outputs.filter((_, i) => i !== index));
     }
-  }, [outputs, handleUpdateOutputs]);
+  }, [outputs, handleUpdateOutputsAndSyncCode]);
 
   const handleUpdateOutputField = useCallback((index, field, fieldValue, depth = 0) => {
     if (depth === 0) {
@@ -646,15 +745,15 @@ const NodeConfigDrawer = ({
           }
           return output;
         });
-        handleUpdateOutputs(newOutputs);
+        handleUpdateOutputsAndSyncCode(newOutputs);
       } else {
         const newOutputs = outputs.map((output, i) =>
           i === index ? { ...output, [field]: fieldValue } : output
         );
-        handleUpdateOutputs(newOutputs);
+        handleUpdateOutputsAndSyncCode(newOutputs);
       }
     }
-  }, [outputs, handleUpdateOutputs]);
+  }, [outputs, handleUpdateOutputsAndSyncCode]);
 
   const collapseItems = [
     {

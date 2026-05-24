@@ -324,6 +324,33 @@ class HandlerRegistry:
             MessageType.FILE_PREVIEW_PDF: FilePreviewPDFHandler(bus),
         })
 
+        # Register Library handlers
+        from backend.channels.desktop.handlers.library import LibraryHandler
+        library_handler = LibraryHandler(bus)
+        self.handlers.update({
+            MessageType.LIBRARY_LIST: library_handler,
+            MessageType.LIBRARY_GET: library_handler,
+            MessageType.LIBRARY_CREATE: library_handler,
+            MessageType.LIBRARY_UPDATE_META: library_handler,
+            MessageType.LIBRARY_DELETE: library_handler,
+            MessageType.LIBRARY_SEARCH: library_handler,
+            MessageType.LIBRARY_ADD_ATTACHMENT: library_handler,
+            MessageType.LIBRARY_ANNOTATIONS_LOAD: library_handler,
+            MessageType.LIBRARY_ANNOTATIONS_SAVE: library_handler,
+            MessageType.LIBRARY_LINK_NOTE: library_handler,
+            MessageType.LIBRARY_COLLECTION_LIST: library_handler,
+            MessageType.LIBRARY_COLLECTION_CREATE: library_handler,
+            MessageType.LIBRARY_COLLECTION_UPDATE: library_handler,
+            MessageType.LIBRARY_COLLECTION_DELETE: library_handler,
+            MessageType.LIBRARY_COLLECTION_MOVE: library_handler,
+            MessageType.LIBRARY_COLLECTION_ADD_ITEM: library_handler,
+            MessageType.LIBRARY_COLLECTION_REMOVE_ITEM: library_handler,
+            MessageType.LIBRARY_IMPORT_DOI: library_handler,
+            MessageType.LIBRARY_IMPORT_ARXIV: library_handler,
+            MessageType.LIBRARY_SEARCH_CHUNKS: library_handler,
+            MessageType.LIBRARY_AI_EXTRACT_META: library_handler,
+        })
+
         # Register Workflow handlers
         workflow_handler = WorkflowHandler(bus)
         self.handlers.update({
@@ -347,6 +374,22 @@ class HandlerRegistry:
             MessageType.WORKFLOW_GET_NODE_REGISTRY: workflow_handler,
             MessageType.WORKFLOW_VERSION_CREATE: workflow_handler,
             MessageType.WORKFLOW_VERSION_LIST: workflow_handler,
+        })
+
+        # Register Database handlers
+        from backend.channels.desktop.handlers.db import DBTableHandler
+        db_handler = DBTableHandler(bus)
+        self.handlers.update({
+            MessageType.DB_TABLE_LIST: db_handler,
+            MessageType.DB_TABLE_CREATE: db_handler,
+            MessageType.DB_TABLE_GET: db_handler,
+            MessageType.DB_TABLE_UPDATE: db_handler,
+            MessageType.DB_TABLE_DELETE: db_handler,
+            MessageType.DB_RECORD_LIST: db_handler,
+            MessageType.DB_RECORD_CREATE: db_handler,
+            MessageType.DB_RECORD_UPDATE: db_handler,
+            MessageType.DB_RECORD_DELETE: db_handler,
+            MessageType.DB_RECORD_SEARCH: db_handler,
         })
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:

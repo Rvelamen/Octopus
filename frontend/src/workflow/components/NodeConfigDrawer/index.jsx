@@ -5,6 +5,7 @@ import {
   Trash2,
   AlertCircle,
   Play,
+  Loader2,
 } from 'lucide-react';
 import { useWorkflowStore } from '../../hooks/useWorkflowStore';
 import { createNodeConfigValidator } from '../../utils/validators';
@@ -23,9 +24,10 @@ import HTTPNodeForm from '../nodes/HTTPNode/NodeConfigDrawer.jsx';
 import TextNodeForm from '../nodes/TextNode/NodeConfigDrawer.jsx';
 import JSONSerializeNodeForm from '../nodes/JSONSerializeNode/NodeConfigDrawer.jsx';
 import JSONDeserializeNodeForm from '../nodes/JSONDeserializeNode/NodeConfigDrawer.jsx';
+import DatabaseNodeForm from '../nodes/DatabaseNode/NodeConfigDrawer.jsx';
 import ExpressionEditorField from '../common/ExpressionEditorField/index.jsx';
 
-const NodeConfigDrawer = ({ isOpen, onClose }) => {
+const NodeConfigDrawer = ({ isOpen, onClose, onSaveWorkflow }) => {
   const selectedNodeId = useWorkflowStore((state) => state.selectedNodeId);
   const selectedLoopChildNodeId = useWorkflowStore((state) => state.selectedLoopChildNodeId);
   const selectedLoopChildParentId = useWorkflowStore((state) => state.selectedLoopChildParentId);
@@ -42,6 +44,7 @@ const NodeConfigDrawer = ({ isOpen, onClose }) => {
 
   const [formValues, setFormValues] = useState({});
   const [errors, setErrors] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const setTestResultOpen = useWorkflowStore((state) => state.setTestResultOpen);
 
@@ -107,7 +110,7 @@ const NodeConfigDrawer = ({ isOpen, onClose }) => {
     return result.valid;
   }, [selectedNode, nodeType, formValues]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!validateForm()) return;
     if (!selectedNode) return;
 
@@ -124,8 +127,23 @@ const NodeConfigDrawer = ({ isOpen, onClose }) => {
     } else {
       updateNode(selectedNode.id, newData);
     }
+
+    // 调用父组件传入的保存方法，将工作流定义同步到后端
+    if (onSaveWorkflow) {
+      try {
+        setIsSaving(true);
+        await onSaveWorkflow();
+      } catch (err) {
+        console.error('[NodeConfigDrawer] save error:', err);
+        setIsSaving(false);
+        return;
+      } finally {
+        setIsSaving(false);
+      }
+    }
+
     onClose?.();
-  }, [validateForm, selectedNode, formValues, updateNode, updateLoopChildNodeData, isEditingChildNode, selectedLoopChildParentId, onClose]);
+  }, [validateForm, selectedNode, formValues, updateNode, updateLoopChildNodeData, isEditingChildNode, selectedLoopChildParentId, onClose, onSaveWorkflow]);
 
   const handleDelete = useCallback(() => {
     if (!selectedNode) return;
@@ -223,6 +241,8 @@ const NodeConfigDrawer = ({ isOpen, onClose }) => {
         return <JSONSerializeNodeForm {...formProps} />;
       case 'jsonDeserialize':
         return <JSONDeserializeNodeForm {...formProps} />;
+      case 'database':
+        return <DatabaseNodeForm {...formProps} />;
       default:
         return null;
     }
@@ -315,6 +335,7 @@ const NodeConfigDrawer = ({ isOpen, onClose }) => {
             </button>
           )}
           <button
+            disabled={isSaving}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -322,16 +343,16 @@ const NodeConfigDrawer = ({ isOpen, onClose }) => {
               padding: '6px 12px',
               borderRadius: '6px',
               border: 'none',
-              background: '#3b82f6',
+              background: isSaving ? '#93c5fd' : '#3b82f6',
               color: 'white',
-              cursor: 'pointer',
+              cursor: isSaving ? 'not-allowed' : 'pointer',
               fontSize: '13px',
               fontWeight: 500,
             }}
             onClick={handleSave}
           >
-            <Save size={14} />
-            保存
+            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            {isSaving ? '保存中...' : '保存'}
           </button>
           <button
             style={{

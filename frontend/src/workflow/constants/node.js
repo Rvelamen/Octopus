@@ -112,6 +112,7 @@ export const FlowNodeTypeEnum = {
   http: 'http',
   jsonSerialize: 'jsonSerialize',
   jsonDeserialize: 'jsonDeserialize',
+  database: 'database',
 };
 
 // 节点颜色主题

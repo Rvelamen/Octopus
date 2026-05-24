@@ -51,6 +51,7 @@ import VersionCompare from '../../workflow/components/WorkflowManager/VersionCom
 import RunHistory from '../../workflow/components/WorkflowManager/RunHistory';
 import WorkflowList from '../../workflow/components/WorkflowManager/WorkflowList';
 import RunDialog from '../../workflow/components/common/RunDialog';
+import PromptDialog from '../../workflow/components/common/PromptDialog';
 
 import nodeTypes from '../../workflow/components/nodes';
 import { createNodeFromTemplate } from '../../workflow/templates';
@@ -128,7 +129,7 @@ const BottomToolbar = ({
       borderRadius: '12px',
       boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
       border: '1px solid #f3f4f6',
-      width: '120%',
+      width: 'auto',
     }}
   >
     <ToolbarButton 
@@ -224,7 +225,7 @@ const StatusBar = ({ nodeCount, edgeCount, selectedNode, workflowId, versionId, 
 );
 
 // 主工作流编辑器组件
-const WorkflowEditor = () => {
+const WorkflowEditor = ({ style, initialWorkflowId }) => {
   const reactFlowWrapper = useRef(null);
   const reactFlow = useReactFlow();
   const api = useWorkflowAPI();
@@ -294,6 +295,9 @@ const WorkflowEditor = () => {
   // 运行弹窗状态
   const [isRunDialogOpen, setIsRunDialogOpen] = useState(false);
   const [pendingRunVariables, setPendingRunVariables] = useState([]);
+
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreatingWorkflow, setIsCreatingWorkflow] = useState(false);
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
 
@@ -415,6 +419,7 @@ const WorkflowEditor = () => {
 
   // 保存工作流到后端
   const handleSave = useCallback(async () => {
+    console.log('[handleSave] workflowId:', workflowId, 'versionId:', versionId);
     if (!workflowId || !versionId) {
       message.warning('请先创建或加载一个工作流');
       setIsWorkflowListOpen(true);
@@ -449,6 +454,8 @@ const WorkflowEditor = () => {
           __parentId: node.parentId || undefined,
         };
 
+        console.log('[handleSave] node:', node.id, 'code:', node.data?.code);
+
         return {
           id: node.id,
           type: node.type,
@@ -474,6 +481,8 @@ const WorkflowEditor = () => {
           sourceHandle: edge.sourceHandle || `${edge.source}-source`,
           targetHandle: edge.targetHandle || `${edge.target}-target`,
         }));
+
+      console.log('[handleSave] saving nodesData:', JSON.stringify(nodesData, null, 2));
 
       await api.saveDefinition(versionId, nodesData, edgesData, []);
       markSaved();
@@ -615,13 +624,17 @@ const WorkflowEditor = () => {
   }, [workflowId, api, updateWorkflowNameInStore]);
 
   // 创建新工作流
-  const handleCreateWorkflow = useCallback(async () => {
+  const handleCreateWorkflow = useCallback(() => {
+    setIsCreateDialogOpen(true);
+  }, []);
+
+  const handleConfirmCreateWorkflow = useCallback(async (form) => {
+    const name = form?.name?.trim();
+    if (!name) return;
+    const description = form?.description?.trim() || '';
+
+    setIsCreatingWorkflow(true);
     try {
-      const name = window.prompt('请输入工作流名称:', '新工作流');
-      if (!name) return;
-
-      const description = window.prompt('请输入工作流描述（可选）:', '') || '';
-
       const newWf = await api.saveWorkflow({
         name,
         description,
@@ -641,10 +654,13 @@ const WorkflowEditor = () => {
       setNodes([]);
       setEdges([]);
       markSaved();
+      setIsCreateDialogOpen(false);
       message.success(`已创建工作流: ${name}`);
     } catch (error) {
       message.error('创建失败: ' + (error.message || '未知错误'));
       console.error('[WorkflowEditor] create error:', error);
+    } finally {
+      setIsCreatingWorkflow(false);
     }
   }, [api, setNodes, setEdges, markSaved]);
 
@@ -875,10 +891,10 @@ const WorkflowEditor = () => {
     setWorkflowInfo(workflowId, versionId);
   }, [workflowId, versionId, setWorkflowInfo]);
 
-  // 首次加载时自动加载第一个工作流
+  // 首次加载时自动加载第一个工作流（仅在未指定 initialWorkflowId 时）
   const hasAutoLoaded = useRef(false);
   useEffect(() => {
-    if (hasAutoLoaded.current || workflowId) return;
+    if (hasAutoLoaded.current || workflowId || initialWorkflowId) return;
     hasAutoLoaded.current = true;
 
     const autoLoadFirstWorkflow = async () => {
@@ -893,7 +909,26 @@ const WorkflowEditor = () => {
     };
 
     autoLoadFirstWorkflow();
-  }, [api, workflowId, handleSelectWorkflow]);
+  }, [api, workflowId, handleSelectWorkflow, initialWorkflowId]);
+
+  // 当传入 initialWorkflowId 时，加载指定工作流
+  useEffect(() => {
+    if (!initialWorkflowId || workflowId) return;
+
+    const loadInitialWorkflow = async () => {
+      try {
+        const list = await api.getWorkflowList();
+        const target = list.find((w) => w.id === initialWorkflowId);
+        if (target) {
+          await handleSelectWorkflow(target);
+        }
+      } catch (err) {
+        console.error('[WorkflowEditor] load initial workflow error:', err);
+      }
+    };
+
+    loadInitialWorkflow();
+  }, [initialWorkflowId, workflowId, api, handleSelectWorkflow]);
 
   return (
     <div
@@ -903,6 +938,7 @@ const WorkflowEditor = () => {
         height: '100vh',
         position: 'relative',
         background: '#f9fafb',
+        ...style,
       }}
     >
       <ReactFlow
@@ -964,7 +1000,7 @@ const WorkflowEditor = () => {
         />
 
         {/* 底部工具栏 */}
-        <Panel position="bottom-center" style={{ left: '45%' }}>
+        <Panel position="bottom-center" style={{ width: '80%' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
             <BottomToolbar
               onSave={handleSave}
@@ -1016,6 +1052,7 @@ const WorkflowEditor = () => {
           setIsConfigOpen(false);
           selectNode(null);
         }}
+        onSaveWorkflow={handleSave}
       />
 
       {/* 试运行结果抽屉 —— 独立渲染在 ConfigDrawer 之上 */}
@@ -1151,15 +1188,30 @@ const WorkflowEditor = () => {
         inputVariables={pendingRunVariables}
         isRunning={isRunning}
       />
+
+      {/* 创建工作流弹窗 */}
+      <PromptDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        onConfirm={handleConfirmCreateWorkflow}
+        title="新建工作流"
+        message="请输入工作流的基本信息"
+        confirmText="创建"
+        loading={isCreatingWorkflow}
+        fields={[
+          { key: 'name', label: '工作流名称', placeholder: '例如：数据处理流程', required: true, defaultValue: '新工作流' },
+          { key: 'description', label: '工作流描述', placeholder: '可选，简要描述该工作流的用途', required: false, defaultValue: '' },
+        ]}
+      />
     </div>
   );
 };
 
 // 包装组件，提供 ReactFlowProvider
-const WorkflowPage = () => {
+const WorkflowPage = ({ style, initialWorkflowId }) => {
   return (
     <ReactFlowProvider>
-      <WorkflowEditor />
+      <WorkflowEditor style={style} initialWorkflowId={initialWorkflowId} />
     </ReactFlowProvider>
   );
 };

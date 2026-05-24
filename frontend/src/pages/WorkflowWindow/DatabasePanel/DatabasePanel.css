@@ -1,0 +1,132 @@
+.database-panel {
+  display: flex;
+  height: 100%;
+  background: #f9fafb;
+}
+
+/* Left sidebar: Table List */
+.database-sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+}
+
+.database-sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.database-sidebar-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.database-table-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.database-table-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #4b5563;
+  transition: background 0.15s;
+}
+
+.database-table-item:hover {
+  background: #f3f4f6;
+}
+
+.database-table-item.active {
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 500;
+}
+
+.database-table-item .table-icon {
+  opacity: 0.6;
+}
+
+/* Main content: Data Table */
+.database-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.database-main-header {
+  padding: 16px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.database-main-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.database-main-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.database-table-wrapper {
+  flex: 1;
+  overflow: auto;
+  padding: 16px 20px;
+}
+
+.database-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  gap: 12px;
+}
+
+.database-empty h3 {
+  margin: 0;
+  color: #6b7280;
+}
+
+/* Field tags in designer */
+.field-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.field-tag.string { background: #dbeafe; color: #1e40af; }
+.field-tag.integer { background: #dcfce7; color: #166534; }
+.field-tag.decimal { background: #fef3c7; color: #92400e; }
+.field-tag.boolean { background: #fce7f3; color: #9d174d; }
+.field-tag.datetime { background: #e0e7ff; color: #3730a3; }
+.field-tag.json { background: #f3f4f6; color: #4b5563; }

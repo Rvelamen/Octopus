@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, X, FileText, StickyNote, GitGraph } from 'lucide-react';
+import { Sparkles, X, FileText, StickyNote, GitGraph, Library } from 'lucide-react';
+import { LibraryTab } from './library';
 import { message, Modal } from 'antd';
 import WindowDots from '@components/layout/WindowDots';
 import TaskIndicator from '@components/TaskIndicator';
@@ -17,6 +18,7 @@ import ImportObsidianModal from './components/import/ImportObsidianModal';
 import CreateVaultModal from './components/vault/CreateVaultModal';
 
 const TABS = [
+  { key: 'library', label: 'LIBRARY', icon: Library },
   { key: 'documents', label: 'DOCUMENTS', icon: FileText },
   { key: 'notes', label: 'NOTES', icon: StickyNote },
   { key: 'graph', label: 'GRAPH', icon: GitGraph },
@@ -1102,7 +1104,9 @@ export default function KnowledgePanel({ sendWSMessage }) {
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
-        {activeTab === 'documents' ? (
+        {activeTab === 'library' ? (
+          <LibraryTab sendWSMessage={sendWSMessage} />
+        ) : activeTab === 'documents' ? (
           <div style={{ flex: 1, display: 'flex', minWidth: 0, overflow: 'hidden' }}>
             <DocumentGridView
               items={treeItems[currentDocPath] || []}

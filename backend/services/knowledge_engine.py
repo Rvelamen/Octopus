@@ -125,8 +125,23 @@ class KnowledgeGraphEngine:
         return tags
 
     def _resolve_title(self, title: str, vault: str | None = None) -> Optional[str]:
-        """Case-insensitive title match within a vault; falls back to path stem match."""
+        """Case-insensitive title match within a vault; falls back to path stem match.
+        Also resolves @citekey references to library items."""
         clean = title.strip().rstrip("\\")
+
+        # 0. Library citation reference: @citekey
+        if clean.startswith("@"):
+            citekey = clean[1:].strip()
+            if not citekey:
+                return None
+            row = self.db.execute(
+                "SELECT id, library_path FROM library_items WHERE LOWER(citekey) = LOWER(?) OR id = ? LIMIT 1",
+                (citekey, citekey),
+            ).fetchone()
+            if row:
+                return f"@library/{citekey}"
+            return None
+
         # 1. Exact title match within the same vault
         if vault is not None:
             rows = self.db.execute(
@@ -164,8 +179,11 @@ class KnowledgeGraphEngine:
         knowledge/notes/                → 'default'
         knowledge/notes/paper/        → 'paper'
         knowledge/notes/obsidian_xxx/ → 'obsidian_xxx'
+        library/...                     → 'library'
         """
         parts = Path(relative_path).parts
+        if parts[0] == "library":
+            return "library"
         if len(parts) >= 3 and parts[0] == "knowledge" and parts[1] == "notes":
             return parts[2]
         return "default"
@@ -681,7 +699,8 @@ class KnowledgeGraphEngine:
         return {"nodes": list(all_nodes.values()), "edges": all_edges}
 
     def _rebuild_cache(self) -> None:
-        """Rebuild the in-memory graph cache from SQLite."""
+        """Rebuild the in-memory graph cache from SQLite.
+        Includes library_items as paper nodes and citation edges."""
         nodes: dict[str, dict[str, Any]] = {}
         title_to_path: dict[str, str] = {}
         for row in self.db.execute(
@@ -703,6 +722,41 @@ class KnowledgeGraphEngine:
             stem = Path(path).stem.lower()
             stem_to_path[stem] = path
 
+        # Collect library citation targets first
+        library_citekeys: set[str] = set()
+        for row in self.db.execute(
+            "SELECT to_path FROM knowledge_links WHERE to_path LIKE '@library/%'"
+        ).fetchall():
+            if row["to_path"]:
+                library_citekeys.add(row["to_path"].split("/", 2)[1])
+
+        # Add library items as paper nodes
+        paper_nodes: dict[str, dict[str, Any]] = {}
+        if library_citekeys:
+            placeholders = ",".join("?" * len(library_citekeys))
+            for row in self.db.execute(
+                f"SELECT id, citekey, title, library_path, tags_json FROM library_items WHERE LOWER(citekey) IN ({placeholders})",
+                [ck.lower() for ck in library_citekeys],
+            ).fetchall():
+                citekey = row["citekey"] or f"item_{row['id']}"
+                paper_path = f"@library/{citekey}"
+                tags = []
+                if row["tags_json"]:
+                    try:
+                        import json
+                        tags = json.loads(row["tags_json"])
+                    except Exception:
+                        pass
+                paper_nodes[paper_path] = {
+                    "id": paper_path,
+                    "label": row["title"] or citekey,
+                    "type": "paper",
+                    "mtime": 0,
+                    "tags": tags,
+                    "vault": "library",
+                }
+        nodes.update(paper_nodes)
+
         for row in self.db.execute(
             "SELECT from_path, to_title, to_path FROM knowledge_links"
         ).fetchall():
@@ -712,7 +766,7 @@ class KnowledgeGraphEngine:
             if not tgt:
                 stem = Path(to_title).stem.lower()
                 tgt = stem_to_path.get(stem)
-            if src in nodes and tgt in nodes:
+            if src in nodes and tgt and tgt in nodes:
                 edges.append({"source": src, "target": tgt})
                 adj_out.setdefault(src, []).append(tgt)
                 adj_in.setdefault(tgt, []).append(src)
@@ -728,8 +782,9 @@ class KnowledgeGraphEngine:
             node_vaults[row["path"]] = row["vault"]
 
         for node_path in nodes:
-            nodes[node_path]["tags"] = node_tags.get(node_path, [])
-            nodes[node_path]["vault"] = node_vaults.get(node_path, "default")
+            if node_path not in paper_nodes:
+                nodes[node_path]["tags"] = node_tags.get(node_path, [])
+                nodes[node_path]["vault"] = node_vaults.get(node_path, "default")
 
         self._cache = {"nodes": nodes, "edges": edges, "adj_out": adj_out, "adj_in": adj_in, "node_tags": node_tags, "node_vaults": node_vaults}
         self._cache_dirty = False

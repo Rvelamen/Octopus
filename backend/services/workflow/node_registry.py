@@ -130,6 +130,72 @@ class NodeRegistry:
         ))
 
         self.register(NodeTypeInfo(
+            type="database",
+            name="数据库",
+            description="对用户数据表执行 INSERT/UPDATE/DELETE/QUERY 操作",
+            category="组件",
+            icon="🗄️",
+            color="orange",
+            inputs=[
+                {"key": "tableName", "label": "目标表名", "type": "string", "required": True},
+                {"key": "operation", "label": "操作类型", "type": "string", "required": True},
+                {"key": "fieldMappings", "label": "字段映射", "type": "arrayObject"},
+                {"key": "whereCondition", "label": "WHERE 条件", "type": "string"},
+                {"key": "orderBy", "label": "ORDER BY", "type": "string"},
+                {"key": "limit", "label": "LIMIT", "type": "number", "default": 100},
+            ],
+            outputs=[
+                {"key": "result", "label": "操作结果", "type": "object"},
+                {"key": "system_text", "label": "结果文本", "type": "string"},
+            ],
+            config_schema={
+                "tableName": {
+                    "type": "input",
+                    "label": "目标表名",
+                    "required": True,
+                    "placeholder": "user_data 或 {{nodeId.table}}",
+                },
+                "operation": {
+                    "type": "select",
+                    "label": "操作类型",
+                    "options": [
+                        {"value": "INSERT", "label": "插入 (INSERT)"},
+                        {"value": "UPDATE", "label": "更新 (UPDATE)"},
+                        {"value": "DELETE", "label": "删除 (DELETE)"},
+                        {"value": "QUERY", "label": "查询 (QUERY)"},
+                    ],
+                    "default": "QUERY",
+                },
+                "fieldMappings": {
+                    "type": "custom",
+                    "label": "字段映射",
+                    "description": "INSERT/UPDATE 的字段和值映射",
+                },
+                "whereCondition": {
+                    "type": "textarea",
+                    "label": "WHERE 条件",
+                    "description": "UPDATE/DELETE/QUERY 的过滤条件，支持 {{变量引用}}",
+                    "rows": 2,
+                    "placeholder": '例如: status = "active"',
+                },
+                "orderBy": {
+                    "type": "input",
+                    "label": "ORDER BY",
+                    "description": "QUERY 排序字段",
+                    "placeholder": "created_at DESC",
+                },
+                "limit": {
+                    "type": "number",
+                    "label": "LIMIT",
+                    "description": "QUERY 返回条数限制",
+                    "min": 1,
+                    "max": 10000,
+                    "default": 100,
+                },
+            },
+        ))
+
+        self.register(NodeTypeInfo(
             type="workflowEnd",
             name="工作流结束",
             description="终止工作流并输出最终结果",

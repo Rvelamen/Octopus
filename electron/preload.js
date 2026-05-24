@@ -54,4 +54,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('window-focus-change');
     ipcRenderer.removeAllListeners('window-maximize-change');
   },
+
+  // 打开 PDF 阅读器窗口
+  openPdfWindow: (path, title, itemId) => ipcRenderer.invoke('open-pdf-window', { path, title, itemId }),
+
+  // 打开 Markdown 编辑器窗口
+  openMarkdownWindow: (path, title) => ipcRenderer.invoke('open-markdown-window', { path, title }),
+
+  // 打开 Workflow 编辑器窗口
+  // params 可以是字符串 workflowId，也可以是对象 { workflowId, runId, workflowName }
+  openWorkflowWindow: (params) => {
+    const payload = typeof params === 'string' ? { workflowId: params } : (params || {});
+    return ipcRenderer.invoke('open-workflow-window', payload);
+  },
 });

@@ -14,6 +14,7 @@ from backend.data.schema import (
     token,
     observation,
     workflow,
+    db,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "token",
     "observation",
     "workflow",
+    "db",
 ]

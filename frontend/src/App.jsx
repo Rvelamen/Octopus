@@ -42,6 +42,9 @@ import Agents from "./pages/Agents";
 import Tokens from "./pages/Tokens";
 import Knowledge from "./pages/Knowledge";
 import Workflow from "./pages/Workflow";
+import PdfViewerWindow from "./pages/PdfViewerWindow";
+import MarkdownEditorWindow from "./pages/MarkdownEditorWindow";
+import WorkflowWindow from "./pages/WorkflowWindow";
 import WorkflowTabTitle from "./workflow/components/WorkflowTabTitle";
 import { useWebSocket } from "./contexts/WebSocketContext";
 import { useChatState } from "./hooks/useChatState";
@@ -170,6 +173,32 @@ function TTSPlayer({ audioData, format, text, durationMs, onClose }) {
  * App 主组件
  */
 function App() {
+  // PDF / Markdown 独立窗口：不渲染主应用外壳
+  const hash = window.location.hash;
+  const isPdfWindow =
+    window.location.pathname === '/pdf-viewer' ||
+    hash.startsWith('#pdf-viewer') ||
+    hash.startsWith('#/pdf-viewer');
+  if (isPdfWindow) {
+    return <PdfViewerWindow />;
+  }
+
+  const isMarkdownWindow =
+    window.location.pathname === '/markdown-editor' ||
+    hash.startsWith('#markdown-editor') ||
+    hash.startsWith('#/markdown-editor');
+  if (isMarkdownWindow) {
+    return <MarkdownEditorWindow />;
+  }
+
+  const isWorkflowWindow =
+    window.location.pathname === '/workflow-window' ||
+    hash.startsWith('#workflow-window') ||
+    hash.startsWith('#/workflow-window');
+  if (isWorkflowWindow) {
+    return <WorkflowWindow />;
+  }
+
   const { sendMessage, connectionStatus, showLoadingOverlay, ws } = useWebSocket();
   const chat = useChatState();
 
@@ -307,6 +336,15 @@ function App() {
 
   // 处理导航
   const handleNavClick = (tab) => {
+    // Workflow 迁移到独立窗口
+    if (tab === 'workflows') {
+      if (window.electronAPI?.openWorkflowWindow) {
+        window.electronAPI.openWorkflowWindow();
+        return;
+      }
+      // 降级：浏览器环境或无 Electron API 时继续走路由
+    }
+
     setActiveTab(tab);
     const routeMap = {
       chat: '/chat',
@@ -543,6 +581,8 @@ function App() {
               <Route path="/tokens" element={<Tokens sendWSMessage={sendMessage} />} />
               <Route path="/knowledge" element={<Knowledge sendWSMessage={sendMessage} />} />
               <Route path="/workflows" element={<Workflow sendWSMessage={sendMessage} />} />
+              <Route path="/pdf-viewer" element={<PdfViewerWindow />} />
+              <Route path="/markdown-editor" element={<MarkdownEditorWindow />} />
               <Route path="/" element={
                 <Chat
                   sendWSMessage={sendMessage}

@@ -45,7 +45,7 @@ export function useMessageRenderer() {
             }
             return <p>{children}</p>;
           },
-          code({ className, children, ...props }) {
+          code({ className, children, inline, ...props }) {
             // react-markdown v9: 行内代码没有 className，代码块有 className (如 "language-js")
             // 行内代码直接由 code 组件渲染，代码块由 pre > code 渲染
             const isInlineCode = !className;

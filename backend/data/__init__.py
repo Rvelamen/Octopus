@@ -23,6 +23,9 @@ from backend.data.subagent_message_store import (
 from backend.data.observation_store import (
     ObservationRepository, ObservationRecord
 )
+from backend.data.db_store import (
+    DBRepository, UserTableRecord, UserDataRecord
+)
 
 def init_system_providers(db: Database):
     """Initialize system providers if not exist."""
@@ -108,4 +111,8 @@ __all__ = [
     # Observations
     "ObservationRepository",
     "ObservationRecord",
+    # Database
+    "DBRepository",
+    "UserTableRecord",
+    "UserDataRecord",
 ]

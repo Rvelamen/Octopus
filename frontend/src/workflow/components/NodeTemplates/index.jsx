@@ -9,20 +9,17 @@ import {
   Bot,
   Puzzle,
   Code,
-  BrainCircuit,
-  Layers,
-  Timer,
   GitFork,
   RefreshCw,
   Combine,
   ArrowRightCircle,
   ArrowLeftCircle,
-  HelpCircle,
   Type,
   Globe,
   Braces,
   MessageSquare,
   GitMerge,
+  Database,
 } from 'lucide-react';
 import { FlowNodeTypeEnum } from '../../constants';
 
@@ -34,7 +31,6 @@ const nodeTemplates = [
       { type: FlowNodeTypeEnum.workflowStart, name: '工作流开始', icon: Bot, color: '#1a1a2e', inputs: [], outputs: [{ key: 'userChatInput', label: '用户输入' }, { key: 'userFiles', label: '用户文件' }], showTargetHandle: false, forbidDelete: true },
       { type: FlowNodeTypeEnum.llm, name: '大模型', icon: MessageSquare, color: '#7c3aed', inputs: [], outputs: [{ key: 'output', label: '输出' }], defaultData: { model: 'gpt-4o-mini', systemPrompt: '', userPrompt: '', outputs: [{ id: 'default_out', name: 'output', type: 'string' }] } },
       { type: FlowNodeTypeEnum.workflowEnd, name: '工作流结束', icon: GitMerge, color: '#ef4444', inputs: [{ key: 'result', label: '最终结果' }], outputs: [], showSourceHandle: false, forbidDelete: true },
-      { type: FlowNodeTypeEnum.answerNode, name: '直接回复', icon: MessageSquare, color: '#22c55e', inputs: [{ key: 'text', label: '回复内容' }], outputs: [], showSourceHandle: false },
     ]
   },
   {
@@ -42,11 +38,8 @@ const nodeTemplates = [
     nodes: [
       { type: FlowNodeTypeEnum.code, name: '代码', icon: Code, color: '#06b6d4' },
       { type: FlowNodeTypeEnum.ifElseNode, name: '选择器', icon: GitFork, color: '#06b6d4' },
-      { type: FlowNodeTypeEnum.classifyQuestion, name: '意图识别', icon: BrainCircuit, color: '#06b6d4' },
       { type: FlowNodeTypeEnum.loop, name: '循环', icon: RefreshCw, color: '#06b6d4' },
-      { type: FlowNodeTypeEnum.contentExtract, name: '批处理', icon: Layers, color: '#06b6d4' },
       { type: FlowNodeTypeEnum.variableUpdate, name: '变量聚合', icon: Combine, color: '#06b6d4' },
-      { type: FlowNodeTypeEnum.readFiles, name: '异步任务', icon: Timer, color: '#06b6d4' },
     ]
   },
   {
@@ -59,11 +52,11 @@ const nodeTemplates = [
   {
     category: '组件',
     nodes: [
-      { type: FlowNodeTypeEnum.answerNode, name: '问答', icon: HelpCircle, color: '#6366f1' },
       { type: FlowNodeTypeEnum.textEditor, name: '文本处理', icon: Type, color: '#6366f1' },
       { type: FlowNodeTypeEnum.http, name: 'HTTP 请求', icon: Globe, color: '#3b82f6', inputs: [{ key: 'url', label: '请求地址' }, { key: 'method', label: '请求方法' }], outputs: [{ key: 'body', label: '响应体' }, { key: 'statusCode', label: '状态码' }, { key: 'headers', label: '响应头' }] },
       { type: FlowNodeTypeEnum.jsonSerialize, name: 'JSON 序列化', icon: Braces, color: '#6366f1' },
       { type: FlowNodeTypeEnum.jsonDeserialize, name: 'JSON 反序列化', icon: Braces, color: '#6366f1' },
+      { type: FlowNodeTypeEnum.database, name: '数据库', icon: Database, color: '#f97316', inputs: [], outputs: [{ key: 'result', label: '结果' }] },
     ]
   },
 ];

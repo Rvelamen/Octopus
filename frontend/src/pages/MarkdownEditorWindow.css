@@ -1,0 +1,233 @@
+.mdew-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background: #f5f5f5;
+  color: #333;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Single-row toolbar */
+.mdew-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px;
+  height: 44px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.mdew-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 180px;
+}
+
+.mdew-dirty {
+  color: #ff9800;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.mdew-toolbar-gap {
+  width: 12px;
+  flex-shrink: 0;
+}
+
+.mdew-saved {
+  font-size: 12px;
+  color: #4caf50;
+  animation: mdew-fade-out 2s forwards;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@keyframes mdew-fade-out {
+  0% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.mdew-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.mdew-btn:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.mdew-btn-primary {
+  background: #1890ff;
+  color: #fff;
+  border-color: #1890ff;
+}
+
+.mdew-btn-primary:hover {
+  background: #40a9ff;
+  border-color: #40a9ff;
+}
+
+/* Editor */
+.mdew-editor {
+  flex: 1;
+  overflow: auto;
+  padding: 16px 24px;
+  background: #f5f5f5;
+}
+
+.mdew-editor .mdxeditor {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  min-height: calc(100vh - 80px);
+}
+
+/* Toolbar overrides - keep light theme */
+.mdew-editor .mdxeditor-toolbar {
+  background: #fff !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+  padding: 0 !important;
+}
+
+.mdew-editor .mdxeditor-toolbar > div:first-child {
+  width: 100%;
+}
+
+.mdew-editor .mdxeditor-toolbar button,
+.mdew-editor .mdxeditor-toolbar [role="button"],
+.mdew-editor .mdxeditor-toolbar [class*="selectTrigger"],
+.mdew-editor .mdxeditor-toolbar select {
+  color: #666 !important;
+  background: transparent !important;
+  border-color: #d9d9d9 !important;
+  height: 28px !important;
+  min-height: 28px !important;
+}
+
+.mdew-editor .mdxeditor-toolbar button:hover,
+.mdew-editor .mdxeditor-toolbar [role="button"]:hover,
+.mdew-editor .mdxeditor-toolbar [class*="selectTrigger"]:hover {
+  background: #f0f0f0 !important;
+  color: #333 !important;
+}
+
+.mdew-editor .mdxeditor-toolbar button[data-active="true"],
+.mdew-editor .mdxeditor-toolbar [aria-pressed="true"] {
+  background: #e6f7ff !important;
+  color: #1890ff !important;
+}
+
+.mdew-editor .mdxeditor-toolbar [class*="separator"] {
+  background: #e0e0e0 !important;
+  height: 20px !important;
+  margin: 0 2px !important;
+}
+
+/* Dropdowns / popups */
+.mdew-editor .mdxeditor-popup-container,
+.mdew-editor .mdxeditor-toolbar [class*="popoverContent"],
+.mdew-editor .mdxeditor-toolbar [class*="dropdownMenu"] {
+  background: #fff !important;
+  border: 1px solid #e0e0e0 !important;
+  color: #333 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+.mdew-editor .mdxeditor-toolbar [class*="popoverContent"] button,
+.mdew-editor .mdxeditor-toolbar [class*="dropdownMenu"] button {
+  color: #666 !important;
+}
+
+.mdew-editor .mdxeditor-toolbar [class*="popoverContent"] button:hover,
+.mdew-editor .mdxeditor-toolbar [class*="dropdownMenu"] button:hover {
+  background: #f0f0f0 !important;
+  color: #333 !important;
+}
+
+/* Diff source tab buttons */
+.mdew-editor .mdxeditor-diff-source-wrapper [class*="tab"] {
+  background: #fff !important;
+  color: #666 !important;
+  border-color: #d9d9d9 !important;
+}
+
+.mdew-editor .mdxeditor-diff-source-wrapper [class*="tab"][data-active="true"] {
+  background: #e6f7ff !important;
+  color: #1890ff !important;
+}
+
+.mdew-content {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* Loading */
+.mdew-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  background: #f5f5f5;
+  color: #666;
+  gap: 16px;
+  font-size: 14px;
+}
+
+.mdew-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e0e0e0;
+  border-top-color: #1890ff;
+  border-radius: 50%;
+  animation: mdew-spin 0.8s linear infinite;
+}
+
+@keyframes mdew-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error */
+.mdew-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  background: #f5f5f5;
+  color: #ff4d4f;
+  gap: 12px;
+  font-size: 14px;
+  padding: 24px;
+  text-align: center;
+}
+
+.mdew-error-icon {
+  font-size: 32px;
+}

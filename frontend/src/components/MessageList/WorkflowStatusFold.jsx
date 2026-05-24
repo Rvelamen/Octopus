@@ -56,7 +56,12 @@ export default function WorkflowStatusFold({ message }) {
   const handleOpenDetail = () => {
     // Use Zustand store instead of sessionStorage for cross-page communication
     setPendingOpenRun({ runId, workflowName, workflowId });
-    navigate("/workflows");
+    // 优先打开独立 Workflow 窗口
+    if (window.electronAPI?.openWorkflowWindow) {
+      window.electronAPI.openWorkflowWindow({ workflowId, runId, workflowName });
+    } else {
+      navigate("/workflows");
+    }
   };
 
   return (

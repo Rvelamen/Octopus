@@ -216,12 +216,210 @@ def _migration_004_add_vault_column(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def _migration_005_add_library_schema(conn: sqlite3.Connection) -> None:
+    """Add library (Zotero-style) schema for academic paper management."""
+    conn.executescript(
+        """
+        -- Library collections (folders / projects)
+        CREATE TABLE IF NOT EXISTS library_collections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            parent_id INTEGER,
+            color TEXT DEFAULT '#1890ff',
+            sort_order INTEGER DEFAULT 0,
+            is_smart INTEGER DEFAULT 0,
+            search_query TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (parent_id) REFERENCES library_collections(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_lib_collections_parent ON library_collections(parent_id);
+
+        -- Library items (papers / documents)
+        CREATE TABLE IF NOT EXISTS library_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            citekey TEXT UNIQUE,
+            item_type TEXT DEFAULT 'journalArticle',
+            title TEXT,
+            authors_json TEXT,
+            year INTEGER,
+            venue TEXT,
+            doi TEXT,
+            url TEXT,
+            abstract TEXT,
+            tags_json TEXT,
+            metadata_json TEXT,
+            library_path TEXT UNIQUE,
+            pdf_sha256 TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_lib_items_year ON library_items(year);
+        CREATE INDEX IF NOT EXISTS idx_lib_items_doi ON library_items(doi);
+        CREATE INDEX IF NOT EXISTS idx_lib_items_citekey ON library_items(citekey);
+
+        -- Collection-Item many-to-many relationship
+        CREATE TABLE IF NOT EXISTS library_collection_items (
+            collection_id INTEGER NOT NULL,
+            item_id INTEGER NOT NULL,
+            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (collection_id, item_id),
+            FOREIGN KEY (collection_id) REFERENCES library_collections(id) ON DELETE CASCADE,
+            FOREIGN KEY (item_id) REFERENCES library_items(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_lib_ci_item ON library_collection_items(item_id);
+
+        -- Attachments (PDFs, supplementary files)
+        CREATE TABLE IF NOT EXISTS library_attachments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_id INTEGER NOT NULL,
+            filename TEXT NOT NULL,
+            file_type TEXT DEFAULT 'pdf',
+            sha256 TEXT,
+            rel_path TEXT NOT NULL,
+            size INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (item_id) REFERENCES library_items(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_lib_attach_item ON library_attachments(item_id);
+
+        -- Link library items to Obsidian notes
+        CREATE TABLE IF NOT EXISTS library_item_notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_id INTEGER NOT NULL,
+            note_path TEXT NOT NULL,
+            relation TEXT DEFAULT 'manual',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (item_id) REFERENCES library_items(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_lib_notes_item ON library_item_notes(item_id);
+
+        -- FTS5 for library title + abstract search
+        CREATE VIRTUAL TABLE IF NOT EXISTS library_fts USING fts5(
+            title,
+            abstract,
+            content='library_items',
+            content_rowid='id',
+            tokenize='unicode61 remove_diacritics 1'
+        );
+
+        -- FTS5 sync triggers
+        CREATE TRIGGER IF NOT EXISTS library_fts_insert
+        AFTER INSERT ON library_items
+        BEGIN
+            INSERT INTO library_fts(rowid, title, abstract)
+            VALUES (new.id, new.title, new.abstract);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS library_fts_delete
+        AFTER DELETE ON library_items
+        BEGIN
+            INSERT INTO library_fts(library_fts, rowid, title, abstract)
+            VALUES ('delete', old.id, old.title, old.abstract);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS library_fts_update
+        AFTER UPDATE ON library_items
+        BEGIN
+            INSERT INTO library_fts(library_fts, rowid, title, abstract)
+            VALUES ('delete', old.id, old.title, old.abstract);
+            INSERT INTO library_fts(rowid, title, abstract)
+            VALUES (new.id, new.title, new.abstract);
+        END;
+
+        -- Insert default collections
+        INSERT OR IGNORE INTO library_collections (id, name, parent_id) VALUES (1, 'All Items', NULL);
+        INSERT OR IGNORE INTO library_collections (id, name, parent_id) VALUES (2, 'Uncategorized', NULL);
+        """
+    )
+
+
+def _migration_006_add_library_chunks(conn: sqlite3.Connection) -> None:
+    """Add library_chunks table for RAG text extraction and embedding."""
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS library_chunks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_id INTEGER NOT NULL,
+            chunk_index INTEGER NOT NULL,
+            page INTEGER,
+            section TEXT,
+            text TEXT NOT NULL,
+            embedding_json TEXT,           -- reserved for vector embedding (JSON array)
+            token_count INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (item_id) REFERENCES library_items(id) ON DELETE CASCADE,
+            UNIQUE(item_id, chunk_index)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_lib_chunks_item ON library_chunks(item_id);
+        CREATE INDEX IF NOT EXISTS idx_lib_chunks_page ON library_chunks(page);
+
+        -- FTS5 for chunk text search (semantic retrieval fallback)
+        CREATE VIRTUAL TABLE IF NOT EXISTS library_chunks_fts USING fts5(
+            text,
+            content='library_chunks',
+            content_rowid='id',
+            tokenize='unicode61 remove_diacritics 1'
+        );
+
+        CREATE TRIGGER IF NOT EXISTS library_chunks_fts_insert
+        AFTER INSERT ON library_chunks
+        BEGIN
+            INSERT INTO library_chunks_fts(rowid, text) VALUES (new.id, new.text);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS library_chunks_fts_delete
+        AFTER DELETE ON library_chunks
+        BEGIN
+            INSERT INTO library_chunks_fts(library_chunks_fts, rowid, text) VALUES ('delete', old.id, old.text);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS library_chunks_fts_update
+        AFTER UPDATE ON library_chunks
+        BEGIN
+            INSERT INTO library_chunks_fts(library_chunks_fts, rowid, text) VALUES ('delete', old.id, old.text);
+            INSERT INTO library_chunks_fts(rowid, text) VALUES (new.id, new.text);
+        END;
+        """
+    )
+
+
+def _migration_007_add_library_annotations(conn: sqlite3.Connection) -> None:
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS library_annotations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_id INTEGER NOT NULL,
+            page INTEGER NOT NULL,
+            type TEXT NOT NULL,
+            color TEXT,
+            text TEXT,
+            comment TEXT,
+            rects TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (item_id) REFERENCES library_items(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_lib_annot_item ON library_annotations(item_id);
+        CREATE INDEX IF NOT EXISTS idx_lib_annot_page ON library_annotations(item_id, page);
+        """
+    )
+
+
 def run_knowledge_index_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_initial_schema", _migration_001_create_initial_schema)
     runner.register(2, "add_orphan_tag_trigger", _migration_002_add_orphan_tag_trigger)
     runner.register(3, "add_document_meta", _migration_003_add_document_meta)
     runner.register(4, "add_vault_column", _migration_004_add_vault_column)
+    runner.register(5, "add_library_schema", _migration_005_add_library_schema)
+    runner.register(6, "add_library_chunks", _migration_006_add_library_chunks)
+    runner.register(7, "add_library_annotations", _migration_007_add_library_annotations)
     runner.run()
 
 

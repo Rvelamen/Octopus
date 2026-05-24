@@ -876,7 +876,8 @@ export const useWorkflowStore = create(
             name: node.data?.name,
             position: node.position,
             inputs: node.data?.inputs || [],
-            outputs: node.data?.outputs || []
+            outputs: node.data?.outputs || [],
+            code: node.data?.code || '',
           })),
           edges: currentEdges.map((edge) => ({
             source: edge.source,

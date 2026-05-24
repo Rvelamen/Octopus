@@ -282,7 +282,13 @@ class NodeExecutor:
         inputs: dict[str, Any],
         context: WorkflowContext,
     ) -> dict[str, Any]:
-        """Execute Python code safely using AST parsing and eval."""
+        """Execute Python code safely in a restricted environment.
+
+        Supports multi-line Python code including function definitions,
+        assignments, and control flow statements.
+        The code can access inputs via the `params` variable and should
+        return results via the `ret` variable.
+        """
         import math
         from datetime import datetime, timedelta
 
@@ -291,18 +297,6 @@ class NodeExecutor:
             tree = ast.parse(code.strip())
         except SyntaxError as e:
             return {"system_text": "", "error": f"Syntax error: {e}"}
-
-        # Only allow a single expression (no statements)
-        if len(tree.body) != 1 or not isinstance(tree.body[0], ast.Expr):
-            return {
-                "system_text": "",
-                "error": "Only a single expression is allowed. "
-                         "Use expressions like: len(items) + 1, "
-                         "[x * 2 for x in data], etc. "
-                         "Assignment and statements are not permitted.",
-            }
-
-        expr = tree.body[0].value
 
         # Allowed builtin names
         safe_builtins = {
@@ -337,16 +331,38 @@ class NodeExecutor:
             "timedelta": timedelta,
         }
 
-        # Provide inputs as a top-level variable
+        # Provide inputs as a top-level variable named `params`
         safe_globals = {
             "__builtins__": safe_builtins,
-            "inputs": inputs,
+            "params": inputs,
             "context": context.to_dict(),
         }
+        safe_locals = {}
 
-        result = eval(compile(tree, filename="<workflow>", mode="eval"), safe_globals)
+        try:
+            exec(compile(tree, filename="<workflow>", mode="exec"), safe_globals, safe_locals)
+        except Exception as e:
+            return {"system_text": "", "error": str(e)}
 
-        return {"system_text": str(result) if result is not None else ""}
+        # If user defined a main() function, call it automatically
+        main_func = safe_locals.get("main")
+        if main_func is None:
+            main_func = safe_globals.get("main")
+        if callable(main_func):
+            try:
+                ret = main_func(inputs)
+                if ret is not None:
+                    return {"system_text": "", **(ret if isinstance(ret, dict) else {"result": ret})}
+            except Exception as e:
+                return {"system_text": "", "error": str(e)}
+
+        # Capture the `ret` variable if defined
+        ret = safe_locals.get("ret")
+        if ret is not None:
+            return {"system_text": "", **(ret if isinstance(ret, dict) else {"result": ret})}
+
+        # Fallback: return the last evaluated expression or empty result
+        return {"system_text": ""}
 
     async def execute_if_else(
         self,
@@ -854,3 +870,265 @@ class NodeExecutor:
             return {"output": None, "error": f"JSON parse error: {e}"}
         except Exception as e:
             return {"output": None, "error": str(e)}
+
+    async def execute_database(
+        self,
+        node: WorkflowNodeRecord,
+        inputs: dict[str, Any],
+        context: WorkflowContext,
+    ) -> dict[str, Any]:
+        """Execute database operation node.
+
+        Supports INSERT, UPDATE, DELETE, and QUERY operations on user-defined tables.
+        """
+        from backend.data.db_store import DBRepository
+
+        table_name_raw = inputs.get("tableName", "")
+        operation = inputs.get("operation", "QUERY")
+        field_mappings = inputs.get("fieldMappings", [])
+        where_condition = inputs.get("whereCondition", "")
+        order_by = inputs.get("orderBy", "")
+        limit = int(inputs.get("limit", 100))
+
+        # Resolve table name (may contain variable references)
+        table_name = context.resolve_value(table_name_raw)
+        if not table_name:
+            return {"result": None, "system_text": "", "error": "Table name is required"}
+
+        # Get database instance from engine
+        engine = getattr(self, "_engine", None)
+        if not engine:
+            return {"result": None, "system_text": "", "error": "Engine not available"}
+
+        db = getattr(engine, "_db", None)
+        if not db:
+            return {"result": None, "system_text": "", "error": "Database not available"}
+
+        repo = DBRepository(db)
+
+        # Check if table exists
+        table = repo.get_table(table_name)
+        if not table:
+            return {"result": None, "system_text": "", "error": f"Table '{table_name}' not found"}
+
+        try:
+            if operation == "INSERT":
+                return await self._execute_db_insert(repo, table_name, field_mappings, context)
+            elif operation == "UPDATE":
+                return await self._execute_db_update(repo, table_name, field_mappings, where_condition, context)
+            elif operation == "DELETE":
+                return await self._execute_db_delete(repo, table_name, where_condition, context)
+            elif operation == "QUERY":
+                return await self._execute_db_query(repo, table_name, where_condition, order_by, limit, context)
+            else:
+                return {"result": None, "system_text": "", "error": f"Unsupported operation: {operation}"}
+        except Exception as e:
+            return {"result": None, "system_text": "", "error": str(e)}
+
+    async def _execute_db_insert(
+        self,
+        repo: "DBRepository",
+        table_name: str,
+        field_mappings: list,
+        context: WorkflowContext,
+    ) -> dict[str, Any]:
+        """Execute INSERT operation."""
+        data = {}
+        for mapping in field_mappings:
+            if isinstance(mapping, dict):
+                field_name = mapping.get("name", "")
+                field_value = mapping.get("value", "")
+                if field_name:
+                    data[field_name] = context.resolve_value(field_value)
+
+        table = repo.get_table(table_name)
+        fields = []
+        if table:
+            fields = json.loads(table.fields_json or "[]")
+
+        record = repo.create_record(table_name, data, fields)
+        return {
+            "result": {"id": record.id, "data": record.record_data},
+            "system_text": f"Inserted record #{record.id} into {table_name}",
+        }
+
+    async def _execute_db_update(
+        self,
+        repo: "DBRepository",
+        table_name: str,
+        field_mappings: list,
+        where_condition: str,
+        context: WorkflowContext,
+    ) -> dict[str, Any]:
+        """Execute UPDATE operation."""
+        records = self._filter_db_records(repo, table_name, where_condition, context)
+        updated = []
+        for rec in records:
+            data = {}
+            for mapping in field_mappings:
+                if isinstance(mapping, dict):
+                    field_name = mapping.get("name", "")
+                    field_value = mapping.get("value", "")
+                    if field_name:
+                        data[field_name] = context.resolve_value(field_value)
+
+            new_data = {**rec.record_data, **data}
+            updated_record = repo.update_record(rec.id, new_data)
+            if updated_record:
+                updated.append({"id": updated_record.id, "data": updated_record.record_data})
+
+        return {
+            "result": {"updated": updated, "count": len(updated)},
+            "system_text": f"Updated {len(updated)} records in {table_name}",
+        }
+
+    async def _execute_db_delete(
+        self,
+        repo: "DBRepository",
+        table_name: str,
+        where_condition: str,
+        context: WorkflowContext,
+    ) -> dict[str, Any]:
+        """Execute DELETE operation."""
+        records = self._filter_db_records(repo, table_name, where_condition, context)
+        deleted_ids = []
+        for rec in records:
+            repo.delete_record(rec.id)
+            deleted_ids.append(rec.id)
+
+        return {
+            "result": {"deleted_ids": deleted_ids, "count": len(deleted_ids)},
+            "system_text": f"Deleted {len(deleted_ids)} records from {table_name}",
+        }
+
+    async def _execute_db_query(
+        self,
+        repo: "DBRepository",
+        table_name: str,
+        where_condition: str,
+        order_by: str,
+        limit: int,
+        context: WorkflowContext,
+    ) -> dict[str, Any]:
+        """Execute QUERY operation."""
+        result = repo.list_records(table_name, page=1, page_size=10000)
+        records = result.get("records", [])
+
+        # Apply WHERE filter
+        if where_condition:
+            conditions = self._parse_where_condition(where_condition, context)
+            records = [r for r in records if self._match_db_record(r, conditions)]
+
+        # Apply ORDER BY
+        if order_by:
+            records = self._sort_db_records(records, order_by)
+
+        # Apply LIMIT
+        records = records[:limit]
+
+        record_data = [r.record_data for r in records]
+        return {
+            "result": {"records": record_data, "total": len(record_data)},
+            "system_text": f"Queried {len(record_data)} records from {table_name}",
+        }
+
+    def _filter_db_records(
+        self,
+        repo: "DBRepository",
+        table_name: str,
+        where_condition: str,
+        context: WorkflowContext,
+    ) -> list:
+        """Get records matching WHERE condition."""
+        if not where_condition:
+            # No condition = match all
+            result = repo.list_records(table_name, page=1, page_size=10000)
+            return result.get("records", [])
+
+        conditions = self._parse_where_condition(where_condition, context)
+        result = repo.list_records(table_name, page=1, page_size=10000)
+        records = result.get("records", [])
+        return [r for r in records if self._match_db_record(r, conditions)]
+
+    def _parse_where_condition(self, condition: str, context: WorkflowContext) -> dict:
+        """Parse simple WHERE condition into key-value pairs.
+
+        Supports:
+            - key = "value"
+            - key = 'value'
+            - key = number
+            - key = {{variable}}
+        Multiple conditions joined by AND (case-insensitive).
+        """
+        if not condition:
+            return {}
+
+        # Resolve variable references first
+        condition = context.resolve_value(condition)
+
+        conditions = {}
+        # Split by AND (case-insensitive)
+        parts = re.split(r'\s+(?i:AND)\s+', condition)
+        for part in parts:
+            part = part.strip()
+            if "=" not in part:
+                continue
+            key, value = part.split("=", 1)
+            key = key.strip()
+            value = value.strip()
+
+            if not key:
+                continue
+
+            # Remove quotes
+            if len(value) >= 2:
+                if (value.startswith('"') and value.endswith('"')) or \
+                   (value.startswith("'") and value.endswith("'")):
+                    value = value[1:-1]
+                else:
+                    # Try to parse as number
+                    try:
+                        if "." in value:
+                            value = float(value)
+                        else:
+                            value = int(value)
+                    except (ValueError, TypeError):
+                        pass
+
+            conditions[key] = value
+
+        return conditions
+
+    def _match_db_record(self, record, conditions: dict) -> bool:
+        """Check if a record matches all conditions."""
+        data = record.record_data
+        for key, expected in conditions.items():
+            actual = data.get(key)
+            # Loose comparison for numbers
+            if isinstance(expected, (int, float)) and isinstance(actual, (int, float)):
+                if actual != expected:
+                    return False
+            elif str(actual) != str(expected):
+                return False
+        return True
+
+    def _sort_db_records(self, records: list, order_by: str) -> list:
+        """Sort records by order_by clause.
+
+        Format: field ASC or field DESC
+        """
+        order_by = order_by.strip()
+        if not order_by:
+            return records
+
+        parts = order_by.split()
+        field = parts[0]
+        reverse = len(parts) > 1 and parts[1].upper() == "DESC"
+
+        def sort_key(r):
+            val = r.record_data.get(field)
+            if val is None:
+                return ""
+            return val
+
+        return sorted(records, key=sort_key, reverse=reverse)

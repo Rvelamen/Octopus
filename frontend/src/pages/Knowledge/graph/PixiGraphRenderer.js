@@ -10,6 +10,7 @@ import * as PIXI from 'pixi.js';
 // Color palette (matching HTML version)
 const COLORS = {
   node: 0xb3b3b3,
+  paper: 0xe89a3c,      // orange for paper nodes
   hover: 0x835ee4,
   drag: 0x835ee4,
   line: 0x3f3f3f,
@@ -501,6 +502,7 @@ export class PixiGraphRenderer {
     container.baseRadius = radius;
     container.borderGraphics = border;
     container.fillGraphics = fill;
+    container.baseColor = n.type === 'paper' ? COLORS.paper : COLORS.node;
     container.setNodeTint = (color) => {
       fill.tint = color;
     };
@@ -627,7 +629,7 @@ export class PixiGraphRenderer {
         const isActive = id === activeId;
 
         sprite.alpha = isNeighbor || isActive ? 1 : 0.25;
-        sprite.setNodeTint(isActive ? COLORS.hover : COLORS.node);
+        sprite.setNodeTint(isActive ? COLORS.hover : (sprite.baseColor || COLORS.node));
 
         const rScale = sprite.baseRadius / 50;
         const targetScale = rScale * baseNodeScale;
@@ -650,7 +652,7 @@ export class PixiGraphRenderer {
       for (let i = 0; i < nodeEntries.length; i++) {
         const [id, sprite] = nodeEntries[i];
         sprite.alpha = 1;
-        sprite.setNodeTint(COLORS.node);
+        sprite.setNodeTint(sprite.baseColor || COLORS.node);
         const rScale = sprite.baseRadius / 50;
         sprite.scale.set(rScale * baseNodeScale);
         sprite.borderGraphics.visible = false;

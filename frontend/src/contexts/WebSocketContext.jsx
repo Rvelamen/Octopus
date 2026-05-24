@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useRef, useCallback, useEffect, useState } from 'react';
 
 const WebSocketContext = createContext(null);
-const WS_BASE = "ws://127.0.0.1:18791";
 
 export function WebSocketProvider({ children }) {
   const ws = useRef(null);
@@ -9,6 +8,7 @@ export function WebSocketProvider({ children }) {
   const listeners = useRef(new Map());
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(true);
+  const [wsPort, setWsPort] = useState(18791);
   const overlayShowTimeRef = useRef(Date.now());
 
   const generateRequestId = () => {
@@ -62,8 +62,16 @@ export function WebSocketProvider({ children }) {
 
   useEffect(() => {
     if (window.electronAPI) {
+      // 获取实际端口（Electron 动态分配）
+      if (window.electronAPI.getApiPort) {
+        window.electronAPI.getApiPort().then((port) => {
+          if (port) setWsPort(port);
+        }).catch(() => {});
+      }
+
       window.electronAPI.onBackendReady((port) => {
         console.log('[App] Backend ready on port:', port);
+        if (port) setWsPort(port);
       });
       window.electronAPI.onBackendError((error) => {
         console.error('[App] Backend error:', error);
@@ -81,7 +89,7 @@ export function WebSocketProvider({ children }) {
         return;
       }
 
-      ws.current = new WebSocket(`${WS_BASE}/ws`);
+      ws.current = new WebSocket(`ws://127.0.0.1:${wsPort}/ws`);
 
       ws.current.onopen = () => {
         if (!isComponentMounted) return;
@@ -154,7 +162,7 @@ export function WebSocketProvider({ children }) {
         ws.current = null;
       }
     };
-  }, []);
+  }, [wsPort]);
 
   return (
     <WebSocketContext.Provider value={{ 

@@ -1,8 +1,18 @@
 import React, { useState, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+
 import { Copy, Check } from 'lucide-react';
+
+// 兼容 react-markdown@8（v9 才有 defaultUrlTransform）
+function safeUrlTransform(url) {
+  const allowed = ['http:', 'https:', 'mailto:', 'tel:'];
+  try {
+    const parsed = new URL(url, 'http://localhost');
+    if (allowed.includes(parsed.protocol)) return url;
+  } catch {}
+  return '';
+}
 
 const WIKI_LINK_RE = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 
@@ -303,7 +313,7 @@ export default function MarkdownRenderer({ content, sendWSMessage }) {
           remarkPlugins={[remarkGfm]}
           urlTransform={(url, key) => {
             if (url.startsWith('wiki://')) return url;
-            return defaultUrlTransform(url);
+            return safeUrlTransform(url);
           }}
           components={{
             a: (props) => {

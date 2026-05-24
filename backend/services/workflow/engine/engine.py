@@ -409,7 +409,7 @@ class WorkflowEngine:
         inputs_config = node.config.get("inputs", [])
         inputs: dict[str, Any] = {}
 
-        node_type = node.type.value if isinstance(node.type, NodeType) else node_type
+        node_type = node.type.value if isinstance(node.type, NodeType) else str(node.type)
 
         # workflowStart inputs are self-referential ({{workflowStart.var_1}}),
         # resolve them from context._variables (runtime input) instead
@@ -462,6 +462,15 @@ class WorkflowEngine:
             if key in context._variables:
                 inputs[key] = context._variables[key]
 
+        # Inject code/config fields for specific node types
+        if node_type == "code":
+            node_code = node.config.get("code", "")
+            if node_code:
+                inputs["code"] = node_code
+            else:
+                import logging
+                logging.warning(f"[CodeNode] code is empty for node {node.id}, config keys: {list(node.config.keys())}")
+
         # Record resolved inputs into the trace so the outer loop can reference them
         context.update_node_trace(node.id, input_snapshot=inputs)
 
@@ -486,6 +495,7 @@ class WorkflowEngine:
             "readFiles": self._executor.execute_read_files,
             "jsonSerialize": self._executor.execute_json_serialize,
             "jsonDeserialize": self._executor.execute_json_deserialize,
+            "database": self._executor.execute_database,
         }
 
         executor = executor_map.get(node_type)

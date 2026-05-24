@@ -184,6 +184,9 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         await sendWSMessage('agent_defaults_update', {
           defaultProviderId: agentDefaults.defaultProviderId,
           defaultModelId: agentDefaults.defaultModelId,
+          libraryExtractProviderId: agentDefaults.libraryExtractProviderId,
+          libraryExtractModelId: agentDefaults.libraryExtractModelId,
+          libraryExtractLanguage: agentDefaults.libraryExtractLanguage,
           workspacePath: agentDefaults.workspacePath,
           maxTokens: agentDefaults.maxTokens,
           temperature: agentDefaults.temperature,
@@ -233,6 +236,27 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         defaultModelDisplayName: selectedModel.modelDisplayName,
       } : null);
     }
+  };
+
+  // Handle library extract model selection
+  const handleLibraryExtractModelChange = (modelValue) => {
+    const selectedModel = enabledModels.find(m => m.value === modelValue);
+    if (selectedModel) {
+      setAgentDefaults(prev => prev ? {
+        ...prev,
+        libraryExtractProviderId: selectedModel.providerId,
+        libraryExtractProviderName: selectedModel.providerName,
+        libraryExtractProviderDisplayName: selectedModel.providerDisplayName,
+        libraryExtractModelId: selectedModel.modelDbId,
+        libraryExtractModelName: selectedModel.modelId,
+        libraryExtractModelDisplayName: selectedModel.modelDisplayName,
+      } : null);
+    }
+  };
+
+  // Handle library extract language selection
+  const handleLibraryExtractLanguageChange = (langValue) => {
+    setAgentDefaults(prev => prev ? { ...prev, libraryExtractLanguage: langValue } : null);
   };
 
   // Update channel config in database
@@ -331,6 +355,11 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
       ? `${agentDefaults.defaultProviderId}/${agentDefaults.defaultModelName}`
       : '';
 
+    // Current library extract model value
+    const currentLibExtractValue = agentDefaults.libraryExtractProviderId && agentDefaults.libraryExtractModelName
+      ? `${agentDefaults.libraryExtractProviderId}/${agentDefaults.libraryExtractModelName}`
+      : '';
+
     return (
       <ConfigCard title="AGENT DEFAULTS" icon="[BOT]">
         {/* Model Selection - Shows all enabled models from all enabled providers */}
@@ -346,6 +375,40 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
             No enabled models found. Please enable providers and models in the PROVIDERS tab.
           </div>
         )}
+
+        {/* Library Extract Model Selection */}
+        <SelectField
+          label="Library AI Extract Model"
+          value={currentLibExtractValue}
+          onChange={handleLibraryExtractModelChange}
+          options={enabledModels}
+          disabled={isLoadingModels || enabledModels.length === 0}
+        />
+        <div className="form-hint" style={{ color: 'var(--text-muted)', marginTop: '-10px', marginBottom: '10px', fontSize: '12px' }}>
+          Model used for AI metadata extraction from PDFs in Library. Falls back to Default Model if not set.
+        </div>
+
+        {/* Library Extract Language Selection */}
+        <SelectField
+          label="Library AI Extract Language"
+          value={agentDefaults.libraryExtractLanguage || 'English'}
+          onChange={handleLibraryExtractLanguageChange}
+          options={[
+            { value: 'English', label: 'English' },
+            { value: 'Chinese', label: '中文 (Chinese)' },
+            { value: 'Japanese', label: '日本語 (Japanese)' },
+            { value: 'Korean', label: '한국어 (Korean)' },
+            { value: 'German', label: 'Deutsch (German)' },
+            { value: 'French', label: 'Français (French)' },
+            { value: 'Spanish', label: 'Español (Spanish)' },
+            { value: 'Portuguese', label: 'Português (Portuguese)' },
+            { value: 'Russian', label: 'Русский (Russian)' },
+            { value: 'Italian', label: 'Italiano (Italian)' },
+          ]}
+        />
+        <div className="form-hint" style={{ color: 'var(--text-muted)', marginTop: '-10px', marginBottom: '10px', fontSize: '12px' }}>
+          Language for AI-extracted abstract and metadata. Author names are kept in their original form.
+        </div>
 
         <InputField
           label="Workspace Path"

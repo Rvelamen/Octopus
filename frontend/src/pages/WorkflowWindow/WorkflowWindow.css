@@ -1,0 +1,70 @@
+/**
+ * WorkflowWindow 窗口级样式
+ * 标签页在顶部，内容区填满剩余空间
+ */
+
+.workflow-window {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f9fafb;
+}
+
+/* 让 Ant Design Tabs 填满整个窗口 */
+.workflow-window > .ant-tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.workflow-window > .ant-tabs > .ant-tabs-nav {
+  flex-shrink: 0;
+  margin-bottom: 0;
+  padding: 0 16px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.workflow-window > .ant-tabs > .ant-tabs-nav .ant-tabs-tab {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.workflow-window > .ant-tabs > .ant-tabs-content-holder {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.workflow-window > .ant-tabs > .ant-tabs-content-holder > .ant-tabs-content {
+  height: 100%;
+}
+
+.workflow-window > .ant-tabs > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
+  height: 100%;
+}
+
+/* Database 占位页样式 */
+.database-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  gap: 16px;
+}
+
+.database-placeholder h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #6b7280;
+}
+
+.database-placeholder p {
+  margin: 0;
+  font-size: 14px;
+}

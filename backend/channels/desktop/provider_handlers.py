@@ -626,7 +626,7 @@ class AgentDefaultsHandler:
         """Get agent defaults with provider and model details."""
         defaults = self.agent_defaults_repo.get_or_create_defaults()
 
-        # Get provider details
+        # Get default provider details
         provider_name = None
         provider_display_name = None
         if defaults.default_provider_id:
@@ -635,7 +635,7 @@ class AgentDefaultsHandler:
                 provider_name = provider.name
                 provider_display_name = provider.display_name
 
-        # Get model details
+        # Get default model details
         model_name = None
         model_display_name = None
         if defaults.default_model_id:
@@ -643,6 +643,24 @@ class AgentDefaultsHandler:
             if model:
                 model_name = model.model_id
                 model_display_name = model.display_name
+
+        # Get library extract provider details
+        lib_provider_name = None
+        lib_provider_display_name = None
+        if defaults.library_extract_provider_id:
+            provider = self.provider_repo.get_provider_by_id(defaults.library_extract_provider_id)
+            if provider:
+                lib_provider_name = provider.name
+                lib_provider_display_name = provider.display_name
+
+        # Get library extract model details
+        lib_model_name = None
+        lib_model_display_name = None
+        if defaults.library_extract_model_id:
+            model = self.model_repo.get_model_by_id(defaults.library_extract_model_id)
+            if model:
+                lib_model_name = model.model_id
+                lib_model_display_name = model.display_name
 
         await websocket.send_json({
             "type": MessageType.AGENT_DEFAULTS.value,
@@ -654,6 +672,13 @@ class AgentDefaultsHandler:
                 "defaultModelId": defaults.default_model_id,
                 "defaultModelName": model_name,
                 "defaultModelDisplayName": model_display_name,
+                "libraryExtractProviderId": defaults.library_extract_provider_id,
+                "libraryExtractProviderName": lib_provider_name,
+                "libraryExtractProviderDisplayName": lib_provider_display_name,
+                "libraryExtractModelId": defaults.library_extract_model_id,
+                "libraryExtractModelName": lib_model_name,
+                "libraryExtractModelDisplayName": lib_model_display_name,
+                "libraryExtractLanguage": defaults.library_extract_language or "English",
                 "workspacePath": defaults.workspace_path,
                 "maxTokens": defaults.max_tokens,
                 "temperature": defaults.temperature,
@@ -679,6 +704,9 @@ class AgentDefaultsHandler:
         success = self.agent_defaults_repo.update_agent_defaults(
             default_provider_id=data.get("defaultProviderId"),
             default_model_id=data.get("defaultModelId"),
+            library_extract_provider_id=data.get("libraryExtractProviderId"),
+            library_extract_model_id=data.get("libraryExtractModelId"),
+            library_extract_language=data.get("libraryExtractLanguage"),
             workspace_path=new_workspace_path,
             max_tokens=data.get("maxTokens"),
             temperature=data.get("temperature"),

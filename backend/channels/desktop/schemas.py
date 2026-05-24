@@ -596,6 +596,9 @@ class AgentDefaultsGetRequest(BaseRequest):
 class AgentDefaultsUpdateRequest(BaseRequest):
     default_provider_id: int | None = Field(default=None, alias="defaultProviderId")
     default_model_id: int | None = Field(default=None, alias="defaultModelId")
+    library_extract_provider_id: int | None = Field(default=None, alias="libraryExtractProviderId")
+    library_extract_model_id: int | None = Field(default=None, alias="libraryExtractModelId")
+    library_extract_language: str | None = Field(default=None, alias="libraryExtractLanguage")
     workspace_path: str | None = Field(default=None, alias="workspacePath")
     max_tokens: int | None = Field(default=None, alias="maxTokens")
     temperature: float | None = None

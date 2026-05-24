@@ -63,39 +63,52 @@ export const withTestButton = (Component) => {
             <button
               onClick={handleTest}
               onPointerDown={handleTestPointerDown}
-              onMouseDown={handleTestPointerDown}
               title="测试此节点"
+              className="node-test-btn"
               style={{
-              position: 'absolute',
-              top: '6px',
-              right: '6px',
-              width: '20px',
-              height: '20px',
-              borderRadius: '50%',
-              border: 'none',
-              background: '#22c55e',
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-              zIndex: 10,
-              padding: 0,
-              opacity: 0.85,
-              transition: 'opacity 0.2s, transform 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = '1';
-              e.currentTarget.style.transform = 'scale(1.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = '0.85';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            <Play size={10} fill="white" />
-          </button>
+                position: 'absolute',
+                top: '6px',
+                right: '6px',
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                border: 'none',
+                background: '#22c55e',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                zIndex: 10,
+                padding: 0,
+                opacity: 0.85,
+                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                outline: 'none',
+                transformOrigin: 'center',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.transform = 'scale(1.05)';
+                e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '0.85';
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.2)';
+              }}
+              onMouseDown={(e) => {
+                handleTestPointerDown(e);
+                e.currentTarget.style.transform = 'scale(0.95)';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(34,197,94,0.2), inset 0 1px 2px rgba(0,0,0,0.1)';
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+                e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
+              }}
+            >
+              <Play size={10} fill="white" />
+            </button>
           )}
         </div>
 

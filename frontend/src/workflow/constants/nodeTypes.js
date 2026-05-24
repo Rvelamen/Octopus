@@ -1,6 +1,6 @@
 export const NODE_TYPE_INFO = {
   workflowStart: { icon: '🚀', color: '#3b82f6', name: '工作流开始', category: '基础节点' },
-  answerNode: { icon: '💬', color: '#22c55e', name: '直接回复', category: '基础节点' },
+
   workflowEnd: { icon: '🔚', color: '#ef4444', name: '工作流结束', category: '基础节点' },
   llm: { icon: '🤖', color: '#8b5cf6', name: '大模型', category: 'AI 节点' },
   classifyQuestion: { icon: '📊', color: '#f97316', name: '问题分类', category: 'AI 节点' },
@@ -22,6 +22,7 @@ export const NODE_TYPE_INFO = {
   agentNode: { icon: '🤖', color: '#8b5cf6', name: 'Agent', category: 'Agent' },
   subWorkflowNode: { icon: '📦', color: '#6366f1', name: '子工作流', category: 'Agent' },
   jsonDeserialize: { icon: '🧩', color: '#6366f1', name: 'JSON 反序列化', category: '工具节点' },
+  database: { icon: '🗄️', color: '#f97316', name: '数据库', category: '组件' },
 };
 
 export const DEFAULT_NODE_TYPE_INFO = { icon: '📦', color: '#6b7280', name: '节点', category: '其他' };

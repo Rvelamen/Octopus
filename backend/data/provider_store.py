@@ -566,6 +566,9 @@ class AgentDefaultsRecord:
     id: int
     default_provider_id: int | None
     default_model_id: int | None
+    library_extract_provider_id: int | None
+    library_extract_model_id: int | None
+    library_extract_language: str | None
     workspace_path: str
     max_tokens: int
     temperature: float
@@ -621,6 +624,9 @@ class AgentDefaultsRepository:
         self,
         default_provider_id: int | None = None,
         default_model_id: int | None = None,
+        library_extract_provider_id: int | None = None,
+        library_extract_model_id: int | None = None,
+        library_extract_language: str | None = None,
         workspace_path: str | None = None,
         max_tokens: int | None = None,
         temperature: float | None = None,
@@ -641,6 +647,15 @@ class AgentDefaultsRepository:
         if default_model_id is not None:
             updates.append("default_model_id = ?")
             params.append(default_model_id)
+        if library_extract_provider_id is not None:
+            updates.append("library_extract_provider_id = ?")
+            params.append(library_extract_provider_id)
+        if library_extract_model_id is not None:
+            updates.append("library_extract_model_id = ?")
+            params.append(library_extract_model_id)
+        if library_extract_language is not None:
+            updates.append("library_extract_language = ?")
+            params.append(library_extract_language)
         if workspace_path is not None:
             updates.append("workspace_path = ?")
             params.append(workspace_path)
@@ -721,6 +736,9 @@ class AgentDefaultsRepository:
             id=row["id"],
             default_provider_id=row["default_provider_id"],
             default_model_id=row["default_model_id"],
+            library_extract_provider_id=row["library_extract_provider_id"] if "library_extract_provider_id" in row.keys() else None,
+            library_extract_model_id=row["library_extract_model_id"] if "library_extract_model_id" in row.keys() else None,
+            library_extract_language=row["library_extract_language"] if "library_extract_language" in row.keys() else "English",
             workspace_path=row["workspace_path"] or "",
             max_tokens=row["max_tokens"] or 8192,
             temperature=row["temperature"] or 0.7,

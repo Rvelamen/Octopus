@@ -68,6 +68,29 @@ class MessageType(Enum):
     KNOWLEDGE_LIST_VAULTS = "knowledge_list_vaults"  # List all vaults
     KNOWLEDGE_UPDATE_REFERENCES = "knowledge_update_references"  # Update references after file move
 
+    # Library - Client -> Server
+    LIBRARY_LIST = "library_list"
+    LIBRARY_GET = "library_get"
+    LIBRARY_CREATE = "library_create"
+    LIBRARY_UPDATE_META = "library_update_meta"
+    LIBRARY_DELETE = "library_delete"
+    LIBRARY_SEARCH = "library_search"
+    LIBRARY_ADD_ATTACHMENT = "library_add_attachment"
+    LIBRARY_ANNOTATIONS_LOAD = "library_annotations_load"
+    LIBRARY_ANNOTATIONS_SAVE = "library_annotations_save"
+    LIBRARY_LINK_NOTE = "library_link_note"
+    LIBRARY_COLLECTION_LIST = "library_collection_list"
+    LIBRARY_COLLECTION_CREATE = "library_collection_create"
+    LIBRARY_COLLECTION_UPDATE = "library_collection_update"
+    LIBRARY_COLLECTION_DELETE = "library_collection_delete"
+    LIBRARY_COLLECTION_MOVE = "library_collection_move"
+    LIBRARY_COLLECTION_ADD_ITEM = "library_collection_add_item"
+    LIBRARY_COLLECTION_REMOVE_ITEM = "library_collection_remove_item"
+    LIBRARY_IMPORT_DOI = "library_import_doi"
+    LIBRARY_IMPORT_ARXIV = "library_import_arxiv"
+    LIBRARY_SEARCH_CHUNKS = "library_search_chunks"
+    LIBRARY_AI_EXTRACT_META = "library_ai_extract_meta"
+
     # File Preview - Client -> Server
     FILE_PREVIEW_PDF = "file_preview_pdf"                   # Convert file to PDF for preview
 
@@ -92,6 +115,18 @@ class MessageType(Enum):
     WORKFLOW_GET_NODE_REGISTRY = "workflow_get_node_registry"
     WORKFLOW_VERSION_CREATE = "workflow_version_create"
     WORKFLOW_VERSION_LIST = "workflow_version_list"
+
+    # Database - Client -> Server
+    DB_TABLE_LIST = "db_table_list"
+    DB_TABLE_CREATE = "db_table_create"
+    DB_TABLE_GET = "db_table_get"
+    DB_TABLE_UPDATE = "db_table_update"
+    DB_TABLE_DELETE = "db_table_delete"
+    DB_RECORD_LIST = "db_record_list"
+    DB_RECORD_CREATE = "db_record_create"
+    DB_RECORD_UPDATE = "db_record_update"
+    DB_RECORD_DELETE = "db_record_delete"
+    DB_RECORD_SEARCH = "db_record_search"
 
     # Memory Stream - Client -> Server
     MEMORY_LIST = "memory_list"                          # List observations
@@ -227,6 +262,29 @@ class MessageType(Enum):
     KNOWLEDGE_GET_DOCUMENT_META_RESULT = "knowledge_get_document_meta_result"  # Document metadata result
     KNOWLEDGE_LIST_VAULTS_RESULT = "knowledge_list_vaults_result"  # Vault list result
     KNOWLEDGE_UPDATE_REFERENCES_RESULT = "knowledge_update_references_result"  # Reference update result
+
+    # Library - Server -> Client
+    LIBRARY_LIST_RESULT = "library_list_result"
+    LIBRARY_GET_RESULT = "library_get_result"
+    LIBRARY_CREATE_RESULT = "library_create_result"
+    LIBRARY_UPDATE_META_RESULT = "library_update_meta_result"
+    LIBRARY_DELETE_RESULT = "library_delete_result"
+    LIBRARY_SEARCH_RESULT = "library_search_result"
+    LIBRARY_ADD_ATTACHMENT_RESULT = "library_add_attachment_result"
+    LIBRARY_ANNOTATIONS_LOAD_RESULT = "library_annotations_load_result"
+    LIBRARY_ANNOTATIONS_SAVE_RESULT = "library_annotations_save_result"
+    LIBRARY_LINK_NOTE_RESULT = "library_link_note_result"
+    LIBRARY_COLLECTION_LIST_RESULT = "library_collection_list_result"
+    LIBRARY_COLLECTION_CREATE_RESULT = "library_collection_create_result"
+    LIBRARY_COLLECTION_UPDATE_RESULT = "library_collection_update_result"
+    LIBRARY_COLLECTION_DELETE_RESULT = "library_collection_delete_result"
+    LIBRARY_COLLECTION_MOVE_RESULT = "library_collection_move_result"
+    LIBRARY_COLLECTION_ADD_ITEM_RESULT = "library_collection_add_item_result"
+    LIBRARY_COLLECTION_REMOVE_ITEM_RESULT = "library_collection_remove_item_result"
+    LIBRARY_IMPORT_DOI_RESULT = "library_import_doi_result"
+    LIBRARY_IMPORT_ARXIV_RESULT = "library_import_arxiv_result"
+    LIBRARY_SEARCH_CHUNKS_RESULT = "library_search_chunks_result"
+    LIBRARY_AI_EXTRACT_META_RESULT = "library_ai_extract_meta_result"
 
     # File Preview - Server -> Client
     FILE_PREVIEW_PDF_RESULT = "file_preview_pdf_result"    # PDF conversion result
@@ -494,6 +552,28 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.KNOWLEDGE_IMPORT,
     MessageType.KNOWLEDGE_GET_DOCUMENT_META,
     MessageType.KNOWLEDGE_LIST_VAULTS,
+    MessageType.KNOWLEDGE_UPDATE_REFERENCES,
+    MessageType.LIBRARY_LIST,
+    MessageType.LIBRARY_GET,
+    MessageType.LIBRARY_CREATE,
+    MessageType.LIBRARY_UPDATE_META,
+    MessageType.LIBRARY_DELETE,
+    MessageType.LIBRARY_SEARCH,
+    MessageType.LIBRARY_ADD_ATTACHMENT,
+    MessageType.LIBRARY_ANNOTATIONS_LOAD,
+    MessageType.LIBRARY_ANNOTATIONS_SAVE,
+    MessageType.LIBRARY_LINK_NOTE,
+    MessageType.LIBRARY_COLLECTION_LIST,
+    MessageType.LIBRARY_COLLECTION_CREATE,
+    MessageType.LIBRARY_COLLECTION_UPDATE,
+    MessageType.LIBRARY_COLLECTION_DELETE,
+    MessageType.LIBRARY_COLLECTION_MOVE,
+    MessageType.LIBRARY_COLLECTION_ADD_ITEM,
+    MessageType.LIBRARY_COLLECTION_REMOVE_ITEM,
+    MessageType.LIBRARY_IMPORT_DOI,
+    MessageType.LIBRARY_IMPORT_ARXIV,
+    MessageType.LIBRARY_SEARCH_CHUNKS,
+    MessageType.LIBRARY_AI_EXTRACT_META,
     MessageType.FILE_PREVIEW_PDF,
     MessageType.WORKSPACE_LIST,
     MessageType.WORKSPACE_READ,
@@ -730,6 +810,28 @@ SERVER_MESSAGE_TYPES = {
     MessageType.KNOWLEDGE_GET_DOCUMENT_META_RESULT,
     MessageType.KNOWLEDGE_LIST_VAULTS_RESULT,
     MessageType.KNOWLEDGE_UPDATE_REFERENCES_RESULT,
+    # Library
+    MessageType.LIBRARY_LIST_RESULT,
+    MessageType.LIBRARY_GET_RESULT,
+    MessageType.LIBRARY_CREATE_RESULT,
+    MessageType.LIBRARY_UPDATE_META_RESULT,
+    MessageType.LIBRARY_DELETE_RESULT,
+    MessageType.LIBRARY_SEARCH_RESULT,
+    MessageType.LIBRARY_ADD_ATTACHMENT_RESULT,
+    MessageType.LIBRARY_ANNOTATIONS_LOAD_RESULT,
+    MessageType.LIBRARY_ANNOTATIONS_SAVE_RESULT,
+    MessageType.LIBRARY_LINK_NOTE_RESULT,
+    MessageType.LIBRARY_COLLECTION_LIST_RESULT,
+    MessageType.LIBRARY_COLLECTION_CREATE_RESULT,
+    MessageType.LIBRARY_COLLECTION_UPDATE_RESULT,
+    MessageType.LIBRARY_COLLECTION_DELETE_RESULT,
+    MessageType.LIBRARY_COLLECTION_MOVE_RESULT,
+    MessageType.LIBRARY_COLLECTION_ADD_ITEM_RESULT,
+    MessageType.LIBRARY_COLLECTION_REMOVE_ITEM_RESULT,
+    MessageType.LIBRARY_IMPORT_DOI_RESULT,
+    MessageType.LIBRARY_IMPORT_ARXIV_RESULT,
+    MessageType.LIBRARY_SEARCH_CHUNKS_RESULT,
+    MessageType.LIBRARY_AI_EXTRACT_META_RESULT,
     MessageType.FILE_PREVIEW_PDF_RESULT,
     MessageType.MEMORY_LIST_RESULT,
     MessageType.MEMORY_SEARCH_RESULT,

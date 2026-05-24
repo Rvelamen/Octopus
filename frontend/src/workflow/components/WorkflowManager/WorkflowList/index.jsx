@@ -258,6 +258,24 @@ const WorkflowList = ({ isOpen, onClose, onSelectWorkflow, onCreateWorkflow }) =
                 color: 'white',
                 cursor: 'pointer',
                 fontSize: '13px',
+                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#2563eb';
+                e.currentTarget.style.boxShadow = '0 4px 8px rgba(59,130,246,0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#3b82f6';
+                e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)';
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.transform = 'scale(0.97)';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.2)';
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = '0 4px 8px rgba(59,130,246,0.25)';
               }}
               onClick={() => {
                 onCreateWorkflow?.();
@@ -274,6 +292,25 @@ const WorkflowList = ({ isOpen, onClose, onSelectWorkflow, onCreateWorkflow }) =
                 border: 'none',
                 background: 'transparent',
                 cursor: 'pointer',
+                color: '#6b7280',
+                transition: 'all 0.15s ease',
+                transformOrigin: 'center',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#f3f4f6';
+                e.currentTarget.style.color = '#1f2937';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = '#6b7280';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.transform = 'scale(0.95)';
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
               }}
               onClick={onClose}
               title="关闭"
@@ -328,7 +365,6 @@ const WorkflowList = ({ isOpen, onClose, onSelectWorkflow, onCreateWorkflow }) =
               { value: 'archived', label: '已归档' },
             ].map((option) => (
               <button
-                key={option.value}
                 style={{
                   padding: '4px 12px',
                   borderRadius: '6px',
@@ -337,6 +373,25 @@ const WorkflowList = ({ isOpen, onClose, onSelectWorkflow, onCreateWorkflow }) =
                   color: filterStatus === option.value ? '#2563eb' : '#6b7280',
                   cursor: 'pointer',
                   fontSize: '13px',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+                onMouseEnter={(e) => {
+                  if (filterStatus !== option.value) {
+                    e.currentTarget.style.background = '#f3f4f6';
+                    e.currentTarget.style.color = '#374151';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (filterStatus !== option.value) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = '#6b7280';
+                  }
+                }}
+                onMouseDown={(e) => {
+                  e.currentTarget.style.transform = 'scale(0.97)';
+                }}
+                onMouseUp={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
                 }}
                 onClick={() => setFilterStatus(option.value)}
               >
@@ -357,10 +412,29 @@ const WorkflowList = ({ isOpen, onClose, onSelectWorkflow, onCreateWorkflow }) =
               cursor: 'pointer',
               fontSize: '13px',
               color: '#6b7280',
+              transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
-            onClick={() => {
-              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#d1d5db';
+              e.currentTarget.style.background = '#f9fafb';
+              e.currentTarget.style.color = '#374151';
             }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#e5e7eb';
+              e.currentTarget.style.background = 'white';
+              e.currentTarget.style.color = '#6b7280';
+            }}
+            onMouseDown={(e) => {
+                e.currentTarget.style.transform = 'scale(0.97)';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(209,213,219,0.3)';
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+              onClick={() => {
+                setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+              }}
           >
             <ArrowUpDown size={14} />
             {sortOrder === 'asc' ? '升序' : '降序'}
@@ -397,6 +471,21 @@ const WorkflowList = ({ isOpen, onClose, onSelectWorkflow, onCreateWorkflow }) =
                   background: 'white',
                   cursor: 'pointer',
                   fontSize: '13px',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                  e.currentTarget.style.background = '#f9fafb';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                  e.currentTarget.style.background = 'white';
+                }}
+                onMouseDown={(e) => {
+                  e.currentTarget.style.transform = 'scale(0.97)';
+                }}
+                onMouseUp={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
                 }}
                 onClick={loadWorkflows}
               >
@@ -425,6 +514,24 @@ const WorkflowList = ({ isOpen, onClose, onSelectWorkflow, onCreateWorkflow }) =
                     color: 'white',
                     cursor: 'pointer',
                     fontSize: '13px',
+                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#2563eb';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(59,130,246,0.25)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#3b82f6';
+                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)';
+                  }}
+                  onMouseDown={(e) => {
+                    e.currentTarget.style.transform = 'scale(0.97)';
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.2)';
+                  }}
+                  onMouseUp={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(59,130,246,0.25)';
                   }}
                   onClick={() => {
                     onCreateWorkflow?.();
@@ -503,6 +610,22 @@ const WorkflowList = ({ isOpen, onClose, onSelectWorkflow, onCreateWorkflow }) =
                       background: 'transparent',
                       cursor: 'pointer',
                       color: '#3b82f6',
+                      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                      transformOrigin: 'center',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#eff6ff';
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                    onMouseDown={(e) => {
+                      e.currentTarget.style.transform = 'scale(0.95)';
+                    }}
+                    onMouseUp={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.05)';
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -521,6 +644,24 @@ const WorkflowList = ({ isOpen, onClose, onSelectWorkflow, onCreateWorkflow }) =
                       background: 'transparent',
                       cursor: 'pointer',
                       color: '#6b7280',
+                      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                      transformOrigin: 'center',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f3f4f6';
+                      e.currentTarget.style.color = '#374151';
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#6b7280';
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                    onMouseDown={(e) => {
+                      e.currentTarget.style.transform = 'scale(0.95)';
+                    }}
+                    onMouseUp={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.05)';
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -538,6 +679,22 @@ const WorkflowList = ({ isOpen, onClose, onSelectWorkflow, onCreateWorkflow }) =
                       background: 'transparent',
                       cursor: 'pointer',
                       color: '#ef4444',
+                      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                      transformOrigin: 'center',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#fef2f2';
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                    onMouseDown={(e) => {
+                      e.currentTarget.style.transform = 'scale(0.95)';
+                    }}
+                    onMouseUp={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.05)';
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -607,6 +764,24 @@ const WorkflowList = ({ isOpen, onClose, onSelectWorkflow, onCreateWorkflow }) =
                       color: 'white',
                       cursor: 'pointer',
                       fontSize: '13px',
+                      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#2563eb';
+                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(59,130,246,0.25)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#3b82f6';
+                      e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)';
+                    }}
+                    onMouseDown={(e) => {
+                      e.currentTarget.style.transform = 'scale(0.97)';
+                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.2)';
+                    }}
+                    onMouseUp={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(59,130,246,0.25)';
                     }}
                     onClick={() => {
                       onSelectWorkflow?.(workflow);
@@ -628,6 +803,25 @@ const WorkflowList = ({ isOpen, onClose, onSelectWorkflow, onCreateWorkflow }) =
                       cursor: 'pointer',
                       fontSize: '13px',
                       color: '#6b7280',
+                      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f9fafb';
+                      e.currentTarget.style.borderColor = '#d1d5db';
+                      e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'white';
+                      e.currentTarget.style.borderColor = '#e5e7eb';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                    onMouseDown={(e) => {
+                      e.currentTarget.style.transform = 'scale(0.97)';
+                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(209,213,219,0.3)';
+                    }}
+                    onMouseUp={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
                     }}
                     onClick={() => handleDuplicateWorkflow(workflow)}
                   >
@@ -646,6 +840,25 @@ const WorkflowList = ({ isOpen, onClose, onSelectWorkflow, onCreateWorkflow }) =
                       cursor: 'pointer',
                       fontSize: '13px',
                       color: '#ef4444',
+                      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#fee2e2';
+                      e.currentTarget.style.borderColor = '#f87171';
+                      e.currentTarget.style.boxShadow = '0 2px 4px rgba(239,68,68,0.08)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#fef2f2';
+                      e.currentTarget.style.borderColor = '#fca5a5';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                    onMouseDown={(e) => {
+                      e.currentTarget.style.transform = 'scale(0.97)';
+                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.15)';
+                    }}
+                    onMouseUp={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = '0 2px 4px rgba(239,68,68,0.08)';
                     }}
                     onClick={() => handleDeleteWorkflow(workflow.id)}
                   >

@@ -146,8 +146,22 @@
   color: #94a3b8;
   border-radius: 5px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 0;
+  position: relative;
+  overflow: hidden;
+  transform-origin: center;
+}
+
+.wf-title-bar__btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at center, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .wf-title-bar__btn:hover {
@@ -156,7 +170,13 @@
 }
 
 .wf-title-bar__btn:active {
-  transform: scale(0.92);
+  transform: scale(0.95);
+  color: #1d4ed8;
+}
+
+.wf-title-bar__btn:active::after {
+  opacity: 1;
+  transform: scale(1);
 }
 
 /* 旋转动画 */

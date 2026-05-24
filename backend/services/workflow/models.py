@@ -32,6 +32,7 @@ class NodeType(Enum):
     READ_FILES = "readFiles"
     JSON_SERIALIZE = "jsonSerialize"
     JSON_DESERIALIZE = "jsonDeserialize"
+    DATABASE = "database"
 
     # Logic nodes
     IF_ELSE = "ifElseNode"

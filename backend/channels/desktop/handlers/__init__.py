@@ -101,6 +101,7 @@ from backend.channels.desktop.handlers.image import (
     ImageGetUnderstandingProvidersHandler,
     ImageGetGenerationProvidersHandler,
 )
+from backend.channels.desktop.handlers.library import LibraryHandler
 
 __all__ = [
     # Base
@@ -175,4 +176,6 @@ __all__ = [
     "ImageGenerateHandler",
     "ImageGetUnderstandingProvidersHandler",
     "ImageGetGenerationProvidersHandler",
+    # Library
+    "LibraryHandler",
 ]
