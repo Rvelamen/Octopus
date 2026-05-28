@@ -71,7 +71,10 @@ const NodeTestDialog = ({ isOpen, onClose, nodeId }) => {
       if (data.node_id && data.status) {
         const trace = data.output?.trace;
         const inputSnapshot = trace?.input_snapshot || {};
-        updateExecutionNode(data.node_id, data.status, data.output?.result || {}, inputSnapshot, data.output?.duration_ms);
+        const errorDetail = trace?.error_detail || null;
+        const errorMessage = errorDetail?.message || null;
+        const warnings = errorDetail?.type === 'unresolved_variables' ? errorDetail.refs : null;
+        updateExecutionNode(data.node_id, data.status, data.output?.result || {}, inputSnapshot, data.output?.duration_ms, errorMessage, warnings);
       }
     };
     const unsub = subscribe('workflow_node_update', handleNodeUpdate);

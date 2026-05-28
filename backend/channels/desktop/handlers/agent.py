@@ -408,6 +408,13 @@ class AgentDeleteHandler(MessageHandler):
             repo = SubagentRepository(self.db)
 
             if agent_id:
+                record = repo.get_subagent_by_id(int(agent_id))
+                if not record:
+                    await self._send_error(websocket, message.request_id, f"Agent with id '{agent_id}' not found")
+                    return
+                if record.is_builtin:
+                    await self._send_error(websocket, message.request_id, f"Built-in agent '{record.name}' cannot be deleted")
+                    return
                 success = repo.delete_subagent(int(agent_id))
                 if success:
                     logger.info(f"Deleted subagent from database: id={agent_id}")
@@ -423,16 +430,21 @@ class AgentDeleteHandler(MessageHandler):
 
             if agent_name:
                 record = repo.get_subagent_by_name(agent_name)
-                if record:
-                    success = repo.delete_subagent(record.id)
-                    if success:
-                        logger.info(f"Deleted subagent from database: {agent_name}")
-                        await self.send_response(websocket, WSMessage(
-                            type=MessageType.AGENT_DELETED,
-                            request_id=message.request_id,
-                            data={"id": record.id, "name": agent_name, "status": "deleted"}
-                        ))
-                        return
+                if not record:
+                    await self._send_error(websocket, message.request_id, f"Agent '{agent_name}' not found")
+                    return
+                if record.is_builtin:
+                    await self._send_error(websocket, message.request_id, f"Built-in agent '{record.name}' cannot be deleted")
+                    return
+                success = repo.delete_subagent(record.id)
+                if success:
+                    logger.info(f"Deleted subagent from database: {agent_name}")
+                    await self.send_response(websocket, WSMessage(
+                        type=MessageType.AGENT_DELETED,
+                        request_id=message.request_id,
+                        data={"id": record.id, "name": agent_name, "status": "deleted"}
+                    ))
+                    return
 
             await self._send_error(websocket, message.request_id, f"Agent '{agent_name or agent_id}' not found")
         except Exception as e:
@@ -450,6 +462,13 @@ class AgentDeleteHandler(MessageHandler):
             repo = SubagentRepository(self.db)
 
             if agent_id:
+                record = repo.get_subagent_by_id(int(agent_id))
+                if not record:
+                    await self._send_error(websocket, message.request_id, f"Agent with id '{agent_id}' not found")
+                    return
+                if record.is_builtin:
+                    await self._send_error(websocket, message.request_id, f"Built-in agent '{record.name}' cannot be deleted")
+                    return
                 success = repo.delete_subagent(int(agent_id))
                 if success:
                     logger.info(f"Deleted subagent from database: id={agent_id}")

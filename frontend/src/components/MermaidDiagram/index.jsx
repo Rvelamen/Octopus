@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
-  Eye, Code, Download, FileCode, FileImage, Copy, Check,
+  Eye, Code, Download, FileCode, FileImage, Copy, Check, X, Maximize2,
+  ZoomIn, ZoomOut, RotateCcw,
 } from 'lucide-react';
 import { useMermaid } from '../../hooks/useMermaid';
 import './MermaidDiagram.css';
@@ -68,7 +69,48 @@ export default function MermaidDiagram({ source }) {
   const [renderError, setRenderError] = useState(null);
   const [viewMode, setViewMode] = useState('diagram'); // 'diagram' | 'code'
   const [copied, setCopied] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fsScale, setFsScale] = useState(1);
+  const [fsOffset, setFsOffset] = useState({ x: 0, y: 0 });
+  const fsDraggingRef = useRef(false);
+  const fsDragStartRef = useRef({ x: 0, y: 0 });
+  const fsContainerRef = useRef(null);
   const diagramId = useRef(getUniqueId()).current;
+
+  const resetFsView = useCallback(() => {
+    setFsScale(1);
+    setFsOffset({ x: 0, y: 0 });
+  }, []);
+
+  const handleFsWheel = useCallback((e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setFsScale((prev) => Math.max(0.2, Math.min(5, prev + delta)));
+  }, []);
+
+  const handleFsMouseDown = useCallback((e) => {
+    if (e.button !== 0) return;
+    fsDraggingRef.current = true;
+    fsDragStartRef.current = { x: e.clientX - fsOffset.x, y: e.clientY - fsOffset.y };
+  }, [fsOffset]);
+
+  const handleFsMouseMove = useCallback((e) => {
+    if (!fsDraggingRef.current) return;
+    setFsOffset({
+      x: e.clientX - fsDragStartRef.current.x,
+      y: e.clientY - fsDragStartRef.current.y,
+    });
+  }, []);
+
+  const handleFsMouseUp = useCallback(() => {
+    fsDraggingRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    if (!isFullscreen) {
+      resetFsView();
+    }
+  }, [isFullscreen, resetFsView]);
 
   useEffect(() => {
     if (!mermaid || !source) return;
@@ -131,6 +173,54 @@ export default function MermaidDiagram({ source }) {
   }, [source]);
 
   const error = mermaidError || renderError;
+
+  if (isFullscreen && svgContent) {
+    return (
+      <div
+        className="mermaid-fullscreen-overlay"
+        onClick={() => setIsFullscreen(false)}
+        onWheel={handleFsWheel}
+        onMouseMove={handleFsMouseMove}
+        onMouseUp={handleFsMouseUp}
+        onMouseLeave={handleFsMouseUp}
+      >
+        <button
+          type="button"
+          className="mermaid-fullscreen-close"
+          onClick={() => setIsFullscreen(false)}
+          title="关闭预览"
+        >
+          <X size={20} />
+        </button>
+
+        {/* Zoom toolbar */}
+        <div className="mermaid-zoom-toolbar">
+          <button type="button" onClick={() => setFsScale((s) => Math.min(5, s + 0.2))} title="放大">
+            <ZoomIn size={16} />
+          </button>
+          <span className="mermaid-zoom-level">{Math.round(fsScale * 100)}%</span>
+          <button type="button" onClick={() => setFsScale((s) => Math.max(0.2, s - 0.2))} title="缩小">
+            <ZoomOut size={16} />
+          </button>
+          <button type="button" onClick={resetFsView} title="重置">
+            <RotateCcw size={16} />
+          </button>
+        </div>
+
+        <div
+          ref={fsContainerRef}
+          className="mermaid-fullscreen-content"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={handleFsMouseDown}
+          style={{
+            transform: `translate(${fsOffset.x}px, ${fsOffset.y}px) scale(${fsScale})`,
+            cursor: fsDraggingRef.current ? 'grabbing' : fsScale > 1 ? 'grab' : 'default',
+          }}
+          dangerouslySetInnerHTML={{ __html: svgContent }}
+        />
+      </div>
+    );
+  }
 
   if (isMermaidLoading) {
     return (
@@ -218,8 +308,16 @@ export default function MermaidDiagram({ source }) {
           <div
             ref={containerRef}
             className="mermaid-diagram-container"
-            dangerouslySetInnerHTML={{ __html: svgContent }}
-          />
+            onClick={() => setIsFullscreen(true)}
+            title="点击放大预览"
+            style={{ cursor: 'zoom-in' }}
+          >
+            <div dangerouslySetInnerHTML={{ __html: svgContent }} />
+            <div className="mermaid-diagram-zoom-hint">
+              <Maximize2 size={14} />
+              <span>点击放大</span>
+            </div>
+          </div>
         ) : (
           <div className="mermaid-diagram-loading-inline">
             <span className="mermaid-spinner" />

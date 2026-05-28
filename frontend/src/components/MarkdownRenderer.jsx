@@ -311,7 +311,7 @@ export default function MarkdownRenderer({ content, sendWSMessage }) {
       <div ref={previewRef} style={{ flex: 1, padding: '0 16px 16px' }}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
-          urlTransform={(url, key) => {
+          transformLinkUri={(url, children, title) => {
             if (url.startsWith('wiki://')) return url;
             return safeUrlTransform(url);
           }}

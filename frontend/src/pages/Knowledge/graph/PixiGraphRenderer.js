@@ -15,6 +15,10 @@ const COLORS = {
   drag: 0x835ee4,
   line: 0x3f3f3f,
   activeLine: 0x835ee4,
+  corefLine: 0x5a8aaa,      // muted blue for coreference edges
+  corefActiveLine: 0x7ecbf7, // brighter blue when highlighted
+  coauthorLine: 0xaa8a5a,    // muted amber for co-author edges
+  coauthorActiveLine: 0xf7c67e, // brighter amber when highlighted
   label: 0xb3b3b3,
 };
 // const COLORS = {
@@ -462,6 +466,7 @@ export class PixiGraphRenderer {
         targetIdx: idToIndex.get(targetId),
         sourceId,
         targetId,
+        edgeType: l.edge_type || 'wikilink',
       };
     });
 
@@ -502,7 +507,21 @@ export class PixiGraphRenderer {
     container.baseRadius = radius;
     container.borderGraphics = border;
     container.fillGraphics = fill;
-    container.baseColor = n.type === 'paper' ? COLORS.paper : COLORS.node;
+    let baseColor = COLORS.node;
+    if (n.color && typeof n.color === 'string' && n.color.startsWith('#')) {
+      baseColor = parseInt(n.color.slice(1), 16);
+    } else if (n.type === 'paper') {
+      baseColor = COLORS.paper;
+    } else if (n.type === 'author') {
+      baseColor = 0x7fb3d5;
+    } else if (n.type === 'venue') {
+      baseColor = 0xd4a373;
+    } else if (n.type === 'tag') {
+      baseColor = 0x95d5b2;
+    } else if (n.type === 'collection') {
+      baseColor = 0xcdb4db;
+    }
+    container.baseColor = baseColor;
     container.setNodeTint = (color) => {
       fill.tint = color;
     };
@@ -712,21 +731,45 @@ export class PixiGraphRenderer {
     if (activeId) {
       for (const link of this.linkIndices) {
         if (link.sourceId === activeId || link.targetId === activeId) continue;
+        let color = COLORS.line;
+        let alpha = baseLineAlpha * 0.5;
+        let width = lw;
+        if (link.edgeType === 'coreference') {
+          color = COLORS.corefLine; alpha = baseLineAlpha * 0.35; width = lw * 0.7;
+        } else if (link.edgeType === 'coauthor') {
+          color = COLORS.coauthorLine; alpha = baseLineAlpha * 0.35; width = lw * 0.7;
+        }
         this.linkGraphics.moveTo(getX(link.sourceId), getY(link.sourceId));
         this.linkGraphics.lineTo(getX(link.targetId), getY(link.targetId));
-        this.linkGraphics.stroke({ width: lw, color: COLORS.line, alpha: baseLineAlpha * 0.5 });
+        this.linkGraphics.stroke({ width, color, alpha });
       }
       for (const link of this.linkIndices) {
         if (link.sourceId !== activeId && link.targetId !== activeId) continue;
+        let color = COLORS.activeLine;
+        let alpha = 0.9;
+        let width = lw;
+        if (link.edgeType === 'coreference') {
+          color = COLORS.corefActiveLine; alpha = 0.75; width = lw * 0.9;
+        } else if (link.edgeType === 'coauthor') {
+          color = COLORS.coauthorActiveLine; alpha = 0.75; width = lw * 0.9;
+        }
         this.linkGraphics.moveTo(getX(link.sourceId), getY(link.sourceId));
         this.linkGraphics.lineTo(getX(link.targetId), getY(link.targetId));
-        this.linkGraphics.stroke({ width: lw, color: COLORS.activeLine, alpha: 0.9 });
+        this.linkGraphics.stroke({ width, color, alpha });
       }
     } else {
       for (const link of this.linkIndices) {
+        let color = COLORS.line;
+        let alpha = baseLineAlpha;
+        let width = lw;
+        if (link.edgeType === 'coreference') {
+          color = COLORS.corefLine; alpha = baseLineAlpha * 0.5; width = lw * 0.7;
+        } else if (link.edgeType === 'coauthor') {
+          color = COLORS.coauthorLine; alpha = baseLineAlpha * 0.5; width = lw * 0.7;
+        }
         this.linkGraphics.moveTo(getX(link.sourceId), getY(link.sourceId));
         this.linkGraphics.lineTo(getX(link.targetId), getY(link.targetId));
-        this.linkGraphics.stroke({ width: lw, color: COLORS.line, alpha: baseLineAlpha });
+        this.linkGraphics.stroke({ width, color, alpha });
       }
     }
   }

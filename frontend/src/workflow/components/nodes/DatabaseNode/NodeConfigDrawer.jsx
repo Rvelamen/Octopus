@@ -1,7 +1,7 @@
 /**
  * 数据库节点配置面板
  * 支持：
- *   - 目标表名（支持变量引用）
+ *   - 目标表名（下拉选择已有表）
  *   - 操作类型（INSERT/UPDATE/DELETE/QUERY）
  *   - 字段映射（INSERT/UPDATE）
  *   - WHERE 条件（UPDATE/DELETE/QUERY）
@@ -9,10 +9,11 @@
  *   - 输出变量管理
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Plus, Trash2, Info } from 'lucide-react';
 import { Collapse, Tooltip, Select, InputNumber } from 'antd';
 import { useWorkflowStore } from '../../../hooks/useWorkflowStore';
+import { useDBAPI } from '../../../services/dbApi';
 import ExpressionEditorField from '../../common/ExpressionEditorField/index.jsx';
 
 const OPERATIONS = [
@@ -29,7 +30,7 @@ const DEFAULT_OUTPUTS = [
 const generateId = (prefix) => `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 // 字段映射行
-const FieldMappingRow = ({ item, index, onUpdate, onDelete, canDelete }) => {
+const FieldMappingRow = ({ item, index, onUpdate, onDelete, canDelete, nodes, edges, currentNodeId }) => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
       <input
@@ -48,12 +49,16 @@ const FieldMappingRow = ({ item, index, onUpdate, onDelete, canDelete }) => {
           height: '32px',
         }}
       />
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', background: 'white', minHeight: '36px' }}>
         <ExpressionEditorField
-          value={item.value || ''}
-          onChange={(value) => onUpdate(index, 'value', value)}
-          placeholder="值或 {{变量引用}}"
-          rows={1}
+          fields={[{ name: item.name || '', value: item.value || '' }]}
+          onChange={(newFields) => onUpdate(index, 'value', newFields[0]?.value || '')}
+          nodes={nodes}
+          edges={edges}
+          currentNodeId={currentNodeId}
+          compact
+          useDropdown
+          canAdd={false}
         />
       </div>
       {canDelete && (
@@ -111,7 +116,7 @@ const OutputRow = ({ output, index, onUpdate, onDelete, canDelete }) => {
           { value: 'object', label: 'Object' },
           { value: 'array', label: 'Array' },
         ]}
-        size="small"
+        size="middle"
         style={{ width: '120px' }}
       />
       {canDelete && (
@@ -140,6 +145,27 @@ const OutputRow = ({ output, index, onUpdate, onDelete, canDelete }) => {
 const NodeConfigDrawer = ({ nodes, edges, currentNodeId, nodeData }) => {
   const [activeKey, setActiveKey] = useState(['basic', 'fields', 'filters', 'outputs']);
   const updateNode = useWorkflowStore((state) => state.updateNode);
+  const dbApi = useDBAPI();
+
+  const [tables, setTables] = useState([]);
+  const [tablesLoading, setTablesLoading] = useState(false);
+
+  // 加载表列表
+  useEffect(() => {
+    let cancelled = false;
+    setTablesLoading(true);
+    dbApi.getTableList()
+      .then((list) => {
+        if (!cancelled) setTables(list || []);
+      })
+      .catch(() => {
+        if (!cancelled) setTables([]);
+      })
+      .finally(() => {
+        if (!cancelled) setTablesLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [dbApi]);
 
   // 从 nodeData 读取配置
   const tableName = nodeData?.tableName || '';
@@ -211,6 +237,9 @@ const NodeConfigDrawer = ({ nodes, edges, currentNodeId, nodeData }) => {
   const showWhereSection = operation === 'UPDATE' || operation === 'DELETE' || operation === 'QUERY';
   const showQueryOptions = operation === 'QUERY';
 
+  const tableOptions = tables.map((t) => ({ value: t.name, label: t.name }));
+  const opMeta = OPERATIONS.find((o) => o.value === operation);
+
   // ==================== Collapse 配置项 ====================
 
   const collapseItems = [];
@@ -219,31 +248,52 @@ const NodeConfigDrawer = ({ nodes, edges, currentNodeId, nodeData }) => {
   collapseItems.push({
     key: 'basic',
     label: (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>基础配置</span>
-        <Tooltip title="配置目标表和操作类型">
-          <Info size={14} color="#9ca3af" style={{ cursor: 'pointer' }} />
-        </Tooltip>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>基础配置</span>
+          <Tooltip title="选择目标表和操作类型">
+            <Info size={14} color="#9ca3af" style={{ cursor: 'pointer' }} />
+          </Tooltip>
+        </div>
+        {opMeta && (
+          <span
+            style={{
+              fontSize: '10px',
+              fontWeight: 700,
+              color: 'white',
+              background: opMeta.color,
+              padding: '1px 6px',
+              borderRadius: '4px',
+            }}
+          >
+            {opMeta.label.split(' ')[0]}
+          </span>
+        )}
       </div>
     ),
     children: (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {/* 目标表名 */}
         <div>
-          <div style={{ fontSize: '12px', fontWeight: 500, color: '#374151', marginBottom: '6px' }}>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: 500 }}>
             目标表名
           </div>
-          <ExpressionEditorField
-            value={tableName}
+          <Select
+            value={tableName || undefined}
             onChange={(value) => handleUpdate({ tableName: value })}
-            placeholder="表名或 {{变量引用}}"
-            rows={1}
+            options={tableOptions}
+            loading={tablesLoading}
+            placeholder="选择数据表"
+            style={{ width: '100%' }}
+            size="middle"
+            allowClear
+            showSearch
           />
         </div>
 
         {/* 操作类型 */}
         <div>
-          <div style={{ fontSize: '12px', fontWeight: 500, color: '#374151', marginBottom: '6px' }}>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: 500 }}>
             操作类型
           </div>
           <Select
@@ -251,7 +301,7 @@ const NodeConfigDrawer = ({ nodes, edges, currentNodeId, nodeData }) => {
             onChange={(value) => handleUpdate({ operation: value })}
             options={OPERATIONS}
             style={{ width: '100%' }}
-            size="small"
+            size="middle"
           />
         </div>
       </div>
@@ -270,7 +320,9 @@ const NodeConfigDrawer = ({ nodes, edges, currentNodeId, nodeData }) => {
               <Info size={14} color="#9ca3af" style={{ cursor: 'pointer' }} />
             </Tooltip>
           </div>
-          <span style={{ fontSize: '11px', color: '#9ca3af' }}>{fieldMappings.length} 个字段</span>
+          <span style={{ fontSize: '11px', color: '#9ca3af', background: '#f3f4f6', padding: '1px 6px', borderRadius: '10px' }}>
+            {fieldMappings.length}
+          </span>
         </div>
       ),
       children: (
@@ -283,6 +335,9 @@ const NodeConfigDrawer = ({ nodes, edges, currentNodeId, nodeData }) => {
               onUpdate={handleUpdateField}
               onDelete={handleDeleteField}
               canDelete={fieldMappings.length > 0}
+              nodes={nodes}
+              edges={edges}
+              currentNodeId={currentNodeId}
             />
           ))}
           <button
@@ -325,7 +380,7 @@ const NodeConfigDrawer = ({ nodes, edges, currentNodeId, nodeData }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* WHERE */}
           <div>
-            <div style={{ fontSize: '12px', fontWeight: 500, color: '#374151', marginBottom: '6px' }}>
+            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: 500 }}>
               WHERE 条件
             </div>
             <ExpressionEditorField
@@ -343,7 +398,7 @@ const NodeConfigDrawer = ({ nodes, edges, currentNodeId, nodeData }) => {
           {showQueryOptions && (
             <>
               <div>
-                <div style={{ fontSize: '12px', fontWeight: 500, color: '#374151', marginBottom: '6px' }}>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: 500 }}>
                   ORDER BY
                 </div>
                 <input
@@ -363,7 +418,7 @@ const NodeConfigDrawer = ({ nodes, edges, currentNodeId, nodeData }) => {
                 />
               </div>
               <div>
-                <div style={{ fontSize: '12px', fontWeight: 500, color: '#374151', marginBottom: '6px' }}>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: 500 }}>
                   LIMIT
                 </div>
                 <InputNumber
@@ -372,7 +427,7 @@ const NodeConfigDrawer = ({ nodes, edges, currentNodeId, nodeData }) => {
                   min={1}
                   max={10000}
                   style={{ width: '100%' }}
-                  size="small"
+                  size="middle"
                 />
               </div>
             </>
@@ -393,7 +448,9 @@ const NodeConfigDrawer = ({ nodes, edges, currentNodeId, nodeData }) => {
             <Info size={14} color="#9ca3af" style={{ cursor: 'pointer' }} />
           </Tooltip>
         </div>
-        <span style={{ fontSize: '11px', color: '#9ca3af' }}>{outputs.length} 个变量</span>
+        <span style={{ fontSize: '11px', color: '#9ca3af', background: '#f3f4f6', padding: '1px 6px', borderRadius: '10px' }}>
+          {outputs.length}
+        </span>
       </div>
     ),
     children: (

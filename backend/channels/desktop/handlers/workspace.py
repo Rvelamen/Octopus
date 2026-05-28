@@ -25,6 +25,32 @@ from backend.data import Database, SessionRepository
 from backend.services.chunked_upload import ChunkedUploadManager
 
 
+def _index_note(path: str, workspace_root: str) -> None:
+    """Route note indexing to the correct engine based on path."""
+    if not (path.startswith("knowledge/") and path.endswith(".md")):
+        return
+    parts = Path(path).parts
+    if len(parts) >= 2 and parts[0] == "knowledge" and parts[1] == "library":
+        from backend.services.library_note_engine import LibraryNoteEngine
+        LibraryNoteEngine(workspace_root).update_note(path)
+    else:
+        from backend.services.knowledge_engine import KnowledgeGraphEngine
+        KnowledgeGraphEngine(workspace_root).update_note(path)
+
+
+def _remove_note(path: str, workspace_root: str) -> None:
+    """Route note removal to the correct engine based on path."""
+    if not (path.startswith("knowledge/") and path.endswith(".md")):
+        return
+    parts = Path(path).parts
+    if len(parts) >= 2 and parts[0] == "knowledge" and parts[1] == "library":
+        from backend.services.library_note_engine import LibraryNoteEngine
+        LibraryNoteEngine(workspace_root).remove_note(path)
+    else:
+        from backend.services.knowledge_engine import KnowledgeGraphEngine
+        KnowledgeGraphEngine(workspace_root).delete_note(path, delete_file=False)
+
+
 class WorkspaceGetRootHandler(MessageHandler):
     """Handle get workspace root path requests."""
 
@@ -371,9 +397,7 @@ class WorkspaceWriteHandler(MessageHandler):
 
             # Auto-update knowledge base index when markdown files in knowledge dir are written
             if path.startswith("knowledge/") and path.endswith(".md"):
-                from backend.services.knowledge_engine import KnowledgeGraphEngine
-                engine = KnowledgeGraphEngine(workspace_root)
-                engine.update_note(path)
+                _index_note(path, workspace_root)
 
             await self.send_response(websocket, WSMessage(
                 type=MessageType.WORKSPACE_WRITE_RESULT,
@@ -424,9 +448,7 @@ class WorkspaceWriteHandler(MessageHandler):
 
             # Auto-update knowledge base index when markdown files in knowledge dir are written
             if path.startswith("knowledge/") and path.endswith(".md"):
-                from backend.services.knowledge_engine import KnowledgeGraphEngine
-                engine = KnowledgeGraphEngine(workspace_root)
-                engine.update_note(path)
+                _index_note(path, str(workspace_root))
 
             await self.send_response(websocket, WSMessage(
                 type=MessageType.WORKSPACE_WRITE_RESULT,
@@ -707,27 +729,18 @@ class WorkspaceRenameHandler(MessageHandler):
             full_old_path.rename(full_new_path)
 
             # Auto-update knowledge base index when markdown files in knowledge/notes are renamed
-            if old_path.startswith("knowledge/notes"):
-                from backend.services.knowledge_engine import KnowledgeGraphEngine
-                engine = KnowledgeGraphEngine(workspace_root)
-                
+            if old_path.startswith("knowledge/"):
                 if old_path.endswith(".md"):
                     # Single markdown file: delete old index entry and update new one
-                    engine.delete_note(old_path)
-                    engine.update_note(new_path)
+                    _remove_note(old_path, workspace_root)
+                    _index_note(new_path, workspace_root)
                 elif full_new_path.is_dir():
                     # Directory was moved: clean up old index entries and update new ones
-                    # First, calculate what the old paths would have been and delete them
-                    # We need to reconstruct the old paths based on the new paths
                     for md_file in full_new_path.rglob("*.md"):
                         new_rel_path = str(md_file.relative_to(Path(workspace_root)))
-                        # Calculate the corresponding old path
-                        # new_path = old_path.replace(old_dir_name, new_dir_name)
-                        # So old_path = new_path.replace(new_dir_name, old_dir_name)
-                        # But we need to be careful about partial matches
                         old_rel_path = new_rel_path.replace(new_path, old_path, 1)
-                        engine.delete_note(old_rel_path)
-                        engine.update_note(new_rel_path)
+                        _remove_note(old_rel_path, workspace_root)
+                        _index_note(new_rel_path, workspace_root)
 
             await self.send_response(websocket, WSMessage(
                 type=MessageType.WORKSPACE_RENAME_RESULT,
@@ -783,27 +796,18 @@ class WorkspaceRenameHandler(MessageHandler):
             full_old_path.rename(full_new_path)
 
             # Auto-update knowledge base index when markdown files in knowledge/notes are renamed
-            if old_path.startswith("knowledge/notes"):
-                from backend.services.knowledge_engine import KnowledgeGraphEngine
-                engine = KnowledgeGraphEngine(workspace_root)
-                
+            if old_path.startswith("knowledge/"):
                 if old_path.endswith(".md"):
                     # Single markdown file: delete old index entry and update new one
-                    engine.delete_note(old_path)
-                    engine.update_note(new_path)
+                    _remove_note(old_path, str(workspace_root))
+                    _index_note(new_path, str(workspace_root))
                 elif full_new_path.is_dir():
                     # Directory was moved: clean up old index entries and update new ones
-                    # First, calculate what the old paths would have been and delete them
-                    # We need to reconstruct the old paths based on the new paths
                     for md_file in full_new_path.rglob("*.md"):
                         new_rel_path = str(md_file.relative_to(Path(workspace_root)))
-                        # Calculate the corresponding old path
-                        # new_path = old_path.replace(old_dir_name, new_dir_name)
-                        # So old_path = new_path.replace(new_dir_name, old_dir_name)
-                        # But we need to be careful about partial matches
                         old_rel_path = new_rel_path.replace(new_path, old_path, 1)
-                        engine.delete_note(old_rel_path)
-                        engine.update_note(new_rel_path)
+                        _remove_note(old_rel_path, str(workspace_root))
+                        _index_note(new_rel_path, str(workspace_root))
 
             await self.send_response(websocket, WSMessage(
                 type=MessageType.WORKSPACE_RENAME_RESULT,
@@ -878,9 +882,7 @@ class WorkspaceWriteChunkHandler(MessageHandler):
                     upload_id, total_chunks, path, expected_md5
                 )
                 if completed and path.startswith("knowledge/") and path.endswith(".md"):
-                    from backend.services.knowledge_engine import KnowledgeGraphEngine
-                    engine = KnowledgeGraphEngine(workspace_root)
-                    engine.update_note(path)
+                    _index_note(path, workspace_root)
 
             await self.send_response(websocket, WSMessage(
                 type=MessageType.WORKSPACE_WRITE_CHUNK_RESULT,
@@ -934,9 +936,7 @@ class WorkspaceWriteChunkHandler(MessageHandler):
                     upload_id, total_chunks, path, expected_md5
                 )
                 if completed and path.startswith("knowledge/") and path.endswith(".md"):
-                    from backend.services.knowledge_engine import KnowledgeGraphEngine
-                    engine = KnowledgeGraphEngine(workspace_root)
-                    engine.update_note(path)
+                    _index_note(path, workspace_root)
 
             await self.send_response(websocket, WSMessage(
                 type=MessageType.WORKSPACE_WRITE_CHUNK_RESULT,

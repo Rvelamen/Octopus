@@ -1,6 +1,9 @@
 /**
  * 运行历史组件
- * 显示工作流的执行历史记录
+ * 支持两种模式：
+ *   1. 弹窗模式 (isOpen=true) — 用于单个工作流的运行历史弹窗
+ *   2. 独立页面模式 (standalone=true) — 用于 Hub 的全局运行历史页面
+ *
  * 已接入后端 WebSocket API
  */
 
@@ -20,21 +23,34 @@ import {
   Trash2,
   Filter,
   Loader2,
+  FolderOpen,
+  BarChart3,
+  Eye,
 } from 'lucide-react';
 import { useWorkflowAPI } from '../../../services/workflowApi';
 import ConfirmDialog from '../../common/ConfirmDialog';
 
-const RunHistory = ({ isOpen, onClose, workflowId }) => {
+const RunHistory = ({
+  isOpen,
+  onClose,
+  workflowId,
+  standalone,
+  onViewWorkflow,
+}) => {
   const api = useWorkflowAPI();
 
   const [runs, setRuns] = useState([]);
+  const [workflows, setWorkflows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [expandedRuns, setExpandedRuns] = useState(new Set());
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterWorkflow, setFilterWorkflow] = useState('all');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  // 从后端加载运行历史
+  // ── 数据加载 ──────────────────────────────
+
   const loadRuns = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -53,20 +69,38 @@ const RunHistory = ({ isOpen, onClose, workflowId }) => {
     }
   }, [api, workflowId]);
 
-  useEffect(() => {
-    if (isOpen) {
-      loadRuns();
+  const loadWorkflows = useCallback(async () => {
+    try {
+      const list = await api.getWorkflowList();
+      setWorkflows(list);
+    } catch (err) {
+      console.error('[RunHistory] load workflows error:', err);
     }
-  }, [isOpen, loadRuns]);
+  }, [api]);
+
+  useEffect(() => {
+    if (isOpen || standalone) {
+      loadRuns();
+      if (standalone) loadWorkflows();
+    }
+  }, [isOpen, standalone, loadRuns, loadWorkflows]);
+
+  // ── 交互 ──────────────────────────────────
 
   const toggleRun = (runId) => {
     setExpandedRuns((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(runId)) {
-        newSet.delete(runId);
-      } else {
-        newSet.add(runId);
-      }
+      if (newSet.has(runId)) newSet.delete(runId);
+      else newSet.add(runId);
+      return newSet;
+    });
+  };
+
+  const toggleGroup = (wfId) => {
+    setExpandedGroups((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(wfId)) newSet.delete(wfId);
+      else newSet.add(wfId);
       return newSet;
     });
   };
@@ -101,13 +135,76 @@ const RunHistory = ({ isOpen, onClose, workflowId }) => {
     }
   };
 
+  // ── 派生数据 ──────────────────────────────
+
+  const workflowMap = useMemo(() => {
+    const map = {};
+    workflows.forEach((w) => {
+      map[w.id] = w.name;
+    });
+    return map;
+  }, [workflows]);
+
   const filteredRuns = useMemo(() => {
-    if (filterStatus === 'all') return runs;
-    if (filterStatus === 'success') {
-      return runs.filter((run) => run.status === 'success' || run.status === 'completed');
+    let result = runs;
+    if (filterStatus !== 'all') {
+      if (filterStatus === 'success') {
+        result = result.filter(
+          (run) => run.status === 'success' || run.status === 'completed'
+        );
+      } else {
+        result = result.filter((run) => run.status === filterStatus);
+      }
     }
-    return runs.filter((run) => run.status === filterStatus);
-  }, [runs, filterStatus]);
+    if (standalone && filterWorkflow !== 'all') {
+      result = result.filter(
+        (run) =>
+          (run.workflow_id || run.workflowId) === filterWorkflow
+      );
+    }
+    return result;
+  }, [runs, filterStatus, filterWorkflow, standalone]);
+
+  const groupedRuns = useMemo(() => {
+    if (!standalone) return null;
+    const groups = {};
+    filteredRuns.forEach((run) => {
+      const wid = run.workflow_id || run.workflowId || 'unknown';
+      if (!groups[wid]) {
+        groups[wid] = {
+          runs: [],
+          total: 0,
+          success: 0,
+          failed: 0,
+          lastRunAt: 0,
+        };
+      }
+      groups[wid].runs.push(run);
+      groups[wid].total++;
+      if (run.status === 'success' || run.status === 'completed')
+        groups[wid].success++;
+      else if (run.status === 'failed') groups[wid].failed++;
+      const t = new Date(run.started_at || run.startTime || 0).getTime();
+      if (t > groups[wid].lastRunAt) groups[wid].lastRunAt = t;
+    });
+    return Object.entries(groups).sort(
+      (a, b) => b[1].lastRunAt - a[1].lastRunAt
+    );
+  }, [filteredRuns, standalone]);
+
+  const totalStats = useMemo(() => {
+    if (!standalone) return null;
+    return {
+      total: filteredRuns.length,
+      success: filteredRuns.filter(
+        (r) => r.status === 'success' || r.status === 'completed'
+      ).length,
+      failed: filteredRuns.filter((r) => r.status === 'failed').length,
+      running: filteredRuns.filter((r) => r.status === 'running').length,
+    };
+  }, [filteredRuns, standalone]);
+
+  // ── 辅助函数 ──────────────────────────────
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -184,6 +281,552 @@ const RunHistory = ({ isOpen, onClose, workflowId }) => {
     if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
     return `${(ms / 60000).toFixed(1)}m`;
   };
+
+  // ── 运行记录条目渲染 ───────────────────────
+
+  const renderRunItem = (run) => {
+    const isExpanded = expandedRuns.has(run.id);
+    return (
+      <div
+        key={run.id}
+        style={{
+          border: `1px solid ${getStatusBorderColor(run.status)}`,
+          borderRadius: '8px',
+          overflow: 'hidden',
+          background: getStatusColor(run.status),
+          marginBottom: '8px',
+        }}
+      >
+        {/* 运行记录头部 */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 12px',
+            cursor: 'pointer',
+          }}
+          onClick={() => toggleRun(run.id)}
+        >
+          {getStatusIcon(run.status)}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: '13px',
+                fontWeight: 500,
+                color: '#1f2937',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              运行 #{run.id?.slice(-6) || run.id}
+            </div>
+            <div style={{ fontSize: '11px', color: '#6b7280' }}>
+              {formatDate(run.started_at || run.startTime)}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                background:
+                  run.status === 'success' || run.status === 'completed'
+                    ? '#bbf7d0'
+                    : run.status === 'failed'
+                    ? '#fecaca'
+                    : '#bfdbfe',
+                color:
+                  run.status === 'success' || run.status === 'completed'
+                    ? '#16a34a'
+                    : run.status === 'failed'
+                    ? '#dc2626'
+                    : '#2563eb',
+              }}
+            >
+              {getStatusLabel(run.status)}
+            </span>
+            {run.duration_ms && (
+              <span style={{ fontSize: '11px', color: '#9ca3af' }}>
+                {formatDuration(run.duration_ms)}
+              </span>
+            )}
+            <button
+              style={{
+                padding: '4px',
+                borderRadius: '4px',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: '#ef4444',
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteRun(run.id);
+              }}
+              title="删除"
+            >
+              <Trash2 size={14} />
+            </button>
+            {isExpanded ? (
+              <ChevronUp size={14} color="#9ca3af" />
+            ) : (
+              <ChevronDown size={14} color="#9ca3af" />
+            )}
+          </div>
+        </div>
+
+        {/* 展开的详情 */}
+        {isExpanded && (
+          <div
+            style={{
+              padding: '10px 12px',
+              borderTop: `1px solid ${getStatusBorderColor(run.status)}`,
+              background: 'white',
+            }}
+          >
+            {/* 输入参数 */}
+            {run.input_variables &&
+              Object.keys(run.input_variables).length > 0 && (
+                <div style={{ marginBottom: '12px' }}>
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      color: '#4b5563',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    输入参数
+                  </div>
+                  <pre
+                    style={{
+                      fontSize: '11px',
+                      fontFamily: 'monospace',
+                      background: '#f9fafb',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      overflow: 'auto',
+                      maxHeight: '150px',
+                      margin: 0,
+                      color: '#374151',
+                    }}
+                  >
+                    {JSON.stringify(run.input_variables, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+            {/* 输出结果 */}
+            {run.output_result &&
+              Object.keys(run.output_result).length > 0 && (
+                <div style={{ marginBottom: '12px' }}>
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      color: '#4b5563',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    输出结果
+                  </div>
+                  <pre
+                    style={{
+                      fontSize: '11px',
+                      fontFamily: 'monospace',
+                      background: '#f9fafb',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      overflow: 'auto',
+                      maxHeight: '150px',
+                      margin: 0,
+                      color: '#374151',
+                    }}
+                  >
+                    {JSON.stringify(run.output_result, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+            {/* 错误信息 */}
+            {run.error_message && (
+              <div
+                style={{
+                  padding: '8px',
+                  background: '#fef2f2',
+                  borderRadius: '6px',
+                  border: '1px solid #fca5a5',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '12px',
+                    color: '#ef4444',
+                    fontWeight: 500,
+                  }}
+                >
+                  <AlertTriangle size={12} />
+                  错误信息
+                </div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: '#dc2626',
+                    marginTop: '4px',
+                    fontFamily: 'monospace',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {run.error_message}
+                </div>
+              </div>
+            )}
+
+            {/* 运行统计 */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '16px',
+                marginTop: '12px',
+                fontSize: '11px',
+                color: '#9ca3af',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div>开始: {formatDate(run.started_at || run.startTime)}</div>
+              {run.completed_at && (
+                <div>结束: {formatDate(run.completed_at)}</div>
+              )}
+              {run.endTime && <div>结束: {formatDate(run.endTime)}</div>}
+              {run.duration_ms && (
+                <div>耗时: {formatDuration(run.duration_ms)}</div>
+              )}
+              {run.duration && <div>耗时: {formatDuration(run.duration)}</div>}
+              {run.node_count && <div>节点数: {run.node_count}</div>}
+              {run.nodeCount && <div>节点数: {run.nodeCount}</div>}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ── 空状态 ────────────────────────────────
+
+  const renderEmpty = () => (
+    <div
+      style={{
+        textAlign: 'center',
+        padding: standalone ? '60px 20px' : '40px',
+        color: '#9ca3af',
+      }}
+    >
+      <History size={standalone ? 48 : 32} style={{ margin: '0 auto 12px' }} />
+      <div style={{ fontSize: '14px' }}>
+        {runs.length === 0 ? '暂无运行记录' : '没有符合条件的记录'}
+      </div>
+    </div>
+  );
+
+  // ═══════════════════════════════════════════
+  //  Standalone 模式
+  // ═══════════════════════════════════════════
+
+  if (standalone) {
+    return (
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* 头部工具栏 */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '16px 20px',
+            borderBottom: '1px solid #f3f4f6',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <History size={20} color="#4b5563" />
+            <span style={{ fontSize: '18px', fontWeight: 600 }}>
+              运行历史
+            </span>
+            {totalStats && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span
+                  style={{
+                    fontSize: '12px',
+                    padding: '2px 8px',
+                    borderRadius: '9999px',
+                    background: '#f3f4f6',
+                    color: '#6b7280',
+                  }}
+                >
+                  共 {totalStats.total} 条
+                </span>
+                {totalStats.success > 0 && (
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: '#dcfce7',
+                      color: '#16a34a',
+                    }}
+                  >
+                    成功 {totalStats.success}
+                  </span>
+                )}
+                {totalStats.failed > 0 && (
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: '#fee2e2',
+                      color: '#dc2626',
+                    }}
+                  >
+                    失败 {totalStats.failed}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* 工作流筛选 */}
+            <select
+              value={filterWorkflow}
+              onChange={(e) => setFilterWorkflow(e.target.value)}
+              style={{
+                padding: '6px 10px',
+                borderRadius: '6px',
+                border: '1px solid #e5e7eb',
+                fontSize: '13px',
+                background: 'white',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="all">全部工作流</option>
+              {workflows.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+
+            {/* 状态筛选 */}
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {[
+                { value: 'all', label: '全部' },
+                { value: 'success', label: '成功' },
+                { value: 'failed', label: '失败' },
+                { value: 'running', label: '运行中' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setFilterStatus(opt.value)}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background:
+                      filterStatus === opt.value ? '#eff6ff' : 'transparent',
+                    color:
+                      filterStatus === opt.value ? '#2563eb' : '#6b7280',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={loadRuns}
+              title="刷新"
+              style={{
+                padding: '6px',
+                borderRadius: '6px',
+                border: '1px solid #e5e7eb',
+                background: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <RotateCcw size={14} color="#6b7280" />
+            </button>
+          </div>
+        </div>
+
+        {/* 内容区 */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+          {loading && (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '60px 20px',
+                color: '#9ca3af',
+              }}
+            >
+              <Loader2
+                size={32}
+                style={{
+                  margin: '0 auto 12px',
+                  animation: 'spin 1s linear infinite',
+                }}
+              />
+              <div style={{ fontSize: '14px' }}>加载中...</div>
+            </div>
+          )}
+
+          {error && !loading && (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '60px 20px',
+                color: '#ef4444',
+              }}
+            >
+              <div style={{ fontSize: '14px' }}>加载失败: {error}</div>
+              <button
+                onClick={loadRuns}
+                style={{
+                  marginTop: '12px',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #e5e7eb',
+                  background: 'white',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                }}
+              >
+                重试
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && filteredRuns.length === 0 && renderEmpty()}
+
+          {!loading &&
+            !error &&
+            groupedRuns &&
+            groupedRuns.map(([wfId, group]) => {
+              const isExpanded = expandedGroups.has(wfId);
+              const wfName = workflowMap[wfId] || '未知工作流';
+              return (
+                <div
+                  key={wfId}
+                  style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '10px',
+                    overflow: 'hidden',
+                    marginBottom: '12px',
+                    background: 'white',
+                  }}
+                >
+                  {/* 分组头部 */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '14px 16px',
+                      cursor: 'pointer',
+                      background: '#fafafa',
+                      borderBottom: isExpanded
+                        ? '1px solid #f3f4f6'
+                        : 'none',
+                    }}
+                    onClick={() => toggleGroup(wfId)}
+                  >
+                    <FolderOpen size={16} color="#6b7280" />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: '#1f2937',
+                        }}
+                      >
+                        {wfName}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          color: '#9ca3af',
+                          marginTop: '2px',
+                        }}
+                      >
+                        {group.total} 次运行 · 成功 {group.success} · 失败{' '}
+                        {group.failed} · 最近{' '}
+                        {formatDate(
+                          group.runs[0]?.started_at ||
+                            group.runs[0]?.startTime
+                        )}
+                      </div>
+                    </div>
+
+                    {onViewWorkflow && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewWorkflow(wfId);
+                        }}
+                        title="查看工作流"
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          border: '1px solid #e5e7eb',
+                          background: 'white',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          color: '#2563eb',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <Eye size={12} />
+                        查看
+                      </button>
+                    )}
+
+                    {isExpanded ? (
+                      <ChevronUp size={16} color="#9ca3af" />
+                    ) : (
+                      <ChevronDown size={16} color="#9ca3af" />
+                    )}
+                  </div>
+
+                  {/* 分组展开后的运行列表 */}
+                  {isExpanded && (
+                    <div style={{ padding: '12px 16px' }}>
+                      {group.runs.map((run) => renderRunItem(run))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+        </div>
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════════
+  //  Modal 弹窗模式
+  // ═══════════════════════════════════════════
 
   if (!isOpen) return null;
 
@@ -300,8 +943,10 @@ const RunHistory = ({ isOpen, onClose, workflowId }) => {
                   padding: '4px 12px',
                   borderRadius: '6px',
                   border: 'none',
-                  background: filterStatus === option.value ? '#eff6ff' : 'transparent',
-                  color: filterStatus === option.value ? '#2563eb' : '#6b7280',
+                  background:
+                    filterStatus === option.value ? '#eff6ff' : 'transparent',
+                  color:
+                    filterStatus === option.value ? '#2563eb' : '#6b7280',
                   cursor: 'pointer',
                   fontSize: '13px',
                 }}
@@ -324,14 +969,32 @@ const RunHistory = ({ isOpen, onClose, workflowId }) => {
           }}
         >
           {loading && (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>
-              <Loader2 size={32} style={{ margin: '0 auto 12px', animation: 'spin 1s linear infinite' }} />
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '40px',
+                color: '#9ca3af',
+              }}
+            >
+              <Loader2
+                size={32}
+                style={{
+                  margin: '0 auto 12px',
+                  animation: 'spin 1s linear infinite',
+                }}
+              />
               <div style={{ fontSize: '14px' }}>加载中...</div>
             </div>
           )}
 
           {error && !loading && (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#ef4444' }}>
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '40px',
+                color: '#ef4444',
+              }}
+            >
               <div style={{ fontSize: '14px' }}>加载失败: {error}</div>
               <button
                 style={{
@@ -350,241 +1013,11 @@ const RunHistory = ({ isOpen, onClose, workflowId }) => {
             </div>
           )}
 
-          {!loading && !error && filteredRuns.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>
-              <History size={32} style={{ margin: '0 auto 12px' }} />
-              <div style={{ fontSize: '14px' }}>
-                {runs.length === 0 ? '暂无运行记录' : '没有符合条件的记录'}
-              </div>
-            </div>
-          )}
+          {!loading && !error && filteredRuns.length === 0 && renderEmpty()}
 
-          {!loading && !error && filteredRuns.map((run) => {
-            const isExpanded = expandedRuns.has(run.id);
-
-            return (
-              <div
-                key={run.id}
-                style={{
-                  border: `1px solid ${getStatusBorderColor(run.status)}`,
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  background: getStatusColor(run.status),
-                }}
-              >
-                {/* 运行记录头部 */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 12px',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => toggleRun(run.id)}
-                >
-                  {getStatusIcon(run.status)}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        color: '#1f2937',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      运行 #{run.id?.slice(-6) || run.id}
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#6b7280' }}>
-                      {formatDate(run.started_at || run.startTime)}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span
-                      style={{
-                        fontSize: '11px',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        background:
-                          run.status === 'success' || run.status === 'completed'
-                            ? '#bbf7d0'
-                            : run.status === 'failed'
-                            ? '#fecaca'
-                            : '#bfdbfe',
-                        color:
-                          run.status === 'success' || run.status === 'completed'
-                            ? '#16a34a'
-                            : run.status === 'failed'
-                            ? '#dc2626'
-                            : '#2563eb',
-                      }}
-                    >
-                      {getStatusLabel(run.status)}
-                    </span>
-                    {run.duration_ms && (
-                      <span style={{ fontSize: '11px', color: '#9ca3af' }}>
-                        {formatDuration(run.duration_ms)}
-                      </span>
-                    )}
-                    <button
-                      style={{
-                        padding: '4px',
-                        borderRadius: '4px',
-                        border: 'none',
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        color: '#ef4444',
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteRun(run.id);
-                      }}
-                      title="删除"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                    {isExpanded ? (
-                      <ChevronUp size={14} color="#9ca3af" />
-                    ) : (
-                      <ChevronDown size={14} color="#9ca3af" />
-                    )}
-                  </div>
-                </div>
-
-                {/* 展开的详情 */}
-                {isExpanded && (
-                  <div
-                    style={{
-                      padding: '10px 12px',
-                      borderTop: `1px solid ${getStatusBorderColor(run.status)}`,
-                      background: 'white',
-                    }}
-                  >
-                    {/* 输入参数 */}
-                    {run.input_variables && Object.keys(run.input_variables).length > 0 && (
-                      <div style={{ marginBottom: '12px' }}>
-                        <div
-                          style={{
-                            fontSize: '12px',
-                            fontWeight: 500,
-                            color: '#4b5563',
-                            marginBottom: '6px',
-                          }}
-                        >
-                          输入参数
-                        </div>
-                        <pre
-                          style={{
-                            fontSize: '11px',
-                            fontFamily: 'monospace',
-                            background: '#f9fafb',
-                            padding: '8px',
-                            borderRadius: '6px',
-                            overflow: 'auto',
-                            maxHeight: '150px',
-                            margin: 0,
-                            color: '#374151',
-                          }}
-                        >
-                          {JSON.stringify(run.input_variables, null, 2)}
-                        </pre>
-                      </div>
-                    )}
-
-                    {/* 输出结果 */}
-                    {run.output_result && Object.keys(run.output_result).length > 0 && (
-                      <div style={{ marginBottom: '12px' }}>
-                        <div
-                          style={{
-                            fontSize: '12px',
-                            fontWeight: 500,
-                            color: '#4b5563',
-                            marginBottom: '6px',
-                          }}
-                        >
-                          输出结果
-                        </div>
-                        <pre
-                          style={{
-                            fontSize: '11px',
-                            fontFamily: 'monospace',
-                            background: '#f9fafb',
-                            padding: '8px',
-                            borderRadius: '6px',
-                            overflow: 'auto',
-                            maxHeight: '150px',
-                            margin: 0,
-                            color: '#374151',
-                          }}
-                        >
-                          {JSON.stringify(run.output_result, null, 2)}
-                        </pre>
-                      </div>
-                    )}
-
-                    {/* 错误信息 */}
-                    {run.error_message && (
-                      <div
-                        style={{
-                          padding: '8px',
-                          background: '#fef2f2',
-                          borderRadius: '6px',
-                          border: '1px solid #fca5a5',
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            fontSize: '12px',
-                            color: '#ef4444',
-                            fontWeight: 500,
-                          }}
-                        >
-                          <AlertTriangle size={12} />
-                          错误信息
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '11px',
-                            color: '#dc2626',
-                            marginTop: '4px',
-                            fontFamily: 'monospace',
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'break-word',
-                          }}
-                        >
-                          {run.error_message}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 运行统计 */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: '16px',
-                        marginTop: '12px',
-                        fontSize: '11px',
-                        color: '#9ca3af',
-                      }}
-                    >
-                      <div>开始: {formatDate(run.started_at || run.startTime)}</div>
-                      {run.completed_at && <div>结束: {formatDate(run.completed_at)}</div>}
-                      {run.endTime && <div>结束: {formatDate(run.endTime)}</div>}
-                      {run.duration_ms && <div>耗时: {formatDuration(run.duration_ms)}</div>}
-                      {run.duration && <div>耗时: {formatDuration(run.duration)}</div>}
-                      {run.node_count && <div>节点数: {run.node_count}</div>}
-                      {run.nodeCount && <div>节点数: {run.nodeCount}</div>}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {!loading &&
+            !error &&
+            filteredRuns.map((run) => renderRunItem(run))}
         </div>
       </div>
 

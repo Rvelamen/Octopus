@@ -33,6 +33,7 @@ def create_tables(conn: sqlite3.Connection) -> None:
             temperature REAL DEFAULT 0.7,
             system_prompt TEXT DEFAULT '',
             enabled BOOLEAN DEFAULT 1,
+            is_builtin BOOLEAN DEFAULT 0,
             created_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
             updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
             FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE SET NULL,
@@ -79,6 +80,23 @@ def create_indexes(conn: sqlite3.Connection) -> None:
 
 
 def seed_data(conn: sqlite3.Connection) -> None:
+    # Ensure pdf-chat subagent exists
+    conn.execute("""
+        INSERT OR IGNORE INTO subagents
+        (name, description, provider_id, model_id, tools, extensions,
+         max_iterations, temperature, system_prompt, enabled, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+    """, (
+        'pdf-chat',
+        'PDF Reading Assistant',
+        None, None,
+        '["read", "kb_search", "kb_read_note", "memory_search", "memory_read"]',
+        '[]',
+        10, 0.5,
+        'You are a helpful PDF reading assistant. You help users understand academic papers and documents by answering questions based on the provided context and your knowledge. You can search the knowledge base and read files to provide accurate answers. Be concise but thorough. When citing information from the PDF, reference the page number if available.',
+        1,
+    ))
+
     default_tools = [
         ("read", "Read File", "Read file contents from the filesystem", "filesystem", 1),
         ("write", "Write File", "Write content to a file", "filesystem", 2),

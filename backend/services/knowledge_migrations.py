@@ -411,6 +411,123 @@ def _migration_007_add_library_annotations(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migration_008_separate_library_from_knowledge(conn: sqlite3.Connection) -> None:
+    """Remove library paths from knowledge graph index. Library and Knowledge are now separate systems."""
+    conn.execute("DELETE FROM knowledge_links WHERE from_path LIKE 'library/%' OR to_path LIKE 'library/%'")
+    conn.execute("DELETE FROM knowledge_node_tags WHERE node_path LIKE 'library/%'")
+    conn.execute("DELETE FROM knowledge_nodes WHERE path LIKE 'library/%'")
+    conn.commit()
+
+
+def _migration_009_add_library_chunk_status(conn: sqlite3.Connection) -> None:
+    """Add chunk_status column to library_items for PDF extraction progress tracking."""
+    try:
+        conn.execute("ALTER TABLE library_items ADD COLUMN chunk_status TEXT DEFAULT 'pending'")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    conn.commit()
+
+
+def _migration_010_add_library_note_schema(conn: sqlite3.Connection) -> None:
+    """Add dedicated tables for library AI notes, completely separate from knowledge graph."""
+    conn.executescript(
+        """
+        -- Library notes (AI-generated notes under knowledge/library/...)
+        CREATE TABLE IF NOT EXISTS library_notes (
+            path TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            type TEXT DEFAULT 'note' CHECK (type IN ('note', 'document')),
+            mtime REAL NOT NULL,
+            word_count INTEGER DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            content TEXT,
+            vault TEXT DEFAULT 'library'
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_lib_notes_vault ON library_notes(vault);
+
+        -- Library note links (wiki-style [[links]] between library notes)
+        CREATE TABLE IF NOT EXISTS library_note_links (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            from_path TEXT NOT NULL,
+            to_title TEXT NOT NULL,
+            to_path TEXT,
+            link_type TEXT DEFAULT 'outgoing'
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_lib_links_from ON library_note_links(from_path);
+        CREATE INDEX IF NOT EXISTS idx_lib_links_to ON library_note_links(to_path);
+        CREATE INDEX IF NOT EXISTS idx_lib_links_resolved ON library_note_links(to_path) WHERE to_path IS NOT NULL;
+
+        -- Library tags
+        CREATE TABLE IF NOT EXISTS library_tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL
+        );
+
+        -- Library note-tag associations
+        CREATE TABLE IF NOT EXISTS library_note_tags (
+            tag_id INTEGER NOT NULL,
+            note_path TEXT NOT NULL,
+            PRIMARY KEY (tag_id, note_path),
+            FOREIGN KEY (tag_id) REFERENCES library_tags(id) ON DELETE CASCADE,
+            FOREIGN KEY (note_path) REFERENCES library_notes(path) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_lib_note_tags_path ON library_note_tags(note_path);
+        CREATE INDEX IF NOT EXISTS idx_lib_note_tags_tag ON library_note_tags(tag_id);
+
+        -- FTS5 full-text search for library notes
+        CREATE VIRTUAL TABLE IF NOT EXISTS library_notes_fts USING fts5(
+            title,
+            content,
+            content='library_notes',
+            content_rowid='rowid',
+            tokenize='unicode61 remove_diacritics 1'
+        );
+
+        CREATE TRIGGER IF NOT EXISTS library_notes_fts_insert
+        AFTER INSERT ON library_notes
+        BEGIN
+            INSERT INTO library_notes_fts(rowid, title, content)
+            VALUES (new.rowid, new.title, new.content);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS library_notes_fts_delete
+        AFTER DELETE ON library_notes
+        BEGIN
+            INSERT INTO library_notes_fts(library_notes_fts, rowid, title, content)
+            VALUES ('delete', old.rowid, old.title, old.content);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS library_notes_fts_update
+        AFTER UPDATE ON library_notes
+        BEGIN
+            INSERT INTO library_notes_fts(library_notes_fts, rowid, title, content)
+            VALUES ('delete', old.rowid, old.title, old.content);
+            INSERT INTO library_notes_fts(rowid, title, content)
+            VALUES (new.rowid, new.title, new.content);
+        END;
+
+        -- Auto-cleanup orphan library tags
+        CREATE TRIGGER IF NOT EXISTS trg_cleanup_orphan_lib_tags
+        AFTER DELETE ON library_note_tags
+        BEGIN
+            DELETE FROM library_tags
+            WHERE id = OLD.tag_id
+              AND NOT EXISTS (
+                  SELECT 1 FROM library_note_tags WHERE tag_id = OLD.tag_id
+              );
+        END;
+        """
+    )
+    # Clean up any legacy library paths that may still exist in knowledge_nodes
+    conn.execute("DELETE FROM knowledge_links WHERE from_path LIKE 'knowledge/library/%' OR to_path LIKE 'knowledge/library/%'")
+    conn.execute("DELETE FROM knowledge_node_tags WHERE node_path LIKE 'knowledge/library/%'")
+    conn.execute("DELETE FROM knowledge_nodes WHERE path LIKE 'knowledge/library/%'")
+    conn.commit()
+
+
 def run_knowledge_index_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_initial_schema", _migration_001_create_initial_schema)
@@ -420,6 +537,9 @@ def run_knowledge_index_migrations(db_path: Path) -> None:
     runner.register(5, "add_library_schema", _migration_005_add_library_schema)
     runner.register(6, "add_library_chunks", _migration_006_add_library_chunks)
     runner.register(7, "add_library_annotations", _migration_007_add_library_annotations)
+    runner.register(8, "separate_library_from_knowledge", _migration_008_separate_library_from_knowledge)
+    runner.register(9, "add_library_chunk_status", _migration_009_add_library_chunk_status)
+    runner.register(10, "add_library_note_schema", _migration_010_add_library_note_schema)
     runner.run()
 
 

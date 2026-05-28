@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Eye, Edit3, ExternalLink, ChevronLeft, Sparkles } from 'lucide-react';
 import FileIcon from '../file-icon/FileIcon';
 import {
@@ -32,6 +32,17 @@ export default function PreviewDrawer({
   docMeta,
 }) {
   const [isPreviewMode, setIsPreviewMode] = useState(true);
+  const backBtnRef = useRef(null);
+
+  useEffect(() => {
+    const btn = backBtnRef.current;
+    if (!btn) return;
+    const handler = (e) => {
+      if (onBack) onBack(e);
+    };
+    btn.addEventListener('click', handler);
+    return () => btn.removeEventListener('click', handler);
+  }, [onBack]);
 
   // 当文件变化时，重置为预览模式
   useEffect(() => {
@@ -153,7 +164,7 @@ export default function PreviewDrawer({
           right: 0,
           bottom: 0,
           background: 'rgba(0, 0, 0, 0.5)',
-          zIndex: 1000,
+          zIndex: 99998,
           opacity: isOpen ? 1 : 0,
           visibility: isOpen ? 'visible' : 'hidden',
           transition: 'opacity 0.3s ease, visibility 0.3s ease',
@@ -171,12 +182,13 @@ export default function PreviewDrawer({
           width: '80%',
           background: 'var(--surface)',
           borderLeft: '1px solid var(--border)',
-          zIndex: 1001,
+          zIndex: 99999,
           transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.3s ease',
           display: 'flex',
           flexDirection: 'column',
           boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.15)',
+          WebkitAppRegion: 'no-drag',
         }}
       >
         {/* 头部 */}
@@ -195,7 +207,17 @@ export default function PreviewDrawer({
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden', flex: 1 }}>
             {canGoBack && (
               <button
-                onClick={onBack}
+                ref={backBtnRef}
+                onClick={(e) => {
+                  // back button clicked
+                  if (onBack) onBack(e);
+                }}
+                onMouseDown={(e) => {
+                  // back button mouseDown
+                }}
+                onPointerDown={(e) => {
+                  // back button pointerDown
+                }}
                 title="返回上一篇"
                 style={{
                   display: 'flex',
@@ -209,6 +231,9 @@ export default function PreviewDrawer({
                   color: 'var(--text-2)',
                   cursor: 'pointer',
                   flexShrink: 0,
+                  position: 'relative',
+                  zIndex: 10,
+                  WebkitAppRegion: 'no-drag',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'var(--accent-soft)';
@@ -340,6 +365,7 @@ export default function PreviewDrawer({
                   cursor: 'pointer',
                   fontSize: 12,
                   transition: 'all 0.15s ease',
+                  WebkitAppRegion: 'no-drag',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'var(--accent-soft)';
@@ -406,6 +432,7 @@ export default function PreviewDrawer({
                 color: 'var(--text-2)',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
+                WebkitAppRegion: 'no-drag',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'rgba(255, 107, 107, 0.12)';

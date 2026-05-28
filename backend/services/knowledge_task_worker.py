@@ -17,6 +17,7 @@ from backend.core.events.bus import MessageBus
 from backend.core.events.types import AgentEvent
 from backend.services.knowledge_task_queue import KnowledgeTaskQueue, DistillTask
 from backend.services.knowledge_engine import KnowledgeGraphEngine
+from backend.services.library_note_engine import LibraryNoteEngine
 from backend.utils.helpers import get_workspace_path
 
 
@@ -73,21 +74,93 @@ class KnowledgeTaskWorker:
         async with self._concurrency_limit:
             logger.info(f"Running distill task {task.request_id}")
 
-            # 动态获取当前 workspace_root
+            async def on_progress(
+                req_id: str,
+                stage: str,
+                msg: str,
+                progress: float,
+                extra: dict | None = None,
+            ) -> None:
+                self.queue.update_status(
+                    task.id,
+                    stage=stage,
+                    message=msg,
+                    progress=progress,
+                )
+                data = {
+                    "request_id": req_id,
+                    "stage": stage,
+                    "message": msg,
+                    "progress": progress,
+                }
+                if extra:
+                    data.update(extra)
+                await self._broadcast_progress(data)
+
             try:
-                current_workspace = get_workspace_path()
-            except Exception as e:
-                logger.warning(f"Failed to get workspace path, using fallback: {e}")
-                current_workspace = self._workspace_root
+                # 动态获取当前 workspace_root
+                try:
+                    current_workspace = get_workspace_path()
+                except Exception as e:
+                    logger.warning(f"Failed to get workspace path, using fallback: {e}")
+                    current_workspace = self._workspace_root
 
-            # 构建蒸馏任务描述
-            template_instructions = ""
-            if task.template and task.template != "custom":
-                template_instructions = f"\nTemplate: {task.template}\nFollow the template guidelines for {task.template}."
+                # 构建蒸馏任务描述
+                template_instructions = ""
+                if task.template and task.template != "custom":
+                    template_instructions = f"\nTemplate: {task.template}\nFollow the template guidelines for {task.template}."
 
-            output_instruction = f"\n\nOutput path: Save the extracted note to: `{task.output_path}`"
+                output_instruction = f"\n\nOutput path: Save the extracted note to: `{task.output_path}`"
 
-            distill_task_desc = f"""You are tasked with distilling a document into a structured Markdown note.
+                is_library_task = str(task.source_path).startswith("library/") or task.vault == "library"
+
+                # For library tasks, use the dedicated library provider and language if configured
+                override_provider_id = None
+                override_model_id = None
+                library_language = "English"
+                if is_library_task:
+                    from backend.data.database import Database
+                    from backend.data.provider_store import AgentDefaultsRepository
+                    db = Database()
+                    agent_repo = AgentDefaultsRepository(db)
+                    defaults = agent_repo.get_or_create_defaults()
+                    override_provider_id = getattr(defaults, 'library_extract_provider_id', None)
+                    override_model_id = getattr(defaults, 'library_extract_model_id', None)
+                    library_language = getattr(defaults, 'library_extract_language', 'English') or 'English'
+
+                if is_library_task:
+                    # Library mode: paper summary with library note connections
+                    language_instruction = f"\n\n**Language**: Write the entire note in **{library_language}**. All headings, summaries, and analysis must be in {library_language}."
+                    distill_task_desc = f"""You are tasked with reading an academic paper and generating a structured summary note.
+
+**Source document**: `{task.source_path}`
+
+**User request**: {task.prompt}
+{template_instructions}
+{output_instruction}
+{language_instruction}
+
+## Instructions
+1. Use the `read` tool to read the source PDF/document.
+2. Use `kb_search` to find related notes in the library. **Do this at least 2 times with different keywords** covering:
+   - Core concepts or frameworks mentioned in the paper
+   - Related papers, technologies, or methodologies
+   - Key people, companies, or projects mentioned
+3. For the most relevant notes found, use `kb_read_note` to read their content and identify precise connection points.
+4. Use the `write` tool to save the summary as Markdown with the following requirements:
+   - Include YAML front-matter with title, authors, year, venue, tags
+   - Use proper Markdown headings, lists, and tables
+   - Add 2-4 relevant #tags in the content
+   - **CRITICAL: Add at least 2-5 wiki-style links [[Exact Note Title]] to existing related library notes.**
+     Only use [[...]] when the exact title was returned by kb_search/kb_read_note. If no strong connection exists, do not force it.
+   - Also add 2-4 wiki-style links to other related Library papers when relevant (use their paper titles)
+5. When done, report the output path in your final response
+
+Be concise but complete. If information is not found in the document, state it explicitly.
+""".strip()
+                else:
+                    # Knowledge mode: distill with knowledge base connections
+                    distill_task_desc = f"""You are tasked with distilling a document into a structured Markdown note.
 
 **Source document**: `{task.source_path}`
 
@@ -115,32 +188,9 @@ class KnowledgeTaskWorker:
 Be concise but complete. If information is not found in the document, state it explicitly.
 """.strip()
 
-            async def on_progress(
-                req_id: str,
-                stage: str,
-                msg: str,
-                progress: float,
-                extra: dict | None = None,
-            ) -> None:
-                self.queue.update_status(
-                    task.id,
-                    stage=stage,
-                    message=msg,
-                    progress=progress,
+                await on_progress(
+                    task.request_id, "running", "Starting subagent...", 0.05
                 )
-                data = {
-                    "request_id": req_id,
-                    "stage": stage,
-                    "message": msg,
-                    "progress": progress,
-                }
-                if extra:
-                    data.update(extra)
-                await self._broadcast_progress(data)
-
-
-
-            try:
                 await on_progress(
                     task.request_id, "running", "Starting subagent...", 0.05
                 )
@@ -153,13 +203,19 @@ Be concise but complete. If information is not found in the document, state it e
                     except Exception as e:
                         logger.warning(f"Failed to save iteration for task {task.id}: {e}")
 
+                # Determine vault filter based on task type
+                vault_filter = "library" if is_library_task else "default"
+
                 task_id, future = await self.subagents.spawn_sync_task(
                     task=distill_task_desc,
                     label=f"Distill: {task.source_path}",
-                    agent_role="knowledge-distiller",
+                    agent_role="library-distiller" if is_library_task else "knowledge-distiller",
                     origin_channel="knowledge",
                     parent_tool_call_id=task.request_id,
                     on_iteration=on_iteration,
+                    vault_filter=vault_filter,
+                    override_provider_id=override_provider_id,
+                    override_model_id=override_model_id,
                 )
 
                 await on_progress(
@@ -306,13 +362,19 @@ extraction_prompt: |
                 elif not wrote_file:
                     logger.warning(f"Distill task {task.id}: No write tool called AND no markdown content - cannot fallback!")
 
-                # 更新索引
+                # 更新索引：Library 笔记走 LibraryNoteEngine，Knowledge 笔记走 KnowledgeGraphEngine
                 output_full_for_index = Path(output_path)
                 if not output_full_for_index.is_absolute():
                     output_full_for_index = Path(current_workspace) / output_full_for_index
                 if output_full_for_index.exists():
-                    self.engine.update_note(output_path)
-                    logger.info(f"Updated index for {output_path}")
+                    parts = output_full_for_index.parts
+                    if len(parts) >= 2 and parts[0] == "knowledge" and parts[1] == "library":
+                        lib_engine = LibraryNoteEngine(str(current_workspace))
+                        lib_engine.update_note(output_path)
+                        logger.info(f"Updated library note index for {output_path}")
+                    else:
+                        self.engine.update_note(output_path)
+                        logger.info(f"Updated knowledge index for {output_path}")
                 else:
                     logger.warning(f"Output file {output_path} does not exist after distillation!")
 

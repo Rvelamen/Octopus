@@ -797,11 +797,19 @@ export const useWorkflowStore = create(
         });
       },
 
-      updateExecutionNode: (nodeId, status, output = {}, input = {}, duration = null) => {
+      updateExecutionNode: (nodeId, status, output = {}, input = {}, duration = null, error = null, warnings = null) => {
         set((state) => ({
           executionStatus: {
             ...state.executionStatus,
-            [nodeId]: { status, output, input, timestamp: Date.now(), duration },
+            [nodeId]: {
+              status,
+              output,
+              input,
+              timestamp: Date.now(),
+              duration,
+              error,
+              warnings,
+            },
           },
           executionLogs: [
             ...state.executionLogs,

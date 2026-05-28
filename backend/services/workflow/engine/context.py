@@ -72,6 +72,8 @@ class WorkflowContext:
         # Trace recording
         self._node_traces: dict[str, NodeExecutionTrace] = {}
         self._logs: list[dict[str, Any]] = []
+        # Unresolved variable references per node
+        self._unresolved_refs: dict[str, list[dict[str, Any]]] = {}
 
     def start_node_trace(self, node_id: str) -> NodeExecutionTrace:
         """Start recording execution trace for a node."""
@@ -159,6 +161,25 @@ class WorkflowContext:
         """Get current executing node."""
         return self._current_node_id
 
+    def record_unresolved_ref(self, node_id: str, ref: str, ref_type: str, details: dict[str, Any] | None = None) -> None:
+        """Record an unresolved variable reference for a node."""
+        if node_id not in self._unresolved_refs:
+            self._unresolved_refs[node_id] = []
+        entry = {"ref": ref, "type": ref_type}
+        if details:
+            entry.update(details)
+        self._unresolved_refs[node_id].append(entry)
+        # Also add to node trace logs
+        self.add_trace_log(node_id, "warning", f"未解析变量引用: {{{ref}}}")
+
+    def get_unresolved_refs(self, node_id: str) -> list[dict[str, Any]]:
+        """Get unresolved references for a node."""
+        return self._unresolved_refs.get(node_id, []).copy()
+
+    def clear_unresolved_refs(self, node_id: str) -> None:
+        """Clear unresolved references for a node."""
+        self._unresolved_refs.pop(node_id, None)
+
     def set_variable(self, name: str, value: Any) -> None:
         """Set a global variable."""
         self._variables[name] = value
@@ -212,6 +233,16 @@ class WorkflowContext:
                         output_key,
                         list(self._node_outputs.keys()),
                     )
+                    self.record_unresolved_ref(
+                        self._current_node_id or node_id,
+                        ref,
+                        "node_output",
+                        {
+                            "node_id": node_id,
+                            "output_key": output_key,
+                            "available_nodes": list(self._node_outputs.keys()),
+                        },
+                    )
                     return f"[未解析变量: {value}]"
                 else:
                     result = self.get_variable(ref)
@@ -220,6 +251,12 @@ class WorkflowContext:
                     logger.warning(
                         f"未解析的全局变量引用: {{{ref}}}, 可用变量=%s",
                         list(self._variables.keys()),
+                    )
+                    self.record_unresolved_ref(
+                        self._current_node_id or "unknown",
+                        ref,
+                        "global_variable",
+                        {"available_variables": list(self._variables.keys())},
                     )
                     return f"[未解析变量: {value}]"
 
@@ -239,12 +276,23 @@ class WorkflowContext:
                         node_id,
                         output_key,
                     )
+                    self.record_unresolved_ref(
+                        self._current_node_id or node_id,
+                        ref,
+                        "inline_node_output",
+                        {"node_id": node_id, "output_key": output_key},
+                    )
                     return f"[未解析: {match.group(0)}]"
                 else:
                     result = self.get_variable(ref)
                     if result is not None:
                         return str(result)
                     logger.warning("字符串内嵌全局变量未解析: {{{ref}}}", ref=ref)
+                    self.record_unresolved_ref(
+                        self._current_node_id or "unknown",
+                        ref,
+                        "inline_global_variable",
+                    )
                     return f"[未解析: {match.group(0)}]"
 
             return re.sub(r'\{\{(.+?)\}\}', replace_ref, value)
@@ -272,4 +320,7 @@ class WorkflowContext:
             "version_id": self._version_id,
             "traces": self.get_all_traces(),
             "logs": self.get_workflow_logs(),
+            "unresolved_refs": {
+                k: v for k, v in self._unresolved_refs.items() if v
+            },
         }

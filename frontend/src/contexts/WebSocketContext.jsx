@@ -171,7 +171,8 @@ export function WebSocketProvider({ children }) {
       unsubscribe,
       connectionStatus, 
       showLoadingOverlay,
-      ws 
+      ws,
+      wsPort,
     }}>
       {children}
     </WebSocketContext.Provider>

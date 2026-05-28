@@ -24,6 +24,7 @@ import {
   PanelLeftClose,
   PanelRight,
   BookOpen,
+  Library,
   Brain,
   GitBranch,
 } from "lucide-react";
@@ -41,7 +42,7 @@ import Cron from "./pages/Cron";
 import Agents from "./pages/Agents";
 import Tokens from "./pages/Tokens";
 import Knowledge from "./pages/Knowledge";
-import Workflow from "./pages/Workflow";
+import { LibraryTab } from "./pages/Knowledge/library";
 import PdfViewerWindow from "./pages/PdfViewerWindow";
 import MarkdownEditorWindow from "./pages/MarkdownEditorWindow";
 import WorkflowWindow from "./pages/WorkflowWindow";
@@ -325,6 +326,7 @@ function App() {
       '/cron': 'cron',
       '/agents': 'agents',
       '/workspaces': 'workspaces',
+      '/library': 'library',
       '/history': 'history',
       '/memory': 'memory',
       '/tokens': 'tokens',
@@ -354,6 +356,7 @@ function App() {
       cron: '/cron',
       agents: '/agents',
       workspaces: '/workspaces',
+      library: '/library',
       history: '/history',
       memory: '/memory',
       tokens: '/tokens',
@@ -507,6 +510,7 @@ function App() {
                 { key: 'cron', icon: Clock, label: 'CRON' },
                 { key: 'agents', icon: Users, label: 'AGENTS' },
                 { key: 'workspaces', icon: FolderOpen, label: 'WORKSPACE' },
+                { key: 'library', icon: Library, label: 'LIBRARY' },
                 { key: 'knowledge', icon: BookOpen, label: 'KNOWLEDGE' },
                 { key: 'workflows', icon: GitBranch, label: 'WORKFLOWS' },
                 { key: 'history', icon: HistoryIcon, label: 'HISTORY' },
@@ -580,7 +584,8 @@ function App() {
               <Route path="/agents" element={<Agents sendWSMessage={sendMessage} />} />
               <Route path="/tokens" element={<Tokens sendWSMessage={sendMessage} />} />
               <Route path="/knowledge" element={<Knowledge sendWSMessage={sendMessage} />} />
-              <Route path="/workflows" element={<Workflow sendWSMessage={sendMessage} />} />
+              <Route path="/library" element={<LibraryTab sendWSMessage={sendMessage} />} />
+              <Route path="/workflows" element={<WorkflowWindow />} />
               <Route path="/pdf-viewer" element={<PdfViewerWindow />} />
               <Route path="/markdown-editor" element={<MarkdownEditorWindow />} />
               <Route path="/" element={

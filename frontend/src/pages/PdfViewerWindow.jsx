@@ -6,9 +6,17 @@ import {
   Plus,
   MessageSquare,
   Underline,
+  Bot,
+  Send,
+  Trash2,
+  Sparkles,
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { useWebSocket } from '../contexts/WebSocketContext';
+import { usePdfChat } from './Knowledge/library/hooks/usePdfChat';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import MermaidDiagram from '../components/MermaidDiagram';
 import './PdfViewerWindow.css';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -179,7 +187,7 @@ const PdfViewerWindow = () => {
   const pdfTitle = params.get('title') || 'PDF Viewer';
   const itemId = params.get('itemId');
 
-  const { sendMessage } = useWebSocket();
+  const { sendMessage, subscribe, unsubscribe } = useWebSocket();
 
   const [pdf, setPdf] = useState(null);
   const [numPages, setNumPages] = useState(0);
@@ -195,12 +203,87 @@ const PdfViewerWindow = () => {
   const [showToolbar, setShowToolbar] = useState(false);
   const [toolbarPos, setToolbarPos] = useState({ x: 0, y: 0 });
 
+  // ── Chat Drawer ──
+  const [showChatDrawer, setShowChatDrawer] = useState(false);
+  const chatInputRef = useRef(null);
+
+  // ── Resizable panels ──
+  const [chatDrawerWidth, setChatDrawerWidth] = useState(360);
+  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const resizeStateRef = useRef(null);
+
+  const startResize = useCallback((e, panel) => {
+    e.preventDefault();
+    resizeStateRef.current = {
+      panel,
+      startX: e.clientX,
+      startWidth: panel === 'chat' ? chatDrawerWidth : sidebarWidth,
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [chatDrawerWidth, sidebarWidth]);
+
+  useEffect(() => {
+    const handleMove = (e) => {
+      const state = resizeStateRef.current;
+      if (!state) return;
+      const delta = state.startX - e.clientX;
+      if (state.panel === 'chat') {
+        setChatDrawerWidth(Math.max(280, Math.min(600, state.startWidth + delta)));
+      } else {
+        setSidebarWidth(Math.max(200, Math.min(500, state.startWidth + delta)));
+      }
+    };
+    const handleUp = () => {
+      resizeStateRef.current = null;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+    };
+  }, []);
+
+  const {
+    sessions: chatSessions,
+    currentSessionId: chatSessionId,
+    setCurrentSessionId: setChatSessionId,
+    messages: chatMessages,
+    loading: chatLoading,
+    streamingContent: chatStreaming,
+    createSession: createChatSession,
+    deleteSession: deleteChatSession,
+    sendChat: sendPdfChat,
+  } = usePdfChat({ sendMessage, subscribe, unsubscribe, itemId, pdfPath });
+
+  // Collect all referenced passages from chat history for display
+  const referencedPassages = React.useMemo(() => {
+    const seen = new Set();
+    const result = [];
+    for (const msg of chatMessages) {
+      if (msg.selected_text && !seen.has(msg.selected_text)) {
+        seen.add(msg.selected_text);
+        result.push({
+          text: msg.selected_text,
+          page: msg.page_number,
+          messageId: msg.id,
+        });
+      }
+    }
+    return result;
+  }, [chatMessages]);
+
   const contentRef = useRef(null);
   const annotationsRef = useRef(annotations);
   annotationsRef.current = annotations;
+  const hasLoadedRef = useRef(false);
 
   // Load saved annotations from SQLite (priority) > localStorage fallback
   useEffect(() => {
+    hasLoadedRef.current = false;
     if (!itemId) {
       // Fallback: localStorage for legacy / direct URL access
       const key = `pdf-annotations:${pdfPath}/main.pdf`;
@@ -208,21 +291,28 @@ const PdfViewerWindow = () => {
       if (saved) {
         try { setAnnotations(JSON.parse(saved)); } catch {}
       }
+      hasLoadedRef.current = true;
       return;
     }
     let cancelled = false;
     const loadAnnotations = async () => {
       try {
         const response = await sendMessage('library_annotations_load', { item_id: Number(itemId) }, 10000);
-        if (response?.data?.annotations && !cancelled) {
-          setAnnotations(response.data.annotations);
+        if (!cancelled) {
+          if (response?.data?.annotations) {
+            setAnnotations(response.data.annotations);
+          }
+          hasLoadedRef.current = true;
         }
       } catch (e) {
         // Fallback to localStorage on error
-        const key = `pdf-annotations:${pdfPath}/main.pdf`;
-        const saved = localStorage.getItem(key);
-        if (saved && !cancelled) {
-          try { setAnnotations(JSON.parse(saved)); } catch {}
+        if (!cancelled) {
+          const key = `pdf-annotations:${pdfPath}/main.pdf`;
+          const saved = localStorage.getItem(key);
+          if (saved) {
+            try { setAnnotations(JSON.parse(saved)); } catch {}
+          }
+          hasLoadedRef.current = true;
         }
       }
     };
@@ -232,6 +322,10 @@ const PdfViewerWindow = () => {
 
   // Save annotations to SQLite (and localStorage as local cache)
   useEffect(() => {
+    // Don't save before load completes — avoids race condition where empty initial []
+    // overwrites DB before server response arrives
+    if (!hasLoadedRef.current) return;
+
     if (!itemId) {
       const key = `pdf-annotations:${pdfPath}/main.pdf`;
       if (annotations.length > 0) localStorage.setItem(key, JSON.stringify(annotations));
@@ -242,7 +336,15 @@ const PdfViewerWindow = () => {
       sendMessage('library_annotations_save', {
         item_id: Number(itemId),
         annotations,
-      }, 10000).catch(() => {});
+      }, 10000)
+        .then(() => {
+          window.dispatchEvent(
+            new CustomEvent('library-annotations-updated', {
+              detail: { item_id: Number(itemId) },
+            })
+          );
+        })
+        .catch(() => {});
     }, 500);
     // Keep localStorage as local cache
     const key = `pdf-annotations:${pdfPath}/main.pdf`;
@@ -408,12 +510,12 @@ const PdfViewerWindow = () => {
   }, [selection]);
 
   const updateComment = useCallback((id, comment) => {
-    setAnnotations((prev) => prev.map((a) => (a.id === id ? { ...a, comment } : a)));
+    setAnnotations((prev) => prev.map((a) => (String(a.id) === String(id) ? { ...a, comment } : a)));
   }, []);
 
   const deleteAnnotation = useCallback((id) => {
-    setAnnotations((prev) => prev.filter((a) => a.id !== id));
-    if (selectedAnnotationId === id) setSelectedAnnotationId(null);
+    setAnnotations((prev) => prev.filter((a) => String(a.id) !== String(id)));
+    if (String(selectedAnnotationId) === String(id)) setSelectedAnnotationId(null);
   }, [selectedAnnotationId]);
 
   const zoomIn = useCallback(() => setScale((s) => Math.min(s + 0.25, 3)), []);
@@ -448,6 +550,32 @@ const PdfViewerWindow = () => {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showToolbar]);
+
+  // ── Chat actions ──
+  const [chatSelection, setChatSelection] = useState(null);
+
+  const openChatWithSelection = useCallback(() => {
+    if (!selection?.text) return;
+    setChatSelection({ text: selection.text, page: selection.page });
+    setShowChatDrawer(true);
+    setShowToolbar(false);
+    window.getSelection().removeAllRanges();
+  }, [selection]);
+
+  const closeChatDrawer = useCallback(() => {
+    setShowChatDrawer(false);
+    setChatSelection(null);
+  }, []);
+
+  const handleSendChat = useCallback(async (input) => {
+    if (!input.trim() || chatLoading) return;
+    await sendPdfChat({
+      content: input.trim(),
+      pageNumber: chatSelection?.page,
+      selectedText: chatSelection?.text,
+    });
+    // Keep chatSelection so user can ask follow-up questions about the same selection
+  }, [chatLoading, chatSelection, sendPdfChat]);
 
   if (loading) {
     return (
@@ -493,6 +621,17 @@ const PdfViewerWindow = () => {
               <span className="pdfv-badge">{annotations.length}</span>
             )}
           </button>
+          <button
+            className={`pdfv-btn ${showChatDrawer ? 'pdfv-btn-active' : ''}`}
+            onClick={() => setShowChatDrawer((s) => !s)}
+            title="Chat"
+            style={{ position: 'relative' }}
+          >
+            <Bot size={16} />
+            {chatSessions.length > 0 && (
+              <span className="pdfv-badge">{chatSessions.length}</span>
+            )}
+          </button>
           <button className="pdfv-btn pdfv-btn-close" onClick={handleClose} title="Close"><X size={16} /></button>
         </div>
       </div>
@@ -515,7 +654,12 @@ const PdfViewerWindow = () => {
 
         {/* Sidebar */}
         {showSidebar && (
-          <div className="pdfv-sidebar">
+          <>
+          <div
+            className="pdfv-resizer"
+            onMouseDown={(e) => startResize(e, 'sidebar')}
+          />
+          <div className="pdfv-sidebar" style={{ width: sidebarWidth, minWidth: sidebarWidth }}>
             <div className="pdfv-sidebar-header">
               <span>Annotations ({annotations.length})</span>
               <button className="pdfv-btn" onClick={() => setShowSidebar(false)}><X size={14} /></button>
@@ -551,35 +695,277 @@ const PdfViewerWindow = () => {
               )}
             </div>
           </div>
+          </>
         )}
-      </div>
+        {/* Chat Drawer */}
+        {showChatDrawer && (
+          <>
+          <div
+            className="pdfv-resizer"
+            onMouseDown={(e) => startResize(e, 'chat')}
+          />
+          <div className="pdfv-chat-drawer" style={{ width: chatDrawerWidth, minWidth: chatDrawerWidth }}>
+            {/* Header */}
+            <div className="pdfv-chat-header">
+              <span className="pdfv-chat-title">
+                <Bot size={14} style={{ marginRight: 6 }} />
+                Chat
+              </span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  className="pdfv-btn"
+                  onClick={() => createChatSession()}
+                  title="New session"
+                >
+                  <Plus size={14} />
+                </button>
+                <button className="pdfv-btn" onClick={closeChatDrawer}><X size={14} /></button>
+              </div>
+            </div>
 
-      {/* Selection toolbar */}
-      {showToolbar && selection && (
-        <div
-          className="pdfv-selection-toolbar"
-          style={{ left: toolbarPos.x, top: toolbarPos.y }}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          <div className="pdfv-color-picker">
-            {COLORS.map((c) => (
-              <button
-                key={c.name}
-                className="pdfv-color-btn"
-                style={{ backgroundColor: c.value }}
-                title={`Highlight ${c.name}`}
-                onClick={() => addHighlight(c.value)}
+            {/* Sessions */}
+            {chatSessions.length > 0 && (
+              <div className="pdfv-chat-sessions">
+                {chatSessions.map((s) => (
+                  <div
+                    key={s.id}
+                    className={`pdfv-chat-session ${chatSessionId === s.id ? 'pdfv-chat-session-active' : ''}`}
+                    onClick={() => setChatSessionId(s.id)}
+                  >
+                    <span className="pdfv-chat-session-title">{s.title}</span>
+                    <button
+                      className="pdfv-chat-session-delete"
+                      onClick={(e) => { e.stopPropagation(); deleteChatSession(s.id); }}
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Context block */}
+            {chatSelection && (
+              <div className="pdfv-chat-context">
+                <div className="pdfv-chat-context-meta">
+                  <span>Page {chatSelection.page}</span>
+                  <button onClick={() => setChatSelection(null)}>✕</button>
+                </div>
+                <div className="pdfv-chat-context-text">{chatSelection.text}</div>
+              </div>
+            )}
+
+            {/* Referenced Passages Summary */}
+            {referencedPassages.length > 0 && (
+              <details className="pdfv-chat-passages">
+                <summary>
+                  📎 Referenced Passages ({referencedPassages.length})
+                </summary>
+                <div className="pdfv-chat-passages-list">
+                  {referencedPassages.map((p, i) => (
+                    <div key={p.messageId} className="pdfv-chat-passage-item">
+                      <div className="pdfv-chat-passage-meta">
+                        #{i + 1}{p.page ? ` · Page ${p.page}` : ''}
+                      </div>
+                      <div className="pdfv-chat-passage-text">{p.text}</div>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+
+            {/* Messages */}
+            <div className="pdfv-chat-messages">
+              {chatMessages.length === 0 && !chatSelection && !referencedPassages.length && (
+                <div className="pdfv-chat-empty">
+                  Select text in the PDF and click <strong>Chat</strong> to start a conversation.
+                </div>
+              )}
+              {chatMessages.map((msg) => (
+                <div key={msg.id} className={`pdfv-chat-msg pdfv-chat-msg-${msg.role}`}>
+                  {msg.role === 'tool' ? (
+                    <div className="pdfv-chat-tool-card">
+                      <div className="pdfv-chat-tool-header">
+                        <span className="pdfv-chat-tool-name">🔧 {msg.metadata?.tool || 'tool'}</span>
+                        <span className={`pdfv-chat-tool-status pdfv-chat-tool-status-${msg.metadata?.status || 'done'}`}>
+                          {msg.metadata?.status === 'running' ? 'Running...' : 'Done'}
+                        </span>
+                      </div>
+                      {msg.metadata?.args && (
+                        <details className="pdfv-chat-tool-details">
+                          <summary>Arguments</summary>
+                          <pre className="pdfv-chat-tool-code">{JSON.stringify(msg.metadata.args, null, 2)}</pre>
+                        </details>
+                      )}
+                      {(msg.metadata?.result || msg.content) && (
+                        <details className="pdfv-chat-tool-details">
+                          <summary>Result</summary>
+                          <pre className="pdfv-chat-tool-code">{typeof (msg.metadata?.result || msg.content) === 'string' ? (msg.metadata?.result || msg.content) : JSON.stringify(msg.metadata?.result || msg.content, null, 2)}</pre>
+                        </details>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="pdfv-chat-msg-bubble">
+                      {msg.role === 'assistant' && (
+                        <div className="pdfv-chat-msg-avatar"><Bot size={12} /></div>
+                      )}
+                      <div className="pdfv-chat-msg-content">
+                        {msg.role === 'user' && msg.selected_text && (
+                          <div className="pdfv-chat-msg-quote">
+                            <div className="pdfv-chat-msg-quote-meta">Page {msg.page_number}</div>
+                            <blockquote>{msg.selected_text}</blockquote>
+                          </div>
+                        )}
+                        {msg.role === 'assistant' ? (
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              pre({ children }) {
+                                const childArray = React.Children.toArray(children);
+                                const codeChild = childArray.find((c) => c?.type === 'code');
+                                if (codeChild) {
+                                  const lang = codeChild.props?.className?.replace('language-', '') || '';
+                                  const text = String(codeChild.props.children).replace(/\n$/, '').trim();
+                                  if (lang === 'mermaid') {
+                                    return <MermaidDiagram source={text} />;
+                                  }
+                                }
+                                return <pre>{children}</pre>;
+                              },
+                            }}
+                          >
+                            {msg.content || ''}
+                          </ReactMarkdown>
+                        ) : (
+                          <div>{msg.content}</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {chatLoading && (
+                <div className="pdfv-chat-msg pdfv-chat-msg-assistant">
+                  <div className="pdfv-chat-msg-bubble">
+                    <div className="pdfv-chat-msg-avatar"><Bot size={12} /></div>
+                    <div className="pdfv-chat-msg-content">
+                      {chatStreaming ? (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {chatStreaming}
+                        </ReactMarkdown>
+                      ) : (
+                        <span className="pdfv-chat-typing"><span /><span /><span /></span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Actions */}
+            {chatMessages.length === 0 && !chatLoading && (
+              <div className="pdfv-quick-actions">
+                <button
+                  className="pdfv-quick-action-btn"
+                  onClick={() => handleSendChat('请总结这篇论文的核心内容、主要贡献和关键发现')}
+                  disabled={chatLoading}
+                >
+                  <Sparkles size={12} />
+                  生成总结
+                </button>
+                <button
+                  className="pdfv-quick-action-btn"
+                  onClick={() => handleSendChat('请基于这篇论文的结构，生成一个思维导图。要求使用 Mermaid 的 mindmap 语法，输出在 ```mermaid 代码块中。包含研究背景、核心方法、实验设计、主要结论、未来工作等关键节点。')}
+                  disabled={chatLoading}
+                >
+                  <Bot size={12} />
+                  生成脑图
+                </button>
+                <button
+                  className="pdfv-quick-action-btn"
+                  onClick={() => handleSendChat('请分析这篇论文使用的研究方法、实验设计和评估指标')}
+                  disabled={chatLoading}
+                >
+                  <MessageSquare size={12} />
+                  研究方法
+                </button>
+                <button
+                  className="pdfv-quick-action-btn"
+                  onClick={() => handleSendChat('请提取并解释这篇论文中的 5–10 个关键术语和核心概念')}
+                  disabled={chatLoading}
+                >
+                  <Underline size={12} />
+                  关键概念
+                </button>
+              </div>
+            )}
+
+            {/* Input */}
+            <div className="pdfv-chat-input-wrap">
+              <textarea
+                ref={chatInputRef}
+                className="pdfv-chat-input"
+                placeholder={chatSelection ? 'Ask about the selection...' : 'Ask a question...'}
+                rows={2}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const val = e.target.value.trim();
+                    if (val) {
+                      handleSendChat(val);
+                      e.target.value = '';
+                    }
+                  }
+                }}
               />
-            ))}
+              <button
+                className="pdfv-chat-send"
+                onClick={() => {
+                  const el = chatInputRef.current;
+                  if (el && el.value.trim()) {
+                    handleSendChat(el.value.trim());
+                    el.value = '';
+                  }
+                }}
+                disabled={chatLoading}
+              >
+                <Send size={14} />
+              </button>
+            </div>
           </div>
-          <div className="pdfv-toolbar-divider" />
-          <button className="pdfv-toolbar-action" onClick={() => addUnderline(COLORS[2].value)} title="Underline">
-            <Underline size={14} />
-          </button>
-        </div>
-      )}
+          </>
+        )}
     </div>
-  );
+
+    {/* Selection toolbar */}
+    {showToolbar && selection && (
+      <div
+        className="pdfv-selection-toolbar"
+        style={{ left: toolbarPos.x, top: toolbarPos.y }}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div className="pdfv-color-picker">
+          {COLORS.map((c) => (
+            <button
+              key={c.name}
+              className="pdfv-color-btn"
+              style={{ backgroundColor: c.value }}
+              title={`Highlight ${c.name}`}
+              onClick={() => addHighlight(c.value)}
+            />
+          ))}
+        </div>
+        <div className="pdfv-toolbar-divider" />
+        <button className="pdfv-toolbar-action" onClick={() => addUnderline(COLORS[2].value)} title="Underline">
+          <Underline size={14} />
+        </button>
+        <button className="pdfv-toolbar-action" onClick={openChatWithSelection} title="Chat about selection">
+          <MessageSquare size={14} />
+        </button>
+      </div>
+    )}
+  </div>
+);
 };
 
 export default PdfViewerWindow;

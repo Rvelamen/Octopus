@@ -95,12 +95,17 @@ const NodeTestResultDrawer = () => {
       if (data.node_id && data.status) {
         const trace = data.output?.trace;
         const inputSnapshot = trace?.input_snapshot || {};
+        const errorDetail = trace?.error_detail || null;
+        const errorMessage = errorDetail?.message || null;
+        const warnings = errorDetail?.type === 'unresolved_variables' ? errorDetail.refs : null;
         updateExecutionNode(
           data.node_id,
           data.status,
           data.output?.result || {},
           inputSnapshot,
-          data.output?.duration_ms
+          data.output?.duration_ms,
+          errorMessage,
+          warnings,
         );
       }
     };
@@ -510,6 +515,47 @@ const NodeTestResultDrawer = () => {
                   </div>
                 ) : null;
               })()}
+
+              {/* 警告：未解析变量引用 */}
+              {nodeExecution.warnings && nodeExecution.warnings.length > 0 && (
+                <div>
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: '#d97706',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    警告
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      color: '#92400e',
+                      background: '#fffbeb',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      lineHeight: 1.6,
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    <div style={{ marginBottom: '4px' }}>
+                      以下变量引用无法解析，将使用占位值运行：
+                    </div>
+                    {nodeExecution.warnings.map((w, i) => (
+                      <div key={i} style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                        {'{{'}{w.ref}{'}}'}
+                        {w.type === 'node_output' && w.node_id && (
+                          <span style={{ color: '#b45309', marginLeft: '6px' }}>
+                            (节点 {w.node_id} 无输出 &quot;{w.output_key}&quot;)
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* 错误 */}
               {nodeExecution.error && (

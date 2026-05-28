@@ -21,6 +21,7 @@ from backend.tools.shell import ExecTool
 from backend.tools.action import ActionTool
 from backend.tools.message import MessageTool
 from backend.tools.knowledge import KBSearchTool, KBReadNoteTool, KBListLinksTool, KBTimelineTool
+from backend.tools.library_knowledge import LibrarySearchTool, LibraryReadNoteTool, LibraryListLinksTool, LibraryTimelineTool, LibraryWriteNoteTool
 from backend.tools.memory_write import MemoryWriteTool
 from backend.tools.memory import MemorySearchTool, MemoryReadTool, MemoryTimelineTool
 from backend.agent.memory import MemoryStore
@@ -76,14 +77,25 @@ class SubagentManager:
         if self._aggregator:
             self._aggregator.set_bus(bus)
     
-    def _get_provider_for_config(self, config: SubAgentConfig) -> tuple[LLMProvider, str, str, int, float]:
-        """Get provider, model, provider_type, max_tokens, and temperature for a subagent configuration."""
+    def _get_provider_for_config(
+        self,
+        config: SubAgentConfig,
+        override_provider_id: int | None = None,
+        override_model_id: int | None = None,
+    ) -> tuple[LLMProvider, str, str, int, float]:
+        """Get provider, model, provider_type, max_tokens, and temperature for a subagent configuration.
+
+        If override_provider_id/override_model_id are given, they take precedence over the config.
+        """
         config_service = AgentConfigService()
         defaults = config_service._get_agent_defaults_repo().get_or_create_defaults()
         max_tokens = getattr(defaults, 'max_tokens', 8192) or 8192
         temperature = getattr(defaults, 'temperature', 0.7) or 0.7
 
-        if config.provider_id and config.model_id:
+        provider_id = override_provider_id or config.provider_id
+        model_id = override_model_id or config.model_id
+
+        if provider_id and model_id:
             from backend.data.provider_store import ProviderRepository, ModelRepository
             from backend.data import Database
             from backend.core.config.schema import AgentDefaults, ProviderConfig
@@ -93,8 +105,8 @@ class SubagentManager:
             provider_repo = ProviderRepository(db)
             model_repo = ModelRepository(db)
 
-            provider_record = provider_repo.get_provider_by_id(config.provider_id)
-            model_record = model_repo.get_model_by_id(config.model_id)
+            provider_record = provider_repo.get_provider_by_id(provider_id)
+            model_record = model_repo.get_model_by_id(model_id)
 
             if provider_record and model_record:
                 provider_config = ProviderConfig(
@@ -179,11 +191,13 @@ class SubagentManager:
             except Exception as e:
                 logger.warning(f"[Subagent:{task_id}] Failed to emit event {event_type}: {e}")
     
-    def _build_tools_for_config(self, config: SubAgentConfig, origin: dict[str, str]) -> ToolRegistry:
+    def _build_tools_for_config(self, config: SubAgentConfig, origin: dict[str, str], vault_filter: str | None = None) -> ToolRegistry:
         """Build tool registry based on subagent configuration."""
         tools = ToolRegistry()
         
-        # Map tool names to tool classes
+        # When running in library mode, map kb_* tools to library_* implementations
+        # so that existing SOUL.md configs still work without modification.
+        is_library_mode = vault_filter == "library"
         tool_mapping = {
             "read": ReadFileTool,
             "write": WriteFileTool,
@@ -198,10 +212,15 @@ class SubagentManager:
             ),
             "action": ActionTool,
             "message": lambda: MessageTool(send_callback=self.bus.publish_outbound),
-            "kb_search": KBSearchTool,
-            "kb_timeline": KBTimelineTool,
-            "kb_read_note": KBReadNoteTool,
-            "kb_list_links": KBListLinksTool,
+            "kb_search": lambda: LibrarySearchTool(vault_filter=vault_filter, name_override="kb_search") if is_library_mode else KBSearchTool(vault_filter=vault_filter),
+            "kb_timeline": lambda: LibraryTimelineTool(vault_filter=vault_filter, name_override="kb_timeline") if is_library_mode else KBTimelineTool(vault_filter=vault_filter),
+            "kb_read_note": lambda: LibraryReadNoteTool(name_override="kb_read_note") if is_library_mode else KBReadNoteTool(),
+            "kb_list_links": lambda: LibraryListLinksTool(vault_filter=vault_filter, name_override="kb_list_links") if is_library_mode else KBListLinksTool(vault_filter=vault_filter),
+            "library_search": lambda: LibrarySearchTool(vault_filter=vault_filter),
+            "library_timeline": lambda: LibraryTimelineTool(vault_filter=vault_filter),
+            "library_read_note": LibraryReadNoteTool,
+            "library_list_links": lambda: LibraryListLinksTool(vault_filter=vault_filter),
+            "library_write_note": LibraryWriteNoteTool,
             "memory_write": lambda: MemoryWriteTool(store=MemoryStore(self.workspace)),
             "memory_search": MemorySearchTool,
             "memory_read": MemoryReadTool,
@@ -241,7 +260,7 @@ class SubagentManager:
         
         return tools
     
-    def _build_default_tools(self, origin: dict[str, str]) -> ToolRegistry:
+    def _build_default_tools(self, origin: dict[str, str], vault_filter: str | None = None) -> ToolRegistry:
         """Build default tool registry for legacy subagents."""
         tools = ToolRegistry()
         tools.register(ReadFileTool())
@@ -254,10 +273,16 @@ class SubagentManager:
             restrict_to_workspace=self.exec_config.restrict_to_workspace,
         ))
         tools.register(ActionTool())
-        tools.register(KBSearchTool())
-        tools.register(KBTimelineTool())
-        tools.register(KBReadNoteTool())
-        tools.register(KBListLinksTool())
+        if vault_filter == "library":
+            tools.register(LibrarySearchTool(vault_filter=vault_filter, name_override="kb_search"))
+            tools.register(LibraryTimelineTool(vault_filter=vault_filter, name_override="kb_timeline"))
+            tools.register(LibraryReadNoteTool(name_override="kb_read_note"))
+            tools.register(LibraryListLinksTool(vault_filter=vault_filter, name_override="kb_list_links"))
+        else:
+            tools.register(KBSearchTool(vault_filter=vault_filter))
+            tools.register(KBTimelineTool(vault_filter=vault_filter))
+            tools.register(KBReadNoteTool())
+            tools.register(KBListLinksTool(vault_filter=vault_filter))
         tools.register(MemoryWriteTool(store=MemoryStore(self.workspace)))
         tools.register(MemorySearchTool())
         tools.register(MemoryReadTool())
@@ -439,6 +464,9 @@ When you have completed the task, provide a clear summary of your findings or ac
         session_instance_id: int | None = None,
         parent_tool_call_id: str | None = None,
         on_iteration: Callable[[dict[str, Any]], Any] | None = None,
+        vault_filter: str | None = None,
+        override_provider_id: int | None = None,
+        override_model_id: int | None = None,
     ) -> tuple[str, asyncio.Future]:
         """
         创建一个同步子代理任务，返回 (task_id, future)。
@@ -454,6 +482,7 @@ When you have completed the task, provide a clear summary of your findings or ac
             agent_role: 可选子代理角色
             session_instance_id: 会话实例 ID
             parent_tool_call_id: 父工具调用 ID（主 agent 的 tool call ID）
+            vault_filter: 可选的 vault 过滤，限制 kb_search 等工具只能访问指定 vault
 
         Returns:
             (task_id, future) - future 的结果包含 summary, token_usage, duration
@@ -472,6 +501,7 @@ When you have completed the task, provide a clear summary of your findings or ac
             "chat_id": origin_chat_id,
             "session_instance_id": session_instance_id,
             "parent_tool_call_id": parent_tool_call_id,
+            "vault_filter": vault_filter,
         }
         
         origin = {
@@ -492,7 +522,10 @@ When you have completed the task, provide a clear summary of your findings or ac
         bg_future = loop.run_in_executor(
             None,
             lambda: asyncio.run(self._run_subagent_and_set_future(
-                task_id, task, display_label, origin, agent_config, future, on_iteration=on_iteration
+                task_id, task, display_label, origin, agent_config, future,
+                on_iteration=on_iteration,
+                override_provider_id=override_provider_id,
+                override_model_id=override_model_id,
             ))
         )
         
@@ -508,6 +541,8 @@ When you have completed the task, provide a clear summary of your findings or ac
         agent_config: SubAgentConfig | None,
         future: asyncio.Future,
         on_iteration: Callable[[dict[str, Any]], Any] | None = None,
+        override_provider_id: int | None = None,
+        override_model_id: int | None = None,
     ) -> None:
         """执行子代理，完成后设置 future 结果"""
         import time
@@ -515,19 +550,26 @@ When you have completed the task, provide a clear summary of your findings or ac
         
         role_name = agent_config.name if agent_config else "default"
         session_instance_id = origin.get("session_instance_id")
-        logger.info(f"[Subagent:sync:{task_id}] Starting sync task: {label} (role: {role_name})")
+        # 从任务上下文中获取 vault_filter
+        task_ctx = self._task_contexts.get(task_id, {})
+        vault_filter = task_ctx.get("vault_filter")
+        logger.info(f"[Subagent:sync:{task_id}] Starting sync task: {label} (role: {role_name}, vault_filter={vault_filter})")
         
         try:
             # 获取配置
             if agent_config:
-                provider, model, provider_type, max_tokens, temperature = self._get_provider_for_config(agent_config)
-                tools = self._build_tools_for_config(agent_config, origin)
+                provider, model, provider_type, max_tokens, temperature = self._get_provider_for_config(
+                    agent_config,
+                    override_provider_id=override_provider_id,
+                    override_model_id=override_model_id,
+                )
+                tools = self._build_tools_for_config(agent_config, origin, vault_filter=vault_filter)
                 system_prompt = self._build_subagent_prompt(agent_config, task)
                 max_iterations = agent_config.max_iterations
                 temperature = agent_config.temperature
             else:
                 provider, model, provider_type, max_tokens, temperature = self._get_default_provider_and_model()
-                tools = self._build_default_tools(origin)
+                tools = self._build_default_tools(origin, vault_filter=vault_filter)
                 system_prompt = self._build_default_subagent_prompt(task)
                 max_iterations = 50
 
@@ -551,6 +593,7 @@ When you have completed the task, provide a clear summary of your findings or ac
                 
                 # 使用流式 API，边接收边 emit token 给前端
                 full_content = ""
+                accumulated_reasoning = ""
                 tool_calls_buffer = {}
                 try:
                     async for chunk in provider.chat_stream(
@@ -568,6 +611,10 @@ When you have completed the task, provide a clear summary of your findings or ac
                                 "session_instance_id": session_instance_id,
                                 "subagent_id": task_id,
                             }, task_id)
+
+                        # DeepSeek reasoning content
+                        if chunk.reasoning_content:
+                            accumulated_reasoning += chunk.reasoning_content
 
                         if chunk.tool_calls:
                             for tc in chunk.tool_calls:
@@ -619,11 +666,15 @@ When you have completed the task, provide a clear summary of your findings or ac
                         }
                         for tc_data in tool_calls_buffer.values()
                     ]
-                    messages.append({
+                    # DeepSeek requires reasoning_content to be passed back
+                    assistant_msg: dict[str, Any] = {
                         "role": "assistant",
                         "content": full_content or "",
                         "tool_calls": tool_call_dicts,
-                    })
+                    }
+                    if accumulated_reasoning:
+                        assistant_msg["reasoning_content"] = accumulated_reasoning
+                    messages.append(assistant_msg)
 
                     for tc_id, tc_data in tool_calls_buffer.items():
                         try:
@@ -674,6 +725,18 @@ When you have completed the task, provide a clear summary of your findings or ac
                 else:
                     final_result = full_content
                     iterations.append(iter_record)
+                    # DeepSeek requires reasoning_content to be passed back
+                    if accumulated_reasoning:
+                        messages.append({
+                            "role": "assistant",
+                            "content": full_content or "",
+                            "reasoning_content": accumulated_reasoning,
+                        })
+                    elif full_content:
+                        messages.append({
+                            "role": "assistant",
+                            "content": full_content,
+                        })
                     if on_iteration:
                         try:
                             result = on_iteration(iter_record)
@@ -834,6 +897,7 @@ When you have completed the task, provide a clear summary of your findings or ac
                 try:
                     # 使用 chat_stream 进行伪流式调用，避免 Anthropic 等 provider 的 10 分钟非流式限制
                     full_content = ""
+                    accumulated_reasoning = ""
                     tool_calls_buffer = {}
                     usage = {}
 
@@ -846,6 +910,9 @@ When you have completed the task, provide a clear summary of your findings or ac
                     ):
                         if chunk.content:
                             full_content += chunk.content
+                        # DeepSeek reasoning content
+                        if chunk.reasoning_content:
+                            accumulated_reasoning += chunk.reasoning_content
                         if chunk.tool_calls:
                             for tc in chunk.tool_calls:
                                 if tc.id not in tool_calls_buffer:
@@ -859,6 +926,7 @@ When you have completed the task, provide a clear summary of your findings or ac
                         content=full_content,
                         tool_calls=list(tool_calls_buffer.values()),
                         usage=usage,
+                        reasoning_content=accumulated_reasoning or None,
                     )
                     logger.info(f"[Subagent:{task_id}] LLM response received via pseudo-stream, has_tool_calls={response.has_tool_calls}")
 
@@ -889,11 +957,14 @@ When you have completed the task, provide a clear summary of your findings or ac
                         }
                         for tc in response.tool_calls
                     ]
-                    messages.append({
+                    assistant_msg: dict[str, Any] = {
                         "role": "assistant",
                         "content": response.content or "",
                         "tool_calls": tool_call_dicts,
-                    })
+                    }
+                    if response.reasoning_content:
+                        assistant_msg["reasoning_content"] = response.reasoning_content
+                    messages.append(assistant_msg)
                     
                     for i, tool_call in enumerate(response.tool_calls):
                         args_str = json.dumps(tool_call.arguments, ensure_ascii=False)
@@ -947,6 +1018,18 @@ When you have completed the task, provide a clear summary of your findings or ac
                     subagent_message_count += 1
                 else:
                     final_result = response.content
+                    # DeepSeek: pass reasoning_content back in next turn
+                    if hasattr(response, 'reasoning_content') and response.reasoning_content:
+                        messages.append({
+                            "role": "assistant",
+                            "content": response.content or "",
+                            "reasoning_content": response.reasoning_content,
+                        })
+                    else:
+                        messages.append({
+                            "role": "assistant",
+                            "content": response.content or "",
+                        })
                     logger.info(f"[Subagent:{task_id}] No tool calls, final result: {final_result[:100] if final_result else 'None'}...")
                     break
             

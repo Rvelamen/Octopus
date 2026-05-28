@@ -39,6 +39,10 @@ const PixiGraph = forwardRef(({
   const hasFittedRef = useRef(false);
   const hasReceivedWorkerDataRef = useRef(false);
 
+  // Keep callbacks fresh without re-creating the renderer
+  const callbacksRef = useRef({ onNodeClick, onNodeHover, onNodeDoubleClick, onBackgroundClick, onZoom, graphData });
+  callbacksRef.current = { onNodeClick, onNodeHover, onNodeDoubleClick, onBackgroundClick, onZoom, graphData };
+
   // Simulation tick handler - receives data from Worker
   const handleTick = useCallback(({ buffer, idMapping, version }) => {
     if (rendererRef.current) {
@@ -116,11 +120,18 @@ const PixiGraph = forwardRef(({
     if (!graphData) return { nodes: [], links: [] };
 
     // Support both 'links' and 'edges' property names
-    const links = graphData.links || graphData.edges || [];
+    const rawLinks = graphData.links || graphData.edges || [];
+    // Preserve edge_type and other metadata for rendering
+    const links = rawLinks.map((e) => ({
+      source: e.source,
+      target: e.target,
+      edge_type: e.edge_type,
+      tag: e.tag,
+      author: e.author,
+    }));
 
     const nodes = graphData.nodes.map((node) => ({
-      id: node.id,
-      label: node.label || node.id,
+      ...node,
       color: node.id === graphData.center ? 'rgba(131,94,228,1)' : '#cbd5e1',
       isCenter: node.id === graphData.center,
     }));
@@ -134,22 +145,27 @@ const PixiGraph = forwardRef(({
 
     const renderer = new PixiGraphRenderer(containerRef.current, {
       onNodeClick: (node, e) => {
-        if (onNodeClick) {
-          const original = graphData?.nodes?.find((n) => n.id === node.id);
-          onNodeClick(original || node, e);
+        const cb = callbacksRef.current.onNodeClick;
+        if (cb) {
+          const original = callbacksRef.current.graphData?.nodes?.find((n) => n.id === node.id);
+          cb(original || node, e);
         }
       },
       onNodeHover: (node) => {
-        if (onNodeHover) onNodeHover(node);
+        const cb = callbacksRef.current.onNodeHover;
+        if (cb) cb(node);
       },
       onNodeDoubleClick: (node, e) => {
-        if (onNodeDoubleClick) onNodeDoubleClick(node, e);
+        const cb = callbacksRef.current.onNodeDoubleClick;
+        if (cb) cb(node, e);
       },
       onBackgroundClick: (e) => {
-        if (onBackgroundClick) onBackgroundClick(e);
+        const cb = callbacksRef.current.onBackgroundClick;
+        if (cb) cb(e);
       },
       onZoom: ({ k, x, y }) => {
-        if (onZoom) onZoom({ k, x, y });
+        const cb = callbacksRef.current.onZoom;
+        if (cb) cb({ k, x, y });
       },
       onDragEnd: (info) => {
         if (info?.id) simUnfixNode(info.id);

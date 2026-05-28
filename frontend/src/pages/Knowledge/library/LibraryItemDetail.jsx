@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, FileText, ExternalLink, Calendar, Users, BookOpen, Hash, Sparkles, Link2, Copy, Trash2, Download, Edit2, Upload, FolderOpen } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { X, FileText, ExternalLink, Calendar, Users, BookOpen, Hash, Sparkles, Link2, Copy, Trash2, Download, Edit2, Upload, FolderOpen, MessageSquare, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { Button, Tag, Popconfirm, Spin, message, Input, Modal } from 'antd';
+import { useDistillTasks } from '@contexts/DistillTaskContext';
+import LibraryAnnotationModal from './LibraryAnnotationModal';
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -16,6 +18,7 @@ const LibraryItemDetail = ({ item, onClose, onDelete, onUpdateItem, onRefreshIte
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [aiExtracting, setAiExtracting] = useState(false);
+  const [annotationModalOpen, setAnnotationModalOpen] = useState(false);
   const thumbnailCanvasRef = useRef(null);
   const renderTaskRef = useRef(null);
   const pdfDocRef = useRef(null);
@@ -143,22 +146,32 @@ const LibraryItemDetail = ({ item, onClose, onDelete, onUpdateItem, onRefreshIte
   };
 
   // Auto-load annotations from SQLite
-  useEffect(() => {
+  const loadAnnotations = useCallback(async () => {
     if (!item?.id) return;
-    let cancelled = false;
-    const loadAnnotations = async () => {
-      try {
-        const response = await sendWSMessage('library_annotations_load', { item_id: item.id }, 10000);
-        if (response?.data?.annotations && !cancelled) {
-          setAnnotations(response.data.annotations);
-        }
-      } catch {
-        // Ignore error
+    try {
+      const response = await sendWSMessage('library_annotations_load', { item_id: item.id }, 10000);
+      if (response?.data?.annotations) {
+        setAnnotations(response.data.annotations);
+      }
+    } catch {
+      // Ignore error
+    }
+  }, [item?.id, sendWSMessage]);
+
+  useEffect(() => {
+    loadAnnotations();
+  }, [loadAnnotations]);
+
+  // Listen for annotation updates from PdfViewerWindow
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail?.item_id === item?.id) {
+        loadAnnotations();
       }
     };
-    loadAnnotations();
-    return () => { cancelled = true; };
-  }, [item?.id, sendWSMessage]);
+    window.addEventListener('library-annotations-updated', handler);
+    return () => window.removeEventListener('library-annotations-updated', handler);
+  }, [item?.id, loadAnnotations]);
 
   // Scan notes/ directory for generated AI notes
   useEffect(() => {
@@ -167,6 +180,12 @@ const LibraryItemDetail = ({ item, onClose, onDelete, onUpdateItem, onRefreshIte
     const scanNotes = async () => {
       const notesDir = `${item.library_path}/notes`;
       try {
+        // Ensure notes directory exists (creates if missing)
+        try {
+          await sendWSMessage('workspace_mkdir', { path: notesDir }, 5000);
+        } catch {
+          // Ignore mkdir errors
+        }
         const response = await sendWSMessage('workspace_list', { path: notesDir }, 5000);
         if (response?.data?.items && !cancelled) {
           const mdFiles = response.data.items.filter((f) => f.name?.endsWith('.md'));
@@ -181,12 +200,15 @@ const LibraryItemDetail = ({ item, onClose, onDelete, onUpdateItem, onRefreshIte
     return () => { cancelled = true; };
   }, [item?.library_path, sendWSMessage]);
 
-  const handleGenerateNote = async () => {
+  const { addTask } = useDistillTasks();
+
+  const doGenerateNote = async () => {
     if (!item?.id || !item.library_path) return;
     setNoteGenerating(true);
     try {
       const sourcePath = `${item.library_path}/main.pdf`;
       const outputPath = `${item.library_path}/notes/summary.md`;
+      const taskId = `library-note-${item.id}-${Date.now()}`;
       const prompt = `Please read this academic paper and generate a comprehensive summary note in Markdown format with the following structure:
 
 ---
@@ -217,6 +239,13 @@ tags: [${(item.tags || []).map((t) => `"${t}"`).join(', ')}]
 
 Please write in English, use academic tone, and include specific details from the paper.`;
 
+      addTask({
+        id: taskId,
+        sourceFile: sourcePath,
+        template: 'custom',
+        prompt,
+      });
+
       await sendWSMessage(
         'knowledge_distill',
         {
@@ -224,7 +253,8 @@ Please write in English, use academic tone, and include specific details from th
           prompt,
           target_path: outputPath,
           template: 'custom',
-          options: { task_id: `library-note-${item.id}-${Date.now()}` },
+          vault: 'library',
+          options: { task_id: taskId },
         },
         30000
       );
@@ -233,6 +263,22 @@ Please write in English, use academic tone, and include specific details from th
       message.error('Failed to start note generation');
     } finally {
       setNoteGenerating(false);
+    }
+  };
+
+  const handleGenerateNote = () => {
+    const hasSummary = noteFiles.some((f) => f.name === 'summary.md');
+    if (hasSummary) {
+      Modal.confirm({
+        title: 'Regenerate AI Note?',
+        content: 'A summary note (summary.md) already exists for this paper. Generating again will overwrite the existing file. Are you sure?',
+        okText: 'Regenerate',
+        okType: 'primary',
+        cancelText: 'Cancel',
+        onOk: doGenerateNote,
+      });
+    } else {
+      doGenerateNote();
     }
   };
 
@@ -506,6 +552,38 @@ Please write in English, use academic tone, and include specific details from th
           )}
         </div>
 
+        {/* Parse status */}
+        {item.chunk_status && item.chunk_status !== 'completed' && (
+          <div style={{ marginBottom: 8 }}>
+            {item.chunk_status === 'pending' && (
+              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: 'var(--bg)', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> PDF processing
+              </span>
+            )}
+            {item.chunk_status === 'failed' && (
+              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#fff1f0', color: '#ff4d4f', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <XCircle size={12} /> PDF parsing failed
+              </span>
+            )}
+            {item.chunk_status.startsWith('processing:') && (() => {
+              const m = item.chunk_status.match(/processing:(\d+)\/(\d+)/);
+              const current = m ? parseInt(m[1], 10) : 0;
+              const total = m ? parseInt(m[2], 10) : 1;
+              const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+              return (
+                <span style={{ fontSize: 11, display: 'inline-flex', flexDirection: 'column', gap: 3, width: '100%' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--accent)' }}>
+                    <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> Parsing PDF {current}/{total} pages
+                  </span>
+                  <span style={{ height: 4, borderRadius: 2, background: 'var(--bg)', overflow: 'hidden', width: '100%' }}>
+                    <span style={{ display: 'block', height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: 2, transition: 'width 0.3s ease' }} />
+                  </span>
+                </span>
+              );
+            })()}
+          </div>
+        )}
+
         {/* Title */}
         <div style={{ fontWeight: 700, fontSize: 15, lineHeight: 1.5, marginBottom: 12, wordBreak: 'break-word' }}>
           {item.title || 'Untitled'}
@@ -711,38 +789,33 @@ Please write in English, use academic tone, and include specific details from th
           )}
         </div>
 
-        {/* Annotations */}
-        {annotations.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>Annotations ({annotations.length})</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {annotations.map((a, idx) => (
-                <div
-                  key={a.id || idx}
-                  style={{
-                    padding: '8px 10px',
-                    borderRadius: 4,
-                    background: 'var(--bg)',
-                    borderLeft: `3px solid ${a.color || '#1890ff'}`,
-                    fontSize: 12,
-                  }}
-                >
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>
-                    Page {a.page} · {a.type}
-                  </div>
-                  {a.text && (
-                    <div style={{ fontStyle: 'italic', marginBottom: 2, color: 'var(--text)' }}>
-                      “{a.text}”
-                    </div>
-                  )}
-                  {a.comment && (
-                    <div style={{ color: 'var(--text-muted)', marginTop: 2, padding: '4px 6px', background: 'rgba(0,0,0,0.04)', borderRadius: 3 }}>{a.comment}</div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Annotations button */}
+        <Button
+          size="small"
+          icon={<MessageSquare size={14} />}
+          onClick={() => setAnnotationModalOpen(true)}
+          style={{ marginBottom: 16 }}
+        >
+          Annotations {annotations.length > 0 && `(${annotations.length})`}
+        </Button>
+
+        <LibraryAnnotationModal
+          open={annotationModalOpen}
+          onClose={() => setAnnotationModalOpen(false)}
+          annotations={annotations}
+          onSave={async (updated) => {
+            await sendWSMessage('library_annotations_save', {
+              item_id: item.id,
+              annotations: updated,
+            }, 10000);
+            setAnnotations(updated);
+            window.dispatchEvent(
+              new CustomEvent('library-annotations-updated', {
+                detail: { item_id: item.id },
+              })
+            );
+          }}
+        />
 
         {/* Linked notes */}
         {item.linked_notes?.length > 0 && (
@@ -750,7 +823,18 @@ Please write in English, use academic tone, and include specific details from th
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>Linked Notes</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {item.linked_notes.map((ln) => (
-                <div key={ln.id} style={{ fontSize: 12, color: 'var(--accent)', cursor: 'pointer' }}>
+                <div
+                  key={ln.id}
+                  style={{ fontSize: 12, color: 'var(--accent)', cursor: 'pointer' }}
+                  onClick={() => {
+                    if (window.electronAPI?.openMarkdownWindow) {
+                      window.electronAPI.openMarkdownWindow(
+                        ln.note_path,
+                        ln.note_path.split('/').pop()
+                      );
+                    }
+                  }}
+                >
                   {ln.note_path}
                 </div>
               ))}
@@ -841,7 +925,7 @@ Please write in English, use academic tone, and include specific details from th
           </div>
         )}
         width={480}
-        destroyOnClose
+        destroyOnHidden
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '8px 0' }}>
           <div>

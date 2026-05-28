@@ -19,7 +19,6 @@ import './Workflow.css';
 import {
   Play,
   Save,
-  FolderOpen,
   Undo2,
   Redo2,
   Bug,
@@ -27,16 +26,11 @@ import {
   ZoomOut,
   Maximize,
   GitBranch,
-  History,
   Plus,
-  Trash2,
   Terminal,
-  X,
-  CheckCircle,
   AlertCircle,
   Loader2,
   CloudOff,
-  Cloud,
 } from 'lucide-react';
 
 import { useWorkflowStore } from '../../workflow/hooks/useWorkflowStore';
@@ -48,10 +42,9 @@ import NodeTestResultDrawer from '../../workflow/components/NodeTestResultDrawer
 import TracePanel from '../../workflow/components/TracePanel';
 import VersionManager from '../../workflow/components/WorkflowManager/VersionManager';
 import VersionCompare from '../../workflow/components/WorkflowManager/VersionCompare';
-import RunHistory from '../../workflow/components/WorkflowManager/RunHistory';
-import WorkflowList from '../../workflow/components/WorkflowManager/WorkflowList';
 import RunDialog from '../../workflow/components/common/RunDialog';
 import PromptDialog from '../../workflow/components/common/PromptDialog';
+import UnsavedChangesDialog from '../../workflow/components/common/UnsavedChangesDialog';
 
 import nodeTypes from '../../workflow/components/nodes';
 import { createNodeFromTemplate } from '../../workflow/templates';
@@ -92,37 +85,175 @@ const ToolbarDivider = () => (
   <div style={{ width: '1px', height: '32px', background: '#e5e7eb', margin: '0 4px' }} />
 );
 
-// 底部工具栏
-const BottomToolbar = ({
+// 顶部工具栏（精简版）
+const TopToolbar = ({
+  onBack,
   onSave,
-  onLoad,
-  onUndo,
-  onRedo,
   onRun,
   onDebug,
-  onZoomIn,
-  onZoomOut,
-  onFitView,
   onToggleTemplates,
   onToggleTrace,
   onToggleVersionManager,
-  onToggleVersionCompare,
-  onToggleRunHistory,
-  onToggleWorkflowList,
-  canUndo,
-  canRedo,
   isRunning,
   isSaving,
   isDirty,
   isConnected,
   currentWorkflowName,
+  onUpdateName,
+}) => {
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState(currentWorkflowName || '');
+
+  useEffect(() => {
+    setNameValue(currentWorkflowName || '');
+  }, [currentWorkflowName]);
+
+  const handleNameBlur = () => {
+    setEditingName(false);
+    if (nameValue.trim() && nameValue.trim() !== currentWorkflowName) {
+      onUpdateName?.(nameValue.trim());
+    }
+  };
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '8px 16px',
+        background: 'rgba(255,255,255,0.95)',
+        borderBottom: '1px solid #e5e7eb',
+        backdropFilter: 'blur(8px)',
+        gap: '12px',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+        {onBack && (
+          <button
+            onClick={onBack}
+            title="返回 Hub"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              border: '1px solid #e5e7eb',
+              background: 'white',
+              color: '#6b7280',
+              fontSize: '12px',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            ← 返回
+          </button>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+          {isDirty && (
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: '#f59e0b',
+                flexShrink: 0,
+              }}
+              title="未保存"
+            />
+          )}
+          {editingName ? (
+            <input
+              autoFocus
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              onBlur={handleNameBlur}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleNameBlur();
+                if (e.key === 'Escape') {
+                  setEditingName(false);
+                  setNameValue(currentWorkflowName || '');
+                }
+              }}
+              style={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#111827',
+                border: '1px solid #a5b4fc',
+                borderRadius: '6px',
+                padding: '2px 8px',
+                outline: 'none',
+                minWidth: '120px',
+                maxWidth: '300px',
+              }}
+            />
+          ) : (
+            <span
+              onClick={() => onUpdateName && setEditingName(true)}
+              style={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#111827',
+                cursor: onUpdateName ? 'text' : 'default',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              title={onUpdateName ? '点击重命名' : currentWorkflowName}
+            >
+              {currentWorkflowName || '未命名工作流'}
+            </span>
+          )}
+          {isSaving && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite', color: '#6b7280' }} />}
+          {isConnected === false && (
+            <span title="WebSocket 已断开">
+              <CloudOff size={14} color="#ef4444" />
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+        <ToolbarButton icon={Plus} label="添加" onClick={onToggleTemplates} />
+        <ToolbarButton icon={Save} label={isSaving ? '保存中' : '保存'} onClick={onSave} color="#3b82f6" disabled={isSaving} />
+        <ToolbarButton
+          icon={isRunning ? AlertCircle : Play}
+          label={isRunning ? '运行中' : '运行'}
+          onClick={onRun}
+          color={isRunning ? '#f59e0b' : '#22c55e'}
+          disabled={isRunning}
+        />
+        <ToolbarButton icon={Bug} label="调试" onClick={onDebug} color="#8b5cf6" />
+        <ToolbarButton icon={Terminal} label="追踪" onClick={onToggleTrace} />
+        <ToolbarButton icon={GitBranch} label="版本" onClick={onToggleVersionManager} />
+      </div>
+    </div>
+  );
+};
+
+// 底部状态栏（精简版，仅保留撤销/重做/缩放/状态信息）
+const BottomToolbar = ({
+  onUndo,
+  onRedo,
+  onZoomIn,
+  onZoomOut,
+  onFitView,
+  canUndo,
+  canRedo,
+  nodeCount,
+  edgeCount,
 }) => (
   <div
     style={{
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      flexWrap: 'wrap',
       gap: '4px',
       padding: '6px 12px',
       background: 'white',
@@ -132,52 +263,16 @@ const BottomToolbar = ({
       width: 'auto',
     }}
   >
-    <ToolbarButton 
-      icon={isSaving ? Loader2 : Save} 
-      label={isSaving ? '保存中' : '保存'} 
-      onClick={onSave} 
-      color="#3b82f6" 
-      disabled={isSaving}
-    />
-    <ToolbarButton icon={FolderOpen} label="打开" onClick={onLoad} />
-    <ToolbarDivider />
     <ToolbarButton icon={Undo2} label="撤销" onClick={onUndo} disabled={!canUndo} />
     <ToolbarButton icon={Redo2} label="重做" onClick={onRedo} disabled={!canRedo} />
-    <ToolbarDivider />
-    <ToolbarButton
-      icon={isSaving ? Loader2 : (isRunning ? AlertCircle : Play)}
-      label={isSaving ? '保存并运行' : (isRunning ? '运行中' : '运行')}
-      onClick={onRun}
-      color={isSaving ? '#3b82f6' : (isRunning ? '#f59e0b' : '#22c55e')}
-      disabled={isSaving || isRunning}
-    />
-    <ToolbarButton icon={Bug} label="调试" onClick={onDebug} color="#8b5cf6" />
     <ToolbarDivider />
     <ToolbarButton icon={ZoomIn} label="放大" onClick={onZoomIn} />
     <ToolbarButton icon={ZoomOut} label="缩小" onClick={onZoomOut} />
     <ToolbarButton icon={Maximize} label="适应" onClick={onFitView} />
     <ToolbarDivider />
-    <ToolbarButton icon={Plus} label="添加" onClick={onToggleTemplates} />
-    <ToolbarButton icon={Terminal} label="追踪" onClick={onToggleTrace} />
-    <ToolbarButton icon={GitBranch} label="版本" onClick={onToggleVersionManager} />
-    <ToolbarButton icon={History} label="历史" onClick={onToggleRunHistory} />
-    <ToolbarButton icon={FolderOpen} label="列表" onClick={onToggleWorkflowList} />
-    {currentWorkflowName && (
-      <>
-        <ToolbarDivider />
-        <span style={{ fontSize: '11px', color: '#6b7280', padding: '0 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {isDirty && (
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />
-          )}
-          {currentWorkflowName}
-          {isSaving && <Loader2 size={12} style={{ animation: 'spin 1s linear infinite', marginLeft: 4 }} />}
-          {isConnected === false && (
-            <span title="WebSocket 已断开"><CloudOff size={12} color="#ef4444" style={{ marginLeft: 4 }} /></span>
-          )}
-          {isConnected && <Cloud size={12} color="#22c55e" style={{ marginLeft: 4 }} />}
-        </span>
-      </>
-    )}
+    <span style={{ fontSize: '11px', color: '#9ca3af', padding: '0 8px' }}>
+      {nodeCount} 个节点 | {edgeCount} 条边
+    </span>
   </div>
 );
 
@@ -225,7 +320,7 @@ const StatusBar = ({ nodeCount, edgeCount, selectedNode, workflowId, versionId, 
 );
 
 // 主工作流编辑器组件
-const WorkflowEditor = ({ style, initialWorkflowId }) => {
+const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWorkflowName, onBack }) => {
   const reactFlowWrapper = useRef(null);
   const reactFlow = useReactFlow();
   const api = useWorkflowAPI();
@@ -263,8 +358,7 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
   const setIsTraceOpen = useWorkflowStore((state) => state.setTracePanelOpen);
   const [isVersionManagerOpen, setIsVersionManagerOpen] = useState(false);
   const [isVersionCompareOpen, setIsVersionCompareOpen] = useState(false);
-  const [isRunHistoryOpen, setIsRunHistoryOpen] = useState(false);
-  const [isWorkflowListOpen, setIsWorkflowListOpen] = useState(false);
+
   const [isRunning, setIsRunning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -285,11 +379,11 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
 
   // 当前工作流状态
   const [workflowId, setWorkflowId] = useState(null);
-  const [versionId, setVersionId] = useState(null);
+  const [versionId, setVersionId] = useState(initialVersionId || null);
   const setWorkflowInfo = useWorkflowStore((state) => state.setWorkflowInfo);
   const setWorkflowBasicInfo = useWorkflowStore((state) => state.setWorkflowBasicInfo);
   const updateWorkflowNameInStore = useWorkflowStore((state) => state.updateWorkflowName);
-  const [workflowName, setWorkflowName] = useState('');
+  const [workflowName, setWorkflowName] = useState(initialWorkflowName || '');
   const [versions, setVersions] = useState([]);
 
   // 运行弹窗状态
@@ -298,6 +392,7 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreatingWorkflow, setIsCreatingWorkflow] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
 
@@ -422,7 +517,6 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
     console.log('[handleSave] workflowId:', workflowId, 'versionId:', versionId);
     if (!workflowId || !versionId) {
       message.warning('请先创建或加载一个工作流');
-      setIsWorkflowListOpen(true);
       return;
     }
 
@@ -495,9 +589,34 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
     }
   }, [workflowId, versionId, nodes, edges, api, markSaved]);
 
-  // 加载工作流
+  // 包装返回逻辑，检查未保存更改（必须在 handleSave 之后定义，避免 TDZ）
+  const handleBack = useCallback(async () => {
+    if (!onBack) return;
+    if (dirty) {
+      setShowUnsavedDialog(true);
+    } else {
+      onBack();
+    }
+  }, [onBack, dirty]);
+
+  const handleSaveAndReturn = useCallback(async () => {
+    try {
+      await handleSave();
+      setShowUnsavedDialog(false);
+      onBack?.();
+    } catch (err) {
+      message.error('保存失败，无法返回');
+    }
+  }, [handleSave, onBack]);
+
+  const handleDiscardAndReturn = useCallback(() => {
+    setShowUnsavedDialog(false);
+    onBack?.();
+  }, [onBack]);
+
+  // 加载工作流（Hub 中操作，此处保留兼容）
   const handleLoad = useCallback(async () => {
-    setIsWorkflowListOpen(true);
+    message.info('请返回 Hub 页面打开工作流');
   }, []);
 
   // 选择工作流并加载定义
@@ -676,7 +795,6 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
   const handleRun = useCallback(async () => {
     if (!workflowId || !versionId) {
       message.warning('请先创建或加载一个工作流');
-      setIsWorkflowListOpen(true);
       return;
     }
 
@@ -735,7 +853,10 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
       if (data.node_id && data.status) {
         const trace = data.output?.trace;
         const inputSnapshot = trace?.input_snapshot || {};
-        updateExecutionNode(data.node_id, data.status, data.output?.result || {}, inputSnapshot, data.output?.duration_ms);
+        const errorDetail = trace?.error_detail || null;
+        const errorMessage = errorDetail?.message || null;
+        const warnings = errorDetail?.type === 'unresolved_variables' ? errorDetail.refs : null;
+        updateExecutionNode(data.node_id, data.status, data.output?.result || {}, inputSnapshot, data.output?.duration_ms, errorMessage, warnings);
       }
     };
     const unsub = subscribe('workflow_node_update', handleNodeUpdate);
@@ -782,7 +903,10 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
       if (data.node_id && data.status) {
         const trace = data.output?.trace;
         const inputSnapshot = trace?.input_snapshot || {};
-        updateExecutionNode(data.node_id, data.status, data.output?.result || {}, inputSnapshot, data.output?.duration_ms);
+        const errorDetail = trace?.error_detail || null;
+        const errorMessage = errorDetail?.message || null;
+        const warnings = errorDetail?.type === 'unresolved_variables' ? errorDetail.refs : null;
+        updateExecutionNode(data.node_id, data.status, data.output?.result || {}, inputSnapshot, data.output?.duration_ms, errorMessage, warnings);
       }
     };
     const unsub = subscribe('workflow_node_update', handleNodeUpdate);
@@ -817,6 +941,16 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
   // 键盘快捷键
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // 如果当前焦点在输入框/文本区/contenteditable 中，不拦截快捷键
+      const target = e.target;
+      const isInput =
+        target && (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable ||
+          target.closest('[contenteditable="true"]')
+        );
+
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
           case 's':
@@ -824,6 +958,7 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
             handleSave();
             break;
           case 'z':
+            if (isInput) return; // 让输入框的撤销默认行为生效
             e.preventDefault();
             if (e.shiftKey) {
               redo();
@@ -832,12 +967,14 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
             }
             break;
           case 'k':
+            if (isInput) return;
             e.preventDefault();
             setIsTemplatesOpen(true);
             break;
         }
       }
       if (e.key === 'Delete' && selectedNodeId) {
+        if (isInput) return; // 让输入框的 Delete 默认行为生效
         const node = nodes.find((n) => n.id === selectedNodeId);
         if (node && !node.data?.forbidDelete) {
           removeNode(selectedNodeId);
@@ -886,6 +1023,14 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
     loadVersions();
   }, [workflowId, loadVersions]);
 
+  // 如果传入了 initialWorkflowName，同步到状态
+  useEffect(() => {
+    if (initialWorkflowName) {
+      setWorkflowName(initialWorkflowName);
+      updateWorkflowNameInStore(initialWorkflowName);
+    }
+  }, [initialWorkflowName, updateWorkflowNameInStore]);
+
   // 同步工作流信息到 store，供节点测试等使用
   useEffect(() => {
     setWorkflowInfo(workflowId, versionId);
@@ -917,6 +1062,53 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
 
     const loadInitialWorkflow = async () => {
       try {
+        // 如果同时传了 versionId，直接加载定义；否则查找最新版本
+        if (initialVersionId) {
+          const definition = await api.getDefinition(initialVersionId);
+          if (definition) {
+            let loadedNodes = (definition.nodes || []).map((n) => {
+              const parentId = n.config?.__parentId;
+              return {
+                id: n.id,
+                type: n.type,
+                position: n.position || { x: 0, y: 0 },
+                width: n.width || 240,
+                height: n.height || 120,
+                parentId,
+                data: { ...n.config, name: n.label, flowNodeType: n.type },
+              };
+            });
+            loadedNodes = loadedNodes.map((node) => {
+              if (!node.parentId) return node;
+              const parentNode = loadedNodes.find((n) => n.id === node.parentId);
+              if (!parentNode) return node;
+              return {
+                ...node,
+                position: { x: node.position.x - parentNode.position.x, y: node.position.y - parentNode.position.y },
+                internals: { ...node.internals, positionAbsolute: { x: node.position.x, y: node.position.y } },
+              };
+            });
+            loadedNodes.sort((a, b) => { const ac = !!a.parentId, bc = !!b.parentId; return ac === bc ? 0 : ac ? 1 : -1; });
+            loadedNodes = loadedNodes.map((node) =>
+              node.type === 'loop'
+                ? { ...node, width: node.width || 400, height: node.height || 280, measured: { width: node.width || 400, height: node.height || 280 }, zIndex: -1 }
+                : node
+            );
+            const loadedEdges = (definition.edges || []).map((e) => ({
+              id: e.id, source: e.source, target: e.target,
+              sourceHandle: e.sourceHandle || `${e.source}-source`,
+              targetHandle: e.targetHandle || `${e.target}-target`,
+              label: e.label || '',
+            }));
+            setNodes(loadedNodes);
+            setEdges(loadedEdges);
+            markSaved();
+          }
+          setWorkflowId(initialWorkflowId);
+          setVersionId(initialVersionId);
+          return;
+        }
+
         const list = await api.getWorkflowList();
         const target = list.find((w) => w.id === initialWorkflowId);
         if (target) {
@@ -928,7 +1120,7 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
     };
 
     loadInitialWorkflow();
-  }, [initialWorkflowId, workflowId, api, handleSelectWorkflow]);
+  }, [initialWorkflowId, initialVersionId, workflowId, api, handleSelectWorkflow, setNodes, setEdges, markSaved]);
 
   return (
     <div
@@ -999,42 +1191,36 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
           }}
         />
 
+        {/* 顶部工具栏 */}
+        <TopToolbar
+          onBack={handleBack}
+          onSave={handleSave}
+          onRun={handleRun}
+          onDebug={handleDebug}
+          onToggleTemplates={() => setIsTemplatesOpen(!isTemplatesOpen)}
+          onToggleTrace={() => setIsTraceOpen(!isTraceOpen)}
+          onToggleVersionManager={() => setIsVersionManagerOpen(!isVersionManagerOpen)}
+          isRunning={isRunning}
+          isSaving={isSaving}
+          isDirty={dirty}
+          isConnected={isConnected}
+          currentWorkflowName={workflowName}
+          onUpdateName={handleUpdateWorkflowName}
+        />
+
         {/* 底部工具栏 */}
-        <Panel position="bottom-center" style={{ width: '80%' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            <BottomToolbar
-              onSave={handleSave}
-              onLoad={handleLoad}
-              onUndo={undo}
-              onRedo={redo}
-              onRun={handleRun}
-              onDebug={handleDebug}
-              onZoomIn={() => reactFlow.zoomIn()}
-              onZoomOut={() => reactFlow.zoomOut()}
-              onFitView={() => reactFlow.fitView()}
-              onToggleTemplates={() => setIsTemplatesOpen(!isTemplatesOpen)}
-              onToggleTrace={() => setIsTraceOpen(!isTraceOpen)}
-              onToggleVersionManager={() => setIsVersionManagerOpen(!isVersionManagerOpen)}
-              onToggleVersionCompare={() => setIsVersionCompareOpen(!isVersionCompareOpen)}
-              onToggleRunHistory={() => setIsRunHistoryOpen(!isRunHistoryOpen)}
-              onToggleWorkflowList={() => setIsWorkflowListOpen(!isWorkflowListOpen)}
-              canUndo={canUndo}
-              canRedo={canRedo}
-              isRunning={isRunning}
-              isSaving={isSaving}
-              isDirty={dirty}
-              isConnected={isConnected}
-              currentWorkflowName={workflowName}
-            />
-            <StatusBar
-              nodeCount={nodes.length}
-              edgeCount={edges.length}
-              selectedNode={selectedNode}
-              workflowId={workflowId}
-              versionId={versionId}
-              isDirty={dirty}
-            />
-          </div>
+        <Panel position="bottom-center" style={{ width: 'auto' }}>
+          <BottomToolbar
+            onUndo={undo}
+            onRedo={redo}
+            onZoomIn={() => reactFlow.zoomIn()}
+            onZoomOut={() => reactFlow.zoomOut()}
+            onFitView={() => reactFlow.fitView()}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            nodeCount={nodes.length}
+            edgeCount={edges.length}
+          />
         </Panel>
       </ReactFlow>
 
@@ -1162,20 +1348,6 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
         versions={versions}
       />
 
-      {/* 运行历史 */}
-      <RunHistory
-        isOpen={isRunHistoryOpen}
-        onClose={() => setIsRunHistoryOpen(false)}
-        workflowId={workflowId}
-      />
-
-      {/* 工作流列表 */}
-      <WorkflowList
-        isOpen={isWorkflowListOpen}
-        onClose={() => setIsWorkflowListOpen(false)}
-        onSelectWorkflow={handleSelectWorkflow}
-        onCreateWorkflow={handleCreateWorkflow}
-      />
 
       {/* 运行弹窗 */}
       <RunDialog
@@ -1187,6 +1359,14 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
         workflowName={workflowName}
         inputVariables={pendingRunVariables}
         isRunning={isRunning}
+      />
+
+      {/* 未保存更改提示 */}
+      <UnsavedChangesDialog
+        isOpen={showUnsavedDialog}
+        onSaveAndReturn={handleSaveAndReturn}
+        onDiscardAndReturn={handleDiscardAndReturn}
+        onCancel={() => setShowUnsavedDialog(false)}
       />
 
       {/* 创建工作流弹窗 */}
@@ -1208,10 +1388,16 @@ const WorkflowEditor = ({ style, initialWorkflowId }) => {
 };
 
 // 包装组件，提供 ReactFlowProvider
-const WorkflowPage = ({ style, initialWorkflowId }) => {
+const WorkflowPage = ({ style, initialWorkflowId, initialVersionId, initialWorkflowName, onBack }) => {
   return (
     <ReactFlowProvider>
-      <WorkflowEditor style={style} initialWorkflowId={initialWorkflowId} />
+      <WorkflowEditor
+        style={style}
+        initialWorkflowId={initialWorkflowId}
+        initialVersionId={initialVersionId}
+        initialWorkflowName={initialWorkflowName}
+        onBack={onBack}
+      />
     </ReactFlowProvider>
   );
 };

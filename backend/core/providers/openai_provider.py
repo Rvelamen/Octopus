@@ -93,7 +93,11 @@ class OpenAIProvider(RetryableProvider):
         logger.info(f"[Stream] Calling OPENAI API with model: {model}")
         adapted_messages = MessageAdapter.adapt_messages(messages, "openai")
         accumulated_content = ""
-        tool_calls: list[ToolCallRequest] = []
+        accumulated_reasoning = ""
+
+        # Buffers for accumulating streaming tool-call arguments (OpenAI sends them as deltas)
+        tool_call_meta: dict[int, dict] = {}   # idx -> {"id": ..., "name": ...}
+        tool_call_arg_buf: dict[int, str] = {}  # idx -> accumulated arguments JSON string
 
         kwargs = dict(
             model=model,
@@ -132,26 +136,40 @@ class OpenAIProvider(RetryableProvider):
                     accumulated_content += delta.content
                     yield StreamChunk(content=delta.content)
 
+                # DeepSeek reasoning content
+                if hasattr(delta, "reasoning_content") and delta.reasoning_content:
+                    accumulated_reasoning += delta.reasoning_content
+                    yield StreamChunk(reasoning_content=delta.reasoning_content)
+
                 if delta.tool_calls:
                     for tc in delta.tool_calls:
                         idx = tc.index
-                        while len(tool_calls) <= idx:
-                            tool_calls.append(ToolCallRequest(id="", name="", arguments={}))
-                        existing = tool_calls[idx]
+                        if idx not in tool_call_meta:
+                            tool_call_meta[idx] = {"id": "", "name": ""}
                         if tc.id:
-                            existing.id = tc.id
+                            tool_call_meta[idx]["id"] = tc.id
                         if tc.function and tc.function.name:
-                            existing.name = tc.function.name
+                            tool_call_meta[idx]["name"] = tc.function.name
                         if tc.function and tc.function.arguments:
-                            raw_args = tc.function.arguments
-                            if isinstance(raw_args, str):
-                                try:
-                                    parsed = json.loads(raw_args)
-                                except json.JSONDecodeError:
-                                    parsed = {"raw": raw_args}
-                                existing.arguments = parsed
-                            else:
-                                existing.arguments = raw_args
+                            tool_call_arg_buf[idx] = tool_call_arg_buf.get(idx, "") + tc.function.arguments
+
+            # Build final tool_calls from accumulated buffers
+            tool_calls: list[ToolCallRequest] = []
+            for idx in sorted(tool_call_meta.keys()):
+                meta = tool_call_meta[idx]
+                raw_args = tool_call_arg_buf.get(idx, "")
+                arguments: dict[str, Any] = {}
+                if raw_args:
+                    try:
+                        arguments = json.loads(raw_args)
+                    except json.JSONDecodeError:
+                        logger.warning(f"[OpenAI] Failed to parse tool call arguments JSON: {raw_args!r}")
+                        arguments = {"raw": raw_args}
+                tool_calls.append(ToolCallRequest(
+                    id=meta.get("id", ""),
+                    name=meta.get("name", ""),
+                    arguments=arguments,
+                ))
 
             # Some compatible APIs return a usage dict with all zeros; treat that as missing too.
             has_real_usage = bool(
@@ -168,6 +186,7 @@ class OpenAIProvider(RetryableProvider):
                 tool_calls=tool_calls if tool_calls else None,
                 is_final=True,
                 usage=final_usage,
+                reasoning_content=accumulated_reasoning or None,
             )
         except Exception as e:
             logger.error(f"Streaming failed: {e}")
@@ -252,9 +271,14 @@ class OpenAIProvider(RetryableProvider):
             usage = _estimate_token_usage(adapted_messages or messages, message.content or "", self.default_model)
             logger.warning(f"[OpenAI] Non-streaming response missing valid usage; estimated: {usage}")
 
+        reasoning_content = None
+        if hasattr(message, "reasoning_content") and message.reasoning_content:
+            reasoning_content = message.reasoning_content
+
         return LLMResponse(
             content=message.content,
             tool_calls=tool_calls,
             finish_reason=choice.finish_reason or "stop",
             usage=usage,
+            reasoning_content=reasoning_content,
         )

@@ -24,6 +24,7 @@ class SubagentRecord:
     temperature: float
     system_prompt: str
     enabled: bool
+    is_builtin: bool
     created_at: datetime
     updated_at: datetime
 
@@ -106,6 +107,7 @@ class SubagentRepository:
         temperature: float = 0.7,
         system_prompt: str = "",
         enabled: bool = True,
+        is_builtin: bool = False,
     ) -> SubagentRecord:
         """Create a new subagent."""
         tools = tools or []
@@ -115,10 +117,10 @@ class SubagentRepository:
             cursor = conn.execute(
                 """INSERT INTO subagents
                    (name, description, provider_id, model_id, tools, extensions,
-                    max_iterations, temperature, system_prompt, enabled, created_at, updated_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
+                    max_iterations, temperature, system_prompt, enabled, is_builtin, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
                 (name, description, provider_id, model_id, json.dumps(tools),
-                 json.dumps(extensions), max_iterations, temperature, system_prompt, enabled)
+                 json.dumps(extensions), max_iterations, temperature, system_prompt, enabled, is_builtin)
             )
 
             row = conn.execute(
@@ -142,6 +144,7 @@ class SubagentRepository:
         temperature: float | None = None,
         system_prompt: str | None = None,
         enabled: bool | None = None,
+        is_builtin: bool | None = None,
     ) -> bool:
         """Update subagent."""
         updates = []
@@ -177,6 +180,9 @@ class SubagentRepository:
         if enabled is not None:
             updates.append("enabled = ?")
             params.append(enabled)
+        if is_builtin is not None:
+            updates.append("is_builtin = ?")
+            params.append(is_builtin)
 
         if not updates:
             return False
@@ -192,8 +198,16 @@ class SubagentRepository:
             return cursor.rowcount > 0
 
     def delete_subagent(self, subagent_id: int) -> bool:
-        """Delete a subagent."""
+        """Delete a subagent. Built-in subagents cannot be deleted."""
         with self.db._get_connection() as conn:
+            # Check if built-in
+            row = conn.execute(
+                "SELECT is_builtin FROM subagents WHERE id = ?",
+                (subagent_id,)
+            ).fetchone()
+            if row and row["is_builtin"]:
+                logger.warning(f"Cannot delete built-in subagent id: {subagent_id}")
+                return False
             cursor = conn.execute(
                 "DELETE FROM subagents WHERE id = ?",
                 (subagent_id,)
@@ -204,8 +218,16 @@ class SubagentRepository:
             return False
 
     def delete_subagent_by_name(self, name: str) -> bool:
-        """Delete a subagent by name."""
+        """Delete a subagent by name. Built-in subagents cannot be deleted."""
         with self.db._get_connection() as conn:
+            # Check if built-in
+            row = conn.execute(
+                "SELECT is_builtin FROM subagents WHERE name = ?",
+                (name,)
+            ).fetchone()
+            if row and row["is_builtin"]:
+                logger.warning(f"Cannot delete built-in subagent: {name}")
+                return False
             cursor = conn.execute(
                 "DELETE FROM subagents WHERE name = ?",
                 (name,)
@@ -231,6 +253,7 @@ class SubagentRepository:
                     s.temperature,
                     s.system_prompt,
                     s.enabled,
+                    s.is_builtin,
                     s.created_at,
                     s.updated_at,
                     p.name as provider_name,
@@ -280,6 +303,7 @@ class SubagentRepository:
             temperature=row["temperature"] or 0.7,
             system_prompt=row["system_prompt"] or "",
             enabled=bool(row["enabled"]),
+            is_builtin=bool(row["is_builtin"]),
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
         )

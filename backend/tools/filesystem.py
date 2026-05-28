@@ -149,11 +149,17 @@ class WriteFileTool(Tool):
 
             # Auto-index markdown notes written to the knowledge directory
             rel_path = file_path.relative_to(workspace)
-            if str(rel_path).startswith("knowledge/") and str(rel_path).endswith(".md"):
+            rel_str = str(rel_path)
+            if rel_str.startswith("knowledge/") and rel_str.endswith(".md"):
                 try:
-                    from backend.services.knowledge_engine import KnowledgeGraphEngine
-                    engine = KnowledgeGraphEngine(str(workspace))
-                    engine.update_note(str(rel_path), force=True)
+                    if len(rel_path.parts) >= 2 and rel_path.parts[0] == "knowledge" and rel_path.parts[1] == "library":
+                        from backend.services.library_note_engine import LibraryNoteEngine
+                        engine = LibraryNoteEngine(str(workspace))
+                        engine.update_note(rel_str, force=True)
+                    else:
+                        from backend.services.knowledge_engine import KnowledgeGraphEngine
+                        engine = KnowledgeGraphEngine(str(workspace))
+                        engine.update_note(rel_str, force=True)
                 except Exception as idx_err:
                     # Indexing failure should not block the write operation
                     return (

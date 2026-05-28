@@ -90,6 +90,15 @@ class MessageType(Enum):
     LIBRARY_IMPORT_ARXIV = "library_import_arxiv"
     LIBRARY_SEARCH_CHUNKS = "library_search_chunks"
     LIBRARY_AI_EXTRACT_META = "library_ai_extract_meta"
+    LIBRARY_GRAPH = "library_graph"
+
+    # PDF Chat - Client -> Server
+    PDF_CHAT = "pdf_chat"                                    # PDF chat operations
+
+    # Subagent - Client -> Server
+    SUBAGENT_LIST = "subagent_list"
+    SUBAGENT_SAVE = "subagent_save"
+    SUBAGENT_DELETE = "subagent_delete"
 
     # File Preview - Client -> Server
     FILE_PREVIEW_PDF = "file_preview_pdf"                   # Convert file to PDF for preview
@@ -285,6 +294,7 @@ class MessageType(Enum):
     LIBRARY_IMPORT_ARXIV_RESULT = "library_import_arxiv_result"
     LIBRARY_SEARCH_CHUNKS_RESULT = "library_search_chunks_result"
     LIBRARY_AI_EXTRACT_META_RESULT = "library_ai_extract_meta_result"
+    LIBRARY_GRAPH_RESULT = "library_graph_result"
 
     # File Preview - Server -> Client
     FILE_PREVIEW_PDF_RESULT = "file_preview_pdf_result"    # PDF conversion result
@@ -574,6 +584,7 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.LIBRARY_IMPORT_ARXIV,
     MessageType.LIBRARY_SEARCH_CHUNKS,
     MessageType.LIBRARY_AI_EXTRACT_META,
+    MessageType.LIBRARY_GRAPH,
     MessageType.FILE_PREVIEW_PDF,
     MessageType.WORKSPACE_LIST,
     MessageType.WORKSPACE_READ,
@@ -832,6 +843,7 @@ SERVER_MESSAGE_TYPES = {
     MessageType.LIBRARY_IMPORT_ARXIV_RESULT,
     MessageType.LIBRARY_SEARCH_CHUNKS_RESULT,
     MessageType.LIBRARY_AI_EXTRACT_META_RESULT,
+    MessageType.LIBRARY_GRAPH_RESULT,
     MessageType.FILE_PREVIEW_PDF_RESULT,
     MessageType.MEMORY_LIST_RESULT,
     MessageType.MEMORY_SEARCH_RESULT,

@@ -557,16 +557,127 @@ class NodeExecutor:
         inputs: dict[str, Any],
         context: WorkflowContext,
     ) -> dict[str, Any]:
-        """Execute read files node (placeholder)."""
-        file_urls = inputs.get("fileUrlList", [])
+        """Execute read files node.
 
-        if isinstance(file_urls, str):
-            file_urls = [file_urls]
+        Downloads content from multiple URLs.
+        Supports:
+        - Multi-line URL string (split by newline)
+        - Array of URLs
+        - Configurable encoding, max file size, content concatenation
+        """
+        import logging
+        import asyncio
 
-        return {
-            "fileTitle": [f"Content of {url}" for url in file_urls],
-            "fileContent": [f"Placeholder content for {url}" for url in file_urls],
-        }
+        logger = logging.getLogger(__name__)
+
+        file_urls_raw = inputs.get("fileUrlList", "")
+        encoding = inputs.get("encoding", "utf-8")
+        max_file_size_mb = float(inputs.get("maxFileSize", 10))
+        max_file_size_bytes = max_file_size_mb * 1024 * 1024
+        concat_content = bool(inputs.get("concatContent", True))
+        separator = inputs.get("separator", "\n\n--- 文件分隔 ---\n\n")
+
+        # Parse URLs from multi-line string or array
+        file_urls: list[str] = []
+        if isinstance(file_urls_raw, str):
+            file_urls = [u.strip() for u in file_urls_raw.split("\n") if u.strip()]
+        elif isinstance(file_urls_raw, list):
+            file_urls = [str(u).strip() for u in file_urls_raw if str(u).strip()]
+
+        if not file_urls:
+            return {
+                "fileTitle": [],
+                "fileContent": [],
+                "error": "没有提供文件 URL",
+            }
+
+        results: list[dict[str, Any]] = []
+
+        async def fetch_url(url: str) -> dict[str, Any]:
+            """Download content from a single URL."""
+            try:
+                async with httpx.AsyncClient(
+                    timeout=30.0,
+                    follow_redirects=True,
+                    max_redirects=5,
+                ) as client:
+                    response = await client.get(url)
+                    response.raise_for_status()
+
+                    content_bytes = response.content
+                    if len(content_bytes) > max_file_size_bytes:
+                        return {
+                            "url": url,
+                            "title": url,
+                            "content": "",
+                            "error": f"文件大小超过限制 ({max_file_size_mb} MB)",
+                            "size": len(content_bytes),
+                        }
+
+                    # Decode content
+                    text = ""
+                    if encoding == "auto":
+                        # Try common encodings
+                        for enc in ("utf-8", "gbk", "gb2312", "latin-1"):
+                            try:
+                                text = content_bytes.decode(enc)
+                                break
+                            except UnicodeDecodeError:
+                                continue
+                        else:
+                            text = content_bytes.decode("utf-8", errors="replace")
+                    else:
+                        try:
+                            text = content_bytes.decode(encoding)
+                        except UnicodeDecodeError:
+                            text = content_bytes.decode("utf-8", errors="replace")
+
+                    return {
+                        "url": url,
+                        "title": url,
+                        "content": text,
+                        "size": len(content_bytes),
+                        "status_code": response.status_code,
+                    }
+            except httpx.TimeoutException:
+                return {"url": url, "title": url, "content": "", "error": "下载超时"}
+            except httpx.HTTPStatusError as e:
+                return {"url": url, "title": url, "content": "", "error": f"HTTP {e.response.status_code}"}
+            except Exception as e:
+                logger.warning(f"Failed to fetch {url}: {e}")
+                return {"url": url, "title": url, "content": "", "error": str(e)}
+
+        # Fetch all URLs concurrently
+        fetch_tasks = [fetch_url(url) for url in file_urls]
+        results = await asyncio.gather(*fetch_tasks)
+
+        # Separate successes and failures
+        successes = [r for r in results if not r.get("error")]
+        failures = [r for r in results if r.get("error")]
+
+        if concat_content:
+            # Return concatenated content
+            contents = [r["content"] for r in successes]
+            titles = [r["title"] for r in successes]
+            combined = separator.join(contents) if contents else ""
+            return {
+                "fileTitle": titles,
+                "fileContent": combined,
+                "fileCount": len(successes),
+                "totalCount": len(file_urls),
+                "failedUrls": [r["url"] for r in failures],
+                "errors": [r["error"] for r in failures] if failures else None,
+            }
+        else:
+            # Return array of contents
+            return {
+                "fileTitle": [r["title"] for r in successes],
+                "fileContent": [r["content"] for r in successes],
+                "fileCount": len(successes),
+                "totalCount": len(file_urls),
+                "failedUrls": [r["url"] for r in failures],
+                "errors": [r["error"] for r in failures] if failures else None,
+            }
 
     async def execute_json_serialize(
         self,
@@ -882,34 +993,67 @@ class NodeExecutor:
         Supports INSERT, UPDATE, DELETE, and QUERY operations on user-defined tables.
         """
         from backend.data.db_store import DBRepository
+        import logging
 
-        table_name_raw = inputs.get("tableName", "")
-        operation = inputs.get("operation", "QUERY")
-        field_mappings = inputs.get("fieldMappings", [])
-        where_condition = inputs.get("whereCondition", "")
-        order_by = inputs.get("orderBy", "")
-        limit = int(inputs.get("limit", 100))
+        logger = logging.getLogger(__name__)
+
+        # Primary: read from inputs; fallback: read directly from node.config
+        node_config = node.config or {}
+        table_name_raw = inputs.get("tableName") or node_config.get("tableName", "")
+        operation = inputs.get("operation") or node_config.get("operation", "QUERY")
+        field_mappings = inputs.get("fieldMappings") or node_config.get("fieldMappings", [])
+        where_condition = inputs.get("whereCondition") or node_config.get("whereCondition", "")
+        order_by = inputs.get("orderBy") or node_config.get("orderBy", "")
+        limit_val = inputs.get("limit") or node_config.get("limit", 100)
+        limit = int(limit_val) if limit_val is not None else 100
+
+        logger.info(f"[DatabaseNode] inputs keys: {list(inputs.keys())}")
+        logger.info(f"[DatabaseNode] tableName: {table_name_raw}")
+        logger.info(f"[DatabaseNode] operation: {operation}")
+        logger.info(f"[DatabaseNode] field_mappings: {field_mappings}")
+        logger.info(f"[DatabaseNode] node.config keys: {list(node.config.keys()) if node.config else []}")
 
         # Resolve table name (may contain variable references)
         table_name = context.resolve_value(table_name_raw)
         if not table_name:
-            return {"result": None, "system_text": "", "error": "Table name is required"}
+            return {
+                "result": None,
+                "system_text": "",
+                "error": "Table name is required",
+                "_debug_inputs_keys": list(inputs.keys()),
+                "_debug_config_keys": list(node.config.keys()) if node.config else [],
+            }
 
         # Get database instance from engine
         engine = getattr(self, "_engine", None)
         if not engine:
-            return {"result": None, "system_text": "", "error": "Engine not available"}
+            return {
+                "result": None,
+                "system_text": "",
+                "error": "Engine not available",
+                "_debug_inputs_keys": list(inputs.keys()),
+            }
 
         db = getattr(engine, "_db", None)
         if not db:
-            return {"result": None, "system_text": "", "error": "Database not available"}
+            return {
+                "result": None,
+                "system_text": "",
+                "error": "Database not available",
+                "_debug_inputs_keys": list(inputs.keys()),
+            }
 
         repo = DBRepository(db)
 
         # Check if table exists
         table = repo.get_table(table_name)
         if not table:
-            return {"result": None, "system_text": "", "error": f"Table '{table_name}' not found"}
+            return {
+                "result": None,
+                "system_text": "",
+                "error": f"Table '{table_name}' not found",
+                "_debug_inputs_keys": list(inputs.keys()),
+            }
 
         try:
             if operation == "INSERT":
@@ -921,9 +1065,19 @@ class NodeExecutor:
             elif operation == "QUERY":
                 return await self._execute_db_query(repo, table_name, where_condition, order_by, limit, context)
             else:
-                return {"result": None, "system_text": "", "error": f"Unsupported operation: {operation}"}
+                return {
+                    "result": None,
+                    "system_text": "",
+                    "error": f"Unsupported operation: {operation}",
+                    "_debug_inputs_keys": list(inputs.keys()),
+                }
         except Exception as e:
-            return {"result": None, "system_text": "", "error": str(e)}
+            return {
+                "result": None,
+                "system_text": "",
+                "error": str(e),
+                "_debug_inputs_keys": list(inputs.keys()),
+            }
 
     async def _execute_db_insert(
         self,
@@ -933,20 +1087,30 @@ class NodeExecutor:
         context: WorkflowContext,
     ) -> dict[str, Any]:
         """Execute INSERT operation."""
+        import logging
+        logger = logging.getLogger(__name__)
         data = {}
-        for mapping in field_mappings:
+        logger.info(f"[DB_INSERT] field_mappings count: {len(field_mappings)}")
+        for idx, mapping in enumerate(field_mappings):
             if isinstance(mapping, dict):
                 field_name = mapping.get("name", "")
                 field_value = mapping.get("value", "")
+                logger.info(f"[DB_INSERT] mapping[{idx}]: name={field_name}, value={field_value}")
                 if field_name:
-                    data[field_name] = context.resolve_value(field_value)
+                    resolved = context.resolve_value(field_value)
+                    data[field_name] = resolved
+                    logger.info(f"[DB_INSERT] resolved: {field_name} = {resolved}")
+            else:
+                logger.warning(f"[DB_INSERT] mapping[{idx}] is not dict: {type(mapping)}")
 
+        logger.info(f"[DB_INSERT] final data: {data}")
         table = repo.get_table(table_name)
         fields = []
         if table:
             fields = json.loads(table.fields_json or "[]")
 
         record = repo.create_record(table_name, data, fields)
+        logger.info(f"[DB_INSERT] created record: id={record.id}, data={record.record_data}")
         return {
             "result": {"id": record.id, "data": record.record_data},
             "system_text": f"Inserted record #{record.id} into {table_name}",

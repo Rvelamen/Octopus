@@ -23,7 +23,7 @@ const useLibraryWS = (sendWSMessage) => {
     [send]
   );
   const createItem = useCallback(
-    (params) => send('library_create', params),
+    (params) => send('library_create', params, 60000),
     [send]
   );
   const updateMetadata = useCallback(
@@ -32,6 +32,10 @@ const useLibraryWS = (sendWSMessage) => {
   );
   const deleteItem = useCallback(
     (itemId) => send('library_delete', { item_id: itemId }),
+    [send]
+  );
+  const deleteItems = useCallback(
+    (itemIds) => send('library_delete', { item_ids: itemIds }),
     [send]
   );
   const searchItems = useCallback(
@@ -79,11 +83,11 @@ const useLibraryWS = (sendWSMessage) => {
   );
 
   const importByDoi = useCallback(
-    (doi, collectionIds) => send('library_import_doi', { doi, collection_ids: collectionIds }),
+    (doi, collectionIds) => send('library_import_doi', { doi, collection_ids: collectionIds }, 120000),
     [send]
   );
   const importByArxiv = useCallback(
-    (arxivId, collectionIds) => send('library_import_arxiv', { arxiv_id: arxivId, collection_ids: collectionIds }),
+    (arxivId, collectionIds) => send('library_import_arxiv', { arxiv_id: arxivId, collection_ids: collectionIds }, 120000),
     [send]
   );
 
@@ -102,6 +106,7 @@ const useLibraryWS = (sendWSMessage) => {
     createItem,
     updateMetadata,
     deleteItem,
+    deleteItems,
     searchItems,
     addAttachment,
     linkNote,

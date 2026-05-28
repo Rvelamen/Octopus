@@ -25,6 +25,7 @@ from backend.data.schema import (
     observation,
     workflow,
     db,
+    pdf_chat,
 )
 
 
@@ -152,6 +153,7 @@ class Database:
             observation.create_tables(conn)
             workflow.create_tables(conn)
             db.create_tables(conn)
+            pdf_chat.create_tables(conn)
 
             # Create indexes
             apscheduler.create_indexes(conn)

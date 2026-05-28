@@ -13,6 +13,7 @@ import JSONSerializeNode from './JSONSerializeNode/Node';
 import JSONDeserializeNode from './JSONDeserializeNode/Node';
 import TextNode from './TextNode/Node';
 import DatabaseNode from './DatabaseNode/Node';
+import ReadFilesNode from './ReadFilesNode/Node';
 import { withTestButton } from './withTestButton';
 
 const nodeTypes = {
@@ -30,6 +31,7 @@ const nodeTypes = {
   jsonSerialize: withTestButton(memo(JSONSerializeNode)),
   jsonDeserialize: withTestButton(memo(JSONDeserializeNode)),
   database: withTestButton(memo(DatabaseNode)),
+  readFiles: withTestButton(memo(ReadFilesNode)),
 };
 
 export default nodeTypes;

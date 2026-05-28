@@ -581,6 +581,7 @@ class WorkflowHandler(MessageHandler):
             "runs": [
                 {
                     "id": r.id,
+                    "workflow_id": r.workflow_id,
                     "version_id": r.version_id,
                     "status": r.status,
                     "trigger_type": r.trigger_type,

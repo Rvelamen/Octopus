@@ -179,20 +179,28 @@ class KnowledgeGraphEngine:
         knowledge/notes/                → 'default'
         knowledge/notes/paper/        → 'paper'
         knowledge/notes/obsidian_xxx/ → 'obsidian_xxx'
-        library/...                     → 'library'
+        knowledge/library/...         → 'library'
         """
         parts = Path(relative_path).parts
-        if parts[0] == "library":
-            return "library"
-        if len(parts) >= 3 and parts[0] == "knowledge" and parts[1] == "notes":
-            return parts[2]
+        if len(parts) >= 2 and parts[0] == "knowledge":
+            if parts[1] == "library":
+                return "library"
+            if parts[1] == "notes" and len(parts) >= 3:
+                return parts[2]
         return "default"
 
     def update_note(self, relative_path: str, force: bool = False) -> None:
         """Read a markdown file, extract title and [[links]], and update the index.
 
         Skips if mtime has not changed. Cleans up DB records if the file is gone.
+        Library notes (under knowledge/library/) are NOT indexed here; they go to LibraryNoteEngine.
         """
+        # Skip library paths - they are managed by LibraryNoteEngine
+        parts = Path(relative_path).parts
+        if len(parts) >= 2 and parts[0] == "knowledge" and parts[1] == "library":
+            logger.debug(f"Skipping knowledge index for library note: {relative_path}")
+            return
+
         full_path = self._resolve_path(relative_path)
 
         if not full_path.exists():
@@ -429,14 +437,20 @@ class KnowledgeGraphEngine:
             result[item["sha256"]] = item
         return result
 
-    def search_notes(self, query: str, limit: int = 20, vault_filter: Optional[str] = None) -> list[dict[str, Any]]:
-        """Fuzzy search notes by path or title, optionally scoped to a vault."""
+    def search_notes(self, query: str, limit: int = 20, vault_filter: Optional[str] = None, exclude_vault: Optional[str] = None) -> list[dict[str, Any]]:
+        """Fuzzy search notes by path or title, optionally scoped to a vault or excluding one."""
         stripped = query.strip()
         if not stripped:
             return []
 
-        vault_cond = " AND vault = ?" if vault_filter else ""
-        vault_args: tuple = (vault_filter,) if vault_filter else ()
+        vault_cond = ""
+        vault_args: tuple = ()
+        if vault_filter:
+            vault_cond = " AND vault = ?"
+            vault_args = (vault_filter,)
+        elif exclude_vault:
+            vault_cond = " AND vault != ?"
+            vault_args = (exclude_vault,)
 
         # 1. Exact title match
         row = self.db.execute(
@@ -456,7 +470,14 @@ class KnowledgeGraphEngine:
 
         # 3. FTS5 match (more intelligent for long titles / phrases)
         try:
-            vault_join = f" AND n.vault = ?" if vault_filter else ""
+            vault_join = ""
+            fts_args: tuple = ()
+            if vault_filter:
+                vault_join = " AND n.vault = ?"
+                fts_args = (vault_filter,)
+            elif exclude_vault:
+                vault_join = " AND n.vault != ?"
+                fts_args = (exclude_vault,)
             rows = self.db.execute(
                 f"""
                 SELECT n.path, n.title, n.mtime, n.word_count, rank
@@ -466,7 +487,7 @@ class KnowledgeGraphEngine:
                 ORDER BY rank
                 LIMIT ?
                 """,
-                (stripped,) + (vault_filter,) * bool(vault_filter) + (limit,),
+                (stripped,) + fts_args + (limit,),
             ).fetchall()
             if rows:
                 return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"], "word_count": r["word_count"], "rank": r["rank"]} for r in rows]
@@ -498,14 +519,21 @@ class KnowledgeGraphEngine:
         ).fetchall()
         return [{"name": r["vault"], "note_count": r["note_count"]} for r in rows]
 
-    def search_notes_fts(self, query: str, limit: int = 20, vault_filter: Optional[str] = None) -> list[dict[str, Any]]:
+    def search_notes_fts(self, query: str, limit: int = 20, vault_filter: Optional[str] = None, exclude_vault: Optional[str] = None) -> list[dict[str, Any]]:
         """Full-text search using SQLite FTS5 with BM25 ranking.
 
         Falls back to path/title search if FTS5 is unavailable or returns no results.
-        Optionally scoped to a vault.
+        Optionally scoped to a vault or excluding one.
         """
         try:
-            vault_join = f" AND n.vault = ?" if vault_filter else ""
+            vault_join = ""
+            args: tuple = ()
+            if vault_filter:
+                vault_join = " AND n.vault = ?"
+                args = (vault_filter,)
+            elif exclude_vault:
+                vault_join = " AND n.vault != ?"
+                args = (exclude_vault,)
             rows = self.db.execute(
                 f"""
                 SELECT n.path, n.title, n.mtime, n.word_count, rank
@@ -515,7 +543,7 @@ class KnowledgeGraphEngine:
                 ORDER BY rank
                 LIMIT ?
                 """,
-                (query,) + (vault_filter,) * bool(vault_filter) + (limit,),
+                (query,) + args + (limit,),
             ).fetchall()
             if rows:
                 return [
@@ -621,7 +649,7 @@ class KnowledgeGraphEngine:
 
     def get_graph(
         self, center_path: Optional[str] = None, depth: int = 1, limit: int = 200, tag_filter: Optional[str] = None,
-        vault_filter: Optional[str] = None,
+        vault_filter: Optional[str] = None, exclude_vault: Optional[str] = None,
     ) -> dict[str, Any]:
         """Return a subgraph as {nodes, edges}.
 
@@ -630,6 +658,7 @@ class KnowledgeGraphEngine:
         `limit` nodes.
         If tag_filter is given, only include nodes that have the tag.
         If vault_filter is given, only include nodes in that vault.
+        If exclude_vault is given, exclude nodes in that vault.
         """
         if self._cache_dirty or self._cache is None:
             self._rebuild_cache()
@@ -642,6 +671,8 @@ class KnowledgeGraphEngine:
 
         def _include_node(key: str) -> bool:
             if vault_filter is not None and cache["node_vaults"].get(key) != vault_filter:
+                return False
+            if exclude_vault is not None and cache["node_vaults"].get(key) == exclude_vault:
                 return False
             if tag_filter is None:
                 return True
@@ -700,7 +731,7 @@ class KnowledgeGraphEngine:
 
     def _rebuild_cache(self) -> None:
         """Rebuild the in-memory graph cache from SQLite.
-        Includes library_items as paper nodes and citation edges."""
+        Only includes knowledge notes and their bidirectional links."""
         nodes: dict[str, dict[str, Any]] = {}
         title_to_path: dict[str, str] = {}
         for row in self.db.execute(
@@ -721,41 +752,6 @@ class KnowledgeGraphEngine:
         for path in nodes:
             stem = Path(path).stem.lower()
             stem_to_path[stem] = path
-
-        # Collect library citation targets first
-        library_citekeys: set[str] = set()
-        for row in self.db.execute(
-            "SELECT to_path FROM knowledge_links WHERE to_path LIKE '@library/%'"
-        ).fetchall():
-            if row["to_path"]:
-                library_citekeys.add(row["to_path"].split("/", 2)[1])
-
-        # Add library items as paper nodes
-        paper_nodes: dict[str, dict[str, Any]] = {}
-        if library_citekeys:
-            placeholders = ",".join("?" * len(library_citekeys))
-            for row in self.db.execute(
-                f"SELECT id, citekey, title, library_path, tags_json FROM library_items WHERE LOWER(citekey) IN ({placeholders})",
-                [ck.lower() for ck in library_citekeys],
-            ).fetchall():
-                citekey = row["citekey"] or f"item_{row['id']}"
-                paper_path = f"@library/{citekey}"
-                tags = []
-                if row["tags_json"]:
-                    try:
-                        import json
-                        tags = json.loads(row["tags_json"])
-                    except Exception:
-                        pass
-                paper_nodes[paper_path] = {
-                    "id": paper_path,
-                    "label": row["title"] or citekey,
-                    "type": "paper",
-                    "mtime": 0,
-                    "tags": tags,
-                    "vault": "library",
-                }
-        nodes.update(paper_nodes)
 
         for row in self.db.execute(
             "SELECT from_path, to_title, to_path FROM knowledge_links"
@@ -782,34 +778,67 @@ class KnowledgeGraphEngine:
             node_vaults[row["path"]] = row["vault"]
 
         for node_path in nodes:
-            if node_path not in paper_nodes:
-                nodes[node_path]["tags"] = node_tags.get(node_path, [])
-                nodes[node_path]["vault"] = node_vaults.get(node_path, "default")
+            nodes[node_path]["tags"] = node_tags.get(node_path, [])
+            nodes[node_path]["vault"] = node_vaults.get(node_path, "default")
 
         self._cache = {"nodes": nodes, "edges": edges, "adj_out": adj_out, "adj_in": adj_in, "node_tags": node_tags, "node_vaults": node_vaults}
         self._cache_dirty = False
 
-    def get_timeline(self, relative_path: str) -> dict[str, Any]:
+    def get_timeline(self, relative_path: str, vault_filter: Optional[str] = None, exclude_vault: Optional[str] = None) -> dict[str, Any]:
         """Return contextual timeline and metadata for a note.
 
         Includes: basic info, outgoing/incoming links, tags, and recently
         modified related notes (linked by graph or tags).
+        Optionally filtered by vault.
         """
         row = self.db.execute(
-            "SELECT path, title, mtime, word_count, updated_at FROM knowledge_nodes WHERE path = ?",
+            "SELECT path, title, mtime, word_count, updated_at, vault FROM knowledge_nodes WHERE path = ?",
             (relative_path,),
         ).fetchone()
         if not row:
             raise FileNotFoundError(f"Note not found: {relative_path}")
 
-        # Links
+        # Build vault condition for link queries
+        vault_join = ""
+        vault_cond = ""
+        vault_args: tuple = ()
+        if vault_filter is not None:
+            vault_join = " JOIN knowledge_nodes n ON l.to_path = n.path"
+            vault_cond = " AND n.vault = ?"
+            vault_args = (vault_filter,)
+        elif exclude_vault is not None:
+            vault_join = " JOIN knowledge_nodes n ON l.to_path = n.path"
+            vault_cond = " AND n.vault != ?"
+            vault_args = (exclude_vault,)
+
+        # Links (outgoing)
         outgoing_rows = self.db.execute(
-            "SELECT to_title, to_path FROM knowledge_links WHERE from_path = ?",
-            (relative_path,),
+            f"""
+            SELECT l.to_title, l.to_path FROM knowledge_links l{vault_join}
+            WHERE l.from_path = ?{vault_cond}
+            """,
+            (relative_path,) + vault_args,
         ).fetchall()
+
+        # Links (incoming)
+        incoming_vault_join = ""
+        incoming_vault_cond = ""
+        incoming_vault_args: tuple = ()
+        if vault_filter is not None:
+            incoming_vault_join = " JOIN knowledge_nodes n ON l.from_path = n.path"
+            incoming_vault_cond = " AND n.vault = ?"
+            incoming_vault_args = (vault_filter,)
+        elif exclude_vault is not None:
+            incoming_vault_join = " JOIN knowledge_nodes n ON l.from_path = n.path"
+            incoming_vault_cond = " AND n.vault != ?"
+            incoming_vault_args = (exclude_vault,)
+
         incoming_rows = self.db.execute(
-            "SELECT from_path FROM knowledge_links WHERE to_path = ?",
-            (relative_path,),
+            f"""
+            SELECT l.from_path FROM knowledge_links l{incoming_vault_join}
+            WHERE l.to_path = ?{incoming_vault_cond}
+            """,
+            (relative_path,) + incoming_vault_args,
         ).fetchall()
 
         outgoing = []
@@ -831,13 +860,24 @@ class KnowledgeGraphEngine:
 
         if tags:
             placeholders = ",".join("?" * len(tags))
+            tag_vault_join = ""
+            tag_vault_cond = ""
+            tag_vault_args: tuple = ()
+            if vault_filter is not None:
+                tag_vault_join = " JOIN knowledge_nodes n ON nt.node_path = n.path"
+                tag_vault_cond = " AND n.vault = ?"
+                tag_vault_args = (vault_filter,)
+            elif exclude_vault is not None:
+                tag_vault_join = " JOIN knowledge_nodes n ON nt.node_path = n.path"
+                tag_vault_cond = " AND n.vault != ?"
+                tag_vault_args = (exclude_vault,)
             tag_rows = self.db.execute(
                 f"""
-                SELECT DISTINCT node_path FROM knowledge_node_tags nt
-                JOIN knowledge_tags t ON nt.tag_id = t.id
-                WHERE t.name IN ({placeholders}) AND nt.node_path != ?
+                SELECT DISTINCT nt.node_path FROM knowledge_node_tags nt
+                JOIN knowledge_tags t ON nt.tag_id = t.id{tag_vault_join}
+                WHERE t.name IN ({placeholders}) AND nt.node_path != ?{tag_vault_cond}
                 """,
-                (*tags, relative_path),
+                (*tags, relative_path) + tag_vault_args,
             ).fetchall()
             for tr in tag_rows:
                 related_paths.add(tr["node_path"])
@@ -845,14 +885,22 @@ class KnowledgeGraphEngine:
         related = []
         if related_paths:
             placeholders = ",".join("?" * len(related_paths))
+            rel_vault_cond = ""
+            rel_vault_args: tuple = ()
+            if vault_filter is not None:
+                rel_vault_cond = " AND vault = ?"
+                rel_vault_args = (vault_filter,)
+            elif exclude_vault is not None:
+                rel_vault_cond = " AND vault != ?"
+                rel_vault_args = (exclude_vault,)
             rel_rows = self.db.execute(
                 f"""
                 SELECT path, title, mtime, word_count FROM knowledge_nodes
-                WHERE path IN ({placeholders})
+                WHERE path IN ({placeholders}){rel_vault_cond}
                 ORDER BY mtime DESC
                 LIMIT 10
                 """,
-                tuple(related_paths),
+                tuple(related_paths) + rel_vault_args,
             ).fetchall()
             related = [
                 {"path": r["path"], "title": r["title"], "mtime": r["mtime"], "word_count": r["word_count"]}

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Layers, Inbox, Folder, FolderOpen, ChevronRight, ChevronDown, Plus, Trash2, Hash } from 'lucide-react';
+import { Layers, Inbox, Folder, FolderOpen, ChevronRight, ChevronDown, Plus, Trash2, Hash, GitGraph } from 'lucide-react';
 import { Popconfirm } from 'antd';
 
-const CollectionTreeNode = ({ node, level, selectedId, onSelect, onDelete, expanded, toggleExpand }) => {
+const CollectionTreeNode = ({ node, level, selectedId, onSelect, onDelete, onOpenGraph, expanded, toggleExpand }) => {
   const isSelected = node.id === selectedId;
   const hasChildren = node.children && node.children.length > 0;
   const isExpanded = expanded.has(node.id);
@@ -47,6 +47,15 @@ const CollectionTreeNode = ({ node, level, selectedId, onSelect, onDelete, expan
           </span>
         )}
 
+        {onOpenGraph && node.id > 2 && (
+          <span
+            style={{ display: 'flex', opacity: 0.4, cursor: 'pointer' }}
+            onClick={(e) => { e.stopPropagation(); onOpenGraph(node.id); }}
+            title="Open in Graph"
+          >
+            <GitGraph size={12} />
+          </span>
+        )}
         {node.id > 2 && (
           <Popconfirm
             title="Delete collection?"
@@ -76,6 +85,7 @@ const CollectionTreeNode = ({ node, level, selectedId, onSelect, onDelete, expan
               selectedId={selectedId}
               onSelect={onSelect}
               onDelete={onDelete}
+              onOpenGraph={onOpenGraph}
               expanded={expanded}
               toggleExpand={toggleExpand}
             />
@@ -120,6 +130,7 @@ const LibrarySidebar = ({
   onSelect,
   onCreateCollection,
   onDeleteCollection,
+  onOpenGraph,
   loading,
 }) => {
   const [expanded, setExpanded] = useState(new Set([1]));
@@ -233,6 +244,7 @@ const LibrarySidebar = ({
             selectedId={selectedId}
             onSelect={onSelect}
             onDelete={onDeleteCollection}
+            onOpenGraph={onOpenGraph}
             expanded={expanded}
             toggleExpand={toggleExpand}
           />

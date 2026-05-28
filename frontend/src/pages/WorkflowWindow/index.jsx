@@ -1,27 +1,21 @@
 /**
- * WorkflowWindow — 独立的 Workflow 编辑器窗口
- * 包含标签页：Workflow / Database
+ * WorkflowWindow — 独立的 Workflow 窗口
+ * 采用 Hub → Editor 的两层架构：
+ *   - Hub:   WorkflowHub 管理首页（列表/历史/模板/数据表）
+ *   - Editor: Workflow 画布编辑器
  */
 
-import React, { useState, useEffect } from 'react';
-import { Tabs } from 'antd';
-import { GitBranch, Database } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import WorkflowHub from '../WorkflowHub';
 import WorkflowPage from '../Workflow';
 import './WorkflowWindow.css';
 
-import DatabasePanel from './DatabasePanel';
-
-const DatabaseContent = () => (
-  <DatabasePanel />
-);
-
 export default function WorkflowWindow() {
-  const [activeKey, setActiveKey] = useState('workflow');
-  const [initialWorkflowId, setInitialWorkflowId] = useState(null);
+  const [view, setView] = useState('hub'); // 'hub' | 'editor'
+  const [editorParams, setEditorParams] = useState(null);
   const [isReady, setIsReady] = useState(false);
 
   // 解析 URL hash 参数（Electron 通过 hash 传参）
-  // 必须在 WorkflowPage 渲染前完成，否则 auto-load 会抢先加载第一个工作流
   useEffect(() => {
     const hash = window.location.hash;
     const queryIndex = hash.indexOf('?');
@@ -30,34 +24,22 @@ export default function WorkflowWindow() {
       const params = new URLSearchParams(search);
       const wfId = params.get('workflowId');
       if (wfId) {
-        setInitialWorkflowId(wfId);
+        setEditorParams({ workflowId: wfId });
+        setView('editor');
       }
     }
     setIsReady(true);
   }, []);
 
-  const items = [
-    {
-      key: 'workflow',
-      label: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <GitBranch size={14} />
-          Workflow
-        </span>
-      ),
-      children: <WorkflowPage style={{ width: '100%', height: '100%' }} initialWorkflowId={initialWorkflowId} />,
-    },
-    {
-      key: 'database',
-      label: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Database size={14} />
-          Database
-        </span>
-      ),
-      children: <DatabaseContent />,
-    },
-  ];
+  const handleEnterEditor = useCallback((params) => {
+    setEditorParams(params);
+    setView('editor');
+  }, []);
+
+  const handleBackToHub = useCallback(() => {
+    setView('hub');
+    setEditorParams(null);
+  }, []);
 
   if (!isReady) {
     return (
@@ -69,13 +51,18 @@ export default function WorkflowWindow() {
 
   return (
     <div className="workflow-window">
-      <Tabs
-        activeKey={activeKey}
-        onChange={setActiveKey}
-        type="card"
-        size="small"
-        items={items}
-      />
+      {view === 'hub' && (
+        <WorkflowHub onEnterEditor={handleEnterEditor} />
+      )}
+      {view === 'editor' && (
+        <WorkflowPage
+          style={{ width: '100%', height: '100%' }}
+          initialWorkflowId={editorParams?.workflowId}
+          initialVersionId={editorParams?.versionId}
+          initialWorkflowName={editorParams?.workflowName}
+          onBack={handleBackToHub}
+        />
+      )}
     </div>
   );
 }

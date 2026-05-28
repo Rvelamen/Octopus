@@ -9,19 +9,28 @@ from backend.services.knowledge_engine import KnowledgeGraphEngine
 class KBSearchTool(Tool):
     """Search the knowledge base for notes by path or title."""
 
+    def __init__(self, vault_filter: str | None = None, exclude_vault: str | None = None):
+        self._vault_filter = vault_filter
+        self._exclude_vault = exclude_vault
+
     @property
     def name(self) -> str:
         return "kb_search"
 
     @property
     def description(self) -> str:
-        return (
+        base = (
             "Search the user's knowledge base for markdown notes that match a query. "
             "Uses full-text search (FTS5) across titles and note contents, ranked by relevance. "
             "Returns a list of note paths and titles. Use this when the user asks about "
             "a topic that might be covered in their notes, or when you need to find a "
             "specific note before reading it. Prefer this over guessing note titles."
         )
+        if self._vault_filter:
+            base += f" Only searches notes in the '{self._vault_filter}' vault."
+        elif self._exclude_vault:
+            base += f" Excludes notes in the '{self._exclude_vault}' vault."
+        return base
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -48,9 +57,17 @@ class KBSearchTool(Tool):
         engine = KnowledgeGraphEngine(str(get_workspace_path()))
 
         # Prefer FTS5 full-text search
-        results = engine.search_notes_fts(query, limit=limit)
+        results = engine.search_notes_fts(
+            query, limit=limit,
+            vault_filter=self._vault_filter,
+            exclude_vault=self._exclude_vault,
+        )
         if not results:
-            results = engine.search_notes(query, limit=limit)
+            results = engine.search_notes(
+                query, limit=limit,
+                vault_filter=self._vault_filter,
+                exclude_vault=self._exclude_vault,
+            )
 
         if not results:
             return "No matching notes found."
@@ -103,19 +120,30 @@ class KBWriteNoteTool(Tool):
         }
 
     async def execute(self, path: str, content: str, **kwargs: Any) -> str:
+        from pathlib import Path
         from backend.utils.helpers import get_workspace_path
 
         if not path.endswith(".md"):
             return f"Error: note path must end with .md, got: {path}"
 
-        engine = KnowledgeGraphEngine(str(get_workspace_path()))
+        workspace = str(get_workspace_path())
+        parts = Path(path).parts
+        is_library = len(parts) >= 2 and parts[0] == "knowledge" and parts[1] == "library"
+
+        if is_library:
+            from backend.services.library_note_engine import LibraryNoteEngine
+            engine = LibraryNoteEngine(workspace)
+        else:
+            engine = KnowledgeGraphEngine(workspace)
+
         engine.write_note(path, content)
         engine.update_note(path, force=True)
 
         word_count = len(content.split())
         title = engine._extract_title(content, path)
+        system = "library" if is_library else "knowledge"
         return (
-            f"Note written and indexed: {path}\n"
+            f"Note written and indexed to {system} graph: {path}\n"
             f"Title: {title}\n"
             f"Words: {word_count} (estimated_tokens: ~{int(word_count * 1.5)})"
         )
@@ -164,18 +192,27 @@ class KBReadNoteTool(Tool):
 class KBTimelineTool(Tool):
     """Preview a note's context before reading: links, tags, and related notes."""
 
+    def __init__(self, vault_filter: str | None = None, exclude_vault: str | None = None):
+        self._vault_filter = vault_filter
+        self._exclude_vault = exclude_vault
+
     @property
     def name(self) -> str:
         return "kb_timeline"
 
     @property
     def description(self) -> str:
-        return (
+        base = (
             "Get a contextual preview of a knowledge base note before reading it. "
             "Returns the note's metadata, outgoing/incoming wiki-links, tags, and "
             "recently modified related notes. Use this after kb_search to decide "
             "which notes are worth reading with kb_read_note."
         )
+        if self._vault_filter:
+            base += f" Only works with notes in the '{self._vault_filter}' vault."
+        elif self._exclude_vault:
+            base += f" Excludes notes in the '{self._exclude_vault}' vault."
+        return base
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -196,8 +233,22 @@ class KBTimelineTool(Tool):
     async def execute(self, path: str, **kwargs: Any) -> str:
         from backend.utils.helpers import get_workspace_path
         engine = KnowledgeGraphEngine(str(get_workspace_path()))
+        # Enforce vault isolation
+        node = engine.db.execute(
+            "SELECT vault FROM knowledge_nodes WHERE path = ?", (path,)
+        ).fetchone()
+        if not node:
+            return f"Note not found: {path}"
+        if self._vault_filter and node["vault"] != self._vault_filter:
+            return f"Note not found: {path}"
+        if self._exclude_vault and node["vault"] == self._exclude_vault:
+            return f"Note not found: {path}"
         try:
-            timeline = engine.get_timeline(path)
+            timeline = engine.get_timeline(
+                path,
+                vault_filter=self._vault_filter,
+                exclude_vault=self._exclude_vault,
+            )
         except FileNotFoundError:
             return f"Note not found: {path}"
 
@@ -234,16 +285,25 @@ class KBTimelineTool(Tool):
 class KBListLinksTool(Tool):
     """List bidirectional links for a given note path."""
 
+    def __init__(self, vault_filter: str | None = None, exclude_vault: str | None = None):
+        self._vault_filter = vault_filter
+        self._exclude_vault = exclude_vault
+
     @property
     def name(self) -> str:
         return "kb_list_links"
 
     @property
     def description(self) -> str:
-        return (
+        base = (
             "List the outgoing and/or incoming [[wiki-style links]] for a knowledge base note. "
             "Use this to explore the knowledge graph around a note after reading it."
         )
+        if self._vault_filter:
+            base += f" Only works with notes in the '{self._vault_filter}' vault."
+        elif self._exclude_vault:
+            base += f" Excludes notes in the '{self._exclude_vault}' vault."
+        return base
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -270,7 +330,21 @@ class KBListLinksTool(Tool):
     async def execute(self, path: str, direction: str = "both", **kwargs: Any) -> str:
         from backend.utils.helpers import get_workspace_path
         engine = KnowledgeGraphEngine(str(get_workspace_path()))
-        graph = engine.get_graph(center_path=path, depth=1)
+        # Enforce vault isolation
+        node = engine.db.execute(
+            "SELECT vault FROM knowledge_nodes WHERE path = ?", (path,)
+        ).fetchone()
+        if not node:
+            return f"Note not found: {path}"
+        if self._vault_filter and node["vault"] != self._vault_filter:
+            return f"Note not found: {path}"
+        if self._exclude_vault and node["vault"] == self._exclude_vault:
+            return f"Note not found: {path}"
+        graph = engine.get_graph(
+            center_path=path, depth=1,
+            vault_filter=self._vault_filter,
+            exclude_vault=self._exclude_vault,
+        )
         edges = graph.get("edges", [])
 
         outgoing = []

@@ -179,13 +179,13 @@ class AgentContainer:
         if should_register("web_fetch"):
             self.tools.register(WebFetchTool())
         if should_register("kb_search"):
-            self.tools.register(KBSearchTool())
+            self.tools.register(KBSearchTool(exclude_vault="library"))
         if should_register("kb_read_note"):
             self.tools.register(KBReadNoteTool())
         if should_register("kb_list_links"):
-            self.tools.register(KBListLinksTool())
+            self.tools.register(KBListLinksTool(exclude_vault="library"))
         if should_register("kb_timeline"):
-            self.tools.register(KBTimelineTool())
+            self.tools.register(KBTimelineTool(exclude_vault="library"))
         if should_register("kb_write_note"):
             self.tools.register(KBWriteNoteTool())
         if should_register("image_understand"):

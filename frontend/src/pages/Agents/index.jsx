@@ -325,12 +325,14 @@ function AgentsPanel({ sendWSMessage }) {
                       <div className="agent-name">{agent.name}</div>
                       <div className="agent-desc">{agent.description}</div>
                     </div>
-                    <Trash2
-                      className="delete-btn"
-                      size={16}
-                      onClick={(e) => { e.stopPropagation(); deleteAgent(agent); }}
-                      title="Delete"
-                    />
+                    {!agent.is_builtin && (
+                      <Trash2
+                        className="delete-btn"
+                        size={16}
+                        onClick={(e) => { e.stopPropagation(); deleteAgent(agent); }}
+                        title="Delete"
+                      />
+                    )}
                   </div>
                 ))}
               </div>

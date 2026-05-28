@@ -20,6 +20,7 @@ import {
   MessageSquare,
   GitMerge,
   Database,
+  FileText,
 } from 'lucide-react';
 import { FlowNodeTypeEnum } from '../../constants';
 
@@ -57,6 +58,7 @@ const nodeTemplates = [
       { type: FlowNodeTypeEnum.jsonSerialize, name: 'JSON 序列化', icon: Braces, color: '#6366f1' },
       { type: FlowNodeTypeEnum.jsonDeserialize, name: 'JSON 反序列化', icon: Braces, color: '#6366f1' },
       { type: FlowNodeTypeEnum.database, name: '数据库', icon: Database, color: '#f97316', inputs: [], outputs: [{ key: 'result', label: '结果' }] },
+      { type: FlowNodeTypeEnum.readFiles, name: '读取文件', icon: FileText, color: '#eab308', inputs: [], outputs: [{ key: 'fileContent', label: '文件内容' }, { key: 'fileCount', label: '成功数量' }] },
     ]
   },
 ];

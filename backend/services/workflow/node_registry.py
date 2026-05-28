@@ -474,7 +474,11 @@ class NodeRegistry:
                 {"key": "fileUrlList", "label": "文件 URL 列表", "type": "arrayString", "required": True},
             ],
             outputs=[
-                {"key": "fileTitle", "label": "文件内容", "type": "string"},
+                {"key": "fileTitle", "label": "文件标题列表", "type": "array"},
+                {"key": "fileContent", "label": "文件内容", "type": "string"},
+                {"key": "fileCount", "label": "成功数量", "type": "number"},
+                {"key": "totalCount", "label": "总数量", "type": "number"},
+                {"key": "failedUrls", "label": "失败 URL 列表", "type": "array"},
             ],
             config_schema={
                 "fileUrlList": {

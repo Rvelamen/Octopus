@@ -20,6 +20,7 @@ class StreamChunk:
     tool_calls: list[ToolCallRequest] | None = None
     is_final: bool = False
     usage: dict[str, int] = field(default_factory=dict)
+    reasoning_content: str | None = None
 
 
 @dataclass
@@ -29,6 +30,7 @@ class LLMResponse:
     tool_calls: list[ToolCallRequest] = field(default_factory=list)
     finish_reason: str = "stop"
     usage: dict[str, int] = field(default_factory=dict)
+    reasoning_content: str | None = None
     
     @property
     def has_tool_calls(self) -> bool:

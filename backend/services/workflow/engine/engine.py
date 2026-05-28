@@ -405,6 +405,7 @@ class WorkflowEngine:
     ) -> dict[str, Any]:
         """Execute a single node."""
         context.set_current_node(node.id)
+        context.clear_unresolved_refs(node.id)
 
         inputs_config = node.config.get("inputs", [])
         inputs: dict[str, Any] = {}
@@ -471,8 +472,39 @@ class WorkflowEngine:
                 import logging
                 logging.warning(f"[CodeNode] code is empty for node {node.id}, config keys: {list(node.config.keys())}")
 
+        # Fallback: for nodes that store config directly in node.config (not in inputs list),
+        # inject config values into inputs when inputs list is empty or values are missing.
+        # This fixes nodes like database, http, etc. where frontend saves to node.data directly.
+        if node_type in ("database", "http", "httpRequest468", "readFiles"):
+            logger.info(f"[_execute_node] fallback for {node_type}, inputs before: {inputs}")
+            for key, value in (node.config or {}).items():
+                if key not in ("inputs", "outputs", "_parentId", "__parentId") and value is not None:
+                    if key not in inputs or inputs[key] is None or inputs[key] == "":
+                        inputs[key] = context.resolve_value(value)
+                        logger.info(f"[_execute_node] fallback injected: {key} = {inputs[key]}")
+            logger.info(f"[_execute_node] inputs after fallback: {inputs}")
+
         # Record resolved inputs into the trace so the outer loop can reference them
         context.update_node_trace(node.id, input_snapshot=inputs)
+
+        # Check for unresolved variable references in this node's inputs
+        unresolved = context.get_unresolved_refs(node.id)
+        if unresolved:
+            ref_messages = [f"{{{u['ref']}}}" for u in unresolved]
+            error_detail = {
+                "type": "unresolved_variables",
+                "message": f"存在未解析的变量引用: {', '.join(ref_messages)}",
+                "refs": unresolved,
+            }
+            context.update_node_trace(
+                node.id,
+                error_detail=error_detail,
+            )
+            logger.warning(
+                "[Node %s] unresolved variable refs: %s",
+                node.id,
+                ref_messages,
+            )
 
         executor_map = {
             "workflowStart": self._executor.execute_workflow_start,
@@ -623,6 +655,8 @@ class WorkflowEngine:
 
         return {
             "id": run.id,
+            "workflow_id": run.workflow_id,
+            "version_id": run.version_id,
             "status": run.status,
             "current_node_id": run.current_node_id,
             "error_message": run.error_message,

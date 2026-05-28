@@ -48,6 +48,7 @@ class LibraryEngine:
             "PRAGMA journal_mode = WAL;",
             "PRAGMA synchronous = NORMAL;",
             "PRAGMA foreign_keys = ON;",
+            "PRAGMA busy_timeout = 5000;",
         ]
         for pragma in pragmas:
             self.db.execute(pragma)
@@ -61,6 +62,29 @@ class LibraryEngine:
         slug = re.sub(r"[^\w\s-]", "", title or "untitled")
         slug = re.sub(r"[-\s]+", "_", slug).strip("_")
         return slug[:50] if slug else "untitled"
+
+    def _ensure_unique_citekey(self, citekey: Optional[str], exclude_item_id: Optional[int] = None) -> Optional[str]:
+        """Ensure citekey is unique by appending _2, _3, etc. if needed."""
+        if not citekey:
+            return None
+        query = "SELECT id FROM library_items WHERE citekey = ?"
+        params: list[Any] = [citekey]
+        if exclude_item_id is not None:
+            query += " AND id != ?"
+            params.append(exclude_item_id)
+        row = self.db.execute(query, params).fetchone()
+        if not row:
+            return citekey
+        base = citekey
+        counter = 2
+        while True:
+            new_citekey = f"{base}_{counter}"
+            row = self.db.execute(
+                "SELECT id FROM library_items WHERE citekey = ?", (new_citekey,)
+            ).fetchone()
+            if not row:
+                return new_citekey
+            counter += 1
 
     def _make_item_dir(self, item_id: int, title: str) -> Path:
         """Create and return the item directory path."""
@@ -161,24 +185,33 @@ class LibraryEngine:
         metadata: Optional[dict] = None,
         collection_ids: Optional[list[int]] = None,
     ) -> dict:
-        """Create a new library item from an optional PDF file."""
+        """Create a new library item from an optional PDF file.
+
+        This is a lightweight synchronous method: it only creates the DB record
+        and directory. All heavy PDF processing (copy, hash, chunk extraction)
+        should be done in the background via _process_pdf_background().
+        """
         metadata = metadata or {}
         title = metadata.get("title")
-
-        # Try to extract title from PDF if not provided
-        if not title and pdf_path and pdf_path.exists():
-            title = self._extract_title_from_pdf(pdf_path)
         if not title:
             title = pdf_path.stem if pdf_path else "untitled"
+
+        # Ensure citekey is unique before inserting
+        citekey = self._ensure_unique_citekey(metadata.get("citekey"))
+        if citekey != metadata.get("citekey"):
+            metadata = {**metadata, "citekey": citekey}
+
+        # Determine chunk_status based on whether PDF is present
+        chunk_status = "pending" if (pdf_path and pdf_path.exists()) else None
 
         # Insert DB record first to get item_id
         cursor = self.db.execute(
             """
-            INSERT INTO library_items (citekey, item_type, title, authors_json, year, venue, doi, url, abstract, tags_json, metadata_json, pdf_sha256)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO library_items (citekey, item_type, title, authors_json, year, venue, doi, url, abstract, tags_json, metadata_json, pdf_sha256, chunk_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                metadata.get("citekey"),
+                citekey,
                 metadata.get("item_type", "journalArticle"),
                 title,
                 json.dumps(metadata.get("authors", [])) if metadata.get("authors") else None,
@@ -190,6 +223,7 @@ class LibraryEngine:
                 json.dumps(metadata.get("tags", [])) if metadata.get("tags") else None,
                 json.dumps(metadata) if metadata else None,
                 None,
+                chunk_status,
             ),
         )
         item_id = cursor.lastrowid
@@ -198,43 +232,29 @@ class LibraryEngine:
         item_dir = self._make_item_dir(item_id, title)
         library_path = str(item_dir.relative_to(self.workspace_root))
 
-        pdf_sha256 = None
-        if pdf_path and pdf_path.exists():
-            # Move PDF into directory as main.pdf
-            main_pdf = item_dir / "main.pdf"
-            if pdf_path.resolve() != main_pdf.resolve():
-                import shutil
+        # Create notes subdirectory for AI-generated notes
+        (item_dir / "notes").mkdir(exist_ok=True)
 
-                shutil.copy2(pdf_path, main_pdf)
-            pdf_sha256 = self._compute_sha256(main_pdf)
+        # Write metadata files (lightweight, no PDF reading)
+        self.db.execute(
+            "UPDATE library_items SET library_path = ? WHERE id = ?",
+            (library_path, item_id),
+        )
+        self._write_octopus_meta(item_dir, item_id, metadata)
+        self._write_metadata_yaml(item_dir, metadata)
 
-            # Update DB with path and sha256
-            self.db.execute(
-                "UPDATE library_items SET library_path = ?, pdf_sha256 = ? WHERE id = ?",
-                (library_path, pdf_sha256, item_id),
-            )
-
-            # Write metadata files
-            self._write_octopus_meta(item_dir, item_id, metadata)
-            self._write_metadata_yaml(item_dir, metadata)
-
-            # Record attachment
-            self.db.execute(
-                "INSERT INTO library_attachments (item_id, filename, file_type, sha256, rel_path, size) VALUES (?, ?, ?, ?, ?, ?)",
-                (item_id, "main.pdf", "pdf", pdf_sha256, "main.pdf", main_pdf.stat().st_size),
-            )
-        else:
-            # No PDF: just create directory and metadata files
-            self.db.execute(
-                "UPDATE library_items SET library_path = ? WHERE id = ?",
-                (library_path, item_id),
-            )
-            self._write_octopus_meta(item_dir, item_id, metadata)
-            self._write_metadata_yaml(item_dir, metadata)
-
-        # Add to collections
+        # Add to collections — filter out non-existent collections to avoid FK errors
+        valid_collection_ids = []
         if collection_ids:
-            for cid in collection_ids:
+            placeholders = ",".join("?" * len(collection_ids))
+            existing = self.db.execute(
+                f"SELECT id FROM library_collections WHERE id IN ({placeholders})",
+                tuple(collection_ids),
+            ).fetchall()
+            valid_collection_ids = [r["id"] for r in existing]
+
+        if valid_collection_ids:
+            for cid in valid_collection_ids:
                 self.db.execute(
                     "INSERT OR IGNORE INTO library_collection_items (collection_id, item_id) VALUES (?, ?)",
                     (cid, item_id),
@@ -247,22 +267,95 @@ class LibraryEngine:
             )
 
         self.db.commit()
-
-        # Auto-extract text chunks from PDF for RAG
-        if pdf_path and pdf_path.exists():
-            try:
-                self.extract_pdf_chunks(item_id)
-            except Exception as e:
-                logger.warning(f"Failed to auto-extract PDF chunks for item {item_id}: {e}")
-
         return self.get_item(item_id)
+
+    def _process_pdf_background(
+        self,
+        item_id: int,
+        pdf_temp_path: Path,
+    ) -> None:
+        """Process a PDF file in the background: copy, hash, extract title, write metadata, record attachment, then extract chunks.
+
+        This runs in a background thread so the frontend never waits for large file operations.
+        """
+        try:
+            item = self.get_item(item_id)
+            if not item:
+                logger.warning(f"Background PDF processing: item {item_id} not found")
+                return
+
+            item_dir = self._item_dir(item_id)
+            if not item_dir:
+                logger.warning(f"Background PDF processing: item dir not found for {item_id}")
+                self._set_chunk_status(item_id, "failed")
+                return
+
+            main_pdf = item_dir / "main.pdf"
+
+            # Copy PDF from temp location
+            if pdf_temp_path.exists():
+                import shutil
+                shutil.copy2(pdf_temp_path, main_pdf)
+                # Clean up temp file
+                try:
+                    pdf_temp_path.unlink()
+                except Exception:
+                    pass
+            elif not main_pdf.exists():
+                logger.warning(f"Background PDF processing: temp PDF not found for item {item_id}")
+                self._set_chunk_status(item_id, "failed")
+                return
+
+            # Compute sha256
+            pdf_sha256 = self._compute_sha256(main_pdf)
+
+            # Extract title from PDF if not already set (or was just the stem)
+            title = item.get("title") or ""
+            if not title or title == "untitled" or title == main_pdf.stem:
+                extracted_title = self._extract_title_from_pdf(main_pdf)
+                if extracted_title and extracted_title != main_pdf.stem:
+                    title = extracted_title
+                    self.db.execute(
+                        "UPDATE library_items SET title = ? WHERE id = ?",
+                        (title, item_id),
+                    )
+
+            # Write metadata files
+            metadata = json.loads(item.get("metadata_json") or "{}")
+            self._write_octopus_meta(item_dir, item_id, metadata)
+            self._write_metadata_yaml(item_dir, metadata)
+
+            # Record attachment
+            self.db.execute(
+                "INSERT INTO library_attachments (item_id, filename, file_type, sha256, rel_path, size) VALUES (?, ?, ?, ?, ?, ?)",
+                (item_id, "main.pdf", "pdf", pdf_sha256, "main.pdf", main_pdf.stat().st_size),
+            )
+
+            # Update DB with sha256
+            self.db.execute(
+                "UPDATE library_items SET pdf_sha256 = ? WHERE id = ?",
+                (pdf_sha256, item_id),
+            )
+            self.db.commit()
+
+            # Extract chunks (this updates chunk_status internally)
+            self.extract_pdf_chunks(item_id)
+
+            logger.info(f"Background PDF processing complete for item {item_id}")
+
+        except Exception as e:
+            logger.error(f"Background PDF processing failed for item {item_id}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            self._set_chunk_status(item_id, "failed")
+            self.db.commit()
 
     def get_item(self, item_id: int) -> dict:
         """Get item details with attachments and linked notes."""
         row = self.db.execute(
             """
             SELECT id, citekey, item_type, title, authors_json, year, venue, doi, url, abstract, tags_json,
-                   metadata_json, library_path, pdf_sha256, created_at, updated_at
+                   metadata_json, library_path, pdf_sha256, chunk_status, created_at, updated_at
             FROM library_items WHERE id = ?
             """,
             (item_id,),
@@ -332,6 +425,9 @@ class LibraryEngine:
             raise ValueError(f"Library item {item_id} not found")
 
         title = metadata.get("title", item["title"])
+        citekey = self._ensure_unique_citekey(
+            metadata.get("citekey", item["citekey"]), exclude_item_id=item_id
+        )
         self.db.execute(
             """
             UPDATE library_items
@@ -340,7 +436,7 @@ class LibraryEngine:
             WHERE id = ?
             """,
             (
-                metadata.get("citekey", item["citekey"]),
+                citekey,
                 metadata.get("item_type", item["item_type"]),
                 title,
                 json.dumps(metadata.get("authors", item["authors"])),
@@ -380,13 +476,27 @@ class LibraryEngine:
 
         self.db.execute("DELETE FROM library_items WHERE id = ?", (item_id,))
 
-        # Clean up knowledge graph nodes for this item's notes
+        # Clean up library note index for this item's notes
         if library_path:
             prefix = f"{library_path}/%"
+            self.db.execute("DELETE FROM library_notes WHERE path LIKE ?", (prefix,))
+            # Also clean up legacy knowledge_nodes entries (migration safety)
             self.db.execute("DELETE FROM knowledge_nodes WHERE path LIKE ?", (prefix,))
 
         self.db.commit()
         return True
+
+    def delete_items(self, item_ids: list[int]) -> dict:
+        """Delete multiple items. Returns success/fail counts."""
+        success = 0
+        fail = 0
+        for item_id in item_ids:
+            try:
+                self.delete_item(item_id)
+                success += 1
+            except Exception:
+                fail += 1
+        return {"success": success, "fail": fail}
 
     def list_items(
         self,
@@ -409,7 +519,7 @@ class LibraryEngine:
             rows = self.db.execute(
                 f"""
                 SELECT id, citekey, title, authors_json, year, venue, doi, url, abstract, tags_json,
-                       library_path, pdf_sha256, created_at
+                       library_path, pdf_sha256, chunk_status, created_at
                 FROM library_items WHERE id IN ({placeholders}) ORDER BY year DESC NULLS LAST
                 """,
                 item_ids,
@@ -422,7 +532,7 @@ class LibraryEngine:
             rows = self.db.execute(
                 """
                 SELECT i.id, i.citekey, i.title, i.authors_json, i.year, i.venue, i.doi, i.url, i.abstract, i.tags_json,
-                       i.library_path, i.pdf_sha256, i.created_at
+                       i.library_path, i.pdf_sha256, i.chunk_status, i.created_at
                 FROM library_items i
                 JOIN library_collection_items ci ON i.id = ci.item_id
                 WHERE ci.collection_id = ?
@@ -439,7 +549,7 @@ class LibraryEngine:
             rows = self.db.execute(
                 """
                 SELECT id, citekey, title, authors_json, year, venue, doi, url, abstract, tags_json,
-                       library_path, pdf_sha256, created_at
+                       library_path, pdf_sha256, chunk_status, created_at
                 FROM library_items
                 ORDER BY year DESC NULLS LAST
                 LIMIT ? OFFSET ?
@@ -463,8 +573,18 @@ class LibraryEngine:
                 "tags": json.loads(row["tags_json"]) if row["tags_json"] else [],
                 "library_path": row["library_path"],
                 "pdf_sha256": row["pdf_sha256"],
+                "chunk_status": row["chunk_status"],
                 "created_at": row["created_at"],
             })
+
+        # Check for AI-generated notes in each item's notes/ directory
+        for item in items:
+            if item["library_path"]:
+                notes_dir = self.workspace_root / item["library_path"] / "notes"
+                item["has_notes"] = any(notes_dir.glob("*.md")) if notes_dir.exists() else False
+            else:
+                item["has_notes"] = False
+
         return items, total
 
     # ------------------------------------------------------------------
@@ -688,12 +808,13 @@ JSON output:"""
             model=model_id,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,
-            max_tokens=2000,
+            max_tokens=4000,
             provider_id=provider_name,
         )
 
         content = response.get("content", "")
         # Try to extract JSON from response
+        extracted = {}
         try:
             # Find JSON block
             json_match = re.search(r"\{.*\}", content, re.DOTALL)
@@ -702,7 +823,39 @@ JSON output:"""
             else:
                 extracted = json.loads(content)
         except json.JSONDecodeError as e:
-            raise ValueError(f"LLM returned invalid JSON: {e}\nContent: {content[:500]}")
+            # Try to fix truncated JSON by adding missing closing brackets/quotes
+            fixed_content = content
+            # Balance braces
+            open_braces = fixed_content.count('{') - fixed_content.count('}')
+            fixed_content += '}' * open_braces
+            # Balance brackets
+            open_brackets = fixed_content.count('[') - fixed_content.count(']')
+            fixed_content += ']' * open_brackets
+            # Fix unterminated strings: find last unmatched quote
+            # Simple heuristic: if content ends mid-string, try to close it
+            if fixed_content.count('"') % 2 == 1:
+                # Find last quote position and check if it's an open string
+                last_quote = fixed_content.rfind('"')
+                if last_quote != -1:
+                    # Check if this quote is escaped
+                    escaped = False
+                    i = last_quote - 1
+                    while i >= 0 and fixed_content[i] == '\\':
+                        escaped = not escaped
+                        i -= 1
+                    if not escaped:
+                        fixed_content += '"'
+            try:
+                json_match = re.search(r"\{.*\}", fixed_content, re.DOTALL)
+                if json_match:
+                    extracted = json.loads(json_match.group(0))
+                else:
+                    extracted = json.loads(fixed_content)
+                logger.info(f"Fixed truncated JSON for item {item_id}")
+            except json.JSONDecodeError:
+                logger.warning(f"LLM returned invalid JSON for item {item_id}: {e}\nContent: {content[:500]}")
+                # Try to extract individual fields with regex as last resort
+                extracted = self._extract_metadata_from_text(content, item)
 
         # Normalize fields
         result = {
@@ -722,6 +875,45 @@ JSON output:"""
     # ------------------------------------------------------------------
     # Metadata extraction
     # ------------------------------------------------------------------
+
+    def _extract_metadata_from_text(self, text: str, item: dict) -> dict:
+        """Extract metadata fields from raw text when JSON parsing fails completely."""
+        result = {}
+        # title
+        m = re.search(r'"title"\s*:\s*"([^"]*)"', text)
+        if m:
+            result["title"] = m.group(1)
+        # authors
+        m = re.search(r'"authors"\s*:\s*\[(.*?)\]', text, re.DOTALL)
+        if m:
+            authors_raw = m.group(1)
+            result["authors"] = re.findall(r'"([^"]*)"', authors_raw)
+        # year
+        m = re.search(r'"year"\s*:\s*(\d{4})', text)
+        if m:
+            result["year"] = int(m.group(1))
+        # venue
+        m = re.search(r'"venue"\s*:\s*"([^"]*)"', text)
+        if m:
+            result["venue"] = m.group(1)
+        # doi
+        m = re.search(r'"doi"\s*:\s*"([^"]*)"', text)
+        if m:
+            result["doi"] = m.group(1)
+        # url
+        m = re.search(r'"url"\s*:\s*"([^"]*)"', text)
+        if m:
+            result["url"] = m.group(1)
+        # abstract
+        m = re.search(r'"abstract"\s*:\s*"([^"]*)"', text, re.DOTALL)
+        if m:
+            result["abstract"] = m.group(1).replace('\\n', '\n')
+        # tags
+        m = re.search(r'"tags"\s*:\s*\[(.*?)\]', text, re.DOTALL)
+        if m:
+            tags_raw = m.group(1)
+            result["tags"] = re.findall(r'"([^"]*)"', tags_raw)
+        return result
 
     async def fetch_metadata_by_doi(self, doi: str) -> dict:
         """Fetch metadata from CrossRef API."""
@@ -752,7 +944,9 @@ JSON output:"""
                 }
 
     async def fetch_metadata_by_arxiv(self, arxiv_id: str) -> dict:
-        """Fetch metadata from arXiv API."""
+        """Fetch metadata from arXiv API with retry on rate limit."""
+        import asyncio
+
         # Normalize arxiv_id
         arxiv_id = arxiv_id.strip()
         if arxiv_id.startswith("http"):
@@ -764,14 +958,33 @@ JSON output:"""
                 arxiv_id = m.group(1)
 
         url = f"http://export.arxiv.org/api/query?id_list={arxiv_id}"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
-                if resp.status != 200:
-                    raise ValueError(f"arXiv API returned {resp.status}")
-                text = await resp.text()
-                return self._parse_arxiv_atom(text)
+        headers = {
+            "User-Agent": "OctopusAcademicBot/1.0 (https://github.com/octopus; contact@octopus.dev)",
+        }
 
-    def _parse_arxiv_atom(self, xml_text: str) -> dict:
+        max_retries = 3
+        base_delay = 3.0
+        async with aiohttp.ClientSession(headers=headers) as session:
+            for attempt in range(max_retries):
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+                    if resp.status == 200:
+                        text = await resp.text()
+                        return self._parse_arxiv_atom(text, arxiv_id)
+                    if resp.status == 429:
+                        if attempt < max_retries - 1:
+                            delay = base_delay * (2 ** attempt)
+                            logger.warning(
+                                f"arXiv API rate limited (429), retrying in {delay}s (attempt {attempt + 1}/{max_retries})"
+                            )
+                            await asyncio.sleep(delay)
+                            continue
+                        raise ValueError(
+                            "arXiv API returned 429 (Too Many Requests). Please wait a moment and try again."
+                        )
+                    raise ValueError(f"arXiv API returned {resp.status}")
+            raise ValueError("arXiv API request failed after retries")
+
+    def _parse_arxiv_atom(self, xml_text: str, arxiv_id: str) -> dict:
         import xml.etree.ElementTree as ET
 
         root = ET.fromstring(xml_text)
@@ -814,7 +1027,9 @@ JSON output:"""
         }
 
     async def download_arxiv_pdf(self, arxiv_id: str, dest_path: Path) -> Path:
-        """Download PDF from arXiv."""
+        """Download PDF from arXiv with retry on rate limit."""
+        import asyncio
+
         arxiv_id = arxiv_id.strip()
         if arxiv_id.startswith("http"):
             import re as re_mod
@@ -824,12 +1039,31 @@ JSON output:"""
                 arxiv_id = m.group(1)
 
         url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=120)) as resp:
-                if resp.status != 200:
+        headers = {
+            "User-Agent": "OctopusAcademicBot/1.0 (https://github.com/octopus; contact@octopus.dev)",
+        }
+
+        max_retries = 3
+        base_delay = 3.0
+        async with aiohttp.ClientSession(headers=headers) as session:
+            for attempt in range(max_retries):
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=120)) as resp:
+                    if resp.status == 200:
+                        dest_path.write_bytes(await resp.read())
+                        return dest_path
+                    if resp.status == 429:
+                        if attempt < max_retries - 1:
+                            delay = base_delay * (2 ** attempt)
+                            logger.warning(
+                                f"arXiv PDF download rate limited (429), retrying in {delay}s (attempt {attempt + 1}/{max_retries})"
+                            )
+                            await asyncio.sleep(delay)
+                            continue
+                        raise ValueError(
+                            "arXiv PDF download returned 429 (Too Many Requests). Please wait a moment and try again."
+                        )
                     raise ValueError(f"Failed to download PDF: {resp.status}")
-                dest_path.write_bytes(await resp.read())
-        return dest_path
+            raise ValueError("arXiv PDF download failed after retries")
 
     # ------------------------------------------------------------------
     # Attachments
@@ -950,20 +1184,29 @@ JSON output:"""
         item = self.get_item(item_id)
         item_dir = self._item_dir(item_id)
         if not item_dir:
+            self._set_chunk_status(item_id, "failed")
             raise ValueError(f"Item directory not found for {item_id}")
 
         main_pdf = item_dir / "main.pdf"
         if not main_pdf.exists():
+            self._set_chunk_status(item_id, "failed")
             raise ValueError(f"PDF not found for item {item_id}")
 
         doc = fitz.open(str(main_pdf))
+        total_pages = len(doc)
         chunks: list[dict] = []
         chunk_index = 0
 
-        for page_num in range(len(doc)):
+        # Mark as processing
+        self._set_chunk_status(item_id, f"processing:0/{total_pages}")
+
+        for page_num in range(total_pages):
             page = doc[page_num]
             text = page.get_text()
             if not text.strip():
+                # Still update progress even for empty pages
+                if (page_num + 1) % 5 == 0 or page_num == total_pages - 1:
+                    self._set_chunk_status(item_id, f"processing:{page_num + 1}/{total_pages}")
                 continue
 
             # Simple paragraph-based chunking
@@ -982,6 +1225,10 @@ JSON output:"""
                 })
                 chunk_index += 1
 
+            # Update progress every 5 pages or on the last page
+            if (page_num + 1) % 5 == 0 or page_num == total_pages - 1:
+                self._set_chunk_status(item_id, f"processing:{page_num + 1}/{total_pages}")
+
         doc.close()
 
         # Clear existing chunks for this item
@@ -995,7 +1242,21 @@ JSON output:"""
                 (chunk["item_id"], chunk["chunk_index"], chunk["page"], chunk["section"], chunk["text"], chunk["token_count"]),
             )
         self.db.commit()
+
+        # Mark as completed
+        self._set_chunk_status(item_id, "completed")
         return chunks
+
+    def _set_chunk_status(self, item_id: int, status: str) -> None:
+        """Update the chunk extraction status for a library item."""
+        try:
+            self.db.execute(
+                "UPDATE library_items SET chunk_status = ? WHERE id = ?",
+                (status, item_id),
+            )
+            self.db.commit()
+        except Exception as e:
+            logger.warning(f"Failed to update chunk_status for item {item_id}: {e}")
 
     def get_item_chunks(self, item_id: int, limit: int = 100) -> list[dict]:
         """Get all chunks for a library item."""
@@ -1027,3 +1288,85 @@ JSON output:"""
             del d["authors_json"]
             results.append(d)
         return results
+
+    # ------------------------------------------------------------------
+    # Paper Graph
+    # ------------------------------------------------------------------
+
+    def get_paper_graph(self, collection_id: int = None, center_item_id: int = None, limit: int = 300) -> dict:
+        """Return graph of library notes related to library items.
+
+        Queries the dedicated library_notes / library_note_links tables.
+        Completely separate from the knowledge graph.
+        """
+        nodes: dict[str, dict] = {}
+        edges: list[dict] = []
+        note_paths: set[str] = set()
+
+        # Determine relevant library items
+        where_clause = ""
+        params: list = []
+        if collection_id:
+            where_clause = "WHERE i.id IN (SELECT item_id FROM library_collection_items WHERE collection_id = ?)"
+            params = [collection_id]
+        elif center_item_id:
+            where_clause = "WHERE i.id = ?"
+            params = [center_item_id]
+
+        # Collect note paths linked to these library items
+        sql = f"""
+            SELECT ln.note_path, ln.item_id, i.library_path, i.title as item_title
+            FROM library_item_notes ln
+            JOIN library_items i ON ln.item_id = i.id
+            {where_clause}
+        """
+        note_to_item: dict[str, dict] = {}
+        for r in self.db.execute(sql, params).fetchall():
+            note_paths.add(r["note_path"])
+            note_to_item[r["note_path"]] = {
+                "item_id": r["item_id"],
+                "library_path": r["library_path"],
+                "item_title": r["item_title"],
+            }
+
+        # Also include notes stored under knowledge/library/ paths
+        for row in self.db.execute(
+            "SELECT path FROM library_notes WHERE path LIKE 'knowledge/library/%'"
+        ).fetchall():
+            note_paths.add(row["path"])
+
+        if not note_paths:
+            return {"nodes": [], "edges": []}
+
+        # Query library notes
+        placeholders = ",".join("?" * len(note_paths))
+        query_params = list(note_paths) + [limit]
+        for row in self.db.execute(
+            f"SELECT path, title, type, mtime FROM library_notes WHERE path IN ({placeholders}) LIMIT ?",
+            query_params,
+        ).fetchall():
+            node_data = {
+                "id": row["path"],
+                "label": row["title"],
+                "type": "note",
+                "mtime": row["mtime"],
+            }
+            # Attach item info if this note is linked to a library item
+            if row["path"] in note_to_item:
+                item_info = note_to_item[row["path"]]
+                node_data["item_id"] = item_info["item_id"]
+                node_data["library_path"] = item_info["library_path"]
+                node_data["item_title"] = item_info["item_title"]
+            nodes[row["path"]] = node_data
+
+        # Links between these notes (from library_note_links)
+        if nodes:
+            placeholders = ",".join("?" * len(nodes))
+            node_keys = list(nodes.keys())
+            for row in self.db.execute(
+                f"SELECT from_path, to_path FROM library_note_links WHERE from_path IN ({placeholders}) AND to_path IN ({placeholders})",
+                node_keys + node_keys,
+            ).fetchall():
+                edges.append({"source": row["from_path"], "target": row["to_path"]})
+
+        return {"nodes": list(nodes.values()), "edges": edges}

@@ -25,6 +25,7 @@ import TextNodeForm from '../nodes/TextNode/NodeConfigDrawer.jsx';
 import JSONSerializeNodeForm from '../nodes/JSONSerializeNode/NodeConfigDrawer.jsx';
 import JSONDeserializeNodeForm from '../nodes/JSONDeserializeNode/NodeConfigDrawer.jsx';
 import DatabaseNodeForm from '../nodes/DatabaseNode/NodeConfigDrawer.jsx';
+import ReadFilesNodeForm from '../nodes/ReadFilesNode/NodeConfigDrawer.jsx';
 import ExpressionEditorField from '../common/ExpressionEditorField/index.jsx';
 
 const NodeConfigDrawer = ({ isOpen, onClose, onSaveWorkflow }) => {
@@ -243,6 +244,8 @@ const NodeConfigDrawer = ({ isOpen, onClose, onSaveWorkflow }) => {
         return <JSONDeserializeNodeForm {...formProps} />;
       case 'database':
         return <DatabaseNodeForm {...formProps} />;
+      case 'readFiles':
+        return <ReadFilesNodeForm {...formProps} />;
       default:
         return null;
     }

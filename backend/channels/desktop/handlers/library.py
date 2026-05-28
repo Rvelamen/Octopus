@@ -44,6 +44,7 @@ class LibraryHandler(MessageHandler):
             MessageType.LIBRARY_IMPORT_ARXIV: self._handle_import_arxiv,
             MessageType.LIBRARY_SEARCH_CHUNKS: self._handle_search_chunks,
             MessageType.LIBRARY_AI_EXTRACT_META: self._handle_ai_extract_meta,
+            MessageType.LIBRARY_GRAPH: self._handle_graph,
         }
 
         handler = handler_map.get(message.type)
@@ -118,27 +119,21 @@ class LibraryHandler(MessageHandler):
             await self._send_error(websocket, message.request_id, "Access denied: path outside workspace")
             return
 
-        # Auto-fetch arXiv metadata if filename contains arXiv ID and no metadata provided
-        if not metadata.get("title"):
-            arxiv_id = self.engine._try_parse_arxiv_from_filename(pdf_path.name)
-            if arxiv_id:
-                try:
-                    arxiv_meta = await self.engine.fetch_metadata_by_arxiv(arxiv_id)
-                    metadata = {**arxiv_meta, **metadata}
-                except Exception as e:
-                    logger.warning(f"Failed to auto-fetch arXiv metadata: {e}")
-
-        item = self.engine.create_item(
-            pdf_path=pdf_path,
-            metadata=metadata,
-            collection_ids=collection_ids,
-        )
-        # Clean up temp file after successful import
         try:
-            if pdf_path.exists():
-                pdf_path.unlink()
-        except Exception:
-            pass
+            item = self.engine.create_item(
+                pdf_path=pdf_path,
+                metadata=metadata,
+                collection_ids=collection_ids,
+            )
+        except Exception as e:
+            logger.error(f"Failed to create library item: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to create item: {e}")
+            return
+
+        # Process PDF in background: copy, hash, extract title, chunks
+        loop = asyncio.get_running_loop()
+        loop.run_in_executor(None, self.engine._process_pdf_background, item["id"], pdf_path)
+
         await self._send_success(websocket, message, MessageType.LIBRARY_CREATE_RESULT, {"item": item})
 
     async def _handle_update_meta(self, websocket: WebSocket, message: WSMessage) -> None:
@@ -151,12 +146,17 @@ class LibraryHandler(MessageHandler):
         await self._send_success(websocket, message, MessageType.LIBRARY_UPDATE_META_RESULT, {"item": item})
 
     async def _handle_delete(self, websocket: WebSocket, message: WSMessage) -> None:
+        item_ids = message.data.get("item_ids")
         item_id = message.data.get("item_id")
-        if not item_id:
-            await self._send_error(websocket, message.request_id, "item_id is required")
-            return
-        self.engine.delete_item(item_id)
-        await self._send_success(websocket, message, MessageType.LIBRARY_DELETE_RESULT, {"success": True})
+
+        if item_ids and isinstance(item_ids, list):
+            result = self.engine.delete_items(item_ids)
+            await self._send_success(websocket, message, MessageType.LIBRARY_DELETE_RESULT, {"success": True, **result})
+        elif item_id:
+            self.engine.delete_item(item_id)
+            await self._send_success(websocket, message, MessageType.LIBRARY_DELETE_RESULT, {"success": True})
+        else:
+            await self._send_error(websocket, message.request_id, "item_id or item_ids is required")
 
     async def _handle_search(self, websocket: WebSocket, message: WSMessage) -> None:
         query = message.data.get("query", "")
@@ -334,24 +334,40 @@ class LibraryHandler(MessageHandler):
             return
 
         try:
-            metadata = await self.engine.fetch_metadata_by_arxiv(arxiv_id)
+            metadata = await asyncio.wait_for(
+                self.engine.fetch_metadata_by_arxiv(arxiv_id),
+                timeout=10.0,
+            )
+        except asyncio.TimeoutError:
+            await self._send_error(websocket, message.request_id, "Fetching arXiv metadata timed out. Please try again.")
+            return
         except Exception as e:
             await self._send_error(websocket, message.request_id, f"Failed to fetch arXiv metadata: {e}")
             return
 
-        # Download PDF
-        pdf_path = self.engine.library_dir / f"_tmp_{arxiv_id}.pdf"
+        # Normalize arxiv_id for safe file path (metadata already parsed the clean ID)
+        clean_arxiv_id = metadata.get("arxiv_id") or arxiv_id
+        pdf_path = self.engine.library_dir / f"_tmp_{clean_arxiv_id}.pdf"
         try:
-            await self.engine.download_arxiv_pdf(arxiv_id, pdf_path)
+            await asyncio.wait_for(
+                self.engine.download_arxiv_pdf(clean_arxiv_id, pdf_path),
+                timeout=60.0,
+            )
             item = self.engine.create_item(
                 pdf_path=pdf_path,
                 metadata=metadata,
                 collection_ids=collection_ids,
             )
-            # Clean up temp file if still exists
+
+            # Process PDF in background: copy, hash, extract title, chunks
+            loop = asyncio.get_running_loop()
+            loop.run_in_executor(None, self.engine._process_pdf_background, item["id"], pdf_path)
+
+            await self._send_success(websocket, message, MessageType.LIBRARY_IMPORT_ARXIV_RESULT, {"item": item})
+        except asyncio.TimeoutError:
             if pdf_path.exists():
                 pdf_path.unlink()
-            await self._send_success(websocket, message, MessageType.LIBRARY_IMPORT_ARXIV_RESULT, {"item": item})
+            await self._send_error(websocket, message.request_id, "Downloading arXiv PDF timed out. Please try again.")
         except Exception as e:
             if pdf_path.exists():
                 pdf_path.unlink()
@@ -371,6 +387,21 @@ class LibraryHandler(MessageHandler):
             })
         except Exception as e:
             await self._send_error(websocket, message.request_id, f"Failed to search chunks: {e}")
+
+    async def _handle_graph(self, websocket: WebSocket, message: WSMessage) -> None:
+        collection_id = message.data.get("collection_id")
+        center_item_id = message.data.get("center_item_id")
+        limit = message.data.get("limit", 300)
+        try:
+            graph = self.engine.get_paper_graph(
+                collection_id=collection_id,
+                center_item_id=center_item_id,
+                limit=limit,
+            )
+            await self._send_success(websocket, message, MessageType.LIBRARY_GRAPH_RESULT, graph)
+        except Exception as e:
+            logger.error(f"Failed to get library graph: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to get library graph: {e}")
 
     async def _handle_ai_extract_meta(self, websocket: WebSocket, message: WSMessage) -> None:
         item_id = message.data.get("item_id")

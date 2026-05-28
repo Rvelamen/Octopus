@@ -29,6 +29,7 @@ from backend.extensions.desktop_handlers import (
 
 # Import chat handlers
 from backend.channels.desktop.handlers.chat import ChatHandler
+from backend.channels.desktop.handlers.pdf_chat import PdfChatHandler
 
 # Import config handlers
 from backend.channels.desktop.handlers.config import (
@@ -86,7 +87,8 @@ from backend.channels.desktop.handlers.agent import (
 # Import subagent handlers
 from backend.channels.desktop.handlers.subagent import (
     SubagentGetAvailableToolsHandler, SubagentGetAvailableExtensionsHandler,
-    SubagentGetProviderModelsHandler
+    SubagentGetProviderModelsHandler, SubagentListHandler, SubagentSaveHandler,
+    SubagentDeleteHandler
 )
 
 # Import token handlers
@@ -136,6 +138,7 @@ class HandlerRegistry:
 
         self.handlers: dict[MessageType, MessageHandler] = {
             MessageType.CHAT: ChatHandler(bus, pending_responses),
+            MessageType.PDF_CHAT: PdfChatHandler(bus, pending_responses),
             MessageType.GET_CONFIG: GetConfigHandler(bus, self.db),
             MessageType.SAVE_CONFIG: SaveConfigHandler(bus),
             MessageType.PING: PingHandler(bus),
@@ -266,6 +269,9 @@ class HandlerRegistry:
             MessageType.SUBAGENT_GET_AVAILABLE_TOOLS: SubagentGetAvailableToolsHandler(bus, db),
             MessageType.SUBAGENT_GET_AVAILABLE_EXTENSIONS: SubagentGetAvailableExtensionsHandler(bus, db),
             MessageType.SUBAGENT_GET_PROVIDER_MODELS: SubagentGetProviderModelsHandler(bus, db),
+            MessageType.SUBAGENT_LIST: SubagentListHandler(bus, db),
+            MessageType.SUBAGENT_SAVE: SubagentSaveHandler(bus, db),
+            MessageType.SUBAGENT_DELETE: SubagentDeleteHandler(bus, db),
         })
 
         # Register Image handlers
@@ -349,6 +355,7 @@ class HandlerRegistry:
             MessageType.LIBRARY_IMPORT_ARXIV: library_handler,
             MessageType.LIBRARY_SEARCH_CHUNKS: library_handler,
             MessageType.LIBRARY_AI_EXTRACT_META: library_handler,
+            MessageType.LIBRARY_GRAPH: library_handler,
         })
 
         # Register Workflow handlers

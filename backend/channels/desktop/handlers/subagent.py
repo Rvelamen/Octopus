@@ -320,3 +320,170 @@ class SubagentGetProviderModelsHandler(MessageHandler):
             request_id=request_id,
             data={"error": error}
         ))
+
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Subagent CRUD handlers (added for PDF Chat Agent configuration)
+# ═══════════════════════════════════════════════════════════════════
+
+class SubagentListHandler(MessageHandler):
+    """List all subagents."""
+
+    def __init__(self, bus, db=None):
+        super().__init__(bus)
+        from backend.data.database import Database
+        self.db = db or Database()
+        from backend.data.subagent_store import SubagentRepository
+        self.repo = SubagentRepository(self.db)
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        try:
+            records = self.repo.get_all_subagents()
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.CHAT_RESPONSE,
+                request_id=message.request_id,
+                data={"subagents": [
+                    {
+                        "id": r.id,
+                        "name": r.name,
+                        "description": r.description,
+                        "provider_id": r.provider_id,
+                        "model_id": r.model_id,
+                        "tools": r.tools,
+                        "extensions": r.extensions,
+                        "max_iterations": r.max_iterations,
+                        "temperature": r.temperature,
+                        "system_prompt": r.system_prompt,
+                        "enabled": r.enabled,
+                        "created_at": r.created_at.isoformat() if r.created_at else None,
+                        "updated_at": r.updated_at.isoformat() if r.updated_at else None,
+                    }
+                    for r in records
+                ]}
+            ))
+        except Exception as e:
+            logger.error(f"Failed to list subagents: {e}")
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.ERROR,
+                request_id=message.request_id,
+                data={"error": str(e)},
+            ))
+
+
+class SubagentSaveHandler(MessageHandler):
+    """Create or update a subagent."""
+
+    def __init__(self, bus, db=None):
+        super().__init__(bus)
+        from backend.data.database import Database
+        self.db = db or Database()
+        from backend.data.subagent_store import SubagentRepository
+        self.repo = SubagentRepository(self.db)
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        try:
+            data = message.data
+            subagent_id = data.get("id")
+            name = data.get("name", "")
+            description = data.get("description", "")
+            provider_id = data.get("provider_id")
+            model_id = data.get("model_id")
+            tools = data.get("tools", [])
+            extensions = data.get("extensions", [])
+            max_iterations = data.get("max_iterations", 30)
+            temperature = data.get("temperature", 0.7)
+            system_prompt = data.get("system_prompt", "")
+            enabled = data.get("enabled", True)
+
+            if subagent_id:
+                self.repo.update_subagent(
+                    subagent_id=subagent_id,
+                    name=name,
+                    description=description,
+                    provider_id=provider_id,
+                    model_id=model_id,
+                    tools=tools,
+                    extensions=extensions,
+                    max_iterations=max_iterations,
+                    temperature=temperature,
+                    system_prompt=system_prompt,
+                    enabled=enabled,
+                )
+                record = self.repo.get_subagent_by_id(subagent_id)
+            else:
+                record = self.repo.create_subagent(
+                    name=name,
+                    description=description,
+                    provider_id=provider_id,
+                    model_id=model_id,
+                    tools=tools,
+                    extensions=extensions,
+                    max_iterations=max_iterations,
+                    temperature=temperature,
+                    system_prompt=system_prompt,
+                    enabled=enabled,
+                )
+
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.CHAT_RESPONSE,
+                request_id=message.request_id,
+                data={"subagent": {
+                    "id": record.id,
+                    "name": record.name,
+                    "description": record.description,
+                    "provider_id": record.provider_id,
+                    "model_id": record.model_id,
+                    "tools": record.tools,
+                    "extensions": record.extensions,
+                    "max_iterations": record.max_iterations,
+                    "temperature": record.temperature,
+                    "system_prompt": record.system_prompt,
+                    "enabled": record.enabled,
+                    "created_at": record.created_at.isoformat() if record.created_at else None,
+                    "updated_at": record.updated_at.isoformat() if record.updated_at else None,
+                }}
+            ))
+        except Exception as e:
+            logger.error(f"Failed to save subagent: {e}")
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.ERROR,
+                request_id=message.request_id,
+                data={"error": str(e)},
+            ))
+
+
+class SubagentDeleteHandler(MessageHandler):
+    """Delete a subagent."""
+
+    def __init__(self, bus, db=None):
+        super().__init__(bus)
+        from backend.data.database import Database
+        self.db = db or Database()
+        from backend.data.subagent_store import SubagentRepository
+        self.repo = SubagentRepository(self.db)
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        try:
+            subagent_id = message.data.get("id")
+            if subagent_id:
+                success = self.repo.delete_subagent(subagent_id)
+                if not success:
+                    await self.send_response(websocket, WSMessage(
+                        type=MessageType.ERROR,
+                        request_id=message.request_id,
+                        data={"error": "Built-in subagents cannot be deleted"},
+                    ))
+                    return
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.CHAT_RESPONSE,
+                request_id=message.request_id,
+                data={"success": True},
+            ))
+        except Exception as e:
+            logger.error(f"Failed to delete subagent: {e}")
+            await self.send_response(websocket, WSMessage(
+                type=MessageType.ERROR,
+                request_id=message.request_id,
+                data={"error": str(e)},
+            ))

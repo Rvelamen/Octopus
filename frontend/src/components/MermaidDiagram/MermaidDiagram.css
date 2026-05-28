@@ -54,14 +54,132 @@
 .mermaid-diagram-container {
   padding: 1em;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 60px;
+  position: relative;
 }
 
 .mermaid-diagram-container svg {
   max-width: 100%;
   height: auto;
+}
+
+.mermaid-diagram-zoom-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(74, 158, 255, 0.1);
+  color: #4a9eff;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.mermaid-diagram-container:hover .mermaid-diagram-zoom-hint {
+  opacity: 1;
+}
+
+/* Fullscreen overlay */
+.mermaid-fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 40px;
+  animation: fadeIn 0.2s ease-out;
+  user-select: none;
+}
+
+.mermaid-fullscreen-close {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  cursor: pointer;
+  z-index: 10000;
+  transition: all 0.15s ease;
+}
+
+.mermaid-fullscreen-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Zoom toolbar */
+.mermaid-zoom-toolbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(30, 30, 30, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  z-index: 10000;
+  backdrop-filter: blur(8px);
+}
+
+.mermaid-zoom-toolbar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #b0b0b0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mermaid-zoom-toolbar button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.mermaid-zoom-level {
+  min-width: 48px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  user-select: none;
+}
+
+.mermaid-fullscreen-content {
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: visible;
+  transition: transform 0.05s ease-out;
+}
+
+.mermaid-fullscreen-content svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
 
 /* Code view */

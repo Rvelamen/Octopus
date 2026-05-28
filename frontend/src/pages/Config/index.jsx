@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Brain, Bot, Radio, Plus, Image, Search, Settings, Trash2, Edit, Check, X, ChevronDown, ChevronRight, RefreshCw, QrCode, Clock, CheckCircle, AlertCircle, Volume2, Layers, Save, Send, MessageCircle, Mail, Hash, Gamepad2, Bell } from 'lucide-react';
+import { Brain, Bot, Radio, Plus, Image, Search, Settings, Trash2, Edit, Check, X, ChevronDown, ChevronRight, RefreshCw, QrCode, Clock, CheckCircle, AlertCircle, Volume2, Layers, Save, Send, MessageCircle, Mail, Hash, Gamepad2, Bell, BookOpen, MessageSquare } from 'lucide-react';
 import { InputField, PasswordField, SelectField, SwitchField } from '@components/forms';
 import { ConfigCard, DynamicItemCard, AddItemDialog } from '@components/config';
 import WindowDots from '@components/layout/WindowDots';
 import MultimodalPanel from '@components/MultimodalPanel';
 import { ProviderSetting } from './components/ProviderSetting';
+import PdfChatAgentConfig from './components/PdfChatAgentConfig';
 import './ConfigPanel.css';
 
 const CONFIG_TABS = [
   { key: 'providers', label: 'PROVIDERS', Icon: Brain },
   { key: 'agents', label: 'AGENT', Icon: Bot },
+  { key: 'library', label: 'LIBRARY', Icon: BookOpen },
+  { key: 'pdfchat', label: 'PDF CHAT', Icon: MessageSquare },
   { key: 'channels', label: 'CHANNELS', Icon: Radio },
   { key: 'multimodal', label: 'MULTIMODAL', Icon: Layers }
 ];
@@ -160,6 +163,14 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         break;
       case 'agents':
         loadAgentDefaults();
+        loadEnabledModels();
+        loadAvailableTools();
+        break;
+      case 'library':
+        loadAgentDefaults();
+        loadEnabledModels();
+        break;
+      case 'pdfchat':
         loadEnabledModels();
         loadAvailableTools();
         break;
@@ -355,11 +366,6 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
       ? `${agentDefaults.defaultProviderId}/${agentDefaults.defaultModelName}`
       : '';
 
-    // Current library extract model value
-    const currentLibExtractValue = agentDefaults.libraryExtractProviderId && agentDefaults.libraryExtractModelName
-      ? `${agentDefaults.libraryExtractProviderId}/${agentDefaults.libraryExtractModelName}`
-      : '';
-
     return (
       <ConfigCard title="AGENT DEFAULTS" icon="[BOT]">
         {/* Model Selection - Shows all enabled models from all enabled providers */}
@@ -375,40 +381,6 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
             No enabled models found. Please enable providers and models in the PROVIDERS tab.
           </div>
         )}
-
-        {/* Library Extract Model Selection */}
-        <SelectField
-          label="Library AI Extract Model"
-          value={currentLibExtractValue}
-          onChange={handleLibraryExtractModelChange}
-          options={enabledModels}
-          disabled={isLoadingModels || enabledModels.length === 0}
-        />
-        <div className="form-hint" style={{ color: 'var(--text-muted)', marginTop: '-10px', marginBottom: '10px', fontSize: '12px' }}>
-          Model used for AI metadata extraction from PDFs in Library. Falls back to Default Model if not set.
-        </div>
-
-        {/* Library Extract Language Selection */}
-        <SelectField
-          label="Library AI Extract Language"
-          value={agentDefaults.libraryExtractLanguage || 'English'}
-          onChange={handleLibraryExtractLanguageChange}
-          options={[
-            { value: 'English', label: 'English' },
-            { value: 'Chinese', label: '中文 (Chinese)' },
-            { value: 'Japanese', label: '日本語 (Japanese)' },
-            { value: 'Korean', label: '한국어 (Korean)' },
-            { value: 'German', label: 'Deutsch (German)' },
-            { value: 'French', label: 'Français (French)' },
-            { value: 'Spanish', label: 'Español (Spanish)' },
-            { value: 'Portuguese', label: 'Português (Portuguese)' },
-            { value: 'Russian', label: 'Русский (Russian)' },
-            { value: 'Italian', label: 'Italiano (Italian)' },
-          ]}
-        />
-        <div className="form-hint" style={{ color: 'var(--text-muted)', marginTop: '-10px', marginBottom: '10px', fontSize: '12px' }}>
-          Language for AI-extracted abstract and metadata. Author names are kept in their original form.
-        </div>
 
         <InputField
           label="Workspace Path"
@@ -509,6 +481,68 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
       </ConfigCard>
     );
   };
+
+  const renderLibrarySettings = () => {
+    if (isLoadingAgentDefaults || !agentDefaults) {
+      return (
+        <ConfigCard title="LIBRARY SETTINGS" icon="[LIBR]">
+          <div className="empty-config">
+            <span>Loading...</span>
+          </div>
+        </ConfigCard>
+      );
+    }
+
+    const currentLibExtractValue = agentDefaults.libraryExtractProviderId && agentDefaults.libraryExtractModelName
+      ? `${agentDefaults.libraryExtractProviderId}/${agentDefaults.libraryExtractModelName}`
+      : '';
+
+    return (
+      <ConfigCard title="LIBRARY SETTINGS" icon="[LIBR]">
+        {/* Library Extract Model Selection */}
+        <SelectField
+          label="Library AI Extract Model"
+          value={currentLibExtractValue}
+          onChange={handleLibraryExtractModelChange}
+          options={enabledModels}
+          disabled={isLoadingModels || enabledModels.length === 0}
+        />
+        <div className="form-hint" style={{ color: 'var(--text-muted)', marginTop: '-10px', marginBottom: '10px', fontSize: '12px' }}>
+          Model used for AI metadata extraction from PDFs in Library. Falls back to Default Model if not set.
+        </div>
+
+        {/* Library Extract Language Selection */}
+        <SelectField
+          label="Library AI Extract Language"
+          value={agentDefaults.libraryExtractLanguage || 'English'}
+          onChange={handleLibraryExtractLanguageChange}
+          options={[
+            { value: 'English', label: 'English' },
+            { value: 'Chinese', label: '中文 (Chinese)' },
+            { value: 'Japanese', label: '日本語 (Japanese)' },
+            { value: 'Korean', label: '한국어 (Korean)' },
+            { value: 'German', label: 'Deutsch (German)' },
+            { value: 'French', label: 'Français (French)' },
+            { value: 'Spanish', label: 'Español (Spanish)' },
+            { value: 'Portuguese', label: 'Português (Portuguese)' },
+            { value: 'Russian', label: 'Русский (Russian)' },
+            { value: 'Italian', label: 'Italiano (Italian)' },
+          ]}
+        />
+        <div className="form-hint" style={{ color: 'var(--text-muted)', marginTop: '-10px', marginBottom: '10px', fontSize: '12px' }}>
+          Language for AI-extracted abstract and metadata. Author names are kept in their original form.
+        </div>
+      </ConfigCard>
+    );
+  };
+
+  const renderPdfChatSettings = () => (
+    <PdfChatAgentConfig
+      sendWSMessage={sendWSMessage}
+      enabledModels={enabledModels}
+      availableTools={availableTools}
+    />
+  );
 
   const renderFeishuConfig = (channel) => {
     const isEnabled = channel.enabled === true;
@@ -1521,6 +1555,8 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
     switch (configTab) {
       case 'providers': return <ProviderSetting sendWSMessage={sendWSMessage} />;
       case 'agents': return renderAgentDefaults();
+      case 'library': return renderLibrarySettings();
+      case 'pdfchat': return renderPdfChatSettings();
       case 'channels': return renderChannels();
       case 'multimodal': return <MultimodalPanel sendWSMessage={sendWSMessage} />;
       default: return <ProviderSetting sendWSMessage={sendWSMessage} />;

@@ -78,16 +78,21 @@ DEFAULT_AVAILABLE_TOOLS = [
     ("kb_read_note", "KB Read Note", "Read the full content of a knowledge base note", "knowledge", 12),
     ("kb_write_note", "KB Write Note", "Write or overwrite a knowledge base note with automatic indexing", "knowledge", 13),
     ("kb_list_links", "KB List Links", "List bidirectional links for a given note path", "knowledge", 14),
-    ("memory_write", "Memory Write", "Add, replace, or remove curated memory entries", "memory", 15),
-    ("memory_search", "Memory Search", "Search observations and memory by keyword", "memory", 16),
-    ("memory_read", "Memory Read", "Read curated memory or user profile", "memory", 17),
-    ("memory_timeline", "Memory Timeline", "Get memory timeline for a session instance", "memory", 18),
-    ("browser", "Browser", "Automate browser navigation, interaction, and screenshots", "browser", 19),
-    ("web_fetch", "Web Fetch", "Fetch web page content via HTTP", "web", 20),
-    ("image_understand", "Image Understand", "Analyze and describe images", "image", 21),
-    ("image_generate", "Image Generate", "Generate images from text descriptions", "image", 22),
-    ("spawn", "Spawn", "Spawn subagents for background tasks", "agent", 23),
-    ("cron", "Cron", "Schedule recurring tasks", "scheduler", 24),
+    ("library_search", "Library Search", "Search the library for papers and AI notes by title or content", "library", 15),
+    ("library_timeline", "Library Timeline", "Preview a library note's context before reading", "library", 16),
+    ("library_read_note", "Library Read Note", "Read the full content of a library note", "library", 17),
+    ("library_list_links", "Library List Links", "List bidirectional links for a given library note path", "library", 18),
+    ("library_write_note", "Library Write Note", "Write or overwrite a library note with automatic indexing", "library", 19),
+    ("memory_write", "Memory Write", "Add, replace, or remove curated memory entries", "memory", 19),
+    ("memory_search", "Memory Search", "Search observations and memory by keyword", "memory", 20),
+    ("memory_read", "Memory Read", "Read curated memory or user profile", "memory", 21),
+    ("memory_timeline", "Memory Timeline", "Get memory timeline for a session instance", "memory", 22),
+    ("browser", "Browser", "Automate browser navigation, interaction, and screenshots", "browser", 23),
+    ("web_fetch", "Web Fetch", "Fetch web page content via HTTP", "web", 24),
+    ("image_understand", "Image Understand", "Analyze and describe images", "image", 25),
+    ("image_generate", "Image Generate", "Generate images from text descriptions", "image", 26),
+    ("spawn", "Spawn", "Spawn subagents for background tasks", "agent", 27),
+    ("cron", "Cron", "Schedule recurring tasks", "scheduler", 28),
 ]
 
 
@@ -111,6 +116,69 @@ def seed_available_tools(db) -> None:
         logger.warning(f"Failed to seed available_tools: {e}")
 
 
+LIBRARY_DISTILLER_SYSTEM_PROMPT = """\
+You are a **library paper distillation expert**. Your job is to read academic papers \
+(PDF, DOCX, TXT) and extract key information into clean, well-structured Markdown notes \
+that live in the Library knowledge base.
+
+## Available Tools
+- `read` — Read a document (supports PDF, DOCX, TXT, MD)
+- `library_search` — **Full-text search** for related papers and notes in the library
+- `library_timeline` — Preview a library note's context (links, tags, related notes) before reading
+- `library_read_note` — Read an existing library note for context
+- `library_list_links` — Explore library knowledge-graph connections
+- `library_write_note` — Save extracted notes as Markdown and auto-index to library graph **(ALWAYS call this!)**
+
+## CRITICAL: You MUST call the `write` tool
+After extracting and formatting the content, you **MUST** call the `write` tool to save the Markdown note to the specified output path.
+- Do NOT just return the content in your final response
+- You MUST explicitly call `write(path=output_path, content=markdown_content)`
+- The task is NOT complete until you call `write`
+
+## Output Format
+Save notes with this structure:
+
+```markdown
+---
+source: <original document path>
+extracted_at: <ISO timestamp>
+extraction_prompt: <user request>
+---
+
+# <Title>
+
+## Summary
+<Key points, 3-5 sentences>
+
+## Key Findings
+- Finding 1
+- Finding 2
+
+## Methods / Evidence
+<If applicable>
+
+## Conclusions
+<If applicable>
+
+## Related Notes
+- [[Related Note 1]]
+- [[Related Note 2]]
+```
+
+## Rules
+1. Be concise but complete — cover all relevant aspects
+2. Use Markdown headings, lists, and tables
+3. **Use `library_search` at least 2 times with different keywords before writing**
+4. For the most relevant results, use `library_read_note` to verify the exact title before writing `[[...]]` links
+5. **Add at least 2-5 wiki-style links `[[Exact Note Title]]` to existing related library notes**
+6. Add 2-4 relevant #tags in the content to improve discoverability
+7. If information is missing from the document, state it explicitly
+8. Focus on the user's extraction request; don't add unrelated content
+9. **ALWAYS call the `write` tool — never skip this step!**
+10. If the document is long, prioritise the most important information
+"""
+
+
 def seed_builtin_subagents(subagent_repo) -> None:
     """Ensure built-in subagent configurations exist in the database.
 
@@ -131,6 +199,21 @@ def seed_builtin_subagents(subagent_repo) -> None:
             "temperature": 0.3,
             "system_prompt": DISTILLER_SYSTEM_PROMPT,
             "enabled": True,
+            "is_builtin": True,
+        },
+        {
+            "name": "library-distiller",
+            "description": (
+                "A library paper distillation expert that reads academic papers "
+                "and generates structured summary notes with library knowledge-graph connections."
+            ),
+            "tools": ["read", "library_search", "library_timeline", "library_read_note", "library_list_links", "library_write_note"],
+            "extensions": [],
+            "max_iterations": 30,
+            "temperature": 0.3,
+            "system_prompt": LIBRARY_DISTILLER_SYSTEM_PROMPT,
+            "enabled": True,
+            "is_builtin": True,
         },
     ]
 

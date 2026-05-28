@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, X, FileText, StickyNote, GitGraph, Library } from 'lucide-react';
-import { LibraryTab } from './library';
+import { Sparkles, X, FileText, StickyNote, GitGraph } from 'lucide-react';
 import { message, Modal } from 'antd';
 import WindowDots from '@components/layout/WindowDots';
 import TaskIndicator from '@components/TaskIndicator';
@@ -18,7 +17,6 @@ import ImportObsidianModal from './components/import/ImportObsidianModal';
 import CreateVaultModal from './components/vault/CreateVaultModal';
 
 const TABS = [
-  { key: 'library', label: 'LIBRARY', icon: Library },
   { key: 'documents', label: 'DOCUMENTS', icon: FileText },
   { key: 'notes', label: 'NOTES', icon: StickyNote },
   { key: 'graph', label: 'GRAPH', icon: GitGraph },
@@ -217,8 +215,13 @@ export default function KnowledgePanel({ sendWSMessage }) {
       }
 
       // 如果当前已有预览文件，先压入历史栈
+      // push history check
       if (previewDrawerOpen && previewFile) {
-        setPreviewHistory((prev) => [...prev, { file: previewFile, content: previewContent }]);
+        setPreviewHistory((prev) => {
+          const next = [...prev, { file: previewFile, content: previewContent }];
+          // history pushed
+          return next;
+        });
       }
 
       // web_clip 也使用 PreviewDrawer 内部 webview 预览，不再直接弹外部浏览器
@@ -292,14 +295,17 @@ export default function KnowledgePanel({ sendWSMessage }) {
 
   // 预览抽屉返回上一篇
   const handlePreviewBack = useCallback(() => {
-    setPreviewHistory((prev) => {
-      if (prev.length === 0) return prev;
-      const last = prev[prev.length - 1];
-      setPreviewFile(last.file);
-      setPreviewContent(last.content);
-      return prev.slice(0, -1);
-    });
-  }, []);
+    // handlePreviewBack called
+    if (previewHistory.length === 0) {
+      // history empty, returning
+      return;
+    }
+    const last = previewHistory[previewHistory.length - 1];
+    console.log('[handlePreviewBack] popping last:', last);
+    setPreviewFile(last.file);
+    setPreviewContent(last.content);
+    setPreviewHistory((prev) => prev.slice(0, -1));
+  }, [previewHistory]);
 
   // 创建文件
   const handleCreateFile = useCallback(
@@ -713,7 +719,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
   useEffect(() => {
     const handler = (e) => {
       const { path, name, is_directory } = e.detail || {};
-      console.log('[KnowledgePanel] knowledge-open-file:', path);
+      // knowledge-open-file event
       if (!path) return;
       handleOpenFile({ path, name: name || path.split('/').pop(), is_directory: !!is_directory });
     };
@@ -1104,9 +1110,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
-        {activeTab === 'library' ? (
-          <LibraryTab sendWSMessage={sendWSMessage} />
-        ) : activeTab === 'documents' ? (
+        {activeTab === 'documents' ? (
           <div style={{ flex: 1, display: 'flex', minWidth: 0, overflow: 'hidden' }}>
             <DocumentGridView
               items={treeItems[currentDocPath] || []}

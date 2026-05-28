@@ -226,6 +226,10 @@ app.include_router(knowledge_clip.router)
 from backend.api.routes import file_preview
 app.include_router(file_preview.router)
 
+# Register library upload API (HTTP multipart for large PDFs)
+from backend.api.routes import library_upload
+app.include_router(library_upload.router)
+
 # CORS configuration - restricted to known origins for security
 # Desktop app uses file:// protocol, development uses localhost
 ALLOWED_ORIGINS = [
