@@ -61,6 +61,7 @@ class WorkflowDesignerAgent:
         workflow_id: str,
         user_content: str,
         selected_nodes: list[dict] | None = None,
+        agent_config_id: int | None = None,
         on_token: Callable[[str], Any] | None = None,
         on_tool_start: Callable[[dict], Any] | None = None,
         on_tool_result: Callable[[dict], Any] | None = None,
@@ -91,7 +92,7 @@ class WorkflowDesignerAgent:
         )
 
         # Load agent config (default to "workflow-designer" role)
-        agent_config = self._load_agent_config()
+        agent_config = self._load_agent_config(agent_config_id)
 
         # Get provider, model, tools
         provider, model, provider_type, max_tokens, temperature = self._get_provider_for_config(agent_config)
@@ -260,8 +261,26 @@ class WorkflowDesignerAgent:
 
     # ── Configuration ──
 
-    def _load_agent_config(self) -> SubAgentConfig | None:
-        """Load agent config. Try 'workflow-designer' role from DB, fallback to default."""
+    def _load_agent_config(self, agent_config_id: int | None = None) -> SubAgentConfig | None:
+        """Load agent config. Fallback to default if not found."""
+        if agent_config_id:
+            from backend.data.subagent_store import SubagentRepository
+            repo = SubagentRepository(self.db)
+            record = repo.get_subagent_by_id(agent_config_id)
+            if record:
+                return SubAgentConfig(
+                    name=record.name,
+                    description=record.description,
+                    provider_id=record.provider_id,
+                    model_id=record.model_id,
+                    tools=record.tools,
+                    extensions=record.extensions,
+                    max_iterations=record.max_iterations,
+                    temperature=record.temperature,
+                    system_prompt=record.system_prompt,
+                )
+
+        # Try to load "workflow-designer" role from database
         config = self._agent_loader.get("workflow-designer", reload=False)
         if config:
             return config
@@ -274,7 +293,7 @@ class WorkflowDesignerAgent:
                 "add_node", "connect_nodes", "set_variable", "remove_node", "update_node",
                 "auto_layout", "validate_workflow", "run_test", "get_variable_context",
                 "get_node_io", "get_nodes", "list_database_tables",
-            "add_input_variable", "add_output_variable", "remove_variable",
+                "add_input_variable", "add_output_variable", "remove_variable",
             ],
             max_iterations=15,
             temperature=0.3,

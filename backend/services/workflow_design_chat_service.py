@@ -16,6 +16,7 @@ class WorkflowDesignSession:
     id: str
     workflow_id: str
     user_id: str | None
+    agent_config_id: int | None
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -72,15 +73,15 @@ class WorkflowDesignChatService:
             ).fetchone()
             return self._row_to_session(row) if row else None
 
-    def create_session(self, workflow_id: str, user_id: str | None = None) -> WorkflowDesignSession:
+    def create_session(self, workflow_id: str, user_id: str | None = None, agent_config_id: int | None = None) -> WorkflowDesignSession:
         session_id = str(uuid.uuid4())
         with self.db._get_connection() as conn:
             conn.execute(
                 """
-                INSERT INTO workflow_design_sessions (id, workflow_id, user_id, created_at, updated_at)
-                VALUES (?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+                INSERT INTO workflow_design_sessions (id, workflow_id, user_id, agent_config_id, created_at, updated_at)
+                VALUES (?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
                 """,
-                (session_id, workflow_id, user_id),
+                (session_id, workflow_id, user_id, agent_config_id),
             )
             row = conn.execute(
                 "SELECT * FROM workflow_design_sessions WHERE id = ?", (session_id,)
@@ -247,6 +248,7 @@ class WorkflowDesignChatService:
             id=row["id"],
             workflow_id=row["workflow_id"],
             user_id=row["user_id"],
+            agent_config_id=row["agent_config_id"],
             created_at=datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None,
             updated_at=datetime.fromisoformat(str(row["updated_at"])) if row["updated_at"] else None,
         )

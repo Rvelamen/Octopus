@@ -77,10 +77,19 @@ class WorkflowEngine:
             published = [v for v in versions if v.status.value == "published"]
             if published:
                 version_id = published[0].id
-            elif versions:
-                version_id = versions[0].id
             else:
-                raise ValueError("No versions found for workflow")
+                raise ValueError(
+                    "No published version found for this workflow. "
+                    "Please publish a version before executing."
+                )
+        else:
+            # Validate that the explicitly requested version is not archived
+            version = self._store.get_version(version_id)
+            if version and version.status.value == "archived":
+                raise ValueError(
+                    "Cannot execute an archived version. "
+                    "Please provide a published or draft version_id, or omit it to use the published version."
+                )
 
         # Create run record (in-memory only for test mode)
         now = datetime.now()
@@ -115,6 +124,18 @@ class WorkflowEngine:
             nodes = self._store.list_nodes(version_id)
             edges = self._store.list_edges(version_id)
             variables = self._store.list_variables(version_id)
+
+            # Validate required input variables (engine-level guard)
+            input_vars = input_variables or {}
+            required_missing = [
+                v.name for v in variables
+                if v.is_input and v.required and v.name not in input_vars
+            ]
+            if required_missing:
+                raise ValueError(
+                    f"Missing required input variables: {', '.join(required_missing)}. "
+                    f"Provide them in input_variables."
+                )
 
             context = WorkflowContext(input_variables or {}, version_id=version_id)
 

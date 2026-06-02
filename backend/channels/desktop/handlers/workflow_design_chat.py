@@ -55,12 +55,14 @@ class WorkflowDesignChatHandler(MessageHandler):
             ))
             return
 
+        agent_config_id = message.data.get("agent_config_id")
+
         # Check for existing session for this workflow
         sessions = self.design_service.list_sessions(workflow_id=workflow_id)
         if sessions:
             session = sessions[0]
         else:
-            session = self.design_service.create_session(workflow_id=workflow_id)
+            session = self.design_service.create_session(workflow_id=workflow_id, agent_config_id=agent_config_id)
 
         await self.send_response(websocket, WSMessage(
             type=MessageType.CHAT_RESPONSE,
@@ -68,6 +70,7 @@ class WorkflowDesignChatHandler(MessageHandler):
             data={"session": {
                 "id": session.id,
                 "workflow_id": session.workflow_id,
+                "agent_config_id": session.agent_config_id,
                 "created_at": session.created_at.isoformat() if session.created_at else None,
                 "updated_at": session.updated_at.isoformat() if session.updated_at else None,
             }},
@@ -83,6 +86,7 @@ class WorkflowDesignChatHandler(MessageHandler):
                 {
                     "id": s.id,
                     "workflow_id": s.workflow_id,
+                    "agent_config_id": s.agent_config_id,
                     "created_at": s.created_at.isoformat() if s.created_at else None,
                     "updated_at": s.updated_at.isoformat() if s.updated_at else None,
                 }
@@ -135,6 +139,10 @@ class WorkflowDesignChatHandler(MessageHandler):
             ))
             return
 
+        # Load session to get agent_config_id
+        session = self.design_service.get_session(session_id)
+        agent_config_id = session.agent_config_id if session else None
+
         request_id = message.request_id
 
         # Emit start event
@@ -175,6 +183,7 @@ class WorkflowDesignChatHandler(MessageHandler):
                 workflow_id=workflow_id,
                 user_content=user_content,
                 selected_nodes=selected_nodes or None,
+                agent_config_id=agent_config_id,
                 on_token=on_token,
                 on_tool_start=on_tool_start,
                 on_tool_result=on_tool_result,

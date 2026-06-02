@@ -164,6 +164,37 @@ def _ensure_columns(conn: sqlite3.Connection) -> None:
     if "parent_id" not in existing_node_cols:
         conn.execute("ALTER TABLE workflow_nodes ADD COLUMN parent_id TEXT REFERENCES workflow_nodes(id) ON DELETE SET NULL")
 
+    cursor = conn.execute("PRAGMA table_info(workflow_variables)")
+    existing_var_cols = {row[1] for row in cursor.fetchall()}
+    if "created_at" not in existing_var_cols:
+        conn.execute("ALTER TABLE workflow_variables ADD COLUMN created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))")
+
+    # Migrate workflow_variables id column from INTEGER to TEXT (store.py uses UUID strings)
+    col_info = {row[1]: row for row in conn.execute("PRAGMA table_info(workflow_variables)").fetchall()}
+    id_col = col_info.get("id")
+    if id_col and id_col[2].upper() == "INTEGER":
+        conn.execute("""
+            CREATE TABLE workflow_variables_new (
+                id TEXT PRIMARY KEY,
+                version_id TEXT NOT NULL REFERENCES workflow_versions(id) ON DELETE CASCADE,
+                name TEXT NOT NULL,
+                type TEXT NOT NULL,
+                default_value TEXT DEFAULT '',
+                description TEXT DEFAULT '',
+                required BOOLEAN DEFAULT 1,
+                is_input BOOLEAN DEFAULT 1,
+                sort_order INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
+                UNIQUE(version_id, name)
+            )
+        """)
+        conn.execute("""
+            INSERT INTO workflow_variables_new (id, version_id, name, type, default_value, description, required, is_input, sort_order, created_at)
+            SELECT CAST(id AS TEXT), version_id, name, type, default_value, description, required, is_input, sort_order, COALESCE(created_at, datetime('now', 'localtime')) FROM workflow_variables
+        """)
+        conn.execute("DROP TABLE workflow_variables")
+        conn.execute("ALTER TABLE workflow_variables_new RENAME TO workflow_variables")
+
     # Migrate id column from INTEGER to TEXT (store.py uses UUID strings)
     col_info = {row[1]: row for row in conn.execute("PRAGMA table_info(workflow_run_nodes)").fetchall()}
     id_col = col_info.get("id")

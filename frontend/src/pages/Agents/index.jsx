@@ -42,6 +42,15 @@ function AgentsPanel({ sendWSMessage }) {
     try {
       const response = await sendWSMessage('agent_get_list', {}, 5000);
       const agentList = response.data?.agents || [];
+      // Sort chat agents to the top
+      const chatAgentNames = ['pdf-chat', 'library-chat', 'workflow-designer'];
+      agentList.sort((a, b) => {
+        const aIsChat = chatAgentNames.includes(a.name);
+        const bIsChat = chatAgentNames.includes(b.name);
+        if (aIsChat && !bIsChat) return -1;
+        if (!aIsChat && bIsChat) return 1;
+        return a.name.localeCompare(b.name);
+      });
       setAgents(agentList);
       if (selectedAgent && !agentList.find(a => a.id === selectedAgent)) {
         setSelectedAgent(null);
@@ -319,22 +328,47 @@ function AgentsPanel({ sendWSMessage }) {
               <div className="sidebar-header"><Bot size={16} /><span>AGENTS</span></div>
               <div className="agents-list">
                 {agents.length === 0 && !isLoading && <div className="empty-state">No agents. Click [+] to create one.</div>}
-                {agents.map((agent) => (
-                  <div key={agent.id} className={`agent-item ${selectedAgent === agent.id ? 'active' : ''}`} onClick={() => loadAgent(agent)}>
-                    <div className="agent-info">
-                      <div className="agent-name">{agent.name}</div>
-                      <div className="agent-desc">{agent.description}</div>
+                {agents.map((agent) => {
+                  const chatAgentNames = ['pdf-chat', 'library-chat', 'workflow-designer'];
+                  const isChatAgent = chatAgentNames.includes(agent.name);
+                  return (
+                    <div key={agent.id} className={`agent-item ${selectedAgent === agent.id ? 'active' : ''}`} onClick={() => loadAgent(agent)}>
+                      <div className="agent-info">
+                        <div className="agent-name">
+                          {agent.name}
+                          {isChatAgent && (
+                            <span
+                              title="Chat Agent — used by independent chat interfaces"
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 600,
+                                color: '#3b82f6',
+                                background: 'rgba(59, 130, 246, 0.1)',
+                                border: '1px solid rgba(59, 130, 246, 0.3)',
+                                borderRadius: 4,
+                                padding: '1px 5px',
+                                marginLeft: 6,
+                                fontFamily: 'var(--font-sans)',
+                                letterSpacing: '0.3px',
+                              }}
+                            >
+                              CHAT
+                            </span>
+                          )}
+                        </div>
+                        <div className="agent-desc">{agent.description}</div>
+                      </div>
+                      {!agent.is_builtin && (
+                        <Trash2
+                          className="delete-btn"
+                          size={16}
+                          onClick={(e) => { e.stopPropagation(); deleteAgent(agent); }}
+                          title="Delete"
+                        />
+                      )}
                     </div>
-                    {!agent.is_builtin && (
-                      <Trash2
-                        className="delete-btn"
-                        size={16}
-                        onClick={(e) => { e.stopPropagation(); deleteAgent(agent); }}
-                        title="Delete"
-                      />
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           ) : (

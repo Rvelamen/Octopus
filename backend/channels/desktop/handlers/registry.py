@@ -388,6 +388,7 @@ class HandlerRegistry:
             MessageType.WORKFLOW_GET_VARIABLES: workflow_handler,
             MessageType.WORKFLOW_GET_NODE_REGISTRY: workflow_handler,
             MessageType.WORKFLOW_VERSION_CREATE: workflow_handler,
+            MessageType.WORKFLOW_VERSION_DELETE: workflow_handler,
             MessageType.WORKFLOW_VERSION_LIST: workflow_handler,
         })
 

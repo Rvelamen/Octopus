@@ -690,7 +690,21 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
 
       console.log('[handleSave] saving nodesData:', JSON.stringify(nodesData, null, 2));
 
-      await api.saveDefinition(versionId, nodesData, edgesData, []);
+      // 提取 workflowStart 节点的输入变量，同步到 workflow_variables 表
+      const startNode = nodesData.find((n) => n.type === 'workflowStart');
+      const startInputs = startNode?.config?.inputs || [];
+      const variables = startInputs
+        .filter((input) => input.name && input.name.trim() !== '')
+        .map((input) => ({
+          name: input.name,
+          type: input.type || 'string',
+          default_value: input.default_value ?? null,
+          description: input.description || '',
+          required: !!input.required,
+          is_input: true,
+        }));
+
+      await api.saveDefinition(versionId, nodesData, edgesData, variables);
       markSaved();
       message.success('工作流已保存到数据库');
     } catch (error) {

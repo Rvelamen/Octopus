@@ -233,6 +233,37 @@ def seed_builtin_subagents(subagent_repo) -> None:
             "enabled": True,
             "is_builtin": True,
         },
+        {
+            "name": "pdf-chat",
+            "description": "A PDF reading assistant for conversational Q&A about documents.",
+            "tools": ["read", "library_search", "library_read_note", "memory_search", "memory_read"],
+            "extensions": [],
+            "max_iterations": 10,
+            "temperature": 0.5,
+            "system_prompt": (
+                "You are a helpful PDF reading assistant. You help users understand academic papers "
+                "and documents by answering questions based on the provided context and your knowledge. "
+                "You can search the knowledge base and read files to provide accurate answers. "
+                "Be concise but thorough. When citing information from the PDF, reference the page number if available."
+            ),
+            "enabled": True,
+            "is_builtin": True,
+        },
+        {
+            "name": "library-chat",
+            "description": "A library knowledge assistant for conversational Q&A about papers and collections.",
+            "tools": ["read", "list", "library_search", "library_read_note", "library_list_links", "library_timeline", "memory_search", "memory_read"],
+            "extensions": [],
+            "max_iterations": 10,
+            "temperature": 0.5,
+            "system_prompt": (
+                "You are a helpful Library knowledge assistant. You help users understand and analyze "
+                "academic papers and documents in their library collection. You can search library notes, "
+                "read PDFs, list directories, and explore note relationships to provide accurate answers."
+            ),
+            "enabled": True,
+            "is_builtin": True,
+        },
     ]
 
     WORKFLOW_DESIGNER_SYSTEM_PROMPT = """\

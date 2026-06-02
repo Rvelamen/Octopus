@@ -356,6 +356,7 @@ class SubagentListHandler(MessageHandler):
                         "temperature": r.temperature,
                         "system_prompt": r.system_prompt,
                         "enabled": r.enabled,
+                        "is_builtin": r.is_builtin,
                         "created_at": r.created_at.isoformat() if r.created_at else None,
                         "updated_at": r.updated_at.isoformat() if r.updated_at else None,
                     }

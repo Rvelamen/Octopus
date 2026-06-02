@@ -74,6 +74,7 @@ class AgentGetListHandler(MessageHandler):
                         "maxIterations": agent.get("maxIterations", 30),
                         "temperature": agent.get("temperature", 0.7),
                         "enabled": agent.get("enabled", True),
+                        "is_builtin": agent.get("is_builtin", False),
                     })
             except Exception as e:
                 logger.warning(f"Failed to load agents from database: {e}")
@@ -109,6 +110,7 @@ class AgentGetListHandler(MessageHandler):
                         "maxIterations": agent.get("maxIterations", 30),
                         "temperature": agent.get("temperature", 0.7),
                         "enabled": agent.get("enabled", True),
+                        "is_builtin": agent.get("is_builtin", False),
                     })
             except Exception as e:
                 logger.warning(f"Failed to load agents from database: {e}")

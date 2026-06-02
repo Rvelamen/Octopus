@@ -9,8 +9,10 @@ def create_tables(conn: sqlite3.Connection) -> None:
             id TEXT PRIMARY KEY,
             workflow_id TEXT NOT NULL,
             user_id TEXT,
+            agent_config_id INTEGER,
             created_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
-            updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
+            updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
+            FOREIGN KEY (agent_config_id) REFERENCES subagents(id) ON DELETE SET NULL
         )
     """)
 

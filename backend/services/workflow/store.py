@@ -225,10 +225,36 @@ class WorkflowStore:
     def delete_workflow(self, workflow_id: str) -> bool:
         """Delete a workflow and all related data atomically."""
         with self._db._get_connection() as conn:
-            cursor = conn.execute(
-                "DELETE FROM workflows WHERE id = ?",
-                (workflow_id,),
-            )
+            # 1. Delete run-level data first (run_nodes / run_variables reference runs)
+            run_ids = [
+                row["id"]
+                for row in conn.execute(
+                    "SELECT id FROM workflow_runs WHERE workflow_id = ?", (workflow_id,)
+                ).fetchall()
+            ]
+            for rid in run_ids:
+                conn.execute("DELETE FROM workflow_run_nodes WHERE run_id = ?", (rid,))
+                conn.execute("DELETE FROM workflow_run_variables WHERE run_id = ?", (rid,))
+            conn.execute("DELETE FROM workflow_runs WHERE workflow_id = ?", (workflow_id,))
+
+            # 2. Delete version-level data (nodes / edges / variables reference versions)
+            version_ids = [
+                row["id"]
+                for row in conn.execute(
+                    "SELECT id FROM workflow_versions WHERE workflow_id = ?", (workflow_id,)
+                ).fetchall()
+            ]
+            for vid in version_ids:
+                conn.execute("DELETE FROM workflow_nodes WHERE version_id = ?", (vid,))
+                conn.execute("DELETE FROM workflow_edges WHERE version_id = ?", (vid,))
+                conn.execute("DELETE FROM workflow_variables WHERE version_id = ?", (vid,))
+            conn.execute("DELETE FROM workflow_versions WHERE workflow_id = ?", (workflow_id,))
+
+            # 3. Delete triggers
+            conn.execute("DELETE FROM workflow_triggers WHERE workflow_id = ?", (workflow_id,))
+
+            # 4. Delete the workflow itself
+            cursor = conn.execute("DELETE FROM workflows WHERE id = ?", (workflow_id,))
             conn.commit()
             return cursor.rowcount > 0
 
@@ -332,16 +358,68 @@ class WorkflowStore:
                 created_at=_parse_dt(row["created_at"]),
             )
 
+    def delete_version(self, version_id: str) -> bool:
+        """Delete a version and all its related data (nodes, edges, variables).
+
+        Returns True if the version was found and deleted.
+        """
+        with self._db._get_connection() as conn:
+            # Foreign key cascades handle edges/variables; manually clean nodes
+            # to avoid issues with parent_id self-references.
+            conn.execute("DELETE FROM workflow_nodes WHERE version_id = ?", (version_id,))
+            cursor = conn.execute("DELETE FROM workflow_versions WHERE id = ?", (version_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+
     def publish_version(self, version_id: str) -> Optional[WorkflowVersionRecord]:
-        """Publish a version."""
+        """Publish a version. Atomically archives any existing published version.
+
+        Guarantees that a workflow has at most one published version at any time.
+        Updates workflows.current_version to reflect the newly published version.
+        """
+        version = self.get_version(version_id)
+        if not version:
+            return None
+
         now = datetime.now()
         with self._db._get_connection() as conn:
+            # Archive any existing published version for this workflow
+            conn.execute(
+                "UPDATE workflow_versions SET status = ?, published_at = NULL "
+                "WHERE workflow_id = ? AND status = ? AND id != ?",
+                (
+                    WorkflowStatus.ARCHIVED.value,
+                    version.workflow_id,
+                    WorkflowStatus.PUBLISHED.value,
+                    version_id,
+                ),
+            )
+            # Publish the target version
             conn.execute(
                 "UPDATE workflow_versions SET status = ?, published_at = ? WHERE id = ?",
                 (WorkflowStatus.PUBLISHED.value, now, version_id),
             )
+            # Update the workflow's current_version pointer
+            conn.execute(
+                "UPDATE workflows SET current_version = ?, updated_at = ? WHERE id = ?",
+                (version.version, now, version.workflow_id),
+            )
             conn.commit()
         return self.get_version(version_id)
+
+    def _archive_version(self, version_id: str) -> None:
+        """Archive a version (used when a published version is edited).
+
+        Unlike _downgrade_to_draft, this preserves the version history by marking
+        it archived rather than mutable draft, keeping the published-version
+        invariant intact.
+        """
+        with self._db._get_connection() as conn:
+            conn.execute(
+                "UPDATE workflow_versions SET status = ?, published_at = NULL WHERE id = ?",
+                (WorkflowStatus.ARCHIVED.value, version_id),
+            )
+            conn.commit()
 
     def _downgrade_to_draft(self, version_id: str) -> None:
         """Silently downgrade a published version back to draft when it is edited."""
@@ -551,6 +629,12 @@ class WorkflowStore:
                 var_id = var_data.get("id") or self._generate_id()
                 now = datetime.now()
 
+                default_value = var_data.get("default_value")
+                default_value_str = json.dumps(default_value) if default_value is not None else None
+                required_val = 1 if var_data.get("required", False) else 0
+                is_input_val = 1 if var_data.get("is_input", True) else 0
+                created_at_str = now.isoformat()
+
                 conn.execute(
                     """
                     INSERT INTO workflow_variables
@@ -562,11 +646,11 @@ class WorkflowStore:
                         version_id,
                         var_data.get("name"),
                         var_data.get("type", "string"),
-                        json.dumps(var_data.get("default_value")),
+                        default_value_str,
                         var_data.get("description", ""),
-                        var_data.get("required", False),
-                        var_data.get("is_input", True),
-                        now,
+                        required_val,
+                        is_input_val,
+                        created_at_str,
                     ),
                 )
 
@@ -575,7 +659,7 @@ class WorkflowStore:
                     version_id=version_id,
                     name=var_data.get("name"),
                     type=VariableType(var_data.get("type", "string")),
-                    default_value=var_data.get("default_value"),
+                    default_value=default_value,
                     description=var_data.get("description", ""),
                     required=var_data.get("required", False),
                     is_input=var_data.get("is_input", True),

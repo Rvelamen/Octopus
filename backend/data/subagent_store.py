@@ -283,6 +283,7 @@ class SubagentRepository:
                     "temperature": row["temperature"],
                     "systemPrompt": row["system_prompt"],
                     "enabled": bool(row["enabled"]),
+                    "is_builtin": bool(row["is_builtin"]),
                     "createdAt": row["created_at"],
                     "updatedAt": row["updated_at"],
                 }

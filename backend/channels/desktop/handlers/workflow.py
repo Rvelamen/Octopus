@@ -74,6 +74,7 @@ class WorkflowHandler(MessageHandler):
             "workflow_run_delete": self._handle_run_delete,
             "workflow_run_list_delete": self._handle_run_list_delete,
             "workflow_version_create": self._handle_version_create,
+            "workflow_version_delete": self._handle_version_delete,
             "workflow_version_list": self._handle_version_list,
             "workflow_get_node_registry": self._handle_get_node_registry,
         }
@@ -308,10 +309,11 @@ class WorkflowHandler(MessageHandler):
             await self._send_error(websocket, message.request_id, "Version not found")
             return
 
-        # If editing a published version, silently downgrade it back to draft
-        # so the user can keep editing without manually creating a new version.
+        # If editing a published version, archive it first so the user edits
+        # on a clean slate. This preserves the invariant that at most one
+        # version is published per workflow.
         if version.status.value == "published":
-            self._store._downgrade_to_draft(version_id)
+            self._store._archive_version(version_id)
 
         result = self._store.save_definition(
             version_id=version_id,
@@ -629,6 +631,26 @@ class WorkflowHandler(MessageHandler):
             })
         except Exception as e:
             await self._send_error(websocket, message.request_id, str(e))
+
+    async def _handle_version_delete(self, websocket: WebSocket, message: WSMessage) -> None:
+        version_id = message.data.get("version_id")
+        if not version_id:
+            await self._send_error(websocket, message.request_id, "version_id required")
+            return
+
+        version = self._store.get_version(version_id)
+        if not version:
+            await self._send_error(websocket, message.request_id, "Version not found")
+            return
+
+        if version.status.value == "published":
+            await self._send_error(websocket, message.request_id, "Cannot delete a published version. Unpublish it first.")
+            return
+
+        if self._store.delete_version(version_id):
+            await self._send_response(websocket, message.request_id, {"deleted": True})
+        else:
+            await self._send_error(websocket, message.request_id, "Version not found")
 
     async def _handle_version_list(self, websocket: WebSocket, message: WSMessage) -> None:
         workflow_id = message.data.get("workflow_id")

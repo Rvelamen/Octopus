@@ -130,6 +130,7 @@ class MessageType(Enum):
     WORKFLOW_GET_VARIABLES = "workflow_get_variables"
     WORKFLOW_GET_NODE_REGISTRY = "workflow_get_node_registry"
     WORKFLOW_VERSION_CREATE = "workflow_version_create"
+    WORKFLOW_VERSION_DELETE = "workflow_version_delete"
     WORKFLOW_VERSION_LIST = "workflow_version_list"
 
     # Database - Client -> Server

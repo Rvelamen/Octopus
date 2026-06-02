@@ -80,7 +80,7 @@ def create_indexes(conn: sqlite3.Connection) -> None:
 
 
 def seed_data(conn: sqlite3.Connection) -> None:
-    # Ensure pdf-chat subagent exists
+    # Ensure pdf-chat subagent exists (for new DBs; existing DBs get tools fixed via migration 017)
     conn.execute("""
         INSERT OR IGNORE INTO subagents
         (name, description, provider_id, model_id, tools, extensions,
@@ -88,12 +88,29 @@ def seed_data(conn: sqlite3.Connection) -> None:
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
     """, (
         'pdf-chat',
-        'PDF Reading Assistant',
+        'A PDF reading assistant for conversational Q&A about documents.',
         None, None,
-        '["read", "kb_search", "kb_read_note", "memory_search", "memory_read"]',
+        '["read", "library_search", "library_read_note", "memory_search", "memory_read"]',
         '[]',
         10, 0.5,
         'You are a helpful PDF reading assistant. You help users understand academic papers and documents by answering questions based on the provided context and your knowledge. You can search the knowledge base and read files to provide accurate answers. Be concise but thorough. When citing information from the PDF, reference the page number if available.',
+        1,
+    ))
+
+    # Ensure library-chat subagent exists
+    conn.execute("""
+        INSERT OR IGNORE INTO subagents
+        (name, description, provider_id, model_id, tools, extensions,
+         max_iterations, temperature, system_prompt, enabled, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+    """, (
+        'library-chat',
+        'A library knowledge assistant for conversational Q&A about papers and collections.',
+        None, None,
+        '["read", "list", "library_search", "library_read_note", "library_list_links", "library_timeline", "memory_search", "memory_read"]',
+        '[]',
+        10, 0.5,
+        'You are a helpful Library knowledge assistant. You help users understand and analyze academic papers and documents in their library collection. You can search library notes, read PDFs, list directories, and explore note relationships to provide accurate answers.',
         1,
     ))
 

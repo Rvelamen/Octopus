@@ -59,6 +59,134 @@ const VersionManager = ({ isOpen, onClose, workflowId, onSelectVersion }) => {
     }
   }, [isOpen, loadVersions]);
 
+  // 生成唯一ID（与 WorkflowStore 保持一致）
+  const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  // 递归替换对象中的节点 id 引用
+  const deepReplaceNodeIds = useCallback((obj, idMap) => {
+    if (typeof obj === 'string') {
+      let result = obj;
+      idMap.forEach((newId, oldId) => {
+        result = result.split(oldId).join(newId);
+      });
+      return result;
+    }
+    if (Array.isArray(obj)) {
+      return obj.map((item) => deepReplaceNodeIds(item, idMap));
+    }
+    if (obj && typeof obj === 'object') {
+      const result = {};
+      for (const [key, value] of Object.entries(obj)) {
+        result[key] = deepReplaceNodeIds(value, idMap);
+      }
+      return result;
+    }
+    return obj;
+  }, []);
+
+  // 构建与 WorkflowEditor handleSave 一致的定义数据
+  // 关键点：创建新版本时，必须重新生成节点 id，因为 workflow_nodes.id 是全局 PRIMARY KEY
+  const buildDefinitionPayload = useCallback(() => {
+    const idMap = new Map(); // oldId -> newId
+
+    // 先生成所有新 id
+    nodes.forEach((node) => {
+      idMap.set(node.id, generateId());
+    });
+
+    const nodesData = nodes.map((node) => {
+      const newId = idMap.get(node.id);
+      let savePosition = node.position;
+
+      // 子节点坐标转为绝对坐标（与 WorkflowEditor handleSave 保持一致）
+      if (node.parentId) {
+        const parentNode = nodes.find((n) => n.id === node.parentId);
+        if (parentNode) {
+          savePosition = {
+            x: parentNode.position.x + node.position.x,
+            y: parentNode.position.y + node.position.y,
+          };
+        }
+      }
+
+      const config = deepReplaceNodeIds(
+        {
+          ...node.data,
+          __parentId: node.parentId ? idMap.get(node.parentId) : undefined,
+        },
+        idMap
+      );
+
+      return {
+        id: newId,
+        type: node.type,
+        label: node.data?.name || node.data?.label || node.type,
+        position: savePosition,
+        width: node.width || 240,
+        height: node.height || 120,
+        config,
+        timeout_seconds: node.data?.timeout_seconds || 60,
+        max_retries: node.data?.max_retries || 0,
+      };
+    });
+
+    const edgesData = edges
+      .filter((edge) => idMap.has(edge.source) && idMap.has(edge.target))
+      .map((edge) => {
+        const newSourceId = idMap.get(edge.source);
+        const newTargetId = idMap.get(edge.target);
+        let sourceHandle = edge.sourceHandle;
+        let targetHandle = edge.targetHandle;
+
+        if (sourceHandle) {
+          idMap.forEach((newId, oldId) => {
+            sourceHandle = sourceHandle.split(oldId).join(newId);
+          });
+        } else {
+          sourceHandle = `${newSourceId}-source`;
+        }
+
+        if (targetHandle) {
+          idMap.forEach((newId, oldId) => {
+            targetHandle = targetHandle.split(oldId).join(newId);
+          });
+        } else {
+          targetHandle = `${newTargetId}-target`;
+        }
+
+        return {
+          id: generateId(),
+          source: newSourceId,
+          target: newTargetId,
+          label: edge.label || '',
+          condition: edge.condition || '',
+          sourceHandle,
+          targetHandle,
+        };
+      });
+
+    return { nodesData, edgesData };
+  }, [nodes, edges, deepReplaceNodeIds]);
+
+  // 保存定义后验证数据是否真正写入
+  const saveAndVerifyDefinition = useCallback(async (versionId, nodesData, edgesData) => {
+    await api.saveDefinition(versionId, nodesData, edgesData, []);
+
+    // 验证：立即读取确认数据已持久化
+    const definition = await api.getDefinition(versionId);
+    const savedNodes = definition?.nodes || [];
+    const savedEdges = definition?.edges || [];
+
+    if (savedNodes.length === 0 && nodesData.length > 0) {
+      throw new Error('定义保存验证失败：节点未成功写入');
+    }
+    if (savedEdges.length === 0 && edgesData.length > 0) {
+      console.warn('[VersionManager] 边保存验证警告：边未成功写入');
+    }
+
+    return { savedNodes, savedEdges };
+  }, [api]);
+
   const handleCreateVersion = async () => {
     if (!newVersionName.trim() || !workflowId) return;
 
@@ -76,30 +204,8 @@ const VersionManager = ({ isOpen, onClose, workflowId, onSelectVersion }) => {
         newVersionDesc.trim()
       );
 
-      // 保存当前定义到新版本
-      const nodesData = nodes.map((node) => ({
-        id: node.id,
-        type: node.type,
-        label: node.data?.name || node.data?.label || node.type,
-        position: node.position,
-        width: node.width || 240,
-        height: node.height || 120,
-        config: node.data || {},
-        timeout_seconds: node.data?.timeout_seconds || 60,
-        max_retries: node.data?.max_retries || 0,
-      }));
-
-      const edgesData = edges.map((edge) => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        label: edge.label || '',
-        condition: edge.condition || '',
-        sourceHandle: edge.sourceHandle || `${edge.source}-source`,
-        targetHandle: edge.targetHandle || `${edge.target}-target`,
-      }));
-
-      await api.saveDefinition(newVersion.id, nodesData, edgesData, []);
+      const { nodesData, edgesData } = buildDefinitionPayload();
+      await saveAndVerifyDefinition(newVersion.id, nodesData, edgesData);
 
       await loadVersions();
       setNewVersionName('');
@@ -130,30 +236,8 @@ const VersionManager = ({ isOpen, onClose, workflowId, onSelectVersion }) => {
         'Auto-created draft after publish'
       );
 
-      // Copy current definition to the new draft version
-      const nodesData = nodes.map((node) => ({
-        id: node.id,
-        type: node.type,
-        label: node.data?.name || node.data?.label || node.type,
-        position: node.position,
-        width: node.width || 240,
-        height: node.height || 120,
-        config: node.data || {},
-        timeout_seconds: node.data?.timeout_seconds || 60,
-        max_retries: node.data?.max_retries || 0,
-      }));
-
-      const edgesData = edges.map((edge) => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        label: edge.label || '',
-        condition: edge.condition || '',
-        sourceHandle: edge.sourceHandle || `${edge.source}-source`,
-        targetHandle: edge.targetHandle || `${edge.target}-target`,
-      }));
-
-      await api.saveDefinition(newVersion.id, nodesData, edgesData, []);
+      const { nodesData, edgesData } = buildDefinitionPayload();
+      await saveAndVerifyDefinition(newVersion.id, nodesData, edgesData);
 
       await loadVersions();
 
@@ -172,6 +256,26 @@ const VersionManager = ({ isOpen, onClose, workflowId, onSelectVersion }) => {
       onSelectVersion(version);
       setSelectedVersion(null);
       onClose?.();
+    }
+  };
+
+  const handleDeleteVersion = async (version) => {
+    if (version.status === 'published') {
+      alert('不能删除已发布的版本，请先取消发布');
+      return;
+    }
+    if (!window.confirm(`确定要删除版本 "${version.name || 'Version ' + version.version}" 吗？此操作不可撤销。`)) {
+      return;
+    }
+    try {
+      await api.deleteVersion(version.id);
+      await loadVersions();
+      if (selectedVersion?.id === version.id) {
+        setSelectedVersion(null);
+      }
+    } catch (err) {
+      alert('删除失败: ' + (err.message || '未知错误'));
+      console.error('[VersionManager] delete error:', err);
     }
   };
 
@@ -516,10 +620,29 @@ const VersionManager = ({ isOpen, onClose, workflowId, onSelectVersion }) => {
                           e.stopPropagation();
                           handleRestoreVersion(version);
                         }}
-                        title="恢复此版本"
+                        title="加载此版本到画布"
                       >
                         <RotateCcw size={14} />
                       </button>
+                      {version.status !== 'published' && (
+                        <button
+                          style={{
+                            padding: '4px',
+                            borderRadius: '4px',
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            color: '#ef4444',
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteVersion(version);
+                          }}
+                          title="删除版本"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
 

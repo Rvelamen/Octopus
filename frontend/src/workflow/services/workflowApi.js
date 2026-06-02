@@ -17,6 +17,7 @@ const MessageTypes = {
 
   // Version Management
   VERSION_CREATE: 'workflow_version_create',
+  VERSION_DELETE: 'workflow_version_delete',
   VERSION_LIST: 'workflow_version_list',
   PUBLISH: 'workflow_publish',
 
@@ -143,6 +144,15 @@ export const createWorkflowAPI = (sendMessage, subscribe) => {
      */
     publishVersion: async (versionId) => {
       const response = await sendMessage(MessageTypes.PUBLISH, { version_id: versionId });
+      return response.data;
+    },
+
+    /**
+     * Delete version
+     * @param {string} versionId - Version ID
+     */
+    deleteVersion: async (versionId) => {
+      const response = await sendMessage(MessageTypes.VERSION_DELETE, { version_id: versionId });
       return response.data;
     },
 
