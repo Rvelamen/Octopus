@@ -116,7 +116,51 @@ const VersionManager = ({ isOpen, onClose, workflowId, onSelectVersion }) => {
   const handlePublishVersion = async (version) => {
     try {
       await api.publishVersion(version.id);
+
+      // After publishing, automatically create a new draft version
+      // so the user can keep editing without hitting "can only edit draft" errors.
+      const versionNum = versions.length > 0
+        ? Math.max(...versions.map((v) => v.version || 0)) + 1
+        : 1;
+
+      const newVersion = await api.createVersion(
+        workflowId,
+        versionNum,
+        `${version.name || 'Version ' + version.version} (编辑中)`,
+        'Auto-created draft after publish'
+      );
+
+      // Copy current definition to the new draft version
+      const nodesData = nodes.map((node) => ({
+        id: node.id,
+        type: node.type,
+        label: node.data?.name || node.data?.label || node.type,
+        position: node.position,
+        width: node.width || 240,
+        height: node.height || 120,
+        config: node.data || {},
+        timeout_seconds: node.data?.timeout_seconds || 60,
+        max_retries: node.data?.max_retries || 0,
+      }));
+
+      const edgesData = edges.map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        label: edge.label || '',
+        condition: edge.condition || '',
+        sourceHandle: edge.sourceHandle || `${edge.source}-source`,
+        targetHandle: edge.targetHandle || `${edge.target}-target`,
+      }));
+
+      await api.saveDefinition(newVersion.id, nodesData, edgesData, []);
+
       await loadVersions();
+
+      // Auto-switch to the new draft version so the canvas stays editable
+      if (onSelectVersion) {
+        onSelectVersion(newVersion);
+      }
     } catch (err) {
       alert('发布失败: ' + (err.message || '未知错误'));
       console.error('[VersionManager] publish error:', err);

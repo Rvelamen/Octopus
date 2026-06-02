@@ -34,6 +34,10 @@ class PingRequest(BaseRequest):
     timestamp: int | None = None
 
 
+class GetSlashCommandsRequest(BaseRequest):
+    pass
+
+
 class StopAgentsRequest(BaseRequest):
     instance_id: int | None = None
 
@@ -763,6 +767,7 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.SAVE_CONFIG: SaveConfigRequest,
     MessageType.PING: PingRequest,
     MessageType.GET_MODELS: GetModelsRequest,
+    MessageType.GET_SLASH_COMMANDS: GetSlashCommandsRequest,
     MessageType.STOP_AGENTS: StopAgentsRequest,
     MessageType.RESTART_SERVICE: RestartServiceRequest,
 

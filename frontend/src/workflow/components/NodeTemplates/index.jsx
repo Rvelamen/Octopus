@@ -29,7 +29,7 @@ const nodeTemplates = [
   {
     category: '常用',
     nodes: [
-      { type: FlowNodeTypeEnum.workflowStart, name: '工作流开始', icon: Bot, color: '#1a1a2e', inputs: [], outputs: [{ key: 'userChatInput', label: '用户输入' }, { key: 'userFiles', label: '用户文件' }], showTargetHandle: false, forbidDelete: true },
+      { type: FlowNodeTypeEnum.workflowStart, name: '工作流开始', icon: Bot, color: '#1a1a2e', inputs: [], outputs: [], showTargetHandle: false, forbidDelete: true },
       { type: FlowNodeTypeEnum.llm, name: '大模型', icon: MessageSquare, color: '#7c3aed', inputs: [], outputs: [{ key: 'output', label: '输出' }], defaultData: { model: 'gpt-4o-mini', systemPrompt: '', userPrompt: '', outputs: [{ id: 'default_out', name: 'output', type: 'string' }] } },
       { type: FlowNodeTypeEnum.workflowEnd, name: '工作流结束', icon: GitMerge, color: '#ef4444', inputs: [{ key: 'result', label: '最终结果' }], outputs: [], showSourceHandle: false, forbidDelete: true },
     ]

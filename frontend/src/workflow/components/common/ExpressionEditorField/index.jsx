@@ -211,10 +211,7 @@ export const getUpstreamNodes = (nodeId, nodes, edges) => {
  * 节点类型默认输出变量映射
  */
 const NODE_TYPE_DEFAULT_OUTPUTS = {
-  workflowStart: [
-    { key: 'userChatInput', label: '用户输入', type: 'string' },
-    { key: 'userFiles', label: '用户文件', type: 'file' },
-  ],
+  workflowStart: [],
   llm: [
     { key: 'output', label: '输出', type: 'string' },
   ],
@@ -321,7 +318,15 @@ export const getNodeOutputVariables = (node, options = {}) => {
         type: normalizeType(input.type) || 'string',
       })).filter((v) => v.key);
     }
-    return NODE_TYPE_DEFAULT_OUTPUTS.workflowStart.map((o) => ({ ...o }));
+    // 兼容旧节点：inputs 为空时从 outputs 读取（旧版数据 model 将变量存于 outputs）
+    if (outputs.length > 0) {
+      return outputs.map((output) => ({
+        key: output.name || output.key,
+        label: output.name || output.label || output.key,
+        type: normalizeType(output.type) || 'string',
+      })).filter((v) => v.key);
+    }
+    return [];
   }
 
   if (nodeType === 'loop') {
@@ -1044,6 +1049,7 @@ const ExpressionEditorField = ({
 
   // 第一个字段的值
   const firstField = fields[0] || { name: '', value: '' };
+  const isPlaceholder = firstField.value === '{{?}}';
 
   const handleValueChange = useCallback(
     (e) => {
@@ -1071,9 +1077,12 @@ const ExpressionEditorField = ({
       <>
         <input
           type="text"
-          value={firstField.value || ''}
+          value={isPlaceholder ? '请选择变量...' : (firstField.value || '')}
           onChange={handleValueChange}
           placeholder="输入值或引用变量"
+          onClick={() => {
+            if (isPlaceholder) setShowVariableDropdown(true);
+          }}
           style={{
             flex: 1,
             padding: '5px 7px',
@@ -1081,8 +1090,10 @@ const ExpressionEditorField = ({
             borderRadius: '0',
             fontSize: '12px',
             outline: 'none',
-            background: 'transparent',
+            background: isPlaceholder ? '#fef3c7' : 'transparent',
+            color: isPlaceholder ? '#92400e' : 'inherit',
             minWidth: 0,
+            cursor: isPlaceholder ? 'pointer' : 'text',
           }}
         />
         <div style={{ position: 'relative' }}>
@@ -1133,9 +1144,12 @@ const ExpressionEditorField = ({
       <>
         <input
           type="text"
-          value={firstField.value || ''}
+          value={isPlaceholder ? '请选择变量...' : (firstField.value || '')}
           onChange={handleValueChange}
           placeholder="输入值或引用变量"
+          onClick={() => {
+            if (isPlaceholder) setShowVariableSelector(true);
+          }}
           style={{
             flex: 1,
             padding: '5px 7px',
@@ -1143,8 +1157,10 @@ const ExpressionEditorField = ({
             borderRadius: '0',
             fontSize: '10px',
             outline: 'none',
-            background: 'transparent',
+            background: isPlaceholder ? '#fef3c7' : 'transparent',
+            color: isPlaceholder ? '#92400e' : 'inherit',
             minWidth: 0,
+            cursor: isPlaceholder ? 'pointer' : 'text',
           }}
         />
         <button

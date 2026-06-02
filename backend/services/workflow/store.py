@@ -343,6 +343,15 @@ class WorkflowStore:
             conn.commit()
         return self.get_version(version_id)
 
+    def _downgrade_to_draft(self, version_id: str) -> None:
+        """Silently downgrade a published version back to draft when it is edited."""
+        with self._db._get_connection() as conn:
+            conn.execute(
+                "UPDATE workflow_versions SET status = ?, published_at = NULL WHERE id = ?",
+                (WorkflowStatus.DRAFT.value, version_id),
+            )
+            conn.commit()
+
     # Node management
     def save_nodes(
         self,
@@ -363,6 +372,19 @@ class WorkflowStore:
                 now = datetime.now()
 
                 parent_id = node_data.get("parent_id") or node_data.get("parentId")
+                # Defensive: ensure type is a string (not NodeType enum)
+                node_type = node_data.get("type", "emptyNode")
+                if hasattr(node_type, "value"):  # Enum
+                    node_type = node_type.value
+
+                # Support both flat position_x/y and nested position.x/y formats
+                pos_x = node_data.get("position_x")
+                pos_y = node_data.get("position_y")
+                if pos_x is None:
+                    pos_x = node_data.get("position", {}).get("x", 0)
+                if pos_y is None:
+                    pos_y = node_data.get("position", {}).get("y", 0)
+
                 conn.execute(
                     """
                     INSERT INTO workflow_nodes
@@ -372,10 +394,10 @@ class WorkflowStore:
                     (
                         node_id,
                         version_id,
-                        _normalize_node_type(node_data.get("type", "emptyNode")),
+                        _normalize_node_type(node_type),
                         node_data.get("label", "Node"),
-                        node_data.get("position", {}).get("x", 0),
-                        node_data.get("position", {}).get("y", 0),
+                        pos_x,
+                        pos_y,
                         node_data.get("width", 240),
                         node_data.get("height", 120),
                         json.dumps(node_data.get("config", {})),
@@ -391,8 +413,8 @@ class WorkflowStore:
                     version_id=version_id,
                     type=NodeType(_normalize_node_type(node_data.get("type", "emptyNode"))),
                     label=node_data.get("label", "Node"),
-                    position_x=node_data.get("position", {}).get("x", 0),
-                    position_y=node_data.get("position", {}).get("y", 0),
+                    position_x=pos_x,
+                    position_y=pos_y,
                     width=node_data.get("width", 240),
                     height=node_data.get("height", 120),
                     config=node_data.get("config", {}),

@@ -7,6 +7,9 @@ from backend.channels.desktop.handlers.registry import HandlerRegistry
 # Chat handlers
 from backend.channels.desktop.handlers.chat import ChatHandler
 
+# Slash commands handler
+from backend.channels.desktop.handlers.slash_commands import GetSlashCommandsHandler
+
 # Config handlers
 from backend.channels.desktop.handlers.config import (
     GetConfigHandler,

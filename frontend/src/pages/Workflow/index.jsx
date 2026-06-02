@@ -31,6 +31,7 @@ import {
   AlertCircle,
   Loader2,
   CloudOff,
+  Sparkles,
 } from 'lucide-react';
 
 import { useWorkflowStore } from '../../workflow/hooks/useWorkflowStore';
@@ -45,6 +46,7 @@ import VersionCompare from '../../workflow/components/WorkflowManager/VersionCom
 import RunDialog from '../../workflow/components/common/RunDialog';
 import PromptDialog from '../../workflow/components/common/PromptDialog';
 import UnsavedChangesDialog from '../../workflow/components/common/UnsavedChangesDialog';
+import DesignChatPanel from '../../workflow/components/DesignChatPanel';
 
 import nodeTypes from '../../workflow/components/nodes';
 import { createNodeFromTemplate } from '../../workflow/templates';
@@ -94,12 +96,14 @@ const TopToolbar = ({
   onToggleTemplates,
   onToggleTrace,
   onToggleVersionManager,
+  onToggleDesignChat,
   isRunning,
   isSaving,
   isDirty,
   isConnected,
   currentWorkflowName,
   onUpdateName,
+  isDesignChatOpen,
 }) => {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(currentWorkflowName || '');
@@ -232,6 +236,13 @@ const TopToolbar = ({
         <ToolbarButton icon={Bug} label="调试" onClick={onDebug} color="#8b5cf6" />
         <ToolbarButton icon={Terminal} label="追踪" onClick={onToggleTrace} />
         <ToolbarButton icon={GitBranch} label="版本" onClick={onToggleVersionManager} />
+        <ToolbarButton
+          icon={Sparkles}
+          label="AI 设计"
+          onClick={onToggleDesignChat}
+          active={isDesignChatOpen}
+          color="#8b5cf6"
+        />
       </div>
     </div>
   );
@@ -358,6 +369,104 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
   const setIsTraceOpen = useWorkflowStore((state) => state.setTracePanelOpen);
   const [isVersionManagerOpen, setIsVersionManagerOpen] = useState(false);
   const [isVersionCompareOpen, setIsVersionCompareOpen] = useState(false);
+  const [isDesignChatOpen, setIsDesignChatOpen] = useState(false);
+
+  // Ref to pass workflowId/setVersionId into loadDefinitionToCanvas without TDZ
+  const refreshCanvasRef = useRef({ workflowId: null, setVersionId: null });
+
+  // 加载工作流定义到画布（用于 AI 设计后刷新）
+  const loadDefinitionToCanvas = useCallback(async (vid) => {
+    let targetVid = vid;
+    const { workflowId: wid, setVersionId: setVid } = refreshCanvasRef.current;
+    // If no versionId provided, try to find the latest version for this workflow
+    // (e.g. when AI auto-created a Draft version on a blank canvas)
+    if (!targetVid && wid) {
+      try {
+        const workflow = await api.getWorkflow(wid);
+        const versions = workflow?.versions || [];
+        if (versions.length > 0) {
+          targetVid = versions[0].id;
+          if (setVid) setVid(targetVid);
+        }
+      } catch (e) {
+        console.error('[WorkflowEditor] Failed to get workflow versions:', e);
+      }
+    }
+    if (!targetVid) return;
+    try {
+      const definition = await api.getDefinition(targetVid);
+      if (!definition) return;
+
+      let loadedNodes = (definition.nodes || []).map((n) => {
+        const parentId = n.config?.__parentId;
+        return {
+          id: n.id,
+          type: n.type,
+          position: n.position || { x: 0, y: 0 },
+          width: n.width || 240,
+          height: n.height || 120,
+          parentId,
+          data: {
+            ...n.config,
+            name: n.label,
+            flowNodeType: n.type,
+          },
+        };
+      });
+
+      loadedNodes = loadedNodes.map((node) => {
+        if (!node.parentId) return node;
+        const parentNode = loadedNodes.find((n) => n.id === node.parentId);
+        if (!parentNode) return node;
+        const relX = node.position.x - parentNode.position.x;
+        const relY = node.position.y - parentNode.position.y;
+        return {
+          ...node,
+          position: { x: relX, y: relY },
+          internals: {
+            ...node.internals,
+            positionAbsolute: { x: node.position.x, y: node.position.y },
+          },
+        };
+      });
+
+      loadedNodes.sort((a, b) => {
+        const aIsChild = !!a.parentId;
+        const bIsChild = !!b.parentId;
+        if (aIsChild && !bIsChild) return 1;
+        if (!aIsChild && bIsChild) return -1;
+        return 0;
+      });
+
+      loadedNodes = loadedNodes.map((node) => {
+        if (node.type !== 'loop') return node;
+        return {
+          ...node,
+          width: node.width || 400,
+          height: node.height || 280,
+          measured: {
+            width: node.width || 400,
+            height: node.height || 280,
+          },
+          zIndex: -1,
+        };
+      });
+
+      const loadedEdges = (definition.edges || []).map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        sourceHandle: e.sourceHandle || `${e.source}-source`,
+        targetHandle: e.targetHandle || `${e.target}-target`,
+        label: e.label || '',
+      }));
+
+      setNodes(loadedNodes);
+      setEdges(loadedEdges);
+    } catch (err) {
+      console.error('[WorkflowEditor] Failed to refresh canvas:', err);
+    }
+  }, [api, setNodes, setEdges]);
 
   const [isRunning, setIsRunning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -380,6 +489,9 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
   // 当前工作流状态
   const [workflowId, setWorkflowId] = useState(null);
   const [versionId, setVersionId] = useState(initialVersionId || null);
+
+  // Update ref so loadDefinitionToCanvas can access current values without TDZ
+  refreshCanvasRef.current = { workflowId, setVersionId };
   const setWorkflowInfo = useWorkflowStore((state) => state.setWorkflowInfo);
   const setWorkflowBasicInfo = useWorkflowStore((state) => state.setWorkflowBasicInfo);
   const updateWorkflowNameInStore = useWorkflowStore((state) => state.updateWorkflowName);
@@ -788,7 +900,13 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
     const startNode = nodes.find((n) => n.type === 'workflowStart');
     if (!startNode) return [];
     const inputs = startNode.data?.inputs || [];
-    return inputs.filter((i) => i.name && i.name.trim() !== '');
+    const validInputs = inputs.filter((i) => i.name && i.name.trim() !== '');
+    if (validInputs.length > 0) return validInputs;
+    // 兼容旧节点：变量可能存于 outputs 中（旧版数据 model）
+    const outputs = startNode.data?.outputs || [];
+    return outputs
+      .filter((o) => (o.name || o.key) && (o.name || o.key).trim() !== '')
+      .map((o) => ({ name: o.name || o.key, type: o.type || 'string', required: o.required || false }));
   }, [nodes]);
 
   // 运行工作流（先保存，再运行）
@@ -1187,7 +1305,8 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
             border: '1px solid #e5e7eb',
             borderRadius: '8px',
             margin: 12,
-            left: 0,
+            marginTop: 70,
+            zIndex: 15,
           }}
         />
 
@@ -1200,6 +1319,8 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
           onToggleTemplates={() => setIsTemplatesOpen(!isTemplatesOpen)}
           onToggleTrace={() => setIsTraceOpen(!isTraceOpen)}
           onToggleVersionManager={() => setIsVersionManagerOpen(!isVersionManagerOpen)}
+          onToggleDesignChat={() => setIsDesignChatOpen(!isDesignChatOpen)}
+          isDesignChatOpen={isDesignChatOpen}
           isRunning={isRunning}
           isSaving={isSaving}
           isDirty={dirty}
@@ -1348,6 +1469,15 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
         versions={versions}
       />
 
+
+      {/* AI 设计面板 */}
+      <DesignChatPanel
+        workflowId={workflowId}
+        versionId={versionId}
+        isOpen={isDesignChatOpen}
+        onToggle={() => setIsDesignChatOpen(!isDesignChatOpen)}
+        onRefreshCanvas={loadDefinitionToCanvas}
+      />
 
       {/* 运行弹窗 */}
       <RunDialog

@@ -53,6 +53,22 @@ const NodeTestDialog = ({ isOpen, onClose, nodeId }) => {
     }
     if (isRunning) return;
 
+    // 验证节点必填配置
+    const nodeType = node?.data?.flowNodeType || node?.type;
+    const nodeData = node?.data || {};
+    const missing = [];
+
+    if (nodeType === 'chatNode' || nodeType === 'llm') {
+      if (!nodeData.providerId) missing.push('Provider');
+      if (!nodeData.modelId) missing.push('模型');
+      if (!nodeData.userPrompt || !nodeData.userPrompt.trim()) missing.push('用户提示词');
+    }
+
+    if (missing.length > 0) {
+      message.error(`节点配置不完整，请配置以下必填项：${missing.join('、')}`);
+      return;
+    }
+
     setIsRunning(true);
     setTracePanelOpen(true);
     message.info('开始运行工作流...');
@@ -109,6 +125,7 @@ const NodeTestDialog = ({ isOpen, onClose, nodeId }) => {
     finishExecution,
     subscribe,
     setTracePanelOpen,
+    node,
   ]);
 
   if (!isOpen || !node) return null;

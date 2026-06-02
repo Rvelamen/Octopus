@@ -36,7 +36,18 @@ const TYPE_PREFIXES = {
 const WorkflowStart = memo(({ id, data, selected }) => {
   const edges = useWorkflowStore((state) => state.edges);
 
-  const inputs = useMemo(() => data.inputs || [], [data.inputs]);
+  // 兼容旧节点：变量可能存于 outputs 中（旧版数据 model）
+  const inputs = useMemo(() => {
+    const ins = data.inputs || [];
+    if (ins.length > 0) return ins;
+    // fallback: 旧节点数据在 outputs 中
+    const outs = data.outputs || [];
+    return outs.map(o => ({
+      name: o.name || o.key,
+      type: o.type || 'string',
+      required: o.required || false,
+    }));
+  }, [data.inputs, data.outputs]);
 
   const hasOutgoingEdge = useMemo(() => {
     if (!Array.isArray(edges)) return false;

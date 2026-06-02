@@ -58,6 +58,7 @@ class WorkflowEngine:
         trigger_type: str = "manual",
         on_node_update: Optional[Callable] = None,
         test_mode: bool = False,
+        timeout: Optional[float] = None,
     ) -> WorkflowRunRecord:
         """Execute a workflow.
 
@@ -68,6 +69,7 @@ class WorkflowEngine:
             trigger_type: How the workflow was triggered.
             on_node_update: Optional callback for real-time node status updates.
             test_mode: If True, execute without persisting run history.
+            timeout: Maximum execution time in seconds (default 300s for test, None for normal).
         """
         # Resolve version_id if not provided
         if not version_id:
@@ -101,11 +103,13 @@ class WorkflowEngine:
                 input_variables=input_variables,
             )
 
-        # Register the running task for cancellation support
-        if not test_mode:
-            current_task = asyncio.current_task()
-            if current_task:
-                self._running_tasks[run.id] = current_task
+        # Register the running task for cancellation support (always, including test_mode)
+        current_task = asyncio.current_task()
+        if current_task:
+            self._running_tasks[run.id] = current_task
+
+        # Default timeout: 300s for test mode, no default for normal runs
+        exec_timeout = timeout if timeout is not None else (300.0 if test_mode else None)
 
         try:
             nodes = self._store.list_nodes(version_id)
@@ -127,9 +131,8 @@ class WorkflowEngine:
                 await on_node_update(run.id, None, "running", {})
 
             for node_id in execution_order:
-                # Check for cancellation before each node
-                if not test_mode:
-                    self._check_cancellation(run.id)
+                # Check for cancellation before each node (always, including test_mode)
+                self._check_cancellation(run.id)
 
                 node = next((n for n in nodes if n.id == node_id), None)
                 if not node:
@@ -165,7 +168,12 @@ class WorkflowEngine:
                     run_node = self._run_store.create_run_node(run.id, node_id)
 
                 try:
-                    result = await self._execute_node(node, context, edges)
+                    # Per-node timeout: use global timeout if set, else 120s default
+                    node_timeout = exec_timeout if exec_timeout else 120.0
+                    result = await asyncio.wait_for(
+                        self._execute_node(node, context, edges),
+                        timeout=node_timeout,
+                    )
 
                     for key, value in result.items():
                         context.set_node_output(node_id, key, value)
@@ -253,6 +261,31 @@ class WorkflowEngine:
                     "all_traces": context.get_all_traces(),
                 })
 
+        except asyncio.TimeoutError:
+            error_msg = f"Workflow execution timed out after {exec_timeout}s" if exec_timeout else "Workflow execution timed out"
+            logger.warning(error_msg)
+            if not test_mode:
+                self._run_store.update_run_status(run.id, "failed", error_message=error_msg)
+            else:
+                run.status = "failed"
+                run.error_message = error_msg
+                run.completed_at = datetime.now()
+            if on_node_update:
+                await on_node_update(run.id, None, "failed", {"error": error_msg})
+            return run if test_mode else self._run_store.get_run(run.id)
+
+        except asyncio.CancelledError:
+            # Task was cancelled (e.g. via cancel_run) - treat as workflow cancellation
+            logger.info(f"Workflow run {run.id} was cancelled via task cancellation")
+            if not test_mode:
+                self._run_store.update_run_status(run.id, "cancelled")
+            else:
+                run.status = "cancelled"
+                run.completed_at = datetime.now()
+            if on_node_update:
+                await on_node_update(run.id, None, "cancelled", {})
+            raise WorkflowCancelledError(f"Run {run.id} was cancelled")
+
         except WorkflowCancelledError:
             # Already handled above, just re-raise
             raise
@@ -269,8 +302,8 @@ class WorkflowEngine:
                 await on_node_update(run.id, None, "failed", {"error": str(e)})
 
         finally:
-            if not test_mode:
-                self._running_tasks.pop(run.id, None)
+            # Always clean up running task tracking
+            self._running_tasks.pop(run.id, None)
 
         if test_mode:
             run.status = "completed"
@@ -281,8 +314,13 @@ class WorkflowEngine:
 
     def _check_cancellation(self, run_id: str) -> None:
         """Check if the run has been cancelled and raise if so."""
+        # Check DB for normal runs
         run = self._run_store.get_run(run_id)
         if run and run.status == "cancelled":
+            raise WorkflowCancelledError(f"Run {run_id} was cancelled")
+        # Check task directly for test_mode or immediate cancellation
+        task = self._running_tasks.get(run_id)
+        if task and task.cancelled():
             raise WorkflowCancelledError(f"Run {run_id} was cancelled")
 
     def cancel_run(self, run_id: str) -> bool:
@@ -294,15 +332,23 @@ class WorkflowEngine:
         Returns:
             True if the run was found and cancelled, False otherwise.
         """
+        cancelled = False
+
+        # Update DB status for normal runs
         run = self._run_store.get_run(run_id)
-        if not run:
-            return False
+        if run:
+            if run.status not in ("pending", "running"):
+                return False
+            self._run_store.update_run_status(run_id, "cancelled")
+            cancelled = True
 
-        if run.status not in ("pending", "running"):
-            return False  # Can only cancel pending or running runs
+        # Directly cancel the asyncio task (works for both normal and test_mode)
+        task = self._running_tasks.get(run_id)
+        if task and not task.done():
+            task.cancel()
+            cancelled = True
 
-        self._run_store.update_run_status(run_id, "cancelled")
-        return True
+        return cancelled
 
     def _build_execution_order(
         self,
@@ -375,6 +421,20 @@ class WorkflowEngine:
                 graph[edge.source_node_id].append(edge.target_node_id)
                 in_degree[edge.target_node_id] += 1
 
+        # 4️⃣.5️⃣ 扫描节点 config 中的变量引用，添加隐式依赖边
+        # 例如 database 节点的 fieldMappings.value = {{codeNode.result}}
+        # 需要确保 codeNode 在 database 之前执行
+        for node in effective_nodes:
+            config = node.config or {}
+            for cfg_value in config.values():
+                refs = self._extract_node_refs_from_value(cfg_value)
+                for ref_node_id in refs:
+                    if ref_node_id in graph and ref_node_id != node.id:
+                        if node.id not in graph[ref_node_id]:
+                            graph[ref_node_id].append(node.id)
+                            in_degree[node.id] += 1
+                            logger.info(f"[_build_execution_order] implicit edge: {ref_node_id} -> {node.id}")
+
         # Use deque for O(1) popleft instead of O(n) list.pop(0)
         queue: deque[str] = deque(sorted(
             (n_id for n_id, degree in in_degree.items() if degree == 0),
@@ -396,6 +456,23 @@ class WorkflowEngine:
             raise ValueError("Workflow contains cycles")
 
         return result
+
+    def _extract_node_refs_from_value(self, value: Any) -> set[str]:
+        """Extract {{nodeId.outputKey}} node IDs from a config value recursively."""
+        import re
+        refs: set[str] = set()
+        if isinstance(value, str):
+            for m in re.finditer(r'\{\{(.+?)\}\}', value):
+                ref = m.group(1)
+                if '.' in ref:
+                    refs.add(ref.split('.', 1)[0])
+        elif isinstance(value, dict):
+            for v in value.values():
+                refs.update(self._extract_node_refs_from_value(v))
+        elif isinstance(value, list):
+            for item in value:
+                refs.update(self._extract_node_refs_from_value(item))
+        return refs
 
     async def _execute_node(
         self,
@@ -432,6 +509,17 @@ class WorkflowEngine:
                     inputs[key] = context.resolve_value(value)
         elif isinstance(inputs_config, dict):
             inputs = context.resolve_inputs(inputs_config)
+
+        # 将解析后的 inputs 绑定到当前节点上下文，供 userPrompt / systemPrompt 中的
+        # {{变量名}} 短引用使用（如 {{input}}）。只注入有效绑定的变量。
+        valid_inputs = {}
+        for key, value in inputs.items():
+            if value is None or value == "" or value == "{{?}}":
+                continue
+            if isinstance(value, str) and value.startswith("[未解析"):
+                continue
+            valid_inputs[key] = value
+        context._current_inputs = valid_inputs
 
         # Translate loopConfig/parallelConfig into inputs format
         if node_type in ("loop", "parallelRun"):
@@ -475,13 +563,21 @@ class WorkflowEngine:
         # Fallback: for nodes that store config directly in node.config (not in inputs list),
         # inject config values into inputs when inputs list is empty or values are missing.
         # This fixes nodes like database, http, etc. where frontend saves to node.data directly.
+        # For values containing {{...}} variable refs, keep them as-is so the executor can
+        # resolve them at execution time (after all dependencies have produced outputs).
         if node_type in ("database", "http", "httpRequest468", "readFiles"):
             logger.info(f"[_execute_node] fallback for {node_type}, inputs before: {inputs}")
             for key, value in (node.config or {}).items():
                 if key not in ("inputs", "outputs", "_parentId", "__parentId") and value is not None:
                     if key not in inputs or inputs[key] is None or inputs[key] == "":
-                        inputs[key] = context.resolve_value(value)
-                        logger.info(f"[_execute_node] fallback injected: {key} = {inputs[key]}")
+                        # Only resolve values that don't contain variable references;
+                        # leave {{...}} refs for the executor to resolve later.
+                        if self._contains_var_ref(value):
+                            inputs[key] = value
+                            logger.info(f"[_execute_node] fallback injected (raw ref): {key} = {value}")
+                        else:
+                            inputs[key] = context.resolve_value(value)
+                            logger.info(f"[_execute_node] fallback injected (resolved): {key} = {inputs[key]}")
             logger.info(f"[_execute_node] inputs after fallback: {inputs}")
 
         # Record resolved inputs into the trace so the outer loop can reference them
@@ -535,6 +631,17 @@ class WorkflowEngine:
             return await executor(node, inputs, context)
 
         return {"result": inputs}
+
+    def _contains_var_ref(self, value: Any) -> bool:
+        """Check if a value contains {{...}} variable references."""
+        import re
+        if isinstance(value, str):
+            return bool(re.search(r'\{\{(.+?)\}\}', value))
+        elif isinstance(value, dict):
+            return any(self._contains_var_ref(v) for v in value.values())
+        elif isinstance(value, list):
+            return any(self._contains_var_ref(item) for item in value)
+        return False
 
     async def execute_step(
         self,

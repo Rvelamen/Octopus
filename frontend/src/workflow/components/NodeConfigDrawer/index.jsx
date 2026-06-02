@@ -235,6 +235,7 @@ const NodeConfigDrawer = ({ isOpen, onClose, onSaveWorkflow }) => {
       case 'chatNode':
         return <LLMNodeForm {...formProps} />;
       case 'http':
+      case 'httpRequest468':
         return <HTTPNodeForm {...formProps} />;
       case 'textEditor':
         return <TextNodeForm {...formProps} />;

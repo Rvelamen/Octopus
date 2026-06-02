@@ -15,6 +15,7 @@ class MessageType(Enum):
     SAVE_CONFIG = "save_config"      # Save configuration
     PING = "ping"                    # Keep-alive ping
     GET_MODELS = "get_models"        # Get available models for a provider
+    GET_SLASH_COMMANDS = "get_slash_commands"  # Get available slash commands
 
     # MCP - Client -> Server
     MCP_GET_STATUS = "mcp_get_status"              # Get MCP system status
@@ -94,6 +95,12 @@ class MessageType(Enum):
 
     # PDF Chat - Client -> Server
     PDF_CHAT = "pdf_chat"                                    # PDF chat operations
+
+    # Library Chat - Client -> Server
+    LIBRARY_CHAT = "library_chat"                            # Library chat operations
+
+    # Workflow Design Chat - Client -> Server
+    WORKFLOW_DESIGN = "workflow_design"                      # AI-assisted workflow design chat
 
     # Subagent - Client -> Server
     SUBAGENT_LIST = "subagent_list"
@@ -585,6 +592,7 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.LIBRARY_SEARCH_CHUNKS,
     MessageType.LIBRARY_AI_EXTRACT_META,
     MessageType.LIBRARY_GRAPH,
+    MessageType.LIBRARY_CHAT,
     MessageType.FILE_PREVIEW_PDF,
     MessageType.WORKSPACE_LIST,
     MessageType.WORKSPACE_READ,

@@ -20,11 +20,10 @@ export const WORKFLOW_TEMPLATES = [
           intro: '接收用户输入',
           avatar: '🚀',
           colorSchema: 'blue',
-          inputs: [],
-          outputs: [
-            { key: 'userChatInput', label: '用户输入' },
-            { key: 'userFiles', label: '用户文件' }
-          ]
+          inputs: [
+            { key: 'input', name: 'input', type: 'string' }
+          ],
+          outputs: []
         }
       },
       {
@@ -39,9 +38,9 @@ export const WORKFLOW_TEMPLATES = [
           colorSchema: 'purple',
           model: 'gpt-4o-mini',
           systemPrompt: '',
-          userPrompt: '{{start-1.userChatInput}}',
+          userPrompt: '{{start-1.input}}',
           inputs: [
-            { id: 'input_1', name: 'input', type: 'string', value: '{{start-1.userChatInput}}' }
+            { id: 'input_1', name: 'input', type: 'string', value: '{{start-1.input}}' }
           ],
           outputs: [
             { id: 'default_out', name: 'output', type: 'string' }
@@ -98,11 +97,10 @@ export const WORKFLOW_TEMPLATES = [
           intro: '接收用户输入',
           avatar: '🚀',
           colorSchema: 'blue',
-          inputs: [],
-          outputs: [
-            { key: 'userChatInput', label: '用户输入' },
-            { key: 'userFiles', label: '用户文件' }
-          ]
+          inputs: [
+            { key: 'input', name: 'input', type: 'string' }
+          ],
+          outputs: []
         }
       },
       {
@@ -116,7 +114,7 @@ export const WORKFLOW_TEMPLATES = [
           avatar: '📊',
           colorSchema: 'orange',
           inputs: [
-            { key: 'content', label: '问题内容', inputType: 'reference', value: '{{start-1.userChatInput}}' },
+            { key: 'content', label: '问题内容', inputType: 'reference', value: '{{start-1.input}}' },
             { key: 'categories', label: '分类选项', inputType: 'textarea', value: '产品咨询,技术支持,投诉建议' }
           ],
           outputs: [
@@ -155,9 +153,9 @@ export const WORKFLOW_TEMPLATES = [
           colorSchema: 'purple',
           model: 'gpt-4o-mini',
           systemPrompt: '你是技术支持专家，请专业地回答用户问题。',
-          userPrompt: '{{start-1.userChatInput}}',
+          userPrompt: '{{start-1.input}}',
           inputs: [
-            { id: 'input_1', name: 'input', type: 'string', value: '{{start-1.userChatInput}}' }
+            { id: 'input_1', name: 'input', type: 'string', value: '{{start-1.input}}' }
           ],
           outputs: [
             { id: 'default_out', name: 'output', type: 'string' }
@@ -176,9 +174,9 @@ export const WORKFLOW_TEMPLATES = [
           colorSchema: 'purple',
           model: 'gpt-4o-mini',
           systemPrompt: '你是友好的客服助手，请热情地回答用户问题。',
-          userPrompt: '{{start-1.userChatInput}}',
+          userPrompt: '{{start-1.input}}',
           inputs: [
-            { id: 'input_1', name: 'input', type: 'string', value: '{{start-1.userChatInput}}' }
+            { id: 'input_1', name: 'input', type: 'string', value: '{{start-1.input}}' }
           ],
           outputs: [
             { id: 'default_out', name: 'output', type: 'string' }
@@ -207,7 +205,7 @@ export const WORKFLOW_TEMPLATES = [
         id: 'e1',
         source: 'start-1',
         target: 'classify-1',
-        sourceHandle: 'start-1-source-userChatInput',
+        sourceHandle: 'start-1-source',
         targetHandle: 'classify-1-target-content'
       },
       {

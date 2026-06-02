@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import PendingImages from './PendingImages.jsx';
 import PendingFiles from './PendingFiles.jsx';
+import SlashCommandMenu from '../SlashCommandMenu/index.jsx';
+import { useSlashCommands } from '../../hooks/useSlashCommands.js';
 import './ChatInput.css';
 
 function ChatInput({
@@ -26,13 +28,32 @@ function ChatInput({
   placeholder,
   onCompress,
   isCompressing,
-  contextStats
+  contextStats,
+  slashCommands = [],
 }) {
   const [isInputExpanded, setIsInputExpanded] = useState(false);
   const [inputHeight, setInputHeight] = useState(200);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const fileUploadRef = useRef(null);
+
+  const {
+    isOpen: isSlashOpen,
+    query: slashQuery,
+    options: slashOptions,
+    activeIndex: slashActiveIndex,
+    setActiveIndex: setSlashActiveIndex,
+    handleTextChange: handleSlashTextChange,
+    handleCaretChange: handleSlashCaretChange,
+    handleKeyDown: handleSlashKeyDown,
+    selectOption: selectSlashOption,
+    closeMenu: closeSlashMenu,
+  } = useSlashCommands({
+    text: inputValue,
+    setText: onInputChange,
+    textareaRef,
+    commands: slashCommands,
+  });
 
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 B';
@@ -43,6 +64,12 @@ function ChatInput({
   };
 
   const handleKeyDown = (e) => {
+    // If slash menu is open, let it handle navigation keys
+    if (isSlashOpen) {
+      handleSlashKeyDown(e);
+      return;
+    }
+
     if (e.nativeEvent?.isComposing || e.isComposing) {
       return;
     }
@@ -50,6 +77,22 @@ function ChatInput({
       e.preventDefault();
       onSend();
     }
+  };
+
+  const handleTextareaChange = (e) => {
+    const value = e.currentTarget.value;
+    const caret = e.currentTarget.selectionStart;
+    onInputChange(value);
+    handleSlashTextChange(value, caret);
+  };
+
+  const handleTextareaSelection = (e) => {
+    const caret = e.currentTarget.selectionStart;
+    handleSlashCaretChange(caret);
+  };
+
+  const handleTextareaBlur = () => {
+    closeSlashMenu();
   };
 
   const handlePaste = (e) => {
@@ -108,14 +151,27 @@ function ChatInput({
           <textarea
             ref={textareaRef}
             value={inputValue}
-            onChange={(e) => onInputChange(e.target.value)}
+            onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
+            onSelect={handleTextareaSelection}
+            onKeyUp={handleTextareaSelection}
+            onClick={handleTextareaSelection}
+            onBlur={handleTextareaBlur}
             placeholder={placeholder}
             className="inputbar-textarea"
             disabled={isProcessing || isUploading || disabled || isCompressing}
             autoFocus
             style={{ height: isInputExpanded ? inputHeight : 48 }}
+          />
+          <SlashCommandMenu
+            open={isSlashOpen && !disabled}
+            query={slashQuery}
+            options={slashOptions}
+            activeIndex={slashActiveIndex}
+            onSelect={selectSlashOption}
+            onHover={setSlashActiveIndex}
+            textareaRef={textareaRef}
           />
         </div>
 

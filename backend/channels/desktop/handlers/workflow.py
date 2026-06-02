@@ -308,9 +308,10 @@ class WorkflowHandler(MessageHandler):
             await self._send_error(websocket, message.request_id, "Version not found")
             return
 
-        if version.status.value != "draft":
-            await self._send_error(websocket, message.request_id, "Can only edit draft versions")
-            return
+        # If editing a published version, silently downgrade it back to draft
+        # so the user can keep editing without manually creating a new version.
+        if version.status.value == "published":
+            self._store._downgrade_to_draft(version_id)
 
         result = self._store.save_definition(
             version_id=version_id,

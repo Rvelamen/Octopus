@@ -30,6 +30,11 @@ from backend.extensions.desktop_handlers import (
 # Import chat handlers
 from backend.channels.desktop.handlers.chat import ChatHandler
 from backend.channels.desktop.handlers.pdf_chat import PdfChatHandler
+from backend.channels.desktop.handlers.library_chat import LibraryChatHandler
+from backend.channels.desktop.handlers.workflow_design_chat import WorkflowDesignChatHandler
+
+# Import slash commands handler
+from backend.channels.desktop.handlers.slash_commands import GetSlashCommandsHandler
 
 # Import config handlers
 from backend.channels.desktop.handlers.config import (
@@ -139,10 +144,13 @@ class HandlerRegistry:
         self.handlers: dict[MessageType, MessageHandler] = {
             MessageType.CHAT: ChatHandler(bus, pending_responses),
             MessageType.PDF_CHAT: PdfChatHandler(bus, pending_responses),
+            MessageType.LIBRARY_CHAT: LibraryChatHandler(bus, pending_responses),
+            MessageType.WORKFLOW_DESIGN: WorkflowDesignChatHandler(bus, pending_responses),
             MessageType.GET_CONFIG: GetConfigHandler(bus, self.db),
             MessageType.SAVE_CONFIG: SaveConfigHandler(bus),
             MessageType.PING: PingHandler(bus),
             MessageType.GET_MODELS: GetModelsHandler(bus, self.db),
+            MessageType.GET_SLASH_COMMANDS: GetSlashCommandsHandler(bus),
             MessageType.STOP_AGENTS: StopAgentsHandler(bus, agent_loop, subagent_manager),
         }
 

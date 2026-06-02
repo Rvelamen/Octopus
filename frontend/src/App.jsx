@@ -539,6 +539,7 @@ function App() {
               <Route path="/chat" element={
                 <Chat
                   sendWSMessage={sendMessage}
+                  connectionStatus={connectionStatus}
                   onSendMessage={handleSendMessage}
                   onStopGeneration={handleStopGeneration}
                   isProcessing={chat.isProcessing}
@@ -591,6 +592,7 @@ function App() {
               <Route path="/" element={
                 <Chat
                   sendWSMessage={sendMessage}
+                  connectionStatus={connectionStatus}
                   onSendMessage={handleSendMessage}
                   onStopGeneration={handleStopGeneration}
                   isProcessing={chat.isProcessing}

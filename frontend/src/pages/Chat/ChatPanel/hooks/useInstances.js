@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 
 const PAGE_SIZE = 20;
 
-export function useInstances(sendWSMessage) {
+export function useInstances(sendWSMessage, connectionStatus) {
   const [instances, setInstances] = useState([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -85,20 +85,21 @@ export function useInstances(sendWSMessage) {
 
   useEffect(() => {
     isComponentMounted.current = true;
-    fetchInstances(false, true);
     return () => {
       isComponentMounted.current = false;
     };
   }, []);
 
+  // Only fetch when WebSocket is actually connected
   useEffect(() => {
-    if (sendWSMessage && isComponentMounted.current && initialLoading) {
-      fetchInstances(false, false);
+    if (sendWSMessage && connectionStatus === 'connected' && isComponentMounted.current) {
+      fetchInstances(false, true);
     }
-  }, [sendWSMessage]);
+  }, [sendWSMessage, connectionStatus]);
 
+  // Retry if still empty after connected and loaded
   useEffect(() => {
-    if (instances.length === 0 && !initialLoading && !error && sendWSMessage) {
+    if (instances.length === 0 && !initialLoading && !error && sendWSMessage && connectionStatus === 'connected') {
       const retryTimer = setInterval(() => {
         if (isComponentMounted.current) {
           fetchInstances(false, true);
@@ -114,7 +115,7 @@ export function useInstances(sendWSMessage) {
         clearTimeout(stopTimer);
       };
     }
-  }, [instances.length, initialLoading, error, sendWSMessage, fetchInstances]);
+  }, [instances.length, initialLoading, error, sendWSMessage, connectionStatus, fetchInstances]);
 
   return {
     instances,

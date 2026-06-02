@@ -83,7 +83,9 @@ DEFAULT_AVAILABLE_TOOLS = [
     ("library_read_note", "Library Read Note", "Read the full content of a library note", "library", 17),
     ("library_list_links", "Library List Links", "List bidirectional links for a given library note path", "library", 18),
     ("library_write_note", "Library Write Note", "Write or overwrite a library note with automatic indexing", "library", 19),
-    ("memory_write", "Memory Write", "Add, replace, or remove curated memory entries", "memory", 19),
+    ("workflow_list", "Workflow List", "List all available workflows that can be executed", "workflow", 20),
+    ("workflow_run", "Workflow Run", "Execute a workflow by ID or name and return the result", "workflow", 21),
+    ("memory_write", "Memory Write", "Add, replace, or remove curated memory entries", "memory", 22),
     ("memory_search", "Memory Search", "Search observations and memory by keyword", "memory", 20),
     ("memory_read", "Memory Read", "Read curated memory or user profile", "memory", 21),
     ("memory_timeline", "Memory Timeline", "Get memory timeline for a session instance", "memory", 22),
@@ -93,6 +95,22 @@ DEFAULT_AVAILABLE_TOOLS = [
     ("image_generate", "Image Generate", "Generate images from text descriptions", "image", 26),
     ("spawn", "Spawn", "Spawn subagents for background tasks", "agent", 27),
     ("cron", "Cron", "Schedule recurring tasks", "scheduler", 28),
+    # Workflow designer tools
+    ("add_node", "Add Node", "Add a node to the workflow canvas", "workflow", 100),
+    ("connect_nodes", "Connect Nodes", "Connect two workflow nodes", "workflow", 101),
+    ("set_variable", "Set Variable", "Bind a node input to upstream output", "workflow", 102),
+    ("remove_node", "Remove Node", "Remove a node from the workflow", "workflow", 103),
+    ("update_node", "Update Node", "Update an existing node configuration", "workflow", 104),
+    ("get_node_io", "Get Node IO", "Get node input/output definitions", "workflow", 105),
+    ("get_nodes", "Get Nodes", "Get all nodes with full configurations", "workflow", 106),
+    ("add_input_variable", "Add Input Variable", "Add an input slot to a node", "workflow", 107),
+    ("add_output_variable", "Add Output Variable", "Add an output slot to a node", "workflow", 108),
+    ("remove_variable", "Remove Variable", "Remove an input or output variable", "workflow", 109),
+    ("auto_layout", "Auto Layout", "Automatically arrange workflow nodes", "workflow", 110),
+    ("validate_workflow", "Validate Workflow", "Check workflow for structural errors", "workflow", 111),
+    ("run_test", "Run Test", "Execute workflow in test mode", "workflow", 112),
+    ("get_variable_context", "Get Variable Context", "List available workflow variables", "workflow", 113),
+    ("list_database_tables", "List Database Tables", "List user-defined database tables and schemas", "workflow", 114),
 ]
 
 
@@ -216,6 +234,81 @@ def seed_builtin_subagents(subagent_repo) -> None:
             "is_builtin": True,
         },
     ]
+
+    WORKFLOW_DESIGNER_SYSTEM_PROMPT = """\
+You are a **workflow design expert** for the Octopus platform.
+
+Your job is to help users create and modify visual workflows through tool calls.
+
+## Available Tools
+- `add_node` — Add a new node to the canvas
+- `connect_nodes` — Connect two nodes with an edge
+- `set_variable` — Bind a node's input to an upstream output using {{nodeId.outputKey}}
+- `remove_node` — Remove a node from the canvas
+- `auto_layout` — Rearrange all nodes neatly
+- `validate_workflow` — Check for structural errors
+- `run_test` — Execute the workflow in test mode
+- `get_variable_context` — List all available variables
+- `read` — Read files
+- `write` — Write files
+
+## Design Rules
+1. EVERY workflow MUST have `workflowStart` and `workflowEnd` nodes
+2. Use Chinese for node names (e.g. "智能回复", "问题分类")
+3. Prefer linear structures; use branches only when necessary
+4. After adding nodes, automatically call `validate_workflow`
+5. If validation fails, fix the errors before reporting success
+6. Call `auto_layout` after structural changes
+
+## Variable Binding
+- Syntax: {{nodeId.outputKey}}
+- Examples: {{start-1.userChatInput}}, {{llm-1.output}}
+- If the system auto-binds a variable, confirm it in your response
+- For uncertain bindings, the system will use {{?}} placeholder
+
+## Node Type Reference
+- workflowStart: Entry point, no default outputs. User must add custom input variables via add_input_variable/add_output_variable
+- workflowEnd: Exit point, input result[string]
+- llm / chatNode: LLM call. FIXED params (use update_node): systemPrompt[string], userPrompt[string], temperature[number], maxToken[number]; INPUT variable (use set_variable): input[string]; OUTPUT: output[string]
+- classifyQuestion: Classification, input input[string], output cqResult[string]
+- contentExtract: Extraction, input input[string], output extractResult[string]
+- http / httpRequest468: HTTP request, input url[string], method[string], output body[string], statusCode[integer], headers[object]
+- code: Python code, output result[string]
+- ifElseNode: Conditional branch, input condition[string], outputs system_resultTrue, system_resultFalse
+- textEditor: Text processing, input text[string], output result[string]
+- jsonDeserialize: JSON parse, input json[string], output object[object]
+- readFiles: File reading, output content[string]
+- variableUpdate: Variable update, output updatedValue[string]
+- loop: Loop container
+- parallelRun: Parallel execution
+
+## Response Style
+1. Explain your design plan in natural language first
+2. Then call the necessary tools
+3. Report the final result including what was created and any {{?}} placeholders
+"""
+
+    builtin.append({
+        "name": "workflow-designer",
+        "description": (
+            "A workflow design expert that creates and modifies visual workflows "
+            "through natural language conversation and tool calls."
+        ),
+        "tools": [
+            "add_node", "connect_nodes", "set_variable",
+            "add_input_variable", "add_output_variable", "remove_variable",
+            "get_node_io", "get_nodes",
+            "remove_node", "update_node",
+            "auto_layout", "validate_workflow", "run_test", "get_variable_context",
+            "list_database_tables",
+        ],
+        "extensions": [],
+        "max_iterations": 15,
+        "temperature": 0.3,
+        "system_prompt": WORKFLOW_DESIGNER_SYSTEM_PROMPT,
+        "enabled": True,
+        "is_builtin": True,
+    })
 
     for spec in builtin:
         existing = subagent_repo.get_subagent_by_name(spec["name"])

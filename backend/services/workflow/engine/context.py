@@ -68,6 +68,7 @@ class WorkflowContext:
         self._variables = input_variables or {}
         self._node_outputs: dict[str, dict[str, Any]] = {}
         self._current_node_id: Optional[str] = None
+        self._current_inputs: dict[str, Any] = {}
         self._version_id: Optional[str] = version_id
         # Trace recording
         self._node_traces: dict[str, NodeExecutionTrace] = {}
@@ -156,6 +157,7 @@ class WorkflowContext:
     def set_current_node(self, node_id: str) -> None:
         """Set current executing node."""
         self._current_node_id = node_id
+        self._current_inputs = {}
 
     def get_current_node(self) -> Optional[str]:
         """Get current executing node."""
@@ -243,22 +245,14 @@ class WorkflowContext:
                             "available_nodes": list(self._node_outputs.keys()),
                         },
                     )
-                    return f"[未解析变量: {value}]"
+                    # Variable not found → keep the original {{xxx}} text as-is
+                    return value
                 else:
-                    result = self.get_variable(ref)
-                    if result is not None:
-                        return result
-                    logger.warning(
-                        f"未解析的全局变量引用: {{{ref}}}, 可用变量=%s",
-                        list(self._variables.keys()),
-                    )
-                    self.record_unresolved_ref(
-                        self._current_node_id or "unknown",
-                        ref,
-                        "global_variable",
-                        {"available_variables": list(self._variables.keys())},
-                    )
-                    return f"[未解析变量: {value}]"
+                    # {{varName}} → 只在当前节点已定义的 inputs 中查找
+                    if ref in self._current_inputs:
+                        return self._current_inputs[ref]
+                    # 不在当前节点 inputs 中 → 保持原样不解析
+                    return value
 
             def replace_ref(match):
                 ref = match.group(1)
@@ -282,18 +276,14 @@ class WorkflowContext:
                         "inline_node_output",
                         {"node_id": node_id, "output_key": output_key},
                     )
-                    return f"[未解析: {match.group(0)}]"
+                    # Variable not found → keep the original {{xxx}} text as-is
+                    return match.group(0)
                 else:
-                    result = self.get_variable(ref)
-                    if result is not None:
-                        return str(result)
-                    logger.warning("字符串内嵌全局变量未解析: {{{ref}}}", ref=ref)
-                    self.record_unresolved_ref(
-                        self._current_node_id or "unknown",
-                        ref,
-                        "inline_global_variable",
-                    )
-                    return f"[未解析: {match.group(0)}]"
+                    # {{varName}} → 只在当前节点已定义的 inputs 中查找
+                    if ref in self._current_inputs:
+                        return str(self._current_inputs[ref])
+                    # 不在当前节点 inputs 中 → 保持原样不解析
+                    return match.group(0)
 
             return re.sub(r'\{\{(.+?)\}\}', replace_ref, value)
 

@@ -422,7 +422,7 @@ const LibraryImportModal = ({ open, onClose, onImportPdf, onImportDoi, onImportA
       footer={null}
       width={520}
       closable={!isImporting}
-      maskClosable={!isImporting}
+      mask={{ closable: !isImporting }}
     >
       <div style={{ marginBottom: 16 }}>
         <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Target Collection (optional)</label>

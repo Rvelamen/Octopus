@@ -30,7 +30,9 @@ from backend.tools.action import ActionTool
 from backend.tools.image import ImageUnderstandTool, ImageGenerateTool
 from backend.tools.web_fetch import WebFetchTool
 from backend.tools.knowledge import KBSearchTool, KBReadNoteTool, KBWriteNoteTool, KBListLinksTool, KBTimelineTool
+from backend.tools.library_knowledge import LibrarySearchTool, LibraryReadNoteTool, LibraryListLinksTool, LibraryTimelineTool, LibraryWriteNoteTool
 from backend.tools.memory import MemorySearchTool, MemoryReadTool, MemoryTimelineTool
+from backend.tools.workflow import WorkflowListTool, WorkflowRunTool
 from backend.tools.browser.registration import register_browser_tools
 
 
@@ -188,6 +190,20 @@ class AgentContainer:
             self.tools.register(KBTimelineTool(exclude_vault="library"))
         if should_register("kb_write_note"):
             self.tools.register(KBWriteNoteTool())
+        if should_register("library_search"):
+            self.tools.register(LibrarySearchTool())
+        if should_register("library_read_note"):
+            self.tools.register(LibraryReadNoteTool())
+        if should_register("library_list_links"):
+            self.tools.register(LibraryListLinksTool())
+        if should_register("library_timeline"):
+            self.tools.register(LibraryTimelineTool())
+        if should_register("library_write_note"):
+            self.tools.register(LibraryWriteNoteTool())
+        if should_register("workflow_list"):
+            self.tools.register(WorkflowListTool(db=self.db))
+        if should_register("workflow_run"):
+            self.tools.register(WorkflowRunTool(db=self.db))
         if should_register("image_understand"):
             self.tools.register(ImageUnderstandTool())
         if should_register("image_generate"):

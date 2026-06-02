@@ -21,9 +21,41 @@ class ChatHandler(MessageHandler):
         self.pending_responses = pending_responses
         self.image_service = image_service
 
+    @staticmethod
+    def _rewrite_skill_content(content: str) -> str:
+        """Detect /skill:{name} prefix and inject skill documentation."""
+        if not isinstance(content, str) or not content.startswith("/skill:"):
+            return content
+
+        parts = content.split(" ", 1)
+        skill_cmd = parts[0]  # e.g. "/skill:arxiv-to-obsidian"
+        skill_name = skill_cmd.replace("/skill:", "")
+        task_desc = parts[1] if len(parts) > 1 else ""
+
+        try:
+            from backend.extensions.registry import get_registry
+            registry = get_registry()
+            skill = registry.get_skill(skill_name) or registry.get(skill_name)
+            if skill and hasattr(skill, "load_documentation"):
+                skill_doc = skill.load_documentation()
+                # Truncate very long skill docs to avoid context bloat
+                MAX_DOC_LEN = 4000
+                if len(skill_doc) > MAX_DOC_LEN:
+                    skill_doc = skill_doc[:MAX_DOC_LEN] + "\n... [truncated]"
+                return (
+                    f"[Using skill: {skill_name}]\n\n"
+                    f"Skill documentation:\n{skill_doc}\n\n"
+                    f"Task: {task_desc}"
+                )
+        except Exception as e:
+            logger.warning(f"Failed to load skill '{skill_name}': {e}")
+
+        return content
+
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Process a chat message and forward to agent."""
         content = message.data.get("content", "")
+        content = self._rewrite_skill_content(content)
         images = message.data.get("images", [])
         files = message.data.get("files", [])
 
@@ -90,7 +122,7 @@ class ChatHandler(MessageHandler):
 
     async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: ChatRequest) -> None:
         """Process a validated chat message and forward to agent."""
-        content = validated.content
+        content = self._rewrite_skill_content(validated.content)
         images = validated.images
         files = validated.files
 

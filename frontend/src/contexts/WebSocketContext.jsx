@@ -6,6 +6,7 @@ export function WebSocketProvider({ children }) {
   const ws = useRef(null);
   const pendingRequests = useRef(new Map());
   const listeners = useRef(new Map());
+  const messageQueue = useRef([]);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(true);
   const [wsPort, setWsPort] = useState(18791);
@@ -31,32 +32,39 @@ export function WebSocketProvider({ children }) {
 
   const sendMessage = useCallback((type, data, timeout = 10000, retryCount = 0) => {
     return new Promise((resolve, reject) => {
-      if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
-        if (retryCount < 3) {
-          console.log(`[WebSocket] Not connected, retrying ${type} (attempt ${retryCount + 1})`);
-          setTimeout(() => {
-            sendMessage(type, data, timeout, retryCount + 1)
-              .then(resolve)
-              .catch(reject);
-          }, 1000 * (retryCount + 1));
-          return;
-        }
-        reject(new Error("WebSocket not connected"));
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        const requestId = generateRequestId();
+        const message = { type, request_id: requestId, data };
+
+        pendingRequests.current.set(requestId, { resolve, reject });
+        ws.current.send(JSON.stringify(message));
+
+        setTimeout(() => {
+          if (pendingRequests.current.has(requestId)) {
+            pendingRequests.current.delete(requestId);
+            reject(new Error("Request timeout"));
+          }
+        }, timeout);
         return;
       }
 
-      const requestId = generateRequestId();
-      const message = { type, request_id: requestId, data };
+      // If still connecting, queue the message to be sent after onopen
+      if (ws.current && ws.current.readyState === WebSocket.CONNECTING) {
+        messageQueue.current.push({ type, data, timeout, resolve, reject });
+        return;
+      }
 
-      pendingRequests.current.set(requestId, { resolve, reject });
-      ws.current.send(JSON.stringify(message));
-
-      setTimeout(() => {
-        if (pendingRequests.current.has(requestId)) {
-          pendingRequests.current.delete(requestId);
-          reject(new Error("Request timeout"));
-        }
-      }, timeout);
+      // Not connected or closed — retry a few times
+      if (retryCount < 3) {
+        console.log(`[WebSocket] Not connected, retrying ${type} (attempt ${retryCount + 1})`);
+        setTimeout(() => {
+          sendMessage(type, data, timeout, retryCount + 1)
+            .then(resolve)
+            .catch(reject);
+        }, 1000 * (retryCount + 1));
+        return;
+      }
+      reject(new Error("WebSocket not connected"));
     });
   }, []);
 
@@ -99,6 +107,15 @@ export function WebSocketProvider({ children }) {
         setTimeout(() => {
           if (isComponentMounted) setShowLoadingOverlay(false);
         }, remaining);
+
+        // Flush queued messages that were sent while CONNECTING
+        const queue = messageQueue.current;
+        messageQueue.current = [];
+        queue.forEach(({ type, data, timeout, resolve, reject }) => {
+          sendMessage(type, data, timeout)
+            .then(resolve)
+            .catch(reject);
+        });
       };
 
       ws.current.onmessage = (event) => {
@@ -139,7 +156,15 @@ export function WebSocketProvider({ children }) {
         setConnectionStatus("disconnected");
         setShowLoadingOverlay(true);
         overlayShowTimeRef.current = Date.now();
-        if (event.code !== 1000 && event.code !== 1001) {
+
+        // Reject queued messages if we are not going to reconnect
+        if (event.code === 1000 || event.code === 1001) {
+          const queue = messageQueue.current;
+          messageQueue.current = [];
+          queue.forEach(({ reject }) => {
+            reject(new Error("WebSocket closed"));
+          });
+        } else {
           reconnectTimer = setTimeout(connectWS, 3000);
         }
       };
@@ -157,6 +182,9 @@ export function WebSocketProvider({ children }) {
     return () => {
       isComponentMounted = false;
       if (reconnectTimer) clearTimeout(reconnectTimer);
+      const queue = messageQueue.current;
+      messageQueue.current = [];
+      queue.forEach(({ reject }) => reject(new Error("Component unmounting")));
       if (ws.current) {
         ws.current.close(1000, "Component unmounting");
         ws.current = null;

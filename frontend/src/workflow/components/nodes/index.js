@@ -27,6 +27,7 @@ const nodeTypes = {
   llm: withTestButton(memo(LLMNode)),
   chatNode: withTestButton(memo(LLMNode)),
   http: withTestButton(memo(HTTPNode)),
+  httpRequest468: withTestButton(memo(HTTPNode)),
   textEditor: withTestButton(memo(TextNode)),
   jsonSerialize: withTestButton(memo(JSONSerializeNode)),
   jsonDeserialize: withTestButton(memo(JSONDeserializeNode)),

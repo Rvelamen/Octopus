@@ -297,11 +297,31 @@ const NodeConfigDrawer = ({
   const updateNode = useWorkflowStore((state) => state.updateNode);
 
   // 从 nodeData 获取有效输入（有 name 的）
+  // 兼容旧节点：变量可能存于 outputs 中（旧版数据 model）
   const savedInputs = nodeData?.inputs || [];
-  const validInputs = savedInputs.filter(i => i.name && i.name.trim() !== '');
+  let validInputs = savedInputs.filter(i => i.name && i.name.trim() !== '');
+  if (validInputs.length === 0) {
+    const savedOutputs = nodeData?.outputs || [];
+    validInputs = savedOutputs
+      .filter(o => (o.name || o.key) && (o.name || o.key).trim() !== '')
+      .map(o => ({
+        id: o.id || `input_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: o.name || o.key,
+        type: o.type || 'string',
+        required: o.required || false,
+      }));
+  }
 
   const handleUpdateInputs = useCallback((newValidInputs) => {
-    updateNode(currentNodeId, { ...nodeData, inputs: newValidInputs });
+    // 同步 outputs 以兼容后端 _extract_outputs（旧版读取逻辑）和前端各处读取逻辑
+    const syncedOutputs = newValidInputs.map(i => ({
+      key: i.name,
+      name: i.name,
+      type: i.type || 'string',
+      label: i.name,
+      value: '',
+    }));
+    updateNode(currentNodeId, { ...nodeData, inputs: newValidInputs, outputs: syncedOutputs });
   }, [currentNodeId, nodeData, updateNode]);
 
   const handleDeleteInput = useCallback((index) => {

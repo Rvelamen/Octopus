@@ -56,7 +56,7 @@ export const withTestButton = (Component) => {
     };
 
     return (
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', display: 'inline-block' }}>
         <div style={{ position: 'relative' }}>
           <Component {...props} />
           {!isStartOrEnd && (

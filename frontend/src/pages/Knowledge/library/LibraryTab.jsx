@@ -1,21 +1,25 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Library, Search, Upload, Plus, Grid3X3, List, Table2, GitGraph, Sparkles, StickyNote, CheckSquare, Square, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Library, Search, Upload, Plus, Grid3X3, List, Table2, GitGraph, Sparkles, StickyNote, CheckSquare, Square, Trash2, Bot } from 'lucide-react';
 import { Input, Button, Segmented, Drawer, message, Progress } from 'antd';
 import { useDistillTasks } from '@contexts/DistillTaskContext';
+import { useWebSocket } from '@contexts/WebSocketContext';
 import TaskIndicator from '@components/TaskIndicator';
 import TaskDetailModal from '@components/TaskIndicator/TaskDetailModal';
 import useLibraryWS from './hooks/useLibraryWS';
 import useLibrary from './hooks/useLibrary';
+import { useLibraryChat } from './hooks/useLibraryChat';
 import LibrarySidebar from './LibrarySidebar';
 import LibraryListView from './LibraryListView';
 import LibraryItemDetail from './LibraryItemDetail';
 import LibraryImportModal from './LibraryImportModal';
 import LibraryCollectionModal from './LibraryCollectionModal';
 import LibraryGraphTab from './LibraryGraphTab';
+import LibraryChatDrawer from './LibraryChatDrawer';
 
 const DEFAULT_PAGE_SIZE = 20;
 
 const LibraryTab = ({ sendWSMessage }) => {
+  const { subscribe, unsubscribe } = useWebSocket();
   const libraryWS = useLibraryWS(sendWSMessage);
   const {
     collections,
@@ -55,6 +59,79 @@ const LibraryTab = ({ sendWSMessage }) => {
   const [batchNoting, setBatchNoting] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [batchProgress, setBatchProgress] = useState(null); // { type, total, done, current, success, fail }
+
+  // ── Library Chat ──
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatDrawerWidth, setChatDrawerWidth] = useState(480);
+  const chatResizeStateRef = useRef(null);
+
+  const startChatResize = useCallback((e) => {
+    e.preventDefault();
+    chatResizeStateRef.current = {
+      startX: e.clientX,
+      startWidth: chatDrawerWidth,
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [chatDrawerWidth]);
+
+  useEffect(() => {
+    const handleMove = (e) => {
+      const state = chatResizeStateRef.current;
+      if (!state) return;
+      const delta = state.startX - e.clientX;
+      setChatDrawerWidth(Math.max(280, Math.min(900, state.startWidth + delta)));
+    };
+    const handleUp = () => {
+      chatResizeStateRef.current = null;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+    };
+  }, []);
+
+  // Compute chat scope based on selection and current collection
+  const chatScope = useCallback(() => {
+    if (selectedIds.size > 0) {
+      return { type: 'items', item_ids: Array.from(selectedIds) };
+    }
+    if (selectedCollectionId && selectedCollectionId !== 1) {
+      return { type: 'collection', collection_id: selectedCollectionId };
+    }
+    return { type: 'global' };
+  }, [selectedIds, selectedCollectionId]);
+
+  const {
+    sessions: chatSessions,
+    currentSessionId: chatSessionId,
+    setCurrentSessionId: setChatSessionId,
+    messages: chatMessages,
+    loading: chatLoading,
+    streamingContent: chatStreamingContent,
+    createSession: createChatSession,
+    deleteSession: deleteChatSession,
+    sendChat: sendLibraryChat,
+  } = useLibraryChat({
+    sendMessage: sendWSMessage,
+    subscribe,
+    unsubscribe,
+    scope: chatScope(),
+  });
+
+  const scopeLabel = useCallback(() => {
+    const scope = chatScope();
+    if (scope.type === 'items') return `${scope.item_ids.length} items selected`;
+    if (scope.type === 'collection') {
+      const coll = collections.find((c) => c.id === scope.collection_id);
+      return coll?.name || `Collection ${scope.collection_id}`;
+    }
+    return 'All items';
+  }, [chatScope, collections]);
 
   // Distill task pagination state
   const [taskPagination, setTaskPagination] = useState({
@@ -352,6 +429,15 @@ const LibraryTab = ({ sendWSMessage }) => {
           Import
         </Button>
 
+        <Button
+          size="small"
+          type={chatOpen ? 'primary' : 'default'}
+          icon={<Bot size={14} />}
+          onClick={() => setChatOpen((v) => !v)}
+        >
+          Chat
+        </Button>
+
         <TaskIndicator
           onViewTaskDetail={handleViewTaskDetail}
           pagination={taskPagination}
@@ -452,7 +538,7 @@ const LibraryTab = ({ sendWSMessage }) => {
         </div>
       )}
 
-      {/* Main content: sidebar + list/graph */}
+      {/* Main content: sidebar + list/graph + chat */}
       <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
         <LibrarySidebar
           collections={collections}
@@ -469,32 +555,56 @@ const LibraryTab = ({ sendWSMessage }) => {
           loading={loading}
         />
 
-        {showGraph ? (
-          <LibraryGraphTab
-            sendWSMessage={sendWSMessage}
-            collectionId={selectedCollectionId}
-            onNodeNavigate={(itemId) => {
-              selectItem(Number(itemId));
-            }}
-          />
-        ) : (
-          <LibraryListView
-            items={items}
-            viewMode={viewMode}
-            selectedId={selectedItem?.id}
-            onSelect={selectItem}
-            onLoadMore={handleLoadMore}
-            hasMore={items.length < itemPagination.total}
-            loading={loading}
-            onMoveToCollection={moveItemToCollection}
-            collections={collections}
-            onDeleteItem={deleteItem}
-            onExtractItem={handleExtractItem}
-            onGenerateNoteItem={handleGenerateNoteItem}
-            selectedIds={selectedIds}
-            onToggleSelect={toggleSelect}
-          />
-        )}
+        <div style={{ flex: 1, display: 'flex', minWidth: 0, overflow: 'hidden' }}>
+          {showGraph ? (
+            <LibraryGraphTab
+              sendWSMessage={sendWSMessage}
+              collectionId={selectedCollectionId}
+              onNodeNavigate={(itemId) => {
+                selectItem(Number(itemId));
+              }}
+            />
+          ) : (
+            <LibraryListView
+              items={items}
+              viewMode={viewMode}
+              selectedId={selectedItem?.id}
+              onSelect={selectItem}
+              onLoadMore={handleLoadMore}
+              hasMore={items.length < itemPagination.total}
+              loading={loading}
+              onMoveToCollection={moveItemToCollection}
+              collections={collections}
+              onDeleteItem={deleteItem}
+              onExtractItem={handleExtractItem}
+              onGenerateNoteItem={handleGenerateNoteItem}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
+            />
+          )}
+
+          {chatOpen && (
+            <>
+              <div
+                className="libchat-resizer"
+                onMouseDown={startChatResize}
+              />
+              <LibraryChatDrawer
+                sessions={chatSessions}
+                currentSessionId={chatSessionId}
+                setCurrentSessionId={setChatSessionId}
+                messages={chatMessages}
+                loading={chatLoading}
+                streamingContent={chatStreamingContent}
+                onSend={sendLibraryChat}
+                onNewSession={createChatSession}
+                onDeleteSession={deleteChatSession}
+                scopeLabel={scopeLabel()}
+                width={chatDrawerWidth}
+              />
+            </>
+          )}
+        </div>
       </div>
 
       <Drawer

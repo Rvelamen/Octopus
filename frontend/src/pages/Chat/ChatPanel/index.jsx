@@ -17,6 +17,7 @@ import '../../../components/ui/ImageModal.css';
 
 function ChatPanel({
   sendWSMessage,
+  connectionStatus,
   onSendMessage,
   onStopGeneration,
   isProcessing,
@@ -64,7 +65,7 @@ function ChatPanel({
     fetchInstances,
     loadMoreInstances,
     deleteInstance
-  } = useInstances(sendWSMessage);
+  } = useInstances(sendWSMessage, connectionStatus);
 
   const {
     messages,
@@ -318,6 +319,41 @@ function ChatPanel({
     }
   };
 
+  const [slashCommands, setSlashCommands] = useState([]);
+
+  useEffect(() => {
+    if (!sendWSMessage || connectionStatus !== 'connected') return;
+    sendWSMessage('get_slash_commands', {}, 5000)
+      .then(res => {
+        const backendCommands = res.data?.slash_commands || [];
+        // Merge backend commands with local action handlers
+        const commandMap = {
+          new: () => {
+            setInputValue('');
+            handleCreateNewChat();
+          },
+          clear: () => {
+            setInputValue('');
+            clearMessages();
+          },
+          compress: () => {
+            setInputValue('');
+            handleCompress();
+          },
+          image: () => {
+            setInputValue('');
+            setShowGenerateModal(true);
+          },
+        };
+        const merged = backendCommands.map(cmd => ({
+          ...cmd,
+          action: commandMap[cmd.name] || undefined,
+        }));
+        setSlashCommands(merged);
+      })
+      .catch(err => console.error('Failed to get slash commands:', err));
+  }, [sendWSMessage, connectionStatus]);
+
   const handleSend = async () => {
     const hasText = inputValue.trim();
     const hasImages = pendingImages.length > 0;
@@ -527,10 +563,11 @@ function ChatPanel({
           onSelectImage={addPendingImage}
           onSelectFile={addPendingFile}
           onGenerateImage={() => setShowGenerateModal(true)}
-          placeholder={isCreatingNew || selectedInstance ? "输入消息... (Shift+Enter 换行，支持粘贴图片)" : "选择一个对话开始聊天..."}
+          placeholder={isCreatingNew || selectedInstance ? "输入消息... (Shift+Enter 换行，/ 命令，支持粘贴图片)" : "选择一个对话开始聊天..."}
           onCompress={handleCompress}
           isCompressing={isCompressing}
           contextStats={contextStats}
+          slashCommands={slashCommands}
         />
       </div>
 

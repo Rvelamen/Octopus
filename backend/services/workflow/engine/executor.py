@@ -85,10 +85,10 @@ class NodeExecutor:
         system_prompt = context.resolve_value(node_config.get("systemPrompt", ""))
         user_message = context.resolve_value(node_config.get("userPrompt", ""))
 
-        # Fallback: if userPrompt is empty or still contains unresolved placeholders,
-        # try to use input variable values as the message
-        has_unresolved = bool(re.search(r'\{\{.+?\}\}', user_message))
-        if (not user_message or has_unresolved) and inputs:
+        # Fallback: only when userPrompt is truly empty, use input variable values as the message.
+        # If userPrompt contains unresolved {{xxx}} placeholders, keep them as-is and let the LLM see the literal text.
+        # Do NOT auto-correct user-written templates.
+        if not user_message and inputs:
             input_values = [
                 str(v) for v in inputs.values()
                 if v is not None and isinstance(v, (str, int, float, bool))
@@ -246,6 +246,20 @@ class NodeExecutor:
                 "system_text": "",
             }
 
+    _SAFE_IMPORT_MODULES = {
+        "math", "json", "re", "datetime", "random", "collections", "itertools",
+        "statistics", "hashlib", "base64", "urllib", "time", "string", "copy",
+        "functools", "decimal", "fractions", "numbers", "typing", "inspect",
+        "textwrap", "html", "uuid", "pathlib", "dataclasses", "enum",
+    }
+
+    def _safe_import(self, name, globals=None, locals=None, fromlist=(), level=0):
+        """Restricted __import__ for sandboxed Python execution."""
+        top = name.split(".")[0]
+        if top not in self._SAFE_IMPORT_MODULES:
+            raise ImportError(f"Import of module '{name}' is not allowed in sandboxed execution")
+        return __import__(name, globals, locals, fromlist, level)
+
     async def execute_code(
         self,
         node: WorkflowNodeRecord,
@@ -254,13 +268,17 @@ class NodeExecutor:
     ) -> dict[str, Any]:
         """Execute Python code in a restricted environment using AST analysis.
 
-        Only pure expression evaluation is allowed (no statements like assignment,
-        loops, imports, or function definitions). Results are captured via the
-        `result` variable.
+        Supports multi-line Python code including imports, assignments, function
+        definitions, and control flow. Results are captured via the `ret` or
+        `result` variable, or by returning a dict from a `main()` function.
 
         Supported builtins: len, range, enumerate, zip, map, filter, sum, min,
         max, abs, round, sorted, reversed, str, int, float, bool, list, dict,
         set, tuple, slice, open, print, json, re, math, datetime, timedelta.
+        Allowed imports: math, json, re, datetime, random, collections, itertools,
+        statistics, hashlib, base64, urllib, time, string, copy, functools,
+        decimal, fractions, numbers, typing, inspect, textwrap, html, uuid,
+        pathlib, dataclasses, enum.
         """
         code = inputs.get("code", "")
         code_type = inputs.get("codeType", "python")
@@ -329,15 +347,18 @@ class NodeExecutor:
             "math": math,
             "datetime": datetime,
             "timedelta": timedelta,
+            "__import__": self._safe_import,
         }
 
         # Provide inputs as a top-level variable named `params`
+        # Use the same dict for globals and locals so that imported modules
+        # and function definitions are visible to each other within the sandbox.
         safe_globals = {
             "__builtins__": safe_builtins,
             "params": inputs,
             "context": context.to_dict(),
         }
-        safe_locals = {}
+        safe_locals = safe_globals
 
         try:
             exec(compile(tree, filename="<workflow>", mode="exec"), safe_globals, safe_locals)
@@ -346,20 +367,29 @@ class NodeExecutor:
 
         # If user defined a main() function, call it automatically
         main_func = safe_locals.get("main")
-        if main_func is None:
-            main_func = safe_globals.get("main")
         if callable(main_func):
             try:
-                ret = main_func(inputs)
+                import inspect
+                sig = inspect.signature(main_func)
+                param_count = len(sig.parameters)
+                if param_count == 0:
+                    ret = main_func()
+                else:
+                    ret = main_func(inputs)
                 if ret is not None:
                     return {"system_text": "", **(ret if isinstance(ret, dict) else {"result": ret})}
             except Exception as e:
                 return {"system_text": "", "error": str(e)}
 
-        # Capture the `ret` variable if defined
+        # Capture the `ret` variable if defined (preferred)
         ret = safe_locals.get("ret")
         if ret is not None:
             return {"system_text": "", **(ret if isinstance(ret, dict) else {"result": ret})}
+
+        # Also capture `result` variable (common user convention)
+        result = safe_locals.get("result")
+        if result is not None:
+            return {"system_text": "", **(result if isinstance(result, dict) else {"result": result})}
 
         # Fallback: return the last evaluated expression or empty result
         return {"system_text": ""}
@@ -1079,6 +1109,21 @@ class NodeExecutor:
                 "_debug_inputs_keys": list(inputs.keys()),
             }
 
+    def _resolve_db_field_value(self, field_value: str, field_name: str, context: WorkflowContext) -> Any:
+        """Resolve a field value, returning error if {{...}} ref remains unresolved."""
+        import re
+        resolved = context.resolve_value(field_value)
+        # If the resolved value still contains {{...}}, the upstream node output is missing
+        if isinstance(resolved, str) and re.search(r'\{\{(.+?)\}\}', resolved):
+            # Try to extract the referenced node ID for a clearer error message
+            match = re.search(r'\{\{([^}]+)\}\}', resolved)
+            ref = match.group(1) if match else resolved
+            raise ValueError(
+                f"Field '{field_name}' references unresolved variable '{{{{{ref}}}}}'. "
+                f"Make sure the upstream node has executed successfully and produced the required output."
+            )
+        return resolved
+
     async def _execute_db_insert(
         self,
         repo: "DBRepository",
@@ -1097,9 +1142,16 @@ class NodeExecutor:
                 field_value = mapping.get("value", "")
                 logger.info(f"[DB_INSERT] mapping[{idx}]: name={field_name}, value={field_value}")
                 if field_name:
-                    resolved = context.resolve_value(field_value)
-                    data[field_name] = resolved
-                    logger.info(f"[DB_INSERT] resolved: {field_name} = {resolved}")
+                    try:
+                        resolved = self._resolve_db_field_value(field_value, field_name, context)
+                        data[field_name] = resolved
+                        logger.info(f"[DB_INSERT] resolved: {field_name} = {resolved}")
+                    except ValueError as e:
+                        return {
+                            "result": None,
+                            "system_text": "",
+                            "error": str(e),
+                        }
             else:
                 logger.warning(f"[DB_INSERT] mapping[{idx}] is not dict: {type(mapping)}")
 
@@ -1134,7 +1186,14 @@ class NodeExecutor:
                     field_name = mapping.get("name", "")
                     field_value = mapping.get("value", "")
                     if field_name:
-                        data[field_name] = context.resolve_value(field_value)
+                        try:
+                            data[field_name] = self._resolve_db_field_value(field_value, field_name, context)
+                        except ValueError as e:
+                            return {
+                                "result": None,
+                                "system_text": "",
+                                "error": str(e),
+                            }
 
             new_data = {**rec.record_data, **data}
             updated_record = repo.update_record(rec.id, new_data)
