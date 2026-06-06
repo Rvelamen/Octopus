@@ -88,6 +88,21 @@ class TokenUsageRepository:
     def __init__(self, db: Database):
         self.db = db
 
+    def _get_model_pricing(self, model_id: str) -> dict | None:
+        """Get pricing from database for a model ID."""
+        try:
+            with self.db._get_connection() as conn:
+                row = conn.execute(
+                    "SELECT pricing_json FROM models WHERE model_id = ? LIMIT 1",
+                    (model_id,)
+                ).fetchone()
+                if row and row["pricing_json"]:
+                    import json
+                    return json.loads(row["pricing_json"])
+        except Exception:
+            pass
+        return None
+
     def record_usage(
         self,
         session_instance_id: int | None,

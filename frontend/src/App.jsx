@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Routes,
   Route,
   useNavigate,
   useLocation,
 } from "react-router-dom";
-import { createPortal } from "react-dom";
 import {
   Settings,
   Server,
@@ -17,9 +16,6 @@ import {
   Users,
   RotateCcw,
   Zap,
-  Volume2,
-  Play,
-  Pause,
   PanelLeftClose,
   PanelRight,
   BookOpen,
@@ -27,10 +23,8 @@ import {
   Brain,
   GitBranch,
 } from "lucide-react";
-import octopusLogo from "./assets/octopus-logo.png";
 import Chat from "./pages/Chat/ChatPanel";
 import Config from "./pages/Config";
-import "./components/ui/TTSPlayer.css";
 import MCP from "./pages/MCP";
 import Extensions from "./pages/Extensions";
 import History from "./pages/History";
@@ -45,6 +39,8 @@ import PdfViewerWindow from "./pages/PdfViewerWindow";
 import MarkdownEditorWindow from "./pages/MarkdownEditorWindow";
 import WorkflowWindow from "./pages/WorkflowWindow";
 import WorkflowTabTitle from "./workflow/components/WorkflowTabTitle";
+import GlobalLoadingOverlay from "./components/GlobalLoadingOverlay";
+import TTSPlayer from "./components/TTSPlayer";
 import { useWebSocket } from "./contexts/WebSocketContext";
 import { useChatState } from "./hooks/useChatState";
 
@@ -62,115 +58,6 @@ const APP_TITLE_BY_TAB = {
   workflows: "WORKFLOWS",
 };
 
-/**
- * TTS 音频播放器组件
- */
-function TTSPlayer({ audioData, format, text, durationMs, onClose }) {
-  const audioRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-
-  useEffect(() => {
-    if (audioRef.current && audioData) {
-      audioRef.current.src = `data:audio/${format};base64,${audioData}`;
-      audioRef.current.load();
-    }
-  }, [audioData, format]);
-
-  const handlePlayPause = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-    }
-  };
-
-  const handleTimeUpdate = () => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration);
-    }
-  };
-
-  const handleEnded = () => {
-    setIsPlaying(false);
-    setCurrentTime(0);
-  };
-
-  const handlePlay = () => setIsPlaying(true);
-  const handlePause = () => setIsPlaying(false);
-
-  const formatTime = (time) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const handleSeek = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = x / rect.width;
-    if (audioRef.current) {
-      audioRef.current.currentTime = percentage * duration;
-    }
-  };
-
-  return (
-    <div className="tts-player">
-      <audio
-        ref={audioRef}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onEnded={handleEnded}
-        onPlay={handlePlay}
-        onPause={handlePause}
-      />
-      
-      <div className="tts-player-content">
-        <div className="tts-player-icon">
-          <Volume2 size={18} />
-        </div>
-        
-        <button className="tts-player-btn" onClick={handlePlayPause}>
-          {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-        </button>
-        
-        <div className="tts-player-progress" onClick={handleSeek}>
-          <div 
-            className="tts-player-progress-bar" 
-            style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
-          />
-        </div>
-        
-        <div className="tts-player-time">
-          {formatTime(currentTime)} / {formatTime(duration)}
-        </div>
-        
-        {text && (
-          <div className="tts-player-text" title={text}>
-            {text.length > 30 ? text.substring(0, 30) + '...' : text}
-          </div>
-        )}
-        
-        <button className="tts-player-close" onClick={onClose}>
-          ×
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * App 主组件
- */
 function App() {
   // Hooks must be called before any early return
   const navigate = useNavigate();
@@ -191,26 +78,33 @@ function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
 
-  // 窗口焦点状态 - 用于控制交通灯颜色（失焦时变为灰色）
-  const [isWindowFocused, setIsWindowFocused] = useState(true);
-
-  useEffect(() => {
-    const onFocus = () => setIsWindowFocused(true);
-    const onBlur = () => setIsWindowFocused(false);
-    window.addEventListener("focus", onFocus);
-    window.addEventListener("blur", onBlur);
-    return () => {
-      window.removeEventListener("focus", onFocus);
-      window.removeEventListener("blur", onBlur);
-    };
-  }, []);
-
   // 切回 chat tab 时，把 ref 中累积的 streamingContent 同步到 state
   useEffect(() => {
     if (activeTab === 'chat') {
       chat.syncStreamingContent();
     }
   }, [activeTab, chat.syncStreamingContent]);
+
+  // 同步 activeTab 与路由
+  useEffect(() => {
+    const path = location.pathname;
+    const tabMap = {
+      '/chat': 'chat',
+      '/config': 'config',
+      '/mcp': 'mcp',
+      '/extensions': 'extensions',
+      '/cron': 'cron',
+      '/agents': 'agents',
+      '/workspaces': 'workspaces',
+      '/library': 'library',
+      '/history': 'history',
+      '/memory': 'memory',
+      '/tokens': 'tokens',
+      '/knowledge': 'knowledge',
+      '/workflows': 'workflows',
+    };
+    setActiveTab(tabMap[path] || 'chat');
+  }, [location.pathname]);
 
   // ===== 独立窗口检测（hooks 之后）=====
   const hash = window.location.hash;
@@ -271,8 +165,8 @@ function App() {
   // ===== 停止生成 =====
   const handleStopGeneration = async () => {
     try {
-      await sendMessage("stop_agents", { 
-        instance_id: chat.currentChatInstanceId 
+      await sendMessage("stop_agents", {
+        instance_id: chat.currentChatInstanceId
       }, 5000);
       chat.setIsProcessing(false);
       chat.resetStreamingContent();
@@ -313,27 +207,6 @@ function App() {
     }
   };
 
-  // 同步 activeTab 与路由
-  useEffect(() => {
-    const path = location.pathname;
-    const tabMap = {
-      '/chat': 'chat',
-      '/config': 'config',
-      '/mcp': 'mcp',
-      '/extensions': 'extensions',
-      '/cron': 'cron',
-      '/agents': 'agents',
-      '/workspaces': 'workspaces',
-      '/library': 'library',
-      '/history': 'history',
-      '/memory': 'memory',
-      '/tokens': 'tokens',
-      '/knowledge': 'knowledge',
-      '/workflows': 'workflows',
-    };
-    setActiveTab(tabMap[path] || 'chat');
-  }, [location.pathname]);
-
   // 处理导航
   const handleNavClick = (tab) => {
     // Workflow 迁移到独立窗口
@@ -366,93 +239,17 @@ function App() {
 
   const appTitleBarText = APP_TITLE_BY_TAB[activeTab] ?? "OCTOPUS";
 
-  // ===== 全局 Loading 遮罩 =====
-  const GlobalLoadingOverlay = () => {
-    const overlayContent = (
-      <div
-        className="global-loading-overlay"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'var(--bg, #1a1a1a)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2147483647,
-          gap: '32px',
-        }}
-      >
-        {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
-          <img src={octopusLogo} alt="Octopus" style={{ width: 64, height: 80, objectFit: 'contain' }} />
-          <span style={{
-            fontSize: '32px',
-            fontWeight: 700,
-            color: 'var(--text, #e0e0e0)',
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-            letterSpacing: '2px'
-          }}>OCTOPUS</span>
-        </div>
-
-        {/* 小球掉落动画 */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'center',
-          gap: '12px',
-          height: '80px',
-        }}>
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              className="bouncing-ball"
-              style={{
-                width: '16px',
-                height: '16px',
-                backgroundColor: '#ec5e37ff',
-                borderRadius: '50%',
-                animation: `bounce 0.6s ease-in-out infinite`,
-                animationDelay: `${i * 0.12}s`,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* 小球动画样式 */}
-        <style>{`
-          @keyframes bounce {
-            0%, 100% {
-              transform: translateY(0);
-            }
-            50% {
-              transform: translateY(-50px);
-            }
-          }
-        `}</style>
-      </div>
-    );
-
-    return createPortal(overlayContent, document.body);
-  };
-
   // ===== 渲染 =====
   return (
     <div className="app-container">
       {/* WebSocket 未连接时显示全局 Loading */}
       {showLoadingOverlay && <GlobalLoadingOverlay />}
-      
+
       {/* 整窗顶栏 */}
       <header className="app-titlebar">
         <div className="app-titlebar-brand">
           <div className="app-titlebar-logo-pill">
             <div className="logo app-titlebar-logo">
-              <img src={octopusLogo} alt="Octopus" className="logo-icon" style={{ width: 24, height: 30, objectFit: 'contain' }} />
               <span className="logo-text">OCTOPUS</span>
             </div>
           </div>
@@ -620,7 +417,6 @@ function App() {
           audioData={chat.ttsAudio.audioData}
           format={chat.ttsAudio.format}
           text={chat.ttsAudio.text}
-          durationMs={chat.ttsAudio.durationMs}
           onClose={() => chat.setTtsAudio(null)}
         />
       )}
