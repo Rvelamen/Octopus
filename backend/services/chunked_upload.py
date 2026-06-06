@@ -1,9 +1,7 @@
 """Simple in-process chunked upload assembler."""
 
 import hashlib
-import os
 from pathlib import Path
-from typing import Optional
 
 from loguru import logger
 
@@ -39,7 +37,7 @@ class ChunkedUploadManager:
         upload_id: str,
         total_chunks: int,
         target_path: str,
-        expected_md5: Optional[str] = None,
+        expected_md5: str | None = None,
     ) -> bool:
         """If all chunks are present, assemble them into target_path.
 

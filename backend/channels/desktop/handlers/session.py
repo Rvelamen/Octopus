@@ -1,29 +1,23 @@
 """Session handlers for Desktop channel."""
 
-import asyncio
-import json
-import uuid
-from pathlib import Path
-from typing import Any
-
 from fastapi import WebSocket
 from loguru import logger
 
-from backend.channels.desktop.protocol import MessageType, WSMessage
-from backend.channels.desktop.handlers.base import MessageHandler
-from backend.channels.desktop.schemas import (
-    SessionGetChannelsRequest,
-    SessionGetChannelSessionsRequest,
-    SessionGetSessionDetailRequest,
-    SessionGetMessagesRequest,
-    SessionDeleteInstanceRequest,
-    SessionCreateRequest,
-    SessionSetActiveRequest,
-    SessionGetInstancesRequest,
-)
-from backend.data import Database, SessionRepository, SessionManager
 from backend.agent.compressor import estimate_message_tokens
 from backend.agent.config_service import AgentConfigService
+from backend.channels.desktop.handlers.base import MessageHandler
+from backend.channels.desktop.protocol import MessageType, WSMessage
+from backend.channels.desktop.schemas import (
+    SessionCreateRequest,
+    SessionDeleteInstanceRequest,
+    SessionGetChannelSessionsRequest,
+    SessionGetChannelsRequest,
+    SessionGetInstancesRequest,
+    SessionGetMessagesRequest,
+    SessionGetSessionDetailRequest,
+    SessionSetActiveRequest,
+)
+from backend.data import Database, SessionManager, SessionRepository
 from backend.utils.helpers import get_workspace_path
 
 
@@ -37,37 +31,44 @@ class SessionGetChannelsHandler(MessageHandler):
             rows = db.execute("SELECT DISTINCT channel FROM sessions ORDER BY channel")
             channels = [row["channel"] for row in rows]
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_CHANNELS,
-                request_id=message.request_id,
-                data={"channels": channels}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_CHANNELS,
+                    request_id=message.request_id,
+                    data={"channels": channels},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get channels: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to get channels: {e}")
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: SessionGetChannelsRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: SessionGetChannelsRequest
+    ) -> None:
         """Return all unique channel names."""
         try:
             db = Database()
             rows = db.execute("SELECT DISTINCT channel FROM sessions ORDER BY channel")
             channels = [row["channel"] for row in rows]
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_CHANNELS,
-                request_id=message.request_id,
-                data={"channels": channels}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_CHANNELS,
+                    request_id=message.request_id,
+                    data={"channels": channels},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get channels: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to get channels: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class SessionGetChannelSessionsHandler(MessageHandler):
@@ -83,8 +84,7 @@ class SessionGetChannelSessionsHandler(MessageHandler):
 
             db = Database()
             rows = db.execute(
-                "SELECT * FROM sessions WHERE channel = ? ORDER BY updated_at DESC",
-                (channel,)
+                "SELECT * FROM sessions WHERE channel = ? ORDER BY updated_at DESC", (channel,)
             )
 
             sessions = [
@@ -95,21 +95,28 @@ class SessionGetChannelSessionsHandler(MessageHandler):
                     "session_key": row["session_key"],
                     "created_at": row["created_at"],
                     "updated_at": row["updated_at"],
-                    "metadata": {}
+                    "metadata": {},
                 }
                 for row in rows
             ]
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_CHANNEL_SESSIONS,
-                request_id=message.request_id,
-                data={"channel": channel, "sessions": sessions}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_CHANNEL_SESSIONS,
+                    request_id=message.request_id,
+                    data={"channel": channel, "sessions": sessions},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get channel sessions: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get channel sessions: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get channel sessions: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: SessionGetChannelSessionsRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: SessionGetChannelSessionsRequest
+    ) -> None:
         """Return all sessions for a specific channel."""
         try:
             channel = validated.channel
@@ -119,8 +126,7 @@ class SessionGetChannelSessionsHandler(MessageHandler):
 
             db = Database()
             rows = db.execute(
-                "SELECT * FROM sessions WHERE channel = ? ORDER BY updated_at DESC",
-                (channel,)
+                "SELECT * FROM sessions WHERE channel = ? ORDER BY updated_at DESC", (channel,)
             )
 
             sessions = [
@@ -131,26 +137,30 @@ class SessionGetChannelSessionsHandler(MessageHandler):
                     "session_key": row["session_key"],
                     "created_at": row["created_at"],
                     "updated_at": row["updated_at"],
-                    "metadata": {}
+                    "metadata": {},
                 }
                 for row in rows
             ]
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_CHANNEL_SESSIONS,
-                request_id=message.request_id,
-                data={"channel": channel, "sessions": sessions}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_CHANNEL_SESSIONS,
+                    request_id=message.request_id,
+                    data={"channel": channel, "sessions": sessions},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get channel sessions: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get channel sessions: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get channel sessions: {e}"
+            )
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class SessionGetSessionDetailHandler(MessageHandler):
@@ -163,7 +173,9 @@ class SessionGetSessionDetailHandler(MessageHandler):
             chat_id = message.data.get("chat_id")
 
             if not channel or not chat_id:
-                await self._send_error(websocket, message.request_id, "Channel and chat_id are required")
+                await self._send_error(
+                    websocket, message.request_id, "Channel and chat_id are required"
+                )
                 return
 
             db = Database()
@@ -178,44 +190,53 @@ class SessionGetSessionDetailHandler(MessageHandler):
 
             instances = repo.list_instances(session.id)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_DETAIL,
-                request_id=message.request_id,
-                data={
-                    "session": {
-                        "id": session.id,
-                        "channel": session.channel,
-                        "chat_id": session.chat_id,
-                        "session_key": session.session_key,
-                        "created_at": session.created_at.isoformat(),
-                        "updated_at": session.updated_at.isoformat(),
-                        "metadata": session.metadata
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_DETAIL,
+                    request_id=message.request_id,
+                    data={
+                        "session": {
+                            "id": session.id,
+                            "channel": session.channel,
+                            "chat_id": session.chat_id,
+                            "session_key": session.session_key,
+                            "created_at": session.created_at.isoformat(),
+                            "updated_at": session.updated_at.isoformat(),
+                            "metadata": session.metadata,
+                        },
+                        "instances": [
+                            {
+                                "id": inst.id,
+                                "session_id": inst.session_id,
+                                "instance_name": inst.instance_name,
+                                "is_active": inst.is_active,
+                                "created_at": inst.created_at.isoformat(),
+                                "updated_at": inst.updated_at.isoformat(),
+                            }
+                            for inst in instances
+                        ],
                     },
-                    "instances": [
-                        {
-                            "id": inst.id,
-                            "session_id": inst.session_id,
-                            "instance_name": inst.instance_name,
-                            "is_active": inst.is_active,
-                            "created_at": inst.created_at.isoformat(),
-                            "updated_at": inst.updated_at.isoformat()
-                        }
-                        for inst in instances
-                    ]
-                }
-            ))
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get session detail: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get session detail: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get session detail: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: SessionGetSessionDetailRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: SessionGetSessionDetailRequest
+    ) -> None:
         """Return session detail with all instances."""
         try:
             channel = validated.channel
             chat_id = validated.chat_id
 
             if not channel or not chat_id:
-                await self._send_error(websocket, message.request_id, "Channel and chat_id are required")
+                await self._send_error(
+                    websocket, message.request_id, "Channel and chat_id are required"
+                )
                 return
 
             db = Database()
@@ -230,42 +251,46 @@ class SessionGetSessionDetailHandler(MessageHandler):
 
             instances = repo.list_instances(session.id)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_DETAIL,
-                request_id=message.request_id,
-                data={
-                    "session": {
-                        "id": session.id,
-                        "channel": session.channel,
-                        "chat_id": session.chat_id,
-                        "session_key": session.session_key,
-                        "created_at": session.created_at.isoformat(),
-                        "updated_at": session.updated_at.isoformat(),
-                        "metadata": session.metadata
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_DETAIL,
+                    request_id=message.request_id,
+                    data={
+                        "session": {
+                            "id": session.id,
+                            "channel": session.channel,
+                            "chat_id": session.chat_id,
+                            "session_key": session.session_key,
+                            "created_at": session.created_at.isoformat(),
+                            "updated_at": session.updated_at.isoformat(),
+                            "metadata": session.metadata,
+                        },
+                        "instances": [
+                            {
+                                "id": inst.id,
+                                "session_id": inst.session_id,
+                                "instance_name": inst.instance_name,
+                                "is_active": inst.is_active,
+                                "created_at": inst.created_at.isoformat(),
+                                "updated_at": inst.updated_at.isoformat(),
+                            }
+                            for inst in instances
+                        ],
                     },
-                    "instances": [
-                        {
-                            "id": inst.id,
-                            "session_id": inst.session_id,
-                            "instance_name": inst.instance_name,
-                            "is_active": inst.is_active,
-                            "created_at": inst.created_at.isoformat(),
-                            "updated_at": inst.updated_at.isoformat()
-                        }
-                        for inst in instances
-                    ]
-                }
-            ))
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get session detail: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get session detail: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get session detail: {e}"
+            )
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class SessionGetMessagesHandler(MessageHandler):
@@ -293,55 +318,66 @@ class SessionGetMessagesHandler(MessageHandler):
             compressed = repo.get_compressed_context(instance_id)
             messages = repo.get_uncompressed_messages(instance_id, limit=limit, offset=offset)
             total = repo.get_message_count_by_compression(instance_id, is_compressed=False)
-            compressed_total = repo.get_message_count_by_compression(instance_id, is_compressed=True)
+            compressed_total = repo.get_message_count_by_compression(
+                instance_id, is_compressed=True
+            )
 
             result_messages = []
 
             if compressed and compressed["summary"]:
-                result_messages.append({
-                    "id": "context-summary",
-                    "session_instance_id": instance_id,
-                    "role": "system",
-                    "content": compressed["summary"],
-                    "timestamp": compressed.get("compressed_at") or "",
-                    "metadata": {
-                        "message_type": "context_summary",
-                        "is_summary": True,
-                        "compression_info": {
-                            "compressed_count": compressed["compressed_count"],
-                            "compressed_at": compressed.get("compressed_at"),
-                        }
+                result_messages.append(
+                    {
+                        "id": "context-summary",
+                        "session_instance_id": instance_id,
+                        "role": "system",
+                        "content": compressed["summary"],
+                        "timestamp": compressed.get("compressed_at") or "",
+                        "metadata": {
+                            "message_type": "context_summary",
+                            "is_summary": True,
+                            "compression_info": {
+                                "compressed_count": compressed["compressed_count"],
+                                "compressed_at": compressed.get("compressed_at"),
+                            },
+                        },
                     }
-                })
+                )
 
-            result_messages.extend([
-                {
-                    "id": msg.id,
-                    "session_instance_id": msg.session_instance_id,
-                    "role": msg.role,
-                    "content": msg.content,
-                    "timestamp": msg.timestamp.isoformat(),
-                    "metadata": msg.metadata
-                }
-                for msg in messages
-            ])
+            result_messages.extend(
+                [
+                    {
+                        "id": msg.id,
+                        "session_instance_id": msg.session_instance_id,
+                        "role": msg.role,
+                        "content": msg.content,
+                        "timestamp": msg.timestamp.isoformat(),
+                        "metadata": msg.metadata,
+                    }
+                    for msg in messages
+                ]
+            )
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_MESSAGES,
-                request_id=message.request_id,
-                data={
-                    "session_instance_id": instance_id,
-                    "messages": result_messages,
-                    "total": total,
-                    "compressed_total": compressed_total,
-                    "has_compression": compressed is not None
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_MESSAGES,
+                    request_id=message.request_id,
+                    data={
+                        "session_instance_id": instance_id,
+                        "messages": result_messages,
+                        "total": total,
+                        "compressed_total": compressed_total,
+                        "has_compression": compressed is not None,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get messages: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to get messages: {e}")
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: SessionGetMessagesRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: SessionGetMessagesRequest
+    ) -> None:
         """Return messages for a specific session instance."""
         try:
             instance_id = validated.instance_id
@@ -363,60 +399,68 @@ class SessionGetMessagesHandler(MessageHandler):
             compressed = repo.get_compressed_context(instance_id)
             messages = repo.get_uncompressed_messages(instance_id, limit=limit, offset=offset)
             total = repo.get_message_count_by_compression(instance_id, is_compressed=False)
-            compressed_total = repo.get_message_count_by_compression(instance_id, is_compressed=True)
+            compressed_total = repo.get_message_count_by_compression(
+                instance_id, is_compressed=True
+            )
 
             result_messages = []
 
             if compressed and compressed["summary"]:
-                result_messages.append({
-                    "id": "context-summary",
-                    "session_instance_id": instance_id,
-                    "role": "system",
-                    "content": compressed["summary"],
-                    "timestamp": compressed.get("compressed_at") or "",
-                    "metadata": {
-                        "message_type": "context_summary",
-                        "is_summary": True,
-                        "compression_info": {
-                            "compressed_count": compressed["compressed_count"],
-                            "compressed_at": compressed.get("compressed_at"),
-                        }
+                result_messages.append(
+                    {
+                        "id": "context-summary",
+                        "session_instance_id": instance_id,
+                        "role": "system",
+                        "content": compressed["summary"],
+                        "timestamp": compressed.get("compressed_at") or "",
+                        "metadata": {
+                            "message_type": "context_summary",
+                            "is_summary": True,
+                            "compression_info": {
+                                "compressed_count": compressed["compressed_count"],
+                                "compressed_at": compressed.get("compressed_at"),
+                            },
+                        },
                     }
-                })
+                )
 
-            result_messages.extend([
-                {
-                    "id": msg.id,
-                    "session_instance_id": msg.session_instance_id,
-                    "role": msg.role,
-                    "content": msg.content,
-                    "timestamp": msg.timestamp.isoformat(),
-                    "metadata": msg.metadata
-                }
-                for msg in messages
-            ])
+            result_messages.extend(
+                [
+                    {
+                        "id": msg.id,
+                        "session_instance_id": msg.session_instance_id,
+                        "role": msg.role,
+                        "content": msg.content,
+                        "timestamp": msg.timestamp.isoformat(),
+                        "metadata": msg.metadata,
+                    }
+                    for msg in messages
+                ]
+            )
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_MESSAGES,
-                request_id=message.request_id,
-                data={
-                    "session_instance_id": instance_id,
-                    "messages": result_messages,
-                    "total": total,
-                    "compressed_total": compressed_total,
-                    "has_compression": compressed is not None
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_MESSAGES,
+                    request_id=message.request_id,
+                    data={
+                        "session_instance_id": instance_id,
+                        "messages": result_messages,
+                        "total": total,
+                        "compressed_total": compressed_total,
+                        "has_compression": compressed is not None,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get messages: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to get messages: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class SessionDeleteInstanceHandler(MessageHandler):
@@ -443,21 +487,26 @@ class SessionDeleteInstanceHandler(MessageHandler):
             # Delete the instance (cascade will delete messages)
             success = repo.delete_instance(instance_id)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_INSTANCE_DELETED,
-                request_id=message.request_id,
-                data={
-                    "success": success,
-                    "instance_id": instance_id,
-                    "session_id": instance.session_id,
-                    "instance_name": instance.instance_name
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_INSTANCE_DELETED,
+                    request_id=message.request_id,
+                    data={
+                        "success": success,
+                        "instance_id": instance_id,
+                        "session_id": instance.session_id,
+                        "instance_name": instance.instance_name,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to delete instance: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to delete instance: {e}")
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: SessionDeleteInstanceRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: SessionDeleteInstanceRequest
+    ) -> None:
         """Delete a session instance and all its messages."""
         try:
             instance_id = validated.instance_id
@@ -478,26 +527,28 @@ class SessionDeleteInstanceHandler(MessageHandler):
             # Delete the instance (cascade will delete messages)
             success = repo.delete_instance(instance_id)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_INSTANCE_DELETED,
-                request_id=message.request_id,
-                data={
-                    "success": success,
-                    "instance_id": instance_id,
-                    "session_id": instance.session_id,
-                    "instance_name": instance.instance_name
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_INSTANCE_DELETED,
+                    request_id=message.request_id,
+                    data={
+                        "success": success,
+                        "instance_id": instance_id,
+                        "session_id": instance.session_id,
+                        "instance_name": instance.instance_name,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to delete instance: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to delete instance: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class SessionCreateHandler(MessageHandler):
@@ -534,34 +585,39 @@ class SessionCreateHandler(MessageHandler):
             instance = repo.get_instance_by_id(instance.id)
             logger.info(f"After refresh, instance {instance.id} is_active: {instance.is_active}")
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_CREATED,
-                request_id=message.request_id,
-                data={
-                    "success": True,
-                    "session": {
-                        "id": session.id,
-                        "channel": session.channel,
-                        "chat_id": session.chat_id,
-                        "session_key": session.session_key,
-                        "created_at": session.created_at.isoformat(),
-                        "updated_at": session.updated_at.isoformat(),
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_CREATED,
+                    request_id=message.request_id,
+                    data={
+                        "success": True,
+                        "session": {
+                            "id": session.id,
+                            "channel": session.channel,
+                            "chat_id": session.chat_id,
+                            "session_key": session.session_key,
+                            "created_at": session.created_at.isoformat(),
+                            "updated_at": session.updated_at.isoformat(),
+                        },
+                        "instance": {
+                            "id": instance.id,
+                            "session_id": instance.session_id,
+                            "instance_name": instance.instance_name,
+                            "is_active": instance.is_active,
+                            "created_at": instance.created_at.isoformat(),
+                            "updated_at": instance.updated_at.isoformat(),
+                        },
                     },
-                    "instance": {
-                        "id": instance.id,
-                        "session_id": instance.session_id,
-                        "instance_name": instance.instance_name,
-                        "is_active": instance.is_active,
-                        "created_at": instance.created_at.isoformat(),
-                        "updated_at": instance.updated_at.isoformat(),
-                    }
-                }
-            ))
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to create session: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to create session: {e}")
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: SessionCreateRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: SessionCreateRequest
+    ) -> None:
         """Create a new instance in the desktop session."""
         try:
             channel = validated.channel or "desktop"
@@ -588,39 +644,41 @@ class SessionCreateHandler(MessageHandler):
             instance = repo.get_instance_by_id(instance.id)
             logger.info(f"After refresh, instance {instance.id} is_active: {instance.is_active}")
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_CREATED,
-                request_id=message.request_id,
-                data={
-                    "success": True,
-                    "session": {
-                        "id": session.id,
-                        "channel": session.channel,
-                        "chat_id": session.chat_id,
-                        "session_key": session.session_key,
-                        "created_at": session.created_at.isoformat(),
-                        "updated_at": session.updated_at.isoformat(),
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_CREATED,
+                    request_id=message.request_id,
+                    data={
+                        "success": True,
+                        "session": {
+                            "id": session.id,
+                            "channel": session.channel,
+                            "chat_id": session.chat_id,
+                            "session_key": session.session_key,
+                            "created_at": session.created_at.isoformat(),
+                            "updated_at": session.updated_at.isoformat(),
+                        },
+                        "instance": {
+                            "id": instance.id,
+                            "session_id": instance.session_id,
+                            "instance_name": instance.instance_name,
+                            "is_active": instance.is_active,
+                            "created_at": instance.created_at.isoformat(),
+                            "updated_at": instance.updated_at.isoformat(),
+                        },
                     },
-                    "instance": {
-                        "id": instance.id,
-                        "session_id": instance.session_id,
-                        "instance_name": instance.instance_name,
-                        "is_active": instance.is_active,
-                        "created_at": instance.created_at.isoformat(),
-                        "updated_at": instance.updated_at.isoformat(),
-                    }
-                }
-            ))
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to create session: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to create session: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class SessionSetActiveHandler(MessageHandler):
@@ -655,21 +713,28 @@ class SessionSetActiveHandler(MessageHandler):
                 # Get updated instance
                 instance = repo.get_instance_by_id(instance_id)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_ACTIVE_SET,
-                request_id=message.request_id,
-                data={
-                    "success": success,
-                    "instance_id": instance_id,
-                    "session_id": instance.session_id,
-                    "is_active": instance.is_active if instance else False
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_ACTIVE_SET,
+                    request_id=message.request_id,
+                    data={
+                        "success": success,
+                        "instance_id": instance_id,
+                        "session_id": instance.session_id,
+                        "is_active": instance.is_active if instance else False,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to set active instance: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to set active instance: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to set active instance: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: SessionSetActiveRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: SessionSetActiveRequest
+    ) -> None:
         """Set an instance as active for its session."""
         try:
             instance_id = validated.instance_id
@@ -694,26 +759,30 @@ class SessionSetActiveHandler(MessageHandler):
                 # Get updated instance
                 instance = repo.get_instance_by_id(instance_id)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_ACTIVE_SET,
-                request_id=message.request_id,
-                data={
-                    "success": success,
-                    "instance_id": instance_id,
-                    "session_id": instance.session_id,
-                    "is_active": instance.is_active if instance else False
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_ACTIVE_SET,
+                    request_id=message.request_id,
+                    data={
+                        "success": success,
+                        "instance_id": instance_id,
+                        "session_id": instance.session_id,
+                        "is_active": instance.is_active if instance else False,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to set active instance: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to set active instance: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to set active instance: {e}"
+            )
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class SessionGetInstancesHandler(MessageHandler):
@@ -732,7 +801,7 @@ class SessionGetInstancesHandler(MessageHandler):
                 """SELECT COUNT(*) as count FROM session_instances si
                    JOIN sessions s ON si.session_id = s.id
                    WHERE s.channel = ?""",
-                (channel,)
+                (channel,),
             )
             total = total_rows[0]["count"] if total_rows else 0
 
@@ -743,7 +812,7 @@ class SessionGetInstancesHandler(MessageHandler):
                    WHERE s.channel = ?
                    ORDER BY si.created_at DESC
                    LIMIT ? OFFSET ?""",
-                (channel, limit, offset)
+                (channel, limit, offset),
             )
 
             instances = [
@@ -755,29 +824,34 @@ class SessionGetInstancesHandler(MessageHandler):
                     "created_at": row["created_at"],
                     "updated_at": row["updated_at"],
                     "session_key": row["session_key"],
-                    "chat_id": row["chat_id"]
+                    "chat_id": row["chat_id"],
                 }
                 for row in rows
             ]
 
             has_more = (offset + limit) < total
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_INSTANCES,
-                request_id=message.request_id,
-                data={
-                    "instances": instances,
-                    "total": total,
-                    "limit": limit,
-                    "offset": offset,
-                    "has_more": has_more
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_INSTANCES,
+                    request_id=message.request_id,
+                    data={
+                        "instances": instances,
+                        "total": total,
+                        "limit": limit,
+                        "offset": offset,
+                        "has_more": has_more,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get instances: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to get instances: {e}")
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: SessionGetInstancesRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: SessionGetInstancesRequest
+    ) -> None:
         """Return instances list with pagination support."""
         try:
             channel = validated.session_key or "desktop"
@@ -790,7 +864,7 @@ class SessionGetInstancesHandler(MessageHandler):
                 """SELECT COUNT(*) as count FROM session_instances si
                    JOIN sessions s ON si.session_id = s.id
                    WHERE s.channel = ?""",
-                (channel,)
+                (channel,),
             )
             total = total_rows[0]["count"] if total_rows else 0
 
@@ -801,7 +875,7 @@ class SessionGetInstancesHandler(MessageHandler):
                    WHERE s.channel = ?
                    ORDER BY si.created_at DESC
                    LIMIT ? OFFSET ?""",
-                (channel, limit, offset)
+                (channel, limit, offset),
             )
 
             instances = [
@@ -813,34 +887,36 @@ class SessionGetInstancesHandler(MessageHandler):
                     "created_at": row["created_at"],
                     "updated_at": row["updated_at"],
                     "session_key": row["session_key"],
-                    "chat_id": row["chat_id"]
+                    "chat_id": row["chat_id"],
                 }
                 for row in rows
             ]
 
             has_more = (offset + limit) < total
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_INSTANCES,
-                request_id=message.request_id,
-                data={
-                    "instances": instances,
-                    "total": total,
-                    "limit": limit,
-                    "offset": offset,
-                    "has_more": has_more
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_INSTANCES,
+                    request_id=message.request_id,
+                    data={
+                        "instances": instances,
+                        "total": total,
+                        "limit": limit,
+                        "offset": offset,
+                        "has_more": has_more,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get instances: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to get instances: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class SessionCompressContextHandler(MessageHandler):
@@ -889,26 +965,34 @@ class SessionCompressContextHandler(MessageHandler):
             # Refresh to get updated compression info
             compressed_info = repo.get_compressed_context(instance_id)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_CONTEXT_COMPRESSED,
-                request_id=message.request_id,
-                data={
-                    "success": True,
-                    "instance_id": instance_id,
-                    "compressed_count": compressed_info.get("compressed_count", 0) if compressed_info else 0,
-                    "compressed_at": compressed_info.get("compressed_at") if compressed_info else None,
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_CONTEXT_COMPRESSED,
+                    request_id=message.request_id,
+                    data={
+                        "success": True,
+                        "instance_id": instance_id,
+                        "compressed_count": (
+                            compressed_info.get("compressed_count", 0) if compressed_info else 0
+                        ),
+                        "compressed_at": (
+                            compressed_info.get("compressed_at") if compressed_info else None
+                        ),
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to compress context: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to compress context: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to compress context: {e}"
+            )
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class SessionGetContextStatsHandler(MessageHandler):
@@ -948,24 +1032,32 @@ class SessionGetContextStatsHandler(MessageHandler):
 
             compressed_info = repo.get_compressed_context(instance_id)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.SESSION_CONTEXT_STATS,
-                request_id=message.request_id,
-                data={
-                    "instance_id": instance_id,
-                    "current_tokens": current_tokens,
-                    "max_tokens": max_tokens,
-                    "percentage": round((current_tokens / max_tokens) * 100, 1) if max_tokens > 0 else 0,
-                    "compressed_count": compressed_info.get("compressed_count", 0) if compressed_info else 0,
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SESSION_CONTEXT_STATS,
+                    request_id=message.request_id,
+                    data={
+                        "instance_id": instance_id,
+                        "current_tokens": current_tokens,
+                        "max_tokens": max_tokens,
+                        "percentage": (
+                            round((current_tokens / max_tokens) * 100, 1) if max_tokens > 0 else 0
+                        ),
+                        "compressed_count": (
+                            compressed_info.get("compressed_count", 0) if compressed_info else 0
+                        ),
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get context stats: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get context stats: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get context stats: {e}"
+            )
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )

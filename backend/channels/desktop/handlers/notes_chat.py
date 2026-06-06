@@ -5,11 +5,11 @@ import asyncio
 from fastapi import WebSocket
 from loguru import logger
 
-from backend.channels.desktop.protocol import MessageType, WSMessage
-from backend.channels.desktop.handlers.base import MessageHandler
-from backend.services.notes_chat_service import NotesChatService
 from backend.agent.notes_chat_agent import NotesChatAgent
+from backend.channels.desktop.handlers.base import MessageHandler
+from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.data.database import Database
+from backend.services.notes_chat_service import NotesChatService
 from backend.utils.helpers import get_workspace_path
 
 
@@ -39,37 +39,45 @@ class NotesChatHandler(MessageHandler):
         elif action == "chat":
             await self._handle_chat(websocket, message)
         else:
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.ERROR,
-                request_id=message.request_id,
-                data={"error": f"Unknown action: {action}"},
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.ERROR,
+                    request_id=message.request_id,
+                    data={"error": f"Unknown action: {action}"},
+                ),
+            )
 
     async def _handle_list_sessions(self, websocket: WebSocket, message: WSMessage) -> None:
         scope_type = message.data.get("scope_type")
         scope_value = message.data.get("scope_value")
         if scope_type is not None and scope_value is not None:
-            sessions = self.chat_service.list_sessions(scope_type=scope_type, scope_value=scope_value)
+            sessions = self.chat_service.list_sessions(
+                scope_type=scope_type, scope_value=scope_value
+            )
         else:
             sessions = self.chat_service.list_sessions()
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.CHAT_RESPONSE,
-            request_id=message.request_id,
-            data={
-                "sessions": [
-                    {
-                        "id": s.id,
-                        "scope_type": s.scope_type,
-                        "scope_value": s.scope_value,
-                        "title": s.title,
-                        "agent_config_id": s.agent_config_id,
-                        "created_at": s.created_at.isoformat() if s.created_at else None,
-                        "updated_at": s.updated_at.isoformat() if s.updated_at else None,
-                    }
-                    for s in sessions
-                ]
-            },
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(
+                type=MessageType.CHAT_RESPONSE,
+                request_id=message.request_id,
+                data={
+                    "sessions": [
+                        {
+                            "id": s.id,
+                            "scope_type": s.scope_type,
+                            "scope_value": s.scope_value,
+                            "title": s.title,
+                            "agent_config_id": s.agent_config_id,
+                            "created_at": s.created_at.isoformat() if s.created_at else None,
+                            "updated_at": s.updated_at.isoformat() if s.updated_at else None,
+                        }
+                        for s in sessions
+                    ]
+                },
+            ),
+        )
 
     async def _handle_create_session(self, websocket: WebSocket, message: WSMessage) -> None:
         title = message.data.get("title", "New Chat")
@@ -82,52 +90,67 @@ class NotesChatHandler(MessageHandler):
             title=title,
             agent_config_id=agent_config_id,
         )
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.CHAT_RESPONSE,
-            request_id=message.request_id,
-            data={"session": {
-                "id": session.id,
-                "scope_type": session.scope_type,
-                "scope_value": session.scope_value,
-                "title": session.title,
-                "agent_config_id": session.agent_config_id,
-                "created_at": session.created_at.isoformat() if session.created_at else None,
-                "updated_at": session.updated_at.isoformat() if session.updated_at else None,
-            }},
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(
+                type=MessageType.CHAT_RESPONSE,
+                request_id=message.request_id,
+                data={
+                    "session": {
+                        "id": session.id,
+                        "scope_type": session.scope_type,
+                        "scope_value": session.scope_value,
+                        "title": session.title,
+                        "agent_config_id": session.agent_config_id,
+                        "created_at": (
+                            session.created_at.isoformat() if session.created_at else None
+                        ),
+                        "updated_at": (
+                            session.updated_at.isoformat() if session.updated_at else None
+                        ),
+                    }
+                },
+            ),
+        )
 
     async def _handle_delete_session(self, websocket: WebSocket, message: WSMessage) -> None:
         session_id = message.data.get("session_id")
         if session_id:
             self.chat_service.delete_session(session_id)
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.CHAT_RESPONSE,
-            request_id=message.request_id,
-            data={"success": True},
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(
+                type=MessageType.CHAT_RESPONSE,
+                request_id=message.request_id,
+                data={"success": True},
+            ),
+        )
 
     async def _handle_list_messages(self, websocket: WebSocket, message: WSMessage) -> None:
         session_id = message.data.get("session_id")
         messages = self.chat_service.list_messages(session_id) if session_id else []
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.CHAT_RESPONSE,
-            request_id=message.request_id,
-            data={
-                "messages": [
-                    {
-                        "id": m.id,
-                        "session_id": m.session_id,
-                        "role": m.role,
-                        "content": m.content,
-                        "metadata": m.metadata,
-                        "tool_calls": m.tool_calls,
-                        "tool_call_id": m.tool_call_id,
-                        "created_at": m.created_at.isoformat() if m.created_at else None,
-                    }
-                    for m in messages
-                ]
-            },
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(
+                type=MessageType.CHAT_RESPONSE,
+                request_id=message.request_id,
+                data={
+                    "messages": [
+                        {
+                            "id": m.id,
+                            "session_id": m.session_id,
+                            "role": m.role,
+                            "content": m.content,
+                            "metadata": m.metadata,
+                            "tool_calls": m.tool_calls,
+                            "tool_call_id": m.tool_call_id,
+                            "created_at": m.created_at.isoformat() if m.created_at else None,
+                        }
+                        for m in messages
+                    ]
+                },
+            ),
+        )
 
     async def _handle_chat(self, websocket: WebSocket, message: WSMessage) -> None:
         session_id = message.data.get("session_id")
@@ -135,46 +158,67 @@ class NotesChatHandler(MessageHandler):
         scope = message.data.get("scope")
 
         if not session_id or not user_content:
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.ERROR,
-                request_id=message.request_id,
-                data={"error": "session_id and content are required"},
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.ERROR,
+                    request_id=message.request_id,
+                    data={"error": "session_id and content are required"},
+                ),
+            )
             return
 
         request_id = message.request_id
 
         # Emit start event
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.CHAT_RESPONSE,
-            request_id=request_id,
-            data={"status": "started", "session_id": session_id},
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(
+                type=MessageType.CHAT_RESPONSE,
+                request_id=request_id,
+                data={"status": "started", "session_id": session_id},
+            ),
+        )
 
         full_content = ""
 
         def on_token(token: str):
             nonlocal full_content
             full_content += token
-            asyncio.create_task(self.send_response(websocket, WSMessage(
-                type=MessageType.CHAT_RESPONSE,
-                request_id=request_id,
-                data={"status": "streaming", "content": token, "session_id": session_id},
-            )))
+            asyncio.create_task(
+                self.send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.CHAT_RESPONSE,
+                        request_id=request_id,
+                        data={"status": "streaming", "content": token, "session_id": session_id},
+                    ),
+                )
+            )
 
         def on_tool_start(data: dict):
-            asyncio.create_task(self.send_response(websocket, WSMessage(
-                type=MessageType.CHAT_RESPONSE,
-                request_id=request_id,
-                data={"status": "tool_start", **data, "session_id": session_id},
-            )))
+            asyncio.create_task(
+                self.send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.CHAT_RESPONSE,
+                        request_id=request_id,
+                        data={"status": "tool_start", **data, "session_id": session_id},
+                    ),
+                )
+            )
 
         def on_tool_result(data: dict):
-            asyncio.create_task(self.send_response(websocket, WSMessage(
-                type=MessageType.CHAT_RESPONSE,
-                request_id=request_id,
-                data={"status": "tool_result", **data, "session_id": session_id},
-            )))
+            asyncio.create_task(
+                self.send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.CHAT_RESPONSE,
+                        request_id=request_id,
+                        data={"status": "tool_result", **data, "session_id": session_id},
+                    ),
+                )
+            )
 
         try:
             result = await self.chat_agent.chat(
@@ -185,15 +229,21 @@ class NotesChatHandler(MessageHandler):
                 on_tool_start=on_tool_start,
                 on_tool_result=on_tool_result,
             )
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.CHAT_RESPONSE,
-                request_id=request_id,
-                data={"status": "completed", "content": result, "session_id": session_id},
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.CHAT_RESPONSE,
+                    request_id=request_id,
+                    data={"status": "completed", "content": result, "session_id": session_id},
+                ),
+            )
         except Exception as e:
             logger.error(f"[NotesChatHandler] Chat failed: {e}")
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.ERROR,
-                request_id=request_id,
-                data={"error": str(e), "session_id": session_id},
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.ERROR,
+                    request_id=request_id,
+                    data={"error": str(e), "session_id": session_id},
+                ),
+            )

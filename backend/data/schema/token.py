@@ -13,8 +13,15 @@ def create_tables(conn: sqlite3.Connection) -> None:
             prompt_tokens INTEGER DEFAULT 0,
             completion_tokens INTEGER DEFAULT 0,
             cached_tokens INTEGER DEFAULT 0,
+            cache_creation_tokens INTEGER DEFAULT 0,
             total_tokens INTEGER DEFAULT 0,
             request_type TEXT DEFAULT 'chat',
+            response_time_ms INTEGER,
+            cost_usd REAL,
+            tool_calls_count INTEGER DEFAULT 0,
+            is_error INTEGER DEFAULT 0,
+            error_type TEXT,
+            parent_instance_id INTEGER,
             created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
         )
     """)
@@ -38,12 +45,20 @@ def create_tables(conn: sqlite3.Connection) -> None:
 
 
 def create_indexes(conn: sqlite3.Connection) -> None:
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_token_usage_instance ON token_usage(session_instance_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_token_usage_provider ON token_usage(provider_name)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_token_usage_instance ON token_usage(session_instance_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_token_usage_provider ON token_usage(provider_name)"
+    )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_token_usage_model ON token_usage(model_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_token_usage_created ON token_usage(created_at)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_token_summary_scope ON token_usage_summary(scope_type, scope_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_token_summary_date ON token_usage_summary(date_date)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_token_summary_scope ON token_usage_summary(scope_type, scope_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_token_summary_date ON token_usage_summary(date_date)"
+    )
 
 
 def seed_data(conn: sqlite3.Connection) -> None:

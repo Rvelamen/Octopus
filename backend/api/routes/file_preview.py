@@ -1,7 +1,7 @@
 """File preview conversion API (PPTX -> PDF via LibreOffice)."""
 
+import contextlib
 import hashlib
-import os
 import subprocess
 from pathlib import Path
 
@@ -13,6 +13,7 @@ router = APIRouter(prefix="/api/file-preview")
 
 def _get_workspace_root() -> Path:
     from backend.utils.helpers import get_workspace_path
+
     return Path(get_workspace_path())
 
 
@@ -21,8 +22,10 @@ def _convert_with_soffice(input_path: Path, output_dir: Path) -> Path:
     cmd = [
         "soffice",
         "--headless",
-        "--convert-to", "pdf:impress_pdf_Export:ExportNotesPages=false",
-        "--outdir", str(output_dir),
+        "--convert-to",
+        "pdf:impress_pdf_Export:ExportNotesPages=false",
+        "--outdir",
+        str(output_dir),
         str(input_path),
     ]
     logger.info(f"Converting {input_path} to PDF via LibreOffice")
@@ -71,7 +74,20 @@ async def get_pdf_preview(path: str = Query(..., description="Relative path to t
         raise HTTPException(status_code=400, detail="Path is not a file")
 
     ext = full_path.suffix.lower()
-    if ext not in {".pptx", ".ppt", ".pptm", ".ppsx", ".ppsm", ".potx", ".potm", ".thmx", ".docx", ".doc", ".xlsx", ".xls"}:
+    if ext not in {
+        ".pptx",
+        ".ppt",
+        ".pptm",
+        ".ppsx",
+        ".ppsm",
+        ".potx",
+        ".potm",
+        ".thmx",
+        ".docx",
+        ".doc",
+        ".xlsx",
+        ".xls",
+    }:
         raise HTTPException(status_code=400, detail=f"Unsupported file type for PDF preview: {ext}")
 
     # Cache directory inside workspace
@@ -90,13 +106,12 @@ async def get_pdf_preview(path: str = Query(..., description="Relative path to t
         output_pdf = _convert_with_soffice(full_path, tmp_dir)
         output_pdf.rename(cached_pdf)
         # Cleanup tmp dir
-        try:
+        with contextlib.suppress(Exception):
             tmp_dir.rmdir()
-        except Exception:
-            pass
 
     pdf_bytes = cached_pdf.read_bytes()
     import base64
+
     return {
         "success": True,
         "encoding": "base64",

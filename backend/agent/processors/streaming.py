@@ -1,7 +1,8 @@
 """Streaming message processor for the desktop channel."""
 
 from backend.core.events.types import InboundMessage
-from .base_chat import BaseChatProcessor, ToolCallInfo, LLMResponse
+
+from .base_chat import BaseChatProcessor, LLMResponse, ToolCallInfo
 
 
 class StreamingMessageProcessor(BaseChatProcessor):
@@ -133,8 +134,10 @@ class StreamingMessageProcessor(BaseChatProcessor):
                 "tool_call_id": tc.id,
                 "tool": tc.name,
                 "args": tc.arguments,
-                "result": result if tc.name == "spawn" else (
-                    result[:500] + "..." if len(result) > 500 else result
+                "result": (
+                    result
+                    if tc.name == "spawn"
+                    else (result[:500] + "..." if len(result) > 500 else result)
                 ),
                 "status": "completed",
                 "session_instance_id": session_instance_id,

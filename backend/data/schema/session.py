@@ -51,9 +51,15 @@ def create_tables(conn: sqlite3.Connection) -> None:
 
 def create_indexes(conn: sqlite3.Connection) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_sessions_key ON sessions(session_key)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_instances_session ON session_instances(session_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_instances_active ON session_instances(session_id, is_active)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_messages_instance ON messages(session_instance_id)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_instances_session ON session_instances(session_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_instances_active ON session_instances(session_id, is_active)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_messages_instance ON messages(session_instance_id)"
+    )
 
 
 def seed_data(conn: sqlite3.Connection) -> None:

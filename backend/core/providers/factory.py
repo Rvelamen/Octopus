@@ -2,10 +2,10 @@
 
 from loguru import logger
 
+from backend.core.config.schema import AgentDefaults, ProviderConfig
+from backend.core.providers.anthropic_provider import AnthropicProvider
 from backend.core.providers.base import LLMProvider, LLMResponse
 from backend.core.providers.openai_provider import OpenAIProvider
-from backend.core.providers.anthropic_provider import AnthropicProvider
-from backend.core.config.schema import AgentDefaults, ProviderConfig
 
 
 class MockProvider(LLMProvider):
@@ -24,12 +24,12 @@ class MockProvider(LLMProvider):
     ) -> LLMResponse:
         return LLMResponse(
             content="⚠️ **LLM Not Configured**\n\n"
-                    "Please configure one of the following API keys to enable LLM functionality:\n\n"
-                    "- `OPENROUTER_API_KEY`\n"
-                    "- `ANTHROPIC_API_KEY`\n"
-                    "- `OPENAI_API_KEY`\n"
-                    "- `DEEPSEEK_API_KEY`\n\n"
-                    "You can set these as environment variables or configure them in the settings.",
+            "Please configure one of the following API keys to enable LLM functionality:\n\n"
+            "- `OPENROUTER_API_KEY`\n"
+            "- `ANTHROPIC_API_KEY`\n"
+            "- `OPENAI_API_KEY`\n"
+            "- `DEEPSEEK_API_KEY`\n\n"
+            "You can set these as environment variables or configure them in the settings.",
             finish_reason="stop",
         )
 
@@ -42,14 +42,15 @@ class MockProvider(LLMProvider):
         temperature: float = 0.7,
     ):
         from backend.core.providers.base import StreamChunk
+
         yield StreamChunk(
             content="⚠️ **LLM Not Configured**\n\n"
-                    "Please configure one of the following API keys to enable LLM functionality:\n\n"
-                    "- `OPENROUTER_API_KEY`\n"
-                    "- `ANTHROPIC_API_KEY`\n"
-                    "- `OPENAI_API_KEY`\n"
-                    "- `DEEPSEEK_API_KEY`\n\n"
-                    "You can set these as environment variables or configure them in the settings.",
+            "Please configure one of the following API keys to enable LLM functionality:\n\n"
+            "- `OPENROUTER_API_KEY`\n"
+            "- `ANTHROPIC_API_KEY`\n"
+            "- `OPENAI_API_KEY`\n"
+            "- `DEEPSEEK_API_KEY`\n\n"
+            "You can set these as environment variables or configure them in the settings.",
             is_final=True,
             usage={"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
         )
@@ -91,7 +92,6 @@ def create_provider(
     """
     provider_config: ProviderConfig | None = None
     provider_type: str = "openai"
-    provider_name: str = ""
 
     providers_dict = providers_config or {}
 
@@ -100,13 +100,16 @@ def create_provider(
     if requested_provider:
         if requested_provider in providers_dict:
             provider_config = providers_dict[requested_provider]
-            provider_name = requested_provider
             if provider_config.api_key and getattr(provider_config, "enabled", True):
                 provider_type = provider_config.type or "openai"
-                logger.info(f"Using requested provider: {requested_provider} (type: {provider_type})")
+                logger.info(
+                    f"Using requested provider: {requested_provider} (type: {provider_type})"
+                )
             else:
                 if not provider_config.api_key:
-                    logger.warning(f"Requested provider '{requested_provider}' has no API key configured")
+                    logger.warning(
+                        f"Requested provider '{requested_provider}' has no API key configured"
+                    )
                 if not getattr(provider_config, "enabled", True):
                     logger.warning(f"Requested provider '{requested_provider}' is disabled")
                 provider_config = None
@@ -115,13 +118,14 @@ def create_provider(
         for name, config in providers_dict.items():
             if config.api_key and getattr(config, "enabled", True):
                 provider_config = config
-                provider_name = name
                 provider_type = config.type or "openai"
                 logger.info(f"Using fallback provider: {name} (type: {provider_type})")
                 break
 
     if provider_config is None:
-        logger.warning("No LLM provider configured. Please set one of the following environment variables:")
+        logger.warning(
+            "No LLM provider configured. Please set one of the following environment variables:"
+        )
         logger.warning("  - OPENROUTER_API_KEY")
         logger.warning("  - ANTHROPIC_API_KEY")
         logger.warning("  - OPENAI_API_KEY")
@@ -131,15 +135,15 @@ def create_provider(
 
     internal_type = TYPE_TO_INTERNAL.get(provider_type, "openai")
 
-    common_kwargs = dict(
-        default_model=agent_defaults.model or "gpt-4",
-        api_key=provider_config.api_key,
-        api_base=provider_config.api_base,
-        provider_type=internal_type,
-        max_retries=agent_defaults.llm_max_retries,
-        retry_base_delay=agent_defaults.llm_retry_base_delay,
-        retry_max_delay=agent_defaults.llm_retry_max_delay,
-    )
+    common_kwargs = {
+        "default_model": agent_defaults.model or "gpt-4",
+        "api_key": provider_config.api_key,
+        "api_base": provider_config.api_base,
+        "provider_type": internal_type,
+        "max_retries": agent_defaults.llm_max_retries,
+        "retry_base_delay": agent_defaults.llm_retry_base_delay,
+        "retry_max_delay": agent_defaults.llm_retry_max_delay,
+    }
 
     if internal_type == "anthropic":
         return AnthropicProvider(**common_kwargs)

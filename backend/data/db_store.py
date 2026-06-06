@@ -1,7 +1,6 @@
 """Repository for user-defined database tables and records."""
 
 import json
-import uuid
 from dataclasses import dataclass
 from typing import Any
 
@@ -80,8 +79,13 @@ class DBRepository:
             ).fetchone()
             return self._row_to_table(row)
 
-    def update_table(self, table_id: int, name: str | None = None,
-                     description: str | None = None, fields: list[dict] | None = None) -> UserTableRecord | None:
+    def update_table(
+        self,
+        table_id: int,
+        name: str | None = None,
+        description: str | None = None,
+        fields: list[dict] | None = None,
+    ) -> UserTableRecord | None:
         updates = []
         params = []
         if name is not None:
@@ -111,8 +115,14 @@ class DBRepository:
 
     # ── Record CRUD ──
 
-    def list_records(self, table_name: str, page: int = 1, page_size: int = 20,
-                     sort_field: str = "created_at", sort_order: str = "desc") -> dict:
+    def list_records(
+        self,
+        table_name: str,
+        page: int = 1,
+        page_size: int = 20,
+        sort_field: str = "created_at",
+        sort_order: str = "desc",
+    ) -> dict:
         offset = (page - 1) * page_size
         order_clause = f"ORDER BY {self._safe_identifier(sort_field)} {sort_order.upper()}"
 
@@ -136,7 +146,9 @@ class DBRepository:
                 "records": [self._row_to_data(row) for row in rows],
             }
 
-    def create_record(self, table_name: str, data: dict, fields: list[dict] | None = None) -> UserDataRecord:
+    def create_record(
+        self, table_name: str, data: dict, fields: list[dict] | None = None
+    ) -> UserDataRecord:
         # Handle auto-increment fields
         if fields:
             auto_inc_fields = [f for f in fields if f.get("autoIncrement")]
@@ -196,8 +208,9 @@ class DBRepository:
         with self.db._get_connection() as conn:
             conn.execute("DELETE FROM user_data_records WHERE id = ?", (record_id,))
 
-    def search_records(self, table_name: str, keyword: str, page: int = 1,
-                       page_size: int = 20) -> dict:
+    def search_records(
+        self, table_name: str, keyword: str, page: int = 1, page_size: int = 20
+    ) -> dict:
         """Full-text search across record_data JSON."""
         offset = (page - 1) * page_size
         pattern = f"%{keyword}%"

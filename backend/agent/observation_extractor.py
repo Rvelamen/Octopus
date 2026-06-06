@@ -1,8 +1,9 @@
 """Extract structured observations from conversation messages."""
 
 import json
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from loguru import logger
 
@@ -122,7 +123,9 @@ def _parse_observations(raw: str) -> list[dict[str, Any]]:
     try:
         data = json.loads(text)
         if not isinstance(data, list):
-            logger.warning(f"Observation extraction returned non-list: {type(data)}, content: {text[:200]}")
+            logger.warning(
+                f"Observation extraction returned non-list: {type(data)}, content: {text[:200]}"
+            )
             return []
         logger.debug(f"Observation extraction parsed {len(data)} observations from LLM response")
         return data
@@ -189,17 +192,29 @@ async def extract_observations_from_messages(
             obs_type = obs.get("type", "general")
             if obs_type not in {t.value for t in ObservationType}:
                 obs_type = "general"
-            valid.append({
-                "type": obs_type,
-                "title": str(obs.get("title", "")).strip() or "Untitled observation",
-                "narrative": str(obs.get("narrative", "")).strip(),
-                "files": list(obs.get("files", [])) if isinstance(obs.get("files"), list) else [],
-                "concepts": list(obs.get("concepts", [])) if isinstance(obs.get("concepts"), list) else [],
-                "token_count": int(obs.get("token_count", 0)) or 100,
-            })
-        logger.info(f"Extracted {len(valid)} observations from {len(messages)} messages (raw count: {len(observations)})")
+            valid.append(
+                {
+                    "type": obs_type,
+                    "title": str(obs.get("title", "")).strip() or "Untitled observation",
+                    "narrative": str(obs.get("narrative", "")).strip(),
+                    "files": (
+                        list(obs.get("files", [])) if isinstance(obs.get("files"), list) else []
+                    ),
+                    "concepts": (
+                        list(obs.get("concepts", []))
+                        if isinstance(obs.get("concepts"), list)
+                        else []
+                    ),
+                    "token_count": int(obs.get("token_count", 0)) or 100,
+                }
+            )
+        logger.info(
+            f"Extracted {len(valid)} observations from {len(messages)} messages (raw count: {len(observations)})"
+        )
         if not valid and raw:
-            logger.warning(f"LLM returned empty observations. Raw response ({len(raw)} chars): {raw[:500]}")
+            logger.warning(
+                f"LLM returned empty observations. Raw response ({len(raw)} chars): {raw[:500]}"
+            )
         return valid
     except Exception as e:
         logger.error(f"Observation extraction failed: {e}")

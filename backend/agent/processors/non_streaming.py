@@ -3,7 +3,8 @@
 from loguru import logger
 
 from backend.core.events.types import InboundMessage
-from .base_chat import BaseChatProcessor, ToolCallInfo, LLMResponse
+
+from .base_chat import BaseChatProcessor, LLMResponse, ToolCallInfo
 
 
 class NonStreamingMessageProcessor(BaseChatProcessor):
@@ -84,8 +85,10 @@ class NonStreamingMessageProcessor(BaseChatProcessor):
         session_instance_id: int | None,
         msg: InboundMessage,
     ) -> None:
-        result_preview = result if tc.name == "spawn" else (
-            result[:500] + "..." if len(result) > 500 else result
+        result_preview = (
+            result
+            if tc.name == "spawn"
+            else (result[:500] + "..." if len(result) > 500 else result)
         )
         try:
             await self.agent_loop._emit(

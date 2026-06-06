@@ -90,7 +90,9 @@ def create_indexes(conn: sqlite3.Connection) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_providers_enabled ON providers(enabled)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_models_provider ON models(provider_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_models_enabled ON models(enabled)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_image_service_config_type ON image_service_config(config_type)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_image_service_config_type ON image_service_config(config_type)"
+    )
 
 
 def seed_data(conn: sqlite3.Connection) -> None:

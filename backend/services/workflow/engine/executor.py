@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import ast
-import re
+import contextlib
 import json
-import httpx
+import re
 from typing import Any
 
-from backend.services.workflow.models import WorkflowNodeRecord
+import httpx
+
+from backend.data.db_store import DBRepository
 from backend.services.workflow.engine.context import WorkflowContext
+from backend.services.workflow.models import WorkflowEdgeRecord, WorkflowNodeRecord
 
 
 class NodeExecutor:
@@ -20,7 +23,7 @@ class NodeExecutor:
                 (loop/parallel nodes). Enables recursive node execution.
     """
 
-    def __init__(self, engine: Optional[Any] = None):
+    def __init__(self, engine: Any | None = None):
         self._engine = engine
 
     async def execute_workflow_start(
@@ -44,7 +47,11 @@ class NodeExecutor:
         if configured_inputs and isinstance(configured_inputs, list):
             # Use dynamically configured input variables
             for input_def in configured_inputs:
-                key = (input_def.get("name") or input_def.get("key")) if isinstance(input_def, dict) else input_def
+                key = (
+                    (input_def.get("name") or input_def.get("key"))
+                    if isinstance(input_def, dict)
+                    else input_def
+                )
                 if key:
                     result[key] = inputs.get(key, "")
         else:
@@ -90,7 +97,8 @@ class NodeExecutor:
         # Do NOT auto-correct user-written templates.
         if not user_message and inputs:
             input_values = [
-                str(v) for v in inputs.values()
+                str(v)
+                for v in inputs.values()
                 if v is not None and isinstance(v, (str, int, float, bool))
             ]
             if input_values:
@@ -191,10 +199,8 @@ class NodeExecutor:
             # Parse body if it's JSON
             json_body = None
             if body and method in ["POST", "PUT", "PATCH"]:
-                try:
+                with contextlib.suppress(json.JSONDecodeError):
                     json_body = json.loads(body)
-                except json.JSONDecodeError:
-                    pass
 
             async with httpx.AsyncClient(timeout=timeout) as client:
                 if method == "GET":
@@ -247,10 +253,32 @@ class NodeExecutor:
             }
 
     _SAFE_IMPORT_MODULES = {
-        "math", "json", "re", "datetime", "random", "collections", "itertools",
-        "statistics", "hashlib", "base64", "urllib", "time", "string", "copy",
-        "functools", "decimal", "fractions", "numbers", "typing", "inspect",
-        "textwrap", "html", "uuid", "pathlib", "dataclasses", "enum",
+        "math",
+        "json",
+        "re",
+        "datetime",
+        "random",
+        "collections",
+        "itertools",
+        "statistics",
+        "hashlib",
+        "base64",
+        "urllib",
+        "time",
+        "string",
+        "copy",
+        "functools",
+        "decimal",
+        "fractions",
+        "numbers",
+        "typing",
+        "inspect",
+        "textwrap",
+        "html",
+        "uuid",
+        "pathlib",
+        "dataclasses",
+        "enum",
     }
 
     def _safe_import(self, name, globals=None, locals=None, fromlist=(), level=0):
@@ -370,14 +398,15 @@ class NodeExecutor:
         if callable(main_func):
             try:
                 import inspect
+
                 sig = inspect.signature(main_func)
                 param_count = len(sig.parameters)
-                if param_count == 0:
-                    ret = main_func()
-                else:
-                    ret = main_func(inputs)
+                ret = main_func() if param_count == 0 else main_func(inputs)
                 if ret is not None:
-                    return {"system_text": "", **(ret if isinstance(ret, dict) else {"result": ret})}
+                    return {
+                        "system_text": "",
+                        **(ret if isinstance(ret, dict) else {"result": ret}),
+                    }
             except Exception as e:
                 return {"system_text": "", "error": str(e)}
 
@@ -389,7 +418,10 @@ class NodeExecutor:
         # Also capture `result` variable (common user convention)
         result = safe_locals.get("result")
         if result is not None:
-            return {"system_text": "", **(result if isinstance(result, dict) else {"result": result})}
+            return {
+                "system_text": "",
+                **(result if isinstance(result, dict) else {"result": result}),
+            }
 
         # Fallback: return the last evaluated expression or empty result
         return {"system_text": ""}
@@ -439,14 +471,14 @@ class NodeExecutor:
             # Check for comparison operators
             if "==" in condition:
                 parts = condition.split("==", 1)
-                left = parts[0].strip().strip('"\'')
-                right = parts[1].strip().strip('"\'')
+                left = parts[0].strip().strip("\"'")
+                right = parts[1].strip().strip("\"'")
                 return left == right
 
             if "!=" in condition:
                 parts = condition.split("!=", 1)
-                left = parts[0].strip().strip('"\'')
-                right = parts[1].strip().strip('"\'')
+                left = parts[0].strip().strip("\"'")
+                right = parts[1].strip().strip("\"'")
                 return left != right
 
             # Check for truthy values
@@ -595,8 +627,8 @@ class NodeExecutor:
         - Array of URLs
         - Configurable encoding, max file size, content concatenation
         """
-        import logging
         import asyncio
+        import logging
 
         logger = logging.getLogger(__name__)
 
@@ -672,7 +704,12 @@ class NodeExecutor:
             except httpx.TimeoutException:
                 return {"url": url, "title": url, "content": "", "error": "下载超时"}
             except httpx.HTTPStatusError as e:
-                return {"url": url, "title": url, "content": "", "error": f"HTTP {e.response.status_code}"}
+                return {
+                    "url": url,
+                    "title": url,
+                    "content": "",
+                    "error": f"HTTP {e.response.status_code}",
+                }
             except Exception as e:
                 logger.warning(f"Failed to fetch {url}: {e}")
                 return {"url": url, "title": url, "content": "", "error": str(e)}
@@ -773,7 +810,8 @@ class NodeExecutor:
             child_nodes = [n for n in all_nodes if n.parent_id == node.id]
             child_node_ids = {n.id for n in child_nodes}
             child_edges = [
-                e for e in all_edges
+                e
+                for e in all_edges
                 if e.source_node_id in child_node_ids and e.target_node_id in child_node_ids
             ]
 
@@ -798,7 +836,7 @@ class NodeExecutor:
                             continue
 
                         # 解析子节点的输入（使用当前上下文）
-                        child_inputs = self._resolve_node_inputs(child_node, context)
+                        self._resolve_node_inputs(child_node, context)
 
                         # 执行子节点
                         child_result = await engine._execute_node(child_node, context, child_edges)
@@ -812,10 +850,16 @@ class NodeExecutor:
                     # 收集本次迭代的结果：取最后一个执行节点的输出作为迭代结果
                     if execution_order:
                         last_node_id = execution_order[-1]
-                        last_result = context.get_node_output(last_node_id, "output") or \
-                                      context.get_node_output(last_node_id, "answerText") or \
-                                      iteration_outputs.get(last_node_id, {})
-                        results.append(last_result if isinstance(last_result, dict) else {"output": last_result})
+                        last_result = (
+                            context.get_node_output(last_node_id, "output")
+                            or context.get_node_output(last_node_id, "answerText")
+                            or iteration_outputs.get(last_node_id, {})
+                        )
+                        results.append(
+                            last_result
+                            if isinstance(last_result, dict)
+                            else {"output": last_result}
+                        )
                     else:
                         results.append({item_var: item})
 
@@ -868,10 +912,12 @@ class NodeExecutor:
                 graph[edge.source_node_id].append(edge.target_node_id)
                 in_degree[edge.target_node_id] += 1
 
-        queue: deque[str] = deque(sorted(
-            (n_id for n_id, degree in in_degree.items() if degree == 0),
-            key=lambda x: x,
-        ))
+        queue: deque[str] = deque(
+            sorted(
+                (n_id for n_id, degree in in_degree.items() if degree == 0),
+                key=lambda x: x,
+            )
+        )
         result: list[str] = []
 
         while queue:
@@ -1022,8 +1068,9 @@ class NodeExecutor:
 
         Supports INSERT, UPDATE, DELETE, and QUERY operations on user-defined tables.
         """
-        from backend.data.db_store import DBRepository
         import logging
+
+        from backend.data.db_store import DBRepository
 
         logger = logging.getLogger(__name__)
 
@@ -1041,7 +1088,9 @@ class NodeExecutor:
         logger.info(f"[DatabaseNode] tableName: {table_name_raw}")
         logger.info(f"[DatabaseNode] operation: {operation}")
         logger.info(f"[DatabaseNode] field_mappings: {field_mappings}")
-        logger.info(f"[DatabaseNode] node.config keys: {list(node.config.keys()) if node.config else []}")
+        logger.info(
+            f"[DatabaseNode] node.config keys: {list(node.config.keys()) if node.config else []}"
+        )
 
         # Resolve table name (may contain variable references)
         table_name = context.resolve_value(table_name_raw)
@@ -1089,11 +1138,15 @@ class NodeExecutor:
             if operation == "INSERT":
                 return await self._execute_db_insert(repo, table_name, field_mappings, context)
             elif operation == "UPDATE":
-                return await self._execute_db_update(repo, table_name, field_mappings, where_condition, context)
+                return await self._execute_db_update(
+                    repo, table_name, field_mappings, where_condition, context
+                )
             elif operation == "DELETE":
                 return await self._execute_db_delete(repo, table_name, where_condition, context)
             elif operation == "QUERY":
-                return await self._execute_db_query(repo, table_name, where_condition, order_by, limit, context)
+                return await self._execute_db_query(
+                    repo, table_name, where_condition, order_by, limit, context
+                )
             else:
                 return {
                     "result": None,
@@ -1109,14 +1162,17 @@ class NodeExecutor:
                 "_debug_inputs_keys": list(inputs.keys()),
             }
 
-    def _resolve_db_field_value(self, field_value: str, field_name: str, context: WorkflowContext) -> Any:
+    def _resolve_db_field_value(
+        self, field_value: str, field_name: str, context: WorkflowContext
+    ) -> Any:
         """Resolve a field value, returning error if {{...}} ref remains unresolved."""
         import re
+
         resolved = context.resolve_value(field_value)
         # If the resolved value still contains {{...}}, the upstream node output is missing
-        if isinstance(resolved, str) and re.search(r'\{\{(.+?)\}\}', resolved):
+        if isinstance(resolved, str) and re.search(r"\{\{(.+?)\}\}", resolved):
             # Try to extract the referenced node ID for a clearer error message
-            match = re.search(r'\{\{([^}]+)\}\}', resolved)
+            match = re.search(r"\{\{([^}]+)\}\}", resolved)
             ref = match.group(1) if match else resolved
             raise ValueError(
                 f"Field '{field_name}' references unresolved variable '{{{{{ref}}}}}'. "
@@ -1126,13 +1182,14 @@ class NodeExecutor:
 
     async def _execute_db_insert(
         self,
-        repo: "DBRepository",
+        repo: DBRepository,
         table_name: str,
         field_mappings: list,
         context: WorkflowContext,
     ) -> dict[str, Any]:
         """Execute INSERT operation."""
         import logging
+
         logger = logging.getLogger(__name__)
         data = {}
         logger.info(f"[DB_INSERT] field_mappings count: {len(field_mappings)}")
@@ -1170,7 +1227,7 @@ class NodeExecutor:
 
     async def _execute_db_update(
         self,
-        repo: "DBRepository",
+        repo: DBRepository,
         table_name: str,
         field_mappings: list,
         where_condition: str,
@@ -1187,7 +1244,9 @@ class NodeExecutor:
                     field_value = mapping.get("value", "")
                     if field_name:
                         try:
-                            data[field_name] = self._resolve_db_field_value(field_value, field_name, context)
+                            data[field_name] = self._resolve_db_field_value(
+                                field_value, field_name, context
+                            )
                         except ValueError as e:
                             return {
                                 "result": None,
@@ -1207,7 +1266,7 @@ class NodeExecutor:
 
     async def _execute_db_delete(
         self,
-        repo: "DBRepository",
+        repo: DBRepository,
         table_name: str,
         where_condition: str,
         context: WorkflowContext,
@@ -1226,7 +1285,7 @@ class NodeExecutor:
 
     async def _execute_db_query(
         self,
-        repo: "DBRepository",
+        repo: DBRepository,
         table_name: str,
         where_condition: str,
         order_by: str,
@@ -1257,7 +1316,7 @@ class NodeExecutor:
 
     def _filter_db_records(
         self,
-        repo: "DBRepository",
+        repo: DBRepository,
         table_name: str,
         where_condition: str,
         context: WorkflowContext,
@@ -1291,7 +1350,7 @@ class NodeExecutor:
 
         conditions = {}
         # Split by AND (case-insensitive)
-        parts = re.split(r'\s+(?i:AND)\s+', condition)
+        parts = re.split(r"\s+(?i:AND)\s+", condition)
         for part in parts:
             part = part.strip()
             if "=" not in part:
@@ -1305,18 +1364,14 @@ class NodeExecutor:
 
             # Remove quotes
             if len(value) >= 2:
-                if (value.startswith('"') and value.endswith('"')) or \
-                   (value.startswith("'") and value.endswith("'")):
+                if (value.startswith('"') and value.endswith('"')) or (
+                    value.startswith("'") and value.endswith("'")
+                ):
                     value = value[1:-1]
                 else:
                     # Try to parse as number
-                    try:
-                        if "." in value:
-                            value = float(value)
-                        else:
-                            value = int(value)
-                    except (ValueError, TypeError):
-                        pass
+                    with contextlib.suppress(ValueError, TypeError):
+                        value = float(value) if "." in value else int(value)
 
             conditions[key] = value
 

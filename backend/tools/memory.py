@@ -2,8 +2,8 @@
 
 from typing import Any
 
-from backend.tools.base import Tool
 from backend.data import Database, ObservationRepository
+from backend.tools.base import Tool
 
 
 class MemorySearchTool(Tool):
@@ -76,9 +76,7 @@ class MemorySearchTool(Tool):
         lines = [f"Found {len(results)} observation(s):"]
         for r in results:
             icon = type_icon.get(r.type, "⚪")
-            lines.append(
-                f'- #{r.id} [{icon} {r.type}] {r.title} (~{r.token_count} tokens)'
-            )
+            lines.append(f"- #{r.id} [{icon} {r.type}] {r.title} (~{r.token_count} tokens)")
         lines.append("")
         lines.append("Use `memory_read` with the observation ID to fetch full details.")
         return "\n".join(lines)
@@ -213,7 +211,5 @@ class MemoryTimelineTool(Tool):
             marker = "👉" if r.id == observation_id else "  "
             icon = type_icon.get(r.type, "⚪")
             time_str = r.created_at.strftime("%H:%M") if r.created_at else ""
-            lines.append(
-                f"{marker} #{r.id} | {time_str} | {icon} {r.type} | {r.title}"
-            )
+            lines.append(f"{marker} #{r.id} | {time_str} | {icon} {r.type} | {r.title}")
         return "\n".join(lines)

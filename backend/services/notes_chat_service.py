@@ -1,11 +1,10 @@
 """Notes Chat service for session and message management."""
 
+import contextlib
 import json
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
-
-from loguru import logger
 
 from backend.data.database import Database
 
@@ -159,16 +158,18 @@ class NotesChatService:
             scope_value=row["scope_value"],
             title=row["title"],
             agent_config_id=row["agent_config_id"],
-            created_at=datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None,
-            updated_at=datetime.fromisoformat(str(row["updated_at"])) if row["updated_at"] else None,
+            created_at=(
+                datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None
+            ),
+            updated_at=(
+                datetime.fromisoformat(str(row["updated_at"])) if row["updated_at"] else None
+            ),
         )
 
     def _row_to_message(self, row) -> NotesChatMessage:
         meta = {}
-        try:
+        with contextlib.suppress(Exception):
             meta = json.loads(row["metadata"] or "{}")
-        except Exception:
-            pass
         tool_calls = None
         try:
             raw = row["tool_calls"]
@@ -184,5 +185,7 @@ class NotesChatService:
             tool_calls=tool_calls,
             tool_call_id=row["tool_call_id"] if row["tool_call_id"] else None,
             metadata=meta,
-            created_at=datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None,
+            created_at=(
+                datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None
+            ),
         )

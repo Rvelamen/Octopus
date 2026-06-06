@@ -1,25 +1,18 @@
 """Cron job handlers for Desktop channel."""
 
-import asyncio
-import json
-import uuid
-from pathlib import Path
-from typing import Any
-
 from fastapi import WebSocket
 from loguru import logger
 
-from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.channels.desktop.handlers.base import MessageHandler
+from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.channels.desktop.schemas import (
-    CronGetJobsRequest,
     CronAddJobRequest,
     CronDeleteJobRequest,
-    CronToggleJobRequest,
+    CronGetJobsRequest,
     CronRunJobRequest,
+    CronToggleJobRequest,
 )
 from backend.core.events.bus import MessageBus
-from backend.data import Database
 
 
 class CronGetJobsHandler(MessageHandler):
@@ -65,16 +58,21 @@ class CronGetJobsHandler(MessageHandler):
             else:
                 jobs_data = []
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.CRON_JOBS,
-                request_id=message.request_id,
-                data={"jobs": jobs_data}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.CRON_JOBS,
+                    request_id=message.request_id,
+                    data={"jobs": jobs_data},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get cron jobs: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to get cron jobs: {e}")
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: CronGetJobsRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: CronGetJobsRequest
+    ) -> None:
         """Return all cron jobs."""
         try:
             include_disabled = validated.include_disabled
@@ -110,21 +108,23 @@ class CronGetJobsHandler(MessageHandler):
             else:
                 jobs_data = []
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.CRON_JOBS,
-                request_id=message.request_id,
-                data={"jobs": jobs_data}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.CRON_JOBS,
+                    request_id=message.request_id,
+                    data={"jobs": jobs_data},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get cron jobs: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to get cron jobs: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class CronAddJobHandler(MessageHandler):
@@ -158,6 +158,7 @@ class CronAddJobHandler(MessageHandler):
 
             # Build schedule
             from backend.services.cron.types import CronSchedule
+
             kind = schedule_data.get("kind", "every")
             if kind == "cron":
                 schedule = CronSchedule(kind="cron", expr=schedule_data.get("expr"))
@@ -166,7 +167,9 @@ class CronAddJobHandler(MessageHandler):
             elif kind == "at":
                 schedule = CronSchedule(kind="at", at_ms=schedule_data.get("at_ms"))
             else:
-                await self._send_error(websocket, message.request_id, f"Unknown schedule kind: {kind}")
+                await self._send_error(
+                    websocket, message.request_id, f"Unknown schedule kind: {kind}"
+                )
                 return
 
             job = self.cron_service.add_job(
@@ -178,30 +181,35 @@ class CronAddJobHandler(MessageHandler):
                 to=to,
             )
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.CRON_JOB_ADDED,
-                request_id=message.request_id,
-                data={
-                    "success": True,
-                    "job": {
-                        "id": job.id,
-                        "name": job.name,
-                        "enabled": job.enabled,
-                        "schedule": {
-                            "kind": job.schedule.kind,
-                            "at_ms": job.schedule.at_ms,
-                            "every_ms": job.schedule.every_ms,
-                            "expr": job.schedule.expr,
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.CRON_JOB_ADDED,
+                    request_id=message.request_id,
+                    data={
+                        "success": True,
+                        "job": {
+                            "id": job.id,
+                            "name": job.name,
+                            "enabled": job.enabled,
+                            "schedule": {
+                                "kind": job.schedule.kind,
+                                "at_ms": job.schedule.at_ms,
+                                "every_ms": job.schedule.every_ms,
+                                "expr": job.schedule.expr,
+                            },
+                            "next_run_at_ms": job.next_run_at_ms,
                         },
-                        "next_run_at_ms": job.next_run_at_ms,
-                    }
-                }
-            ))
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to add cron job: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to add cron job: {e}")
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: CronAddJobRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: CronAddJobRequest
+    ) -> None:
         """Add a new cron job."""
         try:
             if not self.cron_service:
@@ -225,6 +233,7 @@ class CronAddJobHandler(MessageHandler):
 
             # Build schedule
             from backend.services.cron.types import CronSchedule
+
             kind = schedule_data.get("kind", "every")
             if kind == "cron":
                 schedule = CronSchedule(kind="cron", expr=schedule_data.get("expr"))
@@ -233,7 +242,9 @@ class CronAddJobHandler(MessageHandler):
             elif kind == "at":
                 schedule = CronSchedule(kind="at", at_ms=schedule_data.get("at_ms"))
             else:
-                await self._send_error(websocket, message.request_id, f"Unknown schedule kind: {kind}")
+                await self._send_error(
+                    websocket, message.request_id, f"Unknown schedule kind: {kind}"
+                )
                 return
 
             job = self.cron_service.add_job(
@@ -245,35 +256,37 @@ class CronAddJobHandler(MessageHandler):
                 to=to,
             )
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.CRON_JOB_ADDED,
-                request_id=message.request_id,
-                data={
-                    "success": True,
-                    "job": {
-                        "id": job.id,
-                        "name": job.name,
-                        "enabled": job.enabled,
-                        "schedule": {
-                            "kind": job.schedule.kind,
-                            "at_ms": job.schedule.at_ms,
-                            "every_ms": job.schedule.every_ms,
-                            "expr": job.schedule.expr,
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.CRON_JOB_ADDED,
+                    request_id=message.request_id,
+                    data={
+                        "success": True,
+                        "job": {
+                            "id": job.id,
+                            "name": job.name,
+                            "enabled": job.enabled,
+                            "schedule": {
+                                "kind": job.schedule.kind,
+                                "at_ms": job.schedule.at_ms,
+                                "every_ms": job.schedule.every_ms,
+                                "expr": job.schedule.expr,
+                            },
+                            "next_run_at_ms": job.next_run_at_ms,
                         },
-                        "next_run_at_ms": job.next_run_at_ms,
-                    }
-                }
-            ))
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to add cron job: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to add cron job: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class CronDeleteJobHandler(MessageHandler):
@@ -297,16 +310,21 @@ class CronDeleteJobHandler(MessageHandler):
 
             success = self.cron_service.remove_job(job_id)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.CRON_JOB_DELETED,
-                request_id=message.request_id,
-                data={"success": success, "job_id": job_id}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.CRON_JOB_DELETED,
+                    request_id=message.request_id,
+                    data={"success": success, "job_id": job_id},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to delete cron job: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to delete cron job: {e}")
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: CronDeleteJobRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: CronDeleteJobRequest
+    ) -> None:
         """Delete a cron job."""
         try:
             if not self.cron_service:
@@ -320,21 +338,23 @@ class CronDeleteJobHandler(MessageHandler):
 
             success = self.cron_service.remove_job(job_id)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.CRON_JOB_DELETED,
-                request_id=message.request_id,
-                data={"success": success, "job_id": job_id}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.CRON_JOB_DELETED,
+                    request_id=message.request_id,
+                    data={"success": success, "job_id": job_id},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to delete cron job: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to delete cron job: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class CronToggleJobHandler(MessageHandler):
@@ -360,20 +380,25 @@ class CronToggleJobHandler(MessageHandler):
 
             job = self.cron_service.enable_job(job_id, enabled)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.CRON_JOB_TOGGLED,
-                request_id=message.request_id,
-                data={
-                    "success": job is not None,
-                    "job_id": job_id,
-                    "enabled": job.enabled if job else enabled,
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.CRON_JOB_TOGGLED,
+                    request_id=message.request_id,
+                    data={
+                        "success": job is not None,
+                        "job_id": job_id,
+                        "enabled": job.enabled if job else enabled,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to toggle cron job: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to toggle cron job: {e}")
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: CronToggleJobRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: CronToggleJobRequest
+    ) -> None:
         """Enable or disable a cron job."""
         try:
             if not self.cron_service:
@@ -389,25 +414,27 @@ class CronToggleJobHandler(MessageHandler):
 
             job = self.cron_service.enable_job(job_id, enabled)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.CRON_JOB_TOGGLED,
-                request_id=message.request_id,
-                data={
-                    "success": job is not None,
-                    "job_id": job_id,
-                    "enabled": job.enabled if job else enabled,
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.CRON_JOB_TOGGLED,
+                    request_id=message.request_id,
+                    data={
+                        "success": job is not None,
+                        "job_id": job_id,
+                        "enabled": job.enabled if job else enabled,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to toggle cron job: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to toggle cron job: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class CronRunJobHandler(MessageHandler):
@@ -431,16 +458,21 @@ class CronRunJobHandler(MessageHandler):
 
             success = await self.cron_service.run_job(job_id, force=True)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.CRON_JOB_RUN,
-                request_id=message.request_id,
-                data={"success": success, "job_id": job_id}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.CRON_JOB_RUN,
+                    request_id=message.request_id,
+                    data={"success": success, "job_id": job_id},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to run cron job: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to run cron job: {e}")
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: CronRunJobRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: CronRunJobRequest
+    ) -> None:
         """Manually run a cron job."""
         try:
             if not self.cron_service:
@@ -454,18 +486,20 @@ class CronRunJobHandler(MessageHandler):
 
             success = await self.cron_service.run_job(job_id, force=True)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.CRON_JOB_RUN,
-                request_id=message.request_id,
-                data={"success": success, "job_id": job_id}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.CRON_JOB_RUN,
+                    request_id=message.request_id,
+                    data={"success": success, "job_id": job_id},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to run cron job: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to run cron job: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )

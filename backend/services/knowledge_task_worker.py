@@ -9,14 +9,13 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 from loguru import logger
 
 from backend.core.events.bus import MessageBus
 from backend.core.events.types import AgentEvent
-from backend.services.knowledge_task_queue import KnowledgeTaskQueue, DistillTask
 from backend.services.knowledge_engine import KnowledgeGraphEngine
+from backend.services.knowledge_task_queue import DistillTask, KnowledgeTaskQueue
 from backend.services.library_note_engine import LibraryNoteEngine
 from backend.utils.helpers import get_workspace_path
 
@@ -110,9 +109,13 @@ class KnowledgeTaskWorker:
                 if task.template and task.template != "custom":
                     template_instructions = f"\nTemplate: {task.template}\nFollow the template guidelines for {task.template}."
 
-                output_instruction = f"\n\nOutput path: Save the extracted note to: `{task.output_path}`"
+                output_instruction = (
+                    f"\n\nOutput path: Save the extracted note to: `{task.output_path}`"
+                )
 
-                is_library_task = str(task.source_path).startswith("library/") or task.vault == "library"
+                is_library_task = (
+                    str(task.source_path).startswith("library/") or task.vault == "library"
+                )
 
                 # For library tasks, use the dedicated library provider and language if configured
                 override_provider_id = None
@@ -121,12 +124,15 @@ class KnowledgeTaskWorker:
                 if is_library_task:
                     from backend.data.database import Database
                     from backend.data.provider_store import AgentDefaultsRepository
+
                     db = Database()
                     agent_repo = AgentDefaultsRepository(db)
                     defaults = agent_repo.get_or_create_defaults()
-                    override_provider_id = getattr(defaults, 'library_extract_provider_id', None)
-                    override_model_id = getattr(defaults, 'library_extract_model_id', None)
-                    library_language = getattr(defaults, 'library_extract_language', 'English') or 'English'
+                    override_provider_id = getattr(defaults, "library_extract_provider_id", None)
+                    override_model_id = getattr(defaults, "library_extract_model_id", None)
+                    library_language = (
+                        getattr(defaults, "library_extract_language", "English") or "English"
+                    )
 
                 if is_library_task:
                     # Library mode: paper summary with library note connections
@@ -188,18 +194,16 @@ Be concise but complete. If information is not found in the document, state it e
 Be concise but complete. If information is not found in the document, state it explicitly.
 """.strip()
 
-                await on_progress(
-                    task.request_id, "running", "Starting subagent...", 0.05
-                )
-                await on_progress(
-                    task.request_id, "running", "Starting subagent...", 0.05
-                )
+                await on_progress(task.request_id, "running", "Starting subagent...", 0.05)
+                await on_progress(task.request_id, "running", "Starting subagent...", 0.05)
 
                 # 调用 subagent（同步模式，等待完成）
                 def on_iteration(iter_data: dict) -> None:
                     try:
                         self.queue.append_iteration(task.id, iter_data)
-                        logger.debug(f"Saved iteration {iter_data.get('iteration')} for task {task.id}")
+                        logger.debug(
+                            f"Saved iteration {iter_data.get('iteration')} for task {task.id}"
+                        )
                     except Exception as e:
                         logger.warning(f"Failed to save iteration for task {task.id}: {e}")
 
@@ -234,7 +238,6 @@ Be concise but complete. If information is not found in the document, state it e
                 if result and "iterations" in result:
                     header = f"[DistillTask:{task.id}] === ReAct Tool Call Log ==="
                     logger.info(header)
-                    print(header, flush=True)
                     for it in result["iterations"]:
                         tools_info = []
                         for t in it.get("tools", []):
@@ -246,21 +249,20 @@ Be concise but complete. If information is not found in the document, state it e
                             f"reasoning_len={len(it.get('reasoning', ''))}"
                         )
                         logger.info(line)
-                        print(line, flush=True)
                         for t in it.get("tools", []):
                             line_in = f"[DistillTask:{task.id}]   -> {t['toolName']} args={json.dumps(t.get('args', {}), ensure_ascii=False)[:200]}"
                             logger.info(line_in)
-                            print(line_in, flush=True)
                             res = t.get("result", "")
                             line_out = f"[DistillTask:{task.id}]   <- {t['toolName']} result={res[:300]}{'...' if len(res) > 300 else ''}"
                             logger.info(line_out)
-                            print(line_out, flush=True)
 
                 # ✅ 保存 iterations 到数据库
                 if result and "iterations" in result:
                     try:
                         self.queue.save_iterations(task.id, result["iterations"])
-                        logger.info(f"Saved {len(result['iterations'])} iterations for task {task.id}")
+                        logger.info(
+                            f"Saved {len(result['iterations'])} iterations for task {task.id}"
+                        )
                     except Exception as e:
                         logger.warning(f"Failed to save iterations for task {task.id}: {e}")
 
@@ -276,15 +278,20 @@ Be concise but complete. If information is not found in the document, state it e
                 try:
                     source_full = Path(current_workspace) / task.source_path
                     if source_full.exists() and source_full.suffix == ".md":
-                        source_text = source_full.read_text(encoding="utf-8", errors="ignore")[:5000]
+                        source_text = source_full.read_text(encoding="utf-8", errors="ignore")[
+                            :5000
+                        ]
                         fm_match = re.search(r"^---\n(.*?)\n---", source_text, re.DOTALL)
                         if fm_match:
                             import yaml
+
                             fm = yaml.safe_load(fm_match.group(1)) or {}
                             if fm.get("document_type") == "web_clip" and fm.get("source"):
                                 source_path_for_frontmatter = fm["source"]
                                 archive_path = task.source_path
-                                logger.info(f"Task {task.id}: Detected web_clip, using source URL {source_path_for_frontmatter}")
+                                logger.info(
+                                    f"Task {task.id}: Detected web_clip, using source URL {source_path_for_frontmatter}"
+                                )
                 except Exception:
                     pass
 
@@ -313,20 +320,26 @@ Be concise but complete. If information is not found in the document, state it e
                 # ✅ 清理 markdown_content 中的 code block 标记
                 if markdown_content:
                     if markdown_content.startswith("```markdown"):
-                        markdown_content = markdown_content[len("```markdown"):].rstrip("`").strip()
+                        markdown_content = (
+                            markdown_content[len("```markdown") :].rstrip("`").strip()
+                        )
                     elif markdown_content.startswith("```"):
                         lines = markdown_content.split("\n", 1)
                         if len(lines) > 1:
                             markdown_content = lines[1].rstrip("`").strip()
                     # 如果内容只有 frontmatter 而没有正文，尝试从下一个 iteration 补充
                     if markdown_content.startswith("---") and markdown_content.count("\n") < 5:
-                        logger.info(f"Task {task.id}: markdown content is too short, checking next iteration")
+                        logger.info(
+                            f"Task {task.id}: markdown content is too short, checking next iteration"
+                        )
                         for i in range(len(result["iterations"]) - 2, -1, -1):
                             next_reasoning = result["iterations"][i].get("reasoning", "")
                             if next_reasoning and len(next_reasoning) > len(markdown_content):
                                 # 合并内容
                                 if next_reasoning.startswith("```markdown"):
-                                    next_reasoning = next_reasoning[len("```markdown"):].rstrip("`").strip()
+                                    next_reasoning = (
+                                        next_reasoning[len("```markdown") :].rstrip("`").strip()
+                                    )
                                 elif next_reasoning.startswith("```"):
                                     lines = next_reasoning.split("\n", 1)
                                     if len(lines) > 1:
@@ -350,14 +363,18 @@ Be concise but complete. If information is not found in the document, state it e
                             tool_name = tool.get("toolName", "")
                             if tool_name in ("write", "write_file"):
                                 wrote_file = True
-                                logger.info(f"Task {task.id}: Subagent already wrote file via {tool_name}")
+                                logger.info(
+                                    f"Task {task.id}: Subagent already wrote file via {tool_name}"
+                                )
                                 break
                         if wrote_file:
                             break
 
                 if not wrote_file and markdown_content:
                     # Subagent 没有写文件，我们代为写入
-                    logger.info(f"Distill task {task.id}: Fallback writing {len(markdown_content)} chars to {output_path}")
+                    logger.info(
+                        f"Distill task {task.id}: Fallback writing {len(markdown_content)} chars to {output_path}"
+                    )
 
                     # 添加 frontmatter（如果没有的话）
                     if not markdown_content.startswith("---"):
@@ -380,13 +397,18 @@ extraction_prompt: |
                             full_path = Path(current_workspace) / full_path
                         full_path.parent.mkdir(parents=True, exist_ok=True)
                         full_path.write_text(markdown_content, encoding="utf-8")
-                        logger.info(f"✅ Wrote distilled content to {output_path} (subagent didn't call write tool)")
+                        logger.info(
+                            f"✅ Wrote distilled content to {output_path} (subagent didn't call write tool)"
+                        )
                     except Exception as e:
                         logger.error(f"❌ Failed to write distilled content: {e}")
                         import traceback
+
                         logger.error(traceback.format_exc())
                 elif not wrote_file:
-                    logger.warning(f"Distill task {task.id}: No write tool called AND no markdown content - cannot fallback!")
+                    logger.warning(
+                        f"Distill task {task.id}: No write tool called AND no markdown content - cannot fallback!"
+                    )
 
                 # 更新索引：Library 笔记走 LibraryNoteEngine，Knowledge 笔记走 KnowledgeGraphEngine
                 output_full_for_index = Path(output_path)

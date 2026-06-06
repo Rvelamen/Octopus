@@ -4,24 +4,24 @@ This module provides a unified way to manage skills and plugins
 through a common Extension interface.
 """
 
-from .base import Extension, SkillExtension, PluginExtension, PluginResult
-from .loader import ExtensionLoader
-from .registry import ExtensionRegistry, get_registry
-from .plugin_interface import PluginInterface
-from .plugin_handler import PluginHandler
-from .plugin_skill_parser import PluginSkill, SkillParser, ActionDef
-from .plugin_dependency import DependencyManager
-from .plugin_isolated_loader import PluginModuleLoader, IsolatedPluginImporter
+from .base import Extension, PluginExtension, PluginResult, SkillExtension
 from .desktop_handlers import (
-    SkillInstallHandler,
-    SkillGetInstalledHandler,
-    SkillRemoveHandler,
-    SkillRunHandler,
-    PluginInstallHandler,
     PluginGetInstalledHandler,
+    PluginInstallHandler,
     PluginRemoveHandler,
     PluginRunHandler,
+    SkillGetInstalledHandler,
+    SkillInstallHandler,
+    SkillRemoveHandler,
+    SkillRunHandler,
 )
+from .loader import ExtensionLoader
+from .plugin_dependency import DependencyManager
+from .plugin_handler import PluginHandler
+from .plugin_interface import PluginInterface
+from .plugin_isolated_loader import IsolatedPluginImporter, PluginModuleLoader
+from .plugin_skill_parser import ActionDef, PluginSkill, SkillParser
+from .registry import ExtensionRegistry, get_registry
 
 __all__ = [
     # Base classes

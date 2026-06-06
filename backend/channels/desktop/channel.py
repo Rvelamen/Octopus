@@ -2,18 +2,19 @@
 
 import asyncio
 import base64
+import contextlib
 from datetime import datetime
 from typing import Any
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from loguru import logger
 
-from backend.core.events.types import InboundMessage, OutboundMessage, AgentEvent
-from backend.core.events.bus import MessageBus
 from backend.channels.base import BaseChannel
-from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.channels.desktop.handlers import HandlerRegistry
-from backend.mcp.manager import MCPManager, get_mcp_manager
+from backend.channels.desktop.protocol import MessageType, WSMessage
+from backend.core.events.bus import MessageBus
+from backend.core.events.types import AgentEvent, OutboundMessage
+from backend.mcp.manager import MCPManager
 
 
 class DesktopChannel(BaseChannel):
@@ -26,7 +27,16 @@ class DesktopChannel(BaseChannel):
 
     name = "desktop"
 
-    def __init__(self, config: Any, bus: MessageBus, app: FastAPI, mcp_manager: MCPManager | None = None, cron_service=None, agent_loop=None, subagent_manager=None):
+    def __init__(
+        self,
+        config: Any,
+        bus: MessageBus,
+        app: FastAPI,
+        mcp_manager: MCPManager | None = None,
+        cron_service=None,
+        agent_loop=None,
+        subagent_manager=None,
+    ):
         super().__init__(config, bus)
         self.app = app
         self.connected_clients: list[WebSocket] = []
@@ -35,9 +45,16 @@ class DesktopChannel(BaseChannel):
         self.cron_service = cron_service
         self.agent_loop = agent_loop
         self.subagent_manager = subagent_manager
-        self.handler_registry = HandlerRegistry(bus, self.pending_responses, mcp_manager, cron_service, agent_loop=agent_loop, subagent_manager=subagent_manager)
+        self.handler_registry = HandlerRegistry(
+            bus,
+            self.pending_responses,
+            mcp_manager,
+            cron_service,
+            agent_loop=agent_loop,
+            subagent_manager=subagent_manager,
+        )
         self._mcp_state_callback_registered = False
-    
+
     async def start(self) -> None:
         """Start the desktop channel by registering the WebSocket endpoint."""
         self._running = True
@@ -71,10 +88,8 @@ class DesktopChannel(BaseChannel):
                 logger.info("Desktop client disconnected")
             finally:
                 heartbeat_task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError, Exception):
                     await heartbeat_task
-                except (asyncio.CancelledError, Exception):
-                    pass
                 if websocket in self.connected_clients:
                     self.connected_clients.remove(websocket)
 
@@ -83,7 +98,7 @@ class DesktopChannel(BaseChannel):
         # Keep running
         while self._running:
             await asyncio.sleep(1)
-    
+
     async def stop(self) -> None:
         """Stop the channel."""
         self._running = False
@@ -92,7 +107,7 @@ class DesktopChannel(BaseChannel):
             await ws.close()
         self.connected_clients.clear()
         logger.info("Desktop channel stopped")
-    
+
     async def send(self, msg: OutboundMessage) -> None:
         """Send a message to the desktop frontend."""
         if not msg.content:
@@ -105,82 +120,82 @@ class DesktopChannel(BaseChannel):
         if session_instance_id is not None:
             data["session_instance_id"] = session_instance_id
 
-        ws_message = WSMessage(
-            type=MessageType.CHAT_RESPONSE,
-            request_id=request_id,
-            data=data
-        )
+        ws_message = WSMessage(type=MessageType.CHAT_RESPONSE, request_id=request_id, data=data)
 
         await self._broadcast(ws_message.to_dict())
-        
+
         # Handle TTS if enabled
         if msg.metadata and msg.metadata.get("tts_enabled"):
             instance_id = msg.metadata.get("session_instance_id")
             tts_config = msg.metadata.get("tts_config", {})
-            
+
             if instance_id and tts_config:
-                asyncio.create_task(
-                    self._send_tts(msg.content, instance_id, tts_config)
-                )
-    
+                asyncio.create_task(self._send_tts(msg.content, instance_id, tts_config))
+
     async def _send_tts(self, text: str, instance_id: int, tts_config: dict) -> None:
         """Generate and send TTS audio to desktop frontend."""
         try:
-            from backend.services.tts_service import TTSService
             from backend.data import Database
             from backend.data.provider_store import ProviderRepository, SettingsRepository
             from backend.data.session_store import SessionRepository
-            
+            from backend.services.tts_service import TTSService
+
             db = Database()
             session_repo = SessionRepository(db)
             provider_repo = ProviderRepository(db)
             settings_repo = SettingsRepository(db)
-            
+
             tts_service = TTSService(session_repo, provider_repo, settings_repo)
             result = await tts_service.synthesize(text, tts_config)
-            
+
             audio_base64 = base64.b64encode(result.audio_data).decode()
-            
-            await self._broadcast({
-                "type": "tts_auto_reply",
-                "data": {
-                    "instanceId": instance_id,
-                    "audio": audio_base64,
-                    "format": result.format,
-                    "text": text,
-                    "duration_ms": result.duration_ms
+
+            await self._broadcast(
+                {
+                    "type": "tts_auto_reply",
+                    "data": {
+                        "instanceId": instance_id,
+                        "audio": audio_base64,
+                        "format": result.format,
+                        "text": text,
+                        "duration_ms": result.duration_ms,
+                    },
                 }
-            })
-            
+            )
+
             session_repo.update_latest_message_tts(
-                instance_id, 
+                instance_id,
                 "assistant",
                 {
                     "audio": audio_base64,
                     "format": result.format,
                     "text": text,
-                    "duration_ms": result.duration_ms
-                }
+                    "duration_ms": result.duration_ms,
+                },
             )
-            
+
             logger.debug(f"TTS audio sent for instance {instance_id}")
         except Exception as e:
             logger.error(f"Failed to generate TTS audio: {e}")
-                
+
     async def _handle_event(self, event: AgentEvent):
         """Handle an agent event from the bus.
-        
+
         Only process events from the desktop channel to avoid
         displaying messages from other channels (feishu, etc.)
         """
         # 调试日志
-        logger.debug(f"[DesktopChannel] Received event: type={event.event_type}, channel={event.channel}")
-        
+        logger.debug(
+            f"[DesktopChannel] Received event: type={event.event_type}, channel={event.channel}"
+        )
+
         # Only handle events from desktop channel
         if event.channel != "desktop":
-            logger.debug(f"[DesktopChannel] Ignoring event from channel: {event.channel} (expected: desktop)")
+            logger.debug(
+                f"[DesktopChannel] Ignoring event from channel: {event.channel} (expected: desktop)"
+            )
             return
-        
+
         # Map event types to message types
         event_type_map = {
             "agent_start": MessageType.AGENT_START,
@@ -203,23 +218,19 @@ class DesktopChannel(BaseChannel):
             # Knowledge distill events
             "knowledge_distill_progress": MessageType.KNOWLEDGE_DISTILL_PROGRESS,
         }
-        
+
         msg_type = event_type_map.get(event.event_type)
         if msg_type:
-            ws_message = WSMessage(
-                type=msg_type,
-                data=event.data
+            ws_message = WSMessage(type=msg_type, data=event.data)
+            logger.debug(
+                f"[DesktopChannel] Broadcasting mapped event: {event.event_type} to {len(self.connected_clients)} clients"
             )
-            logger.debug(f"[DesktopChannel] Broadcasting mapped event: {event.event_type} to {len(self.connected_clients)} clients")
             await self._broadcast(ws_message.to_dict())
         else:
             # For unknown events, broadcast as-is
             logger.debug(f"[DesktopChannel] Broadcasting unknown event: {event.event_type}")
-            await self._broadcast({
-                "type": event.event_type,
-                "data": event.data
-            })
-        
+            await self._broadcast({"type": event.event_type, "data": event.data})
+
     async def _broadcast(self, payload: dict):
         """Broadcast a payload to all connected clients."""
         # logger.info(f"[_broadcast] Broadcasting to {len(self.connected_clients)} clients: {payload.get('type')}")
@@ -239,6 +250,7 @@ class DesktopChannel(BaseChannel):
     async def _handle_client_message(self, websocket: WebSocket, data: dict):
         """Handle incoming message from client."""
         import time
+
         start = time.perf_counter()
         message_type = data.get("type", "unknown")
         request_id = data.get("request_id")
@@ -258,7 +270,7 @@ class DesktopChannel(BaseChannel):
                 error_msg = WSMessage(
                     type=MessageType.ERROR,
                     request_id=request_id,
-                    data={"error": f"Failed to process message: {str(e)}"}
+                    data={"error": f"Failed to process message: {str(e)}"},
                 )
                 await websocket.send_json(error_msg.to_dict())
             except Exception:
@@ -292,10 +304,14 @@ class DesktopChannel(BaseChannel):
 
     def _on_mcp_state_change(self, event_type: str, old_value: Any, new_value: Any) -> None:
         """Handle MCP state changes and broadcast to all connected clients."""
-        asyncio.create_task(self._broadcast({
-            "type": MessageType.MCP_STATE_CHANGE.value,
-            "event": event_type,
-            "old_value": old_value,
-            "new_value": new_value,
-            "timestamp": datetime.now().isoformat(),
-        }))
+        asyncio.create_task(
+            self._broadcast(
+                {
+                    "type": MessageType.MCP_STATE_CHANGE.value,
+                    "event": event_type,
+                    "old_value": old_value,
+                    "new_value": new_value,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+        )

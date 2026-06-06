@@ -12,7 +12,7 @@ import sqlite3
 from collections import deque
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -51,7 +51,7 @@ class LibraryNoteEngine:
         self._init_db()
 
         # In-memory cache
-        self._cache: Optional[dict[str, Any]] = None
+        self._cache: dict[str, Any] | None = None
         self._cache_dirty = True
 
     def _init_db(self) -> None:
@@ -94,7 +94,7 @@ class LibraryNoteEngine:
                 tags.append(tag)
         return tags
 
-    def _resolve_title(self, title: str, vault: str | None = None) -> Optional[str]:
+    def _resolve_title(self, title: str, vault: str | None = None) -> str | None:
         """Case-insensitive title match within a vault; falls back to path stem match."""
         clean = title.strip().rstrip("\\")
 
@@ -238,10 +238,10 @@ class LibraryNoteEngine:
             # Update tags
             self.db.execute("DELETE FROM library_note_tags WHERE note_path = ?", (relative_path,))
             for tag in tags:
-                self.db.execute(
-                    "INSERT OR IGNORE INTO library_tags (name) VALUES (?)", (tag,)
-                )
-                tag_row = self.db.execute("SELECT id FROM library_tags WHERE name = ?", (tag,)).fetchone()
+                self.db.execute("INSERT OR IGNORE INTO library_tags (name) VALUES (?)", (tag,))
+                tag_row = self.db.execute(
+                    "SELECT id FROM library_tags WHERE name = ?", (tag,)
+                ).fetchone()
                 if tag_row:
                     self.db.execute(
                         "INSERT OR IGNORE INTO library_note_tags (tag_id, note_path) VALUES (?, ?)",
@@ -261,7 +261,9 @@ class LibraryNoteEngine:
     # Search
     # ------------------------------------------------------------------
 
-    def search_notes(self, query: str, limit: int = 20, vault_filter: Optional[str] = None) -> list[dict[str, Any]]:
+    def search_notes(
+        self, query: str, limit: int = 20, vault_filter: str | None = None
+    ) -> list[dict[str, Any]]:
         """Fuzzy search library notes by path or title."""
         stripped = query.strip()
         if not stripped:
@@ -279,7 +281,14 @@ class LibraryNoteEngine:
             (stripped,) + vault_args,
         ).fetchone()
         if row:
-            return [{"path": row["path"], "title": row["title"], "mtime": row["mtime"], "word_count": row["word_count"]}]
+            return [
+                {
+                    "path": row["path"],
+                    "title": row["title"],
+                    "mtime": row["mtime"],
+                    "word_count": row["word_count"],
+                }
+            ]
 
         # Path stem match
         row = self.db.execute(
@@ -287,7 +296,14 @@ class LibraryNoteEngine:
             (f"%/{stripped}.md",) + vault_args,
         ).fetchone()
         if row:
-            return [{"path": row["path"], "title": row["title"], "mtime": row["mtime"], "word_count": row["word_count"]}]
+            return [
+                {
+                    "path": row["path"],
+                    "title": row["title"],
+                    "mtime": row["mtime"],
+                    "word_count": row["word_count"],
+                }
+            ]
 
         # FTS5 match
         try:
@@ -308,7 +324,16 @@ class LibraryNoteEngine:
                 (stripped,) + fts_args + (limit,),
             ).fetchall()
             if rows:
-                return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"], "word_count": r["word_count"], "rank": r["rank"]} for r in rows]
+                return [
+                    {
+                        "path": r["path"],
+                        "title": r["title"],
+                        "mtime": r["mtime"],
+                        "word_count": r["word_count"],
+                        "rank": r["rank"],
+                    }
+                    for r in rows
+                ]
         except Exception:
             pass
 
@@ -323,9 +348,19 @@ class LibraryNoteEngine:
             """,
             (pattern, pattern) + vault_args + (limit,),
         ).fetchall()
-        return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"], "word_count": r["word_count"]} for r in rows]
+        return [
+            {
+                "path": r["path"],
+                "title": r["title"],
+                "mtime": r["mtime"],
+                "word_count": r["word_count"],
+            }
+            for r in rows
+        ]
 
-    def search_notes_fts(self, query: str, limit: int = 20, vault_filter: Optional[str] = None) -> list[dict[str, Any]]:
+    def search_notes_fts(
+        self, query: str, limit: int = 20, vault_filter: str | None = None
+    ) -> list[dict[str, Any]]:
         """Full-text search using SQLite FTS5 with BM25 ranking."""
         try:
             vault_join = ""
@@ -364,13 +399,11 @@ class LibraryNoteEngine:
         """Rebuild the FTS5 index from scratch."""
         try:
             self.db.execute("DELETE FROM library_notes_fts")
-            self.db.execute(
-                """
+            self.db.execute("""
                 INSERT INTO library_notes_fts(rowid, title, content)
                 SELECT rowid, title, content FROM library_notes
                 WHERE content IS NOT NULL
-                """
-            )
+                """)
             self.db.commit()
             logger.info("Rebuilt library FTS5 index")
         except sqlite3.OperationalError as e:
@@ -391,7 +424,7 @@ class LibraryNoteEngine:
     # Tags
     # ------------------------------------------------------------------
 
-    def get_tags(self, vault_filter: Optional[str] = None) -> list[dict[str, Any]]:
+    def get_tags(self, vault_filter: str | None = None) -> list[dict[str, Any]]:
         """Return all tags with usage counts."""
         if vault_filter:
             rows = self.db.execute(
@@ -407,15 +440,13 @@ class LibraryNoteEngine:
                 (vault_filter,),
             ).fetchall()
         else:
-            rows = self.db.execute(
-                """
+            rows = self.db.execute("""
                 SELECT t.name, COUNT(nt.note_path) as count
                 FROM library_tags t
                 LEFT JOIN library_note_tags nt ON t.id = nt.tag_id
                 GROUP BY t.id
                 ORDER BY count DESC, t.name ASC
-                """
-            ).fetchall()
+                """).fetchall()
         return [{"name": r["name"], "count": r["count"]} for r in rows]
 
     def get_node_tags(self, path: str) -> list[str]:
@@ -448,14 +479,12 @@ class LibraryNoteEngine:
 
     def list_vaults(self) -> list[dict[str, Any]]:
         """Return all vaults with note counts."""
-        rows = self.db.execute(
-            """
+        rows = self.db.execute("""
             SELECT vault, COUNT(*) as note_count
             FROM library_notes
             GROUP BY vault
             ORDER BY vault ASC
-            """
-        ).fetchall()
+            """).fetchall()
         return [{"name": r["vault"], "note_count": r["note_count"]} for r in rows]
 
     # ------------------------------------------------------------------
@@ -464,11 +493,11 @@ class LibraryNoteEngine:
 
     def get_graph(
         self,
-        center_path: Optional[str] = None,
+        center_path: str | None = None,
         depth: int = 1,
         limit: int = 200,
-        tag_filter: Optional[str] = None,
-        vault_filter: Optional[str] = None,
+        tag_filter: str | None = None,
+        vault_filter: str | None = None,
     ) -> dict[str, Any]:
         """Return a subgraph as {nodes, edges}."""
         if self._cache_dirty or self._cache is None:
@@ -504,7 +533,9 @@ class LibraryNoteEngine:
             return {"nodes": [], "edges": []}
 
         visited: set[str] = {center_path} if _include_node(center_path) else set()
-        queue: deque[tuple[str, int]] = deque([(center_path, 0)]) if _include_node(center_path) else deque()
+        queue: deque[tuple[str, int]] = (
+            deque([(center_path, 0)]) if _include_node(center_path) else deque()
+        )
 
         while queue:
             current, d = queue.popleft()
@@ -536,9 +567,7 @@ class LibraryNoteEngine:
         """Rebuild the in-memory graph cache from SQLite."""
         nodes: dict[str, dict[str, Any]] = {}
         title_to_path: dict[str, str] = {}
-        for row in self.db.execute(
-            "SELECT path, title, type, mtime FROM library_notes"
-        ).fetchall():
+        for row in self.db.execute("SELECT path, title, type, mtime FROM library_notes").fetchall():
             nodes[row["path"]] = {
                 "id": row["path"],
                 "label": row["title"],
@@ -615,7 +644,7 @@ class LibraryNoteEngine:
             "tags": self.get_node_tags(relative_path),
         }
 
-    def get_timeline(self, relative_path: str, vault_filter: Optional[str] = None) -> dict[str, Any]:
+    def get_timeline(self, relative_path: str, vault_filter: str | None = None) -> dict[str, Any]:
         """Return contextual timeline and metadata for a library note."""
         row = self.db.execute(
             "SELECT path, title, mtime, word_count, updated_at, vault FROM library_notes WHERE path = ?",
@@ -675,7 +704,12 @@ class LibraryNoteEngine:
                 tuple(related_paths),
             ).fetchall()
             related = [
-                {"path": r["path"], "title": r["title"], "mtime": r["mtime"], "word_count": r["word_count"]}
+                {
+                    "path": r["path"],
+                    "title": r["title"],
+                    "mtime": r["mtime"],
+                    "word_count": r["word_count"],
+                }
                 for r in rel_rows
             ]
 

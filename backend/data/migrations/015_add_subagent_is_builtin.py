@@ -1,4 +1,5 @@
 """Add is_builtin column to subagents table."""
+
 from yoyo import step
 
 
@@ -6,7 +7,7 @@ def apply(conn):
     cursor = conn.execute("PRAGMA table_info(subagents)")
     columns = [row[1] for row in cursor.fetchall()]
 
-    if columns and 'is_builtin' not in columns:
+    if columns and "is_builtin" not in columns:
         conn.execute("""
             ALTER TABLE subagents
             ADD COLUMN is_builtin BOOLEAN DEFAULT 0

@@ -1,14 +1,13 @@
 """Unified action tool for plugin and channel operations."""
 
 import json
-from pathlib import Path
 from typing import Any
 
 from loguru import logger
 
-from backend.tools.base import Tool
-from backend.extensions.registry import get_registry
 from backend.channels.registry import ChannelRegistry
+from backend.extensions.registry import get_registry
+from backend.tools.base import Tool
 
 
 class ActionTool(Tool):
@@ -95,31 +94,21 @@ read_file: /Users/.../workspace/extensions/search_aggregator/SKILL.md
         return {
             "type": "object",
             "properties": {
-                "type": {
-                    "type": "string",
-                    "enum": ["plugin"],
-                    "description": "Must be 'plugin'"
-                },
+                "type": {"type": "string", "enum": ["plugin"], "description": "Must be 'plugin'"},
                 "action": {
                     "type": "string",
-                    "description": "The action to execute. Read SKILL.md for available actions"
+                    "description": "The action to execute. Read SKILL.md for available actions",
                 },
                 "name": {
                     "type": "string",
-                    "description": "The plugin name (e.g., 'search_aggregator', 'weather', 'pdf_plugin')"
-                }
+                    "description": "The plugin name (e.g., 'search_aggregator', 'weather', 'pdf_plugin')",
+                },
             },
             "required": ["type", "action", "name"],
-            "additionalProperties": True
+            "additionalProperties": True,
         }
 
-    async def execute(
-        self,
-        type: str,
-        action: str,
-        name: str | None = None,
-        **kwargs
-    ) -> str:
+    async def execute(self, type: str, action: str, name: str | None = None, **kwargs) -> str:
         """Execute unified action based on type."""
 
         if type == "plugin":
@@ -153,10 +142,10 @@ read_file: /Users/.../workspace/extensions/search_aggregator/SKILL.md
                 if normalized_name != name:
                     ext = self._extension_registry.get_plugin(normalized_name)
 
-        if ext and hasattr(ext, 'create_handler'):
+        if ext and hasattr(ext, "create_handler"):
             try:
                 handler = ext.create_handler()
-                if handler and hasattr(handler, 'load'):
+                if handler and hasattr(handler, "load"):
                     await handler.load()
             except Exception as e:
                 logger.warning(f"Failed to create handler for plugin {name}: {e}")
@@ -171,7 +160,7 @@ read_file: /Users/.../workspace/extensions/search_aggregator/SKILL.md
 
         # Note: _load_plugin_env() and _check_required_config() are already called in handler.load()
 
-        if hasattr(handler, 'missing_configs') and handler.missing_configs:
+        if hasattr(handler, "missing_configs") and handler.missing_configs:
             field_names = [f["name"] for f in handler.missing_configs]
 
             return (
@@ -181,12 +170,19 @@ read_file: /Users/.../workspace/extensions/search_aggregator/SKILL.md
             )
 
         if action not in handler.actions:
-            return f"Error: Action '{action}' not supported. Available: {', '.join(handler.actions)}"
+            return (
+                f"Error: Action '{action}' not supported. Available: {', '.join(handler.actions)}"
+            )
 
         try:
-            from backend.extensions.base import PluginResult
             # Pass channel, chat_id, and session_instance_id to handler
-            result = await handler.execute(action, channel=channel, chat_id=chat_id, session_instance_id=session_instance_id, **kwargs)
+            result = await handler.execute(
+                action,
+                channel=channel,
+                chat_id=chat_id,
+                session_instance_id=session_instance_id,
+                **kwargs,
+            )
 
             if result.success:
                 if result.data:
@@ -199,13 +195,13 @@ read_file: /Users/.../workspace/extensions/search_aggregator/SKILL.md
 
     def _get_plugin_handler(self, name: str):
         """Get plugin handler from extension registry."""
-        from backend.extensions.plugin_handler import PluginHandler
         try:
             ext = self._extension_registry.get_plugin(name)
-            if ext and hasattr(ext, 'create_handler'):
+            if ext and hasattr(ext, "create_handler"):
                 handler = ext.create_handler()
-                if handler and hasattr(handler, 'load'):
+                if handler and hasattr(handler, "load"):
                     import asyncio
+
                     asyncio.get_event_loop().run_until_complete(handler.load())
                 return handler
         except Exception:
@@ -224,7 +220,9 @@ read_file: /Users/.../workspace/extensions/search_aggregator/SKILL.md
             return f"Error: Channel '{name}' not found. Available: {available or 'none'}"
 
         if action not in channel.actions:
-            return f"Error: Action '{action}' not supported. Available: {', '.join(channel.actions)}"
+            return (
+                f"Error: Action '{action}' not supported. Available: {', '.join(channel.actions)}"
+            )
 
         try:
             result = await channel.execute(action, **kwargs)

@@ -1,4 +1,5 @@
 """Rebuild token_usage table without foreign key cascade."""
+
 from yoyo import step
 
 
@@ -35,8 +36,12 @@ def apply(conn):
         FROM token_usage_old
     """)
     conn.execute("DROP TABLE token_usage_old")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_token_usage_instance ON token_usage(session_instance_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_token_usage_provider ON token_usage(provider_name)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_token_usage_instance ON token_usage(session_instance_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_token_usage_provider ON token_usage(provider_name)"
+    )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_token_usage_model ON token_usage(model_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_token_usage_created ON token_usage(created_at)")
 

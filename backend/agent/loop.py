@@ -8,23 +8,26 @@ from typing import Any
 
 from loguru import logger
 
-from backend.core.events.types import InboundMessage, OutboundMessage, AgentEvent, MessageContentItem
-from backend.core.events.bus import MessageBus
+from backend.agent.container import AgentContainer
 from backend.agent.context import set_agent_loop
-from backend.agent.shared import PreparedContext
-from backend.data.commands import handle_session_command
-from backend.tools.message import MessageTool
-from backend.tools.spawn import SpawnTool
-from backend.tools.cron import CronTool
-
 from backend.agent.processors import (
     LongtaskMessageProcessor,
-    SystemMessageProcessor,
     NonStreamingMessageProcessor,
     StreamingMessageProcessor,
+    SystemMessageProcessor,
 )
-
-from backend.agent.container import AgentContainer
+from backend.agent.shared import PreparedContext
+from backend.core.events.bus import MessageBus
+from backend.core.events.types import (
+    AgentEvent,
+    InboundMessage,
+    MessageContentItem,
+    OutboundMessage,
+)
+from backend.data.commands import handle_session_command
+from backend.tools.cron import CronTool
+from backend.tools.message import MessageTool
+from backend.tools.spawn import SpawnTool
 
 
 class AgentLoop:
@@ -119,6 +122,7 @@ class AgentLoop:
     def max_iterations(self) -> int:
         """Get max iterations from config or default."""
         from backend.agent.config_service import AgentConfigService
+
         try:
             config_service = AgentConfigService(self.db)
             defaults = config_service._get_agent_defaults_repo().get_or_create_defaults()
@@ -137,7 +141,7 @@ class AgentLoop:
         provider_name: str,
         model_id: str,
         usage: dict,
-        request_type: str = "chat"
+        request_type: str = "chat",
     ) -> None:
         self._container._record_token_usage(
             session_instance_id, provider_name, model_id, usage, request_type
@@ -145,24 +149,27 @@ class AgentLoop:
 
     async def _emit(self, event_type: str, data: dict, channel: str = ""):
         """Emit an agent event to the bus."""
-        await self.bus.publish_event(AgentEvent(
-            event_type=event_type,
-            data=data,
-            channel=channel
-        ))
+        await self.bus.publish_event(AgentEvent(event_type=event_type, data=data, channel=channel))
 
-    async def _send_stream_chunks(self, content: str, session: str, channel: str, session_instance_id: int | None = None, chunk_size: int = 10):
+    async def _send_stream_chunks(
+        self,
+        content: str,
+        session: str,
+        channel: str,
+        session_instance_id: int | None = None,
+        chunk_size: int = 10,
+    ):
         """Send content as a series of stream chunks to simulate streaming for non-desktop channels."""
         if not content:
             return
 
         for i in range(0, len(content), chunk_size):
-            chunk = content[i:i + chunk_size]
-            await self._emit("agent_chunk", {
-                "content": chunk,
-                "session": session,
-                "session_instance_id": session_instance_id
-            }, channel=channel)
+            chunk = content[i : i + chunk_size]
+            await self._emit(
+                "agent_chunk",
+                {"content": chunk, "session": session, "session_instance_id": session_instance_id},
+                channel=channel,
+            )
 
     async def load_extensions(self) -> dict[str, bool]:
         """Load all extensions from workspace/extensions."""
@@ -180,10 +187,7 @@ class AgentLoop:
 
         while self._running:
             try:
-                msg = await asyncio.wait_for(
-                    self.bus.consume_inbound(),
-                    timeout=1.0
-                )
+                msg = await asyncio.wait_for(self.bus.consume_inbound(), timeout=1.0)
 
                 try:
                     response = await self._process_message(msg)
@@ -191,11 +195,16 @@ class AgentLoop:
                         await self.bus.publish_outbound(response)
                 except Exception as e:
                     import traceback
+
                     traceback.print_exc()
                     logger.error(f"Error processing message: {e}")
-                    await self.bus.publish_outbound(OutboundMessage(
-                        channel=msg.channel, chat_id=msg.chat_id, content=f"Sorry, I encountered an error: {str(e)}"
-                    ))
+                    await self.bus.publish_outbound(
+                        OutboundMessage(
+                            channel=msg.channel,
+                            chat_id=msg.chat_id,
+                            content=f"Sorry, I encountered an error: {str(e)}",
+                        )
+                    )
             except asyncio.TimeoutError:
                 continue
 
@@ -294,15 +303,15 @@ class AgentLoop:
                 logger.warning(f"Failed to update stopped_by_user metadata: {e}")
 
     async def _process_message(
-        self,
-        msg: InboundMessage,
-        session_key: str | None = None
+        self, msg: InboundMessage, session_key: str | None = None
     ) -> OutboundMessage | None:
         """Process a single inbound message by delegating to the appropriate processor."""
         for processor in self._processors:
             if processor.can_process(msg):
                 return await processor.process(msg, session_key)
-        logger.warning(f"No processor found for message type {msg.message_type} on channel {msg.channel}")
+        logger.warning(
+            f"No processor found for message type {msg.message_type} on channel {msg.channel}"
+        )
         return None
 
     async def _prepare_session_and_context(
@@ -333,37 +342,41 @@ class AgentLoop:
         metadata_instance_id = msg.metadata.get("instance_id") if msg.metadata else None
 
         if metadata_instance_id:
-            success, switch_msg = self.sessions.switch_instance(session_key, int(metadata_instance_id))
+            success, switch_msg = self.sessions.switch_instance(
+                session_key, int(metadata_instance_id)
+            )
             if success:
                 self.sessions._cache.pop(session_key, None)
                 session = self.sessions.get_or_create(session_key)
-                logger.info(f"Switched to instance {metadata_instance_id} for session {session_key}")
+                logger.info(
+                    f"Switched to instance {metadata_instance_id} for session {session_key}"
+                )
             else:
                 logger.warning(f"Failed to switch to instance {metadata_instance_id}: {switch_msg}")
                 session = self.sessions.get_or_create(session_key)
         else:
             session = self.sessions.get_or_create(session_key)
 
-        command_result = await handle_session_command(
-            msg.content,
-            session_key,
-            self.sessions
-        )
+        command_result = await handle_session_command(msg.content, session_key, self.sessions)
 
         if command_result:
             return None, OutboundMessage(
-                channel=msg.channel,
-                chat_id=msg.chat_id,
-                content=command_result.message
+                channel=msg.channel, chat_id=msg.chat_id, content=command_result.message
             )
 
         session_instance_id = session.active_instance.id if session.active_instance else None
 
-        await self.bus.publish_event(AgentEvent(
-            event_type="agent_start",
-            data={"content": event_content, "session": current_session, "session_instance_id": session_instance_id},
-            channel=msg.channel
-        ))
+        await self.bus.publish_event(
+            AgentEvent(
+                event_type="agent_start",
+                data={
+                    "content": event_content,
+                    "session": current_session,
+                    "session_instance_id": session_instance_id,
+                },
+                channel=msg.channel,
+            )
+        )
 
         message_tool = self.tools.get("message")
         if isinstance(message_tool, MessageTool):
@@ -388,18 +401,27 @@ class AgentLoop:
                 session_instance_id=session_instance_id,
             )
             images = msg.get_images()
-            image_list = [{"path": img.image_path, "name": img.image_path.split('/').pop()} for img in images] if images else []
+            image_list = (
+                [
+                    {"path": img.image_path, "name": img.image_path.split("/").pop()}
+                    for img in images
+                ]
+                if images
+                else []
+            )
 
             files = msg.get_files()
             file_list = []
             for f in files:
-                file_list.append({
-                    "path": f.file_path,
-                    "name": f.file_name or f.file_path.split('/').pop(),
-                    "originalName": f.file_name,
-                    "mimeType": f.mime_type,
-                    "size": f.file_size
-                })
+                file_list.append(
+                    {
+                        "path": f.file_path,
+                        "name": f.file_name or f.file_path.split("/").pop(),
+                        "originalName": f.file_name,
+                        "mimeType": f.mime_type,
+                        "size": f.file_size,
+                    }
+                )
 
             metadata = {}
             if image_list:
@@ -408,7 +430,9 @@ class AgentLoop:
                 metadata["files"] = file_list
 
             metadata = metadata if metadata else None
-            session.add_message("user", msg.text_content, message_type=msg.message_type, metadata=metadata)
+            session.add_message(
+                "user", msg.text_content, message_type=msg.message_type, metadata=metadata
+            )
         else:
             messages = self.context.build_messages(
                 history=session.get_history(),
@@ -421,19 +445,24 @@ class AgentLoop:
             session.add_message("user", msg.content, message_type=msg.message_type)
         self.sessions.save(session)
 
-        return PreparedContext(
-            session=session,
-            messages=messages,
-            session_instance_id=session_instance_id,
-            current_session=current_session,
-            session_key=session_key,
-        ), None
+        return (
+            PreparedContext(
+                session=session,
+                messages=messages,
+                session_instance_id=session_instance_id,
+                current_session=current_session,
+                session_key=session_key,
+            ),
+            None,
+        )
 
     async def _process_longtask_message(self, msg: InboundMessage) -> OutboundMessage | None:
         processor = LongtaskMessageProcessor(self)
         return await processor.process(msg)
 
-    async def _process_system_message(self, msg: InboundMessage, session_key: str | None = None) -> OutboundMessage | None:
+    async def _process_system_message(
+        self, msg: InboundMessage, session_key: str | None = None
+    ) -> OutboundMessage | None:
         processor = SystemMessageProcessor(self)
         return await processor.process(msg, session_key)
 

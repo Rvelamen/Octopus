@@ -1,33 +1,38 @@
 """Notes Chat Agent — an independent, configurable agent for knowledge note conversations."""
 
+import contextlib
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from loguru import logger
 
-from backend.core.providers.base import LLMProvider
 from backend.agent.config_service import AgentConfigService
-from backend.agent.loader import SubAgentLoader, SubAgentConfig
-from backend.data.provider_store import ProviderRepository, ModelRepository
-from backend.data import Database
-from backend.core.config.schema import AgentDefaults, ProviderConfig
-from backend.core.providers.factory import create_provider
-from backend.tools.registry import ToolRegistry
-from backend.tools.base import Tool
-from backend.tools.filesystem import ReadFileTool, WriteFileTool, ListDirTool, EditFileTool
-from backend.tools.shell import ExecTool
-from backend.tools.action import ActionTool
-from backend.tools.message import MessageTool
-from backend.tools.knowledge import (
-    KBSearchTool, KBReadNoteTool, KBListLinksTool, KBTimelineTool, KBWriteNoteTool
-)
-from backend.tools.memory_write import MemoryWriteTool
-from backend.tools.memory import MemorySearchTool, MemoryReadTool, MemoryTimelineTool
+from backend.agent.loader import SubAgentConfig, SubAgentLoader
 from backend.agent.memory import MemoryStore
+from backend.core.config.schema import AgentDefaults, ProviderConfig
+from backend.core.providers.base import LLMProvider
+from backend.core.providers.factory import create_provider
+from backend.data import Database
+from backend.data.provider_store import ModelRepository, ProviderRepository
 from backend.extensions.loader import SkillsLoader
-from backend.services.notes_chat_service import NotesChatService, NotesChatMessage
 from backend.services.knowledge_engine import KnowledgeGraphEngine
+from backend.services.notes_chat_service import NotesChatService
+from backend.tools.action import ActionTool
+from backend.tools.base import Tool
+from backend.tools.filesystem import EditFileTool, ListDirTool, ReadFileTool, WriteFileTool
+from backend.tools.knowledge import (
+    KBListLinksTool,
+    KBReadNoteTool,
+    KBTimelineTool,
+    KBWriteNoteTool,
+)
+from backend.tools.memory import MemoryReadTool, MemorySearchTool, MemoryTimelineTool
+from backend.tools.memory_write import MemoryWriteTool
+from backend.tools.message import MessageTool
+from backend.tools.registry import ToolRegistry
+from backend.tools.shell import ExecTool
 
 
 class ScopedKBSearchTool(Tool):
@@ -75,13 +80,9 @@ class ScopedKBSearchTool(Tool):
         from backend.utils.helpers import get_workspace_path
 
         engine = KnowledgeGraphEngine(str(get_workspace_path()))
-        results = engine.search_notes_fts(
-            query, limit=limit * 2, vault_filter=self._vault_filter
-        )
+        results = engine.search_notes_fts(query, limit=limit * 2, vault_filter=self._vault_filter)
         if not results:
-            results = engine.search_notes(
-                query, limit=limit * 2, vault_filter=self._vault_filter
-            )
+            results = engine.search_notes(query, limit=limit * 2, vault_filter=self._vault_filter)
 
         if not results:
             return "No matching notes found."
@@ -148,14 +149,18 @@ class NotesChatAgent:
         agent_config = self._load_agent_config(session.agent_config_id)
 
         # Get provider, model, tools
-        provider, model, provider_type, max_tokens, temperature = self._get_provider_for_config(agent_config)
+        provider, model, provider_type, max_tokens, temperature = self._get_provider_for_config(
+            agent_config
+        )
 
         # Build scope context
         scope_paths = self._build_scope_paths(scope)
         scope_context = self._build_scope_context(scope)
 
         # Build system prompt
-        system_prompt = self._build_system_prompt(agent_config, session.title, scope_context, scope_paths)
+        system_prompt = self._build_system_prompt(
+            agent_config, session.title, scope_context, scope_paths
+        )
 
         # Build messages
         messages = self._build_messages(session_id, system_prompt, user_content)
@@ -186,10 +191,8 @@ class NotesChatAgent:
                     if chunk.content:
                         full_content += chunk.content
                         if on_token:
-                            try:
+                            with contextlib.suppress(Exception):
                                 on_token(chunk.content)
-                            except Exception:
-                                pass
 
                     if chunk.reasoning_content:
                         accumulated_reasoning += chunk.reasoning_content
@@ -203,14 +206,14 @@ class NotesChatAgent:
                                     "arguments": tc.arguments,
                                 }
                                 if on_tool_start:
-                                    try:
-                                        on_tool_start({
-                                            "tool": tc.name,
-                                            "args": tc.arguments,
-                                            "tool_call_id": tc.id,
-                                        })
-                                    except Exception:
-                                        pass
+                                    with contextlib.suppress(Exception):
+                                        on_tool_start(
+                                            {
+                                                "tool": tc.name,
+                                                "args": tc.arguments,
+                                                "tool_call_id": tc.id,
+                                            }
+                                        )
                             else:
                                 tool_calls_buffer[tc.id]["arguments"].update(tc.arguments)
 
@@ -221,14 +224,16 @@ class NotesChatAgent:
             if tool_calls_buffer:
                 tool_calls_list = []
                 for tc_data in tool_calls_buffer.values():
-                    tool_calls_list.append({
-                        "id": tc_data["id"],
-                        "type": "function",
-                        "function": {
-                            "name": tc_data["name"],
-                            "arguments": json.dumps(tc_data["arguments"], ensure_ascii=False),
-                        },
-                    })
+                    tool_calls_list.append(
+                        {
+                            "id": tc_data["id"],
+                            "type": "function",
+                            "function": {
+                                "name": tc_data["name"],
+                                "arguments": json.dumps(tc_data["arguments"], ensure_ascii=False),
+                            },
+                        }
+                    )
                 assistant_msg: dict[str, Any] = {
                     "role": "assistant",
                     "content": full_content or None,
@@ -276,20 +281,22 @@ class NotesChatAgent:
                     result = f"Error: {e}"
 
                 if on_tool_result:
-                    try:
-                        on_tool_result({
-                            "tool": tc_data["name"],
-                            "result": result,
-                            "tool_call_id": tc_data["id"],
-                        })
-                    except Exception:
-                        pass
+                    with contextlib.suppress(Exception):
+                        on_tool_result(
+                            {
+                                "tool": tc_data["name"],
+                                "result": result,
+                                "tool_call_id": tc_data["id"],
+                            }
+                        )
 
-                messages.append({
-                    "role": "tool",
-                    "content": str(result),
-                    "tool_call_id": tc_data["id"],
-                })
+                messages.append(
+                    {
+                        "role": "tool",
+                        "content": str(result),
+                        "tool_call_id": tc_data["id"],
+                    }
+                )
 
                 # Persist tool result
                 self.chat_service.add_message(
@@ -308,6 +315,7 @@ class NotesChatAgent:
         """Load agent config. Fallback to default if not found."""
         if agent_config_id:
             from backend.data.subagent_store import SubagentRepository
+
             repo = SubagentRepository(self.db)
             record = repo.get_subagent_by_id(agent_config_id)
             if record:
@@ -333,9 +341,18 @@ class NotesChatAgent:
             name="notes-chat",
             description="Knowledge notes assistant",
             tools=[
-                "read", "write", "list", "edit",
-                "kb_search", "kb_read_note", "kb_list_links", "kb_timeline", "kb_write_note",
-                "memory_search", "memory_read", "memory_write",
+                "read",
+                "write",
+                "list",
+                "edit",
+                "kb_search",
+                "kb_read_note",
+                "kb_list_links",
+                "kb_timeline",
+                "kb_write_note",
+                "memory_search",
+                "memory_read",
+                "memory_write",
             ],
             max_iterations=10,
             temperature=0.5,
@@ -347,7 +364,9 @@ class NotesChatAgent:
             ),
         )
 
-    def _get_provider_for_config(self, config: SubAgentConfig | None) -> tuple[LLMProvider, str, str, int, float]:
+    def _get_provider_for_config(
+        self, config: SubAgentConfig | None
+    ) -> tuple[LLMProvider, str, str, int, float]:
         """Get provider and model for the agent config."""
         defaults = self._config_service._get_agent_defaults_repo().get_or_create_defaults()
         max_tokens = getattr(defaults, "max_tokens", 8192) or 8192
@@ -376,12 +395,20 @@ class NotesChatAgent:
                 )
                 providers_dict = {provider_record.name: provider_config}
                 provider = create_provider(providers_dict, agent_defaults)
-                return provider, model_record.model_id, provider_record.provider_type, max_tokens, config.temperature
+                return (
+                    provider,
+                    model_record.model_id,
+                    provider_record.provider_type,
+                    max_tokens,
+                    config.temperature,
+                )
 
         # Fallback to default
         return self._config_service.get_default_provider_and_model()
 
-    def _build_tools_for_config(self, config: SubAgentConfig | None, scope_paths: list[str]) -> ToolRegistry:
+    def _build_tools_for_config(
+        self, config: SubAgentConfig | None, scope_paths: list[str]
+    ) -> ToolRegistry:
         """Build tool registry based on agent configuration and scope."""
         tools = ToolRegistry()
 
@@ -407,7 +434,9 @@ class NotesChatAgent:
             ),
             "action": ActionTool,
             "message": lambda: MessageTool(send_callback=lambda x: None),
-            "kb_search": lambda: ScopedKBSearchTool(scope_paths=scope_paths, vault_filter=vault_filter),
+            "kb_search": lambda: ScopedKBSearchTool(
+                scope_paths=scope_paths, vault_filter=vault_filter
+            ),
             "kb_timeline": lambda: KBTimelineTool(vault_filter=vault_filter),
             "kb_read_note": KBReadNoteTool,
             "kb_list_links": lambda: KBListLinksTool(vault_filter=vault_filter),
@@ -453,7 +482,7 @@ class NotesChatAgent:
             if vault:
                 rows = self.knowledge_engine.db.execute(
                     "SELECT path FROM knowledge_nodes WHERE vault = ? ORDER BY mtime DESC LIMIT 1000",
-                    (vault,)
+                    (vault,),
                 ).fetchall()
                 paths = [r["path"] for r in rows]
         elif scope_type == "file":
@@ -479,16 +508,14 @@ class NotesChatAgent:
         elif scope_type == "vault":
             vault = scope.get("vault", "")
             count = self.knowledge_engine.db.execute(
-                "SELECT COUNT(*) as c FROM knowledge_nodes WHERE vault = ?",
-                (vault,)
+                "SELECT COUNT(*) as c FROM knowledge_nodes WHERE vault = ?", (vault,)
             ).fetchone()["c"]
             return f'Vault scope — "{vault}" ({count} note(s)).'
 
         elif scope_type == "file":
             file_path = scope.get("file_path", "")
             node = self.knowledge_engine.db.execute(
-                "SELECT title, word_count FROM knowledge_nodes WHERE path = ?",
-                (file_path,)
+                "SELECT title, word_count FROM knowledge_nodes WHERE path = ?", (file_path,)
             ).fetchone()
             if node:
                 return (
@@ -508,8 +535,8 @@ class NotesChatAgent:
         scope_paths: list[str],
     ) -> str:
         """Build system prompt for the Notes chat agent."""
-        base_prompt = config.system_prompt if config else (
-            "You are a helpful knowledge notes assistant."
+        base_prompt = (
+            config.system_prompt if config else ("You are a helpful knowledge notes assistant.")
         )
 
         skills_section = ""

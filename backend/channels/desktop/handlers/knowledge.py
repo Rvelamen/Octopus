@@ -17,24 +17,22 @@ from loguru import logger
 from backend.channels.desktop.handlers.base import MessageHandler
 from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.channels.desktop.schemas import (
-    KnowledgeListRequest,
-    KnowledgeReadRequest,
-    KnowledgeWriteRequest,
     KnowledgeDeleteRequest,
-    KnowledgeSearchRequest,
-    KnowledgeGraphRequest,
-    KnowledgeDistillRequest,
-    KnowledgeDistillPreviewRequest,
-    KnowledgeDistillListRequest,
     KnowledgeDistillDetailRequest,
-    KnowledgeGetTagsRequest,
+    KnowledgeDistillListRequest,
+    KnowledgeDistillRequest,
     KnowledgeExportRequest,
-    KnowledgeImportRequest,
+    KnowledgeGetTagsRequest,
+    KnowledgeGraphRequest,
+    KnowledgeListRequest,
     KnowledgeListVaultsRequest,
+    KnowledgeReadRequest,
+    KnowledgeSearchRequest,
+    KnowledgeWriteRequest,
 )
 from backend.services.knowledge_engine import KnowledgeGraphEngine
-from backend.services.library_note_engine import LibraryNoteEngine
 from backend.services.knowledge_task_queue import KnowledgeTaskQueue
+from backend.services.library_note_engine import LibraryNoteEngine
 
 
 def _index_note(path: str, workspace_root: str) -> None:
@@ -63,11 +61,10 @@ class _KnowledgeHandlerMixin:
     """Mixin providing common _send_error for knowledge handlers."""
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class KnowledgeListHandler(_KnowledgeHandlerMixin, MessageHandler):
@@ -81,27 +78,39 @@ class KnowledgeListHandler(_KnowledgeHandlerMixin, MessageHandler):
         try:
             path = message.data.get("path", "knowledge/notes")
             items = self.engine.list_directory(path)
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_LIST_RESULT,
-                request_id=message.request_id,
-                data={"path": path, "items": items}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_LIST_RESULT,
+                    request_id=message.request_id,
+                    data={"path": path, "items": items},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to list knowledge directory: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to list knowledge directory: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to list knowledge directory: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeListRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: KnowledgeListRequest
+    ) -> None:
         try:
             path = validated.path
             items = self.engine.list_directory(path)
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_LIST_RESULT,
-                request_id=message.request_id,
-                data={"path": path, "items": items}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_LIST_RESULT,
+                    request_id=message.request_id,
+                    data={"path": path, "items": items},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to list knowledge directory: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to list knowledge directory: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to list knowledge directory: {e}"
+            )
 
 
 class KnowledgeReadHandler(_KnowledgeHandlerMixin, MessageHandler):
@@ -121,7 +130,11 @@ class KnowledgeReadHandler(_KnowledgeHandlerMixin, MessageHandler):
             file_size = full_path.stat().st_size
             MAX_READ_SIZE = 32 * 1024 * 1024
             if file_size > MAX_READ_SIZE:
-                await self._send_error(websocket, message.request_id, f"File too large to preview ({file_size} bytes, max {MAX_READ_SIZE} bytes). Please download to view.")
+                await self._send_error(
+                    websocket,
+                    message.request_id,
+                    f"File too large to preview ({file_size} bytes, max {MAX_READ_SIZE} bytes). Please download to view.",
+                )
                 return
 
             try:
@@ -131,16 +144,28 @@ class KnowledgeReadHandler(_KnowledgeHandlerMixin, MessageHandler):
                 content = full_path.read_bytes().hex()
                 encoding = "hex"
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_READ_RESULT,
-                request_id=message.request_id,
-                data={"path": path, "content": content, "encoding": encoding, "size": file_size}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_READ_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "path": path,
+                        "content": content,
+                        "encoding": encoding,
+                        "size": file_size,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to read knowledge note: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to read knowledge note: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to read knowledge note: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeReadRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: KnowledgeReadRequest
+    ) -> None:
         try:
             path = validated.path
             full_path = self.engine._resolve_path(path)
@@ -150,7 +175,11 @@ class KnowledgeReadHandler(_KnowledgeHandlerMixin, MessageHandler):
             file_size = full_path.stat().st_size
             MAX_READ_SIZE = 32 * 1024 * 1024
             if file_size > MAX_READ_SIZE:
-                await self._send_error(websocket, message.request_id, f"File too large to preview ({file_size} bytes, max {MAX_READ_SIZE} bytes). Please download to view.")
+                await self._send_error(
+                    websocket,
+                    message.request_id,
+                    f"File too large to preview ({file_size} bytes, max {MAX_READ_SIZE} bytes). Please download to view.",
+                )
                 return
 
             try:
@@ -160,14 +189,24 @@ class KnowledgeReadHandler(_KnowledgeHandlerMixin, MessageHandler):
                 content = full_path.read_bytes().hex()
                 encoding = "hex"
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_READ_RESULT,
-                request_id=message.request_id,
-                data={"path": path, "content": content, "encoding": encoding, "size": file_size}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_READ_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "path": path,
+                        "content": content,
+                        "encoding": encoding,
+                        "size": file_size,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to read knowledge note: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to read knowledge note: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to read knowledge note: {e}"
+            )
 
 
 class KnowledgeWriteHandler(_KnowledgeHandlerMixin, MessageHandler):
@@ -187,16 +226,23 @@ class KnowledgeWriteHandler(_KnowledgeHandlerMixin, MessageHandler):
             if path.startswith("knowledge/") and path.endswith(".md"):
                 _index_note(path, str(self.engine.workspace_root))
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_WRITE_RESULT,
-                request_id=message.request_id,
-                data={"path": path, "success": True}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_WRITE_RESULT,
+                    request_id=message.request_id,
+                    data={"path": path, "success": True},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to write knowledge note: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to write knowledge note: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to write knowledge note: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeWriteRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: KnowledgeWriteRequest
+    ) -> None:
         try:
             path = validated.path
             content = validated.content
@@ -206,14 +252,19 @@ class KnowledgeWriteHandler(_KnowledgeHandlerMixin, MessageHandler):
             if path.startswith("knowledge/") and path.endswith(".md"):
                 _index_note(path, str(self.engine.workspace_root))
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_WRITE_RESULT,
-                request_id=message.request_id,
-                data={"path": path, "success": True}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_WRITE_RESULT,
+                    request_id=message.request_id,
+                    data={"path": path, "success": True},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to write knowledge note: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to write knowledge note: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to write knowledge note: {e}"
+            )
 
 
 class KnowledgeDeleteHandler(_KnowledgeHandlerMixin, MessageHandler):
@@ -232,7 +283,9 @@ class KnowledgeDeleteHandler(_KnowledgeHandlerMixin, MessageHandler):
             workspace_root = Path(self.engine.workspace_root).resolve()
             resolved_full = full_path.resolve()
             if not str(resolved_full).startswith(str(workspace_root)):
-                await self._send_error(websocket, message.request_id, "Access denied: path outside workspace")
+                await self._send_error(
+                    websocket, message.request_id, "Access denied: path outside workspace"
+                )
                 return
 
             ws_root = str(self.engine.workspace_root)
@@ -251,16 +304,23 @@ class KnowledgeDeleteHandler(_KnowledgeHandlerMixin, MessageHandler):
                 # File already gone but index still exists
                 _remove_note(path, ws_root)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_DELETE_RESULT,
-                request_id=message.request_id,
-                data={"path": path, "success": True}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_DELETE_RESULT,
+                    request_id=message.request_id,
+                    data={"path": path, "success": True},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to delete knowledge note: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to delete knowledge note: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to delete knowledge note: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeDeleteRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: KnowledgeDeleteRequest
+    ) -> None:
         try:
             path = validated.path
             full_path = self.engine.workspace_root / path
@@ -269,7 +329,9 @@ class KnowledgeDeleteHandler(_KnowledgeHandlerMixin, MessageHandler):
             workspace_root = Path(self.engine.workspace_root).resolve()
             resolved_full = full_path.resolve()
             if not str(resolved_full).startswith(str(workspace_root)):
-                await self._send_error(websocket, message.request_id, "Access denied: path outside workspace")
+                await self._send_error(
+                    websocket, message.request_id, "Access denied: path outside workspace"
+                )
                 return
 
             ws_root = str(self.engine.workspace_root)
@@ -288,14 +350,19 @@ class KnowledgeDeleteHandler(_KnowledgeHandlerMixin, MessageHandler):
                 # File already gone but index still exists
                 _remove_note(path, ws_root)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_DELETE_RESULT,
-                request_id=message.request_id,
-                data={"path": path, "success": True}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_DELETE_RESULT,
+                    request_id=message.request_id,
+                    data={"path": path, "success": True},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to delete knowledge note: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to delete knowledge note: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to delete knowledge note: {e}"
+            )
 
 
 class KnowledgeSearchHandler(_KnowledgeHandlerMixin, MessageHandler):
@@ -309,28 +376,40 @@ class KnowledgeSearchHandler(_KnowledgeHandlerMixin, MessageHandler):
         try:
             query = message.data.get("query", "")
             results = self.engine.search_notes(query)
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_SEARCH_RESULT,
-                request_id=message.request_id,
-                data={"query": query, "results": results}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_SEARCH_RESULT,
+                    request_id=message.request_id,
+                    data={"query": query, "results": results},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to search knowledge notes: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to search knowledge notes: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to search knowledge notes: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeSearchRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: KnowledgeSearchRequest
+    ) -> None:
         try:
             query = validated.query
             vault = validated.vault
             results = self.engine.search_notes(query, vault_filter=vault)
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_SEARCH_RESULT,
-                request_id=message.request_id,
-                data={"query": query, "results": results}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_SEARCH_RESULT,
+                    request_id=message.request_id,
+                    data={"query": query, "results": results},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to search knowledge notes: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to search knowledge notes: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to search knowledge notes: {e}"
+            )
 
 
 class KnowledgeGraphHandler(_KnowledgeHandlerMixin, MessageHandler):
@@ -346,32 +425,52 @@ class KnowledgeGraphHandler(_KnowledgeHandlerMixin, MessageHandler):
             depth = message.data.get("depth", 1)
             limit = message.data.get("limit", 200)
             tag_filter = message.data.get("tag")
-            graph = self.engine.get_graph(center_path=center, depth=depth, limit=limit, tag_filter=tag_filter)
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_GRAPH_RESULT,
-                request_id=message.request_id,
-                data=graph
-            ))
+            graph = self.engine.get_graph(
+                center_path=center, depth=depth, limit=limit, tag_filter=tag_filter
+            )
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_GRAPH_RESULT,
+                    request_id=message.request_id,
+                    data=graph,
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get knowledge graph: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get knowledge graph: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get knowledge graph: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeGraphRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: KnowledgeGraphRequest
+    ) -> None:
         try:
             center = validated.center
             depth = validated.depth
             limit = validated.limit
             tag_filter = validated.tag
             vault_filter = validated.vault
-            graph = self.engine.get_graph(center_path=center, depth=depth, limit=limit, tag_filter=tag_filter, vault_filter=vault_filter)
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_GRAPH_RESULT,
-                request_id=message.request_id,
-                data=graph
-            ))
+            graph = self.engine.get_graph(
+                center_path=center,
+                depth=depth,
+                limit=limit,
+                tag_filter=tag_filter,
+                vault_filter=vault_filter,
+            )
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_GRAPH_RESULT,
+                    request_id=message.request_id,
+                    data=graph,
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get knowledge graph: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get knowledge graph: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get knowledge graph: {e}"
+            )
 
 
 class KnowledgeDistillListHandler(_KnowledgeHandlerMixin, MessageHandler):
@@ -386,74 +485,86 @@ class KnowledgeDistillListHandler(_KnowledgeHandlerMixin, MessageHandler):
             limit = message.data.get("limit", 20)
             offset = message.data.get("offset", 0)
             tasks, total = self.queue.list_tasks(limit=limit, offset=offset)
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_DISTILL_LIST_RESULT,
-                request_id=message.request_id,
-                data={
-                    "tasks": [
-                        {
-                            "id": t.id,
-                            "request_id": t.request_id,
-                            "source_path": t.source_path,
-                            "status": t.status,
-                            "stage": t.stage,
-                            "message": t.message,
-                            "progress": t.progress,
-                            "result_path": t.result_path,
-                            "error": t.error,
-                            "vault": t.vault,
-                            "created_at": t.created_at,
-                            "updated_at": t.updated_at,
-                        }
-                        for t in tasks
-                    ],
-                    "pagination": {
-                        "total": total,
-                        "limit": limit,
-                        "offset": offset,
-                    }
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_DISTILL_LIST_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "tasks": [
+                            {
+                                "id": t.id,
+                                "request_id": t.request_id,
+                                "source_path": t.source_path,
+                                "status": t.status,
+                                "stage": t.stage,
+                                "message": t.message,
+                                "progress": t.progress,
+                                "result_path": t.result_path,
+                                "error": t.error,
+                                "vault": t.vault,
+                                "created_at": t.created_at,
+                                "updated_at": t.updated_at,
+                            }
+                            for t in tasks
+                        ],
+                        "pagination": {
+                            "total": total,
+                            "limit": limit,
+                            "offset": offset,
+                        },
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to list distill tasks: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to list distill tasks: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to list distill tasks: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeDistillListRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: KnowledgeDistillListRequest
+    ) -> None:
         try:
             limit = validated.limit
             offset = validated.offset
             tasks, total = self.queue.list_tasks(limit=limit, offset=offset)
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_DISTILL_LIST_RESULT,
-                request_id=message.request_id,
-                data={
-                    "tasks": [
-                        {
-                            "id": t.id,
-                            "request_id": t.request_id,
-                            "source_path": t.source_path,
-                            "status": t.status,
-                            "stage": t.stage,
-                            "message": t.message,
-                            "progress": t.progress,
-                            "result_path": t.result_path,
-                            "error": t.error,
-                            "vault": t.vault,
-                            "created_at": t.created_at,
-                            "updated_at": t.updated_at,
-                        }
-                        for t in tasks
-                    ],
-                    "pagination": {
-                        "total": total,
-                        "limit": limit,
-                        "offset": offset,
-                    }
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_DISTILL_LIST_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "tasks": [
+                            {
+                                "id": t.id,
+                                "request_id": t.request_id,
+                                "source_path": t.source_path,
+                                "status": t.status,
+                                "stage": t.stage,
+                                "message": t.message,
+                                "progress": t.progress,
+                                "result_path": t.result_path,
+                                "error": t.error,
+                                "vault": t.vault,
+                                "created_at": t.created_at,
+                                "updated_at": t.updated_at,
+                            }
+                            for t in tasks
+                        ],
+                        "pagination": {
+                            "total": total,
+                            "limit": limit,
+                            "offset": offset,
+                        },
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to list distill tasks: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to list distill tasks: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to list distill tasks: {e}"
+            )
 
 
 class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
@@ -469,7 +580,6 @@ class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         try:
-            from backend.utils.helpers import get_workspace_path
 
             source_path = message.data["source_path"]
             prompt = message.data.get("prompt", "")
@@ -495,24 +605,30 @@ class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
                 vault=vault,
             )
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_DISTILL_RESULT,
-                request_id=message.request_id,
-                data={
-                    "job_id": job_id,
-                    "status": "queued",
-                    "message": "Task queued. Progress will be pushed via knowledge_distill_progress events.",
-                    "output_path": output_path,
-                    "vault": vault,
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_DISTILL_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "job_id": job_id,
+                        "status": "queued",
+                        "message": "Task queued. Progress will be pushed via knowledge_distill_progress events.",
+                        "output_path": output_path,
+                        "vault": vault,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to queue distillation: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to queue distillation: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to queue distillation: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeDistillRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: KnowledgeDistillRequest
+    ) -> None:
         try:
-            from backend.utils.helpers import get_workspace_path
 
             source_path = validated.source_path
             prompt = validated.options.get("prompt", "")
@@ -538,20 +654,25 @@ class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
                 vault=vault,
             )
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_DISTILL_RESULT,
-                request_id=message.request_id,
-                data={
-                    "job_id": job_id,
-                    "status": "queued",
-                    "message": "Task queued. Progress will be pushed via knowledge_distill_progress events.",
-                    "output_path": output_path,
-                    "vault": vault,
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_DISTILL_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "job_id": job_id,
+                        "status": "queued",
+                        "message": "Task queued. Progress will be pushed via knowledge_distill_progress events.",
+                        "output_path": output_path,
+                        "vault": vault,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to queue distillation: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to queue distillation: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to queue distillation: {e}"
+            )
 
 
 class KnowledgeDistillDetailHandler(_KnowledgeHandlerMixin, MessageHandler):
@@ -586,6 +707,7 @@ class KnowledgeDistillDetailHandler(_KnowledgeHandlerMixin, MessageHandler):
             # Calculate duration from task created_at and updated_at
             try:
                 from datetime import datetime
+
                 created_at = datetime.fromisoformat(task["created_at"])
                 updated_at = datetime.fromisoformat(task["updated_at"])
                 total_duration = (updated_at - created_at).total_seconds()
@@ -622,16 +744,23 @@ class KnowledgeDistillDetailHandler(_KnowledgeHandlerMixin, MessageHandler):
                 "iterations": iterations,
             }
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_DISTILL_DETAIL_RESULT,
-                request_id=message.request_id,
-                data={"task": task, "result": result}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_DISTILL_DETAIL_RESULT,
+                    request_id=message.request_id,
+                    data={"task": task, "result": result},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get distill task detail: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get distill task detail: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get distill task detail: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeDistillDetailRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: KnowledgeDistillDetailRequest
+    ) -> None:
         try:
             task_id = validated.task_id
             if not task_id:
@@ -656,6 +785,7 @@ class KnowledgeDistillDetailHandler(_KnowledgeHandlerMixin, MessageHandler):
             # Calculate duration from task created_at and updated_at
             try:
                 from datetime import datetime
+
                 created_at = datetime.fromisoformat(task["created_at"])
                 updated_at = datetime.fromisoformat(task["updated_at"])
                 total_duration = (updated_at - created_at).total_seconds()
@@ -692,14 +822,19 @@ class KnowledgeDistillDetailHandler(_KnowledgeHandlerMixin, MessageHandler):
                 "iterations": iterations,
             }
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_DISTILL_DETAIL_RESULT,
-                request_id=message.request_id,
-                data={"task": task, "result": result}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_DISTILL_DETAIL_RESULT,
+                    request_id=message.request_id,
+                    data={"task": task, "result": result},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get distill task detail: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get distill task detail: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get distill task detail: {e}"
+            )
 
 
 class KnowledgeGetTagsHandler(_KnowledgeHandlerMixin, MessageHandler):
@@ -712,23 +847,31 @@ class KnowledgeGetTagsHandler(_KnowledgeHandlerMixin, MessageHandler):
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         try:
             tags = self.engine.get_tags()
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_GET_TAGS_RESULT,
-                request_id=message.request_id,
-                data={"tags": tags}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_GET_TAGS_RESULT,
+                    request_id=message.request_id,
+                    data={"tags": tags},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get tags: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to get tags: {e}")
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeGetTagsRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: KnowledgeGetTagsRequest
+    ) -> None:
         try:
             tags = self.engine.get_tags(vault_filter=validated.vault)
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_GET_TAGS_RESULT,
-                request_id=message.request_id,
-                data={"tags": tags}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_GET_TAGS_RESULT,
+                    request_id=message.request_id,
+                    data={"tags": tags},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get tags: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to get tags: {e}")
@@ -744,23 +887,31 @@ class KnowledgeListVaultsHandler(_KnowledgeHandlerMixin, MessageHandler):
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         try:
             vaults = self._collect_vaults()
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_LIST_VAULTS_RESULT,
-                request_id=message.request_id,
-                data={"vaults": vaults}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_LIST_VAULTS_RESULT,
+                    request_id=message.request_id,
+                    data={"vaults": vaults},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to list vaults: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to list vaults: {e}")
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeListVaultsRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: KnowledgeListVaultsRequest
+    ) -> None:
         try:
             vaults = self._collect_vaults()
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_LIST_VAULTS_RESULT,
-                request_id=message.request_id,
-                data={"vaults": vaults}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_LIST_VAULTS_RESULT,
+                    request_id=message.request_id,
+                    data={"vaults": vaults},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to list vaults: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to list vaults: {e}")
@@ -768,6 +919,7 @@ class KnowledgeListVaultsHandler(_KnowledgeHandlerMixin, MessageHandler):
     def _collect_vaults(self) -> list[dict[str, Any]]:
         """Merge indexed vaults with filesystem-based vault directories."""
         from backend.utils.helpers import get_workspace_path
+
         workspace_root = str(get_workspace_path())
         notes_dir = Path(workspace_root) / "knowledge" / "notes"
 
@@ -842,16 +994,23 @@ class KnowledgeExportHandler(_KnowledgeHandlerMixin, MessageHandler):
             b64_data = base64.b64encode(buffer.read()).decode("utf-8")
             filename = f"knowledge_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_EXPORT_RESULT,
-                request_id=message.request_id,
-                data={"filename": filename, "data": b64_data}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_EXPORT_RESULT,
+                    request_id=message.request_id,
+                    data={"filename": filename, "data": b64_data},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to export knowledge base: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to export knowledge base: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to export knowledge base: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: KnowledgeExportRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: KnowledgeExportRequest
+    ) -> None:
         try:
             workspace = Path(self.engine.workspace_root)
             knowledge_dir = workspace / "knowledge"
@@ -894,14 +1053,19 @@ class KnowledgeExportHandler(_KnowledgeHandlerMixin, MessageHandler):
             b64_data = base64.b64encode(buffer.read()).decode("utf-8")
             filename = f"knowledge_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_EXPORT_RESULT,
-                request_id=message.request_id,
-                data={"filename": filename, "data": b64_data}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_EXPORT_RESULT,
+                    request_id=message.request_id,
+                    data={"filename": filename, "data": b64_data},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to export knowledge base: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to export knowledge base: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to export knowledge base: {e}"
+            )
 
 
 class KnowledgeImportHandler(_KnowledgeHandlerMixin, MessageHandler):
@@ -954,14 +1118,18 @@ class KnowledgeImportHandler(_KnowledgeHandlerMixin, MessageHandler):
             workspace = Path(self.engine.workspace_root)
             zip_path = workspace / zip_path_rel
             if not zip_path.exists():
-                await self._send_error(websocket, message.request_id, f"Zip file not found: {zip_path_rel}")
+                await self._send_error(
+                    websocket, message.request_id, f"Zip file not found: {zip_path_rel}"
+                )
                 return
 
             # Security check
             resolved_zip = zip_path.resolve()
             resolved_workspace = workspace.resolve()
             if not str(resolved_zip).startswith(str(resolved_workspace)):
-                await self._send_error(websocket, message.request_id, "Access denied: path outside workspace")
+                await self._send_error(
+                    websocket, message.request_id, "Access denied: path outside workspace"
+                )
                 return
 
             skip_prefixes = (
@@ -979,7 +1147,9 @@ class KnowledgeImportHandler(_KnowledgeHandlerMixin, MessageHandler):
                     manifest_bytes = zf.read("manifest.json")
                     manifest = json.loads(manifest_bytes)
                     if manifest.get("version") != "1.0":
-                        await self._send_error(websocket, message.request_id, "Unsupported export version")
+                        await self._send_error(
+                            websocket, message.request_id, "Unsupported export version"
+                        )
                         return
                     extract_base = workspace
                     root_prefix = ""
@@ -995,7 +1165,11 @@ class KnowledgeImportHandler(_KnowledgeHandlerMixin, MessageHandler):
                     if member.endswith("/"):
                         continue
 
-                    rel_path = member[len(root_prefix):] if root_prefix and member.startswith(root_prefix) else member
+                    rel_path = (
+                        member[len(root_prefix) :]
+                        if root_prefix and member.startswith(root_prefix)
+                        else member
+                    )
                     if not rel_path:
                         continue
 
@@ -1035,14 +1209,26 @@ class KnowledgeImportHandler(_KnowledgeHandlerMixin, MessageHandler):
             # Clean up uploaded zip
             zip_path.unlink(missing_ok=True)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_IMPORT_RESULT,
-                request_id=message.request_id,
-                data={"success": True, "vault": vault or ("obsidian_import_" + str(int(time.time()))) if source != "octopus" else "default"}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_IMPORT_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "success": True,
+                        "vault": (
+                            vault or ("obsidian_import_" + str(int(time.time())))
+                            if source != "octopus"
+                            else "default"
+                        ),
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to import knowledge base: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to import knowledge base: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to import knowledge base: {e}"
+            )
 
     async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated) -> None:
         """Validated handler delegates to handle() with vault injected into message.data."""
@@ -1063,27 +1249,37 @@ class KnowledgeGetDocumentMetaHandler(_KnowledgeHandlerMixin, MessageHandler):
         try:
             sha256s = message.data.get("sha256s", [])
             result = self.engine.get_document_metas_batch(sha256s)
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_GET_DOCUMENT_META_RESULT,
-                request_id=message.request_id,
-                data={"metas": result}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_GET_DOCUMENT_META_RESULT,
+                    request_id=message.request_id,
+                    data={"metas": result},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get document metadata: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get document metadata: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get document metadata: {e}"
+            )
 
     async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated) -> None:
         try:
             sha256s = validated.sha256s
             result = self.engine.get_document_metas_batch(sha256s)
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_GET_DOCUMENT_META_RESULT,
-                request_id=message.request_id,
-                data={"metas": result}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_GET_DOCUMENT_META_RESULT,
+                    request_id=message.request_id,
+                    data={"metas": result},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get document metadata: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get document metadata: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get document metadata: {e}"
+            )
 
 
 class KnowledgeUpdateReferencesHandler(_KnowledgeHandlerMixin, MessageHandler):
@@ -1099,7 +1295,9 @@ class KnowledgeUpdateReferencesHandler(_KnowledgeHandlerMixin, MessageHandler):
             new_path = message.data.get("new_path", "")
 
             if not old_path or not new_path:
-                await self._send_error(websocket, message.request_id, "Both old_path and new_path are required")
+                await self._send_error(
+                    websocket, message.request_id, "Both old_path and new_path are required"
+                )
                 return
 
             notes_dir = self.engine._resolve_path("knowledge/notes")
@@ -1134,23 +1332,29 @@ class KnowledgeUpdateReferencesHandler(_KnowledgeHandlerMixin, MessageHandler):
                     try:
                         _index_note(rel_path, str(self.engine.workspace_root))
                     except Exception as e:
-                        logger.warning(f"Failed to re-index note {rel_path} after reference update: {e}")
+                        logger.warning(
+                            f"Failed to re-index note {rel_path} after reference update: {e}"
+                        )
 
                     updated_count += 1
                     updated_paths.append(rel_path)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.KNOWLEDGE_UPDATE_REFERENCES_RESULT,
-                request_id=message.request_id,
-                data={
-                    "updated_count": updated_count,
-                    "updated_paths": updated_paths,
-                    "old_path": old_path,
-                    "new_path": new_path,
-                    "success": True,
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.KNOWLEDGE_UPDATE_REFERENCES_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "updated_count": updated_count,
+                        "updated_paths": updated_paths,
+                        "old_path": old_path,
+                        "new_path": new_path,
+                        "success": True,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to update references: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to update references: {e}")
-
+            await self._send_error(
+                websocket, message.request_id, f"Failed to update references: {e}"
+            )

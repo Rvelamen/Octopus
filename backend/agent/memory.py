@@ -1,5 +1,6 @@
 """Memory system for persistent agent memory."""
 
+import contextlib
 import fcntl
 import os
 import re
@@ -7,7 +8,6 @@ import tempfile
 from pathlib import Path
 
 from backend.utils.helpers import ensure_dir
-
 
 ENTRY_DELIMITER = "\n§\n"
 LIMITS = {
@@ -24,7 +24,11 @@ def _scan_memory_content(content: str) -> str | None:
     """Lightweight security scan for memory content. Returns error string if blocked, else None."""
     # Invisible Unicode characters
     invisible_chars = [
-        "\u200b", "\u200c", "\u200d", "\u2060", "\ufeff",
+        "\u200b",
+        "\u200c",
+        "\u200d",
+        "\u2060",
+        "\ufeff",
         *[chr(cp) for cp in range(0x202A, 0x202F)],
     ]
     for char in invisible_chars:
@@ -148,10 +152,8 @@ class MemoryStore:
                 f.write(text)
             os.replace(tmp_path, path)
         except Exception:
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(tmp_path)
-            except OSError:
-                pass
             raise
 
     # --------------------------------------------------------------------- #
@@ -221,9 +223,8 @@ class MemoryStore:
                     }
 
                 new_entries = entries + [stripped]
-                new_count = (
-                    sum(len(e) for e in new_entries)
-                    + len(ENTRY_DELIMITER) * (len(new_entries) - 1)
+                new_count = sum(len(e) for e in new_entries) + len(ENTRY_DELIMITER) * (
+                    len(new_entries) - 1
                 )
                 limit = self._char_limit(target)
                 if new_count > limit:
@@ -289,10 +290,7 @@ class MemoryStore:
                     }
 
                 if len(matches) > 1:
-                    previews = [
-                        f"- {e[:80]}..." if len(e) > 80 else f"- {e}"
-                        for _, e in matches
-                    ]
+                    previews = [f"- {e[:80]}..." if len(e) > 80 else f"- {e}" for _, e in matches]
                     return {
                         "success": False,
                         "target": target,
@@ -310,9 +308,8 @@ class MemoryStore:
                 new_entries = entries.copy()
                 new_entries[idx] = new_content.strip()
 
-                new_count = (
-                    sum(len(e) for e in new_entries)
-                    + len(ENTRY_DELIMITER) * (len(new_entries) - 1)
+                new_count = sum(len(e) for e in new_entries) + len(ENTRY_DELIMITER) * (
+                    len(new_entries) - 1
                 )
                 limit = self._char_limit(target)
                 if new_count > limit:
@@ -366,10 +363,7 @@ class MemoryStore:
                     }
 
                 if len(matches) > 1:
-                    previews = [
-                        f"- {e[:80]}..." if len(e) > 80 else f"- {e}"
-                        for _, e in matches
-                    ]
+                    previews = [f"- {e[:80]}..." if len(e) > 80 else f"- {e}" for _, e in matches]
                     return {
                         "success": False,
                         "target": target,

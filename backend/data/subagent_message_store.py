@@ -12,6 +12,7 @@ from backend.data.database import Database
 @dataclass
 class SubagentMessageRecord:
     """Subagent message record."""
+
     id: int
     session_instance_id: int
     subagent_id: str
@@ -78,25 +79,33 @@ class SubagentMessageRepository:
                    (session_instance_id, subagent_id, parent_tool_call_id, role, content,
                     message_type, tool_call_id, metadata, timestamp)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))""",
-                (session_instance_id, subagent_id, parent_tool_call_id, role, content,
-                 message_type, tool_call_id, metadata_json)
+                (
+                    session_instance_id,
+                    subagent_id,
+                    parent_tool_call_id,
+                    role,
+                    content,
+                    message_type,
+                    tool_call_id,
+                    metadata_json,
+                ),
             )
 
             record_id = cursor.lastrowid
 
             row = conn.execute(
-                "SELECT * FROM subagent_messages WHERE id = ?",
-                (record_id,)
+                "SELECT * FROM subagent_messages WHERE id = ?", (record_id,)
             ).fetchone()
 
-            logger.debug(f"Saved subagent message: subagent={subagent_id}, "
-                        f"parent_tool_call={parent_tool_call_id}, type={message_type}")
+            logger.debug(
+                f"Saved subagent message: subagent={subagent_id}, "
+                f"parent_tool_call={parent_tool_call_id}, type={message_type}"
+            )
 
             return self._row_to_record(row)
 
     def get_messages_by_parent_tool_call(
-        self,
-        parent_tool_call_id: str
+        self, parent_tool_call_id: str
     ) -> list[SubagentMessageRecord]:
         """Get all subagent messages for a specific parent tool call.
 
@@ -111,15 +120,12 @@ class SubagentMessageRepository:
                 """SELECT * FROM subagent_messages
                    WHERE parent_tool_call_id = ?
                    ORDER BY timestamp ASC""",
-                (parent_tool_call_id,)
+                (parent_tool_call_id,),
             ).fetchall()
 
             return [self._row_to_record(row) for row in rows]
 
-    def get_messages_by_subagent(
-        self,
-        subagent_id: str
-    ) -> list[SubagentMessageRecord]:
+    def get_messages_by_subagent(self, subagent_id: str) -> list[SubagentMessageRecord]:
         """Get all messages for a specific subagent.
 
         Args:
@@ -133,14 +139,13 @@ class SubagentMessageRepository:
                 """SELECT * FROM subagent_messages
                    WHERE subagent_id = ?
                    ORDER BY timestamp ASC""",
-                (subagent_id,)
+                (subagent_id,),
             ).fetchall()
 
             return [self._row_to_record(row) for row in rows]
 
     def get_messages_by_session_instance(
-        self,
-        session_instance_id: int
+        self, session_instance_id: int
     ) -> list[SubagentMessageRecord]:
         """Get all subagent messages for a session instance.
 
@@ -155,15 +160,12 @@ class SubagentMessageRepository:
                 """SELECT * FROM subagent_messages
                    WHERE session_instance_id = ?
                    ORDER BY timestamp ASC""",
-                (session_instance_id,)
+                (session_instance_id,),
             ).fetchall()
 
             return [self._row_to_record(row) for row in rows]
 
-    def delete_messages_by_session_instance(
-        self,
-        session_instance_id: int
-    ) -> int:
+    def delete_messages_by_session_instance(self, session_instance_id: int) -> int:
         """Delete all subagent messages for a session instance.
 
         Args:
@@ -175,10 +177,12 @@ class SubagentMessageRepository:
         with self.db._get_connection() as conn:
             cursor = conn.execute(
                 "DELETE FROM subagent_messages WHERE session_instance_id = ?",
-                (session_instance_id,)
+                (session_instance_id,),
             )
             deleted_count = cursor.rowcount
-            logger.debug(f"Deleted {deleted_count} subagent messages for instance {session_instance_id}")
+            logger.debug(
+                f"Deleted {deleted_count} subagent messages for instance {session_instance_id}"
+            )
             return deleted_count
 
     def _row_to_record(self, row) -> SubagentMessageRecord:

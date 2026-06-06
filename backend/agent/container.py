@@ -6,34 +6,46 @@ from typing import Any
 
 from loguru import logger
 
-from backend.core.config.schema import ExecToolConfig
-from backend.core.providers.base import LLMProvider
-from backend.data import Database
+from backend.agent.aggregator import SubagentAggregator
+from backend.agent.compressor import ContextCompressor
 from backend.agent.config_service import AgentConfigService
 from backend.agent.context import ContextBuilder
-from backend.agent.compressor import ContextCompressor
 from backend.agent.memory_manager import MemoryManager
 from backend.agent.observation_manager import ObservationManager
 from backend.agent.shared import _extract_cached_tokens, _extract_prompt_tokens_with_cache
 from backend.agent.subagent import SubagentManager
-from backend.agent.aggregator import SubagentAggregator
+from backend.core.config.schema import ExecToolConfig
+from backend.core.providers.base import LLMProvider
+from backend.data import Database
 from backend.data.session_manager import SessionManager
 from backend.data.token_store import TokenUsageRepository
 from backend.extensions.loader import ExtensionLoader
-from backend.tools.registry import ToolRegistry
-from backend.tools.filesystem import ReadFileTool, WriteFileTool, EditFileTool, ListDirTool
-from backend.tools.shell import ExecTool
-from backend.tools.message import MessageTool
-from backend.tools.spawn import SpawnTool
-from backend.tools.cron import CronTool
 from backend.tools.action import ActionTool
-from backend.tools.image import ImageUnderstandTool, ImageGenerateTool
-from backend.tools.web_fetch import WebFetchTool
-from backend.tools.knowledge import KBSearchTool, KBReadNoteTool, KBWriteNoteTool, KBListLinksTool, KBTimelineTool
-from backend.tools.library_knowledge import LibrarySearchTool, LibraryReadNoteTool, LibraryListLinksTool, LibraryTimelineTool, LibraryWriteNoteTool
-from backend.tools.memory import MemorySearchTool, MemoryReadTool, MemoryTimelineTool
-from backend.tools.workflow import WorkflowListTool, WorkflowRunTool
 from backend.tools.browser.registration import register_browser_tools
+from backend.tools.cron import CronTool
+from backend.tools.filesystem import EditFileTool, ListDirTool, ReadFileTool, WriteFileTool
+from backend.tools.image import ImageGenerateTool, ImageUnderstandTool
+from backend.tools.knowledge import (
+    KBListLinksTool,
+    KBReadNoteTool,
+    KBSearchTool,
+    KBTimelineTool,
+    KBWriteNoteTool,
+)
+from backend.tools.library_knowledge import (
+    LibraryListLinksTool,
+    LibraryReadNoteTool,
+    LibrarySearchTool,
+    LibraryTimelineTool,
+    LibraryWriteNoteTool,
+)
+from backend.tools.memory import MemoryReadTool, MemorySearchTool, MemoryTimelineTool
+from backend.tools.message import MessageTool
+from backend.tools.registry import ToolRegistry
+from backend.tools.shell import ExecTool
+from backend.tools.spawn import SpawnTool
+from backend.tools.web_fetch import WebFetchTool
+from backend.tools.workflow import WorkflowListTool, WorkflowRunTool
 
 
 @dataclass
@@ -105,7 +117,8 @@ class AgentContainer:
     def tts_service(self):
         """Lazy-load TTS service to avoid circular imports."""
         from backend.services.tts_service import TTSServiceFactory
-        if not hasattr(self, '_tts_service'):
+
+        if not hasattr(self, "_tts_service"):
             self._tts_service = TTSServiceFactory.create_service(self.db)
         return self._tts_service
 
@@ -120,13 +133,19 @@ class AgentContainer:
         provider_name: str,
         model_id: str,
         usage: dict,
-        request_type: str = "chat"
+        request_type: str = "chat",
+        response_time_ms: int | None = None,
+        tool_calls_count: int = 0,
+        is_error: bool = False,
+        error_type: str | None = None,
+        parent_instance_id: int | None = None,
     ) -> None:
         """Record token usage to database."""
         try:
             prompt_tokens = _extract_prompt_tokens_with_cache(usage)
             completion_tokens = usage.get("completion_tokens", 0)
             cached_tokens = _extract_cached_tokens(usage)
+            cache_creation_tokens = usage.get("cache_creation_input_tokens", 0)
 
             self.token_usage.record_usage(
                 session_instance_id=session_instance_id,
@@ -135,11 +154,20 @@ class AgentContainer:
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
                 cached_tokens=cached_tokens,
-                request_type=request_type
+                cache_creation_tokens=cache_creation_tokens,
+                request_type=request_type,
+                response_time_ms=response_time_ms,
+                tool_calls_count=tool_calls_count,
+                is_error=is_error,
+                error_type=error_type,
+                parent_instance_id=parent_instance_id,
             )
 
-            logger.debug(f"Token usage recorded: {provider_name}/{model_id} - "
-                        f"prompt={prompt_tokens}, completion={completion_tokens}, cached={cached_tokens}")
+            logger.debug(
+                f"Token usage recorded: {provider_name}/{model_id} - "
+                f"prompt={prompt_tokens}, completion={completion_tokens}, cached={cached_tokens}, "
+                f"cost=${usage.get('cost_usd', 'N/A')}"
+            )
         except Exception as e:
             logger.error(f"Failed to record token usage: {e}")
 
@@ -148,6 +176,7 @@ class AgentContainer:
         enabled_tools = set()
         try:
             from backend.data.provider_store import AgentDefaultsRepository
+
             repo = AgentDefaultsRepository(self.db)
             defaults = repo.get_agent_defaults()
             if defaults and defaults.tools:
@@ -169,11 +198,13 @@ class AgentContainer:
         if should_register("list"):
             self.tools.register(ListDirTool())
         if should_register("exec"):
-            self.tools.register(ExecTool(
-                working_dir=str(self.workspace),
-                timeout=self.exec_config.timeout,
-                restrict_to_workspace=self.exec_config.restrict_to_workspace,
-            ))
+            self.tools.register(
+                ExecTool(
+                    working_dir=str(self.workspace),
+                    timeout=self.exec_config.timeout,
+                    restrict_to_workspace=self.exec_config.restrict_to_workspace,
+                )
+            )
         if should_register("message"):
             self.tools.register(MessageTool(send_callback=self.bus.publish_outbound))
         if should_register("spawn"):
@@ -220,6 +251,7 @@ class AgentContainer:
             self.tools.register(MemoryTimelineTool())
         if should_register("memory_write"):
             from backend.tools.memory_write import MemoryWriteTool
+
             self.tools.register(MemoryWriteTool(store=self.memory_manager.builtin))
         if should_register("browser"):
             register_browser_tools(self.tools)

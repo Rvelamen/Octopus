@@ -54,18 +54,20 @@ class LibrarySearchTool(Tool):
         }
 
     async def execute(self, query: str, limit: int = 10, **kwargs: Any) -> str:
-        from backend.utils.helpers import get_workspace_path
         from backend.services.library_note_engine import LibraryNoteEngine
+        from backend.utils.helpers import get_workspace_path
 
         engine = LibraryNoteEngine(str(get_workspace_path()))
 
         results = engine.search_notes_fts(
-            query, limit=limit,
+            query,
+            limit=limit,
             vault_filter=self._vault_filter,
         )
         if not results:
             results = engine.search_notes(
-                query, limit=limit,
+                query,
+                limit=limit,
                 vault_filter=self._vault_filter,
             )
 
@@ -116,6 +118,7 @@ class LibraryReadNoteTool(Tool):
 
     async def execute(self, path: str, **kwargs: Any) -> str:
         from pathlib import Path
+
         from backend.utils.helpers import get_workspace_path
 
         file_path = Path(path).expanduser()
@@ -173,8 +176,8 @@ class LibraryTimelineTool(Tool):
         }
 
     async def execute(self, path: str, **kwargs: Any) -> str:
-        from backend.utils.helpers import get_workspace_path
         from backend.services.library_note_engine import LibraryNoteEngine
+        from backend.utils.helpers import get_workspace_path
 
         engine = LibraryNoteEngine(str(get_workspace_path()))
 
@@ -266,6 +269,7 @@ class LibraryWriteNoteTool(Tool):
 
         workspace = str(get_workspace_path())
         from backend.services.library_note_engine import LibraryNoteEngine
+
         engine = LibraryNoteEngine(workspace)
         engine.write_note(path, content)
         engine.update_note(path, force=True)
@@ -323,8 +327,8 @@ class LibraryListLinksTool(Tool):
         }
 
     async def execute(self, path: str, direction: str = "both", **kwargs: Any) -> str:
-        from backend.utils.helpers import get_workspace_path
         from backend.services.library_note_engine import LibraryNoteEngine
+        from backend.utils.helpers import get_workspace_path
 
         engine = LibraryNoteEngine(str(get_workspace_path()))
 
@@ -336,7 +340,8 @@ class LibraryListLinksTool(Tool):
             return f"Library note not found: {path}"
 
         graph = engine.get_graph(
-            center_path=path, depth=1,
+            center_path=path,
+            depth=1,
             vault_filter=self._vault_filter,
         )
         edges = graph.get("edges", [])

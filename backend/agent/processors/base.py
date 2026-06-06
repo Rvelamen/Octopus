@@ -1,4 +1,5 @@
 """Base message processor."""
+
 from abc import ABC, abstractmethod
 
 from backend.core.events.types import InboundMessage, OutboundMessage
@@ -16,6 +17,8 @@ class MessageProcessor(ABC):
         ...
 
     @abstractmethod
-    async def process(self, msg: InboundMessage, session_key: str | None = None) -> OutboundMessage | None:
+    async def process(
+        self, msg: InboundMessage, session_key: str | None = None
+    ) -> OutboundMessage | None:
         """Process the message and return a response, or None."""
         ...

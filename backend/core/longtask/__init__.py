@@ -26,8 +26,8 @@ Example usage:
     #   worker_class: "my_plugin.worker.MyToolWorker"
 """
 
-from backend.core.longtask.base import LongTaskWorker, LongTaskPlugin
-from backend.core.longtask.manager import LongTaskManager, TaskStatus, Task
+from backend.core.longtask.base import LongTaskPlugin, LongTaskWorker
+from backend.core.longtask.manager import LongTaskManager, Task, TaskStatus
 from backend.core.longtask.registry import LongTaskRegistry
 
 __all__ = [

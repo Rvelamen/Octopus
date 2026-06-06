@@ -2,9 +2,9 @@
 
 from typing import Any
 
-from backend.tools.base import Tool
 from backend.services.cron.service import CronService
 from backend.services.cron.types import CronSchedule
+from backend.tools.base import Tool
 
 
 class CronTool(Tool):
@@ -16,7 +16,9 @@ class CronTool(Tool):
         self._chat_id = ""
         self._session_instance_id: int | None = None
 
-    def set_context(self, channel: str, chat_id: str, session_instance_id: int | None = None) -> None:
+    def set_context(
+        self, channel: str, chat_id: str, session_instance_id: int | None = None
+    ) -> None:
         """Set the current session context for delivery."""
         self._channel = channel
         self._chat_id = chat_id
@@ -52,30 +54,27 @@ Actions: add, list, remove.
                 "action": {
                     "type": "string",
                     "enum": ["add", "list", "remove"],
-                    "description": "Action to perform"
+                    "description": "Action to perform",
                 },
                 "message": {
                     "type": "string",
-                    "description": "Task description - what the subagent should do (for add)"
+                    "description": "Task description - what the subagent should do (for add)",
                 },
                 "at": {
                     "type": "string",
-                    "description": "Absolute time in ISO format like '2026-02-11T16:30:00' (for one-time tasks)"
+                    "description": "Absolute time in ISO format like '2026-02-11T16:30:00' (for one-time tasks)",
                 },
                 "every_seconds": {
                     "type": "integer",
-                    "description": "Interval in seconds (for recurring tasks)"
+                    "description": "Interval in seconds (for recurring tasks)",
                 },
                 "cron_expr": {
                     "type": "string",
-                    "description": "Cron expression like '0 9 * * *' (for daily/weekly scheduled tasks)"
+                    "description": "Cron expression like '0 9 * * *' (for daily/weekly scheduled tasks)",
                 },
-                "job_id": {
-                    "type": "string",
-                    "description": "Job ID (for remove)"
-                }
+                "job_id": {"type": "string", "description": "Job ID (for remove)"},
             },
-            "required": ["action"]
+            "required": ["action"],
         }
 
     async def execute(
@@ -86,7 +85,7 @@ Actions: add, list, remove.
         every_seconds: int | None = None,
         cron_expr: str | None = None,
         job_id: str | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> str:
         if action == "add":
             return self._add_job(message, at, every_seconds, cron_expr)
@@ -97,11 +96,7 @@ Actions: add, list, remove.
         return f"Unknown action: {action}"
 
     def _add_job(
-        self,
-        message: str,
-        at: str | None,
-        every_seconds: int | None,
-        cron_expr: str | None
+        self, message: str, at: str | None, every_seconds: int | None, cron_expr: str | None
     ) -> str:
         if not message:
             return "Error: message is required for add"
@@ -117,12 +112,15 @@ Actions: add, list, remove.
 
         if at:
             from datetime import datetime
+
             try:
-                dt = datetime.fromisoformat(at.replace('Z', '+00:00'))
+                dt = datetime.fromisoformat(at.replace("Z", "+00:00"))
                 at_ms = int(dt.timestamp() * 1000)
                 schedule = CronSchedule(kind="at", at_ms=at_ms)
-            except ValueError as e:
-                return f"Error: invalid time format '{at}'. Use ISO format like '2026-02-11T16:30:00'"
+            except ValueError:
+                return (
+                    f"Error: invalid time format '{at}'. Use ISO format like '2026-02-11T16:30:00'"
+                )
         elif every_seconds:
             schedule = CronSchedule(kind="every", every_ms=every_seconds * 1000)
         elif cron_expr:
@@ -144,7 +142,9 @@ Actions: add, list, remove.
         if at:
             return f"Created one-time task '{job.name}' (id: {job.id}) for {at}"
         elif every_seconds:
-            return f"Created recurring task '{job.name}' (id: {job.id}) every {every_seconds} seconds"
+            return (
+                f"Created recurring task '{job.name}' (id: {job.id}) every {every_seconds} seconds"
+            )
         else:
             return f"Created scheduled task '{job.name}' (id: {job.id}) with cron '{cron_expr}'"
 
@@ -157,6 +157,7 @@ Actions: add, list, remove.
             kind = j.schedule.kind
             if kind == "at" and j.schedule.at_ms:
                 from datetime import datetime
+
                 at_time = datetime.fromtimestamp(j.schedule.at_ms / 1000).strftime("%Y-%m-%d %H:%M")
                 lines.append(f"- {j.name} (id: {j.id}, at {at_time})")
             elif kind == "every":

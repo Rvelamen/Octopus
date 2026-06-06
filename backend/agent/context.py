@@ -5,12 +5,9 @@ import mimetypes
 from pathlib import Path
 from typing import Any
 
-from loguru import logger
-
-from backend.extensions.loader import SkillsLoader
 from backend.agent.loader import SubAgentLoader
 from backend.core.providers.message_adapter import MessageAdapter
-
+from backend.extensions.loader import SkillsLoader
 
 # Global agent loop reference
 _agent_loop: "Any" = None
@@ -51,7 +48,7 @@ class ContextBuilder:
         """
         # Agents directory is at the same level as workspace
         return self.workspace.parent / "agents"
-    
+
     def build_system_prompt(
         self,
         skill_names: list[str] | None = None,
@@ -59,16 +56,16 @@ class ContextBuilder:
     ) -> str:
         """
         Build the system prompt from bootstrap files, memory, skills, and subagents.
-        
+
         Args:
             skill_names: Optional list of skills to include.
             session_instance_id: Optional session instance ID for loading observation index.
-        
+
         Returns:
             Complete system prompt.
         """
         from datetime import datetime
-        
+
         parts = []
 
         # Real-time context - refreshed on every request
@@ -77,7 +74,7 @@ class ContextBuilder:
         parts.append(f"""# Current Context
 
 **Current Time**: {current_time}""")
-        
+
         # Bootstrap files
         bootstrap = self._load_bootstrap_files()
         if bootstrap:
@@ -88,7 +85,9 @@ class ContextBuilder:
         memory_parts = []
         observation_index = None
         if self.memory_manager and self.memory_manager.observation_manager:
-            observation_index = self.memory_manager.observation_manager.build_index_markdown(session_instance_id)
+            observation_index = self.memory_manager.observation_manager.build_index_markdown(
+                session_instance_id
+            )
         if observation_index:
             memory_parts.append(observation_index)
         if self.memory_manager:
@@ -98,7 +97,7 @@ class ContextBuilder:
                 memory_parts.append(memory_block)
             if user_block:
                 memory_parts.append(user_block)
-        
+
         if memory_parts:
             memory_block = (
                 "<memory-context>\n"
@@ -110,7 +109,7 @@ class ContextBuilder:
                 + "\n</memory-context>"
             )
             parts.append(memory_block)
-        
+
         # Skills - progressive loading
         # 1. Always-loaded skills: include full content
         always_skills = self.skills.get_always_skills()
@@ -118,10 +117,9 @@ class ContextBuilder:
             always_content = self.skills.load_skills_for_context(always_skills)
             if always_content:
                 parts.append(f"# Active Skills\n\n{always_content}")
-        
+
         # 2. Available skills: only show summary (agent uses read_file to load)
         skills_summary = self.skills.build_skills_summary()
-        print(skills_summary)
         if skills_summary:
             parts.append(f"""# Skills
 
@@ -132,7 +130,7 @@ Skills with available="false" need dependencies installed first - you can try in
 ```
 
 {skills_summary}""")
-        
+
         # 3. Available SubAgents: show summary for spawn tool
         subagents_summary = self.subagent_loader.build_agents_summary()
         if subagents_summary:
@@ -162,7 +160,7 @@ When the user asks about a topic, prefer searching the knowledge base before ans
 """)
 
         return "\n\n---\n\n".join(parts)
-    
+
     def _load_bootstrap_files(self) -> str:
         """Load all bootstrap files from workspace/system directory."""
         parts = []
@@ -174,7 +172,7 @@ When the user asks about a topic, prefer searching the knowledge base before ans
                 parts.append(f"## {filename}\n\n{content}")
 
         return "\n\n".join(parts) if parts else ""
-    
+
     def build_messages(
         self,
         history: list[dict[str, Any]],
@@ -201,10 +199,13 @@ When the user asks about a topic, prefer searching the knowledge base before ans
             List of messages including system prompt.
         """
         from datetime import datetime
+
         messages = []
 
         # System prompt
-        system_prompt = self.build_system_prompt(skill_names, session_instance_id=session_instance_id)
+        system_prompt = self.build_system_prompt(
+            skill_names, session_instance_id=session_instance_id
+        )
         # logger.info(f"System prompt: {system_prompt}")
         if channel and chat_id:
             system_prompt += f"\n\n## Current Session\nChannel: {channel}\nChat ID: {chat_id}"
@@ -229,9 +230,7 @@ When the user asks about a topic, prefer searching the knowledge base before ans
         return messages
 
     def _prepend_time_to_multimodal(
-        self,
-        content: list[dict[str, Any]],
-        time_prefix: str
+        self, content: list[dict[str, Any]], time_prefix: str
     ) -> list[dict[str, Any]]:
         """Prepend time prefix to the first text item in multi-modal content."""
         result = []
@@ -251,7 +250,7 @@ When the user asks about a topic, prefer searching the knowledge base before ans
         """Build user message content with optional base64-encoded images."""
         if not media:
             return text
-        
+
         images = []
         for path in media:
             p = Path(path)
@@ -260,18 +259,18 @@ When the user asks about a topic, prefer searching the knowledge base before ans
                 continue
             b64 = base64.b64encode(p.read_bytes()).decode()
             images.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}})
-        
+
         if not images:
             return text
         return images + [{"type": "text", "text": text}]
-    
+
     def add_tool_result(
         self,
         messages: list[dict[str, Any]],
         tool_call_id: str,
         tool_name: str,
         result: str,
-        provider_type: str = "openai"
+        provider_type: str = "openai",
     ) -> list[dict[str, Any]]:
         """
         Add a tool result to the message list.
@@ -291,17 +290,17 @@ When the user asks about a topic, prefer searching the knowledge base before ans
             tool_call_id=tool_call_id,
             tool_name=tool_name,
             result=result,
-            provider_type=provider_type
+            provider_type=provider_type,
         )
         messages.append(tool_msg)
         return messages
-    
+
     def add_assistant_message(
         self,
         messages: list[dict[str, Any]],
         content: str | None,
         tool_calls: list[dict[str, Any]] | None = None,
-        provider_type: str = "openai"
+        provider_type: str = "openai",
     ) -> list[dict[str, Any]]:
         """
         Add an assistant message to the message list.
@@ -317,9 +316,7 @@ When the user asks about a topic, prefer searching the knowledge base before ans
         """
         # Use MessageAdapter to create properly formatted assistant message
         msg = MessageAdapter.create_assistant_message(
-            content=content,
-            tool_calls=tool_calls,
-            provider_type=provider_type
+            content=content, tool_calls=tool_calls, provider_type=provider_type
         )
         messages.append(msg)
         return messages

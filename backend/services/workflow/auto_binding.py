@@ -4,9 +4,6 @@ Provides rule-based auto-binding of node inputs to upstream node outputs,
 reducing the manual work users need to do when building workflows.
 """
 
-from typing import Any
-
-
 # ── Hard-coded binding rules for common patterns ──
 # Each rule: (source_node_type, source_output_key, target_node_type, target_input_key)
 AUTO_BINDING_RULES: list[tuple[str, str, str, str]] = [
@@ -88,13 +85,15 @@ def _extract_outputs(node: dict) -> list[dict]:
         if raw_outputs:
             for o in raw_outputs:
                 if isinstance(o, dict):
-                    outputs.append({
-                        "key": o.get("key") or o.get("name") or o.get("id", "output"),
-                        "name": o.get("name") or o.get("key") or o.get("id", "output"),
-                        "type": o.get("type", "string"),
-                        "label": o.get("label", ""),
-                        "value": o.get("value", ""),
-                    })
+                    outputs.append(
+                        {
+                            "key": o.get("key") or o.get("name") or o.get("id", "output"),
+                            "name": o.get("name") or o.get("key") or o.get("id", "output"),
+                            "type": o.get("type", "string"),
+                            "label": o.get("label", ""),
+                            "value": o.get("value", ""),
+                        }
+                    )
     # Fallback: known default outputs per node type
     if not outputs:
         node_type = node.get("type", "")
@@ -149,13 +148,15 @@ def _extract_inputs(node: dict) -> list[dict]:
         if raw_inputs:
             for i in raw_inputs:
                 if isinstance(i, dict):
-                    inputs_list.append({
-                        "key": i.get("key") or i.get("name") or i.get("id", "input"),
-                        "name": i.get("name") or i.get("key") or i.get("id", "input"),
-                        "type": i.get("type", "string"),
-                        "value": i.get("value", ""),
-                        "label": i.get("label", ""),
-                    })
+                    inputs_list.append(
+                        {
+                            "key": i.get("key") or i.get("name") or i.get("id", "input"),
+                            "name": i.get("name") or i.get("key") or i.get("id", "input"),
+                            "type": i.get("type", "string"),
+                            "value": i.get("value", ""),
+                            "label": i.get("label", ""),
+                        }
+                    )
     # Fallback: known default inputs per node type
     if not inputs_list:
         node_type = node.get("type", "")
@@ -164,11 +165,25 @@ def _extract_inputs(node: dict) -> list[dict]:
                 {"key": "input", "name": "input", "type": "string", "value": "", "label": "输入"},
             ]
         elif node_type == "workflowEnd":
-            inputs_list = [{"key": "result", "name": "result", "type": "string", "value": "", "label": "最终结果"}]
+            inputs_list = [
+                {
+                    "key": "result",
+                    "name": "result",
+                    "type": "string",
+                    "value": "",
+                    "label": "最终结果",
+                }
+            ]
         elif node_type == "http":
             inputs_list = [
                 {"key": "url", "name": "url", "type": "string", "value": "", "label": "URL"},
-                {"key": "method", "name": "method", "type": "string", "value": "GET", "label": "方法"},
+                {
+                    "key": "method",
+                    "name": "method",
+                    "type": "string",
+                    "value": "GET",
+                    "label": "方法",
+                },
             ]
     return inputs_list
 
@@ -232,15 +247,15 @@ def auto_bind_variables(
         for upstream in upstream_nodes:
             upstream_type = upstream.get("type", "")
             for output in _extract_outputs(upstream):
-                rule = find_binding_rule(
-                    upstream_type, output["key"], node_type, input_key
-                )
+                rule = find_binding_rule(upstream_type, output["key"], node_type, input_key)
                 if rule and _type_matches(input_type, output["type"]):
-                    bindings.append((
-                        input_key,
-                        f"{{{{{upstream['id']}.{output['key']}}}}}",
-                        "high",
-                    ))
+                    bindings.append(
+                        (
+                            input_key,
+                            f"{{{{{upstream['id']}.{output['key']}}}}}",
+                            "high",
+                        )
+                    )
                     bound = True
                     break
             if bound:
@@ -251,11 +266,13 @@ def auto_bind_variables(
             for upstream in upstream_nodes:
                 for output in _extract_outputs(upstream):
                     if _type_matches(input_type, output["type"]):
-                        bindings.append((
-                            input_key,
-                            f"{{{{{upstream['id']}.{output['key']}}}}}",
-                            "medium",
-                        ))
+                        bindings.append(
+                            (
+                                input_key,
+                                f"{{{{{upstream['id']}.{output['key']}}}}}",
+                                "medium",
+                            )
+                        )
                         bound = True
                         break
                 if bound:
@@ -287,7 +304,9 @@ def build_variable_context(existing_nodes: list[dict], edges: list[dict]) -> str
 
         lines.append(f"- {node_id} ({node_type}, 名称: {label}):")
         for o in outputs:
-            lines.append(f"  - {o['key']} [{o['type']}]" + (f" — {o['label']}" if o.get("label") else ""))
+            lines.append(
+                f"  - {o['key']} [{o['type']}]" + (f" — {o['label']}" if o.get("label") else "")
+            )
 
     lines.append("")
     lines.append("## 变量引用语法")

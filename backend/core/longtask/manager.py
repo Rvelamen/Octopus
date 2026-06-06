@@ -2,15 +2,17 @@
 
 import asyncio
 import uuid
+from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from loguru import logger
 
 
 class TaskStatus(Enum):
     """Task status states."""
+
     PENDING = "pending"
     RUNNING = "running"
     WAITING_AUTH = "waiting_auth"
@@ -183,8 +185,9 @@ class LongTaskManager:
     async def _save_task_to_db(self, task: Task) -> None:
         """Save task to database for persistence."""
         try:
-            from backend.data import Database
             import json
+
+            from backend.data import Database
 
             db = Database()
 
@@ -197,63 +200,70 @@ class LongTaskManager:
             # Get or create session and instance
             session_key = f"{task.channel}:{task.chat_id}"
             session_row = db.execute_one(
-                "SELECT id FROM sessions WHERE session_key = ?",
-                (session_key,)
+                "SELECT id FROM sessions WHERE session_key = ?", (session_key,)
             )
 
             if session_row:
-                session_id = session_row['id']
+                session_id = session_row["id"]
             else:
                 # Create new session
-                db.execute("""
+                db.execute(
+                    """
                     INSERT INTO sessions (channel, chat_id, session_key, metadata)
                     VALUES (?, ?, ?, '{}')
-                """, (task.channel, task.chat_id, session_key))
-                session_row = db.execute_one(
-                    "SELECT id FROM sessions WHERE session_key = ?",
-                    (session_key,)
+                """,
+                    (task.channel, task.chat_id, session_key),
                 )
-                session_id = session_row['id']
+                session_row = db.execute_one(
+                    "SELECT id FROM sessions WHERE session_key = ?", (session_key,)
+                )
+                session_id = session_row["id"]
 
             # Get or create default instance
             instance_row = db.execute_one(
                 "SELECT id FROM session_instances WHERE session_id = ? AND instance_name = 'default'",
-                (session_id,)
+                (session_id,),
             )
 
             if instance_row:
-                instance_id = instance_row['id']
+                instance_id = instance_row["id"]
             else:
                 # Create default instance
-                db.execute("""
+                db.execute(
+                    """
                     INSERT INTO session_instances (session_id, instance_name, is_active)
                     VALUES (?, 'default', 1)
-                """, (session_id,))
+                """,
+                    (session_id,),
+                )
                 instance_row = db.execute_one(
                     "SELECT id FROM session_instances WHERE session_id = ? AND instance_name = 'default'",
-                    (session_id,)
+                    (session_id,),
                 )
-                instance_id = instance_row['id']
+                instance_id = instance_row["id"]
 
             # Insert or update task
-            db.execute("""
+            db.execute(
+                """
                 INSERT OR REPLACE INTO tasks (
                     id, type, action, status, parent_session, parent_instance_id,
                     channel, chat_id, input_params, created_at, updated_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                task.id,
-                task.type,
-                task.action,
-                task.status.value,
-                session_key,
-                instance_id,
-                task.channel,
-                task.chat_id,
-                json.dumps(task.params, ensure_ascii=False),
-                task.created_at.isoformat(),
-                task.updated_at.isoformat(),
-            ))
+            """,
+                (
+                    task.id,
+                    task.type,
+                    task.action,
+                    task.status.value,
+                    session_key,
+                    instance_id,
+                    task.channel,
+                    task.chat_id,
+                    json.dumps(task.params, ensure_ascii=False),
+                    task.created_at.isoformat(),
+                    task.updated_at.isoformat(),
+                ),
+            )
 
             logger.info(f"[LongTaskManager] Task {task.id} saved to database")
         except Exception as e:
@@ -262,12 +272,14 @@ class LongTaskManager:
     async def _update_task_in_db(self, task: Task) -> None:
         """Update task status in database."""
         try:
-            from backend.data import Database
             import json
+
+            from backend.data import Database
 
             db = Database()
 
-            db.execute("""
+            db.execute(
+                """
                 UPDATE tasks SET
                     status = ?,
                     updated_at = ?,
@@ -275,14 +287,16 @@ class LongTaskManager:
                     result_summary = ?,
                     error_message = ?
                 WHERE id = ?
-            """, (
-                task.status.value,
-                task.updated_at.isoformat(),
-                task.completed_at.isoformat() if task.completed_at else None,
-                json.dumps(task.result, ensure_ascii=False) if task.result else None,
-                task.error,
-                task.id,
-            ))
+            """,
+                (
+                    task.status.value,
+                    task.updated_at.isoformat(),
+                    task.completed_at.isoformat() if task.completed_at else None,
+                    json.dumps(task.result, ensure_ascii=False) if task.result else None,
+                    task.error,
+                    task.id,
+                ),
+            )
         except Exception as e:
             logger.warning(f"[LongTaskManager] Failed to update task in database: {e}")
 
@@ -374,7 +388,9 @@ class LongTaskManager:
                             self.register_worker(task_type, worker)
                             return worker
                         except Exception as e:
-                            logger.error(f"[LongTaskManager] Failed to load worker {worker_class_path}: {e}")
+                            logger.error(
+                                f"[LongTaskManager] Failed to load worker {worker_class_path}: {e}"
+                            )
 
         return None
 
@@ -474,14 +490,16 @@ class LongTaskManager:
         worker = self.get_worker(task.type)
         if worker:
             try:
-                await worker.execute(Task(
-                    task_id=task_id,
-                    task_type=task.type,
-                    action="auth",
-                    params={"action": response.get("action"), "original_task": task},
-                    channel=task.channel,
-                    chat_id=task.chat_id,
-                ))
+                await worker.execute(
+                    Task(
+                        task_id=task_id,
+                        task_type=task.type,
+                        action="auth",
+                        params={"action": response.get("action"), "original_task": task},
+                        channel=task.channel,
+                        chat_id=task.chat_id,
+                    )
+                )
             except Exception as e:
                 logger.error(f"[LongTaskManager] Error forwarding auth to worker: {e}")
 
@@ -500,7 +518,9 @@ class LongTaskManager:
         hook_type = hook_data.get("type")
         task_id = hook_data.get("task_id")
 
-        logger.info(f"[LongTaskManager] Received hook from {plugin_name}: type={hook_type}, task_id={task_id}")
+        logger.info(
+            f"[LongTaskManager] Received hook from {plugin_name}: type={hook_type}, task_id={task_id}"
+        )
 
         if not task_id:
             return {"success": False, "error": "Missing task_id"}

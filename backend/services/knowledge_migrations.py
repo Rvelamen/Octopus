@@ -1,13 +1,12 @@
 """Lightweight schema migration runner for SQLite knowledge databases."""
 
 import sqlite3
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Callable
 
 from loguru import logger
-
 
 MigrationFunc = Callable[[sqlite3.Connection], None]
 
@@ -29,7 +28,9 @@ class MigrationRunner:
     def register(self, migration_id: int, name: str, func: MigrationFunc) -> "MigrationRunner":
         """Register a migration. IDs must be strictly increasing."""
         if self._migrations and migration_id <= self._migrations[-1].id:
-            raise ValueError(f"Migration IDs must increase. Got {migration_id} after {self._migrations[-1].id}")
+            raise ValueError(
+                f"Migration IDs must increase. Got {migration_id} after {self._migrations[-1].id}"
+            )
         self._migrations.append(Migration(id=migration_id, name=name, apply=func))
         return self
 
@@ -37,15 +38,13 @@ class MigrationRunner:
         """Ensure migration tracking table exists and run pending migrations."""
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         with sqlite3.connect(str(self.db_path), check_same_thread=False) as conn:
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS _schema_migrations (
                     id INTEGER PRIMARY KEY,
                     name TEXT NOT NULL,
                     applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-                """
-            )
+                """)
             conn.commit()
 
             applied = {
@@ -55,7 +54,9 @@ class MigrationRunner:
             for migration in self._migrations:
                 if migration.id in applied:
                     continue
-                logger.info(f"Applying migration {migration.id} '{migration.name}' to {self.db_path.name}")
+                logger.info(
+                    f"Applying migration {migration.id} '{migration.name}' to {self.db_path.name}"
+                )
                 try:
                     migration.apply(conn)
                     conn.execute(
@@ -75,8 +76,7 @@ class MigrationRunner:
 
 
 def _migration_001_create_initial_schema(conn: sqlite3.Connection) -> None:
-    conn.executescript(
-        """
+    conn.executescript("""
         CREATE TABLE IF NOT EXISTS _schema_version (
             key TEXT PRIMARY KEY,
             version INTEGER NOT NULL
@@ -165,13 +165,11 @@ def _migration_001_create_initial_schema(conn: sqlite3.Connection) -> None:
         END;
 
         INSERT OR REPLACE INTO _schema_version (key, version) VALUES ('knowledge_index', 1);
-        """
-    )
+        """)
 
 
 def _migration_002_add_orphan_tag_trigger(conn: sqlite3.Connection) -> None:
-    conn.executescript(
-        """
+    conn.executescript("""
         CREATE TRIGGER IF NOT EXISTS trg_cleanup_orphan_tags
         AFTER DELETE ON knowledge_node_tags
         BEGIN
@@ -181,13 +179,11 @@ def _migration_002_add_orphan_tag_trigger(conn: sqlite3.Connection) -> None:
                   SELECT 1 FROM knowledge_node_tags WHERE tag_id = OLD.tag_id
               );
         END;
-        """
-    )
+        """)
 
 
 def _migration_003_add_document_meta(conn: sqlite3.Connection) -> None:
-    conn.executescript(
-        """
+    conn.executescript("""
         CREATE TABLE IF NOT EXISTS knowledge_documents_meta (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             sha256 TEXT UNIQUE NOT NULL,
@@ -206,8 +202,7 @@ def _migration_003_add_document_meta(conn: sqlite3.Connection) -> None:
 
         CREATE INDEX IF NOT EXISTS idx_doc_meta_sha256 ON knowledge_documents_meta(sha256);
         CREATE INDEX IF NOT EXISTS idx_doc_meta_title ON knowledge_documents_meta(title);
-        """
-    )
+        """)
 
 
 def _migration_004_add_vault_column(conn: sqlite3.Connection) -> None:
@@ -218,8 +213,7 @@ def _migration_004_add_vault_column(conn: sqlite3.Connection) -> None:
 
 def _migration_005_add_library_schema(conn: sqlite3.Connection) -> None:
     """Add library (Zotero-style) schema for academic paper management."""
-    conn.executescript(
-        """
+    conn.executescript("""
         -- Library collections (folders / projects)
         CREATE TABLE IF NOT EXISTS library_collections (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -334,14 +328,12 @@ def _migration_005_add_library_schema(conn: sqlite3.Connection) -> None:
         -- Insert default collections
         INSERT OR IGNORE INTO library_collections (id, name, parent_id) VALUES (1, 'All Items', NULL);
         INSERT OR IGNORE INTO library_collections (id, name, parent_id) VALUES (2, 'Uncategorized', NULL);
-        """
-    )
+        """)
 
 
 def _migration_006_add_library_chunks(conn: sqlite3.Connection) -> None:
     """Add library_chunks table for RAG text extraction and embedding."""
-    conn.executescript(
-        """
+    conn.executescript("""
         CREATE TABLE IF NOT EXISTS library_chunks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             item_id INTEGER NOT NULL,
@@ -385,13 +377,11 @@ def _migration_006_add_library_chunks(conn: sqlite3.Connection) -> None:
             INSERT INTO library_chunks_fts(library_chunks_fts, rowid, text) VALUES ('delete', old.id, old.text);
             INSERT INTO library_chunks_fts(rowid, text) VALUES (new.id, new.text);
         END;
-        """
-    )
+        """)
 
 
 def _migration_007_add_library_annotations(conn: sqlite3.Connection) -> None:
-    conn.executescript(
-        """
+    conn.executescript("""
         CREATE TABLE IF NOT EXISTS library_annotations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             item_id INTEGER NOT NULL,
@@ -407,13 +397,14 @@ def _migration_007_add_library_annotations(conn: sqlite3.Connection) -> None:
         );
         CREATE INDEX IF NOT EXISTS idx_lib_annot_item ON library_annotations(item_id);
         CREATE INDEX IF NOT EXISTS idx_lib_annot_page ON library_annotations(item_id, page);
-        """
-    )
+        """)
 
 
 def _migration_008_separate_library_from_knowledge(conn: sqlite3.Connection) -> None:
     """Remove library paths from knowledge graph index. Library and Knowledge are now separate systems."""
-    conn.execute("DELETE FROM knowledge_links WHERE from_path LIKE 'library/%' OR to_path LIKE 'library/%'")
+    conn.execute(
+        "DELETE FROM knowledge_links WHERE from_path LIKE 'library/%' OR to_path LIKE 'library/%'"
+    )
     conn.execute("DELETE FROM knowledge_node_tags WHERE node_path LIKE 'library/%'")
     conn.execute("DELETE FROM knowledge_nodes WHERE path LIKE 'library/%'")
     conn.commit()
@@ -430,8 +421,7 @@ def _migration_009_add_library_chunk_status(conn: sqlite3.Connection) -> None:
 
 def _migration_010_add_library_note_schema(conn: sqlite3.Connection) -> None:
     """Add dedicated tables for library AI notes, completely separate from knowledge graph."""
-    conn.executescript(
-        """
+    conn.executescript("""
         -- Library notes (AI-generated notes under knowledge/library/...)
         CREATE TABLE IF NOT EXISTS library_notes (
             path TEXT PRIMARY KEY,
@@ -519,10 +509,11 @@ def _migration_010_add_library_note_schema(conn: sqlite3.Connection) -> None:
                   SELECT 1 FROM library_note_tags WHERE tag_id = OLD.tag_id
               );
         END;
-        """
-    )
+        """)
     # Clean up any legacy library paths that may still exist in knowledge_nodes
-    conn.execute("DELETE FROM knowledge_links WHERE from_path LIKE 'knowledge/library/%' OR to_path LIKE 'knowledge/library/%'")
+    conn.execute(
+        "DELETE FROM knowledge_links WHERE from_path LIKE 'knowledge/library/%' OR to_path LIKE 'knowledge/library/%'"
+    )
     conn.execute("DELETE FROM knowledge_node_tags WHERE node_path LIKE 'knowledge/library/%'")
     conn.execute("DELETE FROM knowledge_nodes WHERE path LIKE 'knowledge/library/%'")
     conn.commit()
@@ -537,7 +528,9 @@ def run_knowledge_index_migrations(db_path: Path) -> None:
     runner.register(5, "add_library_schema", _migration_005_add_library_schema)
     runner.register(6, "add_library_chunks", _migration_006_add_library_chunks)
     runner.register(7, "add_library_annotations", _migration_007_add_library_annotations)
-    runner.register(8, "separate_library_from_knowledge", _migration_008_separate_library_from_knowledge)
+    runner.register(
+        8, "separate_library_from_knowledge", _migration_008_separate_library_from_knowledge
+    )
     runner.register(9, "add_library_chunk_status", _migration_009_add_library_chunk_status)
     runner.register(10, "add_library_note_schema", _migration_010_add_library_note_schema)
     runner.run()
@@ -549,8 +542,7 @@ def run_knowledge_index_migrations(db_path: Path) -> None:
 
 
 def _migration_001_create_distill_queue(conn: sqlite3.Connection) -> None:
-    conn.executescript(
-        """
+    conn.executescript("""
         CREATE TABLE IF NOT EXISTS knowledge_distill_tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             request_id TEXT UNIQUE NOT NULL,
@@ -586,17 +578,14 @@ def _migration_001_create_distill_queue(conn: sqlite3.Connection) -> None:
 
         CREATE INDEX IF NOT EXISTS idx_iter_task ON knowledge_distill_task_iterations(task_id);
         CREATE INDEX IF NOT EXISTS idx_iter_task_num ON knowledge_distill_task_iterations(task_id, iteration_num);
-        """
-    )
+        """)
 
 
 def _migration_002_add_unique_iteration_constraint(conn: sqlite3.Connection) -> None:
-    conn.execute(
-        """
+    conn.execute("""
         CREATE UNIQUE INDEX IF NOT EXISTS idx_iter_task_num_unique
         ON knowledge_distill_task_iterations(task_id, iteration_num)
-        """
-    )
+        """)
 
 
 def _migration_003_add_vault_column_to_distill_tasks(conn: sqlite3.Connection) -> None:
@@ -608,6 +597,10 @@ def _migration_003_add_vault_column_to_distill_tasks(conn: sqlite3.Connection) -
 def run_distill_queue_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_distill_queue", _migration_001_create_distill_queue)
-    runner.register(2, "add_unique_iteration_constraint", _migration_002_add_unique_iteration_constraint)
-    runner.register(3, "add_vault_column_to_distill_tasks", _migration_003_add_vault_column_to_distill_tasks)
+    runner.register(
+        2, "add_unique_iteration_constraint", _migration_002_add_unique_iteration_constraint
+    )
+    runner.register(
+        3, "add_vault_column_to_distill_tasks", _migration_003_add_vault_column_to_distill_tasks
+    )
     runner.run()

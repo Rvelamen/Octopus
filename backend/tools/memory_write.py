@@ -1,8 +1,8 @@
-from typing import Any
 import json
+from typing import Any
 
-from backend.tools.base import Tool
 from backend.agent.memory import MemoryStore
+from backend.tools.base import Tool
 
 
 class MemoryWriteTool(Tool):
@@ -45,25 +45,43 @@ SKIP: trivial/obvious info, things easily re-discovered, raw data dumps, tempora
             "properties": {
                 "action": {"type": "string", "enum": ["add", "replace", "remove"]},
                 "target": {"type": "string", "enum": ["memory", "user"]},
-                "content": {"type": "string", "description": "The entry content. Required for 'add' and 'replace'."},
-                "old_text": {"type": "string", "description": "Short unique substring identifying the entry to replace or remove."},
+                "content": {
+                    "type": "string",
+                    "description": "The entry content. Required for 'add' and 'replace'.",
+                },
+                "old_text": {
+                    "type": "string",
+                    "description": "Short unique substring identifying the entry to replace or remove.",
+                },
             },
             "required": ["action", "target"],
         }
 
-    async def execute(self, action: str, target: str, content: str = None, old_text: str = None, **kwargs) -> str:
+    async def execute(
+        self, action: str, target: str, content: str = None, old_text: str = None, **kwargs
+    ) -> str:
         if action == "add":
             if not content:
-                return json.dumps({"success": False, "error": "content is required for add"}, ensure_ascii=False)
+                return json.dumps(
+                    {"success": False, "error": "content is required for add"}, ensure_ascii=False
+                )
             result = self.store.add(target, content)
         elif action == "replace":
             if not old_text or not content:
-                return json.dumps({"success": False, "error": "old_text and content are required for replace"}, ensure_ascii=False)
+                return json.dumps(
+                    {"success": False, "error": "old_text and content are required for replace"},
+                    ensure_ascii=False,
+                )
             result = self.store.replace(target, old_text, content)
         elif action == "remove":
             if not old_text:
-                return json.dumps({"success": False, "error": "old_text is required for remove"}, ensure_ascii=False)
+                return json.dumps(
+                    {"success": False, "error": "old_text is required for remove"},
+                    ensure_ascii=False,
+                )
             result = self.store.remove(target, old_text)
         else:
-            return json.dumps({"success": False, "error": f"Unknown action: {action}"}, ensure_ascii=False)
+            return json.dumps(
+                {"success": False, "error": f"Unknown action: {action}"}, ensure_ascii=False
+            )
         return json.dumps(result, ensure_ascii=False)

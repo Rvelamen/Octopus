@@ -1,7 +1,7 @@
 """Backward-compatible provider re-exports."""
 
-from backend.core.providers.openai_provider import OpenAIProvider
 from backend.core.providers.anthropic_provider import AnthropicProvider
+from backend.core.providers.openai_provider import OpenAIProvider
 
 
 class UnifiedProvider:

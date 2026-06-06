@@ -1,11 +1,13 @@
 """Pydantic request/response schemas for Desktop WebSocket protocol."""
 
 from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class BaseRequest(BaseModel):
     """Base class for all inbound request payloads."""
+
     model_config = ConfigDict(extra="ignore")
 
 
@@ -607,9 +609,13 @@ class AgentDefaultsUpdateRequest(BaseRequest):
     max_tokens: int | None = Field(default=None, alias="maxTokens")
     temperature: float | None = None
     max_iterations: int | None = Field(default=None, alias="maxIterations")
-    context_compression_enabled: bool | None = Field(default=None, alias="contextCompressionEnabled")
+    context_compression_enabled: bool | None = Field(
+        default=None, alias="contextCompressionEnabled"
+    )
     context_compression_turns: int | None = Field(default=None, alias="contextCompressionTurns")
-    context_compression_token_threshold: int | None = Field(default=None, alias="contextCompressionTokenThreshold")
+    context_compression_token_threshold: int | None = Field(
+        default=None, alias="contextCompressionTokenThreshold"
+    )
     llm_max_retries: int | None = Field(default=None, alias="llmMaxRetries")
     llm_retry_base_delay: float | None = Field(default=None, alias="llmRetryBaseDelay")
     llm_retry_max_delay: float | None = Field(default=None, alias="llmRetryMaxDelay")
@@ -682,6 +688,27 @@ class TokenGetUsageRequest(BaseRequest):
     instance_id: int | None = None
     session_instance_id: int | None = None
     days: int = 7
+
+
+class TokenGetEfficiencyRequest(BaseRequest):
+    days: int = 7
+
+
+class TokenGetCostTrendRequest(BaseRequest):
+    days: int = 30
+    granularity: str = "daily"
+
+
+class TokenGetSessionWaterfallRequest(BaseRequest):
+    instance_id: int
+
+
+class TokenGetCacheAnalyticsRequest(BaseRequest):
+    days: int = 7
+
+
+class TokenGetModelComparisonRequest(BaseRequest):
+    days: int = 30
 
 
 # ============================================================================
@@ -770,7 +797,6 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.GET_SLASH_COMMANDS: GetSlashCommandsRequest,
     MessageType.STOP_AGENTS: StopAgentsRequest,
     MessageType.RESTART_SERVICE: RestartServiceRequest,
-
     MessageType.MCP_GET_STATUS: MCPGetStatusRequest,
     MessageType.MCP_GET_SERVERS: MCPGetServersRequest,
     MessageType.MCP_GET_SERVER_TOOLS: MCPGetServerToolsRequest,
@@ -785,7 +811,6 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.MCP_CALL_TOOL: MCPCallToolRequest,
     MessageType.MCP_GET_CONFIG: MCPGetConfigRequest,
     MessageType.MCP_UPDATE_CONFIG: MCPUpdateConfigRequest,
-
     MessageType.SESSION_GET_CHANNELS: SessionGetChannelsRequest,
     MessageType.SESSION_GET_CHANNEL_SESSIONS: SessionGetChannelSessionsRequest,
     MessageType.SESSION_GET_SESSION_DETAIL: SessionGetSessionDetailRequest,
@@ -796,7 +821,6 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.SESSION_GET_INSTANCES: SessionGetInstancesRequest,
     MessageType.SESSION_COMPRESS_CONTEXT: SessionCompressContextRequest,
     MessageType.SESSION_GET_CONTEXT_STATS: SessionGetContextStatsRequest,
-
     MessageType.KNOWLEDGE_LIST: KnowledgeListRequest,
     MessageType.KNOWLEDGE_READ: KnowledgeReadRequest,
     MessageType.KNOWLEDGE_WRITE: KnowledgeWriteRequest,
@@ -812,13 +836,11 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.KNOWLEDGE_IMPORT: KnowledgeImportRequest,
     MessageType.KNOWLEDGE_GET_DOCUMENT_META: KnowledgeGetDocumentMetaRequest,
     MessageType.FILE_PREVIEW_PDF: FilePreviewPDFRequest,
-
     MessageType.MEMORY_LIST: MemoryListRequest,
     MessageType.MEMORY_SEARCH: MemorySearchRequest,
     MessageType.MEMORY_READ: MemoryReadRequest,
     MessageType.MEMORY_TIMELINE: MemoryTimelineRequest,
     MessageType.MEMORY_DELETE: MemoryDeleteRequest,
-
     MessageType.WORKSPACE_GET_ROOT: WorkspaceGetRootRequest,
     MessageType.WORKSPACE_LIST: WorkspaceListRequest,
     MessageType.WORKSPACE_READ: WorkspaceReadRequest,
@@ -827,13 +849,11 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.WORKSPACE_DELETE: WorkspaceDeleteRequest,
     MessageType.WORKSPACE_MKDIR: WorkspaceMkdirRequest,
     MessageType.WORKSPACE_RENAME: WorkspaceRenameRequest,
-
     MessageType.CRON_GET_JOBS: CronGetJobsRequest,
     MessageType.CRON_ADD_JOB: CronAddJobRequest,
     MessageType.CRON_DELETE_JOB: CronDeleteJobRequest,
     MessageType.CRON_TOGGLE_JOB: CronToggleJobRequest,
     MessageType.CRON_RUN_JOB: CronRunJobRequest,
-
     MessageType.AGENT_GET_LIST: AgentGetListRequest,
     MessageType.AGENT_GET_SOUL: AgentGetSoulRequest,
     MessageType.AGENT_SAVE_SOUL: AgentSaveSoulRequest,
@@ -841,11 +861,9 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.AGENT_GET_SYSTEM_FILES: AgentGetSystemFilesRequest,
     MessageType.AGENT_GET_SYSTEM_FILE: AgentGetSystemFileRequest,
     MessageType.AGENT_SAVE_SYSTEM_FILE: AgentSaveSystemFileRequest,
-
     MessageType.SUBAGENT_GET_AVAILABLE_TOOLS: SubagentGetAvailableToolsRequest,
     MessageType.SUBAGENT_GET_AVAILABLE_EXTENSIONS: SubagentGetAvailableExtensionsRequest,
     MessageType.SUBAGENT_GET_PROVIDER_MODELS: SubagentGetProviderModelsRequest,
-
     MessageType.IMAGE_UPLOAD: ImageUploadRequest,
     MessageType.FILE_UPLOAD: FileUploadRequest,
     MessageType.IMAGE_ANALYZE: ImageAnalyzeRequest,
@@ -858,14 +876,12 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.IMAGE_ADD_GENERATION_PROVIDER: ImageAddGenerationProviderRequest,
     MessageType.IMAGE_UPDATE_GENERATION_PROVIDER: ImageUpdateGenerationProviderRequest,
     MessageType.IMAGE_DELETE_GENERATION_PROVIDER: ImageDeleteGenerationProviderRequest,
-
     MessageType.PROVIDER_GET_ALL: ProviderGetAllRequest,
     MessageType.PROVIDER_GET: ProviderGetRequest,
     MessageType.PROVIDER_ADD: ProviderAddRequest,
     MessageType.PROVIDER_UPDATE: ProviderUpdateRequest,
     MessageType.PROVIDER_DELETE: ProviderDeleteRequest,
     MessageType.PROVIDER_ENABLE: ProviderEnableRequest,
-
     MessageType.MODEL_GET_ALL: ModelGetAllRequest,
     MessageType.MODEL_GET: ModelGetRequest,
     MessageType.MODEL_ADD: ModelAddRequest,
@@ -874,30 +890,27 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.MODEL_SET_DEFAULT: ModelSetDefaultRequest,
     MessageType.MODEL_GET_PROVIDERS: ModelGetProvidersRequest,
     MessageType.MODEL_GET_MODELS: ModelGetModelsRequest,
-
     MessageType.SETTINGS_GET: SettingsGetRequest,
     MessageType.SETTINGS_SET: SettingsSetRequest,
-
     MessageType.AGENT_DEFAULTS_GET: AgentDefaultsGetRequest,
     MessageType.AGENT_DEFAULTS_UPDATE: AgentDefaultsUpdateRequest,
     MessageType.GET_ENABLED_MODELS: GetEnabledModelsRequest,
-
     MessageType.CHANNEL_GET_LIST: ChannelGetListRequest,
     MessageType.CHANNEL_UPDATE: ChannelUpdateRequest,
     MessageType.CHANNEL_DELETE: ChannelDeleteRequest,
-
     MessageType.WECHAT_GET_QRCODE: WechatGetQrcodeRequest,
     MessageType.WECHAT_CHECK_STATUS: WechatCheckStatusRequest,
     MessageType.WECHAT_CLEAR_TOKEN: WechatClearTokenRequest,
-
     MessageType.TOOL_GET_CONFIG: ToolGetConfigRequest,
     MessageType.TOOL_UPDATE_CONFIG: ToolUpdateConfigRequest,
-
     MessageType.IMAGE_GET_PROVIDERS: ImageGetProvidersRequest,
     MessageType.IMAGE_SET_DEFAULT_PROVIDER: ImageSetDefaultProviderRequest,
-
     MessageType.TOKEN_GET_USAGE: TokenGetUsageRequest,
-
+    MessageType.TOKEN_GET_EFFICIENCY: TokenGetEfficiencyRequest,
+    MessageType.TOKEN_GET_COST_TREND: TokenGetCostTrendRequest,
+    MessageType.TOKEN_GET_SESSION_WATERFALL: TokenGetSessionWaterfallRequest,
+    MessageType.TOKEN_GET_CACHE_ANALYTICS: TokenGetCacheAnalyticsRequest,
+    MessageType.TOKEN_GET_MODEL_COMPARISON: TokenGetModelComparisonRequest,
     MessageType.TTS_GET_INSTANCE_CONFIG: TTSGetInstanceConfigRequest,
     MessageType.TTS_UPDATE_INSTANCE_CONFIG: TTSUpdateInstanceConfigRequest,
     MessageType.TTS_GET_DEFAULTS: TTSGetDefaultsRequest,
@@ -906,7 +919,6 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.TTS_SYNTHESIZE: TTSSynthesizeRequest,
     MessageType.TTS_GET_PROVIDERS: TTSGetProvidersRequest,
     MessageType.TTS_GET_STYLES: TTSGetStylesRequest,
-
     MessageType.EXTENSION_GET_LIST: ExtensionGetListRequest,
     MessageType.EXTENSION_INSTALL: ExtensionInstallRequest,
     MessageType.EXTENSION_UNINSTALL: ExtensionUninstallRequest,
@@ -915,5 +927,7 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
 }
 
 # Also index by string value for fast lookup
-_string_map = {mt.value: schema for mt, schema in MESSAGE_TYPE_TO_SCHEMA.items() if hasattr(mt, "value")}
+_string_map = {
+    mt.value: schema for mt, schema in MESSAGE_TYPE_TO_SCHEMA.items() if hasattr(mt, "value")
+}
 MESSAGE_TYPE_TO_SCHEMA.update(_string_map)

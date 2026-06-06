@@ -5,8 +5,7 @@ Also fixes pdf-chat tools to use library_* names instead of kb_* names.
 
 from yoyo import step
 
-
-__depends__ = {'016_add_workflow_design_agent_config'}
+__depends__ = {"016_add_workflow_design_agent_config"}
 
 steps = [
     step(

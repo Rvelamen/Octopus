@@ -11,24 +11,25 @@ The MCP Manager is the core component that coordinates all MCP functionality:
 """
 
 import asyncio
-import json
-from typing import Any, Callable
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from loguru import logger
 
-from backend.mcp.config import MCPConfig, MCPServerConfig, MCPToolConfig
-from backend.mcp.server.connection import MCPConnection, ConnectionState
-from backend.mcp.server.tool_registry import MCPToolRegistry, ToolState
-from backend.mcp.server.security import MCPPermissionManager, PermissionLevel
 from backend.data import Database, MCPRepository
+from backend.mcp.config import MCPConfig, MCPServerConfig, MCPToolConfig
+from backend.mcp.server.connection import ConnectionState, MCPConnection
+from backend.mcp.server.security import MCPPermissionManager
+from backend.mcp.server.tool_registry import MCPToolRegistry, ToolState
 
 
 @dataclass
 class MCPState:
     """MCP system state."""
+
     initialized: bool = False
     connections: dict[str, ConnectionState] = field(default_factory=dict)
     tools: dict[str, ToolState] = field(default_factory=dict)
@@ -39,6 +40,7 @@ class MCPState:
 @dataclass
 class MCPMetrics:
     """MCP usage metrics."""
+
     total_requests: int = 0
     successful_requests: int = 0
     failed_requests: int = 0
@@ -49,7 +51,7 @@ class MCPMetrics:
 
 class MCPManager:
     """Central manager for MCP functionality.
-    
+
     This is the main entry point for MCP integration. It provides:
     - Unified configuration access (self.config.mcp.xxx)
     - Connection lifecycle management
@@ -58,16 +60,16 @@ class MCPManager:
     - Event notifications
     - LLM integration interface
     """
-    
+
     _instance = None
     _lock = asyncio.Lock()
-    
+
     def __new__(cls, *args, **kwargs):
         """Singleton pattern to ensure only one manager instance."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-    
+
     def __init__(
         self,
         config: MCPConfig | None = None,
@@ -75,7 +77,7 @@ class MCPManager:
         db: Database | None = None,
     ):
         # Avoid re-initialization
-        if hasattr(self, '_initialized'):
+        if hasattr(self, "_initialized"):
             return
 
         self._initialized = True
@@ -111,29 +113,29 @@ class MCPManager:
         # Initialize
         # NOTE: 不在构造函数中自动初始化，避免阻塞主进程
         # 初始化应该由外部显式调用 initialize()
-    
+
     @property
     def is_enabled(self) -> bool:
         """Check if MCP is enabled."""
         return self.config.enabled
-    
+
     @property
     def is_running(self) -> bool:
         """Check if manager is running."""
         return self._running
-    
+
     def register_state_callback(self, callback: Callable[[str, Any, Any], None]) -> None:
         """Register a callback for state changes.
-        
+
         Callback signature: callback(event_type, old_value, new_value)
         """
         self._state_callbacks.append(callback)
-    
+
     def unregister_state_callback(self, callback: Callable[[str, Any, Any], None]) -> None:
         """Unregister a state change callback."""
         if callback in self._state_callbacks:
             self._state_callbacks.remove(callback)
-    
+
     def _notify_state_change(self, event_type: str, old_value: Any, new_value: Any) -> None:
         """Notify all registered callbacks of state change."""
         for callback in self._state_callbacks:
@@ -141,7 +143,7 @@ class MCPManager:
                 callback(event_type, old_value, new_value)
             except Exception as e:
                 logger.error(f"State change callback error: {e}")
-    
+
     async def initialize(self) -> bool:
         """Initialize the MCP manager."""
         if not self.config.enabled:
@@ -159,16 +161,18 @@ class MCPManager:
             # Sync config to database (在后台线程中执行，避免阻塞)
             loop = asyncio.get_event_loop()
             if self.config.servers:
-                servers_config = {name: config.model_dump() for name, config in self.config.servers.items()}
+                servers_config = {
+                    name: config.model_dump() for name, config in self.config.servers.items()
+                }
                 await loop.run_in_executor(
-                    None,
-                    lambda: self.db.sync_servers_from_config(servers_config)
+                    None, lambda: self.db.sync_servers_from_config(servers_config)
                 )
             if self.config.tools:
-                tools_config = {name: config.model_dump() for name, config in self.config.tools.items()}
+                tools_config = {
+                    name: config.model_dump() for name, config in self.config.tools.items()
+                }
                 await loop.run_in_executor(
-                    None,
-                    lambda: self.db.sync_tools_from_config(tools_config)
+                    None, lambda: self.db.sync_tools_from_config(tools_config)
                 )
 
             # Load servers from database (后台线程)
@@ -180,7 +184,7 @@ class MCPManager:
                     protocol=db_server.protocol,
                     enabled=db_server.enabled,
                     auto_connect=db_server.auto_connect,
-                    **db_server.config
+                    **db_server.config,
                 )
                 self.config.servers[db_server.name] = server_config
 
@@ -188,7 +192,9 @@ class MCPManager:
             await loop.run_in_executor(None, self.db.disable_tools_for_disabled_servers)
 
             # Load tools from database (后台线程)
-            db_tools = await loop.run_in_executor(None, lambda: self.db.list_tools(server_enabled_only=True))
+            db_tools = await loop.run_in_executor(
+                None, lambda: self.db.list_tools(server_enabled_only=True)
+            )
             # 并行注册工具，避免顺序阻塞
             tool_tasks = []
             for db_tool in db_tools:
@@ -198,12 +204,12 @@ class MCPManager:
                     enabled=db_tool.enabled,
                     parameters=db_tool.parameters,
                     dependencies=db_tool.dependencies,
-                    **db_tool.config
+                    **db_tool.config,
                 )
                 self.config.tools[db_tool.name] = tool_config
                 # 不立即注册，先收集任务
                 tool_tasks.append(self.tool_registry.register_tool(tool_config))
-            
+
             # 并行执行所有工具注册
             if tool_tasks:
                 await asyncio.gather(*tool_tasks, return_exceptions=True)
@@ -212,11 +218,7 @@ class MCPManager:
             def on_connection_state_change(conn, old_state, new_state):
                 self.state.connections[conn.name] = new_state
                 self.state.last_updated = datetime.now()
-                self._notify_state_change(
-                    f"connection.{conn.name}",
-                    old_state.name,
-                    new_state.name
-                )
+                self._notify_state_change(f"connection.{conn.name}", old_state.name, new_state.name)
 
             # Initialize connections (使用 gather 并行连接，带超时)
             connection_tasks = []
@@ -234,11 +236,7 @@ class MCPManager:
             def on_tool_state_change(tool_name, old_state, new_state):
                 self.state.tools[tool_name] = new_state
                 self.state.last_updated = datetime.now()
-                self._notify_state_change(
-                    f"tool.{tool_name}",
-                    old_state.name,
-                    new_state.name
-                )
+                self._notify_state_change(f"tool.{tool_name}", old_state.name, new_state.name)
                 is_enabled = new_state in (ToolState.ENABLED, ToolState.LOADED)
                 self.db.set_tool_enabled(tool_name, is_enabled)
 
@@ -259,16 +257,12 @@ class MCPManager:
             return False
 
     async def _connect_server_with_timeout(
-        self,
-        server_name: str,
-        server_config: MCPServerConfig,
-        on_state_change
+        self, server_name: str, server_config: MCPServerConfig, on_state_change
     ) -> None:
         """Connect to a server with timeout to avoid blocking."""
         try:
             connection = await asyncio.wait_for(
-                self.create_connection(server_config, on_state_change),
-                timeout=10.0  # 10秒超时
+                self.create_connection(server_config, on_state_change), timeout=10.0  # 10秒超时
             )
             if connection and connection.is_available:
                 asyncio.create_task(self._auto_discover_tools(server_name))
@@ -276,32 +270,32 @@ class MCPManager:
             logger.warning(f"Connection to server '{server_name}' timed out")
         except Exception as e:
             logger.error(f"Failed to connect to server '{server_name}': {e}")
-    
+
     async def shutdown(self) -> None:
         """Shutdown the MCP manager."""
         logger.info("Shutting down MCP Manager...")
-        
+
         self._running = False
-        
+
         # Cancel background tasks
         if self._monitor_task:
             self._monitor_task.cancel()
-        
+
         if self._cleanup_task:
             self._cleanup_task.cancel()
-        
+
         # Disconnect all connections
         for conn in list(self.connections.values()):
             await conn.disconnect()
-        
+
         self.connections.clear()
-        
+
         # Disable all tools
         await self.tool_registry.disable_all_tools()
-        
+
         self.state.initialized = False
         logger.info("MCP Manager shutdown complete")
-    
+
     async def create_connection(
         self,
         config: MCPServerConfig,
@@ -312,21 +306,23 @@ class MCPManager:
         if not self.config.enabled:
             logger.warning("MCP is disabled, cannot create connection")
             return None
-        
+
         # Check connection limit
         if len(self.connections) >= self.config.max_concurrent_connections:
-            logger.error(f"Max concurrent connections reached ({self.config.max_concurrent_connections})")
+            logger.error(
+                f"Max concurrent connections reached ({self.config.max_concurrent_connections})"
+            )
             return None
-        
+
         # Create connection
         connection = MCPConnection(
             config=config,
             on_state_change=on_state_change,
             on_message=on_message or self._handle_connection_message,
         )
-        
+
         self.connections[config.name] = connection
-        
+
         # Connect
         if await connection.connect():
             logger.info(f"Created MCP connection: {config.name}")
@@ -335,33 +331,33 @@ class MCPManager:
             logger.error(f"Failed to create MCP connection: {config.name}")
             del self.connections[config.name]
             return None
-    
+
     async def remove_connection(self, name: str) -> bool:
         """Remove an MCP connection."""
         connection = self.connections.get(name)
         if not connection:
             return False
-        
+
         await connection.disconnect()
         del self.connections[name]
         logger.info(f"Removed MCP connection: {name}")
         return True
-    
+
     def get_connection(self, name: str) -> MCPConnection | None:
         """Get a connection by name."""
         return self.connections.get(name)
-    
+
     def get_connection_status(self, name: str) -> dict[str, Any] | None:
         """Get connection status."""
         connection = self.connections.get(name)
         if not connection:
             return None
         return connection.get_info()
-    
+
     def get_all_connections_status(self) -> dict[str, dict[str, Any]]:
         """Get status of all connections."""
         return {name: conn.get_info() for name, conn in self.connections.items()}
-    
+
     async def call_tool(
         self,
         tool_name: str,
@@ -396,10 +392,7 @@ class MCPManager:
             connection = self.connections.get(self.config.default_server)
         else:
             # Use first available connection
-            connection = next(
-                (c for c in self.connections.values() if c.is_available),
-                None
-            )
+            connection = next((c for c in self.connections.values() if c.is_available), None)
 
         if not connection:
             return {"error": "No available MCP connection"}
@@ -432,7 +425,7 @@ class MCPManager:
             self.metrics.failed_requests += 1
             logger.error(f"Tool call error for '{tool_name}': {e}")
             return {"error": str(e)}
-    
+
     async def discover_tools(self, connection_name: str | None = None) -> list[dict[str, Any]]:
         """Discover available tools from MCP server and save to database."""
         if not self.config.enabled:
@@ -445,16 +438,13 @@ class MCPManager:
         if connection_name:
             connection = self.connections.get(connection_name)
         else:
-            connection = next(
-                (c for c in self.connections.values() if c.is_available),
-                None
-            )
+            connection = next((c for c in self.connections.values() if c.is_available), None)
 
         if not connection or not connection.is_available:
             logger.info(f"MCP discover_tools: connection not available, connection={connection}")
             return []
 
-        logger.info(f"MCP discover_tools: sending tools/list request")
+        logger.info("MCP discover_tools: sending tools/list request")
 
         try:
             response = await connection.request(
@@ -490,7 +480,9 @@ class MCPManager:
                             await self.tool_registry.register_tool(config)
                             self.config.tools[tool_record.name] = config
 
-                    logger.info(f"Discovered and saved {len(saved_tools)} tools from server '{server_name}'")
+                    logger.info(
+                        f"Discovered and saved {len(saved_tools)} tools from server '{server_name}'"
+                    )
                 except Exception as e:
                     logger.error(f"Failed to save discovered tools: {e}")
 
@@ -500,11 +492,11 @@ class MCPManager:
             logger.error(f"Tool discovery error: {e}")
 
         return []
-    
+
     def get_tools_for_llm(self) -> list[dict[str, Any]]:
         """Get tool definitions formatted for LLM consumption."""
         tools = []
-        
+
         for tool in self.tool_registry.get_enabled_tools():
             tool_def = {
                 "type": "function",
@@ -515,39 +507,39 @@ class MCPManager:
                 },
             }
             tools.append(tool_def)
-        
+
         return tools
-    
+
     async def _auto_discover_tools(self, server_name: str) -> None:
         """Auto-discover tools from a server after connection."""
         try:
             # Wait a moment for connection to stabilize
             await asyncio.sleep(1)
-            
+
             logger.info(f"Auto-discovering tools from server: {server_name}")
             tools = await self.discover_tools(server_name)
-            
+
             if tools:
                 logger.info(f"Auto-discovered {len(tools)} tools from server '{server_name}'")
             else:
                 logger.warning(f"No tools discovered from server '{server_name}'")
-                
+
         except Exception as e:
             logger.error(f"Auto-discover tools error for server '{server_name}': {e}")
-    
+
     def _handle_connection_message(self, connection: MCPConnection, message: dict) -> None:
         """Handle messages from connections."""
         msg_type = message.get("type")
-        
+
         if msg_type == "tool_update":
             # Handle tool updates from server
             logger.info(f"Received tool update from {connection.name}")
             # Trigger async discovery
             asyncio.create_task(self.discover_tools(connection.name))
-        
+
         elif msg_type == "error":
             logger.error(f"Error from {connection.name}: {message.get('error')}")
-    
+
     async def _monitor_loop(self) -> None:
         """Monitor connections and tools."""
         while self._running:
@@ -556,39 +548,39 @@ class MCPManager:
                 for name, connection in self.connections.items():
                     if connection.state == ConnectionState.ERROR:
                         logger.warning(f"Connection {name} in error state")
-                
+
                 # Update metrics
                 for name, connection in self.connections.items():
                     if connection.is_connected and connection.stats.connect_time:
                         uptime = (datetime.now() - connection.stats.connect_time).total_seconds()
                         self.metrics.connection_uptime[name] = uptime
-                
+
                 await asyncio.sleep(10)
-                
+
             except asyncio.CancelledError:
                 break
             except Exception as e:
                 logger.error(f"Monitor loop error: {e}")
                 await asyncio.sleep(10)
-    
+
     async def _cleanup_loop(self) -> None:
         """Periodic cleanup task."""
         while self._running:
             try:
                 # Cleanup expired tokens
                 self.security.cleanup_expired_tokens()
-                
+
                 # Cleanup rate limits
                 self.security.cleanup_rate_limits()
-                
+
                 await asyncio.sleep(300)  # Every 5 minutes
-                
+
             except asyncio.CancelledError:
                 break
             except Exception as e:
                 logger.error(f"Cleanup loop error: {e}")
                 await asyncio.sleep(300)
-    
+
     def get_status(self) -> dict[str, Any]:
         """Get comprehensive MCP status."""
         return {
@@ -611,7 +603,8 @@ class MCPManager:
                 "failed_requests": self.metrics.failed_requests,
                 "average_latency_ms": (
                     self.metrics.total_latency_ms / self.metrics.successful_requests
-                    if self.metrics.successful_requests > 0 else 0
+                    if self.metrics.successful_requests > 0
+                    else 0
                 ),
                 "tool_usage": self.metrics.tool_usage,
                 "connection_uptime": self.metrics.connection_uptime,
@@ -620,11 +613,11 @@ class MCPManager:
             "last_updated": self.state.last_updated.isoformat(),
             "errors": self.state.errors,
         }
-    
+
     def get_config_dict(self) -> dict[str, Any]:
         """Get configuration as dictionary."""
         return self.config.to_dict()
-    
+
     async def update_config(self, config_dict: dict[str, Any]) -> bool:
         """Update configuration."""
         try:
@@ -638,13 +631,13 @@ class MCPManager:
 
             # Sync to database
             if self.config.servers:
-                self.db.sync_servers_from_config({
-                    name: cfg.model_dump() for name, cfg in self.config.servers.items()
-                })
+                self.db.sync_servers_from_config(
+                    {name: cfg.model_dump() for name, cfg in self.config.servers.items()}
+                )
             if self.config.tools:
-                self.db.sync_tools_from_config({
-                    name: cfg.model_dump() for name, cfg in self.config.tools.items()
-                })
+                self.db.sync_tools_from_config(
+                    {name: cfg.model_dump() for name, cfg in self.config.tools.items()}
+                )
 
             # Re-initialize if enabled
             if self.config.enabled:
@@ -661,14 +654,13 @@ class MCPManager:
         """Save configuration to file (for backup/export)."""
         if path is None:
             from backend.utils.helpers import get_data_path
+
             path = get_data_path() / "mcp.json"
 
         # Export from database to ensure we save the current state
         db_config = self.db.export_to_config()
         export_config = MCPConfig(
-            enabled=self.config.enabled,
-            default_server=self.config.default_server,
-            **db_config
+            enabled=self.config.enabled, default_server=self.config.default_server, **db_config
         )
         return export_config.save_to_file(path)
 

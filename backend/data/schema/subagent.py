@@ -69,50 +69,68 @@ def create_tables(conn: sqlite3.Connection) -> None:
 
 
 def create_indexes(conn: sqlite3.Connection) -> None:
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_subagent_messages_instance ON subagent_messages(session_instance_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_subagent_messages_parent ON subagent_messages(parent_tool_call_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_subagent_messages_subagent ON subagent_messages(subagent_id)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_subagent_messages_instance ON subagent_messages(session_instance_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_subagent_messages_parent ON subagent_messages(parent_tool_call_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_subagent_messages_subagent ON subagent_messages(subagent_id)"
+    )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_subagents_name ON subagents(name)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_subagents_provider ON subagents(provider_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_subagents_model ON subagents(model_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_available_tools_name ON available_tools(name)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_available_extensions_name ON available_extensions(name)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_available_extensions_name ON available_extensions(name)"
+    )
 
 
 def seed_data(conn: sqlite3.Connection) -> None:
     # Ensure pdf-chat subagent exists (for new DBs; existing DBs get tools fixed via migration 017)
-    conn.execute("""
+    conn.execute(
+        """
         INSERT OR IGNORE INTO subagents
         (name, description, provider_id, model_id, tools, extensions,
          max_iterations, temperature, system_prompt, enabled, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
-    """, (
-        'pdf-chat',
-        'A PDF reading assistant for conversational Q&A about documents.',
-        None, None,
-        '["read", "library_search", "library_read_note", "memory_search", "memory_read"]',
-        '[]',
-        10, 0.5,
-        'You are a helpful PDF reading assistant. You help users understand academic papers and documents by answering questions based on the provided context and your knowledge. You can search the knowledge base and read files to provide accurate answers. Be concise but thorough. When citing information from the PDF, reference the page number if available.',
-        1,
-    ))
+    """,
+        (
+            "pdf-chat",
+            "A PDF reading assistant for conversational Q&A about documents.",
+            None,
+            None,
+            '["read", "library_search", "library_read_note", "memory_search", "memory_read"]',
+            "[]",
+            10,
+            0.5,
+            "You are a helpful PDF reading assistant. You help users understand academic papers and documents by answering questions based on the provided context and your knowledge. You can search the knowledge base and read files to provide accurate answers. Be concise but thorough. When citing information from the PDF, reference the page number if available.",
+            1,
+        ),
+    )
 
     # Ensure library-chat subagent exists
-    conn.execute("""
+    conn.execute(
+        """
         INSERT OR IGNORE INTO subagents
         (name, description, provider_id, model_id, tools, extensions,
          max_iterations, temperature, system_prompt, enabled, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
-    """, (
-        'library-chat',
-        'A library knowledge assistant for conversational Q&A about papers and collections.',
-        None, None,
-        '["read", "list", "library_search", "library_read_note", "library_list_links", "library_timeline", "memory_search", "memory_read"]',
-        '[]',
-        10, 0.5,
-        'You are a helpful Library knowledge assistant. You help users understand and analyze academic papers and documents in their library collection. You can search library notes, read PDFs, list directories, and explore note relationships to provide accurate answers.',
-        1,
-    ))
+    """,
+        (
+            "library-chat",
+            "A library knowledge assistant for conversational Q&A about papers and collections.",
+            None,
+            None,
+            '["read", "list", "library_search", "library_read_note", "library_list_links", "library_timeline", "memory_search", "memory_read"]',
+            "[]",
+            10,
+            0.5,
+            "You are a helpful Library knowledge assistant. You help users understand and analyze academic papers and documents in their library collection. You can search library notes, read PDFs, list directories, and explore note relationships to provide accurate answers.",
+            1,
+        ),
+    )
 
     default_tools = [
         ("read", "Read File", "Read file contents from the filesystem", "filesystem", 1),
@@ -124,17 +142,56 @@ def seed_data(conn: sqlite3.Connection) -> None:
         ("exec", "Execute Command", "Run shell commands", "shell", 7),
         ("action", "Action", "Perform actions and operations", "action", 8),
         ("message", "Message", "Send messages to users", "communication", 9),
-        ("kb_search", "KB Search", "Search the knowledge base for notes by path or title", "knowledge", 10),
+        (
+            "kb_search",
+            "KB Search",
+            "Search the knowledge base for notes by path or title",
+            "knowledge",
+            10,
+        ),
         ("kb_timeline", "KB Timeline", "Preview a note's context before reading", "knowledge", 11),
-        ("kb_read_note", "KB Read Note", "Read the full content of a knowledge base note", "knowledge", 12),
-        ("kb_list_links", "KB List Links", "List bidirectional links for a given note path", "knowledge", 13),
-        ("memory_write", "Memory Write", "Add, replace, or remove curated memory entries", "memory", 14),
-        ("memory_search", "Memory Search", "Search observations and memory by keyword", "memory", 15),
+        (
+            "kb_read_note",
+            "KB Read Note",
+            "Read the full content of a knowledge base note",
+            "knowledge",
+            12,
+        ),
+        (
+            "kb_list_links",
+            "KB List Links",
+            "List bidirectional links for a given note path",
+            "knowledge",
+            13,
+        ),
+        (
+            "memory_write",
+            "Memory Write",
+            "Add, replace, or remove curated memory entries",
+            "memory",
+            14,
+        ),
+        (
+            "memory_search",
+            "Memory Search",
+            "Search observations and memory by keyword",
+            "memory",
+            15,
+        ),
         ("memory_read", "Memory Read", "Read curated memory or user profile", "memory", 16),
-        ("memory_timeline", "Memory Timeline", "Get memory timeline for a session instance", "memory", 17),
+        (
+            "memory_timeline",
+            "Memory Timeline",
+            "Get memory timeline for a session instance",
+            "memory",
+            17,
+        ),
     ]
     for name, display_name, description, category, sort_order in default_tools:
-        conn.execute("""
+        conn.execute(
+            """
             INSERT OR IGNORE INTO available_tools (name, display_name, description, category, enabled, sort_order)
             VALUES (?, ?, ?, ?, 1, ?)
-        """, (name, display_name, description, category, sort_order))
+        """,
+            (name, display_name, description, category, sort_order),
+        )

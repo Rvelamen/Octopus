@@ -4,15 +4,14 @@ import json
 import os
 import shutil
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from loguru import logger
 
-from .base import Extension, SkillExtension, PluginExtension, LongTaskExtension
+from .base import Extension, LongTaskExtension, PluginExtension, SkillExtension
 
 if TYPE_CHECKING:
-    from backend.core.events.bus import MessageBus
-    from backend.data import Database
+    pass
 
 
 class ExtensionLoader:
@@ -97,6 +96,7 @@ class ExtensionLoader:
                 manifest = json.loads(manifest_file.read_text())
             else:
                 import yaml
+
                 manifest = yaml.safe_load(manifest_file.read_text()) or {}
         except Exception as e:
             logger.error(f"Failed to load manifest from {directory}: {e}")
@@ -135,9 +135,7 @@ class ExtensionLoader:
                 "name": directory.name,
                 "type": "plugin",
                 "description": f"Auto-detected plugin extension: {directory.name}",
-                "plugin": {
-                    "handler": f"extensions.{directory.name}.handler.Handler"
-                }
+                "plugin": {"handler": f"extensions.{directory.name}.handler.Handler"},
             }
             return PluginExtension(directory.name, directory, manifest)
         elif has_skill:
@@ -145,7 +143,7 @@ class ExtensionLoader:
             manifest = {
                 "name": directory.name,
                 "type": "skill",
-                "description": f"Auto-detected skill extension: {directory.name}"
+                "description": f"Auto-detected skill extension: {directory.name}",
             }
             return SkillExtension(directory.name, directory, manifest)
 
@@ -174,7 +172,6 @@ class ExtensionLoader:
         return None
 
 
-
 class SkillsLoader:
     """Loader for agent skills (using Extension system).
 
@@ -193,6 +190,7 @@ class SkillsLoader:
         """Lazy load registry."""
         if self._registry is None:
             from .registry import get_registry
+
             self._registry = get_registry()
             # Auto-load extensions on first access
             extensions = self._loader.load_all()
@@ -213,11 +211,13 @@ class SkillsLoader:
         skills = []
         for ext in self._get_registry().list_skills(filter_available=filter_unavailable):
             if not filter_unavailable or ext.check_requirements()[0]:
-                skills.append({
-                    "name": ext.name,
-                    "path": str(ext.directory / "SKILL.md"),
-                    "source": "builtin" if "builtin" in str(ext.directory) else "workspace"
-                })
+                skills.append(
+                    {
+                        "name": ext.name,
+                        "path": str(ext.directory / "SKILL.md"),
+                        "source": "builtin" if "builtin" in str(ext.directory) else "workspace",
+                    }
+                )
         return skills
 
     def load_skill(self, name: str) -> str | None:
@@ -272,7 +272,7 @@ class SkillsLoader:
         """Get skills marked as always=true that meet requirements."""
         result = []
         for skill in self._get_registry().list_skills(filter_available=True):
-            if skill.type == "skill" and hasattr(skill, 'always_load') and skill.always_load:
+            if skill.type == "skill" and hasattr(skill, "always_load") and skill.always_load:
                 result.append(skill.name)
         return result
 
@@ -306,10 +306,9 @@ class SkillsLoader:
             if source.startswith("http") or source.startswith("git@"):
                 # Clone from git
                 import subprocess
+
                 result = subprocess.run(
-                    ["git", "clone", source, str(target_dir)],
-                    capture_output=True,
-                    text=True
+                    ["git", "clone", source, str(target_dir)], capture_output=True, text=True
                 )
                 if result.returncode != 0:
                     return {"success": False, "error": result.stderr}
@@ -324,6 +323,7 @@ class SkillsLoader:
             if requirements_file.exists():
                 try:
                     from .plugin_dependency import DependencyManager
+
                     dep_manager = DependencyManager(target_dir)
                     dep_manager.install(requirements_file)
                 except Exception as e:
@@ -393,10 +393,9 @@ class SkillsLoader:
 
             # Pull latest
             import subprocess
+
             result = subprocess.run(
-                ["git", "-C", str(target_dir), "pull"],
-                capture_output=True,
-                text=True
+                ["git", "-C", str(target_dir), "pull"], capture_output=True, text=True
             )
 
             if result.returncode != 0:
@@ -425,7 +424,4 @@ class SkillsLoader:
         for b in requires.get("bins", []):
             if not shutil.which(b):
                 return False
-        for env in requires.get("env", []):
-            if not os.environ.get(env):
-                return False
-        return True
+        return all(os.environ.get(env) for env in requires.get("env", []))

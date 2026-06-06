@@ -1,13 +1,15 @@
 """System message processor."""
+
 import json
 
 from loguru import logger
 
+from backend.agent.shared import _normalize_usage
 from backend.core.events.types import InboundMessage, OutboundMessage
+from backend.tools.cron import CronTool
 from backend.tools.message import MessageTool
 from backend.tools.spawn import SpawnTool
-from backend.tools.cron import CronTool
-from backend.agent.shared import _normalize_usage
+
 from .base import MessageProcessor
 
 
@@ -17,7 +19,9 @@ class SystemMessageProcessor(MessageProcessor):
     def can_process(self, msg: InboundMessage) -> bool:
         return msg.channel == "system"
 
-    async def process(self, msg: InboundMessage, session_key: str | None = None) -> OutboundMessage | None:
+    async def process(
+        self, msg: InboundMessage, session_key: str | None = None
+    ) -> OutboundMessage | None:
         """Process a system message."""
         logger.info(f"Processing system message from {msg.sender_id}")
 
@@ -92,7 +96,7 @@ class SystemMessageProcessor(MessageProcessor):
             msg_role,
             f"[{msg.sender_id}] {msg.content}",
             message_type=msg_type or msg.message_type,
-            metadata={"session_instance_id": session_instance_id} if session_instance_id else {}
+            metadata={"session_instance_id": session_instance_id} if session_instance_id else {},
         )
         self.agent_loop.sessions.save(session)
 
@@ -100,7 +104,9 @@ class SystemMessageProcessor(MessageProcessor):
             iteration += 1
 
             # Call LLM - get fresh provider and model from config
-            provider, model, provider_type, max_tokens, temperature = self.agent_loop._get_current_provider_and_model()
+            provider, model, provider_type, max_tokens, temperature = (
+                self.agent_loop._get_current_provider_and_model()
+            )
             response = await provider.chat(
                 messages=messages,
                 tools=self.agent_loop.tools.get_definitions(),
@@ -115,7 +121,7 @@ class SystemMessageProcessor(MessageProcessor):
                 session_instance_id=session_instance_id,
                 provider_name=provider_type,
                 model_id=model,
-                usage=normalized
+                usage=normalized,
             )
 
             if response.has_tool_calls:
@@ -126,8 +132,8 @@ class SystemMessageProcessor(MessageProcessor):
                         "type": "function",
                         "function": {
                             "name": tc.name,
-                            "arguments": json.dumps(tc.arguments, ensure_ascii=False)
-                        }
+                            "arguments": json.dumps(tc.arguments, ensure_ascii=False),
+                        },
                     }
                     for tc in response.tool_calls
                 ]
@@ -138,22 +144,26 @@ class SystemMessageProcessor(MessageProcessor):
                     response.content or "",
                     message_type="tool_call",
                     tool_calls=tool_calls_data,
-                    metadata={
-                        "session_instance_id": session_instance_id,
-                        "usage": {
-                            "prompt_tokens": total_prompt_tokens,
-                            "completion_tokens": total_completion_tokens,
-                            "total_tokens": total_prompt_tokens + total_completion_tokens,
-                            "cached_tokens": total_cached_tokens
+                    metadata=(
+                        {
+                            "session_instance_id": session_instance_id,
+                            "usage": {
+                                "prompt_tokens": total_prompt_tokens,
+                                "completion_tokens": total_completion_tokens,
+                                "total_tokens": total_prompt_tokens + total_completion_tokens,
+                                "cached_tokens": total_cached_tokens,
+                            },
                         }
-                    } if session_instance_id else {
-                        "usage": {
-                            "prompt_tokens": total_prompt_tokens,
-                            "completion_tokens": total_completion_tokens,
-                            "total_tokens": total_prompt_tokens + total_completion_tokens,
-                            "cached_tokens": total_cached_tokens
+                        if session_instance_id
+                        else {
+                            "usage": {
+                                "prompt_tokens": total_prompt_tokens,
+                                "completion_tokens": total_completion_tokens,
+                                "total_tokens": total_prompt_tokens + total_completion_tokens,
+                                "cached_tokens": total_cached_tokens,
+                            }
                         }
-                    }
+                    ),
                 )
                 self.agent_loop.sessions.save(session)
 
@@ -163,8 +173,8 @@ class SystemMessageProcessor(MessageProcessor):
                         "type": "function",
                         "function": {
                             "name": tc.name,
-                            "arguments": json.dumps(tc.arguments, ensure_ascii=False)
-                        }
+                            "arguments": json.dumps(tc.arguments, ensure_ascii=False),
+                        },
                     }
                     for tc in response.tool_calls
                 ]
@@ -185,18 +195,21 @@ class SystemMessageProcessor(MessageProcessor):
                                 {
                                     "tool": tool_call.name,
                                     "args": tool_call.arguments,
-                                    "session_instance_id": session_instance_id
+                                    "session_instance_id": session_instance_id,
                                 },
-                                channel=origin_channel
+                                channel=origin_channel,
                             )
                         except Exception as e:
                             logger.warning(f"Failed to emit tool call event: {e}")
 
                         # Execute tool with error handling
                         try:
-                            result = await self.agent_loop.tools.execute(tool_call.name, tool_call.arguments)
+                            result = await self.agent_loop.tools.execute(
+                                tool_call.name, tool_call.arguments
+                            )
                         except Exception as e:
                             import traceback
+
                             traceback.print_exc()
                             logger.error(f"Tool execution error: {tool_call.name} - {e}")
                             result = f"Error executing tool {tool_call.name}: {str(e)}"
@@ -209,18 +222,23 @@ class SystemMessageProcessor(MessageProcessor):
                                 {
                                     "tool": tool_call.name,
                                     "result": result_preview,
-                                    "session_instance_id": session_instance_id
+                                    "session_instance_id": session_instance_id,
                                 },
-                                channel=origin_channel
+                                channel=origin_channel,
                             )
                         except Exception as e:
                             logger.warning(f"Failed to emit tool result event: {e}")
 
                     except Exception as outer_e:
                         import traceback
+
                         traceback.print_exc()
-                        logger.error(f"Unexpected error in tool call processing: {tool_call.name} - {outer_e}")
-                        result = f"Unexpected error processing tool {tool_call.name}: {str(outer_e)}"
+                        logger.error(
+                            f"Unexpected error in tool call processing: {tool_call.name} - {outer_e}"
+                        )
+                        result = (
+                            f"Unexpected error processing tool {tool_call.name}: {str(outer_e)}"
+                        )
 
                     # Always save tool result to database, even if errors occurred
                     if result is not None:
@@ -231,7 +249,11 @@ class SystemMessageProcessor(MessageProcessor):
                                 message_type="tool_result",
                                 name=tool_call.name,
                                 tool_call_id=tool_call.id,
-                                metadata={"session_instance_id": session_instance_id} if session_instance_id else {}
+                                metadata=(
+                                    {"session_instance_id": session_instance_id}
+                                    if session_instance_id
+                                    else {}
+                                ),
                             )
                             self.agent_loop.sessions.save(session)
                         except Exception as save_err:
@@ -256,11 +278,11 @@ class SystemMessageProcessor(MessageProcessor):
                             "prompt_tokens": total_prompt_tokens,
                             "completion_tokens": total_completion_tokens,
                             "total_tokens": total_prompt_tokens + total_completion_tokens,
-                            "cached_tokens": total_cached_tokens
+                            "cached_tokens": total_cached_tokens,
                         },
-                        "messages": session.messages[-20:]
+                        "messages": session.messages[-20:],
                     },
-                    channel=origin_channel
+                    channel=origin_channel,
                 )
             else:
                 final_content = response.content
@@ -269,7 +291,9 @@ class SystemMessageProcessor(MessageProcessor):
                     "assistant",
                     final_content or "",
                     message_type=msg_type or msg.message_type,
-                    metadata={"session_instance_id": session_instance_id} if session_instance_id else {}
+                    metadata=(
+                        {"session_instance_id": session_instance_id} if session_instance_id else {}
+                    ),
                 )
                 self.agent_loop.sessions.save(session)
                 break
@@ -281,5 +305,5 @@ class SystemMessageProcessor(MessageProcessor):
             channel=origin_channel,
             chat_id=origin_chat_id,
             content=final_content,
-            metadata={"session_instance_id": session_instance_id} if session_instance_id else {}
+            metadata={"session_instance_id": session_instance_id} if session_instance_id else {},
         )

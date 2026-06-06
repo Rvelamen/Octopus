@@ -1,12 +1,11 @@
 """Workflow Design Chat service for session and message management."""
 
+import contextlib
 import json
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
-
-from loguru import logger
+from typing import Any
 
 from backend.data.database import Database
 
@@ -73,7 +72,9 @@ class WorkflowDesignChatService:
             ).fetchone()
             return self._row_to_session(row) if row else None
 
-    def create_session(self, workflow_id: str, user_id: str | None = None, agent_config_id: int | None = None) -> WorkflowDesignSession:
+    def create_session(
+        self, workflow_id: str, user_id: str | None = None, agent_config_id: int | None = None
+    ) -> WorkflowDesignSession:
         session_id = str(uuid.uuid4())
         with self.db._get_connection() as conn:
             conn.execute(
@@ -127,7 +128,10 @@ class WorkflowDesignChatService:
                 VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
                 """,
                 (
-                    msg_id, session_id, role, content,
+                    msg_id,
+                    session_id,
+                    role,
+                    content,
                     json.dumps(tool_calls) if tool_calls is not None else None,
                     tool_call_id,
                     json.dumps(metadata or {}),
@@ -160,7 +164,9 @@ class WorkflowDesignChatService:
                 VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'))
                 """,
                 (
-                    op_id, session_id, operation_type,
+                    op_id,
+                    session_id,
+                    operation_type,
                     json.dumps(before_state) if before_state is not None else None,
                     json.dumps(after_state) if after_state is not None else None,
                 ),
@@ -199,7 +205,13 @@ class WorkflowDesignChatService:
 
         version = store.get_latest_version(workflow_id)
         if not version:
-            return {"workflow_id": workflow_id, "name": workflow.name, "nodes": [], "edges": [], "variables": []}
+            return {
+                "workflow_id": workflow_id,
+                "name": workflow.name,
+                "nodes": [],
+                "edges": [],
+                "variables": [],
+            }
 
         nodes = store.list_nodes(version.id)
         edges = store.list_edges(version.id)
@@ -249,16 +261,18 @@ class WorkflowDesignChatService:
             workflow_id=row["workflow_id"],
             user_id=row["user_id"],
             agent_config_id=row["agent_config_id"],
-            created_at=datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None,
-            updated_at=datetime.fromisoformat(str(row["updated_at"])) if row["updated_at"] else None,
+            created_at=(
+                datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None
+            ),
+            updated_at=(
+                datetime.fromisoformat(str(row["updated_at"])) if row["updated_at"] else None
+            ),
         )
 
     def _row_to_message(self, row) -> WorkflowDesignMessage:
         meta = {}
-        try:
+        with contextlib.suppress(Exception):
             meta = json.loads(row["metadata"] or "{}")
-        except Exception:
-            pass
         tool_calls = None
         try:
             raw = row["tool_calls"]
@@ -274,7 +288,9 @@ class WorkflowDesignChatService:
             tool_calls=tool_calls,
             tool_call_id=row["tool_call_id"] if row["tool_call_id"] else None,
             metadata=meta,
-            created_at=datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None,
+            created_at=(
+                datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None
+            ),
         )
 
     def _row_to_operation(self, row) -> WorkflowDesignOperation:
@@ -296,5 +312,7 @@ class WorkflowDesignChatService:
             operation_type=row["operation_type"],
             before_state=before_state,
             after_state=after_state,
-            created_at=datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None,
+            created_at=(
+                datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None
+            ),
         )

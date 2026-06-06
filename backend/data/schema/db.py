@@ -30,8 +30,12 @@ def create_tables(conn: sqlite3.Connection) -> None:
 def create_indexes(conn: sqlite3.Connection) -> None:
     """Create indexes for user data tables."""
     conn.execute("CREATE INDEX IF NOT EXISTS idx_user_data_table ON user_data_records(table_name)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_user_data_created ON user_data_records(created_at)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_user_data_updated ON user_data_records(updated_at)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_user_data_created ON user_data_records(created_at)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_user_data_updated ON user_data_records(updated_at)"
+    )
 
 
 def seed_data(conn: sqlite3.Connection) -> None:

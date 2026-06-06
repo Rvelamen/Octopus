@@ -48,9 +48,18 @@ class RetryableProvider(LLMProvider):
 
         error_str = str(error).lower()
         retryable_keywords = [
-            "timeout", "timed out", "connection", "network",
-            "502", "503", "504", "429", "rate limit",
-            "gateway", "service unavailable", "bad gateway"
+            "timeout",
+            "timed out",
+            "connection",
+            "network",
+            "502",
+            "503",
+            "504",
+            "429",
+            "rate limit",
+            "gateway",
+            "service unavailable",
+            "bad gateway",
         ]
         return any(kw in error_str for kw in retryable_keywords)
 
@@ -58,10 +67,7 @@ class RetryableProvider(LLMProvider):
         """Calculate delay for retry with exponential backoff and jitter."""
         import random
 
-        delay = min(
-            self.retry_base_delay * (2 ** attempt),
-            self.retry_max_delay
-        )
+        delay = min(self.retry_base_delay * (2**attempt), self.retry_max_delay)
         jitter = random.uniform(0, 0.1 * delay)
         return delay + jitter
 
@@ -80,7 +86,9 @@ class RetryableProvider(LLMProvider):
                 last_error = e
 
                 if not self._is_retryable_error(e):
-                    logger.error(f"[Provider] {operation_name} failed with non-retryable error: {e}")
+                    logger.error(
+                        f"[Provider] {operation_name} failed with non-retryable error: {e}"
+                    )
                     raise
 
                 if attempt < self.max_retries:

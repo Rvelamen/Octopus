@@ -6,17 +6,19 @@ import uuid
 from fastapi import WebSocket
 from loguru import logger
 
-from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.channels.desktop.handlers.base import MessageHandler
+from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.channels.desktop.schemas import ChatRequest
-from backend.core.events.types import InboundMessage, MessageContentItem
 from backend.core.events.bus import MessageBus
+from backend.core.events.types import InboundMessage, MessageContentItem
 
 
 class ChatHandler(MessageHandler):
     """Handle chat messages from clients."""
 
-    def __init__(self, bus: MessageBus, pending_responses: dict[str, asyncio.Queue], image_service=None):
+    def __init__(
+        self, bus: MessageBus, pending_responses: dict[str, asyncio.Queue], image_service=None
+    ):
         super().__init__(bus)
         self.pending_responses = pending_responses
         self.image_service = image_service
@@ -34,6 +36,7 @@ class ChatHandler(MessageHandler):
 
         try:
             from backend.extensions.registry import get_registry
+
             registry = get_registry()
             skill = registry.get_skill(skill_name) or registry.get(skill_name)
             if skill and hasattr(skill, "load_documentation"):
@@ -66,16 +69,12 @@ class ChatHandler(MessageHandler):
         response_queue = asyncio.Queue()
         self.pending_responses[request_id] = response_queue
 
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ACK,
-            request_id=request_id,
-            data={"status": "received"}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ACK, request_id=request_id, data={"status": "received"}),
+        )
 
-        metadata = {
-            "request_id": request_id,
-            "websocket_client": id(websocket)
-        }
+        metadata = {"request_id": request_id, "websocket_client": id(websocket)}
         if instance_id:
             metadata["instance_id"] = instance_id
             logger.info(f"Chat message with instance_id: {instance_id}")
@@ -94,13 +93,15 @@ class ChatHandler(MessageHandler):
                 mime_type = file.get("mime_type", "application/octet-stream")
                 file_size = file.get("size", 0)
                 if file_path:
-                    content_items.append(MessageContentItem(
-                        type="file",
-                        file_path=file_path,
-                        file_name=file_name,
-                        mime_type=mime_type,
-                        file_size=file_size
-                    ))
+                    content_items.append(
+                        MessageContentItem(
+                            type="file",
+                            file_path=file_path,
+                            file_name=file_name,
+                            mime_type=mime_type,
+                            file_size=file_size,
+                        )
+                    )
             processed_content = content_items
         else:
             processed_content = content
@@ -110,7 +111,7 @@ class ChatHandler(MessageHandler):
             sender_id="user",
             chat_id="desktop_session",
             content=processed_content,
-            metadata=metadata
+            metadata=metadata,
         )
 
         try:
@@ -120,7 +121,9 @@ class ChatHandler(MessageHandler):
             await self._send_error(websocket, request_id, f"Failed to process message: {e}")
             del self.pending_responses[request_id]
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: ChatRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: ChatRequest
+    ) -> None:
         """Process a validated chat message and forward to agent."""
         content = self._rewrite_skill_content(validated.content)
         images = validated.images
@@ -133,16 +136,12 @@ class ChatHandler(MessageHandler):
         response_queue = asyncio.Queue()
         self.pending_responses[request_id] = response_queue
 
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ACK,
-            request_id=request_id,
-            data={"status": "received"}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ACK, request_id=request_id, data={"status": "received"}),
+        )
 
-        metadata = {
-            "request_id": request_id,
-            "websocket_client": id(websocket)
-        }
+        metadata = {"request_id": request_id, "websocket_client": id(websocket)}
         if instance_id:
             metadata["instance_id"] = instance_id
             logger.info(f"Chat message with instance_id: {instance_id}")
@@ -161,13 +160,15 @@ class ChatHandler(MessageHandler):
                 mime_type = file.get("mime_type", "application/octet-stream")
                 file_size = file.get("size", 0)
                 if file_path:
-                    content_items.append(MessageContentItem(
-                        type="file",
-                        file_path=file_path,
-                        file_name=file_name,
-                        mime_type=mime_type,
-                        file_size=file_size
-                    ))
+                    content_items.append(
+                        MessageContentItem(
+                            type="file",
+                            file_path=file_path,
+                            file_name=file_name,
+                            mime_type=mime_type,
+                            file_size=file_size,
+                        )
+                    )
             processed_content = content_items
         else:
             processed_content = content
@@ -177,7 +178,7 @@ class ChatHandler(MessageHandler):
             sender_id="user",
             chat_id="desktop_session",
             content=processed_content,
-            metadata=metadata
+            metadata=metadata,
         )
 
         try:
@@ -189,8 +190,7 @@ class ChatHandler(MessageHandler):
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
         """Send error response."""
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )

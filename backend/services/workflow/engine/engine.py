@@ -3,38 +3,42 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Optional, Callable
+from typing import Any
 from uuid import uuid4
 
-from backend.services.workflow.store import WorkflowStore, WorkflowRunStore
-from backend.services.workflow.models import (
-    WorkflowNodeRecord,
-    WorkflowEdgeRecord,
-    WorkflowRunRecord,
-    WorkflowRunNodeRecord,
-    NodeType,
-)
+from loguru import logger
+
+from backend.data.database import Database
 from backend.services.workflow.engine.context import WorkflowContext
 from backend.services.workflow.engine.executor import NodeExecutor
-from backend.data.database import Database
-from loguru import logger
+from backend.services.workflow.models import (
+    NodeType,
+    WorkflowEdgeRecord,
+    WorkflowNodeRecord,
+    WorkflowRunNodeRecord,
+    WorkflowRunRecord,
+)
+from backend.services.workflow.store import WorkflowRunStore, WorkflowStore
 
 
 class WorkflowExecutionError(Exception):
     """Raised when a workflow node execution fails."""
+
     pass
 
 
 class WorkflowCancelledError(Exception):
     """Raised when a workflow run is cancelled."""
+
     pass
 
 
 class WorkflowEngine:
     """Workflow execution engine."""
 
-    def __init__(self, db: Database, executor: Optional[NodeExecutor] = None):
+    def __init__(self, db: Database, executor: NodeExecutor | None = None):
         """Initialize the engine.
 
         Args:
@@ -53,12 +57,12 @@ class WorkflowEngine:
     async def execute(
         self,
         workflow_id: str,
-        version_id: Optional[str] = None,
-        input_variables: Optional[dict[str, Any]] = None,
+        version_id: str | None = None,
+        input_variables: dict[str, Any] | None = None,
         trigger_type: str = "manual",
-        on_node_update: Optional[Callable] = None,
+        on_node_update: Callable | None = None,
         test_mode: bool = False,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> WorkflowRunRecord:
         """Execute a workflow.
 
@@ -128,8 +132,7 @@ class WorkflowEngine:
             # Validate required input variables (engine-level guard)
             input_vars = input_variables or {}
             required_missing = [
-                v.name for v in variables
-                if v.is_input and v.required and v.name not in input_vars
+                v.name for v in variables if v.is_input and v.required and v.name not in input_vars
             ]
             if required_missing:
                 raise ValueError(
@@ -216,11 +219,18 @@ class WorkflowEngine:
                     if on_node_update:
                         trace = context.get_node_trace(node_id)
                         trace_dict = trace.to_dict() if trace else None
-                        await on_node_update(run.id, node_id, "completed", {
-                            "result": result,
-                            "trace": trace_dict,
-                            "duration_ms": trace_dict.get("duration_ms") if trace_dict else None,
-                        })
+                        await on_node_update(
+                            run.id,
+                            node_id,
+                            "completed",
+                            {
+                                "result": result,
+                                "trace": trace_dict,
+                                "duration_ms": (
+                                    trace_dict.get("duration_ms") if trace_dict else None
+                                ),
+                            },
+                        )
 
                 except WorkflowCancelledError:
                     context.update_node_trace(node_id, status="skipped")
@@ -253,11 +263,18 @@ class WorkflowEngine:
                     if on_node_update:
                         trace = context.get_node_trace(node_id)
                         trace_dict = trace.to_dict() if trace else None
-                        await on_node_update(run.id, node_id, "failed", {
-                            "error": str(e),
-                            "trace": trace_dict,
-                            "duration_ms": trace_dict.get("duration_ms") if trace_dict else None,
-                        })
+                        await on_node_update(
+                            run.id,
+                            node_id,
+                            "failed",
+                            {
+                                "error": str(e),
+                                "trace": trace_dict,
+                                "duration_ms": (
+                                    trace_dict.get("duration_ms") if trace_dict else None
+                                ),
+                            },
+                        )
 
                     if not test_mode:
                         return self._run_store.get_run(run.id)
@@ -277,13 +294,22 @@ class WorkflowEngine:
                 )
 
             if on_node_update:
-                await on_node_update(run.id, None, "completed", {
-                    "result": final_outputs,
-                    "all_traces": context.get_all_traces(),
-                })
+                await on_node_update(
+                    run.id,
+                    None,
+                    "completed",
+                    {
+                        "result": final_outputs,
+                        "all_traces": context.get_all_traces(),
+                    },
+                )
 
         except asyncio.TimeoutError:
-            error_msg = f"Workflow execution timed out after {exec_timeout}s" if exec_timeout else "Workflow execution timed out"
+            error_msg = (
+                f"Workflow execution timed out after {exec_timeout}s"
+                if exec_timeout
+                else "Workflow execution timed out"
+            )
             logger.warning(error_msg)
             if not test_mode:
                 self._run_store.update_run_status(run.id, "failed", error_message=error_msg)
@@ -386,23 +412,23 @@ class WorkflowEngine:
         from collections import deque
 
         # 1️⃣ 识别 Loop 节点和它们的子节点
-        logger.info(f"[_build_execution_order] Total nodes: {len(nodes)}, Total edges: {len(edges)}")
+        logger.info(
+            f"[_build_execution_order] Total nodes: {len(nodes)}, Total edges: {len(edges)}"
+        )
         for n in nodes:
-            node_type_val = n.type.value if hasattr(n.type, 'value') else n.type
+            node_type_val = n.type.value if hasattr(n.type, "value") else n.type
             logger.info(f"  Node: id={n.id}, type={node_type_val}, parent_id={n.parent_id}")
         for e in edges:
-            logger.info(f"  Edge: {e.source_node_id} -> {e.target_node_id}, handles: {e.source_handle}/{e.target_handle}")
-        
+            logger.info(
+                f"  Edge: {e.source_node_id} -> {e.target_node_id}, handles: {e.source_handle}/{e.target_handle}"
+            )
+
         loop_node_ids = {
-            n.id for n in nodes
-            if (n.type.value if hasattr(n.type, 'value') else n.type) == "loop"
+            n.id for n in nodes if (n.type.value if hasattr(n.type, "value") else n.type) == "loop"
         }
         logger.info(f"[_build_execution_order] Loop nodes found: {loop_node_ids}")
-        
-        child_node_ids = {
-            n.id for n in nodes
-            if n.parent_id and n.parent_id in loop_node_ids
-        }
+
+        child_node_ids = {n.id for n in nodes if n.parent_id and n.parent_id in loop_node_ids}
         logger.info(f"[_build_execution_order] Child nodes found: {child_node_ids}")
 
         # 2️⃣ 过滤出需要参与拓扑排序的"有效节点"
@@ -418,18 +444,17 @@ class WorkflowEngine:
             # 如果 source 或 target 是子节点，这是内部连接
             if edge.source_node_id in child_node_ids or edge.target_node_id in child_node_ids:
                 return True
-            
+
             # 如果涉及 body-start 或 body-end handle，这是循环体的入口/出口连接
             source_handle = edge.source_handle or ""
             target_handle = edge.target_handle or ""
-            
-            if (
-                "body-start" in source_handle or "body-start" in target_handle or
-                "body-end" in source_handle or "body-end" in target_handle
-            ):
-                return True
-            
-            return False
+
+            return bool(
+                "body-start" in source_handle
+                or "body-start" in target_handle
+                or "body-end" in source_handle
+                or "body-end" in target_handle
+            )
 
         effective_edges = [e for e in edges if not is_loop_internal_edge(e)]
 
@@ -454,13 +479,17 @@ class WorkflowEngine:
                         if node.id not in graph[ref_node_id]:
                             graph[ref_node_id].append(node.id)
                             in_degree[node.id] += 1
-                            logger.info(f"[_build_execution_order] implicit edge: {ref_node_id} -> {node.id}")
+                            logger.info(
+                                f"[_build_execution_order] implicit edge: {ref_node_id} -> {node.id}"
+                            )
 
         # Use deque for O(1) popleft instead of O(n) list.pop(0)
-        queue: deque[str] = deque(sorted(
-            (n_id for n_id, degree in in_degree.items() if degree == 0),
-            key=lambda x: x  # Stable sort by node ID for determinism
-        ))
+        queue: deque[str] = deque(
+            sorted(
+                (n_id for n_id, degree in in_degree.items() if degree == 0),
+                key=lambda x: x,  # Stable sort by node ID for determinism
+            )
+        )
         result: list[str] = []
 
         while queue:
@@ -481,12 +510,13 @@ class WorkflowEngine:
     def _extract_node_refs_from_value(self, value: Any) -> set[str]:
         """Extract {{nodeId.outputKey}} node IDs from a config value recursively."""
         import re
+
         refs: set[str] = set()
         if isinstance(value, str):
-            for m in re.finditer(r'\{\{(.+?)\}\}', value):
+            for m in re.finditer(r"\{\{(.+?)\}\}", value):
                 ref = m.group(1)
-                if '.' in ref:
-                    refs.add(ref.split('.', 1)[0])
+                if "." in ref:
+                    refs.add(ref.split(".", 1)[0])
         elif isinstance(value, dict):
             for v in value.values():
                 refs.update(self._extract_node_refs_from_value(v))
@@ -579,7 +609,10 @@ class WorkflowEngine:
                 inputs["code"] = node_code
             else:
                 import logging
-                logging.warning(f"[CodeNode] code is empty for node {node.id}, config keys: {list(node.config.keys())}")
+
+                logging.warning(
+                    f"[CodeNode] code is empty for node {node.id}, config keys: {list(node.config.keys())}"
+                )
 
         # Fallback: for nodes that store config directly in node.config (not in inputs list),
         # inject config values into inputs when inputs list is empty or values are missing.
@@ -589,16 +622,23 @@ class WorkflowEngine:
         if node_type in ("database", "http", "httpRequest468", "readFiles"):
             logger.info(f"[_execute_node] fallback for {node_type}, inputs before: {inputs}")
             for key, value in (node.config or {}).items():
-                if key not in ("inputs", "outputs", "_parentId", "__parentId") and value is not None:
+                if (
+                    key not in ("inputs", "outputs", "_parentId", "__parentId")
+                    and value is not None
+                ):
                     if key not in inputs or inputs[key] is None or inputs[key] == "":
                         # Only resolve values that don't contain variable references;
                         # leave {{...}} refs for the executor to resolve later.
                         if self._contains_var_ref(value):
                             inputs[key] = value
-                            logger.info(f"[_execute_node] fallback injected (raw ref): {key} = {value}")
+                            logger.info(
+                                f"[_execute_node] fallback injected (raw ref): {key} = {value}"
+                            )
                         else:
                             inputs[key] = context.resolve_value(value)
-                            logger.info(f"[_execute_node] fallback injected (resolved): {key} = {inputs[key]}")
+                            logger.info(
+                                f"[_execute_node] fallback injected (resolved): {key} = {inputs[key]}"
+                            )
             logger.info(f"[_execute_node] inputs after fallback: {inputs}")
 
         # Record resolved inputs into the trace so the outer loop can reference them
@@ -656,8 +696,9 @@ class WorkflowEngine:
     def _contains_var_ref(self, value: Any) -> bool:
         """Check if a value contains {{...}} variable references."""
         import re
+
         if isinstance(value, str):
-            return bool(re.search(r'\{\{(.+?)\}\}', value))
+            return bool(re.search(r"\{\{(.+?)\}\}", value))
         elif isinstance(value, dict):
             return any(self._contains_var_ref(v) for v in value.values())
         elif isinstance(value, list):
@@ -719,9 +760,7 @@ class WorkflowEngine:
             return True
 
         source_type = (
-            source_node.type.value
-            if hasattr(source_node.type, "value")
-            else source_node.type
+            source_node.type.value if hasattr(source_node.type, "value") else source_node.type
         )
         if source_type != "ifElseNode":
             return True
@@ -730,7 +769,7 @@ class WorkflowEngine:
 
         source_handle = edge.source_handle or ""
         prefix = f"{source_node.id}-source-"
-        key = source_handle[len(prefix):] if source_handle.startswith(prefix) else source_handle
+        key = source_handle[len(prefix) :] if source_handle.startswith(prefix) else source_handle
 
         if key == "system_resultTrue":
             return bool(result_true)
@@ -768,12 +807,9 @@ class WorkflowEngine:
         if not incoming_edges:
             return True
 
-        return any(
-            self._is_edge_active(edge, nodes, context)
-            for edge in incoming_edges
-        )
+        return any(self._is_edge_active(edge, nodes, context) for edge in incoming_edges)
 
-    def get_run_status(self, run_id: str) -> Optional[dict[str, Any]]:
+    def get_run_status(self, run_id: str) -> dict[str, Any] | None:
         """Get run status."""
         run = self._run_store.get_run(run_id)
         if not run:

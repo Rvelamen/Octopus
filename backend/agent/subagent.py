@@ -3,39 +3,45 @@
 import asyncio
 import json
 import uuid
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from loguru import logger
 
-from backend.core.events.types import InboundMessage, AgentEvent
-from backend.core.events.bus import MessageBus
-from backend.core.providers.base import LLMProvider, LLMResponse
-from backend.core.providers.factory import create_provider
-from backend.agent.config_service import AgentConfigService
-from backend.agent.shared import _normalize_usage
-from backend.tools.registry import ToolRegistry
-from backend.tools.filesystem import ReadFileTool, WriteFileTool, ListDirTool, EditFileTool
-from backend.tools.shell import ExecTool
-
-from backend.tools.action import ActionTool
-from backend.tools.message import MessageTool
-from backend.tools.knowledge import KBSearchTool, KBReadNoteTool, KBListLinksTool, KBTimelineTool
-from backend.tools.library_knowledge import LibrarySearchTool, LibraryReadNoteTool, LibraryListLinksTool, LibraryTimelineTool, LibraryWriteNoteTool
-from backend.tools.memory_write import MemoryWriteTool
-from backend.tools.memory import MemorySearchTool, MemoryReadTool, MemoryTimelineTool
-from backend.agent.memory import MemoryStore
-from backend.extensions.loader import SkillsLoader
-from backend.agent.loader import SubAgentLoader, SubAgentConfig
 from backend.agent.aggregator import SubagentAggregator
 from backend.agent.compressor import compress_messages
+from backend.agent.config_service import AgentConfigService
+from backend.agent.loader import SubAgentConfig, SubAgentLoader
+from backend.agent.memory import MemoryStore
+from backend.agent.shared import _normalize_usage
+from backend.core.config.schema import ExecToolConfig
+from backend.core.events.bus import MessageBus
+from backend.core.events.types import AgentEvent, InboundMessage
+from backend.core.providers.base import LLMProvider, LLMResponse
 from backend.data import Database, TokenUsageRepository
+from backend.extensions.loader import SkillsLoader
+from backend.tools.action import ActionTool
+from backend.tools.filesystem import EditFileTool, ListDirTool, ReadFileTool, WriteFileTool
+from backend.tools.knowledge import KBListLinksTool, KBReadNoteTool, KBSearchTool, KBTimelineTool
+from backend.tools.library_knowledge import (
+    LibraryListLinksTool,
+    LibraryReadNoteTool,
+    LibrarySearchTool,
+    LibraryTimelineTool,
+    LibraryWriteNoteTool,
+)
+from backend.tools.memory import MemoryReadTool, MemorySearchTool, MemoryTimelineTool
+from backend.tools.memory_write import MemoryWriteTool
+from backend.tools.message import MessageTool
+from backend.tools.registry import ToolRegistry
+from backend.tools.shell import ExecTool
 
 
 class SubagentManager:
     """
     Manages background subagent execution with role-based configuration.
-    
+
     Subagents are lightweight agent instances that run in the background
     to handle specific tasks. Each subagent can have its own:
     - Provider and model (from SOUL.md config)
@@ -43,7 +49,7 @@ class SubagentManager:
     - Extensions/skills (configured in SOUL.md)
     - System prompt (from SOUL.md content)
     """
-    
+
     def __init__(
         self,
         workspace: Path,
@@ -51,7 +57,6 @@ class SubagentManager:
         exec_config: "ExecToolConfig | None" = None,
         aggregator: SubagentAggregator | None = None,
     ):
-        from backend.core.config.schema import ExecToolConfig
         self.workspace = workspace
         self.bus = bus
         self.exec_config = exec_config or ExecToolConfig()
@@ -66,17 +71,19 @@ class SubagentManager:
         self._agent_loader = SubAgentLoader(workspace)
         self._aggregator = aggregator
         self._token_usage = TokenUsageRepository(Database())
-        
+
         # 同步任务追踪
         self._sync_tasks: dict[str, asyncio.Future] = {}  # task_id -> future
         self._task_token_usage: dict[str, dict] = {}  # task_id -> token_usage
-        
+
         # 任务上下文追踪：用于事件路由
-        self._task_contexts: dict[str, dict] = {}  # task_id -> {channel, chat_id, session_instance_id}
+        self._task_contexts: dict[str, dict] = (
+            {}
+        )  # task_id -> {channel, chat_id, session_instance_id}
 
         if self._aggregator:
             self._aggregator.set_bus(bus)
-    
+
     def _get_provider_for_config(
         self,
         config: SubAgentConfig,
@@ -89,17 +96,17 @@ class SubagentManager:
         """
         config_service = AgentConfigService()
         defaults = config_service._get_agent_defaults_repo().get_or_create_defaults()
-        max_tokens = getattr(defaults, 'max_tokens', 8192) or 8192
-        temperature = getattr(defaults, 'temperature', 0.7) or 0.7
+        max_tokens = getattr(defaults, "max_tokens", 8192) or 8192
+        temperature = getattr(defaults, "temperature", 0.7) or 0.7
 
         provider_id = override_provider_id or config.provider_id
         model_id = override_model_id or config.model_id
 
         if provider_id and model_id:
-            from backend.data.provider_store import ProviderRepository, ModelRepository
-            from backend.data import Database
             from backend.core.config.schema import AgentDefaults, ProviderConfig
             from backend.core.providers.factory import create_provider
+            from backend.data import Database
+            from backend.data.provider_store import ModelRepository, ProviderRepository
 
             db = Database()
             provider_repo = ProviderRepository(db)
@@ -112,7 +119,7 @@ class SubagentManager:
                 provider_config = ProviderConfig(
                     type=provider_record.provider_type,
                     api_key=provider_record.api_key,
-                    api_base=provider_record.api_host
+                    api_base=provider_record.api_host,
                 )
 
                 agent_defaults = AgentDefaults(
@@ -120,23 +127,32 @@ class SubagentManager:
                     model=model_record.model_id,
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    llm_max_retries=getattr(defaults, 'llm_max_retries', 3) or 3,
-                    llm_retry_base_delay=getattr(defaults, 'llm_retry_base_delay', 1.0) or 1.0,
-                    llm_retry_max_delay=getattr(defaults, 'llm_retry_max_delay', 30.0) or 30.0,
+                    llm_max_retries=getattr(defaults, "llm_max_retries", 3) or 3,
+                    llm_retry_base_delay=getattr(defaults, "llm_retry_base_delay", 1.0) or 1.0,
+                    llm_retry_max_delay=getattr(defaults, "llm_retry_max_delay", 30.0) or 30.0,
                 )
 
                 providers_dict = {provider_record.name: provider_config}
                 provider = create_provider(providers_dict, agent_defaults)
 
-                self._subagent_compression_enabled = config_service.get_context_compression_enabled()
+                self._subagent_compression_enabled = (
+                    config_service.get_context_compression_enabled()
+                )
                 self._subagent_compression_turns = config_service.get_context_compression_turns()
-                self._subagent_compression_token_threshold = config_service.get_context_compression_token_threshold()
+                self._subagent_compression_token_threshold = (
+                    config_service.get_context_compression_token_threshold()
+                )
 
-                return provider, model_record.model_id, provider_record.provider_type, max_tokens, temperature
+                return (
+                    provider,
+                    model_record.model_id,
+                    provider_record.provider_type,
+                    max_tokens,
+                    temperature,
+                )
 
         provider, model = config_service.get_provider_for_subagent(
-            provider_name=config.provider,
-            model_name=config.model
+            provider_name=config.provider, model_name=config.model
         )
 
         provider_record = config_service.get_provider_by_name(config.provider)
@@ -144,19 +160,25 @@ class SubagentManager:
 
         self._subagent_compression_enabled = config_service.get_context_compression_enabled()
         self._subagent_compression_turns = config_service.get_context_compression_turns()
-        self._subagent_compression_token_threshold = config_service.get_context_compression_token_threshold()
+        self._subagent_compression_token_threshold = (
+            config_service.get_context_compression_token_threshold()
+        )
 
         return provider, model, provider_type, max_tokens, temperature
-    
+
     def _get_default_provider_and_model(self) -> tuple[LLMProvider, str, str, int, float]:
         """Get default provider, model, provider_type, max_tokens, and temperature from database."""
         config_service = AgentConfigService()
 
-        provider, model, provider_type, max_tokens, temperature = config_service.get_default_provider_and_model()
+        provider, model, provider_type, max_tokens, temperature = (
+            config_service.get_default_provider_and_model()
+        )
 
         self._subagent_compression_enabled = config_service.get_context_compression_enabled()
         self._subagent_compression_turns = config_service.get_context_compression_turns()
-        self._subagent_compression_token_threshold = config_service.get_context_compression_token_threshold()
+        self._subagent_compression_token_threshold = (
+            config_service.get_context_compression_token_threshold()
+        )
 
         return provider, model, provider_type, max_tokens, temperature
 
@@ -170,31 +192,37 @@ class SubagentManager:
         context = self._task_contexts.get(task_id, {})
         channel = context.get("channel", "cli")
         parent_tool_call_id = context.get("parent_tool_call_id")
-        
+
         # 添加 parent_tool_call_id 到事件数据
         if parent_tool_call_id:
             data["parent_tool_call_id"] = parent_tool_call_id
-        
+
         # 调试日志 - 打印完整数据
         logger.info(f"[Subagent:{task_id}] Emitting event: {event_type}")
-        logger.info(f"[Subagent:{task_id}]   channel={channel}, parent_tool_call_id={parent_tool_call_id}")
-        logger.info(f"[Subagent:{task_id}]   data: tool={data.get('tool')}, tool_call_id={data.get('tool_call_id')}, args={str(data.get('args', {}))[:200]}")
-        
-        if hasattr(self.bus, 'publish_event'):
+        logger.info(
+            f"[Subagent:{task_id}]   channel={channel}, parent_tool_call_id={parent_tool_call_id}"
+        )
+        logger.info(
+            f"[Subagent:{task_id}]   data: tool={data.get('tool')}, tool_call_id={data.get('tool_call_id')}, args={str(data.get('args', {}))[:200]}"
+        )
+
+        if hasattr(self.bus, "publish_event"):
             try:
-                await self.bus.publish_event(AgentEvent(
-                    event_type=event_type,
-                    data=data,
-                    channel=channel
-                ))
-                logger.debug(f"[Subagent:{task_id}] Event {event_type} published successfully to channel={channel}")
+                await self.bus.publish_event(
+                    AgentEvent(event_type=event_type, data=data, channel=channel)
+                )
+                logger.debug(
+                    f"[Subagent:{task_id}] Event {event_type} published successfully to channel={channel}"
+                )
             except Exception as e:
                 logger.warning(f"[Subagent:{task_id}] Failed to emit event {event_type}: {e}")
-    
-    def _build_tools_for_config(self, config: SubAgentConfig, origin: dict[str, str], vault_filter: str | None = None) -> ToolRegistry:
+
+    def _build_tools_for_config(
+        self, config: SubAgentConfig, origin: dict[str, str], vault_filter: str | None = None
+    ) -> ToolRegistry:
         """Build tool registry based on subagent configuration."""
         tools = ToolRegistry()
-        
+
         # When running in library mode, map kb_* tools to library_* implementations
         # so that existing SOUL.md configs still work without modification.
         is_library_mode = vault_filter == "library"
@@ -212,10 +240,26 @@ class SubagentManager:
             ),
             "action": ActionTool,
             "message": lambda: MessageTool(send_callback=self.bus.publish_outbound),
-            "kb_search": lambda: LibrarySearchTool(vault_filter=vault_filter, name_override="kb_search") if is_library_mode else KBSearchTool(vault_filter=vault_filter),
-            "kb_timeline": lambda: LibraryTimelineTool(vault_filter=vault_filter, name_override="kb_timeline") if is_library_mode else KBTimelineTool(vault_filter=vault_filter),
-            "kb_read_note": lambda: LibraryReadNoteTool(name_override="kb_read_note") if is_library_mode else KBReadNoteTool(),
-            "kb_list_links": lambda: LibraryListLinksTool(vault_filter=vault_filter, name_override="kb_list_links") if is_library_mode else KBListLinksTool(vault_filter=vault_filter),
+            "kb_search": lambda: (
+                LibrarySearchTool(vault_filter=vault_filter, name_override="kb_search")
+                if is_library_mode
+                else KBSearchTool(vault_filter=vault_filter)
+            ),
+            "kb_timeline": lambda: (
+                LibraryTimelineTool(vault_filter=vault_filter, name_override="kb_timeline")
+                if is_library_mode
+                else KBTimelineTool(vault_filter=vault_filter)
+            ),
+            "kb_read_note": lambda: (
+                LibraryReadNoteTool(name_override="kb_read_note")
+                if is_library_mode
+                else KBReadNoteTool()
+            ),
+            "kb_list_links": lambda: (
+                LibraryListLinksTool(vault_filter=vault_filter, name_override="kb_list_links")
+                if is_library_mode
+                else KBListLinksTool(vault_filter=vault_filter)
+            ),
             "library_search": lambda: LibrarySearchTool(vault_filter=vault_filter),
             "library_timeline": lambda: LibraryTimelineTool(vault_filter=vault_filter),
             "library_read_note": LibraryReadNoteTool,
@@ -226,7 +270,7 @@ class SubagentManager:
             "memory_read": MemoryReadTool,
             "memory_timeline": MemoryTimelineTool,
         }
-        
+
         # Register requested tools
         has_browser = False
         for tool_name in config.tools:
@@ -245,39 +289,48 @@ class SubagentManager:
                     logger.warning(f"Failed to register tool '{tool_name}': {e}")
             else:
                 logger.warning(f"Unknown tool '{tool_name}' requested by subagent '{config.name}'")
-        
+
         # Register browser tools if requested
         if has_browser:
             from backend.tools.browser.registration import register_browser_tools
+
             register_browser_tools(tools)
             logger.debug(f"Registered browser tools for subagent '{config.name}'")
-        
+
         # Always include message tool if not already added
         if "message" not in [t.lower() for t in config.tools]:
             message_tool = MessageTool(send_callback=self.bus.publish_outbound)
             message_tool.set_context(origin.get("channel", ""), origin.get("chat_id", ""))
             tools.register(message_tool)
-        
+
         return tools
-    
-    def _build_default_tools(self, origin: dict[str, str], vault_filter: str | None = None) -> ToolRegistry:
+
+    def _build_default_tools(
+        self, origin: dict[str, str], vault_filter: str | None = None
+    ) -> ToolRegistry:
         """Build default tool registry for legacy subagents."""
         tools = ToolRegistry()
         tools.register(ReadFileTool())
         tools.register(WriteFileTool())
         tools.register(EditFileTool())
         tools.register(ListDirTool())
-        tools.register(ExecTool(
-            working_dir=str(self.workspace),
-            timeout=self.exec_config.timeout,
-            restrict_to_workspace=self.exec_config.restrict_to_workspace,
-        ))
+        tools.register(
+            ExecTool(
+                working_dir=str(self.workspace),
+                timeout=self.exec_config.timeout,
+                restrict_to_workspace=self.exec_config.restrict_to_workspace,
+            )
+        )
         tools.register(ActionTool())
         if vault_filter == "library":
             tools.register(LibrarySearchTool(vault_filter=vault_filter, name_override="kb_search"))
-            tools.register(LibraryTimelineTool(vault_filter=vault_filter, name_override="kb_timeline"))
+            tools.register(
+                LibraryTimelineTool(vault_filter=vault_filter, name_override="kb_timeline")
+            )
             tools.register(LibraryReadNoteTool(name_override="kb_read_note"))
-            tools.register(LibraryListLinksTool(vault_filter=vault_filter, name_override="kb_list_links"))
+            tools.register(
+                LibraryListLinksTool(vault_filter=vault_filter, name_override="kb_list_links")
+            )
         else:
             tools.register(KBSearchTool(vault_filter=vault_filter))
             tools.register(KBTimelineTool(vault_filter=vault_filter))
@@ -288,27 +341,28 @@ class SubagentManager:
         tools.register(MemoryReadTool())
         tools.register(MemoryTimelineTool())
         from backend.tools.browser.registration import register_browser_tools
+
         register_browser_tools(tools)
         message_tool = MessageTool(send_callback=self.bus.publish_outbound)
         message_tool.set_context(origin.get("channel", ""), origin.get("chat_id", ""))
         tools.register(message_tool)
 
         return tools
-    
+
     def _load_bootstrap_files(self) -> str:
         """Load bootstrap files from system directory."""
         parts = []
         system_dir = self.workspace / "system"
         bootstrap_files = ["AGENTS.md", "SOUL.md", "USER.md"]
-        
+
         for filename in bootstrap_files:
             file_path = system_dir / filename
             if file_path.exists():
                 content = file_path.read_text(encoding="utf-8")
                 parts.append(f"## {filename}\n\n{content}")
-        
+
         return "\n\n".join(parts) if parts else ""
-    
+
     def _build_subagent_prompt(self, config: SubAgentConfig, task: str) -> str:
         """Build system prompt for a configured subagent."""
         # Build skills summary for configured extensions (skills)
@@ -340,7 +394,7 @@ Your workspace is at: {self.workspace}
 {skills_section}
 
 When you have completed the task, provide a clear summary of your findings or actions."""
-    
+
     def _build_default_subagent_prompt(self, task: str) -> str:
         """Build default system prompt for subagents without role configuration."""
         skills_summary = self._skills.build_skills_summary(exclude_types=["longtask"])
@@ -370,7 +424,7 @@ Your workspace is at: {self.workspace}
 {skills_section}
 
 When you have completed the task, provide a clear summary of your findings or actions."""
-    
+
     async def spawn(
         self,
         task: str,
@@ -384,7 +438,7 @@ When you have completed the task, provide a clear summary of your findings or ac
     ) -> str:
         """
         Spawn a subagent to execute a task in the background.
-        
+
         Args:
             task: The task description for the subagent.
             label: Optional human-readable label for the task.
@@ -396,16 +450,16 @@ When you have completed the task, provide a clear summary of your findings or ac
                      aggregated with other subagents in the same group.
             session_instance_id: Session instance ID for precise routing.
             parent_tool_call_id: Parent tool call ID (injected by AgentLoop) for event routing.
-        
+
         Returns:
             Status message indicating the subagent was started.
         """
         task_id = str(uuid.uuid4())[:8]
         display_label = label or task[:30] + ("..." if len(task) > 30 else "")
-        
+
         self._stop_flags[task_id] = False
         self._task_instance_map[task_id] = session_instance_id
-        
+
         # 保存任务上下文用于事件路由
         self._task_contexts[task_id] = {
             "channel": origin_channel,
@@ -413,42 +467,46 @@ When you have completed the task, provide a clear summary of your findings or ac
             "session_instance_id": session_instance_id,
             "parent_tool_call_id": parent_tool_call_id,
         }
-        
+
         origin = {
             "channel": origin_channel,
             "chat_id": origin_chat_id,
             "session_instance_id": session_instance_id,
         }
-        
+
         # Register with aggregator if group_id provided
         if group_id and self._aggregator:
             await self._aggregator.join_group(group_id, task_id)
             logger.info(f"[Subagent:{task_id}] Joined aggregation group {group_id}")
-        
+
         # Load agent configuration if role specified
         # Always reload from disk to pick up any changes to SOUL.md
         agent_config = None
         if agent_role:
             agent_config = self._agent_loader.get(agent_role, reload=True)
             if not agent_config:
-                logger.warning(f"Subagent role '{agent_role}' not found, using default configuration")
-        
+                logger.warning(
+                    f"Subagent role '{agent_role}' not found, using default configuration"
+                )
+
         # Create background task
         loop = asyncio.get_event_loop()
         bg_future = loop.run_in_executor(
             None,
-            lambda: asyncio.run(self._run_subagent(task_id, task, display_label, origin, agent_config, group_id))
+            lambda: asyncio.run(
+                self._run_subagent(task_id, task, display_label, origin, agent_config, group_id)
+            ),
         )
         bg_task = asyncio.ensure_future(bg_future)
-        
+
         def cleanup_callback(_):
             self._running_tasks.pop(task_id, None)
             self._stop_flags.pop(task_id, None)
             self._task_instance_map.pop(task_id, None)
             self._task_contexts.pop(task_id, None)
-        
+
         bg_task.add_done_callback(cleanup_callback)
-        
+
         role_info = f" [{agent_role}]" if agent_role else ""
         group_info = f" [group:{group_id}]" if group_id else ""
         logger.info(f"[Subagent:{task_id}] Spawned{role_info}{group_info}: {display_label}")
@@ -470,7 +528,7 @@ When you have completed the task, provide a clear summary of your findings or ac
     ) -> tuple[str, asyncio.Future]:
         """
         创建一个同步子代理任务，返回 (task_id, future)。
-        
+
         调用方可以用 asyncio.wait_for(future, timeout) 等待结果。
         子代理完成后会自动设置 future 结果。
 
@@ -491,10 +549,10 @@ When you have completed the task, provide a clear summary of your findings or ac
         display_label = label or task[:30] + ("..." if len(task) > 30 else "")
         loop = asyncio.get_event_loop()
         future = loop.create_future()
-        
+
         self._sync_tasks[task_id] = future
         self._task_instance_map[task_id] = session_instance_id
-        
+
         # 保存任务上下文用于事件路由
         self._task_contexts[task_id] = {
             "channel": origin_channel,
@@ -503,32 +561,41 @@ When you have completed the task, provide a clear summary of your findings or ac
             "parent_tool_call_id": parent_tool_call_id,
             "vault_filter": vault_filter,
         }
-        
+
         origin = {
             "channel": origin_channel,
             "chat_id": origin_chat_id,
             "session_instance_id": session_instance_id,
             "parent_tool_call_id": parent_tool_call_id,
         }
-        
+
         # 加载角色配置
         agent_config = None
         if agent_role:
             agent_config = self._agent_loader.get(agent_role, reload=True)
             if not agent_config:
-                logger.warning(f"Subagent role '{agent_role}' not found, using default configuration")
-        
+                logger.warning(
+                    f"Subagent role '{agent_role}' not found, using default configuration"
+                )
+
         # 在线程池中运行
-        bg_future = loop.run_in_executor(
+        loop.run_in_executor(
             None,
-            lambda: asyncio.run(self._run_subagent_and_set_future(
-                task_id, task, display_label, origin, agent_config, future,
-                on_iteration=on_iteration,
-                override_provider_id=override_provider_id,
-                override_model_id=override_model_id,
-            ))
+            lambda: asyncio.run(
+                self._run_subagent_and_set_future(
+                    task_id,
+                    task,
+                    display_label,
+                    origin,
+                    agent_config,
+                    future,
+                    on_iteration=on_iteration,
+                    override_provider_id=override_provider_id,
+                    override_model_id=override_model_id,
+                )
+            ),
         )
-        
+
         logger.info(f"[Subagent:sync:{task_id}] Created sync task: {display_label}")
         return task_id, future
 
@@ -546,29 +613,38 @@ When you have completed the task, provide a clear summary of your findings or ac
     ) -> None:
         """执行子代理，完成后设置 future 结果"""
         import time
+
         start_time = time.time()
-        
+
         role_name = agent_config.name if agent_config else "default"
         session_instance_id = origin.get("session_instance_id")
         # 从任务上下文中获取 vault_filter
         task_ctx = self._task_contexts.get(task_id, {})
         vault_filter = task_ctx.get("vault_filter")
-        logger.info(f"[Subagent:sync:{task_id}] Starting sync task: {label} (role: {role_name}, vault_filter={vault_filter})")
-        
+        logger.info(
+            f"[Subagent:sync:{task_id}] Starting sync task: {label} (role: {role_name}, vault_filter={vault_filter})"
+        )
+
         try:
             # 获取配置
             if agent_config:
-                provider, model, provider_type, max_tokens, temperature = self._get_provider_for_config(
-                    agent_config,
-                    override_provider_id=override_provider_id,
-                    override_model_id=override_model_id,
+                provider, model, provider_type, max_tokens, temperature = (
+                    self._get_provider_for_config(
+                        agent_config,
+                        override_provider_id=override_provider_id,
+                        override_model_id=override_model_id,
+                    )
                 )
-                tools = self._build_tools_for_config(agent_config, origin, vault_filter=vault_filter)
+                tools = self._build_tools_for_config(
+                    agent_config, origin, vault_filter=vault_filter
+                )
                 system_prompt = self._build_subagent_prompt(agent_config, task)
                 max_iterations = agent_config.max_iterations
                 temperature = agent_config.temperature
             else:
-                provider, model, provider_type, max_tokens, temperature = self._get_default_provider_and_model()
+                provider, model, provider_type, max_tokens, temperature = (
+                    self._get_default_provider_and_model()
+                )
                 tools = self._build_default_tools(origin, vault_filter=vault_filter)
                 system_prompt = self._build_default_subagent_prompt(task)
                 max_iterations = 50
@@ -588,13 +664,13 @@ When you have completed the task, provide a clear summary of your findings or ac
 
             while iteration < max_iterations:
                 iteration += 1
-                
+
                 iter_record: dict[str, Any] = {"iteration": iteration, "tools": []}
-                
+
                 msg = f"[Subagent:sync:{task_id}] === Iteration {iteration}/{max_iterations} ==="
                 logger.info(msg)
-                print(msg, flush=True)
-                
+                logger.info(msg)
+
                 # 使用流式 API，边接收边 emit token 给前端
                 full_content = ""
                 accumulated_reasoning = ""
@@ -609,12 +685,16 @@ When you have completed the task, provide a clear summary of your findings or ac
                     ):
                         if chunk.content:
                             full_content += chunk.content
-                            await self._emit("subagent_token", {
-                                "content": chunk.content,
-                                "iteration": iteration,
-                                "session_instance_id": session_instance_id,
-                                "subagent_id": task_id,
-                            }, task_id)
+                            await self._emit(
+                                "subagent_token",
+                                {
+                                    "content": chunk.content,
+                                    "iteration": iteration,
+                                    "session_instance_id": session_instance_id,
+                                    "subagent_id": task_id,
+                                },
+                                task_id,
+                            )
 
                         # DeepSeek reasoning content
                         if chunk.reasoning_content:
@@ -628,15 +708,19 @@ When you have completed the task, provide a clear summary of your findings or ac
                                         "name": tc.name,
                                         "arguments": tc.arguments,
                                     }
-                                    await self._emit("subagent_tool_call", {
-                                        "tool": tc.name,
-                                        "args": tc.arguments,
-                                        "content": full_content if full_content else None,
-                                        "iteration": iteration,
-                                        "tool_call_id": tc.id,
-                                        "session_instance_id": session_instance_id,
-                                        "subagent_id": task_id,
-                                    }, task_id)
+                                    await self._emit(
+                                        "subagent_tool_call",
+                                        {
+                                            "tool": tc.name,
+                                            "args": tc.arguments,
+                                            "content": full_content if full_content else None,
+                                            "iteration": iteration,
+                                            "tool_call_id": tc.id,
+                                            "session_instance_id": session_instance_id,
+                                            "subagent_id": task_id,
+                                        },
+                                        task_id,
+                                    )
                                 else:
                                     tool_calls_buffer[tc.id]["arguments"].update(tc.arguments)
 
@@ -648,7 +732,7 @@ When you have completed the task, provide a clear summary of your findings or ac
                                 provider_name=provider_type,
                                 model_id=model,
                                 usage=chunk.usage,
-                                request_type="subagent"
+                                request_type="subagent",
                             )
 
                 except Exception as e:
@@ -659,7 +743,7 @@ When you have completed the task, provide a clear summary of your findings or ac
                     iter_record["reasoning"] = full_content
                     msg = f"[Subagent:sync:{task_id}] Iteration {iteration} LLM response:\n{full_content[:1000]}"
                     logger.info(msg)
-                    print(msg, flush=True)
+                    logger.info(msg)
 
                 if tool_calls_buffer:
                     tool_call_dicts = [
@@ -686,84 +770,104 @@ When you have completed the task, provide a clear summary of your findings or ac
                     for tc_id, tc_data in tool_calls_buffer.items():
                         msg = f"[Subagent:sync:{task_id}] Iteration {iteration} Tool Call: {tc_data['name']}({json.dumps(tc_data['arguments'], ensure_ascii=False)})"
                         logger.info(msg)
-                        print(msg, flush=True)
+                        logger.info(msg)
                         try:
                             result = await tools.execute(tc_data["name"], tc_data["arguments"])
 
-                            iter_record["tools"].append({
-                                "toolCallId": tc_id,
-                                "toolName": tc_data["name"],
-                                "args": tc_data["arguments"],
-                                "result": result[:2000] if len(result) > 2000 else result,
-                                "status": "completed",
-                            })
+                            iter_record["tools"].append(
+                                {
+                                    "toolCallId": tc_id,
+                                    "toolName": tc_data["name"],
+                                    "args": tc_data["arguments"],
+                                    "result": result[:2000] if len(result) > 2000 else result,
+                                    "status": "completed",
+                                }
+                            )
 
                             msg = f"[Subagent:sync:{task_id}] Iteration {iteration} Tool Result [{tc_data['name']}]: {result[:500]}"
                             logger.info(msg)
-                            print(msg, flush=True)
+                            logger.info(msg)
 
                             result_preview = result[:500] + "..." if len(result) > 500 else result
-                            await self._emit("subagent_tool_result", {
-                                "tool": tc_data["name"],
-                                "result": result_preview,
-                                "tool_call_id": tc_id,
-                                "iteration": iteration,
-                                "session_instance_id": session_instance_id,
-                                "subagent_id": task_id,
-                            }, task_id)
+                            await self._emit(
+                                "subagent_tool_result",
+                                {
+                                    "tool": tc_data["name"],
+                                    "result": result_preview,
+                                    "tool_call_id": tc_id,
+                                    "iteration": iteration,
+                                    "session_instance_id": session_instance_id,
+                                    "subagent_id": task_id,
+                                },
+                                task_id,
+                            )
                         except Exception as e:
                             result = f"Error: {str(e)}"
                             msg = f"[Subagent:sync:{task_id}] Iteration {iteration} Tool Error [{tc_data['name']}]: {e}"
                             logger.error(msg)
-                            print(msg, flush=True)
-                            iter_record["tools"].append({
-                                "toolCallId": tc_id,
-                                "toolName": tc_data["name"],
-                                "args": tc_data["arguments"],
-                                "result": f"Error: {str(e)}",
-                                "status": "error",
-                            })
-                            await self._emit("subagent_tool_result", {
-                                "tool": tc_data["name"],
-                                "result": f"Error: {str(e)}",
-                                "tool_call_id": tc_id,
-                                "iteration": iteration,
-                                "session_instance_id": session_instance_id,
-                                "subagent_id": task_id,
-                                "error": True,
-                            }, task_id)
+                            logger.info(msg)
+                            iter_record["tools"].append(
+                                {
+                                    "toolCallId": tc_id,
+                                    "toolName": tc_data["name"],
+                                    "args": tc_data["arguments"],
+                                    "result": f"Error: {str(e)}",
+                                    "status": "error",
+                                }
+                            )
+                            await self._emit(
+                                "subagent_tool_result",
+                                {
+                                    "tool": tc_data["name"],
+                                    "result": f"Error: {str(e)}",
+                                    "tool_call_id": tc_id,
+                                    "iteration": iteration,
+                                    "session_instance_id": session_instance_id,
+                                    "subagent_id": task_id,
+                                    "error": True,
+                                },
+                                task_id,
+                            )
 
-                        messages.append({
-                            "role": "tool",
-                            "tool_call_id": tc_id,
-                            "name": tc_data["name"],
-                            "content": result,
-                        })
+                        messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": tc_id,
+                                "name": tc_data["name"],
+                                "content": result,
+                            }
+                        )
                 else:
                     final_result = full_content
                     iterations.append(iter_record)
                     msg = f"[Subagent:sync:{task_id}] Iteration {iteration} final response (no tool calls)"
                     logger.info(msg)
-                    print(msg, flush=True)
+                    logger.info(msg)
                     # DeepSeek requires reasoning_content to be passed back
                     if accumulated_reasoning:
-                        messages.append({
-                            "role": "assistant",
-                            "content": full_content or "",
-                            "reasoning_content": accumulated_reasoning,
-                        })
+                        messages.append(
+                            {
+                                "role": "assistant",
+                                "content": full_content or "",
+                                "reasoning_content": accumulated_reasoning,
+                            }
+                        )
                     elif full_content:
-                        messages.append({
-                            "role": "assistant",
-                            "content": full_content,
-                        })
+                        messages.append(
+                            {
+                                "role": "assistant",
+                                "content": full_content,
+                            }
+                        )
                     if on_iteration:
                         try:
                             result = on_iteration(iter_record)
                             if asyncio.iscoroutine(result):
                                 await result
                         except Exception as e:
-                            logger.warning(f"[Subagent:sync:{task_id}] on_iteration callback failed: {e}")
+                            logger.warning(
+                                f"[Subagent:sync:{task_id}] on_iteration callback failed: {e}"
+                            )
                     break
 
                 iterations.append(iter_record)
@@ -773,57 +877,68 @@ When you have completed the task, provide a clear summary of your findings or ac
                         if asyncio.iscoroutine(result):
                             await result
                     except Exception as e:
-                        logger.warning(f"[Subagent:sync:{task_id}] on_iteration callback failed: {e}")
+                        logger.warning(
+                            f"[Subagent:sync:{task_id}] on_iteration callback failed: {e}"
+                        )
 
             if final_result is None:
                 final_result = "Task completed but no final response was generated."
 
             # 打印完整的 iterations 摘要
-            summary_msg = f"[Subagent:sync:{task_id}] === ReAct Summary ({len(iterations)} iterations) ==="
+            summary_msg = (
+                f"[Subagent:sync:{task_id}] === ReAct Summary ({len(iterations)} iterations) ==="
+            )
             logger.info(summary_msg)
-            print(summary_msg, flush=True)
+            logger.info(summary_msg)
             for it in iterations:
-                tool_names = [t['toolName'] for t in it.get('tools', [])]
+                tool_names = [t["toolName"] for t in it.get("tools", [])]
                 line = f"  Iteration {it['iteration']}: tools={tool_names}, reasoning_len={len(it.get('reasoning', ''))}"
                 logger.info(line)
-                print(line, flush=True)
+                logger.info(line)
 
             duration = time.time() - start_time
-            
+
             # 记录 token 消耗
             token_usage = {
                 "prompt_tokens": total_prompt_tokens,
                 "completion_tokens": total_completion_tokens,
             }
             self._task_token_usage[task_id] = token_usage
-            
+
             # 设置 future 结果
             if not future.done():
-                future.set_result({
-                    "summary": final_result,
-                    "token_usage": token_usage,
-                    "duration": duration,
-                    "iterations": iterations,
-                })
-            
-            logger.info(f"[Subagent:sync:{task_id}] Completed in {duration:.1f}s, "
-                       f"tokens: {total_prompt_tokens}+{total_completion_tokens}")
+                future.set_result(
+                    {
+                        "summary": final_result,
+                        "token_usage": token_usage,
+                        "duration": duration,
+                        "iterations": iterations,
+                    }
+                )
+
+            logger.info(
+                f"[Subagent:sync:{task_id}] Completed in {duration:.1f}s, "
+                f"tokens: {total_prompt_tokens}+{total_completion_tokens}"
+            )
 
         except Exception as e:
             import traceback
+
             duration = time.time() - start_time
             error_msg = f"Error: {str(e)}"
             logger.error(f"[Subagent:sync:{task_id}] Failed: {e}")
             logger.error(f"[Subagent:sync:{task_id}] Traceback: {traceback.format_exc()}")
 
             if not future.done():
-                future.set_result({
-                    "summary": error_msg,
-                    "token_usage": {},
-                    "duration": duration,
-                    "iterations": locals().get("iterations", []),
-                })
-    
+                future.set_result(
+                    {
+                        "summary": error_msg,
+                        "token_usage": {},
+                        "duration": duration,
+                        "iterations": locals().get("iterations", []),
+                    }
+                )
+
     async def _run_subagent(
         self,
         task_id: str,
@@ -837,74 +952,92 @@ When you have completed the task, provide a clear summary of your findings or ac
         role_name = agent_config.name if agent_config else "default"
         logger.info(f"[Subagent:{task_id}] Starting task: {label} (role: {role_name})")
         logger.info(f"[Subagent:{task_id}] Task content: {task[:200]}...")
-        
+
         try:
             # Get configuration
             if agent_config:
-                provider, model, provider_type, max_tokens, temperature = self._get_provider_for_config(agent_config)
+                provider, model, provider_type, max_tokens, temperature = (
+                    self._get_provider_for_config(agent_config)
+                )
                 tools = self._build_tools_for_config(agent_config, origin)
                 system_prompt = self._build_subagent_prompt(agent_config, task)
                 max_iterations = agent_config.max_iterations
                 temperature = agent_config.temperature
             else:
                 # Fallback to default behavior
-                provider, model, provider_type, max_tokens, temperature = self._get_default_provider_and_model()
+                provider, model, provider_type, max_tokens, temperature = (
+                    self._get_default_provider_and_model()
+                )
                 tools = self._build_default_tools(origin)
                 system_prompt = self._build_default_subagent_prompt(task)
                 max_iterations = 50
                 temperature = temperature
-            
+
             session_instance_id = origin.get("session_instance_id")
-            
-            logger.info(f"[Subagent:{task_id}] Using role={role_name}, model={model}, provider_type={provider_type}")
+
+            logger.info(
+                f"[Subagent:{task_id}] Using role={role_name}, model={model}, provider_type={provider_type}"
+            )
             logger.info(f"[Subagent:{task_id}] Tools: {list(tools._tools.keys())}")
-            
+
             # Build messages
             messages: list[dict[str, Any]] = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": task},
             ]
-            
+
             # Run agent loop
             iteration = 0
             final_result: str | None = None
-            
+
             # Subagent context compression state
-            subagent_compressed_context = ""
             subagent_message_count = 0
             last_prompt_tokens = 0
-            
+
             while iteration < max_iterations:
                 # Check if task should stop
                 if self._stop_flags.get(task_id, False):
                     logger.info(f"[Subagent:{task_id}] Task stopped by user request")
                     final_result = "任务已被用户暂停。"
                     break
-                
+
                 iteration += 1
-                logger.info(f"[Subagent:{task_id}] Iteration {iteration}/{max_iterations} - calling LLM...")
-                
+                logger.info(
+                    f"[Subagent:{task_id}] Iteration {iteration}/{max_iterations} - calling LLM..."
+                )
+
                 # Check if context compression is needed (hybrid trigger)
                 if self._subagent_compression_enabled:
                     should_compress = False
                     trigger_reason = ""
-                    
+
                     # Strategy 1: Token threshold (primary)
                     if last_prompt_tokens >= self._subagent_compression_token_threshold:
                         should_compress = True
                         trigger_reason = f"token threshold ({last_prompt_tokens} >= {self._subagent_compression_token_threshold})"
-                    
+
                     # Strategy 2: Turn threshold (fallback)
-                    if not should_compress and subagent_message_count >= self._subagent_compression_turns:
+                    if (
+                        not should_compress
+                        and subagent_message_count >= self._subagent_compression_turns
+                    ):
                         should_compress = True
                         trigger_reason = f"turn threshold (turn {subagent_message_count})"
-                    
+
                     if should_compress:
-                        logger.info(f"[Subagent:{task_id}] Compressing context triggered by {trigger_reason}")
+                        logger.info(
+                            f"[Subagent:{task_id}] Compressing context triggered by {trigger_reason}"
+                        )
                         keep_count = 6
-                        non_system_messages = [m for m in messages if m.get("role") not in ("system",)]
-                        to_compress = non_system_messages[:-keep_count] if len(non_system_messages) > keep_count else non_system_messages
-                        
+                        non_system_messages = [
+                            m for m in messages if m.get("role") not in ("system",)
+                        ]
+                        to_compress = (
+                            non_system_messages[:-keep_count]
+                            if len(non_system_messages) > keep_count
+                            else non_system_messages
+                        )
+
                         if len(to_compress) >= 4:
                             summary = await compress_messages(
                                 messages=to_compress,
@@ -912,18 +1045,28 @@ When you have completed the task, provide a clear summary of your findings or ac
                                 model=model,
                                 provider_type=provider_type,
                                 record_token_usage=self._record_token_usage,
-                                request_type="subagent_compression"
+                                request_type="subagent_compression",
                             )
                             if summary:
-                                subagent_compressed_context = summary
                                 system_messages = [m for m in messages if m.get("role") == "system"]
-                                remaining_non_system = non_system_messages[-keep_count:] if len(non_system_messages) > keep_count else non_system_messages
-                                messages = system_messages + [
-                                    {"role": "system", "content": f"# Previous Context Summary\n\n{summary}"},
-                                ] + remaining_non_system
+                                remaining_non_system = (
+                                    non_system_messages[-keep_count:]
+                                    if len(non_system_messages) > keep_count
+                                    else non_system_messages
+                                )
+                                messages = (
+                                    system_messages
+                                    + [
+                                        {
+                                            "role": "system",
+                                            "content": f"# Previous Context Summary\n\n{summary}",
+                                        },
+                                    ]
+                                    + remaining_non_system
+                                )
                                 subagent_message_count = 0
                                 logger.info(f"[Subagent:{task_id}] Context compressed")
-                
+
                 try:
                     # 使用 chat_stream 进行伪流式调用，避免 Anthropic 等 provider 的 10 分钟非流式限制
                     full_content = ""
@@ -958,24 +1101,30 @@ When you have completed the task, provide a clear summary of your findings or ac
                         usage=usage,
                         reasoning_content=accumulated_reasoning or None,
                     )
-                    logger.info(f"[Subagent:{task_id}] LLM response received via pseudo-stream, has_tool_calls={response.has_tool_calls}")
+                    logger.info(
+                        f"[Subagent:{task_id}] LLM response received via pseudo-stream, has_tool_calls={response.has_tool_calls}"
+                    )
 
-                    normalized = _normalize_usage(response.usage, messages, response.content or "", model)
+                    normalized = _normalize_usage(
+                        response.usage, messages, response.content or "", model
+                    )
                     last_prompt_tokens = normalized["prompt_tokens"]
                     self._record_token_usage(
                         session_instance_id=session_instance_id,
                         provider_name=provider_type,
                         model_id=model,
                         usage=normalized,
-                        request_type="subagent"
+                        request_type="subagent",
                     )
                 except Exception as e:
                     logger.error(f"[Subagent:{task_id}] LLM call failed: {e}")
                     raise
-                
+
                 if response.has_tool_calls:
-                    logger.info(f"[Subagent:{task_id}] Processing {len(response.tool_calls)} tool calls...")
-                    
+                    logger.info(
+                        f"[Subagent:{task_id}] Processing {len(response.tool_calls)} tool calls..."
+                    )
+
                     tool_call_dicts = [
                         {
                             "id": tc.id,
@@ -995,88 +1144,115 @@ When you have completed the task, provide a clear summary of your findings or ac
                     if response.reasoning_content:
                         assistant_msg["reasoning_content"] = response.reasoning_content
                     messages.append(assistant_msg)
-                    
+
                     for i, tool_call in enumerate(response.tool_calls):
                         args_str = json.dumps(tool_call.arguments, ensure_ascii=False)
-                        logger.info(f"[Subagent:{task_id}] Executing tool {i+1}/{len(response.tool_calls)}: {tool_call.name}")
+                        logger.info(
+                            f"[Subagent:{task_id}] Executing tool {i+1}/{len(response.tool_calls)}: {tool_call.name}"
+                        )
                         logger.info(f"[Subagent:{task_id}] Tool args: {args_str[:500]}")
-                        
+
                         try:
-                            await self._emit("subagent_tool_call", {
-                                "tool": tool_call.name,
-                                "args": tool_call.arguments,
-                                "content": response.content if response.content else None,
-                                "iteration": iteration,
-                                "tool_call_id": tool_call.id,
-                                "session_instance_id": session_instance_id,
-                                "subagent_id": task_id,
-                            }, task_id)
-                            
+                            await self._emit(
+                                "subagent_tool_call",
+                                {
+                                    "tool": tool_call.name,
+                                    "args": tool_call.arguments,
+                                    "content": response.content if response.content else None,
+                                    "iteration": iteration,
+                                    "tool_call_id": tool_call.id,
+                                    "session_instance_id": session_instance_id,
+                                    "subagent_id": task_id,
+                                },
+                                task_id,
+                            )
+
                             result = await tools.execute(tool_call.name, tool_call.arguments)
-                            logger.info(f"[Subagent:{task_id}] Tool result: {result[:200] if result else 'None'}...")
-                            
+                            logger.info(
+                                f"[Subagent:{task_id}] Tool result: {result[:200] if result else 'None'}..."
+                            )
+
                             result_preview = result[:500] + "..." if len(result) > 500 else result
-                            await self._emit("subagent_tool_result", {
-                                "tool": tool_call.name,
-                                "result": result_preview,
-                                "tool_call_id": tool_call.id,
-                                "iteration": iteration,
-                                "session_instance_id": session_instance_id,
-                                "subagent_id": task_id,
-                            }, task_id)
+                            await self._emit(
+                                "subagent_tool_result",
+                                {
+                                    "tool": tool_call.name,
+                                    "result": result_preview,
+                                    "tool_call_id": tool_call.id,
+                                    "iteration": iteration,
+                                    "session_instance_id": session_instance_id,
+                                    "subagent_id": task_id,
+                                },
+                                task_id,
+                            )
                         except Exception as e:
                             logger.error(f"[Subagent:{task_id}] Tool execution failed: {e}")
                             result = f"Error: {str(e)}"
-                            
-                            await self._emit("subagent_tool_result", {
-                                "tool": tool_call.name,
-                                "result": f"Error: {str(e)}",
+
+                            await self._emit(
+                                "subagent_tool_result",
+                                {
+                                    "tool": tool_call.name,
+                                    "result": f"Error: {str(e)}",
+                                    "tool_call_id": tool_call.id,
+                                    "iteration": iteration,
+                                    "session_instance_id": session_instance_id,
+                                    "subagent_id": task_id,
+                                    "error": True,
+                                },
+                                task_id,
+                            )
+
+                        messages.append(
+                            {
+                                "role": "tool",
                                 "tool_call_id": tool_call.id,
-                                "iteration": iteration,
-                                "session_instance_id": session_instance_id,
-                                "subagent_id": task_id,
-                                "error": True,
-                            }, task_id)
-                        
-                        messages.append({
-                            "role": "tool",
-                            "tool_call_id": tool_call.id,
-                            "name": tool_call.name,
-                            "content": result,
-                        })
-                    
+                                "name": tool_call.name,
+                                "content": result,
+                            }
+                        )
+
                     subagent_message_count += 1
                 else:
                     final_result = response.content
                     # DeepSeek: pass reasoning_content back in next turn
-                    if hasattr(response, 'reasoning_content') and response.reasoning_content:
-                        messages.append({
-                            "role": "assistant",
-                            "content": response.content or "",
-                            "reasoning_content": response.reasoning_content,
-                        })
+                    if hasattr(response, "reasoning_content") and response.reasoning_content:
+                        messages.append(
+                            {
+                                "role": "assistant",
+                                "content": response.content or "",
+                                "reasoning_content": response.reasoning_content,
+                            }
+                        )
                     else:
-                        messages.append({
-                            "role": "assistant",
-                            "content": response.content or "",
-                        })
-                    logger.info(f"[Subagent:{task_id}] No tool calls, final result: {final_result[:100] if final_result else 'None'}...")
+                        messages.append(
+                            {
+                                "role": "assistant",
+                                "content": response.content or "",
+                            }
+                        )
+                    logger.info(
+                        f"[Subagent:{task_id}] No tool calls, final result: {final_result[:100] if final_result else 'None'}..."
+                    )
                     break
-            
+
             if final_result is None:
                 final_result = "Task completed but no final response was generated."
-                logger.warning(f"[Subagent:{task_id}] No final result after {max_iterations} iterations")
-            
+                logger.warning(
+                    f"[Subagent:{task_id}] No final result after {max_iterations} iterations"
+                )
+
             logger.info(f"[Subagent:{task_id}] Task completed successfully")
             await self._announce_result(task_id, label, task, final_result, origin, "ok", group_id)
-            
+
         except Exception as e:
             import traceback
+
             error_msg = f"Error: {str(e)}"
             logger.error(f"[Subagent:{task_id}] Failed: {e}")
             logger.error(f"[Subagent:{task_id}] Traceback: {traceback.format_exc()}")
             await self._announce_result(task_id, label, task, error_msg, origin, "error", group_id)
-    
+
     async def _announce_result(
         self,
         task_id: str,
@@ -1089,23 +1265,29 @@ When you have completed the task, provide a clear summary of your findings or ac
     ) -> None:
         """Announce the subagent result to the main agent via the message bus."""
         status_text = "completed successfully" if status == "ok" else "failed"
-        
-        logger.info(f"[Subagent:{task_id}] Announcing result to {origin['channel']}:{origin['chat_id']}")
-        
+
+        logger.info(
+            f"[Subagent:{task_id}] Announcing result to {origin['channel']}:{origin['chat_id']}"
+        )
+
         # Check if this subagent is part of an aggregation group
         if group_id and self._aggregator:
             is_grouped, is_complete = await self._aggregator.submit_result(
                 task_id, label, task, result, status
             )
-            
+
             if is_grouped:
                 if is_complete:
-                    logger.info(f"[Subagent:{task_id}] Group {group_id} complete, summary triggered")
+                    logger.info(
+                        f"[Subagent:{task_id}] Group {group_id} complete, summary triggered"
+                    )
                 else:
-                    logger.info(f"[Subagent:{task_id}] Result added to group {group_id}, waiting for others")
+                    logger.info(
+                        f"[Subagent:{task_id}] Result added to group {group_id}, waiting for others"
+                    )
                 return
             # If not grouped (shouldn't happen), fall through to individual announcement
-        
+
         # Individual announcement (no aggregation or not part of a group)
         announce_content = f"""[Subagent '{label}' {status_text}]
 
@@ -1115,7 +1297,7 @@ Result:
 {result}
 
 Summarize this naturally for the user. Keep it brief (1-2 sentences). Do not mention technical details like "subagent" or task IDs."""
-        
+
         # Inject as system message to trigger main agent
         session_instance_id = origin.get("session_instance_id")
         msg = InboundMessage(
@@ -1126,9 +1308,9 @@ Summarize this naturally for the user. Keep it brief (1-2 sentences). Do not men
             metadata={
                 "session_instance_id": session_instance_id,
                 "subagent_id": task_id,
-            }
+            },
         )
-        
+
         try:
             await self.bus.publish_inbound(msg)
             logger.info(f"[Subagent:{task_id}] Result announced successfully")
@@ -1141,10 +1323,10 @@ Summarize this naturally for the user. Keep it brief (1-2 sentences). Do not men
         provider_name: str,
         model_id: str,
         usage: dict,
-        request_type: str = "subagent"
+        request_type: str = "subagent",
     ) -> None:
         """Record token usage to database.
-        
+
         Args:
             session_instance_id: The session instance ID
             provider_name: Provider name (e.g., openai, anthropic)
@@ -1155,61 +1337,63 @@ Summarize this naturally for the user. Keep it brief (1-2 sentences). Do not men
         try:
             prompt_tokens = usage.get("prompt_tokens", 0)
             completion_tokens = usage.get("completion_tokens", 0)
-            
+
             self._token_usage.record_usage(
                 session_instance_id=session_instance_id,
                 provider_name=provider_name,
                 model_id=model_id,
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
-                request_type=request_type
+                request_type=request_type,
             )
-            
-            logger.debug(f"[Subagent] Token usage recorded: {provider_name}/{model_id} - "
-                        f"prompt={prompt_tokens}, completion={completion_tokens}")
+
+            logger.debug(
+                f"[Subagent] Token usage recorded: {provider_name}/{model_id} - "
+                f"prompt={prompt_tokens}, completion={completion_tokens}"
+            )
         except Exception as e:
             logger.error(f"[Subagent] Failed to record token usage: {e}")
-    
+
     def get_running_count(self) -> int:
         """Return the number of currently running subagents."""
         return len(self._running_tasks)
-    
+
     def list_available_roles(self) -> list[dict[str, str]]:
         """List all available subagent roles."""
         return self._agent_loader.list_agents()
-    
+
     def get_role_config(self, role_name: str) -> SubAgentConfig | None:
         """Get configuration for a specific role."""
         return self._agent_loader.get(role_name)
-    
+
     def stop_all(self) -> int:
         """Stop all running subagents.
-        
+
         Returns:
             Number of subagents that were stopped.
         """
         count = len(self._running_tasks)
-        
+
         # Set stop flags for all running tasks
         for task_id in list(self._running_tasks.keys()):
             self._stop_flags[task_id] = True
             logger.info(f"[Subagent:{task_id}] Stop flag set")
-        
+
         # Cancel all running tasks
         for task_id, task in list(self._running_tasks.items()):
             if not task.done():
                 task.cancel()
                 logger.info(f"[Subagent:{task_id}] Task cancelled")
-        
+
         logger.info(f"[SubagentManager] Stopped {count} subagents")
         return count
-    
+
     def stop_by_instance(self, instance_id: int) -> int:
         """Stop all running subagents for a specific session instance.
-        
+
         Args:
             instance_id: The session instance ID to stop subagents for.
-        
+
         Returns:
             Number of subagents that were stopped.
         """
@@ -1217,25 +1401,28 @@ Summarize this naturally for the user. Keep it brief (1-2 sentences). Do not men
         if not instance_id_int:
             logger.warning("[SubagentManager] stop_by_instance called with invalid instance_id")
             return 0
-        
+
         # Find all subagents belonging to this instance
         tasks_to_stop = [
-            task_id for task_id, inst_id in self._task_instance_map.items()
+            task_id
+            for task_id, inst_id in self._task_instance_map.items()
             if inst_id == instance_id_int and task_id in self._running_tasks
         ]
-        
+
         count = len(tasks_to_stop)
-        
+
         # Set stop flags and cancel tasks
         for task_id in tasks_to_stop:
             self._stop_flags[task_id] = True
             logger.info(f"[Subagent:{task_id}] Stop flag set for instance {instance_id_int}")
-            
+
             if task_id in self._running_tasks:
                 task = self._running_tasks[task_id]
                 if not task.done():
                     task.cancel()
-                    logger.info(f"[Subagent:{task_id}] Task cancelled for instance {instance_id_int}")
-        
+                    logger.info(
+                        f"[Subagent:{task_id}] Task cancelled for instance {instance_id_int}"
+                    )
+
         logger.info(f"[SubagentManager] Stopped {count} subagents for instance {instance_id_int}")
         return count

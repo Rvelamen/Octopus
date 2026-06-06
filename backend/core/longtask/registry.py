@@ -1,7 +1,6 @@
 """Registry for long-running task plugins."""
 
 from pathlib import Path
-from typing import Any
 
 from loguru import logger
 
@@ -45,7 +44,9 @@ class LongTaskRegistry:
             "plugin_name": plugin_name,
             "extension_path": str(extension_path),
         }
-        logger.info(f"[LongTaskRegistry] Registered plugin '{plugin_name}' for task type '{task_type}'")
+        logger.info(
+            f"[LongTaskRegistry] Registered plugin '{plugin_name}' for task type '{task_type}'"
+        )
 
     def unregister(self, task_type: str):
         """Unregister a plugin."""
@@ -59,10 +60,7 @@ class LongTaskRegistry:
 
     def list_all(self) -> list[dict]:
         """List all registered plugins."""
-        return [
-            {"task_type": k, **v}
-            for k, v in self._plugins.items()
-        ]
+        return [{"task_type": k, **v} for k, v in self._plugins.items()]
 
     def discover_from_extensions(self):
         """Discover longtask plugins from extensions."""

@@ -7,23 +7,23 @@ with Desktop client, but internally uses Extension system.
 
 import asyncio
 import os
-import uuid
-import shutil
 import re
+import shutil
+import uuid
 import zipfile
-import httpx
-import yaml
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import httpx
+import yaml
 from fastapi import WebSocket
 from loguru import logger
+from pydantic import ValidationError
 
 from backend.channels.desktop.protocol import MessageType, WSMessage
+from backend.channels.desktop.schemas import MESSAGE_TYPE_TO_SCHEMA
 from backend.core.events.types import InboundMessage
 from backend.utils import get_extensions_path, get_plugins_path
-from pydantic import ValidationError
-from backend.channels.desktop.schemas import MESSAGE_TYPE_TO_SCHEMA
 
 if TYPE_CHECKING:
     from backend.core.events.bus import MessageBus
@@ -48,17 +48,23 @@ class SkillInstallHandler:
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Install an extension from Extension Market API."""
         # Validate inbound payload
-        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
         if schema is not None:
             try:
                 schema.model_validate(message.data)
             except ValidationError as ve:
                 logger.warning(f"Validation error for {msg_type_str}: {ve}")
-                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                await websocket.send_json(
+                    {
+                        "type": MessageType.ERROR.value,
+                        "request_id": message.request_id,
+                        "data": {"error": "Invalid request data", "details": ve.errors()},
+                    }
+                )
                 return
         else:
-            msg_data = message.data
+            pass
 
         try:
             extension_id = message.data.get("skill_id") or message.data.get("extension_id")
@@ -70,49 +76,61 @@ class SkillInstallHandler:
                 return
 
             # Send installing status
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.SKILL_INSTALLING,
-                request_id=request_id,
-                data={"skill_id": extension_id, "extension_id": extension_id}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SKILL_INSTALLING,
+                    request_id=request_id,
+                    data={"skill_id": extension_id, "extension_id": extension_id},
+                ),
+            )
 
             # Ensure extensions directory exists
             get_extensions_path().mkdir(parents=True, exist_ok=True)
 
             # Execute installation in background
-            asyncio.create_task(self._execute_install(
-                websocket, request_id, extension_id, extension_name
-            ))
+            asyncio.create_task(
+                self._execute_install(websocket, request_id, extension_id, extension_name)
+            )
 
             # Send acknowledgment
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.ACK,
-                request_id=request_id,
-                data={"status": "installing", "extension_id": extension_id}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.ACK,
+                    request_id=request_id,
+                    data={"status": "installing", "extension_id": extension_id},
+                ),
+            )
 
         except Exception as e:
             logger.error(f"Failed to start extension installation: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to start installation: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to start installation: {e}"
+            )
 
-    async def _execute_install(self, websocket: WebSocket, request_id: str,
-                               extension_id: str, extension_name: str | None):
+    async def _execute_install(
+        self, websocket: WebSocket, request_id: str, extension_id: str, extension_name: str | None
+    ):
         """Execute the installation by downloading from API and extracting."""
         temp_zip_path = None
         try:
             # Step 1: Get extension details from API
             extension_detail = await self._fetch_extension_detail(extension_id)
             if not extension_detail:
-                await self._send_response(websocket, WSMessage(
-                    type=MessageType.SKILL_INSTALL_ERROR,
-                    request_id=request_id,
-                    data={
-                        "success": False,
-                        "skill_id": extension_id,
-                        "extension_id": extension_id,
-                        "error": f"Extension '{extension_id}' not found in market"
-                    }
-                ))
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.SKILL_INSTALL_ERROR,
+                        request_id=request_id,
+                        data={
+                            "success": False,
+                            "skill_id": extension_id,
+                            "extension_id": extension_id,
+                            "error": f"Extension '{extension_id}' not found in market",
+                        },
+                    ),
+                )
                 return
 
             # Use provided name or fallback to extension name from API
@@ -126,33 +144,52 @@ class SkillInstallHandler:
             download_url = f"{EXTENSION_MARKET_API_BASE}/api/extensions/{extension_id}/download"
             temp_zip_path = get_extensions_path() / f"{extension_id}_{uuid.uuid4()}.zip"
 
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.SKILL_INSTALLING,
-                request_id=request_id,
-                data={"skill_id": extension_id, "extension_id": extension_id, "name": extension_name, "status": "downloading"}
-            ))
-
-            download_success = await self._download_zip(download_url, temp_zip_path)
-            if not download_success:
-                await self._send_response(websocket, WSMessage(
-                    type=MessageType.SKILL_INSTALL_ERROR,
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SKILL_INSTALLING,
                     request_id=request_id,
                     data={
-                        "success": False,
                         "skill_id": extension_id,
                         "extension_id": extension_id,
                         "name": extension_name,
-                        "error": "Failed to download extension ZIP file"
-                    }
-                ))
+                        "status": "downloading",
+                    },
+                ),
+            )
+
+            download_success = await self._download_zip(download_url, temp_zip_path)
+            if not download_success:
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.SKILL_INSTALL_ERROR,
+                        request_id=request_id,
+                        data={
+                            "success": False,
+                            "skill_id": extension_id,
+                            "extension_id": extension_id,
+                            "name": extension_name,
+                            "error": "Failed to download extension ZIP file",
+                        },
+                    ),
+                )
                 return
 
             # Step 3: Extract ZIP file
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.SKILL_INSTALLING,
-                request_id=request_id,
-                data={"skill_id": extension_id, "extension_id": extension_id, "name": extension_name, "status": "extracting"}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SKILL_INSTALLING,
+                    request_id=request_id,
+                    data={
+                        "skill_id": extension_id,
+                        "extension_id": extension_id,
+                        "name": extension_name,
+                        "status": "extracting",
+                    },
+                ),
+            )
 
             extension_dir = get_extensions_path() / extension_name
 
@@ -161,7 +198,7 @@ class SkillInstallHandler:
                 shutil.rmtree(extension_dir)
 
             # Extract ZIP file
-            with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
+            with zipfile.ZipFile(temp_zip_path, "r") as zip_ref:
                 zip_ref.extractall(extension_dir)
 
             # Step 4: Verify installation (check for manifest.yaml or SKILL.md)
@@ -186,7 +223,87 @@ class SkillInstallHandler:
                 # Clean up and report error
                 if extension_dir.exists():
                     shutil.rmtree(extension_dir)
-                await self._send_response(websocket, WSMessage(
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.SKILL_INSTALL_ERROR,
+                        request_id=request_id,
+                        data={
+                            "success": False,
+                            "skill_id": extension_id,
+                            "extension_id": extension_id,
+                            "name": extension_name,
+                            "error": "Invalid extension package: manifest.yaml or SKILL.md not found",
+                        },
+                    ),
+                )
+                return
+
+            # Step 5: Auto-generate manifest.yaml if missing (for backward compatibility)
+            if not manifest_path.exists() and skill_md_path.exists():
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.SKILL_INSTALLING,
+                        request_id=request_id,
+                        data={
+                            "skill_id": extension_id,
+                            "extension_id": extension_id,
+                            "name": extension_name,
+                            "status": "generating_manifest",
+                        },
+                    ),
+                )
+                self._generate_manifest_from_skill(extension_dir, extension_name, skill_md_path)
+
+            # Step 6: Install dependencies if requirements.txt exists
+            requirements_file = extension_dir / "requirements.txt"
+            if requirements_file.exists():
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.SKILL_INSTALLING,
+                        request_id=request_id,
+                        data={
+                            "skill_id": extension_id,
+                            "extension_id": extension_id,
+                            "name": extension_name,
+                            "status": "installing_deps",
+                        },
+                    ),
+                )
+                try:
+                    from backend.extensions.plugin_dependency import DependencyManager
+
+                    dep_manager = DependencyManager(extension_dir)
+                    await dep_manager.install(requirements_file)
+                except Exception as e:
+                    logger.warning(f"Failed to install dependencies for '{extension_name}': {e}")
+
+            # Installation successful
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SKILL_INSTALLED,
+                    request_id=request_id,
+                    data={
+                        "success": True,
+                        "skill_id": extension_id,
+                        "extension_id": extension_id,
+                        "name": extension_name,
+                        "path": str(extension_dir),
+                    },
+                ),
+            )
+            logger.info(
+                f"Extension '{extension_name}' (ID: {extension_id}) installed successfully from market API"
+            )
+
+        except Exception as e:
+            logger.error(f"Exception during extension installation: {e}")
+            await self._send_response(
+                websocket,
+                WSMessage(
                     type=MessageType.SKILL_INSTALL_ERROR,
                     request_id=request_id,
                     data={
@@ -194,62 +311,10 @@ class SkillInstallHandler:
                         "skill_id": extension_id,
                         "extension_id": extension_id,
                         "name": extension_name,
-                        "error": "Invalid extension package: manifest.yaml or SKILL.md not found"
-                    }
-                ))
-                return
-
-            # Step 5: Auto-generate manifest.yaml if missing (for backward compatibility)
-            if not manifest_path.exists() and skill_md_path.exists():
-                await self._send_response(websocket, WSMessage(
-                    type=MessageType.SKILL_INSTALLING,
-                    request_id=request_id,
-                    data={"skill_id": extension_id, "extension_id": extension_id, "name": extension_name, "status": "generating_manifest"}
-                ))
-                self._generate_manifest_from_skill(extension_dir, extension_name, skill_md_path)
-
-            # Step 6: Install dependencies if requirements.txt exists
-            requirements_file = extension_dir / "requirements.txt"
-            if requirements_file.exists():
-                await self._send_response(websocket, WSMessage(
-                    type=MessageType.SKILL_INSTALLING,
-                    request_id=request_id,
-                    data={"skill_id": extension_id, "extension_id": extension_id, "name": extension_name, "status": "installing_deps"}
-                ))
-                try:
-                    from backend.extensions.plugin_dependency import DependencyManager
-                    dep_manager = DependencyManager(extension_dir)
-                    await dep_manager.install(requirements_file)
-                except Exception as e:
-                    logger.warning(f"Failed to install dependencies for '{extension_name}': {e}")
-
-            # Installation successful
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.SKILL_INSTALLED,
-                request_id=request_id,
-                data={
-                    "success": True,
-                    "skill_id": extension_id,
-                    "extension_id": extension_id,
-                    "name": extension_name,
-                    "path": str(extension_dir)
-                }
-            ))
-            logger.info(f"Extension '{extension_name}' (ID: {extension_id}) installed successfully from market API")
-
-        except Exception as e:
-            logger.error(f"Exception during extension installation: {e}")
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.SKILL_INSTALL_ERROR,
-                request_id=request_id,
-                data={
-                    "success": False,
-                    "skill_id": extension_id,
-                    "extension_id": extension_id,
-                    "name": extension_name,
-                    "error": str(e)
-                }
-            ))
+                        "error": str(e),
+                    },
+                ),
+            )
         finally:
             # Clean up temp ZIP file
             if temp_zip_path and temp_zip_path.exists():
@@ -267,8 +332,8 @@ class SkillInstallHandler:
                 if response.status_code == 200:
                     data = response.json()
                     # Handle API response wrapper format
-                    if isinstance(data, dict) and 'data' in data:
-                        return data['data']
+                    if isinstance(data, dict) and "data" in data:
+                        return data["data"]
                     return data
                 else:
                     logger.error(f"Failed to fetch extension detail: HTTP {response.status_code}")
@@ -283,7 +348,7 @@ class SkillInstallHandler:
             async with httpx.AsyncClient() as client:
                 async with client.stream("GET", url) as response:
                     if response.status_code == 200:
-                        with open(dest_path, 'wb') as f:
+                        with open(dest_path, "wb") as f:
                             async for chunk in response.aiter_bytes(chunk_size=8192):
                                 f.write(chunk)
                         return True
@@ -307,7 +372,9 @@ class SkillInstallHandler:
             name = "unnamed_extension"
         return name
 
-    def _generate_manifest_from_skill(self, extension_dir: Path, extension_name: str, skill_md_path: Path) -> None:
+    def _generate_manifest_from_skill(
+        self, extension_dir: Path, extension_name: str, skill_md_path: Path
+    ) -> None:
         """Generate manifest.yaml from SKILL.md for backward compatibility.
 
         Parses the SKILL.md frontmatter and creates a manifest.yaml with
@@ -321,7 +388,7 @@ class SkillInstallHandler:
                 "version": "1.0.0",
                 "author": "unknown",
                 "type": "skill",
-                "capabilities": []
+                "capabilities": [],
             }
 
             # Parse YAML frontmatter if present
@@ -342,15 +409,14 @@ class SkillInstallHandler:
 
                         # Extract octopus metadata
                         octopus_meta = frontmatter.get("octopus", {})
-                        if octopus_meta:
-                            if "capabilities" in octopus_meta:
-                                manifest["capabilities"] = octopus_meta["capabilities"]
+                        if octopus_meta and "capabilities" in octopus_meta:
+                            manifest["capabilities"] = octopus_meta["capabilities"]
                     except yaml.YAMLError as e:
                         logger.warning(f"Failed to parse SKILL.md frontmatter: {e}")
 
             # Detect extension type based on files present
             has_worker = (extension_dir / "worker.py").exists()
-            has_skill = (extension_dir / "SKILL.md").exists()
+            (extension_dir / "SKILL.md").exists()
             has_plugin_handlers = (extension_dir / "handlers.py").exists()
 
             if has_worker and has_plugin_handlers:
@@ -364,10 +430,14 @@ class SkillInstallHandler:
 
             # Write manifest.yaml
             manifest_path = extension_dir / "manifest.yaml"
-            with open(manifest_path, 'w', encoding='utf-8') as f:
-                yaml.dump(manifest, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+            with open(manifest_path, "w", encoding="utf-8") as f:
+                yaml.dump(
+                    manifest, f, default_flow_style=False, sort_keys=False, allow_unicode=True
+                )
 
-            logger.info(f"Generated manifest.yaml for extension '{extension_name}' (type: {manifest['type']})")
+            logger.info(
+                f"Generated manifest.yaml for extension '{extension_name}' (type: {manifest['type']})"
+            )
 
         except Exception as e:
             logger.error(f"Failed to generate manifest.yaml for '{extension_name}': {e}")
@@ -381,11 +451,10 @@ class SkillInstallHandler:
             logger.error(f"Failed to send response: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self._send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self._send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 # =============================================================================
@@ -403,40 +472,53 @@ class ExtensionGetListHandler:
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Return list of extensions (installed or from market)."""
         # Validate inbound payload
-        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
         if schema is not None:
             try:
                 schema.model_validate(message.data)
             except ValidationError as ve:
                 logger.warning(f"Validation error for {msg_type_str}: {ve}")
-                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                await websocket.send_json(
+                    {
+                        "type": MessageType.ERROR.value,
+                        "request_id": message.request_id,
+                        "data": {"error": "Invalid request data", "details": ve.errors()},
+                    }
+                )
                 return
         else:
-            msg_data = message.data
+            pass
 
         try:
             list_type = message.data.get("type", "installed")  # "installed" or "market"
-            extension_type = message.data.get("extension_type")  # "skill", "plugin", "worker", or None for all
+            extension_type = message.data.get(
+                "extension_type"
+            )  # "skill", "plugin", "worker", or None for all
 
             if list_type == "market":
                 extensions = await self._fetch_market_extensions(extension_type)
             else:
                 extensions = self._get_installed_extensions(extension_type)
 
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.EXTENSION_LIST,
-                request_id=message.request_id,
-                data={
-                    "extensions": extensions,
-                    "type": list_type,
-                    "extension_type": extension_type
-                }
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.EXTENSION_LIST,
+                    request_id=message.request_id,
+                    data={
+                        "extensions": extensions,
+                        "type": list_type,
+                        "extension_type": extension_type,
+                    },
+                ),
+            )
 
         except Exception as e:
             logger.error(f"Failed to get extensions list: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get extensions list: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get extensions list: {e}"
+            )
 
     async def _fetch_market_extensions(self, extension_type: str | None) -> list[dict]:
         """Fetch extensions from Market API."""
@@ -453,10 +535,12 @@ class ExtensionGetListHandler:
                     # Handle API response wrapper format
                     if isinstance(data, dict):
                         # Try to get extensions from data.list or data.extensions
-                        if 'data' in data:
-                            inner_data = data['data']
+                        if "data" in data:
+                            inner_data = data["data"]
                             if isinstance(inner_data, dict):
-                                return inner_data.get("list", []) or inner_data.get("extensions", [])
+                                return inner_data.get("list", []) or inner_data.get(
+                                    "extensions", []
+                                )
                         return data.get("extensions", []) or data.get("list", [])
                     return []
                 return []
@@ -486,14 +570,16 @@ class ExtensionGetListHandler:
                     # Use manifest name if available, otherwise use directory name
                     ext_name = metadata.get("name", ext_dir.name)
 
-                    extensions.append({
-                        "id": ext_id,
-                        "name": ext_name,
-                        "path": str(ext_dir),
-                        "type": ext_type,
-                        "metadata": metadata,
-                        "installed_at": ext_dir.stat().st_mtime
-                    })
+                    extensions.append(
+                        {
+                            "id": ext_id,
+                            "name": ext_name,
+                            "path": str(ext_dir),
+                            "type": ext_type,
+                            "metadata": metadata,
+                            "installed_at": ext_dir.stat().st_mtime,
+                        }
+                    )
 
         return extensions
 
@@ -502,7 +588,7 @@ class ExtensionGetListHandler:
         extension_id_file = ext_dir / ".extension_id"
         if extension_id_file.exists():
             try:
-                return extension_id_file.read_text(encoding='utf-8').strip()
+                return extension_id_file.read_text(encoding="utf-8").strip()
             except Exception as e:
                 logger.warning(f"Failed to read .extension_id from {ext_dir}: {e}")
         return None
@@ -512,7 +598,7 @@ class ExtensionGetListHandler:
         manifest_file = ext_dir / "manifest.yaml"
         if manifest_file.exists():
             try:
-                with open(manifest_file, 'r', encoding='utf-8') as f:
+                with open(manifest_file, encoding="utf-8") as f:
                     return yaml.safe_load(f) or {}
             except Exception as e:
                 logger.warning(f"Failed to parse manifest.yaml from {ext_dir}: {e}")
@@ -528,7 +614,7 @@ class ExtensionGetListHandler:
                         for line in match.group(1).split("\n"):
                             if ":" in line:
                                 key, value = line.split(":", 1)
-                                metadata[key.strip()] = value.strip().strip('"\'')
+                                metadata[key.strip()] = value.strip().strip("\"'")
                         return metadata
             except Exception as e:
                 logger.warning(f"Failed to parse SKILL.md from {ext_dir}: {e}")
@@ -542,11 +628,10 @@ class ExtensionGetListHandler:
             logger.error(f"Failed to send response: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self._send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self._send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class ExtensionInstallHandler:
@@ -559,17 +644,23 @@ class ExtensionInstallHandler:
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Install an extension from Extension Market API."""
         # Validate inbound payload
-        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
         if schema is not None:
             try:
                 schema.model_validate(message.data)
             except ValidationError as ve:
                 logger.warning(f"Validation error for {msg_type_str}: {ve}")
-                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                await websocket.send_json(
+                    {
+                        "type": MessageType.ERROR.value,
+                        "request_id": message.request_id,
+                        "data": {"error": "Invalid request data", "details": ve.errors()},
+                    }
+                )
                 return
         else:
-            msg_data = message.data
+            pass
 
         try:
             extension_id = message.data.get("extension_id")
@@ -582,48 +673,65 @@ class ExtensionInstallHandler:
                 return
 
             # Send installing status
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.EXTENSION_INSTALLING,
-                request_id=request_id,
-                data={"extension_id": extension_id, "name": extension_name}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.EXTENSION_INSTALLING,
+                    request_id=request_id,
+                    data={"extension_id": extension_id, "name": extension_name},
+                ),
+            )
 
             # Ensure extensions directory exists
             get_extensions_path().mkdir(parents=True, exist_ok=True)
 
             # Execute installation in background
-            asyncio.create_task(self._execute_install(
-                websocket, request_id, extension_id, extension_name, env_vars
-            ))
+            asyncio.create_task(
+                self._execute_install(websocket, request_id, extension_id, extension_name, env_vars)
+            )
 
             # Send acknowledgment
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.ACK,
-                request_id=request_id,
-                data={"status": "installing", "extension_id": extension_id}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.ACK,
+                    request_id=request_id,
+                    data={"status": "installing", "extension_id": extension_id},
+                ),
+            )
 
         except Exception as e:
             logger.error(f"Failed to start extension installation: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to start installation: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to start installation: {e}"
+            )
 
-    async def _execute_install(self, websocket: WebSocket, request_id: str,
-                               extension_id: str, extension_name: str | None, env_vars: dict):
+    async def _execute_install(
+        self,
+        websocket: WebSocket,
+        request_id: str,
+        extension_id: str,
+        extension_name: str | None,
+        env_vars: dict,
+    ):
         """Execute the installation by downloading from API and extracting."""
         temp_zip_path = None
         try:
             # Step 1: Get extension details from API
             extension_detail = await self._fetch_extension_detail(extension_id)
             if not extension_detail:
-                await self._send_response(websocket, WSMessage(
-                    type=MessageType.EXTENSION_INSTALL_ERROR,
-                    request_id=request_id,
-                    data={
-                        "success": False,
-                        "extension_id": extension_id,
-                        "error": f"Extension '{extension_id}' not found in market"
-                    }
-                ))
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.EXTENSION_INSTALL_ERROR,
+                        request_id=request_id,
+                        data={
+                            "success": False,
+                            "extension_id": extension_id,
+                            "error": f"Extension '{extension_id}' not found in market",
+                        },
+                    ),
+                )
                 return
 
             # Use provided name or fallback to extension name from API
@@ -640,32 +748,49 @@ class ExtensionInstallHandler:
             download_url = f"{EXTENSION_MARKET_API_BASE}/api/extensions/{extension_id}/download"
             temp_zip_path = get_extensions_path() / f"{extension_id}_{uuid.uuid4()}.zip"
 
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.EXTENSION_INSTALLING,
-                request_id=request_id,
-                data={"extension_id": extension_id, "name": extension_name, "status": "downloading"}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.EXTENSION_INSTALLING,
+                    request_id=request_id,
+                    data={
+                        "extension_id": extension_id,
+                        "name": extension_name,
+                        "status": "downloading",
+                    },
+                ),
+            )
 
             download_success = await self._download_zip(download_url, temp_zip_path)
             if not download_success:
-                await self._send_response(websocket, WSMessage(
-                    type=MessageType.EXTENSION_INSTALL_ERROR,
-                    request_id=request_id,
-                    data={
-                        "success": False,
-                        "extension_id": extension_id,
-                        "name": extension_name,
-                        "error": "Failed to download extension ZIP file"
-                    }
-                ))
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.EXTENSION_INSTALL_ERROR,
+                        request_id=request_id,
+                        data={
+                            "success": False,
+                            "extension_id": extension_id,
+                            "name": extension_name,
+                            "error": "Failed to download extension ZIP file",
+                        },
+                    ),
+                )
                 return
 
             # Step 3: Extract ZIP file
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.EXTENSION_INSTALLING,
-                request_id=request_id,
-                data={"extension_id": extension_id, "name": extension_name, "status": "extracting"}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.EXTENSION_INSTALLING,
+                    request_id=request_id,
+                    data={
+                        "extension_id": extension_id,
+                        "name": extension_name,
+                        "status": "extracting",
+                    },
+                ),
+            )
 
             # Use sanitized extension name as directory name
             extension_dir = get_extensions_path() / extension_name
@@ -675,7 +800,7 @@ class ExtensionInstallHandler:
                 shutil.rmtree(extension_dir)
 
             # Extract ZIP file
-            with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
+            with zipfile.ZipFile(temp_zip_path, "r") as zip_ref:
                 zip_ref.extractall(extension_dir)
 
             # Step 4: Handle nested structure
@@ -695,32 +820,56 @@ class ExtensionInstallHandler:
 
             # Step 5: Generate manifest.yaml if missing
             if not manifest_path.exists() and skill_md_path.exists():
-                await self._send_response(websocket, WSMessage(
-                    type=MessageType.EXTENSION_INSTALLING,
-                    request_id=request_id,
-                    data={"extension_id": extension_id, "name": extension_name, "status": "generating_manifest"}
-                ))
-                self._generate_manifest_from_skill(extension_dir, extension_name, skill_md_path, ext_type)
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.EXTENSION_INSTALLING,
+                        request_id=request_id,
+                        data={
+                            "extension_id": extension_id,
+                            "name": extension_name,
+                            "status": "generating_manifest",
+                        },
+                    ),
+                )
+                self._generate_manifest_from_skill(
+                    extension_dir, extension_name, skill_md_path, ext_type
+                )
 
             # Step 6: Save environment variables for plugin type
             if ext_type == "plugin" and env_vars:
-                await self._send_response(websocket, WSMessage(
-                    type=MessageType.EXTENSION_INSTALLING,
-                    request_id=request_id,
-                    data={"extension_id": extension_id, "name": extension_name, "status": "saving_config"}
-                ))
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.EXTENSION_INSTALLING,
+                        request_id=request_id,
+                        data={
+                            "extension_id": extension_id,
+                            "name": extension_name,
+                            "status": "saving_config",
+                        },
+                    ),
+                )
                 self._save_env_vars(extension_dir, env_vars)
 
             # Step 7: Install dependencies (for all extension types)
             requirements_file = extension_dir / "requirements.txt"
             if requirements_file.exists():
-                await self._send_response(websocket, WSMessage(
-                    type=MessageType.EXTENSION_INSTALLING,
-                    request_id=request_id,
-                    data={"extension_id": extension_id, "name": extension_name, "status": "installing_deps"}
-                ))
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.EXTENSION_INSTALLING,
+                        request_id=request_id,
+                        data={
+                            "extension_id": extension_id,
+                            "name": extension_name,
+                            "status": "installing_deps",
+                        },
+                    ),
+                )
                 try:
                     from backend.extensions.plugin_dependency import DependencyManager
+
                     dep_manager = DependencyManager(extension_dir)
                     await dep_manager.install(requirements_file)
                 except Exception as e:
@@ -729,8 +878,10 @@ class ExtensionInstallHandler:
             # Step 8: Create .extension_id file to store the real extension ID
             extension_id_file = extension_dir / ".extension_id"
             try:
-                extension_id_file.write_text(extension_id, encoding='utf-8')
-                logger.info(f"Created .extension_id file for extension '{extension_name}' with ID: {extension_id}")
+                extension_id_file.write_text(extension_id, encoding="utf-8")
+                logger.info(
+                    f"Created .extension_id file for extension '{extension_name}' with ID: {extension_id}"
+                )
             except Exception as e:
                 logger.warning(f"Failed to create .extension_id file for '{extension_name}': {e}")
 
@@ -743,7 +894,7 @@ class ExtensionInstallHandler:
                 "extension_id": extension_id,
                 "name": extension_name,
                 "type": ext_type,
-                "path": str(extension_dir)
+                "path": str(extension_dir),
             }
 
             # If configuration is needed, include config params
@@ -754,25 +905,31 @@ class ExtensionInstallHandler:
             else:
                 response_data["requires_config"] = False
 
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.EXTENSION_INSTALLED,
-                request_id=request_id,
-                data=response_data
-            ))
-            logger.info(f"Extension '{extension_name}' (ID: {extension_id}, type: {ext_type}) installed successfully")
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.EXTENSION_INSTALLED, request_id=request_id, data=response_data
+                ),
+            )
+            logger.info(
+                f"Extension '{extension_name}' (ID: {extension_id}, type: {ext_type}) installed successfully"
+            )
 
         except Exception as e:
             logger.error(f"Exception during extension installation: {e}")
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.EXTENSION_INSTALL_ERROR,
-                request_id=request_id,
-                data={
-                    "success": False,
-                    "extension_id": extension_id,
-                    "name": extension_name,
-                    "error": str(e)
-                }
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.EXTENSION_INSTALL_ERROR,
+                    request_id=request_id,
+                    data={
+                        "success": False,
+                        "extension_id": extension_id,
+                        "name": extension_name,
+                        "error": str(e),
+                    },
+                ),
+            )
         finally:
             if temp_zip_path and temp_zip_path.exists():
                 try:
@@ -789,8 +946,8 @@ class ExtensionInstallHandler:
                 if response.status_code == 200:
                     data = response.json()
                     # Handle API response wrapper format
-                    if isinstance(data, dict) and 'data' in data:
-                        return data['data']
+                    if isinstance(data, dict) and "data" in data:
+                        return data["data"]
                     return data
                 return None
         except Exception as e:
@@ -803,7 +960,7 @@ class ExtensionInstallHandler:
             async with httpx.AsyncClient() as client:
                 async with client.stream("GET", url) as response:
                     if response.status_code == 200:
-                        with open(dest_path, 'wb') as f:
+                        with open(dest_path, "wb") as f:
                             async for chunk in response.aiter_bytes(chunk_size=8192):
                                 f.write(chunk)
                         return True
@@ -822,8 +979,9 @@ class ExtensionInstallHandler:
             name = "unnamed_extension"
         return name
 
-    def _generate_manifest_from_skill(self, extension_dir: Path, extension_name: str,
-                                       skill_md_path: Path, ext_type: str = "skill") -> None:
+    def _generate_manifest_from_skill(
+        self, extension_dir: Path, extension_name: str, skill_md_path: Path, ext_type: str = "skill"
+    ) -> None:
         """Generate manifest.yaml from SKILL.md."""
         try:
             content = skill_md_path.read_text(encoding="utf-8")
@@ -833,7 +991,7 @@ class ExtensionInstallHandler:
                 "version": "1.0.0",
                 "author": "unknown",
                 "type": ext_type,
-                "capabilities": []
+                "capabilities": [],
             }
 
             if content.startswith("---"):
@@ -848,15 +1006,16 @@ class ExtensionInstallHandler:
                             if isinstance(desc, str):
                                 manifest["description"] = " ".join(desc.split())
                         octopus_meta = frontmatter.get("octopus", {})
-                        if octopus_meta:
-                            if "capabilities" in octopus_meta:
-                                manifest["capabilities"] = octopus_meta["capabilities"]
+                        if octopus_meta and "capabilities" in octopus_meta:
+                            manifest["capabilities"] = octopus_meta["capabilities"]
                     except yaml.YAMLError:
                         pass
 
             manifest_path = extension_dir / "manifest.yaml"
-            with open(manifest_path, 'w', encoding='utf-8') as f:
-                yaml.dump(manifest, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+            with open(manifest_path, "w", encoding="utf-8") as f:
+                yaml.dump(
+                    manifest, f, default_flow_style=False, sort_keys=False, allow_unicode=True
+                )
 
             logger.info(f"Generated manifest.yaml for extension '{extension_name}'")
         except Exception as e:
@@ -866,7 +1025,7 @@ class ExtensionInstallHandler:
         """Save environment variables to .env file in extension directory."""
         try:
             env_file = extension_dir / ".env"
-            with open(env_file, 'w', encoding='utf-8') as f:
+            with open(env_file, "w", encoding="utf-8") as f:
                 f.write("# Auto-generated environment variables\n")
                 for key, value in env_vars.items():
                     f.write(f"{key}={value}\n")
@@ -887,6 +1046,7 @@ class ExtensionInstallHandler:
                 return None
 
             import yaml
+
             manifest = yaml.safe_load(manifest_path.read_text()) or {}
 
             # Get environment config
@@ -924,12 +1084,11 @@ class ExtensionInstallHandler:
             return {
                 "title": config_page.get("title", f"{extension_name} 配置"),
                 "description": config_page.get(
-                    "description",
-                    f"请配置 {extension_name} 扩展所需的以下信息"
+                    "description", f"请配置 {extension_name} 扩展所需的以下信息"
                 ),
                 "fields": missing_fields,
                 "expires_in_minutes": config_page.get("expires_in_minutes", 30),
-                "extension": extension_name
+                "extension": extension_name,
             }
 
         except Exception as e:
@@ -943,11 +1102,10 @@ class ExtensionInstallHandler:
             logger.error(f"Failed to send response: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self._send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self._send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class ExtensionUninstallHandler:
@@ -959,24 +1117,32 @@ class ExtensionUninstallHandler:
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Remove an installed extension."""
         # Validate inbound payload
-        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
         if schema is not None:
             try:
                 schema.model_validate(message.data)
             except ValidationError as ve:
                 logger.warning(f"Validation error for {msg_type_str}: {ve}")
-                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                await websocket.send_json(
+                    {
+                        "type": MessageType.ERROR.value,
+                        "request_id": message.request_id,
+                        "data": {"error": "Invalid request data", "details": ve.errors()},
+                    }
+                )
                 return
         else:
-            msg_data = message.data
+            pass
 
         try:
             extension_id = message.data.get("extension_id")
             extension_name = message.data.get("name")
 
             if not extension_id and not extension_name:
-                await self._send_error(websocket, message.request_id, "Extension ID or name is required")
+                await self._send_error(
+                    websocket, message.request_id, "Extension ID or name is required"
+                )
                 return
 
             if not extension_id:
@@ -988,7 +1154,9 @@ class ExtensionUninstallHandler:
             extension_dir = self._find_extension_dir_by_id(extensions_path, extension_id)
 
             if not extension_dir or not extension_dir.exists():
-                await self._send_error(websocket, message.request_id, f"Extension '{extension_id}' not found")
+                await self._send_error(
+                    websocket, message.request_id, f"Extension '{extension_id}' not found"
+                )
                 return
 
             # Get extension name for response
@@ -996,7 +1164,7 @@ class ExtensionUninstallHandler:
             manifest_file = extension_dir / "manifest.yaml"
             if manifest_file.exists():
                 try:
-                    with open(manifest_file, 'r', encoding='utf-8') as f:
+                    with open(manifest_file, encoding="utf-8") as f:
                         manifest = yaml.safe_load(f) or {}
                         actual_name = manifest.get("name", extension_dir.name)
                 except Exception:
@@ -1005,16 +1173,25 @@ class ExtensionUninstallHandler:
             # Remove the extension directory
             shutil.rmtree(extension_dir)
 
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.EXTENSION_UNINSTALLED,
-                request_id=message.request_id,
-                data={"success": True, "extension_id": extension_id or extension_dir.name, "name": actual_name}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.EXTENSION_UNINSTALLED,
+                    request_id=message.request_id,
+                    data={
+                        "success": True,
+                        "extension_id": extension_id or extension_dir.name,
+                        "name": actual_name,
+                    },
+                ),
+            )
             logger.info(f"Extension '{actual_name}' uninstalled successfully")
 
         except Exception as e:
             logger.error(f"Failed to uninstall extension: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to uninstall extension: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to uninstall extension: {e}"
+            )
 
     def _find_extension_dir_by_id(self, extensions_path: Path, extension_id: str) -> Path | None:
         """Find extension directory by reading .extension_id files."""
@@ -1023,7 +1200,7 @@ class ExtensionUninstallHandler:
                 ext_id_file = ext_dir / ".extension_id"
                 if ext_id_file.exists():
                     try:
-                        stored_id = ext_id_file.read_text(encoding='utf-8').strip()
+                        stored_id = ext_id_file.read_text(encoding="utf-8").strip()
                         if stored_id == extension_id:
                             return ext_dir
                     except Exception:
@@ -1037,11 +1214,10 @@ class ExtensionUninstallHandler:
             logger.error(f"Failed to send response: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self._send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self._send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class ExtensionRunHandler:
@@ -1054,17 +1230,23 @@ class ExtensionRunHandler:
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Run an extension by sending its documentation to the agent."""
         # Validate inbound payload
-        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
         if schema is not None:
             try:
                 schema.model_validate(message.data)
             except ValidationError as ve:
                 logger.warning(f"Validation error for {msg_type_str}: {ve}")
-                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                await websocket.send_json(
+                    {
+                        "type": MessageType.ERROR.value,
+                        "request_id": message.request_id,
+                        "data": {"error": "Invalid request data", "details": ve.errors()},
+                    }
+                )
                 return
         else:
-            msg_data = message.data
+            pass
 
         try:
             extension_id = message.data.get("extension_id") or message.data.get("name")
@@ -1078,12 +1260,16 @@ class ExtensionRunHandler:
             # Find the extension by .extension_id file
             user_ext_dir = self._find_extension_dir_by_id(get_extensions_path(), extension_id)
             if not user_ext_dir:
-                await self._send_error(websocket, request_id, f"Extension '{extension_id}' not found")
+                await self._send_error(
+                    websocket, request_id, f"Extension '{extension_id}' not found"
+                )
                 return
 
             ext_content = self._load_extension_content(user_ext_dir)
             if not ext_content:
-                await self._send_error(websocket, request_id, f"Extension '{extension_id}' has no content")
+                await self._send_error(
+                    websocket, request_id, f"Extension '{extension_id}' has no content"
+                )
                 return
 
             # Get extension name from manifest or directory
@@ -1091,18 +1277,21 @@ class ExtensionRunHandler:
             extension_name = user_ext_dir.name
             if manifest_file.exists():
                 try:
-                    with open(manifest_file, 'r', encoding='utf-8') as f:
+                    with open(manifest_file, encoding="utf-8") as f:
                         manifest = yaml.safe_load(f) or {}
                         extension_name = manifest.get("name", user_ext_dir.name)
                 except Exception:
                     pass
 
             # Send running status
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.EXTENSION_RUNNING,
-                request_id=request_id,
-                data={"extension_id": extension_id, "name": extension_name}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.EXTENSION_RUNNING,
+                    request_id=request_id,
+                    data={"extension_id": extension_id, "name": extension_name},
+                ),
+            )
 
             # Create message for agent with extension context
             content = f"""Please use the following extension to help with the user's request:
@@ -1120,18 +1309,25 @@ User request: {user_query}"""
                 metadata={
                     "request_id": request_id,
                     "extension_name": extension_name,
-                    "websocket_client": id(websocket)
-                }
+                    "websocket_client": id(websocket),
+                },
             )
 
             await self.bus.publish_inbound(msg)
 
             # Send acknowledgment
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.ACK,
-                request_id=request_id,
-                data={"status": "running", "extension_id": extension_name, "name": extension_name}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.ACK,
+                    request_id=request_id,
+                    data={
+                        "status": "running",
+                        "extension_id": extension_name,
+                        "name": extension_name,
+                    },
+                ),
+            )
 
         except Exception as e:
             logger.error(f"Failed to run extension: {e}")
@@ -1148,7 +1344,7 @@ User request: {user_query}"""
         manifest_file = ext_dir / "manifest.yaml"
         if manifest_file.exists():
             try:
-                with open(manifest_file, 'r', encoding='utf-8') as f:
+                with open(manifest_file, encoding="utf-8") as f:
                     manifest = yaml.safe_load(f) or {}
                     desc = manifest.get("description", "")
                     if desc:
@@ -1165,7 +1361,7 @@ User request: {user_query}"""
                 ext_id_file = ext_dir / ".extension_id"
                 if ext_id_file.exists():
                     try:
-                        stored_id = ext_id_file.read_text(encoding='utf-8').strip()
+                        stored_id = ext_id_file.read_text(encoding="utf-8").strip()
                         if stored_id == extension_id:
                             return ext_dir
                     except Exception:
@@ -1179,11 +1375,10 @@ User request: {user_query}"""
             logger.error(f"Failed to send response: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self._send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self._send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class SkillGetInstalledHandler:
@@ -1198,17 +1393,23 @@ class SkillGetInstalledHandler:
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Return list of installed extensions."""
         # Validate inbound payload
-        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
         if schema is not None:
             try:
                 schema.model_validate(message.data)
             except ValidationError as ve:
                 logger.warning(f"Validation error for {msg_type_str}: {ve}")
-                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                await websocket.send_json(
+                    {
+                        "type": MessageType.ERROR.value,
+                        "request_id": message.request_id,
+                        "data": {"error": "Invalid request data", "details": ve.errors()},
+                    }
+                )
                 return
         else:
-            msg_data = message.data
+            pass
 
         try:
             extensions = []
@@ -1223,22 +1424,32 @@ class SkillGetInstalledHandler:
                         if manifest_file.exists() or skill_file.exists():
                             # Parse metadata from manifest.yaml or SKILL.md
                             metadata = self._parse_extension_metadata(ext_dir)
-                            extensions.append({
-                                "name": ext_dir.name,
-                                "path": str(ext_dir),
-                                "metadata": metadata,
-                                "installed_at": ext_dir.stat().st_mtime
-                            })
+                            extensions.append(
+                                {
+                                    "name": ext_dir.name,
+                                    "path": str(ext_dir),
+                                    "metadata": metadata,
+                                    "installed_at": ext_dir.stat().st_mtime,
+                                }
+                            )
 
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.SKILL_LIST,
-                request_id=message.request_id,
-                data={"skills": extensions, "extensions": extensions}  # Both keys for compatibility
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SKILL_LIST,
+                    request_id=message.request_id,
+                    data={
+                        "skills": extensions,
+                        "extensions": extensions,
+                    },  # Both keys for compatibility
+                ),
+            )
 
         except Exception as e:
             logger.error(f"Failed to get installed extensions: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get installed extensions: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get installed extensions: {e}"
+            )
 
     def _parse_extension_metadata(self, ext_dir: Path) -> dict:
         """Parse metadata from manifest.yaml or SKILL.md."""
@@ -1246,7 +1457,7 @@ class SkillGetInstalledHandler:
         manifest_file = ext_dir / "manifest.yaml"
         if manifest_file.exists():
             try:
-                with open(manifest_file, 'r', encoding='utf-8') as f:
+                with open(manifest_file, encoding="utf-8") as f:
                     return yaml.safe_load(f) or {}
             except Exception as e:
                 logger.warning(f"Failed to parse manifest.yaml from {ext_dir}: {e}")
@@ -1263,7 +1474,7 @@ class SkillGetInstalledHandler:
                         for line in match.group(1).split("\n"):
                             if ":" in line:
                                 key, value = line.split(":", 1)
-                                metadata[key.strip()] = value.strip().strip('"\'')
+                                metadata[key.strip()] = value.strip().strip("\"'")
                         return metadata
             except Exception as e:
                 logger.warning(f"Failed to parse SKILL.md from {ext_dir}: {e}")
@@ -1278,11 +1489,10 @@ class SkillGetInstalledHandler:
             logger.error(f"Failed to send response: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self._send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self._send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class SkillRemoveHandler:
@@ -1297,43 +1507,60 @@ class SkillRemoveHandler:
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Remove an installed extension."""
         # Validate inbound payload
-        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
         if schema is not None:
             try:
                 schema.model_validate(message.data)
             except ValidationError as ve:
                 logger.warning(f"Validation error for {msg_type_str}: {ve}")
-                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                await websocket.send_json(
+                    {
+                        "type": MessageType.ERROR.value,
+                        "request_id": message.request_id,
+                        "data": {"error": "Invalid request data", "details": ve.errors()},
+                    }
+                )
                 return
         else:
-            msg_data = message.data
+            pass
 
         try:
             # Support both 'name' and 'skill_id'/'extension_id' for backward compatibility
-            extension_name = message.data.get("name") or message.data.get("skill_id") or message.data.get("extension_id")
+            extension_name = (
+                message.data.get("name")
+                or message.data.get("skill_id")
+                or message.data.get("extension_id")
+            )
             if not extension_name:
                 await self._send_error(websocket, message.request_id, "Extension name is required")
                 return
 
             extension_dir = get_extensions_path() / extension_name
             if not extension_dir.exists():
-                await self._send_error(websocket, message.request_id, f"Extension '{extension_name}' not found")
+                await self._send_error(
+                    websocket, message.request_id, f"Extension '{extension_name}' not found"
+                )
                 return
 
             # Remove the extension directory
             shutil.rmtree(extension_dir)
 
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.SKILL_REMOVED,
-                request_id=message.request_id,
-                data={"success": True, "name": extension_name}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SKILL_REMOVED,
+                    request_id=message.request_id,
+                    data={"success": True, "name": extension_name},
+                ),
+            )
             logger.info(f"Extension '{extension_name}' removed successfully")
 
         except Exception as e:
             logger.error(f"Failed to remove extension: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to remove extension: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to remove extension: {e}"
+            )
 
     async def _send_response(self, websocket: WebSocket, message: WSMessage) -> None:
         """Send a response back to the client."""
@@ -1343,11 +1570,10 @@ class SkillRemoveHandler:
             logger.error(f"Failed to send response: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self._send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self._send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class SkillRunHandler:
@@ -1363,17 +1589,23 @@ class SkillRunHandler:
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Run an extension by sending its documentation to the agent."""
         # Validate inbound payload
-        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
         if schema is not None:
             try:
                 schema.model_validate(message.data)
             except ValidationError as ve:
                 logger.warning(f"Validation error for {msg_type_str}: {ve}")
-                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                await websocket.send_json(
+                    {
+                        "type": MessageType.ERROR.value,
+                        "request_id": message.request_id,
+                        "data": {"error": "Invalid request data", "details": ve.errors()},
+                    }
+                )
                 return
         else:
-            msg_data = message.data
+            pass
 
         try:
             extension_name = message.data.get("name")
@@ -1393,20 +1625,27 @@ class SkillRunHandler:
                 ext_content = self._load_extension_content(user_ext_dir)
             else:
                 # Check built-in extensions
-                builtin_dir = Path(__file__).parent.parent / "extensions" / "builtin" / extension_name
+                builtin_dir = (
+                    Path(__file__).parent.parent / "extensions" / "builtin" / extension_name
+                )
                 if builtin_dir.exists():
                     ext_content = self._load_extension_content(builtin_dir)
 
             if not ext_content:
-                await self._send_error(websocket, request_id, f"Extension '{extension_name}' not found")
+                await self._send_error(
+                    websocket, request_id, f"Extension '{extension_name}' not found"
+                )
                 return
 
             # Send running status
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.SKILL_RUNNING,
-                request_id=request_id,
-                data={"skill_name": extension_name, "extension_name": extension_name}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SKILL_RUNNING,
+                    request_id=request_id,
+                    data={"skill_name": extension_name, "extension_name": extension_name},
+                ),
+            )
 
             # Create message for agent with extension context
             content = f"""Please use the following skill/extension to help with the user's request:
@@ -1425,18 +1664,25 @@ User request: {user_query}"""
                     "request_id": request_id,
                     "skill_name": extension_name,
                     "extension_name": extension_name,
-                    "websocket_client": id(websocket)
-                }
+                    "websocket_client": id(websocket),
+                },
             )
 
             await self.bus.publish_inbound(msg)
 
             # Send acknowledgment
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.ACK,
-                request_id=request_id,
-                data={"status": "running", "skill_name": extension_name, "extension_name": extension_name}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.ACK,
+                    request_id=request_id,
+                    data={
+                        "status": "running",
+                        "skill_name": extension_name,
+                        "extension_name": extension_name,
+                    },
+                ),
+            )
 
         except Exception as e:
             logger.error(f"Failed to run extension: {e}")
@@ -1453,7 +1699,7 @@ User request: {user_query}"""
         manifest_file = ext_dir / "manifest.yaml"
         if manifest_file.exists():
             try:
-                with open(manifest_file, 'r', encoding='utf-8') as f:
+                with open(manifest_file, encoding="utf-8") as f:
                     manifest = yaml.safe_load(f) or {}
                     desc = manifest.get("description", "")
                     if desc:
@@ -1471,11 +1717,10 @@ User request: {user_query}"""
             logger.error(f"Failed to send response: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self._send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self._send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 # =============================================================================
@@ -1497,17 +1742,23 @@ class PluginInstallHandler:
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Install a plugin from Plugin Market API."""
         # Validate inbound payload
-        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
         if schema is not None:
             try:
                 schema.model_validate(message.data)
             except ValidationError as ve:
                 logger.warning(f"Validation error for {msg_type_str}: {ve}")
-                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                await websocket.send_json(
+                    {
+                        "type": MessageType.ERROR.value,
+                        "request_id": message.request_id,
+                        "data": {"error": "Invalid request data", "details": ve.errors()},
+                    }
+                )
                 return
         else:
-            msg_data = message.data
+            pass
 
         try:
             plugin_id = message.data.get("plugin_id") or message.data.get("skill_id")
@@ -1519,48 +1770,60 @@ class PluginInstallHandler:
                 return
 
             # Send installing status
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.PLUGIN_INSTALLING,
-                request_id=request_id,
-                data={"plugin_id": plugin_id, "name": plugin_name}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.PLUGIN_INSTALLING,
+                    request_id=request_id,
+                    data={"plugin_id": plugin_id, "name": plugin_name},
+                ),
+            )
 
             # Ensure extensions directory exists (plugins are now extensions)
             get_extensions_path().mkdir(parents=True, exist_ok=True)
 
             # Execute installation in background
-            asyncio.create_task(self._execute_install(
-                websocket, request_id, plugin_id, plugin_name
-            ))
+            asyncio.create_task(
+                self._execute_install(websocket, request_id, plugin_id, plugin_name)
+            )
 
             # Send acknowledgment
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.ACK,
-                request_id=request_id,
-                data={"status": "installing", "plugin_id": plugin_id}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.ACK,
+                    request_id=request_id,
+                    data={"status": "installing", "plugin_id": plugin_id},
+                ),
+            )
 
         except Exception as e:
             logger.error(f"Failed to start plugin installation: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to start installation: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to start installation: {e}"
+            )
 
-    async def _execute_install(self, websocket: WebSocket, request_id: str,
-                               plugin_id: str, plugin_name: str | None):
+    async def _execute_install(
+        self, websocket: WebSocket, request_id: str, plugin_id: str, plugin_name: str | None
+    ):
         """Execute the installation by downloading from API and extracting."""
         temp_zip_path = None
         try:
             # Step 1: Get plugin details from API
             plugin_detail = await self._fetch_plugin_detail(plugin_id)
             if not plugin_detail:
-                await self._send_response(websocket, WSMessage(
-                    type=MessageType.PLUGIN_INSTALL_ERROR,
-                    request_id=request_id,
-                    data={
-                        "success": False,
-                        "plugin_id": plugin_id,
-                        "error": f"Plugin '{plugin_id}' not found in market"
-                    }
-                ))
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.PLUGIN_INSTALL_ERROR,
+                        request_id=request_id,
+                        data={
+                            "success": False,
+                            "plugin_id": plugin_id,
+                            "error": f"Plugin '{plugin_id}' not found in market",
+                        },
+                    ),
+                )
                 return
 
             # Use provided name or fallback
@@ -1574,39 +1837,48 @@ class PluginInstallHandler:
             download_url = f"{EXTENSION_MARKET_API_BASE}/api/extensions/{plugin_id}/download"
             temp_zip_path = get_extensions_path() / f"{plugin_id}_{uuid.uuid4()}.zip"
 
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.PLUGIN_INSTALLING,
-                request_id=request_id,
-                data={"plugin_id": plugin_id, "name": plugin_name, "status": "downloading"}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.PLUGIN_INSTALLING,
+                    request_id=request_id,
+                    data={"plugin_id": plugin_id, "name": plugin_name, "status": "downloading"},
+                ),
+            )
 
             download_success = await self._download_zip(download_url, temp_zip_path)
             if not download_success:
-                await self._send_response(websocket, WSMessage(
-                    type=MessageType.PLUGIN_INSTALL_ERROR,
-                    request_id=request_id,
-                    data={
-                        "success": False,
-                        "plugin_id": plugin_id,
-                        "name": plugin_name,
-                        "error": "Failed to download plugin ZIP file"
-                    }
-                ))
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.PLUGIN_INSTALL_ERROR,
+                        request_id=request_id,
+                        data={
+                            "success": False,
+                            "plugin_id": plugin_id,
+                            "name": plugin_name,
+                            "error": "Failed to download plugin ZIP file",
+                        },
+                    ),
+                )
                 return
 
             # Step 3: Extract
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.PLUGIN_INSTALLING,
-                request_id=request_id,
-                data={"plugin_id": plugin_id, "name": plugin_name, "status": "extracting"}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.PLUGIN_INSTALLING,
+                    request_id=request_id,
+                    data={"plugin_id": plugin_id, "name": plugin_name, "status": "extracting"},
+                ),
+            )
 
             plugin_dir = get_extensions_path() / plugin_name
 
             if plugin_dir.exists():
                 shutil.rmtree(plugin_dir)
 
-            with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
+            with zipfile.ZipFile(temp_zip_path, "r") as zip_ref:
                 zip_ref.extractall(plugin_dir)
 
             # Step 4: Verify (check for SKILL.md and handler.py)
@@ -1629,37 +1901,55 @@ class PluginInstallHandler:
             if not skill_md_path.exists() or not handler_path.exists():
                 if plugin_dir.exists():
                     shutil.rmtree(plugin_dir)
-                await self._send_response(websocket, WSMessage(
-                    type=MessageType.PLUGIN_INSTALL_ERROR,
-                    request_id=request_id,
-                    data={
-                        "success": False,
-                        "plugin_id": plugin_id,
-                        "name": plugin_name,
-                        "error": "Invalid plugin package: SKILL.md or handler.py not found"
-                    }
-                ))
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.PLUGIN_INSTALL_ERROR,
+                        request_id=request_id,
+                        data={
+                            "success": False,
+                            "plugin_id": plugin_id,
+                            "name": plugin_name,
+                            "error": "Invalid plugin package: SKILL.md or handler.py not found",
+                        },
+                    ),
+                )
                 return
 
             # Step 5: Generate manifest.yaml
             manifest_path = plugin_dir / "manifest.yaml"
             if not manifest_path.exists():
-                await self._send_response(websocket, WSMessage(
-                    type=MessageType.PLUGIN_INSTALLING,
-                    request_id=request_id,
-                    data={"plugin_id": plugin_id, "name": plugin_name, "status": "generating_manifest"}
-                ))
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.PLUGIN_INSTALLING,
+                        request_id=request_id,
+                        data={
+                            "plugin_id": plugin_id,
+                            "name": plugin_name,
+                            "status": "generating_manifest",
+                        },
+                    ),
+                )
                 self._generate_manifest_from_skill(plugin_dir, plugin_name, skill_md_path)
 
             # Step 6: Install dependencies
             requirements_file = plugin_dir / "requirements.txt"
             if requirements_file.exists():
-                await self._send_response(websocket, WSMessage(
-                    type=MessageType.PLUGIN_INSTALLING,
-                    request_id=request_id,
-                    data={"plugin_id": plugin_id, "name": plugin_name, "status": "installing_deps"}
-                ))
+                await self._send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.PLUGIN_INSTALLING,
+                        request_id=request_id,
+                        data={
+                            "plugin_id": plugin_id,
+                            "name": plugin_name,
+                            "status": "installing_deps",
+                        },
+                    ),
+                )
                 from backend.extensions.plugin_dependency import DependencyManager
+
                 dep_manager = DependencyManager(plugin_dir)
                 deps_success = await dep_manager.install(requirements_file)
                 if not deps_success:
@@ -1667,30 +1957,36 @@ class PluginInstallHandler:
                     # Continue anyway, plugin might work without deps
 
             # Success
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.PLUGIN_INSTALLED,
-                request_id=request_id,
-                data={
-                    "success": True,
-                    "plugin_id": plugin_id,
-                    "name": plugin_name,
-                    "path": str(plugin_dir)
-                }
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.PLUGIN_INSTALLED,
+                    request_id=request_id,
+                    data={
+                        "success": True,
+                        "plugin_id": plugin_id,
+                        "name": plugin_name,
+                        "path": str(plugin_dir),
+                    },
+                ),
+            )
             logger.info(f"Plugin '{plugin_name}' (ID: {plugin_id}) installed successfully")
 
         except Exception as e:
             logger.error(f"Exception during plugin installation: {e}")
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.PLUGIN_INSTALL_ERROR,
-                request_id=request_id,
-                data={
-                    "success": False,
-                    "plugin_id": plugin_id,
-                    "name": plugin_name,
-                    "error": str(e)
-                }
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.PLUGIN_INSTALL_ERROR,
+                    request_id=request_id,
+                    data={
+                        "success": False,
+                        "plugin_id": plugin_id,
+                        "name": plugin_name,
+                        "error": str(e),
+                    },
+                ),
+            )
         finally:
             if temp_zip_path and temp_zip_path.exists():
                 try:
@@ -1717,7 +2013,7 @@ class PluginInstallHandler:
             async with httpx.AsyncClient() as client:
                 async with client.stream("GET", url) as response:
                     if response.status_code == 200:
-                        with open(dest_path, 'wb') as f:
+                        with open(dest_path, "wb") as f:
                             async for chunk in response.aiter_bytes(chunk_size=8192):
                                 f.write(chunk)
                         return True
@@ -1736,7 +2032,9 @@ class PluginInstallHandler:
             name = "unnamed_plugin"
         return name
 
-    def _generate_manifest_from_skill(self, plugin_dir: Path, plugin_name: str, skill_md_path: Path) -> None:
+    def _generate_manifest_from_skill(
+        self, plugin_dir: Path, plugin_name: str, skill_md_path: Path
+    ) -> None:
         """Generate manifest.yaml from SKILL.md."""
         try:
             content = skill_md_path.read_text(encoding="utf-8")
@@ -1747,9 +2045,7 @@ class PluginInstallHandler:
                 "author": "unknown",
                 "type": "plugin",
                 "capabilities": [],
-                "plugin": {
-                    "handler": f"workspace.plugins.{plugin_name}.handler.Handler"
-                }
+                "plugin": {"handler": f"workspace.plugins.{plugin_name}.handler.Handler"},
             }
 
             if content.startswith("---"):
@@ -1764,15 +2060,16 @@ class PluginInstallHandler:
                             if isinstance(desc, str):
                                 manifest["description"] = " ".join(desc.split())
                         octopus_meta = frontmatter.get("octopus", {})
-                        if octopus_meta:
-                            if "capabilities" in octopus_meta:
-                                manifest["capabilities"] = octopus_meta["capabilities"]
+                        if octopus_meta and "capabilities" in octopus_meta:
+                            manifest["capabilities"] = octopus_meta["capabilities"]
                     except yaml.YAMLError:
                         pass
 
             manifest_path = plugin_dir / "manifest.yaml"
-            with open(manifest_path, 'w', encoding='utf-8') as f:
-                yaml.dump(manifest, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+            with open(manifest_path, "w", encoding="utf-8") as f:
+                yaml.dump(
+                    manifest, f, default_flow_style=False, sort_keys=False, allow_unicode=True
+                )
 
             logger.info(f"Generated manifest.yaml for plugin '{plugin_name}'")
         except Exception as e:
@@ -1785,11 +2082,10 @@ class PluginInstallHandler:
             logger.error(f"Failed to send response: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self._send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self._send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class PluginGetInstalledHandler:
@@ -1801,17 +2097,23 @@ class PluginGetInstalledHandler:
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Return list of installed plugins."""
         # Validate inbound payload
-        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
         if schema is not None:
             try:
                 schema.model_validate(message.data)
             except ValidationError as ve:
                 logger.warning(f"Validation error for {msg_type_str}: {ve}")
-                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                await websocket.send_json(
+                    {
+                        "type": MessageType.ERROR.value,
+                        "request_id": message.request_id,
+                        "data": {"error": "Invalid request data", "details": ve.errors()},
+                    }
+                )
                 return
         else:
-            msg_data = message.data
+            pass
 
         try:
             plugins = []
@@ -1828,18 +2130,23 @@ class PluginGetInstalledHandler:
                             # Only include plugins (type: plugin or hybrid)
                             ext_type = metadata.get("type", "")
                             if ext_type in ("plugin", "hybrid"):
-                                plugins.append({
-                                    "name": plugin_dir.name,
-                                    "path": str(plugin_dir),
-                                    "metadata": metadata,
-                                    "installed_at": plugin_dir.stat().st_mtime
-                                })
+                                plugins.append(
+                                    {
+                                        "name": plugin_dir.name,
+                                        "path": str(plugin_dir),
+                                        "metadata": metadata,
+                                        "installed_at": plugin_dir.stat().st_mtime,
+                                    }
+                                )
 
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.PLUGIN_LIST,
-                request_id=message.request_id,
-                data={"plugins": plugins}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.PLUGIN_LIST,
+                    request_id=message.request_id,
+                    data={"plugins": plugins},
+                ),
+            )
 
         except Exception as e:
             logger.error(f"Failed to get installed plugins: {e}")
@@ -1850,7 +2157,7 @@ class PluginGetInstalledHandler:
         manifest_file = plugin_dir / "manifest.yaml"
         if manifest_file.exists():
             try:
-                with open(manifest_file, 'r', encoding='utf-8') as f:
+                with open(manifest_file, encoding="utf-8") as f:
                     return yaml.safe_load(f) or {}
             except Exception:
                 pass
@@ -1866,7 +2173,7 @@ class PluginGetInstalledHandler:
                         for line in match.group(1).split("\n"):
                             if ":" in line:
                                 key, value = line.split(":", 1)
-                                metadata[key.strip()] = value.strip().strip('"\'')
+                                metadata[key.strip()] = value.strip().strip("\"'")
                         return metadata
             except Exception:
                 pass
@@ -1880,11 +2187,10 @@ class PluginGetInstalledHandler:
             logger.error(f"Failed to send response: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self._send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self._send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class PluginRemoveHandler:
@@ -1896,17 +2202,23 @@ class PluginRemoveHandler:
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Remove an installed plugin."""
         # Validate inbound payload
-        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
         if schema is not None:
             try:
                 schema.model_validate(message.data)
             except ValidationError as ve:
                 logger.warning(f"Validation error for {msg_type_str}: {ve}")
-                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                await websocket.send_json(
+                    {
+                        "type": MessageType.ERROR.value,
+                        "request_id": message.request_id,
+                        "data": {"error": "Invalid request data", "details": ve.errors()},
+                    }
+                )
                 return
         else:
-            msg_data = message.data
+            pass
 
         try:
             # Support both 'name' and 'plugin_id' for backward compatibility
@@ -1924,14 +2236,19 @@ class PluginRemoveHandler:
             elif ext_dir.exists():
                 shutil.rmtree(ext_dir)
             else:
-                await self._send_error(websocket, message.request_id, f"Plugin '{plugin_name}' not found")
+                await self._send_error(
+                    websocket, message.request_id, f"Plugin '{plugin_name}' not found"
+                )
                 return
 
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.PLUGIN_UNINSTALLED,
-                request_id=message.request_id,
-                data={"success": True, "name": plugin_name}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.PLUGIN_UNINSTALLED,
+                    request_id=message.request_id,
+                    data={"success": True, "name": plugin_name},
+                ),
+            )
             logger.info(f"Plugin '{plugin_name}' removed successfully")
 
         except Exception as e:
@@ -1945,11 +2262,10 @@ class PluginRemoveHandler:
             logger.error(f"Failed to send response: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self._send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self._send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class ExtensionConfigHandler:
@@ -1961,17 +2277,23 @@ class ExtensionConfigHandler:
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Save extension configuration (environment variables)."""
         # Validate inbound payload
-        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
         if schema is not None:
             try:
                 schema.model_validate(message.data)
             except ValidationError as ve:
                 logger.warning(f"Validation error for {msg_type_str}: {ve}")
-                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                await websocket.send_json(
+                    {
+                        "type": MessageType.ERROR.value,
+                        "request_id": message.request_id,
+                        "data": {"error": "Invalid request data", "details": ve.errors()},
+                    }
+                )
                 return
         else:
-            msg_data = message.data
+            pass
 
         try:
             extension_id = message.data.get("extension_id")
@@ -1988,7 +2310,9 @@ class ExtensionConfigHandler:
             extension_dir = self._find_extension_dir_by_id(extensions_path, extension_id)
 
             if not extension_dir or not extension_dir.exists():
-                await self._send_error(websocket, request_id, f"Extension '{extension_id}' not found")
+                await self._send_error(
+                    websocket, request_id, f"Extension '{extension_id}' not found"
+                )
                 return
 
             # Get extension name from manifest
@@ -1996,7 +2320,7 @@ class ExtensionConfigHandler:
             manifest_file = extension_dir / "manifest.yaml"
             if manifest_file.exists():
                 try:
-                    with open(manifest_file, 'r', encoding='utf-8') as f:
+                    with open(manifest_file, encoding="utf-8") as f:
                         manifest = yaml.safe_load(f) or {}
                         extension_name = manifest.get("name", extension_dir.name)
                 except Exception:
@@ -2006,15 +2330,14 @@ class ExtensionConfigHandler:
             if env_vars:
                 self._save_env_vars(extension_dir, env_vars)
 
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.EXTENSION_CONFIG_SAVED,
-                request_id=request_id,
-                data={
-                    "success": True,
-                    "extension_id": extension_id,
-                    "name": extension_name
-                }
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.EXTENSION_CONFIG_SAVED,
+                    request_id=request_id,
+                    data={"success": True, "extension_id": extension_id, "name": extension_name},
+                ),
+            )
             logger.info(f"Configuration saved for extension '{extension_id}'")
 
         except Exception as e:
@@ -2025,7 +2348,7 @@ class ExtensionConfigHandler:
         """Save environment variables to .env file in extension directory."""
         try:
             env_file = extension_dir / ".env"
-            with open(env_file, 'w', encoding='utf-8') as f:
+            with open(env_file, "w", encoding="utf-8") as f:
                 f.write("# Auto-generated environment variables\n")
                 for key, value in env_vars.items():
                     f.write(f"{key}={value}\n")
@@ -2041,7 +2364,7 @@ class ExtensionConfigHandler:
                 ext_id_file = ext_dir / ".extension_id"
                 if ext_id_file.exists():
                     try:
-                        stored_id = ext_id_file.read_text(encoding='utf-8').strip()
+                        stored_id = ext_id_file.read_text(encoding="utf-8").strip()
                         if stored_id == extension_id:
                             return ext_dir
                     except Exception:
@@ -2055,11 +2378,10 @@ class ExtensionConfigHandler:
             logger.error(f"Failed to send response: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self._send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self._send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class PluginRunHandler:
@@ -2072,17 +2394,23 @@ class PluginRunHandler:
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Run a plugin by sending its documentation to the agent."""
         # Validate inbound payload
-        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         schema = MESSAGE_TYPE_TO_SCHEMA.get(msg_type_str)
         if schema is not None:
             try:
                 schema.model_validate(message.data)
             except ValidationError as ve:
                 logger.warning(f"Validation error for {msg_type_str}: {ve}")
-                await websocket.send_json({'type': MessageType.ERROR.value, 'request_id': message.request_id, 'data': {'error': 'Invalid request data', 'details': ve.errors()}})
+                await websocket.send_json(
+                    {
+                        "type": MessageType.ERROR.value,
+                        "request_id": message.request_id,
+                        "data": {"error": "Invalid request data", "details": ve.errors()},
+                    }
+                )
                 return
         else:
-            msg_data = message.data
+            pass
 
         try:
             plugin_name = message.data.get("name")
@@ -2105,11 +2433,14 @@ class PluginRunHandler:
                 return
 
             # Send running status
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.PLUGIN_RUNNING,
-                request_id=request_id,
-                data={"plugin_name": plugin_name}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.PLUGIN_RUNNING,
+                    request_id=request_id,
+                    data={"plugin_name": plugin_name},
+                ),
+            )
 
             # Create message for agent
             content = f"""Please use the following plugin to help with the user's request:
@@ -2127,18 +2458,21 @@ User request: {user_query}"""
                 metadata={
                     "request_id": request_id,
                     "plugin_name": plugin_name,
-                    "websocket_client": id(websocket)
-                }
+                    "websocket_client": id(websocket),
+                },
             )
 
             await self.bus.publish_inbound(msg)
 
             # Send acknowledgment
-            await self._send_response(websocket, WSMessage(
-                type=MessageType.ACK,
-                request_id=request_id,
-                data={"status": "running", "plugin_name": plugin_name}
-            ))
+            await self._send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.ACK,
+                    request_id=request_id,
+                    data={"status": "running", "plugin_name": plugin_name},
+                ),
+            )
 
         except Exception as e:
             logger.error(f"Failed to run plugin: {e}")
@@ -2153,7 +2487,7 @@ User request: {user_query}"""
         manifest_file = plugin_dir / "manifest.yaml"
         if manifest_file.exists():
             try:
-                with open(manifest_file, 'r', encoding='utf-8') as f:
+                with open(manifest_file, encoding="utf-8") as f:
                     manifest = yaml.safe_load(f) or {}
                     desc = manifest.get("description", "")
                     if desc:
@@ -2170,8 +2504,7 @@ User request: {user_query}"""
             logger.error(f"Failed to send response: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self._send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self._send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )

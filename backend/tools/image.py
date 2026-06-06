@@ -3,8 +3,8 @@
 from pathlib import Path
 from typing import Any
 
-from backend.tools.base import Tool
 from backend.services.image_service import ImageService
+from backend.tools.base import Tool
 
 
 class ImageUnderstandTool(Tool):
@@ -28,20 +28,20 @@ The tool supports multiple providers (Kimi, OpenAI, Anthropic) and will use the 
             "properties": {
                 "image_path": {
                     "type": "string",
-                    "description": "Absolute or relative path to the image file. Supported formats: png, jpg, jpeg, webp, gif"
+                    "description": "Absolute or relative path to the image file. Supported formats: png, jpg, jpeg, webp, gif",
                 },
                 "question": {
                     "type": "string",
                     "description": "Specific question about the image. If not provided, will return a general description. Examples: 'What does this chart show?', 'Extract all text from this image', 'What UI components are visible?'",
-                    "default": ""
+                    "default": "",
                 },
                 "provider_name": {
                     "type": "string",
                     "description": "Optional provider name to use (e.g., 'kimi', 'openai'). If not specified, uses the default provider.",
-                    "default": ""
-                }
+                    "default": "",
+                },
             },
-            "required": ["image_path"]
+            "required": ["image_path"],
         }
 
     def __init__(self, image_service: ImageService | None = None):
@@ -60,6 +60,7 @@ The tool supports multiple providers (Kimi, OpenAI, Anthropic) and will use the 
         """
         try:
             from backend.utils.helpers import get_workspace_path
+
             workspace = get_workspace_path()
 
             # Try multiple path resolution strategies
@@ -86,7 +87,9 @@ The tool supports multiple providers (Kimi, OpenAI, Anthropic) and will use the 
             if not path.exists():
                 # Try to find the file in workspace
                 for f in workspace.rglob("*"):
-                    if f.is_file() and (f.name == Path(image_path).name or f.name == Path(image_path).stem):
+                    if f.is_file() and (
+                        f.name == Path(image_path).name or f.name == Path(image_path).stem
+                    ):
                         path = f
                         break
 
@@ -95,9 +98,7 @@ The tool supports multiple providers (Kimi, OpenAI, Anthropic) and will use the 
 
             # Call image service
             result = await self.image_service.understand_image(
-                image_path=str(path),
-                question=question,
-                provider_name=provider_name or None
+                image_path=str(path), question=question, provider_name=provider_name or None
             )
 
             return result
@@ -125,38 +126,44 @@ The tool supports multiple providers and will use the default configured provide
             "properties": {
                 "prompt": {
                     "type": "string",
-                    "description": "Detailed description of the image you want to generate. Be specific about style, colors, composition, and content."
+                    "description": "Detailed description of the image you want to generate. Be specific about style, colors, composition, and content.",
                 },
                 "size": {
                     "type": "string",
                     "description": "Image size in format WIDTHxHEIGHT. Common sizes: 1024x1024 (square), 1024x1792 (portrait), 1792x1024 (landscape). Uses provider default if not specified.",
-                    "default": ""
+                    "default": "",
                 },
                 "quality": {
                     "type": "string",
                     "description": "Image quality. Options: 'standard' (faster, cheaper), 'hd' (higher quality). Uses provider default if not specified.",
                     "enum": ["", "standard", "hd"],
-                    "default": ""
+                    "default": "",
                 },
                 "save_path": {
                     "type": "string",
                     "description": "Optional path to save the generated image. If not provided, saves to workspace/generated/ with auto-generated filename.",
-                    "default": ""
+                    "default": "",
                 },
                 "provider_name": {
                     "type": "string",
                     "description": "Optional provider name to use (e.g., 'openai', 'stability'). If not specified, uses the default provider.",
-                    "default": ""
-                }
+                    "default": "",
+                },
             },
-            "required": ["prompt"]
+            "required": ["prompt"],
         }
 
     def __init__(self, image_service: ImageService | None = None):
         self.image_service = image_service or ImageService()
 
-    async def execute(self, prompt: str, size: str = "", quality: str = "",
-                      save_path: str = "", provider_name: str = "") -> str:
+    async def execute(
+        self,
+        prompt: str,
+        size: str = "",
+        quality: str = "",
+        save_path: str = "",
+        provider_name: str = "",
+    ) -> str:
         """Execute image generation.
 
         Args:
@@ -175,7 +182,7 @@ The tool supports multiple providers and will use the default configured provide
                 prompt=prompt,
                 size=size or None,
                 quality=quality or None,
-                provider_name=provider_name or None
+                provider_name=provider_name or None,
             )
 
             # Determine save path
@@ -183,8 +190,10 @@ The tool supports multiple providers and will use the default configured provide
                 output_path = Path(save_path)
             else:
                 # Auto-generate path in workspace/generated/
-                from backend.utils.helpers import get_workspace_path
                 import uuid
+
+                from backend.utils.helpers import get_workspace_path
+
                 output_dir = get_workspace_path() / "generated"
                 output_dir.mkdir(parents=True, exist_ok=True)
                 output_path = output_dir / f"generated_{uuid.uuid4().hex[:8]}.png"
@@ -196,6 +205,7 @@ The tool supports multiple providers and will use the default configured provide
             elif "url" in result:
                 # URL to download (e.g., from DALL-E)
                 import httpx
+
                 async with httpx.AsyncClient() as client:
                     response = await client.get(result["url"], timeout=60.0)
                     response.raise_for_status()
@@ -203,6 +213,7 @@ The tool supports multiple providers and will use the default configured provide
 
             # Get relative path for display
             from backend.utils.helpers import get_workspace_path
+
             try:
                 rel_path = output_path.relative_to(get_workspace_path())
             except ValueError:

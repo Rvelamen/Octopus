@@ -1,7 +1,7 @@
 """Base classes for extensions."""
 
-import shutil
 import os
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -12,6 +12,7 @@ from loguru import logger
 @dataclass
 class PluginResult:
     """Result of a plugin action execution."""
+
     success: bool
     data: Any = None
     error: str = None
@@ -43,8 +44,7 @@ class Extension:
     def description(self) -> str:
         """Get extension description."""
         return self.manifest.get(
-            "description",
-            self._metadata.get("description", f"Extension: {self.name}")
+            "description", self._metadata.get("description", f"Extension: {self.name}")
         )
 
     @property
@@ -129,10 +129,12 @@ class Extension:
             content = skill_file.read_text(encoding="utf-8")
             if content.startswith("---"):
                 import re
+
                 match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
                 if match:
                     try:
                         import yaml
+
                         return yaml.safe_load(match.group(1)) or {}
                     except ImportError:
                         # Fallback to simple parsing
@@ -140,7 +142,7 @@ class Extension:
                         for line in match.group(1).split("\n"):
                             if ":" in line and not line.strip().startswith("#"):
                                 key, value = line.split(":", 1)
-                                metadata[key.strip()] = value.strip().strip('"\'')
+                                metadata[key.strip()] = value.strip().strip("\"'")
                         return metadata
         except Exception as e:
             logger.warning(f"Failed to load metadata for {self.name}: {e}")
@@ -184,9 +186,10 @@ class SkillExtension(Extension):
         # Strip frontmatter if present
         if content.startswith("---"):
             import re
+
             match = re.match(r"^---\n.*?\n---\n", content, re.DOTALL)
             if match:
-                content = content[match.end():]
+                content = content[match.end() :]
 
         return content.strip()
 
@@ -216,6 +219,7 @@ class PluginExtension(Extension):
 
         try:
             import ast
+
             source = handler_file.read_text(encoding="utf-8")
             tree = ast.parse(source)
 
@@ -251,9 +255,11 @@ class PluginExtension(Extension):
         """Create and return plugin handler instance."""
         handler_class = self.handler_class
         if not handler_class:
-            raise ValueError(f"No handler found for plugin '{self.name}'. "
-                           f"Either define 'plugin.handler' in manifest.yaml "
-                           f"or create a handler.py with a PluginHandler subclass.")
+            raise ValueError(
+                f"No handler found for plugin '{self.name}'. "
+                f"Either define 'plugin.handler' in manifest.yaml "
+                f"or create a handler.py with a PluginHandler subclass."
+            )
 
         from backend.extensions.plugin_isolated_loader import PluginModuleLoader
 
@@ -304,6 +310,7 @@ class LongTaskExtension(PluginExtension):
 
         try:
             import ast
+
             source = handler_file.read_text(encoding="utf-8")
             tree = ast.parse(source)
 
@@ -341,9 +348,11 @@ class LongTaskExtension(PluginExtension):
         """Create and return longtask handler instance."""
         handler_class = self.handler_class
         if not handler_class:
-            raise ValueError(f"No handler found for longtask plugin '{self.name}'. "
-                           f"Either define 'longtask.handler' in manifest.yaml "
-                           f"or create a handler.py with a LongTaskPlugin subclass.")
+            raise ValueError(
+                f"No handler found for longtask plugin '{self.name}'. "
+                f"Either define 'longtask.handler' in manifest.yaml "
+                f"or create a handler.py with a LongTaskPlugin subclass."
+            )
 
         # Import and instantiate handler
         module_path, class_name = handler_class.rsplit(".", 1)

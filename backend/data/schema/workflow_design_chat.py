@@ -44,6 +44,12 @@ def create_tables(conn: sqlite3.Connection) -> None:
 
 
 def create_indexes(conn: sqlite3.Connection) -> None:
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_wf_design_sessions_workflow ON workflow_design_sessions(workflow_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_wf_design_messages_session ON workflow_design_messages(session_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_wf_design_operations_session ON workflow_design_operations(session_id)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_wf_design_sessions_workflow ON workflow_design_sessions(workflow_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_wf_design_messages_session ON workflow_design_messages(session_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_wf_design_operations_session ON workflow_design_operations(session_id)"
+    )

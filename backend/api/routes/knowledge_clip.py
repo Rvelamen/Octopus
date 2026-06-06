@@ -1,13 +1,14 @@
 """REST API for Chrome Extension web clipping."""
 
+import json
 import re
-import yaml
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
 import httpx
+import yaml
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
@@ -39,7 +40,7 @@ class ClipRequest(BaseModel):
 
 def _sanitize_filename(name: str) -> str:
     """将标题/主机名转换为安全的文件名字符串。"""
-    name = re.sub(r'[^\w\u4e00-\u9fa5\-]', '_', name)
+    name = re.sub(r"[^\w\u4e00-\u9fa5\-]", "_", name)
     return name[:60] or "untitled"
 
 
@@ -61,6 +62,7 @@ def _download_pdf(url: str, dest_path: Path) -> bool:
 def _file_sha256(file_path: Path) -> str:
     """计算文件 SHA256。"""
     import hashlib
+
     h = hashlib.sha256()
     with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
@@ -72,6 +74,7 @@ def _extract_pdf_text(pdf_path: Path, max_pages: int | None = None) -> str:
     """使用 pypdf 提取 PDF 文本，失败返回空字符串。"""
     try:
         from pypdf import PdfReader
+
         reader = PdfReader(str(pdf_path))
         parts = []
         for i, page in enumerate(reader.pages):
@@ -86,7 +89,9 @@ def _extract_pdf_text(pdf_path: Path, max_pages: int | None = None) -> str:
         return ""
 
 
-async def _extract_pdf_metadata(pdf_path: Path, url: str = "", title_hint: str = "") -> dict[str, Any]:
+async def _extract_pdf_metadata(
+    pdf_path: Path, url: str = "", title_hint: str = ""
+) -> dict[str, Any]:
     """使用 LLM 分析 PDF 第一页，提取文献 metadata。"""
     first_page_text = _extract_pdf_text(pdf_path, max_pages=1)
     if not first_page_text:
@@ -116,11 +121,17 @@ Return ONLY a valid JSON object with these fields (use empty string or null if u
     try:
         from backend.agent.config_service import AgentConfigService
         from backend.data.database import Database
+
         config_service = AgentConfigService(Database())
-        provider, model_id, _, max_tokens, temperature = config_service.get_default_provider_and_model()
+        provider, model_id, _, max_tokens, temperature = (
+            config_service.get_default_provider_and_model()
+        )
 
         messages = [
-            {"role": "system", "content": "You are a precise academic metadata extractor. Return only valid JSON."},
+            {
+                "role": "system",
+                "content": "You are a precise academic metadata extractor. Return only valid JSON.",
+            },
             {"role": "user", "content": prompt},
         ]
         response = await provider.chat(
@@ -179,7 +190,9 @@ async def knowledge_clip(request: ClipRequest):
 
     # ── PDF 统一处理：直接下载保存，不生成 web_clips ──
     if request.is_pdf:
-        pdf_slug = _sanitize_filename(request.file_name or request.title or urlparse(request.url).netloc or "untitled")
+        pdf_slug = _sanitize_filename(
+            request.file_name or request.title or urlparse(request.url).netloc or "untitled"
+        )
         pdf_filename = f"{timestamp}_{pdf_slug}.pdf"
         pdf_path_relative = f"knowledge/raw/pdf_clips/{pdf_filename}"
         pdf_full_path = Path(workspace) / pdf_path_relative
@@ -195,8 +208,11 @@ async def knowledge_clip(request: ClipRequest):
         if existing_meta:
             meta = existing_meta
         else:
-            meta = await _extract_pdf_metadata(pdf_full_path, url=request.url, title_hint=request.title)
+            meta = await _extract_pdf_metadata(
+                pdf_full_path, url=request.url, title_hint=request.title
+            )
             from pypdf import PdfReader
+
             try:
                 page_count = len(PdfReader(str(pdf_full_path)).pages)
             except Exception:

@@ -4,12 +4,13 @@ Maintains a SQLite index for markdown files, extracts [[bidirectional links]],
 and provides graph queries with in-memory caching.
 """
 
+import contextlib
 import re
 import sqlite3
 from collections import deque
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -53,7 +54,7 @@ class KnowledgeGraphEngine:
         self._init_db()
 
         # In-memory cache
-        self._cache: Optional[dict[str, Any]] = None
+        self._cache: dict[str, Any] | None = None
         self._cache_dirty = True
 
     def _init_db(self) -> None:
@@ -89,6 +90,7 @@ class KnowledgeGraphEngine:
             return None
         try:
             import yaml
+
             return self._make_json_safe(yaml.safe_load(match.group(1))) or None
         except Exception:
             return None
@@ -124,7 +126,7 @@ class KnowledgeGraphEngine:
                 tags.append(tag)
         return tags
 
-    def _resolve_title(self, title: str, vault: str | None = None) -> Optional[str]:
+    def _resolve_title(self, title: str, vault: str | None = None) -> str | None:
         """Case-insensitive title match within a vault; falls back to path stem match.
         Also resolves @citekey references to library items."""
         clean = title.strip().rstrip("\\")
@@ -275,10 +277,10 @@ class KnowledgeGraphEngine:
             # Update tags
             self.db.execute("DELETE FROM knowledge_node_tags WHERE node_path = ?", (relative_path,))
             for tag in tags:
-                self.db.execute(
-                    "INSERT OR IGNORE INTO knowledge_tags (name) VALUES (?)", (tag,)
-                )
-                tag_row = self.db.execute("SELECT id FROM knowledge_tags WHERE name = ?", (tag,)).fetchone()
+                self.db.execute("INSERT OR IGNORE INTO knowledge_tags (name) VALUES (?)", (tag,))
+                tag_row = self.db.execute(
+                    "SELECT id FROM knowledge_tags WHERE name = ?", (tag,)
+                ).fetchone()
                 if tag_row:
                     self.db.execute(
                         "INSERT OR IGNORE INTO knowledge_node_tags (tag_id, node_path) VALUES (?, ?)",
@@ -318,6 +320,7 @@ class KnowledgeGraphEngine:
             if not entry.is_dir() and entry.suffix.lower() in (".pdf", ".docx", ".pptx", ".xlsx"):
                 try:
                     import hashlib
+
                     h = hashlib.sha256()
                     with open(entry, "rb") as f:
                         for chunk in iter(lambda: f.read(65536), b""):
@@ -353,6 +356,7 @@ class KnowledgeGraphEngine:
     def upsert_document_meta(self, sha256: str, data: dict[str, Any]) -> None:
         """Insert or update metadata for a document identified by sha256."""
         import json
+
         self.db.execute(
             """
             INSERT INTO knowledge_documents_meta (
@@ -376,14 +380,22 @@ class KnowledgeGraphEngine:
                 sha256,
                 data.get("source_type"),
                 data.get("title"),
-                json.dumps(data.get("authors", [])) if isinstance(data.get("authors"), list) else data.get("authors"),
+                (
+                    json.dumps(data.get("authors", []))
+                    if isinstance(data.get("authors"), list)
+                    else data.get("authors")
+                ),
                 data.get("year"),
                 data.get("venue"),
                 data.get("doi"),
                 data.get("url"),
                 data.get("summary"),
                 data.get("page_count"),
-                json.dumps(data.get("metadata_json", {})) if isinstance(data.get("metadata_json"), dict) else data.get("metadata_json"),
+                (
+                    json.dumps(data.get("metadata_json", {}))
+                    if isinstance(data.get("metadata_json"), dict)
+                    else data.get("metadata_json")
+                ),
             ),
         )
         self.db.commit()
@@ -391,6 +403,7 @@ class KnowledgeGraphEngine:
     def get_document_meta(self, sha256: str) -> dict[str, Any] | None:
         """Retrieve metadata for a document by sha256."""
         import json
+
         row = self.db.execute(
             "SELECT * FROM knowledge_documents_meta WHERE sha256 = ?", (sha256,)
         ).fetchone()
@@ -399,20 +412,17 @@ class KnowledgeGraphEngine:
         result = dict(row)
         for field in ("authors",):
             if result.get(field):
-                try:
+                with contextlib.suppress(Exception):
                     result[field] = json.loads(result[field])
-                except Exception:
-                    pass
         if result.get("metadata_json"):
-            try:
+            with contextlib.suppress(Exception):
                 result["metadata_json"] = json.loads(result["metadata_json"])
-            except Exception:
-                pass
         return result
 
     def get_document_metas_batch(self, sha256s: list[str]) -> dict[str, dict[str, Any]]:
         """Batch retrieve metadata by sha256 list."""
         import json
+
         if not sha256s:
             return {}
         placeholders = ",".join(["?"] * len(sha256s))
@@ -425,19 +435,21 @@ class KnowledgeGraphEngine:
             item = dict(row)
             for field in ("authors",):
                 if item.get(field):
-                    try:
+                    with contextlib.suppress(Exception):
                         item[field] = json.loads(item[field])
-                    except Exception:
-                        pass
             if item.get("metadata_json"):
-                try:
+                with contextlib.suppress(Exception):
                     item["metadata_json"] = json.loads(item["metadata_json"])
-                except Exception:
-                    pass
             result[item["sha256"]] = item
         return result
 
-    def search_notes(self, query: str, limit: int = 20, vault_filter: Optional[str] = None, exclude_vault: Optional[str] = None) -> list[dict[str, Any]]:
+    def search_notes(
+        self,
+        query: str,
+        limit: int = 20,
+        vault_filter: str | None = None,
+        exclude_vault: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Fuzzy search notes by path or title, optionally scoped to a vault or excluding one."""
         stripped = query.strip()
         if not stripped:
@@ -458,7 +470,14 @@ class KnowledgeGraphEngine:
             (stripped,) + vault_args,
         ).fetchone()
         if row:
-            return [{"path": row["path"], "title": row["title"], "mtime": row["mtime"], "word_count": row["word_count"]}]
+            return [
+                {
+                    "path": row["path"],
+                    "title": row["title"],
+                    "mtime": row["mtime"],
+                    "word_count": row["word_count"],
+                }
+            ]
 
         # 2. Path stem match (e.g. "Foo" -> ".../Foo.md")
         row = self.db.execute(
@@ -466,7 +485,14 @@ class KnowledgeGraphEngine:
             (f"%/{stripped}.md",) + vault_args,
         ).fetchone()
         if row:
-            return [{"path": row["path"], "title": row["title"], "mtime": row["mtime"], "word_count": row["word_count"]}]
+            return [
+                {
+                    "path": row["path"],
+                    "title": row["title"],
+                    "mtime": row["mtime"],
+                    "word_count": row["word_count"],
+                }
+            ]
 
         # 3. FTS5 match (more intelligent for long titles / phrases)
         try:
@@ -490,7 +516,16 @@ class KnowledgeGraphEngine:
                 (stripped,) + fts_args + (limit,),
             ).fetchall()
             if rows:
-                return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"], "word_count": r["word_count"], "rank": r["rank"]} for r in rows]
+                return [
+                    {
+                        "path": r["path"],
+                        "title": r["title"],
+                        "mtime": r["mtime"],
+                        "word_count": r["word_count"],
+                        "rank": r["rank"],
+                    }
+                    for r in rows
+                ]
         except Exception:
             pass
 
@@ -505,21 +540,33 @@ class KnowledgeGraphEngine:
             """,
             (pattern, pattern) + vault_args + (limit,),
         ).fetchall()
-        return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"], "word_count": r["word_count"]} for r in rows]
+        return [
+            {
+                "path": r["path"],
+                "title": r["title"],
+                "mtime": r["mtime"],
+                "word_count": r["word_count"],
+            }
+            for r in rows
+        ]
 
     def list_vaults(self) -> list[dict[str, Any]]:
         """Return all vaults with note counts."""
-        rows = self.db.execute(
-            """
+        rows = self.db.execute("""
             SELECT vault, COUNT(*) as note_count
             FROM knowledge_nodes
             GROUP BY vault
             ORDER BY vault ASC
-            """
-        ).fetchall()
+            """).fetchall()
         return [{"name": r["vault"], "note_count": r["note_count"]} for r in rows]
 
-    def search_notes_fts(self, query: str, limit: int = 20, vault_filter: Optional[str] = None, exclude_vault: Optional[str] = None) -> list[dict[str, Any]]:
+    def search_notes_fts(
+        self,
+        query: str,
+        limit: int = 20,
+        vault_filter: str | None = None,
+        exclude_vault: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Full-text search using SQLite FTS5 with BM25 ranking.
 
         Falls back to path/title search if FTS5 is unavailable or returns no results.
@@ -565,13 +612,11 @@ class KnowledgeGraphEngine:
         """Rebuild the FTS5 index from scratch."""
         try:
             self.db.execute("DELETE FROM knowledge_nodes_fts")
-            self.db.execute(
-                """
+            self.db.execute("""
                 INSERT INTO knowledge_nodes_fts(rowid, title, content)
                 SELECT rowid, title, content FROM knowledge_nodes
                 WHERE content IS NOT NULL
-                """
-            )
+                """)
             self.db.commit()
             logger.info("Rebuilt FTS5 index")
         except sqlite3.OperationalError as e:
@@ -580,19 +625,15 @@ class KnowledgeGraphEngine:
     def _ensure_fts_populated(self) -> None:
         """Ensure FTS5 index is populated if table exists but is empty."""
         try:
-            fts_count = self.db.execute(
-                "SELECT COUNT(*) FROM knowledge_nodes_fts"
-            ).fetchone()[0]
-            node_count = self.db.execute(
-                "SELECT COUNT(*) FROM knowledge_nodes"
-            ).fetchone()[0]
+            fts_count = self.db.execute("SELECT COUNT(*) FROM knowledge_nodes_fts").fetchone()[0]
+            node_count = self.db.execute("SELECT COUNT(*) FROM knowledge_nodes").fetchone()[0]
             if fts_count == 0 and node_count > 0:
                 logger.info("FTS5 index empty, rebuilding from existing nodes")
                 self.rebuild_fts_index()
         except sqlite3.OperationalError:
             pass
 
-    def get_tags(self, vault_filter: Optional[str] = None) -> list[dict[str, Any]]:
+    def get_tags(self, vault_filter: str | None = None) -> list[dict[str, Any]]:
         """Return all tags (optionally scoped to a vault) with usage counts."""
         if vault_filter:
             rows = self.db.execute(
@@ -608,15 +649,13 @@ class KnowledgeGraphEngine:
                 (vault_filter,),
             ).fetchall()
         else:
-            rows = self.db.execute(
-                """
+            rows = self.db.execute("""
                 SELECT t.name, COUNT(nt.node_path) as count
                 FROM knowledge_tags t
                 LEFT JOIN knowledge_node_tags nt ON t.id = nt.tag_id
                 GROUP BY t.id
                 ORDER BY count DESC, t.name ASC
-                """
-            ).fetchall()
+                """).fetchall()
         return [{"name": r["name"], "count": r["count"]} for r in rows]
 
     def get_node_tags(self, path: str) -> list[str]:
@@ -648,8 +687,13 @@ class KnowledgeGraphEngine:
         return [{"path": r["path"], "title": r["title"], "mtime": r["mtime"]} for r in rows]
 
     def get_graph(
-        self, center_path: Optional[str] = None, depth: int = 1, limit: int = 200, tag_filter: Optional[str] = None,
-        vault_filter: Optional[str] = None, exclude_vault: Optional[str] = None,
+        self,
+        center_path: str | None = None,
+        depth: int = 1,
+        limit: int = 200,
+        tag_filter: str | None = None,
+        vault_filter: str | None = None,
+        exclude_vault: str | None = None,
     ) -> dict[str, Any]:
         """Return a subgraph as {nodes, edges}.
 
@@ -697,7 +741,9 @@ class KnowledgeGraphEngine:
 
         # BFS from center
         visited: set[str] = {center_path} if _include_node(center_path) else set()
-        queue: deque[tuple[str, int]] = deque([(center_path, 0)]) if _include_node(center_path) else deque()
+        queue: deque[tuple[str, int]] = (
+            deque([(center_path, 0)]) if _include_node(center_path) else deque()
+        )
 
         while queue:
             current, d = queue.popleft()
@@ -781,10 +827,19 @@ class KnowledgeGraphEngine:
             nodes[node_path]["tags"] = node_tags.get(node_path, [])
             nodes[node_path]["vault"] = node_vaults.get(node_path, "default")
 
-        self._cache = {"nodes": nodes, "edges": edges, "adj_out": adj_out, "adj_in": adj_in, "node_tags": node_tags, "node_vaults": node_vaults}
+        self._cache = {
+            "nodes": nodes,
+            "edges": edges,
+            "adj_out": adj_out,
+            "adj_in": adj_in,
+            "node_tags": node_tags,
+            "node_vaults": node_vaults,
+        }
         self._cache_dirty = False
 
-    def get_timeline(self, relative_path: str, vault_filter: Optional[str] = None, exclude_vault: Optional[str] = None) -> dict[str, Any]:
+    def get_timeline(
+        self, relative_path: str, vault_filter: str | None = None, exclude_vault: str | None = None
+    ) -> dict[str, Any]:
         """Return contextual timeline and metadata for a note.
 
         Includes: basic info, outgoing/incoming links, tags, and recently
@@ -903,7 +958,12 @@ class KnowledgeGraphEngine:
                 tuple(related_paths) + rel_vault_args,
             ).fetchall()
             related = [
-                {"path": r["path"], "title": r["title"], "mtime": r["mtime"], "word_count": r["word_count"]}
+                {
+                    "path": r["path"],
+                    "title": r["title"],
+                    "mtime": r["mtime"],
+                    "word_count": r["word_count"],
+                }
                 for r in rel_rows
             ]
 

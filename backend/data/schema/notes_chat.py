@@ -33,5 +33,9 @@ def create_tables(conn: sqlite3.Connection) -> None:
 
 
 def create_indexes(conn: sqlite3.Connection) -> None:
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_notes_chat_sessions_scope ON notes_chat_sessions(scope_type, scope_value)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_notes_chat_messages_session ON notes_chat_messages(session_id)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_notes_chat_sessions_scope ON notes_chat_sessions(scope_type, scope_value)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_notes_chat_messages_session ON notes_chat_messages(session_id)"
+    )

@@ -1,14 +1,15 @@
 """OpenAI-compatible provider (OpenAI, Azure, Ollama, etc.)."""
 
 import json
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 import httpx
+from loguru import logger
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionChunk
-from loguru import logger
 
-from backend.core.providers.base import LLMResponse, ToolCallRequest, StreamChunk
+from backend.core.providers.base import LLMResponse, StreamChunk, ToolCallRequest
 from backend.core.providers.base_client import RetryableProvider
 from backend.core.providers.message_adapter import MessageAdapter
 
@@ -54,26 +55,31 @@ class OpenAIProvider(RetryableProvider):
         if stream:
             return self._stream_openai(adapted_messages, tools, model, max_tokens, temperature)
 
-        kwargs = dict(
-            model=model,
-            messages=adapted_messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
+        kwargs = {
+            "model": model,
+            "messages": adapted_messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
         if tools:
             kwargs["tools"] = tools
             kwargs["tool_choice"] = "auto"
 
         async def _call_api():
-            logger.debug(f"[Provider] Sending request to openai with model {model}, tools count: {len(tools) if tools else 0}")
+            logger.debug(
+                f"[Provider] Sending request to openai with model {model}, tools count: {len(tools) if tools else 0}"
+            )
             response = await self._client.chat.completions.create(**kwargs)
-            logger.info(f"[Provider] Response received from openai: id={response.id}, finish_reason={response.choices[0].finish_reason if response.choices else 'N/A'}")
+            logger.info(
+                f"[Provider] Response received from openai: id={response.id}, finish_reason={response.choices[0].finish_reason if response.choices else 'N/A'}"
+            )
             return self._parse_response(response, adapted_messages=adapted_messages, model=model)
 
         try:
             return await self._execute_with_retry(_call_api, "openai chat")
         except Exception as e:
             import traceback
+
             logger.error(f"[Provider] OPENAI API call failed after retries: {e}")
             logger.error(f"[Provider] Traceback: {traceback.format_exc()}")
             return LLMResponse(
@@ -96,17 +102,17 @@ class OpenAIProvider(RetryableProvider):
         accumulated_reasoning = ""
 
         # Buffers for accumulating streaming tool-call arguments (OpenAI sends them as deltas)
-        tool_call_meta: dict[int, dict] = {}   # idx -> {"id": ..., "name": ...}
+        tool_call_meta: dict[int, dict] = {}  # idx -> {"id": ..., "name": ...}
         tool_call_arg_buf: dict[int, str] = {}  # idx -> accumulated arguments JSON string
 
-        kwargs = dict(
-            model=model,
-            messages=adapted_messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            stream=True,
-            stream_options={"include_usage": True},
-        )
+        kwargs = {
+            "model": model,
+            "messages": adapted_messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "stream": True,
+            "stream_options": {"include_usage": True},
+        }
         if tools:
             kwargs["tools"] = tools
             kwargs["tool_choice"] = "auto"
@@ -123,7 +129,10 @@ class OpenAIProvider(RetryableProvider):
                         "completion_tokens": chunk.usage.completion_tokens,
                         "total_tokens": chunk.usage.total_tokens,
                     }
-                    if hasattr(chunk.usage, "prompt_tokens_details") and chunk.usage.prompt_tokens_details:
+                    if (
+                        hasattr(chunk.usage, "prompt_tokens_details")
+                        and chunk.usage.prompt_tokens_details
+                    ):
                         final_usage["prompt_tokens_details"] = {
                             "cached_tokens": chunk.usage.prompt_tokens_details.cached_tokens
                         }
@@ -151,7 +160,9 @@ class OpenAIProvider(RetryableProvider):
                         if tc.function and tc.function.name:
                             tool_call_meta[idx]["name"] = tc.function.name
                         if tc.function and tc.function.arguments:
-                            tool_call_arg_buf[idx] = tool_call_arg_buf.get(idx, "") + tc.function.arguments
+                            tool_call_arg_buf[idx] = (
+                                tool_call_arg_buf.get(idx, "") + tc.function.arguments
+                            )
 
             # Build final tool_calls from accumulated buffers
             tool_calls: list[ToolCallRequest] = []
@@ -163,23 +174,35 @@ class OpenAIProvider(RetryableProvider):
                     try:
                         arguments = json.loads(raw_args)
                     except json.JSONDecodeError:
-                        logger.warning(f"[OpenAI] Failed to parse tool call arguments JSON: {raw_args!r}")
+                        logger.warning(
+                            f"[OpenAI] Failed to parse tool call arguments JSON: {raw_args!r}"
+                        )
                         arguments = {"raw": raw_args}
-                tool_calls.append(ToolCallRequest(
-                    id=meta.get("id", ""),
-                    name=meta.get("name", ""),
-                    arguments=arguments,
-                ))
+                tool_calls.append(
+                    ToolCallRequest(
+                        id=meta.get("id", ""),
+                        name=meta.get("name", ""),
+                        arguments=arguments,
+                    )
+                )
 
             # Some compatible APIs return a usage dict with all zeros; treat that as missing too.
             has_real_usage = bool(
                 final_usage
-                and (final_usage.get("prompt_tokens", 0) > 0 or final_usage.get("completion_tokens", 0) > 0)
+                and (
+                    final_usage.get("prompt_tokens", 0) > 0
+                    or final_usage.get("completion_tokens", 0) > 0
+                )
             )
             if not has_real_usage:
                 from backend.agent.shared import _estimate_token_usage
-                final_usage = _estimate_token_usage(adapted_messages or messages, accumulated_content, model)
-                logger.warning(f"[OpenAI] API did not return valid streaming usage; estimated: {final_usage}")
+
+                final_usage = _estimate_token_usage(
+                    adapted_messages or messages, accumulated_content, model
+                )
+                logger.warning(
+                    f"[OpenAI] API did not return valid streaming usage; estimated: {final_usage}"
+                )
 
             yield StreamChunk(
                 content="",
@@ -202,13 +225,13 @@ class OpenAIProvider(RetryableProvider):
     ) -> AsyncGenerator[str, None]:
         """Stream OpenAI/Azure completions (legacy string generator)."""
         try:
-            kwargs = dict(
-                model=model,
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                stream=True,
-            )
+            kwargs = {
+                "model": model,
+                "messages": messages,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "stream": True,
+            }
             if tools:
                 kwargs["tools"] = tools
                 kwargs["tool_choice"] = "auto"
@@ -230,7 +253,9 @@ class OpenAIProvider(RetryableProvider):
                 return delta.content or ""
         return None
 
-    def _parse_response(self, response: Any, adapted_messages: list | None = None, model: str | None = None) -> LLMResponse:
+    def _parse_response(
+        self, response: Any, adapted_messages: list | None = None, model: str | None = None
+    ) -> LLMResponse:
         """Parse OpenAI response into our standard format."""
         choice = response.choices[0]
         message = choice.message
@@ -245,11 +270,13 @@ class OpenAIProvider(RetryableProvider):
                     except json.JSONDecodeError:
                         args = {"raw": args}
 
-                tool_calls.append(ToolCallRequest(
-                    id=tc.id,
-                    name=tc.function.name,
-                    arguments=args,
-                ))
+                tool_calls.append(
+                    ToolCallRequest(
+                        id=tc.id,
+                        name=tc.function.name,
+                        arguments=args,
+                    )
+                )
 
         usage = {}
         if response.usage:
@@ -258,9 +285,14 @@ class OpenAIProvider(RetryableProvider):
                 "completion_tokens": response.usage.completion_tokens,
                 "total_tokens": response.usage.total_tokens,
             }
-            if hasattr(response.usage, "prompt_tokens_details") and response.usage.prompt_tokens_details:
+            if (
+                hasattr(response.usage, "prompt_tokens_details")
+                and response.usage.prompt_tokens_details
+            ):
                 usage["prompt_tokens_details"] = {
-                    "cached_tokens": getattr(response.usage.prompt_tokens_details, "cached_tokens", 0),
+                    "cached_tokens": getattr(
+                        response.usage.prompt_tokens_details, "cached_tokens", 0
+                    ),
                 }
 
         has_real_usage = bool(
@@ -268,8 +300,13 @@ class OpenAIProvider(RetryableProvider):
         )
         if not has_real_usage:
             from backend.agent.shared import _estimate_token_usage
-            usage = _estimate_token_usage(adapted_messages or messages, message.content or "", self.default_model)
-            logger.warning(f"[OpenAI] Non-streaming response missing valid usage; estimated: {usage}")
+
+            usage = _estimate_token_usage(
+                adapted_messages or [], message.content or "", self.default_model
+            )
+            logger.warning(
+                f"[OpenAI] Non-streaming response missing valid usage; estimated: {usage}"
+            )
 
         reasoning_content = None
         if hasattr(message, "reasoning_content") and message.reasoning_content:

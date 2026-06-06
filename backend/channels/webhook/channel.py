@@ -1,15 +1,13 @@
 """Webhook channel implementation using aiohttp."""
 
-import asyncio
 import json
-from typing import Any
 
 from aiohttp import web
 from loguru import logger
 
-from backend.core.events.types import OutboundMessage
-from backend.core.events.bus import MessageBus
 from backend.channels.base import BaseChannel
+from backend.core.events.bus import MessageBus
+from backend.core.events.types import OutboundMessage
 
 
 class WebhookChannel(BaseChannel):

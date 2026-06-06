@@ -1,8 +1,10 @@
 """Entry point for PyInstaller packaged Octopus backend."""
 
-from backend.api.server import app, PORT
-import uvicorn
 import os
+
+import uvicorn
+
+from backend.api.server import PORT, app
 
 if __name__ == "__main__":
     port = int(os.environ.get("OCTOPUS_PORT", PORT))

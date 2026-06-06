@@ -3,7 +3,7 @@
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -13,6 +13,7 @@ from backend.data.database import Database
 @dataclass
 class MCPServerRecord:
     """MCP server record data class."""
+
     id: int
     name: str
     url: str
@@ -27,8 +28,9 @@ class MCPServerRecord:
 @dataclass
 class MCPToolRecord:
     """MCP tool record data class."""
+
     id: int
-    server_id: Optional[int]
+    server_id: int | None
     name: str
     description: str
     enabled: bool
@@ -42,72 +44,69 @@ class MCPToolRecord:
 @dataclass
 class MCPToolStats:
     """MCP tool usage statistics."""
+
     id: int
     tool_id: int
     use_count: int
-    last_used_at: Optional[datetime]
+    last_used_at: datetime | None
 
 
 class MCPRepository:
     """Repository for MCP-related database operations."""
-    
+
     def __init__(self, db: Database):
         self.db = db
-    
+
     # ========== Server Operations ==========
-    
-    def get_or_create_server(self, name: str, url: str, protocol: str = "stdio",
-                             enabled: bool = True, auto_connect: bool = True,
-                             config: dict[str, Any] | None = None) -> MCPServerRecord:
+
+    def get_or_create_server(
+        self,
+        name: str,
+        url: str,
+        protocol: str = "stdio",
+        enabled: bool = True,
+        auto_connect: bool = True,
+        config: dict[str, Any] | None = None,
+    ) -> MCPServerRecord:
         """Get or create a server record."""
         config = config or {}
         config_json = json.dumps(config, ensure_ascii=False)
-        
+
         with self.db._get_connection() as conn:
             # Try to get existing
-            row = conn.execute(
-                "SELECT * FROM mcp_servers WHERE name = ?",
-                (name,)
-            ).fetchone()
-            
+            row = conn.execute("SELECT * FROM mcp_servers WHERE name = ?", (name,)).fetchone()
+
             if row:
                 return self._row_to_server(row)
-            
+
             # Create new
             cursor = conn.execute(
                 """INSERT INTO mcp_servers (name, url, protocol, enabled, auto_connect, config_json, created_at, updated_at)
                    VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
-                (name, url, protocol, enabled, auto_connect, config_json)
+                (name, url, protocol, enabled, auto_connect, config_json),
             )
-            
+
             row = conn.execute(
-                "SELECT * FROM mcp_servers WHERE id = ?",
-                (cursor.lastrowid,)
+                "SELECT * FROM mcp_servers WHERE id = ?", (cursor.lastrowid,)
             ).fetchone()
-            
+
             logger.info(f"Created MCP server record: {name}")
             return self._row_to_server(row)
-    
-    def get_server(self, name: str) -> Optional[MCPServerRecord]:
+
+    def get_server(self, name: str) -> MCPServerRecord | None:
         """Get server by name."""
         with self.db._get_connection() as conn:
-            row = conn.execute(
-                "SELECT * FROM mcp_servers WHERE name = ?",
-                (name,)
-            ).fetchone()
-            
+            row = conn.execute("SELECT * FROM mcp_servers WHERE name = ?", (name,)).fetchone()
+
             return self._row_to_server(row) if row else None
-    
-    def get_server_by_id(self, server_id: int) -> Optional[MCPServerRecord]:
+
+    def get_server_by_id(self, server_id: int) -> MCPServerRecord | None:
         """Get server by ID."""
         with self.db._get_connection() as conn:
-            row = conn.execute(
-                "SELECT * FROM mcp_servers WHERE id = ?",
-                (server_id,)
-            ).fetchone()
-            
+            row = conn.execute("SELECT * FROM mcp_servers WHERE id = ?", (server_id,)).fetchone()
+
             return self._row_to_server(row) if row else None
-    
+
     def list_servers(self, enabled_only: bool = False) -> list[MCPServerRecord]:
         """List all servers."""
         with self.db._get_connection() as conn:
@@ -116,34 +115,29 @@ class MCPRepository:
                     "SELECT * FROM mcp_servers WHERE enabled = 1 ORDER BY name"
                 ).fetchall()
             else:
-                rows = conn.execute(
-                    "SELECT * FROM mcp_servers ORDER BY name"
-                ).fetchall()
-            
+                rows = conn.execute("SELECT * FROM mcp_servers ORDER BY name").fetchall()
+
             return [self._row_to_server(row) for row in rows]
-    
+
     def update_server(self, name: str, **kwargs) -> bool:
         """Update server configuration."""
         allowed_fields = {"url", "protocol", "enabled", "auto_connect", "config"}
         updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
-        
+
         if not updates:
             return False
-        
+
         with self.db._get_connection() as conn:
             # Check if server exists
-            row = conn.execute(
-                "SELECT id FROM mcp_servers WHERE name = ?",
-                (name,)
-            ).fetchone()
-            
+            row = conn.execute("SELECT id FROM mcp_servers WHERE name = ?", (name,)).fetchone()
+
             if not row:
                 return False
-            
+
             # Build update query
             set_clauses = []
             values = []
-            
+
             for key, value in updates.items():
                 if key == "config":
                     set_clauses.append("config_json = ?")
@@ -151,64 +145,71 @@ class MCPRepository:
                 else:
                     set_clauses.append(f"{key} = ?")
                     values.append(value)
-            
+
             set_clauses.append("updated_at = (datetime('now', 'localtime'))")
             values.append(name)
-            
-            conn.execute(
-                f"UPDATE mcp_servers SET {', '.join(set_clauses)} WHERE name = ?",
-                values
-            )
-            
+
+            conn.execute(f"UPDATE mcp_servers SET {', '.join(set_clauses)} WHERE name = ?", values)
+
             logger.info(f"Updated MCP server: {name}")
             return True
-    
+
     def delete_server(self, name: str) -> bool:
         """Delete a server and all its tools (cascade)."""
         with self.db._get_connection() as conn:
-            cursor = conn.execute(
-                "DELETE FROM mcp_servers WHERE name = ?",
-                (name,)
-            )
-            
+            cursor = conn.execute("DELETE FROM mcp_servers WHERE name = ?", (name,))
+
             if cursor.rowcount > 0:
                 logger.info(f"Deleted MCP server: {name}")
                 return True
             return False
-    
+
     # ========== Tool Operations ==========
-    
-    def get_or_create_tool(self, name: str, server_id: Optional[int] = None,
-                           description: str = "", enabled: bool = True,
-                           parameters: dict[str, Any] | None = None,
-                           dependencies: list[str] | None = None,
-                           config: dict[str, Any] | None = None) -> MCPToolRecord:
+
+    def get_or_create_tool(
+        self,
+        name: str,
+        server_id: int | None = None,
+        description: str = "",
+        enabled: bool = True,
+        parameters: dict[str, Any] | None = None,
+        dependencies: list[str] | None = None,
+        config: dict[str, Any] | None = None,
+    ) -> MCPToolRecord:
         """Get or create a tool record."""
         parameters = parameters or {}
         dependencies = dependencies or []
         config = config or {}
-        
+
         parameters_json = json.dumps(parameters, ensure_ascii=False)
         dependencies_json = json.dumps(dependencies, ensure_ascii=False)
         config_json = json.dumps(config, ensure_ascii=False)
-        
+
         with self.db._get_connection() as conn:
             # Try to get existing
             row = conn.execute(
                 """SELECT * FROM mcp_tools
                    WHERE name = ? AND (server_id = ? OR (server_id IS NULL AND ? IS NULL))""",
-                (name, server_id, server_id)
+                (name, server_id, server_id),
             ).fetchone()
-            
+
             if row:
                 return self._row_to_tool(row)
-            
+
             # Create new
             cursor = conn.execute(
                 """INSERT INTO mcp_tools
                    (server_id, name, description, enabled, parameters_json, dependencies_json, config_json, created_at, updated_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
-                (server_id, name, description, enabled, parameters_json, dependencies_json, config_json)
+                (
+                    server_id,
+                    name,
+                    description,
+                    enabled,
+                    parameters_json,
+                    dependencies_json,
+                    config_json,
+                ),
             )
 
             tool_id = cursor.lastrowid
@@ -216,46 +217,36 @@ class MCPRepository:
             # Create stats record
             conn.execute(
                 "INSERT INTO mcp_tool_stats (tool_id, use_count, last_used_at) VALUES (?, 0, datetime('now', 'localtime'))",
-                (tool_id,)
+                (tool_id,),
             )
-            
-            row = conn.execute(
-                "SELECT * FROM mcp_tools WHERE id = ?",
-                (tool_id,)
-            ).fetchone()
-            
+
+            row = conn.execute("SELECT * FROM mcp_tools WHERE id = ?", (tool_id,)).fetchone()
+
             logger.info(f"Created MCP tool record: {name}")
             return self._row_to_tool(row)
-    
-    def get_tool(self, name: str, server_id: Optional[int] = None) -> Optional[MCPToolRecord]:
+
+    def get_tool(self, name: str, server_id: int | None = None) -> MCPToolRecord | None:
         """Get tool by name and optional server_id."""
         with self.db._get_connection() as conn:
             if server_id is not None:
                 row = conn.execute(
-                    "SELECT * FROM mcp_tools WHERE name = ? AND server_id = ?",
-                    (name, server_id)
+                    "SELECT * FROM mcp_tools WHERE name = ? AND server_id = ?", (name, server_id)
                 ).fetchone()
             else:
-                row = conn.execute(
-                    "SELECT * FROM mcp_tools WHERE name = ?",
-                    (name,)
-                ).fetchone()
-            
+                row = conn.execute("SELECT * FROM mcp_tools WHERE name = ?", (name,)).fetchone()
+
             return self._row_to_tool(row) if row else None
-    
-    def get_tool_by_id(self, tool_id: int) -> Optional[MCPToolRecord]:
+
+    def get_tool_by_id(self, tool_id: int) -> MCPToolRecord | None:
         """Get tool by ID."""
         with self.db._get_connection() as conn:
-            row = conn.execute(
-                "SELECT * FROM mcp_tools WHERE id = ?",
-                (tool_id,)
-            ).fetchone()
-            
+            row = conn.execute("SELECT * FROM mcp_tools WHERE id = ?", (tool_id,)).fetchone()
+
             return self._row_to_tool(row) if row else None
-    
+
     def list_tools(
         self,
-        server_id: Optional[int] = None,
+        server_id: int | None = None,
         enabled_only: bool = False,
         server_enabled_only: bool = False,
     ) -> list[MCPToolRecord]:
@@ -282,35 +273,31 @@ class MCPRepository:
 
             rows = conn.execute(query, params).fetchall()
             return [self._row_to_tool(row) for row in rows]
-    
-    def update_tool(self, name: str, server_id: Optional[int] = None, **kwargs) -> bool:
+
+    def update_tool(self, name: str, server_id: int | None = None, **kwargs) -> bool:
         """Update tool configuration."""
         allowed_fields = {"description", "enabled", "parameters", "dependencies", "config"}
         updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
-        
+
         if not updates:
             return False
-        
+
         with self.db._get_connection() as conn:
             # Check if tool exists
             if server_id is not None:
                 row = conn.execute(
-                    "SELECT id FROM mcp_tools WHERE name = ? AND server_id = ?",
-                    (name, server_id)
+                    "SELECT id FROM mcp_tools WHERE name = ? AND server_id = ?", (name, server_id)
                 ).fetchone()
             else:
-                row = conn.execute(
-                    "SELECT id FROM mcp_tools WHERE name = ?",
-                    (name,)
-                ).fetchone()
-            
+                row = conn.execute("SELECT id FROM mcp_tools WHERE name = ?", (name,)).fetchone()
+
             if not row:
                 return False
-            
+
             # Build update query
             set_clauses = []
             values = []
-            
+
             for key, value in updates.items():
                 if key == "parameters":
                     set_clauses.append("parameters_json = ?")
@@ -324,42 +311,37 @@ class MCPRepository:
                 else:
                     set_clauses.append(f"{key} = ?")
                     values.append(value)
-            
+
             set_clauses.append("updated_at = (datetime('now', 'localtime'))")
             values.extend([name, server_id] if server_id is not None else [name])
-            
+
             if server_id is not None:
                 conn.execute(
                     f"UPDATE mcp_tools SET {', '.join(set_clauses)} WHERE name = ? AND server_id = ?",
-                    values
+                    values,
                 )
             else:
                 conn.execute(
-                    f"UPDATE mcp_tools SET {', '.join(set_clauses)} WHERE name = ?",
-                    values
+                    f"UPDATE mcp_tools SET {', '.join(set_clauses)} WHERE name = ?", values
                 )
-            
+
             logger.info(f"Updated MCP tool: {name}")
             return True
-    
-    def set_tool_enabled(self, name: str, enabled: bool, server_id: Optional[int] = None) -> bool:
+
+    def set_tool_enabled(self, name: str, enabled: bool, server_id: int | None = None) -> bool:
         """Set tool enabled state."""
         return self.update_tool(name, server_id=server_id, enabled=enabled)
-    
-    def delete_tool(self, name: str, server_id: Optional[int] = None) -> bool:
+
+    def delete_tool(self, name: str, server_id: int | None = None) -> bool:
         """Delete a tool."""
         with self.db._get_connection() as conn:
             if server_id is not None:
                 cursor = conn.execute(
-                    "DELETE FROM mcp_tools WHERE name = ? AND server_id = ?",
-                    (name, server_id)
+                    "DELETE FROM mcp_tools WHERE name = ? AND server_id = ?", (name, server_id)
                 )
             else:
-                cursor = conn.execute(
-                    "DELETE FROM mcp_tools WHERE name = ?",
-                    (name,)
-                )
-            
+                cursor = conn.execute("DELETE FROM mcp_tools WHERE name = ?", (name,))
+
             if cursor.rowcount > 0:
                 logger.info(f"Deleted MCP tool: {name}")
                 return True
@@ -368,19 +350,17 @@ class MCPRepository:
     def disable_tools_for_disabled_servers(self) -> int:
         """Disable all tools that belong to disabled servers."""
         with self.db._get_connection() as conn:
-            cursor = conn.execute(
-                """UPDATE mcp_tools
+            cursor = conn.execute("""UPDATE mcp_tools
                    SET enabled = 0
                    WHERE enabled = 1
-                     AND server_id IN (SELECT id FROM mcp_servers WHERE enabled = 0)"""
-            )
+                     AND server_id IN (SELECT id FROM mcp_servers WHERE enabled = 0)""")
             count = cursor.rowcount
             if count > 0:
                 logger.info(f"Disabled {count} tools belonging to disabled servers")
             return count
 
     # ========== Tool Statistics ==========
-    
+
     def record_tool_use(self, tool_id: int) -> bool:
         """Record tool usage."""
         with self.db._get_connection() as conn:
@@ -388,28 +368,27 @@ class MCPRepository:
                 """UPDATE mcp_tool_stats
                    SET use_count = use_count + 1, last_used_at = (datetime('now', 'localtime'))
                    WHERE tool_id = ?""",
-                (tool_id,)
+                (tool_id,),
             )
             return True
-    
-    def get_tool_stats(self, tool_id: int) -> Optional[MCPToolStats]:
+
+    def get_tool_stats(self, tool_id: int) -> MCPToolStats | None:
         """Get tool usage statistics."""
         with self.db._get_connection() as conn:
             row = conn.execute(
-                "SELECT * FROM mcp_tool_stats WHERE tool_id = ?",
-                (tool_id,)
+                "SELECT * FROM mcp_tool_stats WHERE tool_id = ?", (tool_id,)
             ).fetchone()
-            
+
             return self._row_to_stats(row) if row else None
-    
+
     def get_all_tool_stats(self) -> dict[int, MCPToolStats]:
         """Get statistics for all tools."""
         with self.db._get_connection() as conn:
             rows = conn.execute("SELECT * FROM mcp_tool_stats").fetchall()
             return {row["tool_id"]: self._row_to_stats(row) for row in rows}
-    
+
     # ========== Bulk Operations ==========
-    
+
     def sync_servers_from_config(self, servers_config: dict[str, dict]) -> None:
         """Sync servers from configuration dictionary."""
         with self.db._get_connection() as conn:
@@ -418,35 +397,44 @@ class MCPRepository:
                 protocol = config.get("protocol", "stdio")
                 enabled = config.get("enabled", True)
                 auto_connect = config.get("auto_connect", True)
-                
-                other_config = {k: v for k, v in config.items()
-                               if k not in {"name", "url", "protocol", "enabled", "auto_connect"}}
-                
+
+                other_config = {
+                    k: v
+                    for k, v in config.items()
+                    if k not in {"name", "url", "protocol", "enabled", "auto_connect"}
+                }
+
                 row = conn.execute(
-                    "SELECT id, enabled, auto_connect FROM mcp_servers WHERE name = ?",
-                    (name,)
+                    "SELECT id, enabled, auto_connect FROM mcp_servers WHERE name = ?", (name,)
                 ).fetchone()
-                
+
                 if row:
                     enabled = bool(row["enabled"])
                     auto_connect = bool(row["auto_connect"])
-                    
+
                     conn.execute(
                         """UPDATE mcp_servers
                            SET url = ?, protocol = ?, config_json = ?,
                                updated_at = (datetime('now', 'localtime'))
                            WHERE name = ?""",
-                        (url, protocol, json.dumps(other_config, ensure_ascii=False), name)
+                        (url, protocol, json.dumps(other_config, ensure_ascii=False), name),
                     )
                 else:
                     conn.execute(
                         """INSERT INTO mcp_servers (name, url, protocol, enabled, auto_connect, config_json, created_at, updated_at)
                            VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
-                        (name, url, protocol, enabled, auto_connect, json.dumps(other_config, ensure_ascii=False))
+                        (
+                            name,
+                            url,
+                            protocol,
+                            enabled,
+                            auto_connect,
+                            json.dumps(other_config, ensure_ascii=False),
+                        ),
                     )
-            
+
             logger.info(f"Synced {len(servers_config)} servers from config")
-    
+
     def sync_tools_from_config(self, tools_config: dict[str, dict]) -> None:
         """Sync tools from configuration dictionary."""
         with self.db._get_connection() as conn:
@@ -455,42 +443,56 @@ class MCPRepository:
                 enabled = config.get("enabled", True)
                 parameters = config.get("parameters", {})
                 dependencies = config.get("dependencies", [])
-                
-                other_config = {k: v for k, v in config.items()
-                               if k not in {"name", "description", "enabled", "parameters", "dependencies"}}
-                
+
+                other_config = {
+                    k: v
+                    for k, v in config.items()
+                    if k not in {"name", "description", "enabled", "parameters", "dependencies"}
+                }
+
                 row = conn.execute(
                     "SELECT id, enabled FROM mcp_tools WHERE name = ? AND server_id IS NULL",
-                    (name,)
+                    (name,),
                 ).fetchone()
-                
+
                 if row:
                     enabled = bool(row["enabled"])
-                    
+
                     conn.execute(
                         """UPDATE mcp_tools
                            SET description = ?, parameters_json = ?,
                                dependencies_json = ?, config_json = ?, updated_at = (datetime('now', 'localtime'))
                            WHERE name = ? AND server_id IS NULL""",
-                        (description, json.dumps(parameters, ensure_ascii=False),
-                         json.dumps(dependencies, ensure_ascii=False), json.dumps(other_config, ensure_ascii=False), name)
+                        (
+                            description,
+                            json.dumps(parameters, ensure_ascii=False),
+                            json.dumps(dependencies, ensure_ascii=False),
+                            json.dumps(other_config, ensure_ascii=False),
+                            name,
+                        ),
                     )
                 else:
                     cursor = conn.execute(
                         """INSERT INTO mcp_tools
                            (name, description, enabled, parameters_json, dependencies_json, config_json, created_at, updated_at)
                            VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
-                        (name, description, enabled, json.dumps(parameters, ensure_ascii=False),
-                         json.dumps(dependencies, ensure_ascii=False), json.dumps(other_config, ensure_ascii=False))
+                        (
+                            name,
+                            description,
+                            enabled,
+                            json.dumps(parameters, ensure_ascii=False),
+                            json.dumps(dependencies, ensure_ascii=False),
+                            json.dumps(other_config, ensure_ascii=False),
+                        ),
                     )
 
                     conn.execute(
                         "INSERT INTO mcp_tool_stats (tool_id, use_count, last_used_at) VALUES (?, 0, datetime('now', 'localtime'))",
-                        (cursor.lastrowid,)
+                        (cursor.lastrowid,),
                     )
-            
+
             logger.info(f"Synced {len(tools_config)} tools from config")
-    
+
     def get_tools_by_server(self, server_name: str) -> list[MCPToolRecord]:
         """Get all tools for a specific server."""
         with self.db._get_connection() as conn:
@@ -499,59 +501,59 @@ class MCPRepository:
                    JOIN mcp_servers s ON t.server_id = s.id
                    WHERE s.name = ?
                    ORDER BY t.name""",
-                (server_name,)
+                (server_name,),
             ).fetchall()
             return [self._row_to_tool(row) for row in rows]
-    
-    def get_server_with_tools(self, server_name: str) -> tuple[Optional[MCPServerRecord], list[MCPToolRecord]]:
+
+    def get_server_with_tools(
+        self, server_name: str
+    ) -> tuple[MCPServerRecord | None, list[MCPToolRecord]]:
         """Get a server and all its tools."""
         server = self.get_server(server_name)
         if not server:
             return None, []
         tools = self.get_tools_by_server(server_name)
         return server, tools
-    
+
     def get_all_servers_with_tools(self, enabled_only: bool = False) -> list[dict[str, Any]]:
         """Get all servers with their tools."""
         servers = self.list_servers(enabled_only=enabled_only)
         result = []
         for server in servers:
             tools = self.get_tools_by_server(server.name)
-            result.append({
-                "server": server,
-                "tools": tools
-            })
+            result.append({"server": server, "tools": tools})
         return result
-    
-    def save_discovered_tools(self, server_name: str, tools_data: list[dict[str, Any]]) -> list[MCPToolRecord]:
+
+    def save_discovered_tools(
+        self, server_name: str, tools_data: list[dict[str, Any]]
+    ) -> list[MCPToolRecord]:
         """Save discovered tools for a server."""
         server = self.get_server(server_name)
         if not server:
             raise ValueError(f"Server '{server_name}' not found")
-        
+
         created_tools = []
         with self.db._get_connection() as conn:
             for tool_data in tools_data:
                 name = tool_data.get("name")
                 if not name:
                     continue
-                
+
                 description = tool_data.get("description", "")
                 parameters = tool_data.get("parameters", tool_data.get("inputSchema", {}))
-                
+
                 # Check if tool already exists for this server
                 row = conn.execute(
-                    "SELECT id FROM mcp_tools WHERE name = ? AND server_id = ?",
-                    (name, server.id)
+                    "SELECT id FROM mcp_tools WHERE name = ? AND server_id = ?", (name, server.id)
                 ).fetchone()
-                
+
                 if row:
                     # Update existing (preserve enabled state)
                     conn.execute(
                         """UPDATE mcp_tools
                            SET description = ?, parameters_json = ?, updated_at = (datetime('now', 'localtime'))
                            WHERE id = ?""",
-                        (description, json.dumps(parameters, ensure_ascii=False), row["id"])
+                        (description, json.dumps(parameters, ensure_ascii=False), row["id"]),
                     )
                     tool_id = row["id"]
                 else:
@@ -561,31 +563,34 @@ class MCPRepository:
                         """INSERT INTO mcp_tools
                            (server_id, name, description, enabled, parameters_json, dependencies_json, config_json, created_at, updated_at)
                            VALUES (?, ?, ?, ?, ?, '[]', '{}', datetime('now', 'localtime'), datetime('now', 'localtime'))""",
-                        (server.id, name, description, is_enabled, json.dumps(parameters, ensure_ascii=False))
+                        (
+                            server.id,
+                            name,
+                            description,
+                            is_enabled,
+                            json.dumps(parameters, ensure_ascii=False),
+                        ),
                     )
                     tool_id = cursor.lastrowid
 
                     # Create stats record
                     conn.execute(
                         "INSERT INTO mcp_tool_stats (tool_id, use_count, last_used_at) VALUES (?, 0, datetime('now', 'localtime'))",
-                        (tool_id,)
+                        (tool_id,),
                     )
-                
+
                 # Get the created/updated record
-                row = conn.execute(
-                    "SELECT * FROM mcp_tools WHERE id = ?",
-                    (tool_id,)
-                ).fetchone()
+                row = conn.execute("SELECT * FROM mcp_tools WHERE id = ?", (tool_id,)).fetchone()
                 if row:
                     created_tools.append(self._row_to_tool(row))
-        
+
         logger.info(f"Saved {len(created_tools)} discovered tools for server '{server_name}'")
         return created_tools
-    
+
     def export_to_config(self) -> dict[str, Any]:
         """Export all configuration to dictionary format."""
         config = {"servers": {}, "tools": {}}
-        
+
         with self.db._get_connection() as conn:
             # Export servers
             rows = conn.execute("SELECT * FROM mcp_servers").fetchall()
@@ -597,13 +602,11 @@ class MCPRepository:
                     "protocol": server.protocol,
                     "enabled": server.enabled,
                     "auto_connect": server.auto_connect,
-                    **server.config
+                    **server.config,
                 }
-            
+
             # Export tools (global only, server-specific tools are managed per-server)
-            rows = conn.execute(
-                "SELECT * FROM mcp_tools WHERE server_id IS NULL"
-            ).fetchall()
+            rows = conn.execute("SELECT * FROM mcp_tools WHERE server_id IS NULL").fetchall()
             for row in rows:
                 tool = self._row_to_tool(row)
                 config["tools"][tool.name] = {
@@ -612,13 +615,13 @@ class MCPRepository:
                     "enabled": tool.enabled,
                     "parameters": tool.parameters,
                     "dependencies": tool.dependencies,
-                    **tool.config
+                    **tool.config,
                 }
-        
+
         return config
-    
+
     # ========== Helper Methods ==========
-    
+
     def _row_to_server(self, row) -> MCPServerRecord:
         """Convert database row to MCPServerRecord."""
         return MCPServerRecord(
@@ -630,9 +633,9 @@ class MCPRepository:
             auto_connect=bool(row["auto_connect"]),
             config=json.loads(row["config_json"]),
             created_at=datetime.fromisoformat(row["created_at"]),
-            updated_at=datetime.fromisoformat(row["updated_at"])
+            updated_at=datetime.fromisoformat(row["updated_at"]),
         )
-    
+
     def _row_to_tool(self, row) -> MCPToolRecord:
         """Convert database row to MCPToolRecord."""
         return MCPToolRecord(
@@ -645,9 +648,9 @@ class MCPRepository:
             dependencies=json.loads(row["dependencies_json"]),
             config=json.loads(row["config_json"]),
             created_at=datetime.fromisoformat(row["created_at"]),
-            updated_at=datetime.fromisoformat(row["updated_at"])
+            updated_at=datetime.fromisoformat(row["updated_at"]),
         )
-    
+
     def _row_to_stats(self, row) -> MCPToolStats:
         """Convert database row to MCPToolStats."""
         last_used = row["last_used_at"]
@@ -655,5 +658,5 @@ class MCPRepository:
             id=row["id"],
             tool_id=row["tool_id"],
             use_count=row["use_count"],
-            last_used_at=datetime.fromisoformat(last_used) if last_used else None
+            last_used_at=datetime.fromisoformat(last_used) if last_used else None,
         )

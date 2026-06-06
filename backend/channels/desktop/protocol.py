@@ -1,7 +1,7 @@
 """WebSocket message protocol definitions for Desktop channel."""
 
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
@@ -10,62 +10,66 @@ class MessageType(Enum):
     """Message types for WebSocket communication."""
 
     # Client -> Server
-    CHAT = "chat"                    # Send a chat message
-    GET_CONFIG = "get_config"        # Get current configuration
-    SAVE_CONFIG = "save_config"      # Save configuration
-    PING = "ping"                    # Keep-alive ping
-    GET_MODELS = "get_models"        # Get available models for a provider
+    CHAT = "chat"  # Send a chat message
+    GET_CONFIG = "get_config"  # Get current configuration
+    SAVE_CONFIG = "save_config"  # Save configuration
+    PING = "ping"  # Keep-alive ping
+    GET_MODELS = "get_models"  # Get available models for a provider
     GET_SLASH_COMMANDS = "get_slash_commands"  # Get available slash commands
 
     # MCP - Client -> Server
-    MCP_GET_STATUS = "mcp_get_status"              # Get MCP system status
-    MCP_GET_SERVERS = "mcp_get_servers"            # Get all MCP servers
+    MCP_GET_STATUS = "mcp_get_status"  # Get MCP system status
+    MCP_GET_SERVERS = "mcp_get_servers"  # Get all MCP servers
     MCP_GET_SERVER_TOOLS = "mcp_get_server_tools"  # Get tools for a server
-    MCP_ADD_SERVER = "mcp_add_server"              # Add new MCP server
-    MCP_DELETE_SERVER = "mcp_delete_server"        # Delete MCP server
-    MCP_UPDATE_SERVER = "mcp_update_server"        # Update server config
-    MCP_UPDATE_TOOL = "mcp_update_tool"            # Update tool config
-    MCP_DISCOVER_TOOLS = "mcp_discover_tools"      # Discover tools from server
-    MCP_CONNECT_SERVER = "mcp_connect_server"      # Connect to a server
+    MCP_ADD_SERVER = "mcp_add_server"  # Add new MCP server
+    MCP_DELETE_SERVER = "mcp_delete_server"  # Delete MCP server
+    MCP_UPDATE_SERVER = "mcp_update_server"  # Update server config
+    MCP_UPDATE_TOOL = "mcp_update_tool"  # Update tool config
+    MCP_DISCOVER_TOOLS = "mcp_discover_tools"  # Discover tools from server
+    MCP_CONNECT_SERVER = "mcp_connect_server"  # Connect to a server
     MCP_RECONNECT_SERVER = "mcp_reconnect_server"  # Reconnect to a server
     MCP_DISCONNECT_SERVER = "mcp_disconnect_server"  # Disconnect from server
-    MCP_CALL_TOOL = "mcp_call_tool"                # Call a tool
-    MCP_GET_CONFIG = "mcp_get_config"              # Get MCP configuration
-    MCP_UPDATE_CONFIG = "mcp_update_config"        # Update MCP configuration
+    MCP_CALL_TOOL = "mcp_call_tool"  # Call a tool
+    MCP_GET_CONFIG = "mcp_get_config"  # Get MCP configuration
+    MCP_UPDATE_CONFIG = "mcp_update_config"  # Update MCP configuration
 
     # Extensions - Client -> Server (Unified)
-    EXTENSION_GET_LIST = "extension_get_list"      # Get extensions list (market or installed)
-    EXTENSION_INSTALL = "extension_install"        # Install an extension
-    EXTENSION_UNINSTALL = "extension_uninstall"    # Uninstall an extension
-    EXTENSION_RUN = "extension_run"                # Run an extension
-    EXTENSION_CONFIG = "extension_config"          # Configure extension (save env vars)
+    EXTENSION_GET_LIST = "extension_get_list"  # Get extensions list (market or installed)
+    EXTENSION_INSTALL = "extension_install"  # Install an extension
+    EXTENSION_UNINSTALL = "extension_uninstall"  # Uninstall an extension
+    EXTENSION_RUN = "extension_run"  # Run an extension
+    EXTENSION_CONFIG = "extension_config"  # Configure extension (save env vars)
 
     # Session History - Client -> Server
-    SESSION_GET_CHANNELS = "session_get_channels"              # Get all channels
+    SESSION_GET_CHANNELS = "session_get_channels"  # Get all channels
     SESSION_GET_CHANNEL_SESSIONS = "session_get_channel_sessions"  # Get sessions for a channel
-    SESSION_GET_SESSION_DETAIL = "session_get_session_detail"      # Get session detail with instances
-    SESSION_GET_MESSAGES = "session_get_messages"                  # Get messages for an instance
-    SESSION_DELETE_INSTANCE = "session_delete_instance"            # Delete a session instance
-    SESSION_CREATE = "session_create"                              # Create a new session with instance
-    SESSION_SET_ACTIVE = "session_set_active"                      # Set an instance as active
-    SESSION_GET_INSTANCES = "session_get_instances"                # Get instances list with pagination
-    SESSION_COMPRESS_CONTEXT = "session_compress_context"          # Compress context for an instance
-    SESSION_GET_CONTEXT_STATS = "session_get_context_stats"        # Get context usage stats for an instance
+    SESSION_GET_SESSION_DETAIL = "session_get_session_detail"  # Get session detail with instances
+    SESSION_GET_MESSAGES = "session_get_messages"  # Get messages for an instance
+    SESSION_DELETE_INSTANCE = "session_delete_instance"  # Delete a session instance
+    SESSION_CREATE = "session_create"  # Create a new session with instance
+    SESSION_SET_ACTIVE = "session_set_active"  # Set an instance as active
+    SESSION_GET_INSTANCES = "session_get_instances"  # Get instances list with pagination
+    SESSION_COMPRESS_CONTEXT = "session_compress_context"  # Compress context for an instance
+    SESSION_GET_CONTEXT_STATS = (
+        "session_get_context_stats"  # Get context usage stats for an instance
+    )
 
     # Knowledge Base - Client -> Server
-    KNOWLEDGE_LIST = "knowledge_list"                    # List knowledge directory contents
-    KNOWLEDGE_READ = "knowledge_read"                    # Read knowledge file content
-    KNOWLEDGE_WRITE = "knowledge_write"                  # Write knowledge file content
-    KNOWLEDGE_DELETE = "knowledge_delete"                # Delete knowledge file or directory
-    KNOWLEDGE_SEARCH = "knowledge_search"                # Search knowledge notes
-    KNOWLEDGE_GRAPH = "knowledge_graph"                  # Get knowledge graph data
-    KNOWLEDGE_DISTILL = "knowledge_distill"                 # Distill document to note
-    KNOWLEDGE_DISTILL_PREVIEW = "knowledge_distill_preview" # Preview distillation without writing
-    KNOWLEDGE_DISTILL_LIST = "knowledge_distill_list"       # List distillation tasks
-    KNOWLEDGE_GET_TAGS = "knowledge_get_tags"               # Get all tags
-    KNOWLEDGE_EXPORT = "knowledge_export"                   # Export knowledge base as zip
-    KNOWLEDGE_IMPORT = "knowledge_import"                   # Import knowledge base from zip
-    KNOWLEDGE_GET_DOCUMENT_META = "knowledge_get_document_meta"  # Get metadata for documents by sha256
+    KNOWLEDGE_LIST = "knowledge_list"  # List knowledge directory contents
+    KNOWLEDGE_READ = "knowledge_read"  # Read knowledge file content
+    KNOWLEDGE_WRITE = "knowledge_write"  # Write knowledge file content
+    KNOWLEDGE_DELETE = "knowledge_delete"  # Delete knowledge file or directory
+    KNOWLEDGE_SEARCH = "knowledge_search"  # Search knowledge notes
+    KNOWLEDGE_GRAPH = "knowledge_graph"  # Get knowledge graph data
+    KNOWLEDGE_DISTILL = "knowledge_distill"  # Distill document to note
+    KNOWLEDGE_DISTILL_PREVIEW = "knowledge_distill_preview"  # Preview distillation without writing
+    KNOWLEDGE_DISTILL_LIST = "knowledge_distill_list"  # List distillation tasks
+    KNOWLEDGE_GET_TAGS = "knowledge_get_tags"  # Get all tags
+    KNOWLEDGE_EXPORT = "knowledge_export"  # Export knowledge base as zip
+    KNOWLEDGE_IMPORT = "knowledge_import"  # Import knowledge base from zip
+    KNOWLEDGE_GET_DOCUMENT_META = (
+        "knowledge_get_document_meta"  # Get metadata for documents by sha256
+    )
     KNOWLEDGE_LIST_VAULTS = "knowledge_list_vaults"  # List all vaults
     KNOWLEDGE_UPDATE_REFERENCES = "knowledge_update_references"  # Update references after file move
 
@@ -94,16 +98,16 @@ class MessageType(Enum):
     LIBRARY_GRAPH = "library_graph"
 
     # PDF Chat - Client -> Server
-    PDF_CHAT = "pdf_chat"                                    # PDF chat operations
+    PDF_CHAT = "pdf_chat"  # PDF chat operations
 
     # Library Chat - Client -> Server
-    LIBRARY_CHAT = "library_chat"                            # Library chat operations
+    LIBRARY_CHAT = "library_chat"  # Library chat operations
 
     # Notes Chat - Client -> Server
-    NOTES_CHAT = "notes_chat"                                # Notes chat operations
+    NOTES_CHAT = "notes_chat"  # Notes chat operations
 
     # Workflow Design Chat - Client -> Server
-    WORKFLOW_DESIGN = "workflow_design"                      # AI-assisted workflow design chat
+    WORKFLOW_DESIGN = "workflow_design"  # AI-assisted workflow design chat
 
     # Subagent - Client -> Server
     SUBAGENT_LIST = "subagent_list"
@@ -111,7 +115,7 @@ class MessageType(Enum):
     SUBAGENT_DELETE = "subagent_delete"
 
     # File Preview - Client -> Server
-    FILE_PREVIEW_PDF = "file_preview_pdf"                   # Convert file to PDF for preview
+    FILE_PREVIEW_PDF = "file_preview_pdf"  # Convert file to PDF for preview
 
     # Workflow - Client -> Server
     WORKFLOW_LIST = "workflow_list"
@@ -149,139 +153,157 @@ class MessageType(Enum):
     DB_RECORD_SEARCH = "db_record_search"
 
     # Memory Stream - Client -> Server
-    MEMORY_LIST = "memory_list"                          # List observations
-    MEMORY_SEARCH = "memory_search"                      # Search observations (frontend)
-    MEMORY_READ = "memory_read"                          # Read single observation
-    MEMORY_TIMELINE = "memory_timeline"                  # Get observation timeline
-    MEMORY_DELETE = "memory_delete"                      # Delete observation
-    MEMORY_EXTRACT = "memory_extract"                    # Client -> Server: manually trigger observation extraction
-    MEMORY_PROMOTE = "memory_promote"                    # Client -> Server: promote observation to curated memory
+    MEMORY_LIST = "memory_list"  # List observations
+    MEMORY_SEARCH = "memory_search"  # Search observations (frontend)
+    MEMORY_READ = "memory_read"  # Read single observation
+    MEMORY_TIMELINE = "memory_timeline"  # Get observation timeline
+    MEMORY_DELETE = "memory_delete"  # Delete observation
+    MEMORY_EXTRACT = "memory_extract"  # Client -> Server: manually trigger observation extraction
+    MEMORY_PROMOTE = "memory_promote"  # Client -> Server: promote observation to curated memory
 
     # Workspace File System - Client -> Server
-    WORKSPACE_LIST = "workspace_list"                    # List directory contents
-    WORKSPACE_READ = "workspace_read"                    # Read file content
-    WORKSPACE_WRITE = "workspace_write"                  # Write file content
-    WORKSPACE_WRITE_CHUNK = "workspace_write_chunk"      # Write a file chunk (resumable upload)
-    WORKSPACE_DELETE = "workspace_delete"                # Delete file or directory
-    WORKSPACE_MKDIR = "workspace_mkdir"                  # Create directory
-    WORKSPACE_RENAME = "workspace_rename"                # Rename file or directory
-    WORKSPACE_GET_ROOT = "workspace_get_root"            # Get workspace root path
+    WORKSPACE_LIST = "workspace_list"  # List directory contents
+    WORKSPACE_READ = "workspace_read"  # Read file content
+    WORKSPACE_WRITE = "workspace_write"  # Write file content
+    WORKSPACE_WRITE_CHUNK = "workspace_write_chunk"  # Write a file chunk (resumable upload)
+    WORKSPACE_DELETE = "workspace_delete"  # Delete file or directory
+    WORKSPACE_MKDIR = "workspace_mkdir"  # Create directory
+    WORKSPACE_RENAME = "workspace_rename"  # Rename file or directory
+    WORKSPACE_GET_ROOT = "workspace_get_root"  # Get workspace root path
 
     # Cron - Client -> Server
-    CRON_GET_JOBS = "cron_get_jobs"                      # Get all cron jobs
-    CRON_ADD_JOB = "cron_add_job"                        # Add a new cron job
-    CRON_DELETE_JOB = "cron_delete_job"                  # Delete a cron job
-    CRON_TOGGLE_JOB = "cron_toggle_job"                  # Enable/disable a cron job
-    CRON_RUN_JOB = "cron_run_job"                        # Run a cron job manually
+    CRON_GET_JOBS = "cron_get_jobs"  # Get all cron jobs
+    CRON_ADD_JOB = "cron_add_job"  # Add a new cron job
+    CRON_DELETE_JOB = "cron_delete_job"  # Delete a cron job
+    CRON_TOGGLE_JOB = "cron_toggle_job"  # Enable/disable a cron job
+    CRON_RUN_JOB = "cron_run_job"  # Run a cron job manually
 
     # Agent - Client -> Server
-    AGENT_GET_LIST = "agent_get_list"                    # Get all agents
-    AGENT_GET_SOUL = "agent_get_soul"                    # Get agent SOUL.md content
-    AGENT_SAVE_SOUL = "agent_save_soul"                  # Save agent SOUL.md content
-    AGENT_DELETE = "agent_delete"                        # Delete an agent
-    AGENT_GET_SYSTEM_FILES = "agent_get_system_files"    # Get system agent file list
-    AGENT_GET_SYSTEM_FILE = "agent_get_system_file"      # Get system agent file content
-    AGENT_SAVE_SYSTEM_FILE = "agent_save_system_file"    # Save system agent file content
+    AGENT_GET_LIST = "agent_get_list"  # Get all agents
+    AGENT_GET_SOUL = "agent_get_soul"  # Get agent SOUL.md content
+    AGENT_SAVE_SOUL = "agent_save_soul"  # Save agent SOUL.md content
+    AGENT_DELETE = "agent_delete"  # Delete an agent
+    AGENT_GET_SYSTEM_FILES = "agent_get_system_files"  # Get system agent file list
+    AGENT_GET_SYSTEM_FILE = "agent_get_system_file"  # Get system agent file content
+    AGENT_SAVE_SYSTEM_FILE = "agent_save_system_file"  # Save system agent file content
 
     # System - Client -> Server
-    RESTART_SERVICE = "restart_service"                  # Restart backend service
-    STOP_AGENTS = "stop_agents"                          # Stop all running agents and subagents
+    RESTART_SERVICE = "restart_service"  # Restart backend service
+    STOP_AGENTS = "stop_agents"  # Stop all running agents and subagents
 
     # Image - Client -> Server
-    IMAGE_UPLOAD = "image_upload"                              # Upload image
-    FILE_UPLOAD = "file_upload"                                # Upload file
-    IMAGE_ANALYZE = "image_analyze"                            # Analyze image request
-    IMAGE_GENERATE = "image_generate"                          # Generate image request
-    IMAGE_GET_UNDERSTANDING_PROVIDERS = "image_get_understanding_providers"  # Get understanding providers
-    IMAGE_GET_GENERATION_PROVIDERS = "image_get_generation_providers"        # Get generation providers
-    IMAGE_ADD_UNDERSTANDING_PROVIDER = "image_add_understanding_provider"    # Add understanding provider
-    IMAGE_UPDATE_UNDERSTANDING_PROVIDER = "image_update_understanding_provider"  # Update understanding provider
-    IMAGE_DELETE_UNDERSTANDING_PROVIDER = "image_delete_understanding_provider"  # Delete understanding provider
-    IMAGE_ADD_GENERATION_PROVIDER = "image_add_generation_provider"          # Add generation provider
-    IMAGE_UPDATE_GENERATION_PROVIDER = "image_update_generation_provider"    # Update generation provider
-    IMAGE_DELETE_GENERATION_PROVIDER = "image_delete_generation_provider"    # Delete generation provider
+    IMAGE_UPLOAD = "image_upload"  # Upload image
+    FILE_UPLOAD = "file_upload"  # Upload file
+    IMAGE_ANALYZE = "image_analyze"  # Analyze image request
+    IMAGE_GENERATE = "image_generate"  # Generate image request
+    IMAGE_GET_UNDERSTANDING_PROVIDERS = (
+        "image_get_understanding_providers"  # Get understanding providers
+    )
+    IMAGE_GET_GENERATION_PROVIDERS = "image_get_generation_providers"  # Get generation providers
+    IMAGE_ADD_UNDERSTANDING_PROVIDER = (
+        "image_add_understanding_provider"  # Add understanding provider
+    )
+    IMAGE_UPDATE_UNDERSTANDING_PROVIDER = (
+        "image_update_understanding_provider"  # Update understanding provider
+    )
+    IMAGE_DELETE_UNDERSTANDING_PROVIDER = (
+        "image_delete_understanding_provider"  # Delete understanding provider
+    )
+    IMAGE_ADD_GENERATION_PROVIDER = "image_add_generation_provider"  # Add generation provider
+    IMAGE_UPDATE_GENERATION_PROVIDER = (
+        "image_update_generation_provider"  # Update generation provider
+    )
+    IMAGE_DELETE_GENERATION_PROVIDER = (
+        "image_delete_generation_provider"  # Delete generation provider
+    )
 
     # Server -> Client
-    ACK = "ack"                      # Message acknowledged
+    ACK = "ack"  # Message acknowledged
     CHAT_RESPONSE = "chat_response"  # Chat response (full)
-    AGENT_START = "agent_start"      # Agent started processing
-    AGENT_TOKEN = "agent_token"      # Streaming token (new)
-    AGENT_CHUNK = "agent_chunk"      # Streaming chunk
-    AGENT_FINISH = "agent_finish"    # Agent finished
+    AGENT_START = "agent_start"  # Agent started processing
+    AGENT_TOKEN = "agent_token"  # Streaming token (new)
+    AGENT_CHUNK = "agent_chunk"  # Streaming chunk
+    AGENT_FINISH = "agent_finish"  # Agent finished
     AGENT_STOPPED = "agent_stopped"  # Agent stopped by user
-    CONFIG = "config"                # Configuration data
-    ERROR = "error"                  # Error message
-    PONG = "pong"                    # Keep-alive pong
-    MODELS = "models"                # Available models list
-    
+    CONFIG = "config"  # Configuration data
+    ERROR = "error"  # Error message
+    PONG = "pong"  # Keep-alive pong
+    MODELS = "models"  # Available models list
+
     # Tool Call Events - Server -> Client (new)
-    AGENT_TOOL_CALL_START = "agent_tool_call_start"          # Tool call started
+    AGENT_TOOL_CALL_START = "agent_tool_call_start"  # Tool call started
     AGENT_TOOL_CALL_STREAMING = "agent_tool_call_streaming"  # Tool call streaming
-    AGENT_TOOL_CALL_INVOKING = "agent_tool_call_invoking"    # Tool call invoking
-    AGENT_TOOL_CALL_COMPLETE = "agent_tool_call_complete"    # Tool call completed
-    AGENT_TOOL_CALL_ERROR = "agent_tool_call_error"          # Tool call error
+    AGENT_TOOL_CALL_INVOKING = "agent_tool_call_invoking"  # Tool call invoking
+    AGENT_TOOL_CALL_COMPLETE = "agent_tool_call_complete"  # Tool call completed
+    AGENT_TOOL_CALL_ERROR = "agent_tool_call_error"  # Tool call error
 
     # Iteration Events - Server -> Client
-    AGENT_ITERATION_COMPLETE = "agent_iteration_complete"    # Iteration round completed
+    AGENT_ITERATION_COMPLETE = "agent_iteration_complete"  # Iteration round completed
 
     # MCP - Server -> Client
-    MCP_STATUS = "mcp_status"              # MCP status response
-    MCP_SERVERS = "mcp_servers"            # MCP servers list
+    MCP_STATUS = "mcp_status"  # MCP status response
+    MCP_SERVERS = "mcp_servers"  # MCP servers list
     MCP_SERVER_TOOLS = "mcp_server_tools"  # MCP server tools
-    MCP_SERVER_ADDED = "mcp_server_added"      # Server added confirmation
+    MCP_SERVER_ADDED = "mcp_server_added"  # Server added confirmation
     MCP_SERVER_DELETED = "mcp_server_deleted"  # Server deleted confirmation
     MCP_SERVER_UPDATED = "mcp_server_updated"  # Server updated confirmation
-    MCP_TOOL_UPDATED = "mcp_tool_updated"      # Tool updated confirmation
+    MCP_TOOL_UPDATED = "mcp_tool_updated"  # Tool updated confirmation
     MCP_TOOLS_DISCOVERED = "mcp_tools_discovered"  # Tools discovered
-    MCP_SERVER_CONNECTED = "mcp_server_connected"    # Server connected
+    MCP_SERVER_CONNECTED = "mcp_server_connected"  # Server connected
     MCP_SERVER_DISCONNECTED = "mcp_server_disconnected"  # Server disconnected
-    MCP_TOOL_RESULT = "mcp_tool_result"    # Tool call result
-    MCP_CONFIG = "mcp_config"              # MCP configuration
+    MCP_TOOL_RESULT = "mcp_tool_result"  # Tool call result
+    MCP_CONFIG = "mcp_config"  # MCP configuration
     MCP_CONFIG_UPDATED = "mcp_config_updated"  # Config updated confirmation
     MCP_STATE_CHANGE = "mcp_state_change"  # MCP state change event
 
     # Extensions - Server -> Client (Unified)
-    EXTENSION_LIST = "extension_list"              # List of extensions
+    EXTENSION_LIST = "extension_list"  # List of extensions
     EXTENSION_INSTALLING = "extension_installing"  # Extension installation started
-    EXTENSION_INSTALLED = "extension_installed"    # Extension installation completed
+    EXTENSION_INSTALLED = "extension_installed"  # Extension installation completed
     EXTENSION_INSTALL_ERROR = "extension_install_error"  # Extension installation failed
-    EXTENSION_UNINSTALLED = "extension_uninstalled"      # Extension uninstalled
-    EXTENSION_RUNNING = "extension_running"        # Extension is running
+    EXTENSION_UNINSTALLED = "extension_uninstalled"  # Extension uninstalled
+    EXTENSION_RUNNING = "extension_running"  # Extension is running
     EXTENSION_RUN_RESULT = "extension_run_result"  # Extension run result
     EXTENSION_CONFIG_REQUIRED = "extension_config_required"  # Extension requires configuration
-    EXTENSION_CONFIG_SAVED = "extension_config_saved"        # Extension config saved
+    EXTENSION_CONFIG_SAVED = "extension_config_saved"  # Extension config saved
 
     # Session History - Server -> Client
-    SESSION_CHANNELS = "session_channels"              # List of channels
+    SESSION_CHANNELS = "session_channels"  # List of channels
     SESSION_CHANNEL_SESSIONS = "session_channel_sessions"  # Sessions for a channel
-    SESSION_DETAIL = "session_detail"                  # Session detail with instances
-    SESSION_MESSAGES = "session_messages"              # Messages for an instance
+    SESSION_DETAIL = "session_detail"  # Session detail with instances
+    SESSION_MESSAGES = "session_messages"  # Messages for an instance
     SESSION_INSTANCE_DELETED = "session_instance_deleted"  # Instance deleted confirmation
-    SESSION_CREATED = "session_created"                # Session created confirmation
-    SESSION_ACTIVE_SET = "session_active_set"          # Active instance set confirmation
-    SESSION_INSTANCES = "session_instances"            # Instances list with pagination
+    SESSION_CREATED = "session_created"  # Session created confirmation
+    SESSION_ACTIVE_SET = "session_active_set"  # Active instance set confirmation
+    SESSION_INSTANCES = "session_instances"  # Instances list with pagination
     SESSION_CONTEXT_COMPRESSED = "session_context_compressed"  # Context compressed confirmation
-    SESSION_CONTEXT_STATS = "session_context_stats"            # Context usage stats response
+    SESSION_CONTEXT_STATS = "session_context_stats"  # Context usage stats response
 
     # Knowledge Base - Server -> Client
-    KNOWLEDGE_LIST_RESULT = "knowledge_list_result"    # Knowledge directory listing result
-    KNOWLEDGE_READ_RESULT = "knowledge_read_result"    # Knowledge file content result
+    KNOWLEDGE_LIST_RESULT = "knowledge_list_result"  # Knowledge directory listing result
+    KNOWLEDGE_READ_RESULT = "knowledge_read_result"  # Knowledge file content result
     KNOWLEDGE_WRITE_RESULT = "knowledge_write_result"  # Knowledge write success confirmation
     KNOWLEDGE_DELETE_RESULT = "knowledge_delete_result"  # Knowledge delete success confirmation
     KNOWLEDGE_SEARCH_RESULT = "knowledge_search_result"  # Knowledge search results
     KNOWLEDGE_GRAPH_RESULT = "knowledge_graph_result"  # Knowledge graph data
-    KNOWLEDGE_DISTILL_RESULT = "knowledge_distill_result"   # Distill result
+    KNOWLEDGE_DISTILL_RESULT = "knowledge_distill_result"  # Distill result
     KNOWLEDGE_DISTILL_PREVIEW_RESULT = "knowledge_distill_preview_result"  # Preview result
     KNOWLEDGE_DISTILL_PROGRESS = "knowledge_distill_progress"  # Distill progress
     KNOWLEDGE_DISTILL_LIST_RESULT = "knowledge_distill_list_result"  # Task list result
     KNOWLEDGE_DISTILL_DETAIL = "knowledge_distill_detail"  # Request task detail
-    KNOWLEDGE_DISTILL_DETAIL_RESULT = "knowledge_distill_detail_result"  # Task detail with iterations
+    KNOWLEDGE_DISTILL_DETAIL_RESULT = (
+        "knowledge_distill_detail_result"  # Task detail with iterations
+    )
     KNOWLEDGE_GET_TAGS_RESULT = "knowledge_get_tags_result"  # Tags list result
-    KNOWLEDGE_EXPORT_RESULT = "knowledge_export_result"      # Export zip data
-    KNOWLEDGE_IMPORT_RESULT = "knowledge_import_result"      # Import success/failure
-    KNOWLEDGE_GET_DOCUMENT_META_RESULT = "knowledge_get_document_meta_result"  # Document metadata result
+    KNOWLEDGE_EXPORT_RESULT = "knowledge_export_result"  # Export zip data
+    KNOWLEDGE_IMPORT_RESULT = "knowledge_import_result"  # Import success/failure
+    KNOWLEDGE_GET_DOCUMENT_META_RESULT = (
+        "knowledge_get_document_meta_result"  # Document metadata result
+    )
     KNOWLEDGE_LIST_VAULTS_RESULT = "knowledge_list_vaults_result"  # Vault list result
-    KNOWLEDGE_UPDATE_REFERENCES_RESULT = "knowledge_update_references_result"  # Reference update result
+    KNOWLEDGE_UPDATE_REFERENCES_RESULT = (
+        "knowledge_update_references_result"  # Reference update result
+    )
 
     # Library - Server -> Client
     LIBRARY_LIST_RESULT = "library_list_result"
@@ -308,193 +330,208 @@ class MessageType(Enum):
     LIBRARY_GRAPH_RESULT = "library_graph_result"
 
     # File Preview - Server -> Client
-    FILE_PREVIEW_PDF_RESULT = "file_preview_pdf_result"    # PDF conversion result
+    FILE_PREVIEW_PDF_RESULT = "file_preview_pdf_result"  # PDF conversion result
 
     # Memory Stream - Server -> Client
-    MEMORY_LIST_RESULT = "memory_list_result"          # Observations list result
-    MEMORY_SEARCH_RESULT = "memory_search_result"      # Observation search results
-    MEMORY_READ_RESULT = "memory_read_result"          # Single observation result
+    MEMORY_LIST_RESULT = "memory_list_result"  # Observations list result
+    MEMORY_SEARCH_RESULT = "memory_search_result"  # Observation search results
+    MEMORY_READ_RESULT = "memory_read_result"  # Single observation result
     MEMORY_TIMELINE_RESULT = "memory_timeline_result"  # Timeline result
-    MEMORY_DELETED = "memory_deleted"                  # Observation deleted confirmation
-    MEMORY_EXTRACT_RESULT = "memory_extract_result"    # Server -> Client: extraction completed
-    MEMORY_PROMOTED = "memory_promoted"                  # Server -> Client: promotion completed
-    WORKSPACE_LIST_RESULT = "workspace_list_result"    # Directory listing result
-    WORKSPACE_READ_RESULT = "workspace_read_result"    # File content result
+    MEMORY_DELETED = "memory_deleted"  # Observation deleted confirmation
+    MEMORY_EXTRACT_RESULT = "memory_extract_result"  # Server -> Client: extraction completed
+    MEMORY_PROMOTED = "memory_promoted"  # Server -> Client: promotion completed
+    WORKSPACE_LIST_RESULT = "workspace_list_result"  # Directory listing result
+    WORKSPACE_READ_RESULT = "workspace_read_result"  # File content result
     WORKSPACE_WRITE_RESULT = "workspace_write_result"  # Write success confirmation
     WORKSPACE_WRITE_CHUNK_RESULT = "workspace_write_chunk_result"  # Chunk upload progress
     WORKSPACE_DELETE_RESULT = "workspace_delete_result"  # Delete success confirmation
     WORKSPACE_MKDIR_RESULT = "workspace_mkdir_result"  # Mkdir success confirmation
     WORKSPACE_RENAME_RESULT = "workspace_rename_result"  # Rename success confirmation
-    WORKSPACE_ROOT = "workspace_root"                  # Workspace root path
+    WORKSPACE_ROOT = "workspace_root"  # Workspace root path
 
     # Cron - Server -> Client
-    CRON_JOBS = "cron_jobs"                            # List of cron jobs
-    CRON_JOB_ADDED = "cron_job_added"                  # Job added confirmation
-    CRON_JOB_DELETED = "cron_job_deleted"              # Job deleted confirmation
-    CRON_JOB_TOGGLED = "cron_job_toggled"              # Job toggled confirmation
-    CRON_JOB_RUN = "cron_job_run"                      # Job run confirmation
+    CRON_JOBS = "cron_jobs"  # List of cron jobs
+    CRON_JOB_ADDED = "cron_job_added"  # Job added confirmation
+    CRON_JOB_DELETED = "cron_job_deleted"  # Job deleted confirmation
+    CRON_JOB_TOGGLED = "cron_job_toggled"  # Job toggled confirmation
+    CRON_JOB_RUN = "cron_job_run"  # Job run confirmation
 
     # Agent - Server -> Client
-    AGENT_LIST = "agent_list"                          # List of agents
-    AGENT_SOUL = "agent_soul"                          # Agent SOUL.md content
-    AGENT_SAVED = "agent_saved"                        # Agent saved confirmation
-    AGENT_DELETED = "agent_deleted"                    # Agent deleted confirmation
-    AGENT_SYSTEM_FILES = "agent_system_files"          # System agent file list
-    AGENT_SYSTEM_FILE = "agent_system_file"            # System agent file content
+    AGENT_LIST = "agent_list"  # List of agents
+    AGENT_SOUL = "agent_soul"  # Agent SOUL.md content
+    AGENT_SAVED = "agent_saved"  # Agent saved confirmation
+    AGENT_DELETED = "agent_deleted"  # Agent deleted confirmation
+    AGENT_SYSTEM_FILES = "agent_system_files"  # System agent file list
+    AGENT_SYSTEM_FILE = "agent_system_file"  # System agent file content
     AGENT_SYSTEM_FILE_SAVED = "agent_system_file_saved"  # System agent file saved
 
     # Subagent Options - Client -> Server
-    SUBAGENT_GET_AVAILABLE_TOOLS = "subagent_get_available_tools"      # Get available tools
-    SUBAGENT_GET_AVAILABLE_EXTENSIONS = "subagent_get_available_extensions"  # Get available extensions
-    SUBAGENT_GET_PROVIDER_MODELS = "subagent_get_provider_models"      # Get providers with models
+    SUBAGENT_GET_AVAILABLE_TOOLS = "subagent_get_available_tools"  # Get available tools
+    SUBAGENT_GET_AVAILABLE_EXTENSIONS = (
+        "subagent_get_available_extensions"  # Get available extensions
+    )
+    SUBAGENT_GET_PROVIDER_MODELS = "subagent_get_provider_models"  # Get providers with models
 
     # Subagent Options - Server -> Client
-    SUBAGENT_AVAILABLE_TOOLS = "subagent_available_tools"              # Available tools list
-    SUBAGENT_AVAILABLE_EXTENSIONS = "subagent_available_extensions"    # Available extensions list
-    SUBAGENT_PROVIDER_MODELS = "subagent_provider_models"              # Providers with models
+    SUBAGENT_AVAILABLE_TOOLS = "subagent_available_tools"  # Available tools list
+    SUBAGENT_AVAILABLE_EXTENSIONS = "subagent_available_extensions"  # Available extensions list
+    SUBAGENT_PROVIDER_MODELS = "subagent_provider_models"  # Providers with models
 
     # Subagent Events - Server -> Client
-    SUBAGENT_TOKEN = "subagent_token"                            # Subagent streaming token
-    SUBAGENT_TOOL_CALL = "subagent_tool_call"                        # Subagent tool call started
-    SUBAGENT_TOOL_RESULT = "subagent_tool_result"                    # Subagent tool call result
+    SUBAGENT_TOKEN = "subagent_token"  # Subagent streaming token
+    SUBAGENT_TOOL_CALL = "subagent_tool_call"  # Subagent tool call started
+    SUBAGENT_TOOL_RESULT = "subagent_tool_result"  # Subagent tool call result
 
     # System - Server -> Client
-    SERVICE_RESTARTING = "service_restarting"          # Service is restarting
-    AGENTS_STOPPED = "agents_stopped"                  # Agents stopped confirmation
+    SERVICE_RESTARTING = "service_restarting"  # Service is restarting
+    AGENTS_STOPPED = "agents_stopped"  # Agents stopped confirmation
 
     # Image - Server -> Client
-    IMAGE_UPLOADED = "image_uploaded"                        # Image upload confirmation
-    FILE_UPLOADED = "file_uploaded"                          # File upload confirmation
-    IMAGE_ANALYSIS_RESULT = "image_analysis_result"          # Image analysis result
-    IMAGE_GENERATED = "image_generated"                      # Image generated confirmation
+    IMAGE_UPLOADED = "image_uploaded"  # Image upload confirmation
+    FILE_UPLOADED = "file_uploaded"  # File upload confirmation
+    IMAGE_ANALYSIS_RESULT = "image_analysis_result"  # Image analysis result
+    IMAGE_GENERATED = "image_generated"  # Image generated confirmation
     IMAGE_GENERATION_PROGRESS = "image_generation_progress"  # Generation progress
     IMAGE_UNDERSTANDING_PROVIDERS = "image_understanding_providers"  # Understanding providers list
-    IMAGE_GENERATION_PROVIDERS = "image_generation_providers"        # Generation providers list
-    IMAGE_PROVIDER_ADDED = "image_provider_added"            # Provider added confirmation
-    IMAGE_PROVIDER_UPDATED = "image_provider_updated"        # Provider updated confirmation
-    IMAGE_PROVIDER_DELETED = "image_provider_deleted"        # Provider deleted confirmation
+    IMAGE_GENERATION_PROVIDERS = "image_generation_providers"  # Generation providers list
+    IMAGE_PROVIDER_ADDED = "image_provider_added"  # Provider added confirmation
+    IMAGE_PROVIDER_UPDATED = "image_provider_updated"  # Provider updated confirmation
+    IMAGE_PROVIDER_DELETED = "image_provider_deleted"  # Provider deleted confirmation
 
     # Provider - Client -> Server
-    PROVIDER_GET_ALL = "provider_get_all"                    # Get all providers
-    PROVIDER_GET = "provider_get"                            # Get provider by ID
-    PROVIDER_ADD = "provider_add"                           # Add new provider
-    PROVIDER_UPDATE = "provider_update"                     # Update provider
-    PROVIDER_DELETE = "provider_delete"                     # Delete provider
-    PROVIDER_ENABLE = "provider_enable"                     # Enable/disable provider
+    PROVIDER_GET_ALL = "provider_get_all"  # Get all providers
+    PROVIDER_GET = "provider_get"  # Get provider by ID
+    PROVIDER_ADD = "provider_add"  # Add new provider
+    PROVIDER_UPDATE = "provider_update"  # Update provider
+    PROVIDER_DELETE = "provider_delete"  # Delete provider
+    PROVIDER_ENABLE = "provider_enable"  # Enable/disable provider
 
     # Model - Client -> Server
-    MODEL_GET_ALL = "model_get_all"                         # Get all models for a provider
-    MODEL_GET = "model_get"                                 # Get model by ID
-    MODEL_ADD = "model_add"                                 # Add new model
-    MODEL_UPDATE = "model_update"                           # Update model
-    MODEL_DELETE = "model_delete"                           # Delete model
-    MODEL_SET_DEFAULT = "model_set_default"                 # Set default model
-    MODEL_GET_PROVIDERS = "model_get_providers"             # Get all enabled providers for workflow
-    MODEL_GET_MODELS = "model_get_models"                   # Get enabled models by provider for workflow
+    MODEL_GET_ALL = "model_get_all"  # Get all models for a provider
+    MODEL_GET = "model_get"  # Get model by ID
+    MODEL_ADD = "model_add"  # Add new model
+    MODEL_UPDATE = "model_update"  # Update model
+    MODEL_DELETE = "model_delete"  # Delete model
+    MODEL_SET_DEFAULT = "model_set_default"  # Set default model
+    MODEL_GET_PROVIDERS = "model_get_providers"  # Get all enabled providers for workflow
+    MODEL_GET_MODELS = "model_get_models"  # Get enabled models by provider for workflow
 
     # Settings - Client -> Server
-    SETTINGS_GET = "settings_get"                           # Get settings
-    SETTINGS_SET = "settings_set"                           # Set settings
+    SETTINGS_GET = "settings_get"  # Get settings
+    SETTINGS_SET = "settings_set"  # Set settings
 
     # Provider - Server -> Client
-    PROVIDERS = "providers"                                 # All providers list
-    PROVIDER = "provider"                                   # Single provider
-    PROVIDER_ADDED = "provider_added"                      # Provider added confirmation
-    PROVIDER_UPDATED = "provider_updated"                   # Provider updated confirmation
-    PROVIDER_DELETED = "provider_deleted"                   # Provider deleted confirmation
+    PROVIDERS = "providers"  # All providers list
+    PROVIDER = "provider"  # Single provider
+    PROVIDER_ADDED = "provider_added"  # Provider added confirmation
+    PROVIDER_UPDATED = "provider_updated"  # Provider updated confirmation
+    PROVIDER_DELETED = "provider_deleted"  # Provider deleted confirmation
 
     # Model - Server -> Client
-    MODELS_LIST = "models_list"                             # Models list for a provider
-    MODEL_ITEM = "model_item"                              # Single model
-    MODEL_ADDED = "model_added"                             # Model added confirmation
-    MODEL_UPDATED = "model_updated"                         # Model updated confirmation
-    MODEL_DELETED = "model_deleted"                         # Model deleted confirmation
-    MODEL_PROVIDERS_LIST = "model_providers_list"           # Providers list for workflow
-    MODEL_MODELS_LIST = "model_models_list"                 # Models list for workflow
+    MODELS_LIST = "models_list"  # Models list for a provider
+    MODEL_ITEM = "model_item"  # Single model
+    MODEL_ADDED = "model_added"  # Model added confirmation
+    MODEL_UPDATED = "model_updated"  # Model updated confirmation
+    MODEL_DELETED = "model_deleted"  # Model deleted confirmation
+    MODEL_PROVIDERS_LIST = "model_providers_list"  # Providers list for workflow
+    MODEL_MODELS_LIST = "model_models_list"  # Models list for workflow
 
     # Settings - Server -> Client
-    SETTINGS = "settings"                                   # Settings data
+    SETTINGS = "settings"  # Settings data
 
     # Agent Defaults - Client -> Server
-    AGENT_DEFAULTS_GET = "agent_defaults_get"               # Get agent defaults
-    AGENT_DEFAULTS_UPDATE = "agent_defaults_update"         # Update agent defaults
-    GET_ENABLED_MODELS = "get_enabled_models"               # Get all enabled models from enabled providers
+    AGENT_DEFAULTS_GET = "agent_defaults_get"  # Get agent defaults
+    AGENT_DEFAULTS_UPDATE = "agent_defaults_update"  # Update agent defaults
+    GET_ENABLED_MODELS = "get_enabled_models"  # Get all enabled models from enabled providers
 
     # Agent Defaults - Server -> Client
-    AGENT_DEFAULTS = "agent_defaults"                       # Agent defaults data
-    AGENT_DEFAULTS_UPDATED = "agent_defaults_updated"       # Agent defaults updated confirmation
-    ENABLED_MODELS = "enabled_models"                       # All enabled models from enabled providers
+    AGENT_DEFAULTS = "agent_defaults"  # Agent defaults data
+    AGENT_DEFAULTS_UPDATED = "agent_defaults_updated"  # Agent defaults updated confirmation
+    ENABLED_MODELS = "enabled_models"  # All enabled models from enabled providers
 
     # Channel - Client -> Server
-    CHANNEL_GET_LIST = "channel_get_list"                   # Get all channel configs
-    CHANNEL_UPDATE = "channel_update"                       # Update channel config
-    CHANNEL_DELETE = "channel_delete"                       # Delete channel config
+    CHANNEL_GET_LIST = "channel_get_list"  # Get all channel configs
+    CHANNEL_UPDATE = "channel_update"  # Update channel config
+    CHANNEL_DELETE = "channel_delete"  # Delete channel config
 
     # Channel - Server -> Client
-    CHANNEL_LIST = "channel_list"                           # All channel configs
-    CHANNEL_UPDATED = "channel_updated"                     # Channel config updated confirmation
-    CHANNEL_DELETED = "channel_deleted"                     # Channel config deleted confirmation
+    CHANNEL_LIST = "channel_list"  # All channel configs
+    CHANNEL_UPDATED = "channel_updated"  # Channel config updated confirmation
+    CHANNEL_DELETED = "channel_deleted"  # Channel config deleted confirmation
 
     # WeChat QR Code - Client -> Server
-    WECHAT_GET_QRCODE = "wechat_get_qrcode"                 # Get WeChat QR code
-    WECHAT_CHECK_STATUS = "wechat_check_status"             # Check QR code scan status
-    WECHAT_CLEAR_TOKEN = "wechat_clear_token"               # Clear expired token
+    WECHAT_GET_QRCODE = "wechat_get_qrcode"  # Get WeChat QR code
+    WECHAT_CHECK_STATUS = "wechat_check_status"  # Check QR code scan status
+    WECHAT_CLEAR_TOKEN = "wechat_clear_token"  # Clear expired token
 
     # WeChat QR Code - Server -> Client
-    WECHAT_QRCODE_RESULT = "wechat_qrcode_result"           # QR code result
-    WECHAT_STATUS_RESULT = "wechat_status_result"           # Status check result
-    WECHAT_TOKEN_EXPIRED = "wechat_token_expired"           # Token expired notification
+    WECHAT_QRCODE_RESULT = "wechat_qrcode_result"  # QR code result
+    WECHAT_STATUS_RESULT = "wechat_status_result"  # Status check result
+    WECHAT_TOKEN_EXPIRED = "wechat_token_expired"  # Token expired notification
 
     # Tool - Client -> Server
-    TOOL_GET_CONFIG = "tool_get_config"                     # Get tool configs
-    TOOL_UPDATE_CONFIG = "tool_update_config"               # Update tool config
+    TOOL_GET_CONFIG = "tool_get_config"  # Get tool configs
+    TOOL_UPDATE_CONFIG = "tool_update_config"  # Update tool config
 
     # Tool - Server -> Client
-    TOOL_CONFIG = "tool_config"                             # Tool configs
-    TOOL_UPDATED = "tool_updated"                           # Tool config updated confirmation
+    TOOL_CONFIG = "tool_config"  # Tool configs
+    TOOL_UPDATED = "tool_updated"  # Tool config updated confirmation
 
     # Image Provider - Client -> Server
-    IMAGE_GET_PROVIDERS = "image_get_providers"             # Get image providers
+    IMAGE_GET_PROVIDERS = "image_get_providers"  # Get image providers
     IMAGE_SET_DEFAULT_PROVIDER = "image_set_default_provider"  # Set default image provider
 
     # Token Usage - Client -> Server
-    TOKEN_GET_USAGE = "token_get_usage"                     # Get token usage statistics
+    TOKEN_GET_USAGE = "token_get_usage"  # Get token usage statistics
+    TOKEN_GET_EFFICIENCY = "token_get_efficiency"  # Get efficiency metrics
+    TOKEN_GET_COST_TREND = "token_get_cost_trend"  # Get cost trend
+    TOKEN_GET_SESSION_WATERFALL = "token_get_session_waterfall"  # Get session waterfall
+    TOKEN_GET_CACHE_ANALYTICS = "token_get_cache_analytics"  # Get cache analytics
+    TOKEN_GET_MODEL_COMPARISON = "token_get_model_comparison"  # Get model comparison
 
     # Image Provider - Server -> Client
-    IMAGE_PROVIDERS = "image_providers"                     # Image providers list
+    IMAGE_PROVIDERS = "image_providers"  # Image providers list
     IMAGE_DEFAULT_PROVIDER_UPDATED = "image_default_provider_updated"  # Default provider updated
 
     # Token Usage - Server -> Client
-    TOKEN_USAGE = "token_usage"                             # Token usage statistics
-    TOKEN_USAGE_UPDATE = "token_usage_update"               # Real-time token usage update
+    TOKEN_USAGE = "token_usage"  # Token usage statistics
+    TOKEN_USAGE_UPDATE = "token_usage_update"  # Real-time token usage update
+    TOKEN_EFFICIENCY = "token_efficiency"  # Efficiency metrics
+    TOKEN_COST_TREND = "token_cost_trend"  # Cost trend data
+    TOKEN_SESSION_WATERFALL = "token_session_waterfall"  # Session waterfall data
+    TOKEN_CACHE_ANALYTICS = "token_cache_analytics"  # Cache analytics data
+    TOKEN_MODEL_COMPARISON = "token_model_comparison"  # Model comparison data
 
     # TTS - Client -> Server
-    TTS_GET_INSTANCE_CONFIG = "tts_get_instance_config"     # Get TTS config for session instance
-    TTS_UPDATE_INSTANCE_CONFIG = "tts_update_instance_config"  # Update TTS config for session instance
-    TTS_GET_DEFAULTS = "tts_get_defaults"                   # Get global default TTS config
-    TTS_SET_DEFAULTS = "tts_set_defaults"                   # Set global default TTS config
-    TTS_GET_VOICES = "tts_get_voices"                       # Get available voices
-    TTS_SYNTHESIZE = "tts_synthesize"                       # Synthesize text to speech
-    TTS_GET_PROVIDERS = "tts_get_providers"                 # Get supported TTS providers
-    TTS_GET_STYLES = "tts_get_styles"                       # Get available styles
+    TTS_GET_INSTANCE_CONFIG = "tts_get_instance_config"  # Get TTS config for session instance
+    TTS_UPDATE_INSTANCE_CONFIG = (
+        "tts_update_instance_config"  # Update TTS config for session instance
+    )
+    TTS_GET_DEFAULTS = "tts_get_defaults"  # Get global default TTS config
+    TTS_SET_DEFAULTS = "tts_set_defaults"  # Set global default TTS config
+    TTS_GET_VOICES = "tts_get_voices"  # Get available voices
+    TTS_SYNTHESIZE = "tts_synthesize"  # Synthesize text to speech
+    TTS_GET_PROVIDERS = "tts_get_providers"  # Get supported TTS providers
+    TTS_GET_STYLES = "tts_get_styles"  # Get available styles
 
     # TTS - Server -> Client
-    TTS_CONFIG = "tts_config"                               # TTS config response
-    TTS_DEFAULTS = "tts_defaults"                           # Global default TTS config
-    TTS_VOICES = "tts_voices"                               # Available voices list
-    TTS_AUDIO = "tts_audio"                                 # Synthesized audio data
-    TTS_PROVIDERS = "tts_providers"                         # Supported TTS providers
-    TTS_STYLES = "tts_styles"                               # Available styles list
-    TTS_ERROR = "tts_error"                                 # TTS error
-    TTS_AUTO_REPLY = "tts_auto_reply"                       # Auto TTS reply from agent
+    TTS_CONFIG = "tts_config"  # TTS config response
+    TTS_DEFAULTS = "tts_defaults"  # Global default TTS config
+    TTS_VOICES = "tts_voices"  # Available voices list
+    TTS_AUDIO = "tts_audio"  # Synthesized audio data
+    TTS_PROVIDERS = "tts_providers"  # Supported TTS providers
+    TTS_STYLES = "tts_styles"  # Available styles list
+    TTS_ERROR = "tts_error"  # TTS error
+    TTS_AUTO_REPLY = "tts_auto_reply"  # Auto TTS reply from agent
 
 
 class WSMessage(BaseModel):
     """WebSocket message structure."""
+
     model_config = ConfigDict(extra="ignore")
 
     type: MessageType | str
-    request_id: Optional[str] = None
+    request_id: str | None = None
     data: dict[str, Any] = {}
 
     def to_dict(self) -> dict[str, Any]:
@@ -502,7 +539,7 @@ class WSMessage(BaseModel):
         return {
             "type": self.type.value if isinstance(self.type, MessageType) else self.type,
             "request_id": self.request_id,
-            "data": self.data
+            "data": self.data,
         }
 
     @classmethod
@@ -516,11 +553,7 @@ class WSMessage(BaseModel):
             except ValueError:
                 msg_type = msg_type  # Keep as string if not in enum
 
-        return cls(
-            type=msg_type,
-            request_id=data.get("request_id"),
-            data=data.get("data", {})
-        )
+        return cls(type=msg_type, request_id=data.get("request_id"), data=data.get("data", {}))
 
 
 # Message type validation
@@ -671,6 +704,11 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.IMAGE_SET_DEFAULT_PROVIDER,
     # Token Usage
     MessageType.TOKEN_GET_USAGE,
+    MessageType.TOKEN_GET_EFFICIENCY,
+    MessageType.TOKEN_GET_COST_TREND,
+    MessageType.TOKEN_GET_SESSION_WATERFALL,
+    MessageType.TOKEN_GET_CACHE_ANALYTICS,
+    MessageType.TOKEN_GET_MODEL_COMPARISON,
     # Subagent Options
     MessageType.SUBAGENT_GET_AVAILABLE_TOOLS,
     MessageType.SUBAGENT_GET_AVAILABLE_EXTENSIONS,
@@ -795,6 +833,11 @@ SERVER_MESSAGE_TYPES = {
     # Token Usage
     MessageType.TOKEN_USAGE,
     MessageType.TOKEN_USAGE_UPDATE,
+    MessageType.TOKEN_EFFICIENCY,
+    MessageType.TOKEN_COST_TREND,
+    MessageType.TOKEN_SESSION_WATERFALL,
+    MessageType.TOKEN_CACHE_ANALYTICS,
+    MessageType.TOKEN_MODEL_COMPARISON,
     # Model workflow
     MessageType.MODEL_PROVIDERS_LIST,
     MessageType.MODEL_MODELS_LIST,

@@ -1,16 +1,10 @@
 """Token usage handler for Desktop channel."""
 
-import asyncio
-import json
-import uuid
-from pathlib import Path
-from typing import Any
-
 from fastapi import WebSocket
 from loguru import logger
 
-from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.channels.desktop.handlers.base import MessageHandler
+from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.channels.desktop.schemas import TokenGetUsageRequest
 from backend.core.events.bus import MessageBus
 from backend.data import Database
@@ -60,7 +54,10 @@ class TokenUsageHandler(MessageHandler):
                             "model_id": r.model_id,
                             "prompt_tokens": r.prompt_tokens,
                             "completion_tokens": r.completion_tokens,
+                            "cached_tokens": r.cached_tokens,
                             "total_tokens": r.total_tokens,
+                            "cost_usd": r.cost_usd,
+                            "response_time_ms": r.response_time_ms,
                             "request_type": r.request_type,
                             "created_at": r.created_at.isoformat(),
                         }
@@ -94,19 +91,22 @@ class TokenUsageHandler(MessageHandler):
                     "daily": self.token_repo.get_daily_usage(days),
                 }
             else:
-                await self._send_error(websocket, message.request_id, f"Invalid scope or missing scope_id: {scope}")
+                await self._send_error(
+                    websocket, message.request_id, f"Invalid scope or missing scope_id: {scope}"
+                )
                 return
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.TOKEN_USAGE,
-                request_id=message.request_id,
-                data=result
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(type=MessageType.TOKEN_USAGE, request_id=message.request_id, data=result),
+            )
         except Exception as e:
             logger.error(f"Failed to get token usage: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to get token usage: {e}")
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: TokenGetUsageRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: TokenGetUsageRequest
+    ) -> None:
         """Return token usage statistics."""
         scope = validated.scope
         scope_id = validated.scope_id or validated.instance_id or validated.session_instance_id
@@ -137,7 +137,10 @@ class TokenUsageHandler(MessageHandler):
                             "model_id": r.model_id,
                             "prompt_tokens": r.prompt_tokens,
                             "completion_tokens": r.completion_tokens,
+                            "cached_tokens": r.cached_tokens,
                             "total_tokens": r.total_tokens,
+                            "cost_usd": r.cost_usd,
+                            "response_time_ms": r.response_time_ms,
                             "request_type": r.request_type,
                             "created_at": r.created_at.isoformat(),
                         }
@@ -171,21 +174,21 @@ class TokenUsageHandler(MessageHandler):
                     "daily": self.token_repo.get_daily_usage(days),
                 }
             else:
-                await self._send_error(websocket, message.request_id, f"Invalid scope or missing scope_id: {scope}")
+                await self._send_error(
+                    websocket, message.request_id, f"Invalid scope or missing scope_id: {scope}"
+                )
                 return
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.TOKEN_USAGE,
-                request_id=message.request_id,
-                data=result
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(type=MessageType.TOKEN_USAGE, request_id=message.request_id, data=result),
+            )
         except Exception as e:
             logger.error(f"Failed to get token usage: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to get token usage: {e}")
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )

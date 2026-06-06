@@ -2,8 +2,8 @@
 
 from typing import Any
 
-from backend.tools.base import Tool
 from backend.services.knowledge_engine import KnowledgeGraphEngine
+from backend.tools.base import Tool
 
 
 class KBSearchTool(Tool):
@@ -54,17 +54,20 @@ class KBSearchTool(Tool):
 
     async def execute(self, query: str, limit: int = 10, **kwargs: Any) -> str:
         from backend.utils.helpers import get_workspace_path
+
         engine = KnowledgeGraphEngine(str(get_workspace_path()))
 
         # Prefer FTS5 full-text search
         results = engine.search_notes_fts(
-            query, limit=limit,
+            query,
+            limit=limit,
             vault_filter=self._vault_filter,
             exclude_vault=self._exclude_vault,
         )
         if not results:
             results = engine.search_notes(
-                query, limit=limit,
+                query,
+                limit=limit,
                 vault_filter=self._vault_filter,
                 exclude_vault=self._exclude_vault,
             )
@@ -121,6 +124,7 @@ class KBWriteNoteTool(Tool):
 
     async def execute(self, path: str, content: str, **kwargs: Any) -> str:
         from pathlib import Path
+
         from backend.utils.helpers import get_workspace_path
 
         if not path.endswith(".md"):
@@ -132,6 +136,7 @@ class KBWriteNoteTool(Tool):
 
         if is_library:
             from backend.services.library_note_engine import LibraryNoteEngine
+
             engine = LibraryNoteEngine(workspace)
         else:
             engine = KnowledgeGraphEngine(workspace)
@@ -181,6 +186,7 @@ class KBReadNoteTool(Tool):
 
     async def execute(self, path: str, **kwargs: Any) -> str:
         from backend.utils.helpers import get_workspace_path
+
         engine = KnowledgeGraphEngine(str(get_workspace_path()))
         try:
             content = engine.read_note(path)
@@ -232,6 +238,7 @@ class KBTimelineTool(Tool):
 
     async def execute(self, path: str, **kwargs: Any) -> str:
         from backend.utils.helpers import get_workspace_path
+
         engine = KnowledgeGraphEngine(str(get_workspace_path()))
         # Enforce vault isolation
         node = engine.db.execute(
@@ -329,6 +336,7 @@ class KBListLinksTool(Tool):
 
     async def execute(self, path: str, direction: str = "both", **kwargs: Any) -> str:
         from backend.utils.helpers import get_workspace_path
+
         engine = KnowledgeGraphEngine(str(get_workspace_path()))
         # Enforce vault isolation
         node = engine.db.execute(
@@ -341,7 +349,8 @@ class KBListLinksTool(Tool):
         if self._exclude_vault and node["vault"] == self._exclude_vault:
             return f"Note not found: {path}"
         graph = engine.get_graph(
-            center_path=path, depth=1,
+            center_path=path,
+            depth=1,
             vault_filter=self._vault_filter,
             exclude_vault=self._exclude_vault,
         )

@@ -1,11 +1,9 @@
 """FastAPI service for Octopus Desktop."""
 
 import asyncio
-import json
 import os
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
-from typing import Any
 
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,9 +11,8 @@ from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from backend.core.events.bus import MessageBus
-from backend.core.events.types import InboundMessage, OutboundMessage, AgentEvent
-from backend.utils import init_workspace_path, get_workspace_path
-
+from backend.core.events.types import InboundMessage, OutboundMessage
+from backend.utils import get_workspace_path, init_workspace_path
 
 # Global instances
 agent_loop = None  # Main agent loop for user messages
@@ -34,13 +31,14 @@ async def lifespan(app: FastAPI):
     Manage application lifecycle: start/stop agent loop and channels.
     """
     global agent_loop, agent_task, channel_manager
-    
+
     logger.info("=== STARTING LIFESPAN ===")
-    
+
     logger.info("Starting Octopus Desktop Service...")
 
     # 1. Initialize Database first
     from backend.data import Database, init_system_providers
+
     db = Database()
     init_system_providers(db)
 
@@ -48,8 +46,9 @@ async def lifespan(app: FastAPI):
     bus = MessageBus()
 
     # 2.1. Seed built-in subagent configurations and available tools
+    from backend.data.subagent_seeder import seed_available_tools, seed_builtin_subagents
     from backend.data.subagent_store import SubagentRepository
-    from backend.data.subagent_seeder import seed_builtin_subagents, seed_available_tools
+
     subagent_repo = SubagentRepository(db)
     seed_builtin_subagents(subagent_repo)
     seed_available_tools(db)
@@ -79,41 +78,33 @@ async def lifespan(app: FastAPI):
         agent_defaults_repo.update_agent_defaults(workspace_path=str(workspace))
 
     workspace = init_workspace_path(str(workspace))
-    print(f"Workspace: {workspace}")
-    print(f"Workspace Path: {get_workspace_path()}")
+    logger.info(f"Workspace: {workspace}")
+    logger.info(f"Workspace Path: {get_workspace_path()}")
 
     # 4. Initialize Agent Loop (Lazy import to avoid circular deps)
-    from backend.agent.loop import AgentLoop
     from backend.agent.container import AgentContainer
+    from backend.agent.loop import AgentLoop
     from backend.channels.manager import ChannelManager
-    
-    from backend.mcp.manager import MCPManager
     from backend.mcp.llm_bridge import MCPBridgeIntegration
+    from backend.mcp.manager import MCPManager
+
     mcp_manager = MCPManager(db=db)
     if mcp_manager.config.enabled:
         await mcp_manager.initialize()
     mcp_bridge = MCPBridgeIntegration(mcp_manager)
-    
+
     from backend.agent.subagent import SubagentManager
-    from backend.services.cron import CronService
-    from backend.core.events.types import OutboundMessage
     from backend.core.config.schema import ExecToolConfig
-    from backend.data import SessionManager
+    from backend.services.cron import CronService
 
     exec_config = ExecToolConfig()
-    subagent_manager = SubagentManager(
-        workspace=workspace,
-        bus=bus,
-        exec_config=exec_config
-    )
+    subagent_manager = SubagentManager(workspace=workspace, bus=bus, exec_config=exec_config)
 
     async def publish_message(channel: str, chat_id: str, content: str) -> None:
         """Publish message to user via message bus."""
-        await bus.publish_outbound(OutboundMessage(
-            channel=channel,
-            chat_id=chat_id,
-            content=content
-        ))
+        await bus.publish_outbound(
+            OutboundMessage(channel=channel, chat_id=chat_id, content=content)
+        )
 
     cron_service = CronService(
         db=db,
@@ -133,7 +124,7 @@ async def lifespan(app: FastAPI):
         mcp_bridge=mcp_bridge,
     )
     agent_loop = AgentLoop(agent_container)
-    
+
     # 4. Initialize Desktop Channel
     from backend.channels.desktop.channel import DesktopChannel
     from backend.channels.desktop.config import DesktopConfig
@@ -146,13 +137,15 @@ async def lifespan(app: FastAPI):
         mcp_manager=mcp_manager,
         cron_service=cron_service,
         agent_loop=agent_loop,
-        subagent_manager=subagent_manager
+        subagent_manager=subagent_manager,
     )
-    
+
     # 5. Initialize Channel Manager with Desktop Channel
     logger.info(f"Creating ChannelManager with desktop channel: {desktop_channel}")
-    channel_manager = ChannelManager(bus=bus, workspace=workspace, custom_channels={"desktop": desktop_channel})
-    
+    channel_manager = ChannelManager(
+        bus=bus, workspace=workspace, custom_channels={"desktop": desktop_channel}
+    )
+
     # 6. Subscribe Desktop Channel to Events
     logger.info(f"Event subscribers before: {bus._event_subscribers}")
     bus.subscribe_event(desktop_channel._handle_event)
@@ -173,7 +166,9 @@ async def lifespan(app: FastAPI):
     # 10. Mount workspace directory for static file serving (images)
     # This must be done after init_workspace_path() is called
     from fastapi.staticfiles import StaticFiles
+
     from backend.utils.helpers import get_data_path
+
     workspace_path = get_workspace_path()
     app.mount("/workspace", StaticFiles(directory=str(workspace_path)), name="workspace")
     logger.info(f"Mounted /workspace to {workspace_path}")
@@ -208,10 +203,8 @@ async def lifespan(app: FastAPI):
         event_dispatch_task.cancel()
 
     # Checkpoint WAL before exit
-    try:
+    with suppress(Exception):
         db.checkpoint("PASSIVE")
-    except Exception:
-        pass
 
     logger.info("Service stopped.")
 
@@ -220,23 +213,26 @@ app = FastAPI(lifespan=lifespan)
 
 # Register Chrome Extension clip API
 from backend.api.routes import knowledge_clip
+
 app.include_router(knowledge_clip.router)
 
 # Register file preview conversion API
 from backend.api.routes import file_preview
+
 app.include_router(file_preview.router)
 
 # Register library upload API (HTTP multipart for large PDFs)
 from backend.api.routes import library_upload
+
 app.include_router(library_upload.router)
 
 # CORS configuration - restricted to known origins for security
 # Desktop app uses file:// protocol, development uses localhost
 ALLOWED_ORIGINS = [
-    "http://localhost:3000",    # Vite dev server
-    "http://127.0.0.1:3000",    # Vite dev server (alternative)
-    "http://localhost:5173",    # Vite default port (if changed)
-    "http://127.0.0.1:5173",    # Vite default port (alternative)
+    "http://localhost:3000",  # Vite dev server
+    "http://127.0.0.1:3000",  # Vite dev server (alternative)
+    "http://localhost:5173",  # Vite default port (if changed)
+    "http://127.0.0.1:5173",  # Vite default port (alternative)
 ]
 
 app.add_middleware(
@@ -246,6 +242,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Extra CORS middleware for Chrome Extension (origin varies by installation)
 @app.middleware("http")
@@ -268,9 +265,11 @@ async def chrome_extension_cors(request, call_next):
         return response
     return await call_next(request)
 
+
 # Mount wechat qrcodes directory upfront
-from fastapi.staticfiles import StaticFiles
+
 from backend.utils.helpers import get_data_path
+
 wechat_qrcodes_dir = get_data_path() / "wechat_qrcodes"
 wechat_qrcodes_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/wechat_qrcodes", StaticFiles(directory=str(wechat_qrcodes_dir)), name="wechat_qrcodes")
@@ -296,8 +295,7 @@ async def longtask_hook(plugin_name: str, request: dict):
     Returns:
         Response dict
     """
-    from backend.core.longtask.manager import get_longtask_manager, TaskStatus
-    from backend.core.events.types import InboundMessage
+    from backend.core.longtask.manager import TaskStatus, get_longtask_manager
 
     manager = get_longtask_manager()
 
@@ -347,10 +345,14 @@ async def longtask_hook(plugin_name: str, request: dict):
                 session_instance_id = task.params.get("session_instance_id")
                 if session_instance_id:
                     session_mgr.save_to_instance(session_obj, session_instance_id)
-                    logger.info(f"[LongTaskHook] Saved auth request to session {session_key}, instance {session_instance_id}")
+                    logger.info(
+                        f"[LongTaskHook] Saved auth request to session {session_key}, instance {session_instance_id}"
+                    )
                 else:
                     session_mgr.save(session_obj)
-                    logger.info(f"[LongTaskHook] Saved auth request to session {session_key} (using active instance)")
+                    logger.info(
+                        f"[LongTaskHook] Saved auth request to session {session_key} (using active instance)"
+                    )
 
                 # Create InboundMessage to trigger main Agent
                 if agent_loop.bus:
@@ -365,6 +367,7 @@ async def longtask_hook(plugin_name: str, request: dict):
             except Exception as e:
                 logger.warning(f"[LongTaskHook] Failed to save auth to session: {e}")
                 import traceback
+
                 logger.warning(traceback.format_exc())
 
     elif hook_type == "complete":

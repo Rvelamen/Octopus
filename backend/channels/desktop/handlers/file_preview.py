@@ -1,6 +1,7 @@
 """File preview conversion handler for Desktop channel."""
 
 import base64
+import contextlib
 import hashlib
 import shutil
 import subprocess
@@ -31,8 +32,9 @@ class FilePreviewPDFHandler(MessageHandler):
         soffice = _get_soffice_path()
         if not soffice:
             await self._send_error(
-                websocket, message.request_id,
-                "LibreOffice not found. Please install LibreOffice to preview PowerPoint/Word/Excel files, or download the file directly."
+                websocket,
+                message.request_id,
+                "LibreOffice not found. Please install LibreOffice to preview PowerPoint/Word/Excel files, or download the file directly.",
             )
             return
 
@@ -46,7 +48,9 @@ class FilePreviewPDFHandler(MessageHandler):
             full_path = full_path.resolve()
             workspace_root = workspace_root.resolve()
             if not str(full_path).startswith(str(workspace_root)):
-                await self._send_error(websocket, message.request_id, "Access denied: path outside workspace")
+                await self._send_error(
+                    websocket, message.request_id, "Access denied: path outside workspace"
+                )
                 return
         except Exception:
             await self._send_error(websocket, message.request_id, "Invalid path")
@@ -60,8 +64,23 @@ class FilePreviewPDFHandler(MessageHandler):
             return
 
         ext = full_path.suffix.lower()
-        if ext not in {".pptx", ".ppt", ".pptm", ".ppsx", ".ppsm", ".potx", ".potm", ".thmx", ".docx", ".doc", ".xlsx", ".xls"}:
-            await self._send_error(websocket, message.request_id, f"Unsupported file type for PDF preview: {ext}")
+        if ext not in {
+            ".pptx",
+            ".ppt",
+            ".pptm",
+            ".ppsx",
+            ".ppsm",
+            ".potx",
+            ".potm",
+            ".thmx",
+            ".docx",
+            ".doc",
+            ".xlsx",
+            ".xls",
+        }:
+            await self._send_error(
+                websocket, message.request_id, f"Unsupported file type for PDF preview: {ext}"
+            )
             return
 
         # Cache directory inside workspace
@@ -83,23 +102,24 @@ class FilePreviewPDFHandler(MessageHandler):
                 await self._send_error(websocket, message.request_id, f"PDF conversion failed: {e}")
                 return
             finally:
-                try:
+                with contextlib.suppress(Exception):
                     tmp_dir.rmdir()
-                except Exception:
-                    pass
 
         try:
             pdf_bytes = cached_pdf.read_bytes()
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.FILE_PREVIEW_PDF_RESULT,
-                request_id=message.request_id,
-                data={
-                    "success": True,
-                    "encoding": "base64",
-                    "content": base64.b64encode(pdf_bytes).decode("ascii"),
-                    "size": len(pdf_bytes),
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.FILE_PREVIEW_PDF_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "success": True,
+                        "encoding": "base64",
+                        "content": base64.b64encode(pdf_bytes).decode("ascii"),
+                        "size": len(pdf_bytes),
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to read cached PDF: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to read PDF: {e}")
@@ -111,8 +131,10 @@ class FilePreviewPDFHandler(MessageHandler):
         cmd = [
             soffice,
             "--headless",
-            "--convert-to", "pdf:impress_pdf_Export:ExportNotesPages=false",
-            "--outdir", str(output_dir),
+            "--convert-to",
+            "pdf:impress_pdf_Export:ExportNotesPages=false",
+            "--outdir",
+            str(output_dir),
             str(input_path),
         ]
         logger.info(f"Converting {input_path} to PDF via LibreOffice")
@@ -128,8 +150,7 @@ class FilePreviewPDFHandler(MessageHandler):
         return output_path
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )

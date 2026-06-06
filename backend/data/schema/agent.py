@@ -33,8 +33,12 @@ def create_tables(conn: sqlite3.Connection) -> None:
 
 
 def create_indexes(conn: sqlite3.Connection) -> None:
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_agent_defaults_provider ON agent_defaults(default_provider_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_agent_defaults_model ON agent_defaults(default_model_id)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_agent_defaults_provider ON agent_defaults(default_provider_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_agent_defaults_model ON agent_defaults(default_model_id)"
+    )
 
 
 def seed_data(conn: sqlite3.Connection) -> None:

@@ -73,23 +73,107 @@ DEFAULT_AVAILABLE_TOOLS = [
     ("exec", "Execute Command", "Run shell commands", "shell", 7),
     ("action", "Action", "Perform actions and operations", "action", 8),
     ("message", "Message", "Send messages to users", "communication", 9),
-    ("kb_search", "KB Search", "Search the knowledge base for notes by path or title", "knowledge", 10),
+    (
+        "kb_search",
+        "KB Search",
+        "Search the knowledge base for notes by path or title",
+        "knowledge",
+        10,
+    ),
     ("kb_timeline", "KB Timeline", "Preview a note's context before reading", "knowledge", 11),
-    ("kb_read_note", "KB Read Note", "Read the full content of a knowledge base note", "knowledge", 12),
-    ("kb_write_note", "KB Write Note", "Write or overwrite a knowledge base note with automatic indexing", "knowledge", 13),
-    ("kb_list_links", "KB List Links", "List bidirectional links for a given note path", "knowledge", 14),
-    ("library_search", "Library Search", "Search the library for papers and AI notes by title or content", "library", 15),
-    ("library_timeline", "Library Timeline", "Preview a library note's context before reading", "library", 16),
-    ("library_read_note", "Library Read Note", "Read the full content of a library note", "library", 17),
-    ("library_list_links", "Library List Links", "List bidirectional links for a given library note path", "library", 18),
-    ("library_write_note", "Library Write Note", "Write or overwrite a library note with automatic indexing", "library", 19),
-    ("workflow_list", "Workflow List", "List all available workflows that can be executed", "workflow", 20),
-    ("workflow_run", "Workflow Run", "Execute a workflow by ID or name and return the result", "workflow", 21),
-    ("memory_write", "Memory Write", "Add, replace, or remove curated memory entries", "memory", 22),
+    (
+        "kb_read_note",
+        "KB Read Note",
+        "Read the full content of a knowledge base note",
+        "knowledge",
+        12,
+    ),
+    (
+        "kb_write_note",
+        "KB Write Note",
+        "Write or overwrite a knowledge base note with automatic indexing",
+        "knowledge",
+        13,
+    ),
+    (
+        "kb_list_links",
+        "KB List Links",
+        "List bidirectional links for a given note path",
+        "knowledge",
+        14,
+    ),
+    (
+        "library_search",
+        "Library Search",
+        "Search the library for papers and AI notes by title or content",
+        "library",
+        15,
+    ),
+    (
+        "library_timeline",
+        "Library Timeline",
+        "Preview a library note's context before reading",
+        "library",
+        16,
+    ),
+    (
+        "library_read_note",
+        "Library Read Note",
+        "Read the full content of a library note",
+        "library",
+        17,
+    ),
+    (
+        "library_list_links",
+        "Library List Links",
+        "List bidirectional links for a given library note path",
+        "library",
+        18,
+    ),
+    (
+        "library_write_note",
+        "Library Write Note",
+        "Write or overwrite a library note with automatic indexing",
+        "library",
+        19,
+    ),
+    (
+        "workflow_list",
+        "Workflow List",
+        "List all available workflows that can be executed",
+        "workflow",
+        20,
+    ),
+    (
+        "workflow_run",
+        "Workflow Run",
+        "Execute a workflow by ID or name and return the result",
+        "workflow",
+        21,
+    ),
+    (
+        "memory_write",
+        "Memory Write",
+        "Add, replace, or remove curated memory entries",
+        "memory",
+        22,
+    ),
     ("memory_search", "Memory Search", "Search observations and memory by keyword", "memory", 20),
     ("memory_read", "Memory Read", "Read curated memory or user profile", "memory", 21),
-    ("memory_timeline", "Memory Timeline", "Get memory timeline for a session instance", "memory", 22),
-    ("browser", "Browser", "Automate browser navigation, interaction, and screenshots", "browser", 23),
+    (
+        "memory_timeline",
+        "Memory Timeline",
+        "Get memory timeline for a session instance",
+        "memory",
+        22,
+    ),
+    (
+        "browser",
+        "Browser",
+        "Automate browser navigation, interaction, and screenshots",
+        "browser",
+        23,
+    ),
     ("web_fetch", "Web Fetch", "Fetch web page content via HTTP", "web", 24),
     ("image_understand", "Image Understand", "Analyze and describe images", "image", 25),
     ("image_generate", "Image Generate", "Generate images from text descriptions", "image", 26),
@@ -107,10 +191,28 @@ DEFAULT_AVAILABLE_TOOLS = [
     ("add_output_variable", "Add Output Variable", "Add an output slot to a node", "workflow", 108),
     ("remove_variable", "Remove Variable", "Remove an input or output variable", "workflow", 109),
     ("auto_layout", "Auto Layout", "Automatically arrange workflow nodes", "workflow", 110),
-    ("validate_workflow", "Validate Workflow", "Check workflow for structural errors", "workflow", 111),
+    (
+        "validate_workflow",
+        "Validate Workflow",
+        "Check workflow for structural errors",
+        "workflow",
+        111,
+    ),
     ("run_test", "Run Test", "Execute workflow in test mode", "workflow", 112),
-    ("get_variable_context", "Get Variable Context", "List available workflow variables", "workflow", 113),
-    ("list_database_tables", "List Database Tables", "List user-defined database tables and schemas", "workflow", 114),
+    (
+        "get_variable_context",
+        "Get Variable Context",
+        "List available workflow variables",
+        "workflow",
+        113,
+    ),
+    (
+        "list_database_tables",
+        "List Database Tables",
+        "List user-defined database tables and schemas",
+        "workflow",
+        114,
+    ),
 ]
 
 
@@ -123,11 +225,14 @@ def seed_available_tools(db) -> None:
     try:
         with db._get_connection() as conn:
             for name, display_name, description, category, sort_order in DEFAULT_AVAILABLE_TOOLS:
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT OR IGNORE INTO available_tools
                     (name, display_name, description, category, enabled, sort_order)
                     VALUES (?, ?, ?, ?, 1, ?)
-                """, (name, display_name, description, category, sort_order))
+                """,
+                    (name, display_name, description, category, sort_order),
+                )
             conn.commit()
         logger.info("Seeded available_tools with defaults")
     except Exception as e:
@@ -211,7 +316,14 @@ def seed_builtin_subagents(subagent_repo) -> None:
                 "A document distillation expert that extracts key information "
                 "from PDFs, DOCX, and text files into structured Markdown notes."
             ),
-            "tools": ["read", "write", "kb_search", "kb_read_note", "kb_write_note", "kb_list_links"],
+            "tools": [
+                "read",
+                "write",
+                "kb_search",
+                "kb_read_note",
+                "kb_write_note",
+                "kb_list_links",
+            ],
             "extensions": [],
             "max_iterations": 30,
             "temperature": 0.3,
@@ -225,7 +337,14 @@ def seed_builtin_subagents(subagent_repo) -> None:
                 "A library paper distillation expert that reads academic papers "
                 "and generates structured summary notes with library knowledge-graph connections."
             ),
-            "tools": ["read", "library_search", "library_timeline", "library_read_note", "library_list_links", "library_write_note"],
+            "tools": [
+                "read",
+                "library_search",
+                "library_timeline",
+                "library_read_note",
+                "library_list_links",
+                "library_write_note",
+            ],
             "extensions": [],
             "max_iterations": 30,
             "temperature": 0.3,
@@ -236,7 +355,13 @@ def seed_builtin_subagents(subagent_repo) -> None:
         {
             "name": "pdf-chat",
             "description": "A PDF reading assistant for conversational Q&A about documents.",
-            "tools": ["read", "library_search", "library_read_note", "memory_search", "memory_read"],
+            "tools": [
+                "read",
+                "library_search",
+                "library_read_note",
+                "memory_search",
+                "memory_read",
+            ],
             "extensions": [],
             "max_iterations": 10,
             "temperature": 0.5,
@@ -252,7 +377,16 @@ def seed_builtin_subagents(subagent_repo) -> None:
         {
             "name": "library-chat",
             "description": "A library knowledge assistant for conversational Q&A about papers and collections.",
-            "tools": ["read", "list", "library_search", "library_read_note", "library_list_links", "library_timeline", "memory_search", "memory_read"],
+            "tools": [
+                "read",
+                "list",
+                "library_search",
+                "library_read_note",
+                "library_list_links",
+                "library_timeline",
+                "memory_search",
+                "memory_read",
+            ],
             "extensions": [],
             "max_iterations": 10,
             "temperature": 0.5,
@@ -319,27 +453,38 @@ Your job is to help users create and modify visual workflows through tool calls.
 3. Report the final result including what was created and any {{?}} placeholders
 """
 
-    builtin.append({
-        "name": "workflow-designer",
-        "description": (
-            "A workflow design expert that creates and modifies visual workflows "
-            "through natural language conversation and tool calls."
-        ),
-        "tools": [
-            "add_node", "connect_nodes", "set_variable",
-            "add_input_variable", "add_output_variable", "remove_variable",
-            "get_node_io", "get_nodes",
-            "remove_node", "update_node",
-            "auto_layout", "validate_workflow", "run_test", "get_variable_context",
-            "list_database_tables",
-        ],
-        "extensions": [],
-        "max_iterations": 15,
-        "temperature": 0.3,
-        "system_prompt": WORKFLOW_DESIGNER_SYSTEM_PROMPT,
-        "enabled": True,
-        "is_builtin": True,
-    })
+    builtin.append(
+        {
+            "name": "workflow-designer",
+            "description": (
+                "A workflow design expert that creates and modifies visual workflows "
+                "through natural language conversation and tool calls."
+            ),
+            "tools": [
+                "add_node",
+                "connect_nodes",
+                "set_variable",
+                "add_input_variable",
+                "add_output_variable",
+                "remove_variable",
+                "get_node_io",
+                "get_nodes",
+                "remove_node",
+                "update_node",
+                "auto_layout",
+                "validate_workflow",
+                "run_test",
+                "get_variable_context",
+                "list_database_tables",
+            ],
+            "extensions": [],
+            "max_iterations": 15,
+            "temperature": 0.3,
+            "system_prompt": WORKFLOW_DESIGNER_SYSTEM_PROMPT,
+            "enabled": True,
+            "is_builtin": True,
+        }
+    )
 
     for spec in builtin:
         existing = subagent_repo.get_subagent_by_name(spec["name"])

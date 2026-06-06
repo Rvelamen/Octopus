@@ -6,8 +6,8 @@ from typing import Any
 
 from backend.core.config.schema import AgentDefaults, ProviderConfig
 from backend.core.providers.factory import create_provider
-from backend.data.provider_store import ProviderRepository, ModelRepository
 from backend.data.database import Database
+from backend.data.provider_store import ModelRepository, ProviderRepository
 
 
 class LLMService:
@@ -63,6 +63,7 @@ class LLMService:
         else:
             # Fallback: use default from config
             from backend.core.config.loader import load_config
+
             config = load_config()
             providers_dict = config.providers
             agent_defaults = AgentDefaults(

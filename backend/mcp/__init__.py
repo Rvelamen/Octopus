@@ -37,19 +37,19 @@ Note: This module does NOT replace provider.py.
 - llm_bridge.py: Adapts MCP tools to agent's tool system
 """
 
-from backend.mcp.manager import MCPManager, get_mcp_manager
+from backend.data.mcp_store import MCPRepository, MCPServerRecord, MCPToolRecord, MCPToolStats
 from backend.mcp.config import MCPConfig, MCPServerConfig, MCPToolConfig
-from backend.mcp.server.connection import MCPConnection, ConnectionState
-from backend.mcp.server.tool_registry import MCPToolRegistry, ToolState
+from backend.mcp.llm_bridge import MCPBridgeIntegration, MCPToolBridge, get_mcp_bridge
+from backend.mcp.manager import MCPManager, get_mcp_manager
+from backend.mcp.server.connection import ConnectionState, MCPConnection
 from backend.mcp.server.security import MCPPermissionManager
-from backend.mcp.llm_bridge import MCPToolBridge, MCPBridgeIntegration, get_mcp_bridge
 from backend.mcp.server.tool_adapter import (
-    MCPToolAdapter,
-    MCPAdapterFactory,
     HybridToolRegistry,
+    MCPAdapterFactory,
+    MCPToolAdapter,
     create_hybrid_registry,
 )
-from backend.data.mcp_store import MCPRepository, MCPServerRecord, MCPToolRecord, MCPToolStats
+from backend.mcp.server.tool_registry import MCPToolRegistry, ToolState
 
 __all__ = [
     # Core components

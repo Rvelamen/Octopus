@@ -1,10 +1,10 @@
 """Base classes for long-running task plugins."""
 
 import asyncio
-import json
+import contextlib
 from abc import abstractmethod
-from pathlib import Path
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from loguru import logger
 
@@ -198,10 +198,8 @@ class LongTaskWorker:
             }
 
         except asyncio.TimeoutError:
-            try:
+            with contextlib.suppress(BaseException):
                 proc.kill()
-            except:
-                pass
             return {
                 "success": False,
                 "stdout": "",
@@ -302,7 +300,9 @@ class LongTaskPlugin:
         channel = kwargs.get("channel", "desktop")  # Default to desktop channel
         chat_id = kwargs.get("chat_id", "default")
         session = kwargs.get("session", f"{task_type}_{asyncio.get_event_loop().time()}")
-        session_instance_id = kwargs.get("session_instance_id")  # Current session instance when task is created
+        session_instance_id = kwargs.get(
+            "session_instance_id"
+        )  # Current session instance when task is created
 
         # Get callback URL for hooks
         callback_url = manager.get_hook_url(plugin_name=task_type)
@@ -317,7 +317,11 @@ class LongTaskPlugin:
                     "session": session,
                     "callback_url": callback_url,
                     "session_instance_id": session_instance_id,  # Record the instance where task was created
-                    **{k: v for k, v in kwargs.items() if k not in ["channel", "chat_id", "session", "session_instance_id"]},
+                    **{
+                        k: v
+                        for k, v in kwargs.items()
+                        if k not in ["channel", "chat_id", "session", "session_instance_id"]
+                    },
                 },
                 channel=channel,
                 chat_id=chat_id,
@@ -328,12 +332,16 @@ class LongTaskPlugin:
                 "task_id": task_id,
                 "session": session,
                 "status": "started",
-                "message": f"Claude Code 任务已启动",
+                "message": "Claude Code 任务已启动",
                 "details": {
                     "task_id": task_id,
                     "session": session,
                     "workdir": kwargs.get("workdir", ""),
-                    "prompt_preview": kwargs.get("prompt", "")[:100] + "..." if len(kwargs.get("prompt", "")) > 100 else kwargs.get("prompt", ""),
+                    "prompt_preview": (
+                        kwargs.get("prompt", "")[:100] + "..."
+                        if len(kwargs.get("prompt", "")) > 100
+                        else kwargs.get("prompt", "")
+                    ),
                 },
                 "note": "任务正在后台运行。当需要授权或任务完成时，我会通知您。",
             }
@@ -414,10 +422,13 @@ class LongTaskPlugin:
 
             try:
                 # Directly execute auth on the worker
-                result = await worker._handle_auth(task.id, {
-                    "session": session,
-                    "action": auth_action,
-                })
+                result = await worker._handle_auth(
+                    task.id,
+                    {
+                        "session": session,
+                        "action": auth_action,
+                    },
+                )
 
                 return {
                     "success": True,
@@ -438,10 +449,8 @@ class LongTaskPlugin:
             status_filter = kwargs.get("status")
             status_enum = None
             if status_filter:
-                try:
+                with contextlib.suppress(ValueError):
                     status_enum = TaskStatus(status_filter)
-                except ValueError:
-                    pass
 
             tasks = manager.list_tasks(task_type=task_type, status=status_enum)
 

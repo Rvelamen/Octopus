@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 import re
 import time
-import logging
-from typing import Any, Optional
 from dataclasses import dataclass, field
-from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -15,18 +14,19 @@ logger = logging.getLogger(__name__)
 @dataclass
 class NodeExecutionTrace:
     """Execution trace for a single node."""
+
     node_id: str
     status: str = "pending"  # pending, running, completed, failed, skipped
-    start_time: Optional[float] = None  # Unix timestamp
-    end_time: Optional[float] = None  # Unix timestamp
+    start_time: float | None = None  # Unix timestamp
+    end_time: float | None = None  # Unix timestamp
     input_snapshot: dict[str, Any] = field(default_factory=dict)
     output_snapshot: dict[str, Any] = field(default_factory=dict)
-    error_detail: Optional[dict[str, Any]] = None
+    error_detail: dict[str, Any] | None = None
     retry_count: int = 0
     logs: list[dict[str, Any]] = field(default_factory=list)
 
     @property
-    def duration_ms(self) -> Optional[float]:
+    def duration_ms(self) -> float | None:
         """Get execution duration in milliseconds."""
         if self.start_time and self.end_time:
             return (self.end_time - self.start_time) * 1000
@@ -56,8 +56,8 @@ class WorkflowContext:
 
     def __init__(
         self,
-        input_variables: Optional[dict[str, Any]] = None,
-        version_id: Optional[str] = None,
+        input_variables: dict[str, Any] | None = None,
+        version_id: str | None = None,
     ):
         """Initialize context with input variables.
 
@@ -67,9 +67,9 @@ class WorkflowContext:
         """
         self._variables = input_variables or {}
         self._node_outputs: dict[str, dict[str, Any]] = {}
-        self._current_node_id: Optional[str] = None
+        self._current_node_id: str | None = None
         self._current_inputs: dict[str, Any] = {}
-        self._version_id: Optional[str] = version_id
+        self._version_id: str | None = version_id
         # Trace recording
         self._node_traces: dict[str, NodeExecutionTrace] = {}
         self._logs: list[dict[str, Any]] = []
@@ -90,11 +90,11 @@ class WorkflowContext:
     def update_node_trace(
         self,
         node_id: str,
-        status: Optional[str] = None,
-        input_snapshot: Optional[dict[str, Any]] = None,
-        output_snapshot: Optional[dict[str, Any]] = None,
-        error_detail: Optional[dict[str, Any]] = None,
-        retry_count: Optional[int] = None,
+        status: str | None = None,
+        input_snapshot: dict[str, Any] | None = None,
+        output_snapshot: dict[str, Any] | None = None,
+        error_detail: dict[str, Any] | None = None,
+        retry_count: int | None = None,
     ) -> None:
         """Update execution trace for a node."""
         trace = self._node_traces.get(node_id)
@@ -118,37 +118,38 @@ class WorkflowContext:
         if status:
             self.add_log(
                 "info" if status == "completed" else "error" if status == "failed" else "warn",
-                f"Node {node_id} {status}"
+                f"Node {node_id} {status}",
             )
 
     def add_trace_log(self, node_id: str, level: str, message: str) -> None:
         """Add a log entry to a node's trace."""
         trace = self._node_traces.get(node_id)
         if trace:
-            trace.logs.append({
-                "timestamp": time.time(),
-                "level": level,
-                "message": message,
-            })
+            trace.logs.append(
+                {
+                    "timestamp": time.time(),
+                    "level": level,
+                    "message": message,
+                }
+            )
 
     def add_log(self, level: str, message: str) -> None:
         """Add a log entry to the workflow context."""
-        self._logs.append({
-            "timestamp": time.time(),
-            "level": level,
-            "message": message,
-        })
+        self._logs.append(
+            {
+                "timestamp": time.time(),
+                "level": level,
+                "message": message,
+            }
+        )
 
-    def get_node_trace(self, node_id: str) -> Optional[NodeExecutionTrace]:
+    def get_node_trace(self, node_id: str) -> NodeExecutionTrace | None:
         """Get execution trace for a node."""
         return self._node_traces.get(node_id)
 
     def get_all_traces(self) -> dict[str, dict[str, Any]]:
         """Get all node traces as dictionaries."""
-        return {
-            node_id: trace.to_dict()
-            for node_id, trace in self._node_traces.items()
-        }
+        return {node_id: trace.to_dict() for node_id, trace in self._node_traces.items()}
 
     def get_workflow_logs(self) -> list[dict[str, Any]]:
         """Get all workflow logs."""
@@ -159,11 +160,13 @@ class WorkflowContext:
         self._current_node_id = node_id
         self._current_inputs = {}
 
-    def get_current_node(self) -> Optional[str]:
+    def get_current_node(self) -> str | None:
         """Get current executing node."""
         return self._current_node_id
 
-    def record_unresolved_ref(self, node_id: str, ref: str, ref_type: str, details: dict[str, Any] | None = None) -> None:
+    def record_unresolved_ref(
+        self, node_id: str, ref: str, ref_type: str, details: dict[str, Any] | None = None
+    ) -> None:
         """Record an unresolved variable reference for a node."""
         if node_id not in self._unresolved_refs:
             self._unresolved_refs[node_id] = []
@@ -215,11 +218,11 @@ class WorkflowContext:
         When resolution fails, returns a clear marker instead of the raw reference string.
         """
         if isinstance(value, str):
-            match = re.match(r'^\{\{(.+?)\}\}$', value.strip())
+            match = re.match(r"^\{\{(.+?)\}\}$", value.strip())
             if match:
                 ref = match.group(1)
-                if '.' in ref:
-                    parts = ref.split('.', 1)
+                if "." in ref:
+                    parts = ref.split(".", 1)
                     node_id, output_key = parts[0], parts[1]
                     result = self.get_node_output(node_id, output_key)
                     if result is not None:
@@ -256,8 +259,8 @@ class WorkflowContext:
 
             def replace_ref(match):
                 ref = match.group(1)
-                if '.' in ref:
-                    parts = ref.split('.', 1)
+                if "." in ref:
+                    parts = ref.split(".", 1)
                     node_id, output_key = parts[0], parts[1]
                     result = self.get_node_output(node_id, output_key)
                     if result is not None:
@@ -285,7 +288,7 @@ class WorkflowContext:
                     # 不在当前节点 inputs 中 → 保持原样不解析
                     return match.group(0)
 
-            return re.sub(r'\{\{(.+?)\}\}', replace_ref, value)
+            return re.sub(r"\{\{(.+?)\}\}", replace_ref, value)
 
         elif isinstance(value, dict):
             return {k: self.resolve_value(v) for k, v in value.items()}
@@ -303,14 +306,10 @@ class WorkflowContext:
         """Convert context to dictionary."""
         return {
             "variables": self._variables.copy(),
-            "node_outputs": {
-                k: v.copy() for k, v in self._node_outputs.items()
-            },
+            "node_outputs": {k: v.copy() for k, v in self._node_outputs.items()},
             "current_node_id": self._current_node_id,
             "version_id": self._version_id,
             "traces": self.get_all_traces(),
             "logs": self.get_workflow_logs(),
-            "unresolved_refs": {
-                k: v for k, v in self._unresolved_refs.items() if v
-            },
+            "unresolved_refs": {k: v for k, v in self._unresolved_refs.items() if v},
         }

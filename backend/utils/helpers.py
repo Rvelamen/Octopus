@@ -1,9 +1,8 @@
 """Utility functions for backend."""
 
 import threading
-from pathlib import Path
 from datetime import datetime
-
+from pathlib import Path
 
 # Global workspace configuration
 _workspace_config = {
@@ -22,19 +21,16 @@ def init_workspace_path(workspace: str | None = None) -> Path:
     """
     Initialize the global workspace path.
     This should be called once during application startup.
-    
+
     Args:
         workspace: Optional workspace path. If not provided, defaults to ~/.octopus/workspace.
-    
+
     Returns:
         The initialized workspace path.
     """
     with _workspace_config["lock"]:
-        if workspace:
-            path = Path(workspace).expanduser()
-        else:
-            path = Path.home() / ".octopus" / "workspace"
-        
+        path = Path(workspace).expanduser() if workspace else Path.home() / ".octopus" / "workspace"
+
         _workspace_config["path"] = ensure_dir(path)
         return _workspace_config["path"]
 
@@ -87,6 +83,7 @@ def _get_workspace_path_from_db() -> str | None:
     try:
         from backend.data.database import Database
         from backend.data.provider_store import AgentDefaultsRepository
+
         db = Database()
         repo = AgentDefaultsRepository(db)
         defaults = repo.get_or_create_defaults()
@@ -151,10 +148,10 @@ def safe_filename(name: str) -> str:
 def parse_session_key(key: str) -> tuple[str, str]:
     """
     Parse a session key into channel and chat_id.
-    
+
     Args:
         key: Session key in format "channel:chat_id"
-    
+
     Returns:
         Tuple of (channel, chat_id)
     """

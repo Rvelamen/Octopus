@@ -1,41 +1,14 @@
 """WebSocket message handlers for Desktop channel."""
 
-import asyncio
-import json
-import random
-import time
-import uuid
-from pathlib import Path
 from typing import Any
-import re
 
 from fastapi import WebSocket
 from loguru import logger
 
-from backend.channels.desktop.protocol import MessageType, WSMessage
-from backend.channels.desktop.provider_handlers import (
-    ProviderHandler, ModelHandler, SettingsHandler, AgentDefaultsHandler,
-    ChannelConfigHandler, ToolConfigHandler, ImageProviderConfigHandler
-)
-from backend.channels.desktop.wechat_handler import WechatConfigHandler
-from backend.core.events.types import InboundMessage, AgentEvent, MessageContentItem
+from backend.channels.desktop.protocol import WSMessage
 from backend.core.events.bus import MessageBus
-from backend.mcp.manager import MCPManager, get_mcp_manager
-from backend.mcp.config import MCPServerConfig
-from backend.data import Database, SessionRepository
-from backend.data.provider_store import (
-    ProviderRepository, ModelRepository, AgentDefaultsRepository,
-    SettingsRepository, ChannelConfigRepository, ToolConfigRepository
-)
 
 # Import handlers from extensions (unified extension system)
-from backend.extensions.desktop_handlers import (
-    ExtensionGetListHandler,
-    ExtensionInstallHandler,
-    ExtensionUninstallHandler,
-    ExtensionRunHandler,
-    ExtensionConfigHandler,
-)
 
 
 class MessageHandler:
@@ -48,7 +21,9 @@ class MessageHandler:
         """Handle a message. Must be implemented by subclasses."""
         raise NotImplementedError
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: Any) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: Any
+    ) -> None:
         """Handle a validated Pydantic model.
 
         Subclasses should override this to consume typed payloads.

@@ -1,16 +1,15 @@
 """Context compression for managing conversation history length."""
 
 import json
-import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from loguru import logger
 
 from backend.agent.config_service import AgentConfigService
 from backend.data.session_manager import SessionManager
 from backend.data.token_store import TokenUsageRepository
-
 
 # 配置压缩日志输出到独立文件
 _log_dir = Path(__file__).parent.parent.parent / "logs"
@@ -28,7 +27,7 @@ compression_logger.add(
     retention="30 days",
     level="DEBUG",
     format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
-    encoding="utf-8"
+    encoding="utf-8",
 )
 
 
@@ -86,10 +85,10 @@ def _estimate_single_message_tokens(msg: dict[str, Any]) -> int:
 def estimate_message_tokens(messages: list[dict[str, Any]]) -> int:
     """
     快速估算消息列表的 token 数量 (基于字符数 / 4 + 固定开销)。
-    
+
     Args:
         messages: 消息列表
-        
+
     Returns:
         估算的 token 数量
     """
@@ -98,43 +97,46 @@ def estimate_message_tokens(messages: list[dict[str, Any]]) -> int:
 
 
 def prune_old_tool_results(
-    messages: list[dict[str, Any]], 
-    tail_token_budget: int = 15000
+    messages: list[dict[str, Any]], tail_token_budget: int = 15000
 ) -> list[dict[str, Any]]:
     """
     廉价预处理: 将尾部 token 预算外的旧 tool result 替换为占位符。
-    
+
     零成本操作，无需 LLM 调用，可节省 30-50% 需要压缩的内容。
     从后向前遍历，保护尾部预算内的消息。
-    
+
     Args:
         messages: 消息列表
         tail_token_budget: 尾部保护的 token 预算 (默认 15000)
-        
+
     Returns:
         处理后的消息列表 (可能修改了部分 tool result 的内容)
     """
     if not messages:
         return messages
-    
+
     result = []
     tokens_from_end = 0
-    
+
     # 从后向前遍历，保护尾部预算
     for msg in reversed(messages):
         content = msg.get("content", "")
         token_estimate = len(str(content)) // _CHARS_PER_TOKEN
         tokens_from_end += token_estimate
-        
+
         # 如果是 tool 消息，且超出尾部预算，且内容较长，则替换为占位符
-        if (msg.get("role") == "tool" and
-            tokens_from_end > tail_token_budget and
-            len(str(content)) > _TOOL_RESULT_PRUNE_MAX_CHARS):
+        if (
+            msg.get("role") == "tool"
+            and tokens_from_end > tail_token_budget
+            and len(str(content)) > _TOOL_RESULT_PRUNE_MAX_CHARS
+        ):
             msg = {**msg, "content": _TOOL_RESULT_PRUNE_PLACEHOLDER}
-            compression_logger.debug(f"Pruned old tool result ({len(str(content))} chars) to save context space")
-        
+            compression_logger.debug(
+                f"Pruned old tool result ({len(str(content))} chars) to save context space"
+            )
+
         result.append(msg)
-    
+
     return list(reversed(result))
 
 
@@ -149,7 +151,7 @@ async def _chat_stream_to_content(
 
     Uses streaming to avoid Anthropic SDK's 10-minute non-streaming limit.
     """
-    kwargs: dict[str, Any] = dict(messages=messages, tools=[], model=model)
+    kwargs: dict[str, Any] = {"messages": messages, "tools": [], "model": model}
     if max_tokens is not None:
         kwargs["max_tokens"] = max_tokens
     if temperature is not None:
@@ -196,10 +198,9 @@ async def compress_messages(
     if len(messages) < 4:
         return ""
 
-    conversation_text = "\n".join([
-        f"{m.get('role', 'user')}: {m.get('content', '')[:500]}"
-        for m in messages
-    ])
+    conversation_text = "\n".join(
+        [f"{m.get('role', 'user')}: {m.get('content', '')[:500]}" for m in messages]
+    )
 
     # Use structured summary template
     compression_prompt = f"""{STRUCTURED_SUMMARY_TEMPLATE}
@@ -209,23 +210,21 @@ Conversation to summarize:
 
     compression_messages = [
         {"role": "system", "content": STRUCTURED_SUMMARY_SYSTEM_PROMPT},
-        {"role": "user", "content": compression_prompt}
+        {"role": "user", "content": compression_prompt},
     ]
-    
+
     try:
-        full_content, usage = await _chat_stream_to_content(
-            provider, compression_messages, model
-        )
-        
+        full_content, usage = await _chat_stream_to_content(provider, compression_messages, model)
+
         if usage and record_token_usage:
             record_token_usage(
                 session_instance_id=session_instance_id,
                 provider_name=provider_type,
                 model_id=model,
                 usage=usage,
-                request_type=request_type
+                request_type=request_type,
             )
-        
+
         summary = full_content or ""
         compression_logger.info(f"Context compressed to {len(summary)} characters")
         return summary
@@ -237,11 +236,11 @@ Conversation to summarize:
 class ContextCompressor:
     """
     Handles context compression to manage conversation history length.
-    
+
     Provides two compression strategies:
     1. First-time compression: Summarize entire conversation history
     2. Incremental compression: Update existing summary with new messages
-    
+
     Compression is triggered by:
     - Token threshold (primary): When prompt tokens exceed threshold
     - Turn threshold (fallback): When turn count reaches threshold
@@ -258,7 +257,7 @@ class ContextCompressor:
     ):
         """
         Initialize the context compressor.
-        
+
         Args:
             db: Database connection for config retrieval.
             sessions: Session manager for saving sessions.
@@ -333,15 +332,16 @@ class ContextCompressor:
         Returns:
             Compressed context summary with structured format.
         """
-        to_compress = messages or session.messages[:-6] if len(session.messages) > 6 else session.messages
+        to_compress = (
+            messages or session.messages[:-6] if len(session.messages) > 6 else session.messages
+        )
 
         if len(to_compress) < 4:
             return ""
 
-        conversation_text = "\n".join([
-            f"{m.get('role', 'user')}: {m.get('content', '')[:500]}"
-            for m in to_compress
-        ])
+        conversation_text = "\n".join(
+            [f"{m.get('role', 'user')}: {m.get('content', '')[:500]}" for m in to_compress]
+        )
 
         # Use structured summary prompt
         compression_prompt = f"""{STRUCTURED_SUMMARY_TEMPLATE}
@@ -352,25 +352,30 @@ Conversation to summarize:
         provider, model, provider_type, max_tokens, temperature = self._get_provider_and_model()
         compression_messages = [
             {"role": "system", "content": STRUCTURED_SUMMARY_SYSTEM_PROMPT},
-            {"role": "user", "content": compression_prompt}
+            {"role": "user", "content": compression_prompt},
         ]
 
         try:
             full_content, usage = await _chat_stream_to_content(
-                provider, compression_messages, model,
-                max_tokens=max_tokens, temperature=temperature,
+                provider,
+                compression_messages,
+                model,
+                max_tokens=max_tokens,
+                temperature=temperature,
             )
-            
+
             if usage:
-                session_instance_id = session.active_instance.id if session.active_instance else None
+                session_instance_id = (
+                    session.active_instance.id if session.active_instance else None
+                )
                 self._record_token_usage(
                     session_instance_id=session_instance_id,
                     provider_name=provider_type,
                     model_id=model,
                     usage=usage,
-                    request_type="compression"
+                    request_type="compression",
                 )
-            
+
             summary = full_content or ""
             compression_logger.info(f"Context compressed to {len(summary)} characters")
             return summary
@@ -392,10 +397,9 @@ Conversation to summarize:
         if len(new_messages) < 4:
             return last_summary
 
-        new_conversation = "\n".join([
-            f"{m.get('role', 'user')}: {m.get('content', '')[:500]}"
-            for m in new_messages
-        ])
+        new_conversation = "\n".join(
+            [f"{m.get('role', 'user')}: {m.get('content', '')[:500]}" for m in new_messages]
+        )
 
         # Use structured summary template for incremental compression
         prompt = f"""{STRUCTURED_SUMMARY_TEMPLATE}
@@ -411,32 +415,39 @@ Please generate a complete structured summary that integrates both the previous 
         provider, model, provider_type, max_tokens, temperature = self._get_provider_and_model()
         compression_messages = [
             {"role": "system", "content": STRUCTURED_SUMMARY_SYSTEM_PROMPT},
-            {"role": "user", "content": prompt}
+            {"role": "user", "content": prompt},
         ]
 
         try:
             full_content, usage = await _chat_stream_to_content(
-                provider, compression_messages, model,
-                max_tokens=max_tokens, temperature=temperature,
+                provider,
+                compression_messages,
+                model,
+                max_tokens=max_tokens,
+                temperature=temperature,
             )
-            
+
             if usage:
                 self._record_token_usage(
                     session_instance_id=None,
                     provider_name=provider_type,
                     model_id=model,
                     usage=usage,
-                    request_type="compression"
+                    request_type="compression",
                 )
-            
+
             summary = full_content or last_summary
-            compression_logger.info(f"Incremental compression: {len(last_summary)} -> {len(summary)} characters")
+            compression_logger.info(
+                f"Incremental compression: {len(last_summary)} -> {len(summary)} characters"
+            )
             return summary
         except Exception as e:
             compression_logger.error(f"Incremental compression failed: {e}")
             return last_summary
 
-    async def do_compress(self, session, current_turns: int, model_context_window: int = 0, force: bool = False) -> None:
+    async def do_compress(
+        self, session, current_turns: int, model_context_window: int = 0, force: bool = False
+    ) -> None:
         """
         Perform context compression with dynamic tail protection.
 
@@ -451,17 +462,19 @@ Please generate a complete structured summary that integrates both the previous 
                    Used for manual compression requests.
         """
         instance_id = session.active_instance.id if session.active_instance else None
-        
+
         # 方案1: 廉价预处理 - Tool Output 裁剪
         tail_budget = self.compression_tail_token_budget
         session.messages = prune_old_tool_results(session.messages, tail_budget)
-        compression_logger.info(f"Phase 1: Pruned old tool results (tail budget: {tail_budget} tokens)")
-        
+        compression_logger.info(
+            f"Phase 1: Pruned old tool results (tail budget: {tail_budget} tokens)"
+        )
+
         # 方案3: 动态尾部保护 - 使用 Token 预算而非固定数量
         tail_messages = []
         tokens_in_tail = 0
         MAX_TAIL_MESSAGES = 12  # 最多保留12条消息（约6轮对话），防止消息少时不压缩
-        
+
         # 从后向前累加，确定保留区域 (跳过 system 消息)
         non_system_messages = [m for m in session.messages if m.get("role") != "system"]
         for msg in reversed(non_system_messages):
@@ -474,9 +487,9 @@ Please generate a complete structured summary that integrates both the previous 
                 break
             tail_messages.append(msg)
             tokens_in_tail += token_est
-        
+
         tail_messages = list(reversed(tail_messages))
-        
+
         # 确保 tail_messages 以 user 消息开头，保留完整的对话轮次。
         # 如果截断点落在 assistant/tool 消息中间，会导致上下文缺失对应的 user 消息，
         # 甚至让 tool result 找不到对应的 tool_call，引发 API 报错。
@@ -500,9 +513,9 @@ Please generate a complete structured summary that integrates both the previous 
                         f"Extended tail by {len(prepend_msgs)} messages to preserve complete turn, "
                         f"tail now starts with role={tail_messages[0].get('role')}"
                     )
-        
+
         to_compress = [m for m in non_system_messages if m not in tail_messages]
-        
+
         if len(to_compress) < 4:
             compression_logger.info(f"Not enough messages to compress: {len(to_compress)}")
             return
@@ -524,7 +537,7 @@ Please generate a complete structured summary that integrates both the previous 
         session.compressed_message_count += len(to_compress)
         session.last_compressed_turn = current_turns
 
-        message_ids = [m.get('id') for m in to_compress if m.get('id')]
+        message_ids = [m.get("id") for m in to_compress if m.get("id")]
         if instance_id and message_ids:
             self.sessions.db.mark_messages_compressed(instance_id, message_ids)
 
@@ -552,16 +565,13 @@ Please generate a complete structured summary that integrates both the previous 
         )
 
     async def maybe_compress(
-        self, 
-        session, 
-        prompt_tokens: int = 0,
-        model_context_window: int = 0
+        self, session, prompt_tokens: int = 0, model_context_window: int = 0
     ) -> None:
         """
         Check if context compression is needed and perform it.
 
         方案2: 智能触发机制 - 基于上下文窗口百分比的动态触发
-        
+
         Hybrid trigger strategy:
         1. Token ratio (primary): trigger when prompt_tokens / model_context_window >= trigger_ratio
         2. Token threshold (fallback): trigger when prompt_tokens >= token_threshold
@@ -590,7 +600,7 @@ Please generate a complete structured summary that integrates both the previous 
             if usage_ratio >= trigger_ratio:
                 should_compress = True
                 trigger_reason = f"token ratio ({usage_ratio:.1%} >= {trigger_ratio:.1%})"
-        
+
         # 回退到固定 token 阈值
         if not should_compress:
             token_threshold = self.compression_token_threshold

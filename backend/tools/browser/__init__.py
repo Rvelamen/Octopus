@@ -14,7 +14,7 @@ Features:
 
 Usage:
     from backend.tools.browser import BrowserTool
-    
+
     browser = BrowserTool()
     session = browser.create_session(task_id="task_123")
     result = browser.navigate("https://example.com", session_id=session["session_id"])

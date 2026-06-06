@@ -1,12 +1,13 @@
 """Anthropic-compatible provider (Anthropic, Kimi, MiniMax, etc.)."""
 
 import json
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from anthropic import AsyncAnthropic
 from loguru import logger
 
-from backend.core.providers.base import LLMResponse, ToolCallRequest, StreamChunk
+from backend.core.providers.base import LLMResponse, StreamChunk, ToolCallRequest
 from backend.core.providers.base_client import RetryableProvider
 
 
@@ -24,11 +25,15 @@ def convert_tools_to_anthropic_format(tools: list[dict[str, Any]]) -> list[dict[
         if isinstance(tool, dict):
             if tool.get("type") == "function" and "function" in tool:
                 func = tool["function"]
-                anthropic_tools.append({
-                    "name": func.get("name", ""),
-                    "description": func.get("description", ""),
-                    "input_schema": func.get("parameters", {"type": "object", "properties": {}}),
-                })
+                anthropic_tools.append(
+                    {
+                        "name": func.get("name", ""),
+                        "description": func.get("description", ""),
+                        "input_schema": func.get(
+                            "parameters", {"type": "object", "properties": {}}
+                        ),
+                    }
+                )
             else:
                 anthropic_tools.append(tool)
     return anthropic_tools
@@ -65,17 +70,19 @@ class AnthropicProvider(RetryableProvider):
                     anthropic_messages, system_message, tools, model, max_tokens, temperature
                 )
 
-            kwargs = dict(
-                model=model,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                system=system_message,
-                messages=anthropic_messages,
-            )
+            kwargs = {
+                "model": model,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "system": system_message,
+                "messages": anthropic_messages,
+            }
             if tools:
                 anthropic_tools = convert_tools_to_anthropic_format(tools)
                 kwargs["tools"] = anthropic_tools
-                logger.info(f"[Anthropic] Tools converted and passed to API: {len(anthropic_tools)} tools")
+                logger.info(
+                    f"[Anthropic] Tools converted and passed to API: {len(anthropic_tools)} tools"
+                )
 
             async def _call_anthropic():
                 response = await self._client.messages.create(**kwargs)
@@ -86,11 +93,13 @@ class AnthropicProvider(RetryableProvider):
                         if block.type == "text":
                             content = block.text
                         elif block.type == "tool_use":
-                            tool_calls.append(ToolCallRequest(
-                                id=block.id,
-                                name=block.name,
-                                arguments=block.input,
-                            ))
+                            tool_calls.append(
+                                ToolCallRequest(
+                                    id=block.id,
+                                    name=block.name,
+                                    arguments=block.input,
+                                )
+                            )
 
                 usage = {}
                 if response.usage:
@@ -102,15 +111,21 @@ class AnthropicProvider(RetryableProvider):
                     if hasattr(response.usage, "cache_read_input_tokens"):
                         usage["cache_read_input_tokens"] = response.usage.cache_read_input_tokens
                     if hasattr(response.usage, "cache_creation_input_tokens"):
-                        usage["cache_creation_input_tokens"] = response.usage.cache_creation_input_tokens
+                        usage["cache_creation_input_tokens"] = (
+                            response.usage.cache_creation_input_tokens
+                        )
 
                 has_real_usage = bool(
-                    usage and (usage.get("prompt_tokens", 0) > 0 or usage.get("completion_tokens", 0) > 0)
+                    usage
+                    and (usage.get("prompt_tokens", 0) > 0 or usage.get("completion_tokens", 0) > 0)
                 )
                 if not has_real_usage:
                     from backend.agent.shared import _estimate_token_usage
+
                     usage = _estimate_token_usage(anthropic_messages, content or "", model)
-                    logger.warning(f"[Anthropic] Non-streaming response missing valid usage; estimated: {usage}")
+                    logger.warning(
+                        f"[Anthropic] Non-streaming response missing valid usage; estimated: {usage}"
+                    )
 
                 return LLMResponse(
                     content=content,
@@ -139,13 +154,13 @@ class AnthropicProvider(RetryableProvider):
         logger.info(f"[Stream] Calling ANTHROPIC API with model: {model}")
         system_message, anthropic_messages = self._adapt_messages(messages)
 
-        kwargs = dict(
-            model=model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            system=system_message,
-            messages=anthropic_messages,
-        )
+        kwargs = {
+            "model": model,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "system": system_message,
+            "messages": anthropic_messages,
+        }
         if tools:
             anthropic_tools = convert_tools_to_anthropic_format(tools)
             kwargs["tools"] = anthropic_tools
@@ -195,23 +210,34 @@ class AnthropicProvider(RetryableProvider):
                         final_usage = {
                             "prompt_tokens": final_message.usage.input_tokens,
                             "completion_tokens": final_message.usage.output_tokens,
-                            "total_tokens": final_message.usage.input_tokens + final_message.usage.output_tokens,
+                            "total_tokens": final_message.usage.input_tokens
+                            + final_message.usage.output_tokens,
                         }
                         if hasattr(final_message.usage, "cache_read_input_tokens"):
-                            final_usage["cache_read_input_tokens"] = final_message.usage.cache_read_input_tokens
+                            final_usage["cache_read_input_tokens"] = (
+                                final_message.usage.cache_read_input_tokens
+                            )
                         if hasattr(final_message.usage, "cache_creation_input_tokens"):
-                            final_usage["cache_creation_input_tokens"] = final_message.usage.cache_creation_input_tokens
+                            final_usage["cache_creation_input_tokens"] = (
+                                final_message.usage.cache_creation_input_tokens
+                            )
                 except Exception as usage_err:
                     logger.warning(f"Failed to get anthropic stream usage: {usage_err}")
 
             has_real_usage = bool(
                 final_usage
-                and (final_usage.get("prompt_tokens", 0) > 0 or final_usage.get("completion_tokens", 0) > 0)
+                and (
+                    final_usage.get("prompt_tokens", 0) > 0
+                    or final_usage.get("completion_tokens", 0) > 0
+                )
             )
             if not has_real_usage:
                 from backend.agent.shared import _estimate_token_usage
+
                 final_usage = _estimate_token_usage(anthropic_messages, accumulated_content, model)
-                logger.warning(f"[Anthropic] API did not return valid streaming usage; estimated: {final_usage}")
+                logger.warning(
+                    f"[Anthropic] API did not return valid streaming usage; estimated: {final_usage}"
+                )
 
             yield StreamChunk(
                 content="",
@@ -234,13 +260,13 @@ class AnthropicProvider(RetryableProvider):
     ) -> AsyncGenerator[str, None]:
         """Stream Anthropic completions (legacy string generator)."""
         try:
-            kwargs = dict(
-                model=model,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                system=system_message,
-                messages=messages,
-            )
+            kwargs = {
+                "model": model,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "system": system_message,
+                "messages": messages,
+            }
             if tools:
                 anthropic_tools = convert_tools_to_anthropic_format(tools)
                 kwargs["tools"] = anthropic_tools
@@ -276,31 +302,39 @@ class AnthropicProvider(RetryableProvider):
                             if image_url.startswith("data:"):
                                 mime_type = image_url.split(";")[0].split(":")[1]
                                 base64_data = image_url.split(",")[1]
-                                anthropic_content.append({
-                                    "type": "image",
-                                    "source": {
-                                        "type": "base64",
-                                        "media_type": mime_type,
-                                        "data": base64_data,
+                                anthropic_content.append(
+                                    {
+                                        "type": "image",
+                                        "source": {
+                                            "type": "base64",
+                                            "media_type": mime_type,
+                                            "data": base64_data,
+                                        },
                                     }
-                                })
+                                )
                             else:
-                                anthropic_content.append({
-                                    "type": "image",
-                                    "source": {
-                                        "type": "url",
-                                        "url": image_url,
+                                anthropic_content.append(
+                                    {
+                                        "type": "image",
+                                        "source": {
+                                            "type": "url",
+                                            "url": image_url,
+                                        },
                                     }
-                                })
-                    anthropic_messages.append({
-                        "role": "user",
-                        "content": anthropic_content,
-                    })
+                                )
+                    anthropic_messages.append(
+                        {
+                            "role": "user",
+                            "content": anthropic_content,
+                        }
+                    )
                 else:
-                    anthropic_messages.append({
-                        "role": "user",
-                        "content": content,
-                    })
+                    anthropic_messages.append(
+                        {
+                            "role": "user",
+                            "content": content,
+                        }
+                    )
             elif msg["role"] == "assistant":
                 content_blocks = []
                 if msg.get("content"):
@@ -310,13 +344,17 @@ class AnthropicProvider(RetryableProvider):
                         tool_id = tool.get("id")
                         if not tool_id:
                             tool_id = f"fallback_{hash(str(tool))}_{len(added_tool_use_ids)}"
-                            logger.warning(f"[Anthropic] Tool use missing id, generated fallback: {tool_id}")
-                        content_blocks.append({
-                            "type": "tool_use",
-                            "id": tool_id,
-                            "name": tool.get("name", "unknown"),
-                            "input": tool.get("input", {}),
-                        })
+                            logger.warning(
+                                f"[Anthropic] Tool use missing id, generated fallback: {tool_id}"
+                            )
+                        content_blocks.append(
+                            {
+                                "type": "tool_use",
+                                "id": tool_id,
+                                "name": tool.get("name", "unknown"),
+                                "input": tool.get("input", {}),
+                            }
+                        )
                         added_tool_use_ids.add(tool_id)
                 if msg.get("tool_calls"):
                     for tc in msg["tool_calls"]:
@@ -330,20 +368,26 @@ class AnthropicProvider(RetryableProvider):
                         tc_id = tc.get("id")
                         if not tc_id:
                             tc_id = f"fallback_{hash(str(tc))}_{len(added_tool_use_ids)}"
-                            logger.warning(f"[Anthropic] Tool call missing id, generated fallback: {tc_id}")
-                        content_blocks.append({
-                            "type": "tool_use",
-                            "id": tc_id,
-                            "name": func.get("name", "unknown"),
-                            "input": args,
-                        })
+                            logger.warning(
+                                f"[Anthropic] Tool call missing id, generated fallback: {tc_id}"
+                            )
+                        content_blocks.append(
+                            {
+                                "type": "tool_use",
+                                "id": tc_id,
+                                "name": func.get("name", "unknown"),
+                                "input": args,
+                            }
+                        )
                         added_tool_use_ids.add(tc_id)
 
                 if content_blocks:
-                    anthropic_messages.append({
-                        "role": "assistant",
-                        "content": content_blocks,
-                    })
+                    anthropic_messages.append(
+                        {
+                            "role": "assistant",
+                            "content": content_blocks,
+                        }
+                    )
                 else:
                     logger.warning(f"[Anthropic] Skipping empty assistant message: {msg}")
                     continue
@@ -353,15 +397,21 @@ class AnthropicProvider(RetryableProvider):
                     logger.warning(f"[Anthropic] Tool message missing tool_use_id, skipping: {msg}")
                     continue
                 if tool_use_id not in added_tool_use_ids:
-                    logger.warning(f"[Anthropic] Tool result references non-existent tool_use_id: {tool_use_id}, skipping")
+                    logger.warning(
+                        f"[Anthropic] Tool result references non-existent tool_use_id: {tool_use_id}, skipping"
+                    )
                     continue
-                anthropic_messages.append({
-                    "role": "user",
-                    "content": [{
-                        "type": "tool_result",
-                        "tool_use_id": tool_use_id,
-                        "content": msg.get("content", ""),
-                    }],
-                })
+                anthropic_messages.append(
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": tool_use_id,
+                                "content": msg.get("content", ""),
+                            }
+                        ],
+                    }
+                )
 
         return system_message, anthropic_messages

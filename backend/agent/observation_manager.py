@@ -1,10 +1,10 @@
-import json
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from loguru import logger
 
 from backend.agent.observation_extractor import extract_observations_from_messages
-from backend.data import Database, ObservationRepository, ObservationRecord
+from backend.data import Database, ObservationRecord, ObservationRepository
 
 
 class ObservationManager:
@@ -49,16 +49,20 @@ class ObservationManager:
             if extracted:
                 obs_repo = ObservationRepository(self.db)
                 for obs in extracted:
-                    obs_repo.add_observation(ObservationRecord(
-                        session_instance_id=session_instance_id,
-                        type=obs.get("type", "general"),
-                        title=obs.get("title", ""),
-                        narrative=obs.get("narrative", ""),
-                        files=obs.get("files", []),
-                        concepts=obs.get("concepts", []),
-                        token_count=obs.get("token_count", 0),
-                    ))
-                logger.info(f"ObservationManager: extracted and saved {len(extracted)} observations for instance {session_instance_id}")
+                    obs_repo.add_observation(
+                        ObservationRecord(
+                            session_instance_id=session_instance_id,
+                            type=obs.get("type", "general"),
+                            title=obs.get("title", ""),
+                            narrative=obs.get("narrative", ""),
+                            files=obs.get("files", []),
+                            concepts=obs.get("concepts", []),
+                            token_count=obs.get("token_count", 0),
+                        )
+                    )
+                logger.info(
+                    f"ObservationManager: extracted and saved {len(extracted)} observations for instance {session_instance_id}"
+                )
             return extracted
         except Exception as e:
             logger.warning(f"ObservationManager extraction failed: {e}")

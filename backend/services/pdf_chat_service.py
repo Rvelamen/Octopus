@@ -1,11 +1,10 @@
 """PDF Chat service for session and message management."""
 
+import contextlib
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
-
-from loguru import logger
+from typing import Any
 
 from backend.data.database import Database
 
@@ -43,7 +42,9 @@ class PdfChatService:
 
     # ── Sessions ──
 
-    def list_sessions(self, item_id: int | None = None, pdf_path: str | None = None) -> list[PdfChatSession]:
+    def list_sessions(
+        self, item_id: int | None = None, pdf_path: str | None = None
+    ) -> list[PdfChatSession]:
         """List sessions for a given item or pdf_path."""
         with self.db._get_connection() as conn:
             if item_id is not None:
@@ -138,16 +139,18 @@ class PdfChatService:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
                 """,
                 (
-                    session_id, role, content, page_number, selected_text,
+                    session_id,
+                    role,
+                    content,
+                    page_number,
+                    selected_text,
                     json.dumps(metadata or {}),
                     json.dumps(tool_calls) if tool_calls is not None else None,
                     tool_call_id,
                 ),
             )
             msg_id = cursor.lastrowid
-            row = conn.execute(
-                "SELECT * FROM pdf_chat_messages WHERE id = ?", (msg_id,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM pdf_chat_messages WHERE id = ?", (msg_id,)).fetchone()
             self.touch_session(session_id)
             return self._row_to_message(row)
 
@@ -164,16 +167,18 @@ class PdfChatService:
             pdf_path=row["pdf_path"],
             title=row["title"],
             agent_config_id=row["agent_config_id"],
-            created_at=datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None,
-            updated_at=datetime.fromisoformat(str(row["updated_at"])) if row["updated_at"] else None,
+            created_at=(
+                datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None
+            ),
+            updated_at=(
+                datetime.fromisoformat(str(row["updated_at"])) if row["updated_at"] else None
+            ),
         )
 
     def _row_to_message(self, row) -> PdfChatMessage:
         meta = {}
-        try:
+        with contextlib.suppress(Exception):
             meta = json.loads(row["metadata"] or "{}")
-        except Exception:
-            pass
         tool_calls = None
         try:
             raw = row["tool_calls"]
@@ -191,5 +196,7 @@ class PdfChatService:
             metadata=meta,
             tool_calls=tool_calls,
             tool_call_id=row["tool_call_id"] if row["tool_call_id"] else None,
-            created_at=datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None,
+            created_at=(
+                datetime.fromisoformat(str(row["created_at"])) if row["created_at"] else None
+            ),
         )

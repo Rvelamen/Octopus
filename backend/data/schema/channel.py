@@ -23,23 +23,30 @@ def create_tables(conn: sqlite3.Connection) -> None:
 
 
 def create_indexes(conn: sqlite3.Connection) -> None:
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_channel_configs_name ON channel_configs(channel_name)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_channel_configs_enabled ON channel_configs(enabled)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_channel_configs_name ON channel_configs(channel_name)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_channel_configs_enabled ON channel_configs(enabled)"
+    )
 
 
 def seed_data(conn: sqlite3.Connection) -> None:
     _CHANNELS = [
-        ('feishu', 'feishu'),
-        ('wechat', 'wechat'),
-        ('telegram', 'telegram'),
-        ('dingtalk', 'dingtalk'),
-        ('slack', 'slack'),
-        ('discord', 'discord'),
-        ('email', 'email'),
+        ("feishu", "feishu"),
+        ("wechat", "wechat"),
+        ("telegram", "telegram"),
+        ("dingtalk", "dingtalk"),
+        ("slack", "slack"),
+        ("discord", "discord"),
+        ("email", "email"),
     ]
     for name, ctype in _CHANNELS:
-        conn.execute("""
+        conn.execute(
+            """
             INSERT OR IGNORE INTO channel_configs
             (channel_name, channel_type, enabled, app_id, app_secret, encrypt_key, verification_token, allow_from, config_json)
             VALUES (?, ?, 0, '', '', '', '', '[]', '{}')
-        """, (name, ctype))
+        """,
+            (name, ctype),
+        )

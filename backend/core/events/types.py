@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 
 @dataclass
@@ -56,7 +56,7 @@ class InboundMessage:
         if isinstance(self.content, str):
             return []
         return [item for item in self.content if item.type in ("image", "image_url")]
-    
+
     def get_files(self) -> list[MessageContentItem]:
         """Get all file content items."""
         if isinstance(self.content, str):
@@ -67,7 +67,7 @@ class InboundMessage:
 @dataclass
 class OutboundMessage:
     """Message to send to a chat channel."""
-    
+
     channel: str
     chat_id: str
     content: str
@@ -79,15 +79,16 @@ class OutboundMessage:
 @dataclass
 class AgentEvent:
     """Event emitted by the agent (start, finish, chunk, etc)."""
-    
+
     event_type: str  # "agent_start", "agent_finish", "agent_chunk"
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
     channel: str = ""  # Source channel (desktop, feishu, etc.)
 
 
 @dataclass
 class ToolCallStatus:
     """Tool call status with detailed info."""
+
     tool_call_id: str
     tool_name: str
     status: str  # pending, invoking, streaming, completed, error
@@ -96,4 +97,3 @@ class ToolCallStatus:
     result: str | None = None
     error: str | None = None
     iteration: int = 1
-

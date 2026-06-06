@@ -5,13 +5,14 @@ from typing import Any
 
 from loguru import logger
 
-from backend.core.events.types import OutboundMessage
-from backend.core.events.bus import MessageBus
 from backend.channels.base import BaseChannel
+from backend.core.events.bus import MessageBus
+from backend.core.events.types import OutboundMessage
 
 try:
     from telegram import Update
-    from telegram.ext import Application, MessageHandler, filters, ContextTypes
+    from telegram.ext import Application, ContextTypes, MessageHandler, filters
+
     TELEGRAM_AVAILABLE = True
 except ImportError:
     TELEGRAM_AVAILABLE = False

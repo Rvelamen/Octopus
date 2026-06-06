@@ -1,4 +1,5 @@
 """Add TTS fields to session_instances table."""
+
 from yoyo import step
 
 
@@ -7,9 +8,9 @@ def apply(conn):
     columns = [row[1] for row in cursor.fetchall()]
     if not columns:
         return
-    if 'tts_enabled' not in columns:
+    if "tts_enabled" not in columns:
         conn.execute("ALTER TABLE session_instances ADD COLUMN tts_enabled BOOLEAN DEFAULT 0")
-    if 'tts_config' not in columns:
+    if "tts_config" not in columns:
         conn.execute("ALTER TABLE session_instances ADD COLUMN tts_config TEXT DEFAULT '{}'")
 
 

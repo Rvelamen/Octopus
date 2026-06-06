@@ -1,19 +1,21 @@
 """DingTalk channel implementation using dingtalk-stream SDK."""
 
 import asyncio
+import contextlib
 import uuid
 from typing import Any
 
 import httpx
 from loguru import logger
 
-from backend.core.events.types import OutboundMessage
-from backend.core.events.bus import MessageBus
 from backend.channels.base import BaseChannel
+from backend.core.events.bus import MessageBus
+from backend.core.events.types import OutboundMessage
 
 try:
     import dingtalk_stream
     from dingtalk_stream import ChatbotHandler, ChatbotMessage
+
     DINGTALK_AVAILABLE = True
 except ImportError:
     DINGTALK_AVAILABLE = False
@@ -38,9 +40,7 @@ class _DingTalkHandler(ChatbotHandler if DINGTALK_AVAILABLE else object):
                 return dingtalk_stream.AckMessage.STATUS_OK, "OK"
             return "OK", "OK"
 
-        future = asyncio.run_coroutine_threadsafe(
-            self._channel._on_message(message), self._loop
-        )
+        future = asyncio.run_coroutine_threadsafe(self._channel._on_message(message), self._loop)
         try:
             future.result(timeout=60)
         except Exception:
@@ -82,9 +82,7 @@ class DingTalkChannel(BaseChannel):
 
         loop = asyncio.get_running_loop()
         handler = _DingTalkHandler(self, loop)
-        self._stream_client.register_callback_handler(
-            dingtalk_stream.ChatbotMessage.TOPIC, handler
-        )
+        self._stream_client.register_callback_handler(dingtalk_stream.ChatbotMessage.TOPIC, handler)
 
         self._stream_task = asyncio.create_task(self._run_stream())
         logger.info("DingTalk channel started")
@@ -114,10 +112,8 @@ class DingTalkChannel(BaseChannel):
         self._running = False
         if self._stream_task:
             self._stream_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._stream_task
-            except asyncio.CancelledError:
-                pass
         if self._http_client:
             await self._http_client.aclose()
         logger.info("DingTalk channel stopped")
@@ -147,10 +143,7 @@ class DingTalkChannel(BaseChannel):
     def _extract_text(message: ChatbotMessage) -> str:
         """Extract plain text from DingTalk message."""
         text = getattr(message, "text", None) or ""
-        if isinstance(text, dict):
-            content = text.get("content", "").strip()
-        else:
-            content = str(text).strip()
+        content = text.get("content", "").strip() if isinstance(text, dict) else str(text).strip()
 
         if not content:
             rich_text = getattr(message, "rich_text", None)
@@ -169,9 +162,7 @@ class DingTalkChannel(BaseChannel):
             logger.warning("DingTalk HTTP client not initialized")
             return
 
-        session_webhook = (
-            msg.metadata.get("session_webhook") if msg.metadata else None
-        )
+        session_webhook = msg.metadata.get("session_webhook") if msg.metadata else None
         if not session_webhook:
             session_webhook = self._session_webhooks.get(msg.chat_id)
         if not session_webhook:
@@ -184,12 +175,8 @@ class DingTalkChannel(BaseChannel):
         }
 
         try:
-            resp = await self._http_client.post(
-                session_webhook, json=payload, timeout=15.0
-            )
+            resp = await self._http_client.post(session_webhook, json=payload, timeout=15.0)
             if resp.status_code >= 300:
-                logger.warning(
-                    f"DingTalk send failed: HTTP {resp.status_code} {resp.text[:200]}"
-                )
+                logger.warning(f"DingTalk send failed: HTTP {resp.status_code} {resp.text[:200]}")
         except Exception as e:
             logger.error(f"Error sending DingTalk message: {e}")

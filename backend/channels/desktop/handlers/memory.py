@@ -6,11 +6,11 @@ from loguru import logger
 from backend.channels.desktop.handlers.base import MessageHandler
 from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.channels.desktop.schemas import (
-    MemoryListRequest,
-    MemorySearchRequest,
-    MemoryReadRequest,
-    MemoryTimelineRequest,
     MemoryDeleteRequest,
+    MemoryListRequest,
+    MemoryReadRequest,
+    MemorySearchRequest,
+    MemoryTimelineRequest,
 )
 from backend.data import Database, ObservationRepository
 
@@ -30,21 +30,28 @@ class MemoryListHandler(MessageHandler):
             else:
                 records = repo.get_recent(limit=limit)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.MEMORY_LIST_RESULT,
-                request_id=message.request_id,
-                data={
-                    "observations": [_record_to_dict(r) for r in records],
-                    "instance_id": instance_id,
-                    "limit": limit,
-                    "offset": offset,
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.MEMORY_LIST_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "observations": [_record_to_dict(r) for r in records],
+                        "instance_id": instance_id,
+                        "limit": limit,
+                        "offset": offset,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to list observations: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to list observations: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to list observations: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: MemoryListRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: MemoryListRequest
+    ) -> None:
         try:
             instance_id = validated.instance_id
             limit = validated.limit
@@ -56,26 +63,30 @@ class MemoryListHandler(MessageHandler):
             else:
                 records = repo.get_recent(limit=limit)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.MEMORY_LIST_RESULT,
-                request_id=message.request_id,
-                data={
-                    "observations": [_record_to_dict(r) for r in records],
-                    "instance_id": instance_id,
-                    "limit": limit,
-                    "offset": offset,
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.MEMORY_LIST_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "observations": [_record_to_dict(r) for r in records],
+                        "instance_id": instance_id,
+                        "limit": limit,
+                        "offset": offset,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to list observations: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to list observations: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to list observations: {e}"
+            )
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class MemorySearchHandler(MessageHandler):
@@ -100,20 +111,27 @@ class MemorySearchHandler(MessageHandler):
                 instance_id=instance_id,
             )
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.MEMORY_SEARCH_RESULT,
-                request_id=message.request_id,
-                data={
-                    "observations": [_record_to_dict(r) for r in records],
-                    "query": query,
-                    "limit": limit,
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.MEMORY_SEARCH_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "observations": [_record_to_dict(r) for r in records],
+                        "query": query,
+                        "limit": limit,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to search observations: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to search observations: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to search observations: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: MemorySearchRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: MemorySearchRequest
+    ) -> None:
         try:
             query = validated.query
             limit = validated.limit
@@ -132,25 +150,29 @@ class MemorySearchHandler(MessageHandler):
                 instance_id=instance_id,
             )
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.MEMORY_SEARCH_RESULT,
-                request_id=message.request_id,
-                data={
-                    "observations": [_record_to_dict(r) for r in records],
-                    "query": query,
-                    "limit": limit,
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.MEMORY_SEARCH_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "observations": [_record_to_dict(r) for r in records],
+                        "query": query,
+                        "limit": limit,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to search observations: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to search observations: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to search observations: {e}"
+            )
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class MemoryReadHandler(MessageHandler):
@@ -166,19 +188,28 @@ class MemoryReadHandler(MessageHandler):
             repo = ObservationRepository(Database())
             record = repo.get_by_id(obs_id)
             if not record:
-                await self._send_error(websocket, message.request_id, f"Observation #{obs_id} not found")
+                await self._send_error(
+                    websocket, message.request_id, f"Observation #{obs_id} not found"
+                )
                 return
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.MEMORY_READ_RESULT,
-                request_id=message.request_id,
-                data={"observation": _record_to_dict(record)}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.MEMORY_READ_RESULT,
+                    request_id=message.request_id,
+                    data={"observation": _record_to_dict(record)},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to read observation: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to read observation: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to read observation: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: MemoryReadRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: MemoryReadRequest
+    ) -> None:
         try:
             obs_id = validated.observation_id
             if obs_id is None:
@@ -188,24 +219,30 @@ class MemoryReadHandler(MessageHandler):
             repo = ObservationRepository(Database())
             record = repo.get_by_id(obs_id)
             if not record:
-                await self._send_error(websocket, message.request_id, f"Observation #{obs_id} not found")
+                await self._send_error(
+                    websocket, message.request_id, f"Observation #{obs_id} not found"
+                )
                 return
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.MEMORY_READ_RESULT,
-                request_id=message.request_id,
-                data={"observation": _record_to_dict(record)}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.MEMORY_READ_RESULT,
+                    request_id=message.request_id,
+                    data={"observation": _record_to_dict(record)},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to read observation: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to read observation: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to read observation: {e}"
+            )
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class MemoryTimelineHandler(MessageHandler):
@@ -224,19 +261,26 @@ class MemoryTimelineHandler(MessageHandler):
             repo = ObservationRepository(Database())
             records = repo.get_timeline(obs_id, depth_before=depth_before, depth_after=depth_after)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.MEMORY_TIMELINE_RESULT,
-                request_id=message.request_id,
-                data={
-                    "observations": [_record_to_dict(r) for r in records],
-                    "anchor_id": obs_id,
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.MEMORY_TIMELINE_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "observations": [_record_to_dict(r) for r in records],
+                        "anchor_id": obs_id,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get observation timeline: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get observation timeline: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get observation timeline: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: MemoryTimelineRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: MemoryTimelineRequest
+    ) -> None:
         try:
             obs_id = validated.observation_id
             depth_before = validated.depth_before
@@ -249,24 +293,28 @@ class MemoryTimelineHandler(MessageHandler):
             repo = ObservationRepository(Database())
             records = repo.get_timeline(obs_id, depth_before=depth_before, depth_after=depth_after)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.MEMORY_TIMELINE_RESULT,
-                request_id=message.request_id,
-                data={
-                    "observations": [_record_to_dict(r) for r in records],
-                    "anchor_id": obs_id,
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.MEMORY_TIMELINE_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "observations": [_record_to_dict(r) for r in records],
+                        "anchor_id": obs_id,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to get observation timeline: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to get observation timeline: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to get observation timeline: {e}"
+            )
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class MemoryDeleteHandler(MessageHandler):
@@ -282,16 +330,23 @@ class MemoryDeleteHandler(MessageHandler):
             repo = ObservationRepository(Database())
             success = repo.delete_observation(obs_id)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.MEMORY_DELETED,
-                request_id=message.request_id,
-                data={"success": success, "observation_id": obs_id}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.MEMORY_DELETED,
+                    request_id=message.request_id,
+                    data={"success": success, "observation_id": obs_id},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to delete observation: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to delete observation: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to delete observation: {e}"
+            )
 
-    async def handle_validated(self, websocket: WebSocket, message: WSMessage, validated: MemoryDeleteRequest) -> None:
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: MemoryDeleteRequest
+    ) -> None:
         try:
             obs_id = validated.observation_id
             if obs_id is None:
@@ -301,21 +356,25 @@ class MemoryDeleteHandler(MessageHandler):
             repo = ObservationRepository(Database())
             success = repo.delete_observation(obs_id)
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.MEMORY_DELETED,
-                request_id=message.request_id,
-                data={"success": success, "observation_id": obs_id}
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.MEMORY_DELETED,
+                    request_id=message.request_id,
+                    data={"success": success, "observation_id": obs_id},
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to delete observation: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to delete observation: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to delete observation: {e}"
+            )
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class MemoryExtractHandler(MessageHandler):
@@ -334,48 +393,61 @@ class MemoryExtractHandler(MessageHandler):
 
             # Fetch recent uncompressed messages for this instance
             from backend.data import Database, SessionRepository
+
             db = Database()
             repo = SessionRepository(db)
             messages = repo.get_uncompressed_messages(instance_id, limit=50)
 
             msg_dicts = []
             for msg in messages:
-                msg_dicts.append({
-                    "role": msg.role,
-                    "content": msg.content,
-                    "metadata": msg.metadata or {},
-                })
+                msg_dicts.append(
+                    {
+                        "role": msg.role,
+                        "content": msg.content,
+                        "metadata": msg.metadata or {},
+                    }
+                )
 
             extracted_count = 0
-            if self.agent_loop and hasattr(self.agent_loop, 'observation_manager') and self.agent_loop.observation_manager:
+            if (
+                self.agent_loop
+                and hasattr(self.agent_loop, "observation_manager")
+                and self.agent_loop.observation_manager
+            ):
                 extracted = await self.agent_loop.observation_manager.extract_from_messages(
                     session_instance_id=instance_id,
                     messages=msg_dicts,
                 )
                 extracted_count = len(extracted)
             else:
-                await self._send_error(websocket, message.request_id, "Observation manager not available")
+                await self._send_error(
+                    websocket, message.request_id, "Observation manager not available"
+                )
                 return
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.MEMORY_EXTRACT_RESULT,
-                request_id=message.request_id,
-                data={
-                    "success": True,
-                    "instance_id": instance_id,
-                    "extracted_count": extracted_count,
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.MEMORY_EXTRACT_RESULT,
+                    request_id=message.request_id,
+                    data={
+                        "success": True,
+                        "instance_id": instance_id,
+                        "extracted_count": extracted_count,
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to extract observations: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to extract observations: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to extract observations: {e}"
+            )
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 class MemoryPromoteHandler(MessageHandler):
@@ -395,15 +467,20 @@ class MemoryPromoteHandler(MessageHandler):
                 return
 
             if target not in ("memory", "user"):
-                await self._send_error(websocket, message.request_id, "target must be 'memory' or 'user'")
+                await self._send_error(
+                    websocket, message.request_id, "target must be 'memory' or 'user'"
+                )
                 return
 
             # Fetch observation
-            from backend.data import ObservationRepository, Database
+            from backend.data import Database, ObservationRepository
+
             obs_repo = ObservationRepository(Database())
             record = obs_repo.get_by_id(obs_id)
             if not record:
-                await self._send_error(websocket, message.request_id, f"Observation #{obs_id} not found")
+                await self._send_error(
+                    websocket, message.request_id, f"Observation #{obs_id} not found"
+                )
                 return
 
             # Format as curated entry
@@ -414,40 +491,48 @@ class MemoryPromoteHandler(MessageHandler):
                 entry += f"\nConcepts: {', '.join(record.concepts)}"
 
             # Write to curated memory
-            if not self.agent_loop or not hasattr(self.agent_loop, 'memory_manager') or not self.agent_loop.memory_manager:
-                await self._send_error(websocket, message.request_id, "Memory manager not available")
+            if (
+                not self.agent_loop
+                or not hasattr(self.agent_loop, "memory_manager")
+                or not self.agent_loop.memory_manager
+            ):
+                await self._send_error(
+                    websocket, message.request_id, "Memory manager not available"
+                )
                 return
 
             result = self.agent_loop.memory_manager.builtin.add(target, entry)
             if not result.get("success"):
                 await self._send_error(
-                    websocket,
-                    message.request_id,
-                    result.get("error", "Promotion failed")
+                    websocket, message.request_id, result.get("error", "Promotion failed")
                 )
                 return
 
-            await self.send_response(websocket, WSMessage(
-                type=MessageType.MEMORY_PROMOTED,
-                request_id=message.request_id,
-                data={
-                    "success": True,
-                    "observation_id": obs_id,
-                    "target": target,
-                    "usage": result.get("usage"),
-                    "entry_count": result.get("entry_count"),
-                }
-            ))
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.MEMORY_PROMOTED,
+                    request_id=message.request_id,
+                    data={
+                        "success": True,
+                        "observation_id": obs_id,
+                        "target": target,
+                        "usage": result.get("usage"),
+                        "entry_count": result.get("entry_count"),
+                    },
+                ),
+            )
         except Exception as e:
             logger.error(f"Failed to promote observation: {e}")
-            await self._send_error(websocket, message.request_id, f"Failed to promote observation: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to promote observation: {e}"
+            )
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await self.send_response(websocket, WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ))
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
 
 
 def _record_to_dict(record) -> dict:

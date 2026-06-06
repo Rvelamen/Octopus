@@ -1,8 +1,8 @@
 """Workspace template service for initializing and updating workspace directories."""
 
 import shutil
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from loguru import logger
 
@@ -109,7 +109,11 @@ class WorkspaceTemplateService:
             workspace = Path(workspace_path)
             workspace.mkdir(parents=True, exist_ok=True)
 
-            all_items = list(self.TEMPLATE_DIRS) + list(self.TEMPLATE_FILES) + ["agents/code-worker", "agents/researcher"]
+            all_items = (
+                list(self.TEMPLATE_DIRS)
+                + list(self.TEMPLATE_FILES)
+                + ["agents/code-worker", "agents/researcher"]
+            )
             total_steps = len(all_items)
             current_step = 0
 
@@ -118,14 +122,18 @@ class WorkspaceTemplateService:
                 target_dir.mkdir(parents=True, exist_ok=True)
                 current_step += 1
                 if on_progress:
-                    on_progress(f"Creating directory: {dirname}", int(current_step / total_steps * 100))
+                    on_progress(
+                        f"Creating directory: {dirname}", int(current_step / total_steps * 100)
+                    )
 
             for filename in self.TEMPLATE_FILES:
                 target_file = workspace / filename
                 if target_file.exists():
                     current_step += 1
                     if on_progress:
-                        on_progress(f"Skipping existing: {filename}", int(current_step / total_steps * 100))
+                        on_progress(
+                            f"Skipping existing: {filename}", int(current_step / total_steps * 100)
+                        )
                     continue
 
                 source_file = self.template_base_path / filename
@@ -143,7 +151,10 @@ class WorkspaceTemplateService:
                 if soul_file.exists():
                     current_step += 1
                     if on_progress:
-                        on_progress(f"Skipping existing agent: {agent_name}", int(current_step / total_steps * 100))
+                        on_progress(
+                            f"Skipping existing agent: {agent_name}",
+                            int(current_step / total_steps * 100),
+                        )
                     continue
 
                 source_file = self.template_base_path / "agents" / agent_name / "SOUL.md"
@@ -151,7 +162,9 @@ class WorkspaceTemplateService:
                     shutil.copy2(source_file, soul_file)
                 current_step += 1
                 if on_progress:
-                    on_progress(f"Creating agent: {agent_name}", int(current_step / total_steps * 100))
+                    on_progress(
+                        f"Creating agent: {agent_name}", int(current_step / total_steps * 100)
+                    )
 
             logger.info(f"Workspace setup completed: {workspace}")
             return True

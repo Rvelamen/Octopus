@@ -1,14 +1,19 @@
 """Cron service using APScheduler with SQLite backend."""
 
+from __future__ import annotations
+
 import asyncio
 import time
 import uuid
-from pathlib import Path
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from typing import TYPE_CHECKING, Any
 
 from loguru import logger
 
-from backend.services.cron.types import CronJob, CronSchedule, CronPayload
+from backend.services.cron.types import CronJob, CronPayload, CronSchedule
+
+if TYPE_CHECKING:
+    from backend.data import Database
 
 
 def _now_ms() -> int:
@@ -18,7 +23,7 @@ def _now_ms() -> int:
 
 # Global registry to store service instances for job execution
 # This avoids pickling issues with instance methods
-_service_registry: dict[str, "CronService"] = {}
+_service_registry: dict[str, CronService] = {}
 
 
 def _execute_job_wrapper(service_id: str, job_id: str, **kwargs) -> None:
@@ -33,10 +38,7 @@ def _execute_job_wrapper(service_id: str, job_id: str, **kwargs) -> None:
         # Try to get the running loop (for asyncio scheduler)
         loop = asyncio.get_running_loop()
         # Schedule the coroutine in the running loop
-        asyncio.run_coroutine_threadsafe(
-            service._do_execute(job_id, **kwargs),
-            loop
-        )
+        asyncio.run_coroutine_threadsafe(service._do_execute(job_id, **kwargs), loop)
     except RuntimeError:
         # No running loop - create a new one
         try:
@@ -48,7 +50,7 @@ def _execute_job_wrapper(service_id: str, job_id: str, **kwargs) -> None:
 async def default_on_cron_job(
     job: CronJob,
     publish_message: Callable[[str, str, str], Coroutine[Any, Any, None]],
-    subagent_manager: Any = None
+    subagent_manager: Any = None,
 ) -> None:
     """
     Default handler for cron job execution.
@@ -89,11 +91,7 @@ When you need to send a message or file to the user, use the `channel` tool with
     else:
         # Fallback: just send notification
         logger.warning("No SubagentManager available, sending notification only")
-        await publish_message(
-            payload.channel,
-            payload.to,
-            f"🔔 定时任务: {payload.message}"
-        )
+        await publish_message(payload.channel, payload.to, f"🔔 定时任务: {payload.message}")
 
 
 class CronService:
@@ -105,15 +103,16 @@ class CronService:
 
     def __init__(
         self,
-        db: "Database | None" = None,
+        db: Database | None = None,
         on_job: Callable[[CronJob], Coroutine[Any, Any, str | None]] | None = None,
         publish_message: Callable[[str, str, str], Coroutine[Any, Any, None]] | None = None,
         subagent_manager: Any = None,
     ):
         if db is None:
             from backend.data import Database
+
             db = Database()
-        
+
         self._db = db
         self.db_path = db.db_path
         self.on_job = on_job
@@ -126,34 +125,35 @@ class CronService:
 
         # Register this service instance (may override previous registration)
         _service_registry[self._service_id] = self
-    
+
     def _get_job_id(self, job_id: str) -> str:
         """Generate APScheduler job ID."""
         return f"cron_{job_id}"
-    
+
     def _extract_job_id(self, scheduler_job_id: str) -> str:
         """Extract original job ID from APScheduler job ID."""
         return scheduler_job_id.replace("cron_", "", 1)
-    
+
     def _build_trigger(self, schedule: CronSchedule):
         """Build APScheduler trigger from CronSchedule."""
+        from datetime import datetime, timezone
+
+        from apscheduler.triggers.cron import CronTrigger
         from apscheduler.triggers.date import DateTrigger
         from apscheduler.triggers.interval import IntervalTrigger
-        from apscheduler.triggers.cron import CronTrigger
-        from datetime import datetime, timezone
-        
+
         if schedule.kind == "at":
             if not schedule.at_ms:
                 raise ValueError("at_ms is required for 'at' schedule")
             run_date = datetime.fromtimestamp(schedule.at_ms / 1000, tz=timezone.utc)
             return DateTrigger(run_date=run_date)
-        
+
         elif schedule.kind == "every":
             if not schedule.every_ms:
                 raise ValueError("every_ms is required for 'every' schedule")
             seconds = schedule.every_ms / 1000
             return IntervalTrigger(seconds=seconds)
-        
+
         elif schedule.kind == "cron":
             if not schedule.expr:
                 raise ValueError("expr is required for 'cron' schedule")
@@ -168,56 +168,54 @@ class CronService:
                 day=day,
                 month=month,
                 day_of_week=day_of_week,
-                timezone=schedule.tz or "UTC"
+                timezone=schedule.tz or "UTC",
             )
-        
+
         else:
             raise ValueError(f"Unknown schedule kind: {schedule.kind}")
-    
+
     async def start(self) -> None:
         """Start the cron service."""
-        from apscheduler.schedulers.asyncio import AsyncIOScheduler
         from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
-        
+        from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
         # Ensure directory exists
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Configure job store with SQLite
-        jobstores = {
-            'default': SQLAlchemyJobStore(url=f'sqlite:///{self.db_path}')
-        }
-        
+        jobstores = {"default": SQLAlchemyJobStore(url=f"sqlite:///{self.db_path}")}
+
         self._scheduler = AsyncIOScheduler(jobstores=jobstores)
         self._scheduler.start()
         self._running = True
-        
+
         logger.info(f"Cron service started with SQLite backend: {self.db_path}")
-    
+
     def stop(self) -> None:
         """Stop the cron service."""
         if self._scheduler:
             self._scheduler.shutdown()
             self._scheduler = None
         self._running = False
-        
+
         # Unregister from global registry
         _service_registry.pop(self._service_id, None)
-        
+
         logger.info("Cron service stopped")
-    
+
     def _job_to_cron_job(self, job) -> CronJob:
         """Convert APScheduler job to CronJob."""
         job_id = self._extract_job_id(job.id)
-        
+
         # Extract payload from job kwargs
         payload = CronPayload(
-            message=job.kwargs.get('message', ''),
-            deliver=job.kwargs.get('deliver', False),
-            channel=job.kwargs.get('channel'),
-            to=job.kwargs.get('to'),
-            session_instance_id=job.kwargs.get('session_instance_id'),
+            message=job.kwargs.get("message", ""),
+            deliver=job.kwargs.get("deliver", False),
+            channel=job.kwargs.get("channel"),
+            to=job.kwargs.get("to"),
+            session_instance_id=job.kwargs.get("session_instance_id"),
         )
-        
+
         # Determine schedule type from trigger
         trigger_type = type(job.trigger).__name__
         if trigger_type == "DateTrigger":
@@ -232,28 +230,28 @@ class CronService:
             schedule = CronSchedule(kind="cron", expr=expr)
         else:
             schedule = CronSchedule(kind="every")
-        
+
         # Get next run time
         next_run_at_ms = None
         if job.next_run_time:
             next_run_at_ms = int(job.next_run_time.timestamp() * 1000)
-        
+
         return CronJob(
             id=job_id,
-            name=job.kwargs.get('name', job_id),
-            enabled=not job.kwargs.get('paused', False),
+            name=job.kwargs.get("name", job_id),
+            enabled=not job.kwargs.get("paused", False),
             schedule=schedule,
             payload=payload,
-            created_at_ms=job.kwargs.get('created_at_ms', 0),
-            updated_at_ms=job.kwargs.get('updated_at_ms', 0),
-            delete_after_run=job.kwargs.get('delete_after_run', False),
+            created_at_ms=job.kwargs.get("created_at_ms", 0),
+            updated_at_ms=job.kwargs.get("updated_at_ms", 0),
+            delete_after_run=job.kwargs.get("delete_after_run", False),
             next_run_at_ms=next_run_at_ms,
         )
-    
+
     async def _do_execute(self, job_id: str, **kwargs) -> None:
         """Actually execute the job (called by global wrapper)."""
-        name = kwargs.get('name', job_id)
-        delete_after_run = kwargs.get('delete_after_run', False)
+        name = kwargs.get("name", job_id)
+        delete_after_run = kwargs.get("delete_after_run", False)
 
         logger.info(f"Cron: executing job '{name}' ({job_id})")
 
@@ -262,14 +260,14 @@ class CronService:
             id=job_id,
             name=name,
             payload=CronPayload(
-                message=kwargs.get('message', ''),
-                deliver=kwargs.get('deliver', False),
-                channel=kwargs.get('channel'),
-                to=kwargs.get('to'),
-                session_instance_id=kwargs.get('session_instance_id'),
+                message=kwargs.get("message", ""),
+                deliver=kwargs.get("deliver", False),
+                channel=kwargs.get("channel"),
+                to=kwargs.get("to"),
+                session_instance_id=kwargs.get("session_instance_id"),
             ),
-            created_at_ms=kwargs.get('created_at_ms', 0),
-            updated_at_ms=kwargs.get('updated_at_ms', 0),
+            created_at_ms=kwargs.get("created_at_ms", 0),
+            updated_at_ms=kwargs.get("updated_at_ms", 0),
             delete_after_run=delete_after_run,
         )
 
@@ -289,32 +287,32 @@ class CronService:
         # Handle one-shot jobs (DateTrigger with delete_after_run)
         if delete_after_run:
             self.remove_job(job_id)
-    
+
     # ========== Public API ==========
-    
+
     def list_jobs(self, include_disabled: bool = False) -> list[CronJob]:
         """List all jobs."""
         if not self._scheduler:
             return []
-        
+
         jobs = []
         for job in self._scheduler.get_jobs():
             # Skip non-cron jobs
             if not job.id.startswith("cron_"):
                 continue
-            
+
             cron_job = self._job_to_cron_job(job)
-            
+
             # Filter out paused jobs unless include_disabled
             if not include_disabled and not cron_job.enabled:
                 continue
-            
+
             jobs.append(cron_job)
-        
+
         # Sort by next run time
-        jobs.sort(key=lambda j: j.next_run_at_ms or float('inf'))
+        jobs.sort(key=lambda j: j.next_run_at_ms or float("inf"))
         return jobs
-    
+
     def add_job(
         self,
         name: str,
@@ -342,17 +340,17 @@ class CronService:
             trigger=trigger,
             id=scheduler_job_id,
             kwargs={
-                'service_id': self._service_id,
-                'job_id': job_id,
-                'name': name,
-                'message': message,
-                'deliver': deliver,
-                'channel': channel,
-                'to': to,
-                'session_instance_id': session_instance_id,
-                'created_at_ms': now,
-                'updated_at_ms': now,
-                'delete_after_run': delete_after_run,
+                "service_id": self._service_id,
+                "job_id": job_id,
+                "name": name,
+                "message": message,
+                "deliver": deliver,
+                "channel": channel,
+                "to": to,
+                "session_instance_id": session_instance_id,
+                "created_at_ms": now,
+                "updated_at_ms": now,
+                "delete_after_run": delete_after_run,
             },
             replace_existing=True,
         )
@@ -374,12 +372,12 @@ class CronService:
             updated_at_ms=now,
             delete_after_run=delete_after_run,
         )
-    
+
     def remove_job(self, job_id: str) -> bool:
         """Remove a job by ID."""
         if not self._scheduler:
             return False
-        
+
         scheduler_job_id = self._get_job_id(job_id)
         try:
             self._scheduler.remove_job(scheduler_job_id)
@@ -387,71 +385,71 @@ class CronService:
             return True
         except Exception:
             return False
-    
+
     def enable_job(self, job_id: str, enabled: bool = True) -> CronJob | None:
         """Enable or disable a job."""
         if not self._scheduler:
             return None
-        
+
         scheduler_job_id = self._get_job_id(job_id)
         try:
             job = self._scheduler.get_job(scheduler_job_id)
             if not job:
                 return None
-            
+
             if enabled:
                 self._scheduler.resume_job(scheduler_job_id)
             else:
                 self._scheduler.pause_job(scheduler_job_id)
-            
+
             # Update kwargs
-            job.kwargs['paused'] = not enabled
-            job.kwargs['updated_at_ms'] = _now_ms()
-            
+            job.kwargs["paused"] = not enabled
+            job.kwargs["updated_at_ms"] = _now_ms()
+
             logger.info(f"Cron: {'enabled' if enabled else 'disabled'} job {job_id}")
             return self._job_to_cron_job(job)
         except Exception:
             return None
-    
+
     async def run_job(self, job_id: str, force: bool = False) -> bool:
         """Manually run a job."""
         if not self._scheduler:
             return False
-        
+
         scheduler_job_id = self._get_job_id(job_id)
         try:
             job = self._scheduler.get_job(scheduler_job_id)
             if not job:
                 return False
-            
-            if not force and job.kwargs.get('paused'):
+
+            if not force and job.kwargs.get("paused"):
                 return False
-            
+
             # Execute immediately
             await self._do_execute(job_id, **job.kwargs)
-            
+
             # For interval/cron jobs, reschedule next run
-            if not job.kwargs.get('delete_after_run'):
+            if not job.kwargs.get("delete_after_run"):
                 self._scheduler.reschedule_job(scheduler_job_id)
-            
+
             return True
         except Exception as e:
             logger.error(f"Failed to run job {job_id}: {e}")
             return False
-    
+
     def status(self) -> dict:
         """Get service status."""
         if not self._scheduler:
             return {"enabled": False, "jobs": 0, "next_wake_at_ms": None}
-        
+
         jobs = self.list_jobs(include_disabled=True)
         next_wake = None
-        
+
         for job in jobs:
             if job.enabled and job.next_run_at_ms:
                 if next_wake is None or job.next_run_at_ms < next_wake:
                     next_wake = job.next_run_at_ms
-        
+
         return {
             "enabled": self._running,
             "jobs": len(jobs),

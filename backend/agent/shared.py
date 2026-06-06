@@ -1,4 +1,5 @@
 """Shared utilities for agent processing."""
+
 from dataclasses import dataclass
 from typing import Any
 
@@ -6,6 +7,7 @@ from typing import Any
 @dataclass
 class PreparedContext:
     """Shared context prepared before LLM call (used by both streaming and non-streaming paths)."""
+
     session: Any
     messages: list
     session_instance_id: int | None
@@ -47,17 +49,22 @@ def _extract_prompt_tokens_with_cache(usage: dict) -> int:
     return usage.get("prompt_tokens", 0)
 
 
-def _estimate_token_usage(messages: list[dict], content: str | None, model: str | None = None) -> dict[str, int]:
+def _estimate_token_usage(
+    messages: list[dict], content: str | None, model: str | None = None
+) -> dict[str, int]:
     """Estimate token usage when API does not return it (or returns zeros).
 
     Tries tiktoken first, falls back to a simple character-based heuristic
     (~1.5 chars per token for CJK, ~4 chars per token for ASCII) if tiktoken
     is unavailable or the model is unknown.
     """
+
     def _extract_text(msg_content) -> str:
         if isinstance(msg_content, list):
             return "\n".join(
-                item.get("text", "") for item in msg_content if isinstance(item, dict) and item.get("type") == "text"
+                item.get("text", "")
+                for item in msg_content
+                if isinstance(item, dict) and item.get("type") == "text"
             )
         return str(msg_content or "")
 
@@ -66,6 +73,7 @@ def _estimate_token_usage(messages: list[dict], content: str | None, model: str 
 
     try:
         import tiktoken
+
         try:
             enc = tiktoken.encoding_for_model(model or "gpt-4")
         except KeyError:
@@ -77,6 +85,7 @@ def _estimate_token_usage(messages: list[dict], content: str | None, model: str 
         # CJK ~ 1.5 chars/token, ASCII ~ 4 chars/token
         def _approx(chars: str) -> int:
             import unicodedata
+
             total = 0.0
             for ch in chars:
                 cat = unicodedata.category(ch)

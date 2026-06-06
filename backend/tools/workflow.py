@@ -9,10 +9,10 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from backend.tools.base import Tool
-from backend.services.workflow.store import WorkflowStore
-from backend.services.workflow.engine.engine import WorkflowEngine
 from backend.data.database import Database
+from backend.services.workflow.engine.engine import WorkflowEngine
+from backend.services.workflow.store import WorkflowStore
+from backend.tools.base import Tool
 
 
 def _check_type(value: Any, expected_type: str) -> bool:
@@ -205,7 +205,9 @@ class WorkflowRunTool(Tool):
                     break
             if not target_id:
                 return json.dumps(
-                    {"error": f"Workflow '{workflow_name}' not found. Call workflow_list to see available workflows."},
+                    {
+                        "error": f"Workflow '{workflow_name}' not found. Call workflow_list to see available workflows."
+                    },
                     ensure_ascii=False,
                 )
 
@@ -232,7 +234,9 @@ class WorkflowRunTool(Tool):
                 resolved_version_id = published[0].id
             else:
                 return json.dumps(
-                    {"error": "No published version found for this workflow. Please publish a version first."},
+                    {
+                        "error": "No published version found for this workflow. Please publish a version first."
+                    },
                     ensure_ascii=False,
                 )
 
@@ -242,10 +246,7 @@ class WorkflowRunTool(Tool):
         input_var_defs = [v for v in variables if v.is_input]
 
         # 1. Check for missing required variables
-        required_missing = [
-            v for v in input_var_defs
-            if v.required and v.name not in input_vars
-        ]
+        required_missing = [v for v in input_var_defs if v.required and v.name not in input_vars]
 
         # 2. Check for type mismatches in provided variables
         type_errors = []
@@ -254,12 +255,14 @@ class WorkflowRunTool(Tool):
                 value = input_vars[v.name]
                 var_type = v.type.value if hasattr(v.type, "value") else str(v.type)
                 if not _check_type(value, var_type):
-                    type_errors.append({
-                        "name": v.name,
-                        "expected_type": var_type,
-                        "actual_type": type(value).__name__,
-                        "value_preview": str(value)[:50],
-                    })
+                    type_errors.append(
+                        {
+                            "name": v.name,
+                            "expected_type": var_type,
+                            "actual_type": type(value).__name__,
+                            "value_preview": str(value)[:50],
+                        }
+                    )
 
         if required_missing or type_errors:
             all_vars = [

@@ -5,7 +5,7 @@ import shutil
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, File, UploadFile
 from loguru import logger
 
 from backend.utils.helpers import get_workspace_path
@@ -32,9 +32,11 @@ async def library_upload(file: UploadFile = File(...)):
         # Run sync file copy in executor to avoid blocking the event loop
         # for large PDFs (which can break WebSocket keepalive)
         loop = asyncio.get_running_loop()
+
         def _save():
             with open(dest, "wb") as f:
                 shutil.copyfileobj(file.file, f)
+
         await loop.run_in_executor(None, _save)
 
         rel_path = str(dest.relative_to(workspace))

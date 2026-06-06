@@ -5,26 +5,26 @@ from __future__ import annotations
 import json
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from backend.data.database import Database
 from backend.services.workflow.models import (
-    WorkflowRecord,
-    WorkflowVersionRecord,
-    WorkflowNodeRecord,
-    WorkflowEdgeRecord,
-    WorkflowVariableRecord,
-    WorkflowTriggerRecord,
-    WorkflowRunRecord,
-    WorkflowRunNodeRecord,
-    WorkflowStatus,
     NodeType,
-    VariableType,
     TriggerType,
+    VariableType,
+    WorkflowEdgeRecord,
+    WorkflowNodeRecord,
+    WorkflowRecord,
+    WorkflowRunNodeRecord,
+    WorkflowRunRecord,
+    WorkflowStatus,
+    WorkflowTriggerRecord,
+    WorkflowVariableRecord,
+    WorkflowVersionRecord,
 )
 
 
-def _parse_dt(value: Any) -> Optional[datetime]:
+def _parse_dt(value: Any) -> datetime | None:
     """Parse datetime from SQLite string or return as-is if already a datetime."""
     if value is None:
         return None
@@ -75,7 +75,7 @@ class WorkflowStore:
         """Create a new workflow."""
         workflow_id = self._generate_id()
         now = datetime.now()
-        
+
         with self._db._get_connection() as conn:
             conn.execute(
                 """
@@ -97,7 +97,7 @@ class WorkflowStore:
             updated_at=now,
         )
 
-    def get_workflow(self, workflow_id: str) -> Optional[WorkflowRecord]:
+    def get_workflow(self, workflow_id: str) -> WorkflowRecord | None:
         """Get a workflow by ID."""
         with self._db._get_connection() as conn:
             cursor = conn.execute(
@@ -121,8 +121,8 @@ class WorkflowStore:
 
     def list_workflows(
         self,
-        category: Optional[str] = None,
-        status: Optional[WorkflowStatus] = None,
+        category: str | None = None,
+        status: WorkflowStatus | None = None,
     ) -> list[WorkflowRecord]:
         """List workflows with optional filters."""
         query = "SELECT * FROM workflows WHERE 1=1"
@@ -180,12 +180,12 @@ class WorkflowStore:
     def update_workflow(
         self,
         workflow_id: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        category: Optional[str] = None,
-        status: Optional[WorkflowStatus] = None,
-        current_version: Optional[int] = None,
-    ) -> Optional[WorkflowRecord]:
+        name: str | None = None,
+        description: str | None = None,
+        category: str | None = None,
+        status: WorkflowStatus | None = None,
+        current_version: int | None = None,
+    ) -> WorkflowRecord | None:
         """Update a workflow."""
         updates = []
         params = []
@@ -265,7 +265,7 @@ class WorkflowStore:
         version: int,
         name: str,
         description: str = "",
-        definition: Optional[dict] = None,
+        definition: dict | None = None,
     ) -> WorkflowVersionRecord:
         """Create a new workflow version."""
         version_id = self._generate_id()
@@ -277,7 +277,15 @@ class WorkflowStore:
                 INSERT INTO workflow_versions (id, workflow_id, version, name, description, status, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (version_id, workflow_id, version, name, description, WorkflowStatus.DRAFT.value, now),
+                (
+                    version_id,
+                    workflow_id,
+                    version,
+                    name,
+                    description,
+                    WorkflowStatus.DRAFT.value,
+                    now,
+                ),
             )
             conn.commit()
 
@@ -291,7 +299,7 @@ class WorkflowStore:
             created_at=now,
         )
 
-    def get_version(self, version_id: str) -> Optional[WorkflowVersionRecord]:
+    def get_version(self, version_id: str) -> WorkflowVersionRecord | None:
         """Get a version by ID."""
         with self._db._get_connection() as conn:
             cursor = conn.execute(
@@ -336,7 +344,7 @@ class WorkflowStore:
                 for row in rows
             ]
 
-    def get_latest_version(self, workflow_id: str) -> Optional[WorkflowVersionRecord]:
+    def get_latest_version(self, workflow_id: str) -> WorkflowVersionRecord | None:
         """Get the latest version of a workflow."""
         with self._db._get_connection() as conn:
             cursor = conn.execute(
@@ -371,7 +379,7 @@ class WorkflowStore:
             conn.commit()
             return cursor.rowcount > 0
 
-    def publish_version(self, version_id: str) -> Optional[WorkflowVersionRecord]:
+    def publish_version(self, version_id: str) -> WorkflowVersionRecord | None:
         """Publish a version. Atomically archives any existing published version.
 
         Guarantees that a workflow has at most one published version at any time.
@@ -486,21 +494,23 @@ class WorkflowStore:
                     ),
                 )
 
-                records.append(WorkflowNodeRecord(
-                    id=node_id,
-                    version_id=version_id,
-                    type=NodeType(_normalize_node_type(node_data.get("type", "emptyNode"))),
-                    label=node_data.get("label", "Node"),
-                    position_x=pos_x,
-                    position_y=pos_y,
-                    width=node_data.get("width", 240),
-                    height=node_data.get("height", 120),
-                    config=node_data.get("config", {}),
-                    timeout_seconds=node_data.get("timeout_seconds", 60),
-                    max_retries=node_data.get("max_retries", 0),
-                    parent_id=parent_id,
-                    created_at=now,
-                ))
+                records.append(
+                    WorkflowNodeRecord(
+                        id=node_id,
+                        version_id=version_id,
+                        type=NodeType(_normalize_node_type(node_data.get("type", "emptyNode"))),
+                        label=node_data.get("label", "Node"),
+                        position_x=pos_x,
+                        position_y=pos_y,
+                        width=node_data.get("width", 240),
+                        height=node_data.get("height", 120),
+                        config=node_data.get("config", {}),
+                        timeout_seconds=node_data.get("timeout_seconds", 60),
+                        max_retries=node_data.get("max_retries", 0),
+                        parent_id=parent_id,
+                        created_at=now,
+                    )
+                )
 
             conn.commit()
             return records
@@ -571,17 +581,19 @@ class WorkflowStore:
                     ),
                 )
 
-                records.append(WorkflowEdgeRecord(
-                    id=edge_id,
-                    version_id=version_id,
-                    source_node_id=edge_data.get("source"),
-                    target_node_id=edge_data.get("target"),
-                    label=edge_data.get("label"),
-                    condition=edge_data.get("condition"),
-                    source_handle=edge_data.get("sourceHandle"),
-                    target_handle=edge_data.get("targetHandle"),
-                    created_at=now,
-                ))
+                records.append(
+                    WorkflowEdgeRecord(
+                        id=edge_id,
+                        version_id=version_id,
+                        source_node_id=edge_data.get("source"),
+                        target_node_id=edge_data.get("target"),
+                        label=edge_data.get("label"),
+                        condition=edge_data.get("condition"),
+                        source_handle=edge_data.get("sourceHandle"),
+                        target_handle=edge_data.get("targetHandle"),
+                        created_at=now,
+                    )
+                )
 
             conn.commit()
             return records
@@ -654,17 +666,19 @@ class WorkflowStore:
                     ),
                 )
 
-                records.append(WorkflowVariableRecord(
-                    id=var_id,
-                    version_id=version_id,
-                    name=var_data.get("name"),
-                    type=VariableType(var_data.get("type", "string")),
-                    default_value=default_value,
-                    description=var_data.get("description", ""),
-                    required=var_data.get("required", False),
-                    is_input=var_data.get("is_input", True),
-                    created_at=now,
-                ))
+                records.append(
+                    WorkflowVariableRecord(
+                        id=var_id,
+                        version_id=version_id,
+                        name=var_data.get("name"),
+                        type=VariableType(var_data.get("type", "string")),
+                        default_value=default_value,
+                        description=var_data.get("description", ""),
+                        required=var_data.get("required", False),
+                        is_input=var_data.get("is_input", True),
+                        created_at=now,
+                    )
+                )
 
             conn.commit()
             return records
@@ -684,7 +698,9 @@ class WorkflowStore:
                     version_id=row["version_id"],
                     name=row["name"],
                     type=VariableType(row["type"]),
-                    default_value=json.loads(row["default_value"]) if row["default_value"] else None,
+                    default_value=(
+                        json.loads(row["default_value"]) if row["default_value"] else None
+                    ),
                     description=row["description"],
                     required=row["required"],
                     is_input=row["is_input"],
@@ -780,7 +796,7 @@ class WorkflowRunStore:
         workflow_id: str,
         version_id: str,
         trigger_type: str = "manual",
-        input_variables: Optional[dict[str, Any]] = None,
+        input_variables: dict[str, Any] | None = None,
     ) -> WorkflowRunRecord:
         """Create a new workflow run."""
         run_id = self._generate_id()
@@ -817,7 +833,7 @@ class WorkflowRunStore:
             created_at=now,
         )
 
-    def get_run(self, run_id: str) -> Optional[WorkflowRunRecord]:
+    def get_run(self, run_id: str) -> WorkflowRunRecord | None:
         """Get a run by ID."""
         with self._db._get_connection() as conn:
             cursor = conn.execute(
@@ -834,7 +850,9 @@ class WorkflowRunStore:
                 version_id=row["version_id"],
                 status=row["status"],
                 trigger_type=row["trigger_type"],
-                input_variables=json.loads(row["input_variables"]) if row["input_variables"] else {},
+                input_variables=(
+                    json.loads(row["input_variables"]) if row["input_variables"] else {}
+                ),
                 output_result=json.loads(row["output_result"]) if row["output_result"] else None,
                 error_message=row["error_message"],
                 current_node_id=row["current_node_id"],
@@ -847,10 +865,10 @@ class WorkflowRunStore:
         self,
         run_id: str,
         status: str,
-        output_result: Optional[dict[str, Any]] = None,
-        error_message: Optional[str] = None,
-        current_node_id: Optional[str] = None,
-    ) -> Optional[WorkflowRunRecord]:
+        output_result: dict[str, Any] | None = None,
+        error_message: str | None = None,
+        current_node_id: str | None = None,
+    ) -> WorkflowRunRecord | None:
         """Update run status."""
         updates = ["status = ?"]
         params = [status]
@@ -882,8 +900,8 @@ class WorkflowRunStore:
 
     def list_runs(
         self,
-        workflow_id: Optional[str] = None,
-        status: Optional[str] = None,
+        workflow_id: str | None = None,
+        status: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[WorkflowRunRecord]:
@@ -912,8 +930,12 @@ class WorkflowRunStore:
                     version_id=row["version_id"],
                     status=row["status"],
                     trigger_type=row["trigger_type"],
-                    input_variables=json.loads(row["input_variables"]) if row["input_variables"] else {},
-                    output_result=json.loads(row["output_result"]) if row["output_result"] else None,
+                    input_variables=(
+                        json.loads(row["input_variables"]) if row["input_variables"] else {}
+                    ),
+                    output_result=(
+                        json.loads(row["output_result"]) if row["output_result"] else None
+                    ),
                     error_message=row["error_message"],
                     current_node_id=row["current_node_id"],
                     started_at=_parse_dt(row["started_at"]),
@@ -928,7 +950,7 @@ class WorkflowRunStore:
         self,
         run_id: str,
         node_id: str,
-        input_data: Optional[dict[str, Any]] = None,
+        input_data: dict[str, Any] | None = None,
     ) -> WorkflowRunNodeRecord:
         """Create a run node record."""
         run_node_id = self._generate_id()
@@ -967,9 +989,9 @@ class WorkflowRunStore:
         self,
         run_node_id: str,
         status: str,
-        output_data: Optional[dict[str, Any]] = None,
-        error_message: Optional[str] = None,
-    ) -> Optional[WorkflowRunNodeRecord]:
+        output_data: dict[str, Any] | None = None,
+        error_message: str | None = None,
+    ) -> WorkflowRunNodeRecord | None:
         """Update run node status."""
         updates = ["status = ?"]
         params = [status]
@@ -1020,7 +1042,7 @@ class WorkflowRunStore:
             )
             conn.commit()
 
-    def get_run_node(self, run_node_id: str) -> Optional[WorkflowRunNodeRecord]:
+    def get_run_node(self, run_node_id: str) -> WorkflowRunNodeRecord | None:
         """Get a run node by ID."""
         with self._db._get_connection() as conn:
             cursor = conn.execute(

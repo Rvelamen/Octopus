@@ -15,17 +15,17 @@ from backend.utils.helpers import get_extensions_path
 class PluginHandler(PluginInterface):
     """
     Plugin handler base class - similar to FeishuCapabilities.
-    
+
     Subclasses implement specific action methods.
     SKILL.md defines what actions are available.
     """
-    
+
     def __init__(self, plugin_dir: Path):
         self.plugin_dir = plugin_dir
         self.skill: PluginSkill | None = None
         self.config: dict = {}
         self.missing_configs: list[dict] = []  # 缺失的必需配置
-    
+
     async def load(self) -> bool:
         """Load plugin - parse SKILL.md and initialize."""
         # Parse SKILL.md
@@ -59,12 +59,13 @@ class PluginHandler(PluginInterface):
 
         try:
             import yaml
+
             manifest = yaml.safe_load(manifest_path.read_text()) or {}
             return manifest.get("config", {})
         except Exception as e:
             logger.warning(f"Failed to parse manifest.yaml: {e}")
             return {}
-    
+
     def _load_plugin_env(self) -> None:
         """Load environment variables from plugin's .env file."""
         plugin_name = self.plugin_dir.name
@@ -78,7 +79,7 @@ class PluginHandler(PluginInterface):
 
         try:
             loaded_count = 0
-            with open(plugin_env_path, "r") as f:
+            with open(plugin_env_path) as f:
                 content = f.read()
                 logger.info(f"Env file content: {repr(content)}")
                 for line in content.splitlines():
@@ -98,7 +99,7 @@ class PluginHandler(PluginInterface):
             logger.info(f"Loaded {loaded_count} environment variables for plugin: {plugin_name}")
         except Exception as e:
             logger.warning(f"Failed to load env for plugin {plugin_name}: {e}")
-    
+
     def _check_required_config(self) -> None:
         """Check if required environment variables are configured."""
         self.missing_configs = []
@@ -107,7 +108,9 @@ class PluginHandler(PluginInterface):
         env_config = self.config.get("environment", {})
         fields = env_config.get("fields", [])
 
-        logger.info(f"Checking required config for plugin {self.plugin_dir.name}, fields: {[f.get('name') for f in fields]}")
+        logger.info(
+            f"Checking required config for plugin {self.plugin_dir.name}, fields: {[f.get('name') for f in fields]}"
+        )
 
         if not fields:
             return
@@ -130,96 +133,92 @@ class PluginHandler(PluginInterface):
             logger.warning(
                 f"Plugin '{self.name}' missing required config: {', '.join(field_names)}"
             )
-    
+
     def get_config_page_params(self) -> dict | None:
         """Get parameters for creating a configuration page.
-        
+
         Returns:
             Dict with title, description, fields, etc. or None if no config needed.
         """
         if not self.missing_configs:
             return None
-        
+
         env_config = self.config.get("environment", {})
         config_page = env_config.get("config_page", {})
-        
+
         return {
             "title": config_page.get("title", f"{self.name} 配置"),
-            "description": config_page.get(
-                "description", 
-                f"请配置 {self.name} 插件所需的以下信息"
-            ),
+            "description": config_page.get("description", f"请配置 {self.name} 插件所需的以下信息"),
             "fields": self.missing_configs,
             "expires_in_minutes": config_page.get("expires_in_minutes", 30),
-            "plugin": self.name
+            "plugin": self.name,
         }
-    
+
     async def unload(self) -> None:
         """Unload plugin - cleanup resources."""
         await self.on_unload()
-    
+
     @abstractmethod
     async def on_load(self) -> bool:
         """
         Subclass implements: initialization when loading.
-        
+
         Returns:
             True if initialization successful
         """
         pass
-    
+
     @abstractmethod
     async def on_unload(self) -> None:
         """Subclass implements: cleanup when unloading."""
         pass
-    
+
     @property
     def name(self) -> str:
         """Plugin name from SKILL.md."""
         return self.skill.name if self.skill else ""
-    
+
     @property
     def actions(self) -> list[str]:
         """Actions auto-discovered from handle_* methods."""
         actions = []
         for attr_name in dir(self):
-            if attr_name.startswith('handle_') and callable(getattr(self, attr_name)):
+            if attr_name.startswith("handle_") and callable(getattr(self, attr_name)):
                 action_name = attr_name[7:]  # Remove 'handle_' prefix
                 actions.append(action_name)
         return actions
-    
+
     @property
     def capabilities(self) -> list[str]:
         """Capabilities from SKILL.md."""
         if not self.skill:
             return []
         return self.skill.capabilities
-    
+
     async def execute(self, action: str, **kwargs: Any) -> PluginResult:
         """
         Execute action - dispatch to handle_{action} method.
         """
         logger.info(f"Executing action '{action}' for plugin '{self.name}'")
-        
+
         # Validate action exists
         if action not in self.actions:
             return PluginResult(
                 success=False,
-                error=f"Action '{action}' not supported. Available: {', '.join(self.actions)}"
+                error=f"Action '{action}' not supported. Available: {', '.join(self.actions)}",
             )
-        
+
         # Note: Configuration check is done in ActionTool._execute_plugin() before calling this method
-        
+
         # Find handler method
         method_name = f"handle_{action}"
         method = getattr(self, method_name, None)
-        
+
         if not method:
             return PluginResult(
-                success=False,
-                error=f"Handler method '{method_name}' not implemented"
+                success=False, error=f"Handler method '{method_name}' not implemented"
             )
-        
+
         # Execute
         try:
             result = await method(**kwargs)
@@ -228,19 +227,19 @@ class PluginHandler(PluginInterface):
             return PluginResult(success=True, data=result)
         except Exception as e:
             return PluginResult(success=False, error=str(e))
-    
+
     def get_skill_doc(self) -> str:
         """Get SKILL.md content for agent context - always read fresh from file."""
         skill_path = self.plugin_dir / "SKILL.md"
         if skill_path.exists():
             return skill_path.read_text(encoding="utf-8")
         return self.skill.raw_content if self.skill else ""
-    
+
     def get_action_info(self, action: str) -> dict[str, Any] | None:
         """Get information about a specific action."""
         if not self.skill:
             return None
-        
+
         for a in self.skill.actions:
             if a.name == action:
                 return {

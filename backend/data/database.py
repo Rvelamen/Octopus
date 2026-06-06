@@ -1,4 +1,5 @@
 """Core database module - unified SQLite database manager."""
+
 import asyncio
 import os
 import sqlite3
@@ -11,24 +12,24 @@ from typing import Any
 from loguru import logger
 
 from backend.data.schema import (
-    apscheduler,
-    mcp,
-    session,
-    provider,
-    image,
-    task,
-    subagent,
     agent,
+    apscheduler,
     channel,
-    tool,
-    token,
-    observation,
-    workflow,
     db,
-    pdf_chat,
-    workflow_design_chat,
+    image,
     library_chat,
+    mcp,
     notes_chat,
+    observation,
+    pdf_chat,
+    provider,
+    session,
+    subagent,
+    task,
+    token,
+    tool,
+    workflow,
+    workflow_design_chat,
 )
 
 
@@ -48,6 +49,7 @@ class Database:
         """
         if db_path is None:
             from backend.utils.helpers import get_data_path
+
             db_path = get_data_path() / "app.db"
 
         self.db_path = Path(db_path)
@@ -127,7 +129,9 @@ class Database:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         if self.db_path.exists() and not os.access(self.db_path, os.W_OK):
-            logger.warning(f"Database file is not writable, attempting to fix permissions: {self.db_path}")
+            logger.warning(
+                f"Database file is not writable, attempting to fix permissions: {self.db_path}"
+            )
             try:
                 os.chmod(self.db_path, 0o644)
             except Exception as e:
@@ -192,7 +196,7 @@ class Database:
         """Apply pending yoyo migrations."""
         try:
             from yoyo import get_backend, read_migrations
-        except ImportError as e:
+        except ImportError:
             # yoyo-migrations not installed, skip silently
             return
         except Exception as e:

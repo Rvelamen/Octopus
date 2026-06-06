@@ -1,22 +1,22 @@
 """Domain-scoped database schema modules."""
 
 from backend.data.schema import (
-    apscheduler,
-    mcp,
-    session,
-    provider,
-    image,
-    task,
-    subagent,
     agent,
+    apscheduler,
     channel,
-    tool,
-    token,
-    observation,
-    workflow,
     db,
+    image,
     library_chat,
+    mcp,
     notes_chat,
+    observation,
+    provider,
+    session,
+    subagent,
+    task,
+    token,
+    tool,
+    workflow,
 )
 
 __all__ = [

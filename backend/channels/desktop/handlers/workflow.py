@@ -5,7 +5,6 @@ Mirrors the REST API but over WebSocket for real-time updates.
 
 from __future__ import annotations
 
-import asyncio
 import json
 from datetime import datetime
 from typing import Any
@@ -14,13 +13,13 @@ from fastapi import WebSocket
 from loguru import logger
 
 from backend.channels.desktop.handlers.base import MessageHandler
-from backend.channels.desktop.protocol import MessageType, WSMessage
+from backend.channels.desktop.protocol import WSMessage
 from backend.data import Database
 from backend.services.workflow import (
-    WorkflowStore,
-    WorkflowRunStore,
     WorkflowEngine,
+    WorkflowRunStore,
     WorkflowStatus,
+    WorkflowStore,
 )
 
 # Sensitive patterns to sanitize from error messages
@@ -79,27 +78,35 @@ class WorkflowHandler(MessageHandler):
             "workflow_get_node_registry": self._handle_get_node_registry,
         }
 
-        msg_type_str = message.type.value if hasattr(message.type, 'value') else str(message.type)
+        msg_type_str = message.type.value if hasattr(message.type, "value") else str(message.type)
         handler = handler_map.get(msg_type_str)
         if handler:
             await handler(websocket, message)
         else:
-            await self._send_error(websocket, message.request_id, f"Unknown workflow message type: {message.type}")
+            await self._send_error(
+                websocket, message.request_id, f"Unknown workflow message type: {message.type}"
+            )
 
-    async def _send_response(self, websocket: WebSocket, request_id: str, data: dict[str, Any]) -> None:
-        await websocket.send_json({
-            "type": "workflow_response",
-            "request_id": request_id,
-            "data": data,
-        })
+    async def _send_response(
+        self, websocket: WebSocket, request_id: str, data: dict[str, Any]
+    ) -> None:
+        await websocket.send_json(
+            {
+                "type": "workflow_response",
+                "request_id": request_id,
+                "data": data,
+            }
+        )
 
     async def _send_error(self, websocket: WebSocket, request_id: str, error: str) -> None:
         sanitized = _sanitize_error(error)
-        await websocket.send_json({
-            "type": "workflow_error",
-            "request_id": request_id,
-            "error": sanitized,
-        })
+        await websocket.send_json(
+            {
+                "type": "workflow_error",
+                "request_id": request_id,
+                "error": sanitized,
+            }
+        )
 
     # ── Workflow CRUD ──
 
@@ -108,21 +115,25 @@ class WorkflowHandler(MessageHandler):
         status_str = message.data.get("status")
         status = WorkflowStatus(status_str) if status_str else None
         workflows = self._store.list_workflows(category=category, status=status)
-        await self._send_response(websocket, message.request_id, {
-            "workflows": [
-                {
-                    "id": w.id,
-                    "name": w.name,
-                    "description": w.description,
-                    "category": w.category,
-                    "status": w.status.value,
-                    "current_version": w.current_version,
-                    "created_at": w.created_at.isoformat() if w.created_at else None,
-                    "updated_at": w.updated_at.isoformat() if w.updated_at else None,
-                }
-                for w in workflows
-            ]
-        })
+        await self._send_response(
+            websocket,
+            message.request_id,
+            {
+                "workflows": [
+                    {
+                        "id": w.id,
+                        "name": w.name,
+                        "description": w.description,
+                        "category": w.category,
+                        "status": w.status.value,
+                        "current_version": w.current_version,
+                        "created_at": w.created_at.isoformat() if w.created_at else None,
+                        "updated_at": w.updated_at.isoformat() if w.updated_at else None,
+                    }
+                    for w in workflows
+                ]
+            },
+        )
 
     async def _handle_get(self, websocket: WebSocket, message: WSMessage) -> None:
         workflow_id = message.data.get("workflow_id")
@@ -137,32 +148,36 @@ class WorkflowHandler(MessageHandler):
 
         versions = self._store.list_versions(workflow_id)
         triggers = self._store.list_triggers(workflow_id)
-        await self._send_response(websocket, message.request_id, {
-            "id": wf.id,
-            "name": wf.name,
-            "description": wf.description,
-            "category": wf.category,
-            "status": wf.status.value,
-            "current_version": wf.current_version,
-            "versions": [
-                {
-                    "id": v.id,
-                    "version": v.version,
-                    "name": v.name,
-                    "status": v.status.value,
-                    "published_at": v.published_at.isoformat() if v.published_at else None,
-                }
-                for v in versions
-            ],
-            "triggers": [
-                {
-                    "id": t.id,
-                    "type": t.trigger_type.value,
-                    "enabled": t.enabled,
-                }
-                for t in triggers
-            ],
-        })
+        await self._send_response(
+            websocket,
+            message.request_id,
+            {
+                "id": wf.id,
+                "name": wf.name,
+                "description": wf.description,
+                "category": wf.category,
+                "status": wf.status.value,
+                "current_version": wf.current_version,
+                "versions": [
+                    {
+                        "id": v.id,
+                        "version": v.version,
+                        "name": v.name,
+                        "status": v.status.value,
+                        "published_at": v.published_at.isoformat() if v.published_at else None,
+                    }
+                    for v in versions
+                ],
+                "triggers": [
+                    {
+                        "id": t.id,
+                        "type": t.trigger_type.value,
+                        "enabled": t.enabled,
+                    }
+                    for t in triggers
+                ],
+            },
+        )
 
     async def _handle_update(self, websocket: WebSocket, message: WSMessage) -> None:
         workflow_id = message.data.get("workflow_id")
@@ -170,18 +185,26 @@ class WorkflowHandler(MessageHandler):
             await self._send_error(websocket, message.request_id, "workflow_id required")
             return
 
-        updates = {k: v for k, v in message.data.items() if k in {"name", "description", "category", "status"}}
+        updates = {
+            k: v
+            for k, v in message.data.items()
+            if k in {"name", "description", "category", "status"}
+        }
         if "status" in updates:
             updates["status"] = WorkflowStatus(updates["status"])
         wf = self._store.update_workflow(workflow_id, **updates)
         if not wf:
             await self._send_error(websocket, message.request_id, "Workflow not found")
             return
-        await self._send_response(websocket, message.request_id, {
-            "id": wf.id,
-            "name": wf.name,
-            "status": wf.status.value,
-        })
+        await self._send_response(
+            websocket,
+            message.request_id,
+            {
+                "id": wf.id,
+                "name": wf.name,
+                "status": wf.status.value,
+            },
+        )
 
     async def _handle_save(self, websocket: WebSocket, message: WSMessage) -> None:
         data = message.data
@@ -191,7 +214,9 @@ class WorkflowHandler(MessageHandler):
         category = data.get("category", "general")
 
         if workflow_id:
-            wf = self._store.update_workflow(workflow_id, name=name, description=description, category=category)
+            wf = self._store.update_workflow(
+                workflow_id, name=name, description=description, category=category
+            )
             if not wf:
                 await self._send_error(websocket, message.request_id, "Workflow not found")
                 return
@@ -200,11 +225,15 @@ class WorkflowHandler(MessageHandler):
             # Create initial version
             self._store.create_version(wf.id, 1, name, description)
 
-        await self._send_response(websocket, message.request_id, {
-            "id": wf.id,
-            "name": wf.name,
-            "status": wf.status.value,
-        })
+        await self._send_response(
+            websocket,
+            message.request_id,
+            {
+                "id": wf.id,
+                "name": wf.name,
+                "status": wf.status.value,
+            },
+        )
 
     async def _handle_publish(self, websocket: WebSocket, message: WSMessage) -> None:
         version_id = message.data.get("version_id")
@@ -217,10 +246,14 @@ class WorkflowHandler(MessageHandler):
             await self._send_error(websocket, message.request_id, "Version not found")
             return
 
-        await self._send_response(websocket, message.request_id, {
-            "id": version.id,
-            "status": version.status.value,
-        })
+        await self._send_response(
+            websocket,
+            message.request_id,
+            {
+                "id": version.id,
+                "status": version.status.value,
+            },
+        )
 
     async def _handle_delete(self, websocket: WebSocket, message: WSMessage) -> None:
         workflow_id = message.data.get("workflow_id")
@@ -250,48 +283,52 @@ class WorkflowHandler(MessageHandler):
         edges = self._store.list_edges(version_id)
         variables = self._store.list_variables(version_id)
 
-        await self._send_response(websocket, message.request_id, {
-            "version_id": version_id,
-            "workflow_id": version.workflow_id,
-            "nodes": [
-                {
-                    "id": n.id,
-                    "type": n.type.value if hasattr(n.type, 'value') else n.type,
-                    "label": n.label,
-                    "position": {"x": n.position_x, "y": n.position_y},
-                    "width": n.width,
-                    "height": n.height,
-                    "config": n.config,
-                    "timeout_seconds": n.timeout_seconds,
-                    "max_retries": n.max_retries,
-                    "parent_id": n.parent_id,
-                }
-                for n in nodes
-            ],
-            "edges": [
-                {
-                    "id": e.id,
-                    "source": e.source_node_id,
-                    "target": e.target_node_id,
-                    "label": e.label,
-                    "condition": e.condition,
-                    "sourceHandle": e.source_handle,
-                    "targetHandle": e.target_handle,
-                }
-                for e in edges
-            ],
-            "variables": [
-                {
-                    "name": v.name,
-                    "type": v.type.value if hasattr(v.type, 'value') else v.type,
-                    "default_value": v.default_value,
-                    "description": v.description,
-                    "required": v.required,
-                    "is_input": v.is_input,
-                }
-                for v in variables
-            ],
-        })
+        await self._send_response(
+            websocket,
+            message.request_id,
+            {
+                "version_id": version_id,
+                "workflow_id": version.workflow_id,
+                "nodes": [
+                    {
+                        "id": n.id,
+                        "type": n.type.value if hasattr(n.type, "value") else n.type,
+                        "label": n.label,
+                        "position": {"x": n.position_x, "y": n.position_y},
+                        "width": n.width,
+                        "height": n.height,
+                        "config": n.config,
+                        "timeout_seconds": n.timeout_seconds,
+                        "max_retries": n.max_retries,
+                        "parent_id": n.parent_id,
+                    }
+                    for n in nodes
+                ],
+                "edges": [
+                    {
+                        "id": e.id,
+                        "source": e.source_node_id,
+                        "target": e.target_node_id,
+                        "label": e.label,
+                        "condition": e.condition,
+                        "sourceHandle": e.source_handle,
+                        "targetHandle": e.target_handle,
+                    }
+                    for e in edges
+                ],
+                "variables": [
+                    {
+                        "name": v.name,
+                        "type": v.type.value if hasattr(v.type, "value") else v.type,
+                        "default_value": v.default_value,
+                        "description": v.description,
+                        "required": v.required,
+                        "is_input": v.is_input,
+                    }
+                    for v in variables
+                ],
+            },
+        )
 
     async def _handle_definition_save(self, websocket: WebSocket, message: WSMessage) -> None:
         data = message.data
@@ -322,10 +359,14 @@ class WorkflowHandler(MessageHandler):
             variables_data=variables_data,
         )
 
-        await self._send_response(websocket, message.request_id, {
-            "saved": True,
-            **result,
-        })
+        await self._send_response(
+            websocket,
+            message.request_id,
+            {
+                "saved": True,
+                **result,
+            },
+        )
 
     async def _handle_export(self, websocket: WebSocket, message: WSMessage) -> None:
         """Export a workflow as JSON for backup or migration."""
@@ -367,52 +408,58 @@ class WorkflowHandler(MessageHandler):
             edges = self._store.list_edges(version.id)
             variables = self._store.list_variables(version.id)
 
-            export_data["versions"].append({
-                "version": version.version,
-                "name": version.name,
-                "description": version.description,
-                "status": version.status.value,
-                "nodes": [
-                    {
-                        "id": n.id,
-                        "type": n.type.value if hasattr(n.type, 'value') else n.type,
-                        "label": n.label,
-                        "position": {"x": n.position_x, "y": n.position_y},
-                        "width": n.width,
-                        "height": n.height,
-                        "config": n.config,
-                        "timeout_seconds": n.timeout_seconds,
-                        "max_retries": n.max_retries,
-                    }
-                    for n in nodes
-                ],
-                "edges": [
-                    {
-                        "id": e.id,
-                        "source": e.source_node_id,
-                        "target": e.target_node_id,
-                        "label": e.label,
-                        "condition": e.condition,
-                    }
-                    for e in edges
-                ],
-                "variables": [
-                    {
-                        "name": v.name,
-                        "type": v.type.value if hasattr(v.type, 'value') else v.type,
-                        "default_value": v.default_value,
-                        "description": v.description,
-                        "required": v.required,
-                        "is_input": v.is_input,
-                    }
-                    for v in variables
-                ],
-            })
+            export_data["versions"].append(
+                {
+                    "version": version.version,
+                    "name": version.name,
+                    "description": version.description,
+                    "status": version.status.value,
+                    "nodes": [
+                        {
+                            "id": n.id,
+                            "type": n.type.value if hasattr(n.type, "value") else n.type,
+                            "label": n.label,
+                            "position": {"x": n.position_x, "y": n.position_y},
+                            "width": n.width,
+                            "height": n.height,
+                            "config": n.config,
+                            "timeout_seconds": n.timeout_seconds,
+                            "max_retries": n.max_retries,
+                        }
+                        for n in nodes
+                    ],
+                    "edges": [
+                        {
+                            "id": e.id,
+                            "source": e.source_node_id,
+                            "target": e.target_node_id,
+                            "label": e.label,
+                            "condition": e.condition,
+                        }
+                        for e in edges
+                    ],
+                    "variables": [
+                        {
+                            "name": v.name,
+                            "type": v.type.value if hasattr(v.type, "value") else v.type,
+                            "default_value": v.default_value,
+                            "description": v.description,
+                            "required": v.required,
+                            "is_input": v.is_input,
+                        }
+                        for v in variables
+                    ],
+                }
+            )
 
-        await self._send_response(websocket, message.request_id, {
-            "exported": True,
-            "data": export_data,
-        })
+        await self._send_response(
+            websocket,
+            message.request_id,
+            {
+                "exported": True,
+                "data": export_data,
+            },
+        )
 
     async def _handle_import(self, websocket: WebSocket, message: WSMessage) -> None:
         """Import a workflow from JSON export data."""
@@ -455,6 +502,7 @@ class WorkflowHandler(MessageHandler):
             # Import triggers
             for t_data in import_data.get("triggers", []):
                 from backend.services.workflow.models import TriggerType
+
                 trigger_type = TriggerType(t_data.get("type", "manual"))
                 self._store.create_trigger(
                     workflow_id=wf.id,
@@ -463,11 +511,15 @@ class WorkflowHandler(MessageHandler):
                     enabled=t_data.get("enabled", True),
                 )
 
-            await self._send_response(websocket, message.request_id, {
-                "imported": True,
-                "workflow_id": wf.id,
-                "name": wf.name,
-            })
+            await self._send_response(
+                websocket,
+                message.request_id,
+                {
+                    "imported": True,
+                    "workflow_id": wf.id,
+                    "name": wf.name,
+                },
+            )
 
         except Exception as e:
             logger.error(f"Workflow import failed: {e}")
@@ -487,15 +539,17 @@ class WorkflowHandler(MessageHandler):
             return
 
         async def on_node_update(run_id: str, node_id: str | None, status: str, data: dict):
-            await websocket.send_json({
-                "type": "workflow_node_update",
-                "data": {
-                    "run_id": run_id,
-                    "node_id": node_id,
-                    "status": status,
-                    "output": data,
-                },
-            })
+            await websocket.send_json(
+                {
+                    "type": "workflow_node_update",
+                    "data": {
+                        "run_id": run_id,
+                        "node_id": node_id,
+                        "status": status,
+                        "output": data,
+                    },
+                }
+            )
 
         try:
             run = await self._engine.execute(
@@ -506,10 +560,14 @@ class WorkflowHandler(MessageHandler):
                 on_node_update=on_node_update,
                 test_mode=test_mode,
             )
-            await self._send_response(websocket, message.request_id, {
-                "run_id": run.id,
-                "status": run.status,
-            })
+            await self._send_response(
+                websocket,
+                message.request_id,
+                {
+                    "run_id": run.id,
+                    "status": run.status,
+                },
+            )
         except Exception as e:
             logger.error(f"Workflow execution failed: {e}")
             await self._send_error(websocket, message.request_id, str(e))
@@ -536,7 +594,9 @@ class WorkflowHandler(MessageHandler):
         if self._engine.cancel_run(run_id):
             await self._send_response(websocket, message.request_id, {"cancelled": True})
         else:
-            await self._send_error(websocket, message.request_id, "Run not found or cannot be cancelled")
+            await self._send_error(
+                websocket, message.request_id, "Run not found or cannot be cancelled"
+            )
 
     async def _handle_run_delete(self, websocket: WebSocket, message: WSMessage) -> None:
         run_id = message.data.get("run_id")
@@ -570,6 +630,7 @@ class WorkflowHandler(MessageHandler):
             limit=limit,
             offset=offset,
         )
+
         def _parse_json_field(field):
             if field is None:
                 return {}
@@ -580,23 +641,27 @@ class WorkflowHandler(MessageHandler):
                     return {}
             return field
 
-        await self._send_response(websocket, message.request_id, {
-            "runs": [
-                {
-                    "id": r.id,
-                    "workflow_id": r.workflow_id,
-                    "version_id": r.version_id,
-                    "status": r.status,
-                    "trigger_type": r.trigger_type,
-                    "started_at": r.started_at.isoformat() if r.started_at else None,
-                    "completed_at": r.completed_at.isoformat() if r.completed_at else None,
-                    "error_message": r.error_message,
-                    "input_variables": _parse_json_field(r.input_variables),
-                    "output_result": _parse_json_field(r.output_result),
-                }
-                for r in runs
-            ]
-        })
+        await self._send_response(
+            websocket,
+            message.request_id,
+            {
+                "runs": [
+                    {
+                        "id": r.id,
+                        "workflow_id": r.workflow_id,
+                        "version_id": r.version_id,
+                        "status": r.status,
+                        "trigger_type": r.trigger_type,
+                        "started_at": r.started_at.isoformat() if r.started_at else None,
+                        "completed_at": r.completed_at.isoformat() if r.completed_at else None,
+                        "error_message": r.error_message,
+                        "input_variables": _parse_json_field(r.input_variables),
+                        "output_result": _parse_json_field(r.output_result),
+                    }
+                    for r in runs
+                ]
+            },
+        )
 
     async def _handle_run_detail(self, websocket: WebSocket, message: WSMessage) -> None:
         run_id = message.data.get("run_id")
@@ -623,12 +688,16 @@ class WorkflowHandler(MessageHandler):
 
         try:
             version_record = self._store.create_version(workflow_id, version, name, description)
-            await self._send_response(websocket, message.request_id, {
-                "id": version_record.id,
-                "version": version_record.version,
-                "name": version_record.name,
-                "status": version_record.status.value,
-            })
+            await self._send_response(
+                websocket,
+                message.request_id,
+                {
+                    "id": version_record.id,
+                    "version": version_record.version,
+                    "name": version_record.name,
+                    "status": version_record.status.value,
+                },
+            )
         except Exception as e:
             await self._send_error(websocket, message.request_id, str(e))
 
@@ -644,7 +713,11 @@ class WorkflowHandler(MessageHandler):
             return
 
         if version.status.value == "published":
-            await self._send_error(websocket, message.request_id, "Cannot delete a published version. Unpublish it first.")
+            await self._send_error(
+                websocket,
+                message.request_id,
+                "Cannot delete a published version. Unpublish it first.",
+            )
             return
 
         if self._store.delete_version(version_id):
@@ -659,23 +732,32 @@ class WorkflowHandler(MessageHandler):
             return
 
         versions = self._store.list_versions(workflow_id)
-        await self._send_response(websocket, message.request_id, {
-            "versions": [
-                {
-                    "id": v.id,
-                    "version": v.version,
-                    "name": v.name,
-                    "description": v.description,
-                    "status": v.status.value,
-                    "published_at": v.published_at.isoformat() if v.published_at else None,
-                }
-                for v in versions
-            ]
-        })
+        await self._send_response(
+            websocket,
+            message.request_id,
+            {
+                "versions": [
+                    {
+                        "id": v.id,
+                        "version": v.version,
+                        "name": v.name,
+                        "description": v.description,
+                        "status": v.status.value,
+                        "published_at": v.published_at.isoformat() if v.published_at else None,
+                    }
+                    for v in versions
+                ]
+            },
+        )
 
     async def _handle_get_node_registry(self, websocket: WebSocket, message: WSMessage) -> None:
         from backend.services.workflow.node_registry import get_node_types_dict
+
         registry = get_node_types_dict()
-        await self._send_response(websocket, message.request_id, {
-            "nodes": registry,
-        })
+        await self._send_response(
+            websocket,
+            message.request_id,
+            {
+                "nodes": registry,
+            },
+        )

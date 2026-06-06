@@ -3,7 +3,7 @@
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -14,6 +14,7 @@ from backend.utils.encryption import decrypt_value, encrypt_value
 @dataclass
 class ProviderRecord:
     """Provider record data class."""
+
     id: int
     name: str
     display_name: str
@@ -32,6 +33,7 @@ class ProviderRecord:
 @dataclass
 class ModelRecord:
     """Model record data class."""
+
     id: int
     provider_id: int
     model_id: str
@@ -74,22 +76,16 @@ class ProviderRepository:
             ).fetchall()
             return [self._row_to_provider(row) for row in rows]
 
-    def get_provider_by_id(self, provider_id: int) -> Optional[ProviderRecord]:
+    def get_provider_by_id(self, provider_id: int) -> ProviderRecord | None:
         """Get provider by ID."""
         with self.db._get_connection() as conn:
-            row = conn.execute(
-                "SELECT * FROM providers WHERE id = ?",
-                (provider_id,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM providers WHERE id = ?", (provider_id,)).fetchone()
             return self._row_to_provider(row) if row else None
 
-    def get_provider_by_name(self, name: str) -> Optional[ProviderRecord]:
+    def get_provider_by_name(self, name: str) -> ProviderRecord | None:
         """Get provider by name."""
         with self.db._get_connection() as conn:
-            row = conn.execute(
-                "SELECT * FROM providers WHERE name = ?",
-                (name,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM providers WHERE name = ?", (name,)).fetchone()
             return self._row_to_provider(row) if row else None
 
     def add_provider(
@@ -115,9 +111,7 @@ class ProviderRepository:
         with self.db._get_connection() as conn:
             # If sort_order not provided, place new provider at the top
             if sort_order is None:
-                row = conn.execute(
-                    "SELECT MIN(sort_order) as min_order FROM providers"
-                ).fetchone()
+                row = conn.execute("SELECT MIN(sort_order) as min_order FROM providers").fetchone()
                 min_order = row["min_order"] if row and row["min_order"] is not None else 0
                 sort_order = min_order - 1
 
@@ -126,13 +120,22 @@ class ProviderRepository:
                    (name, display_name, provider_type, api_key, api_host, api_version,
                     enabled, is_system, sort_order, config_json, created_at, updated_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
-                (name, display_name, provider_type, encrypt_value(api_key), api_host, api_version,
-                 enabled, is_system, sort_order, json.dumps(config_json))
+                (
+                    name,
+                    display_name,
+                    provider_type,
+                    encrypt_value(api_key),
+                    api_host,
+                    api_version,
+                    enabled,
+                    is_system,
+                    sort_order,
+                    json.dumps(config_json),
+                ),
             )
 
             row = conn.execute(
-                "SELECT * FROM providers WHERE id = ?",
-                (cursor.lastrowid,)
+                "SELECT * FROM providers WHERE id = ?", (cursor.lastrowid,)
             ).fetchone()
 
             logger.info(f"Added provider: {name}")
@@ -179,18 +182,14 @@ class ProviderRepository:
 
         with self.db._get_connection() as conn:
             cursor = conn.execute(
-                f"UPDATE providers SET {', '.join(updates)} WHERE id = ?",
-                tuple(params)
+                f"UPDATE providers SET {', '.join(updates)} WHERE id = ?", tuple(params)
             )
             return cursor.rowcount > 0
 
     def delete_provider(self, provider_id: int) -> bool:
         """Delete a provider and all its models (cascade)."""
         with self.db._get_connection() as conn:
-            cursor = conn.execute(
-                "DELETE FROM providers WHERE id = ?",
-                (provider_id,)
-            )
+            cursor = conn.execute("DELETE FROM providers WHERE id = ?", (provider_id,))
             if cursor.rowcount > 0:
                 logger.info(f"Deleted provider id: {provider_id}")
                 return True
@@ -199,10 +198,7 @@ class ProviderRepository:
     def delete_provider_by_name(self, name: str) -> bool:
         """Delete a provider by name."""
         with self.db._get_connection() as conn:
-            cursor = conn.execute(
-                "DELETE FROM providers WHERE name = ?",
-                (name,)
-            )
+            cursor = conn.execute("DELETE FROM providers WHERE name = ?", (name,))
             if cursor.rowcount > 0:
                 logger.info(f"Deleted provider: {name}")
                 return True
@@ -240,7 +236,7 @@ class ModelRepository:
                 """SELECT * FROM models
                    WHERE provider_id = ?
                    ORDER BY group_name ASC, display_name ASC""",
-                (provider_id,)
+                (provider_id,),
             ).fetchall()
             return [self._row_to_model(row) for row in rows]
 
@@ -251,36 +247,33 @@ class ModelRepository:
                 """SELECT * FROM models
                    WHERE provider_id = ? AND enabled = 1
                    ORDER BY group_name ASC, display_name ASC""",
-                (provider_id,)
+                (provider_id,),
             ).fetchall()
             return [self._row_to_model(row) for row in rows]
 
-    def get_model_by_id(self, model_id: int) -> Optional[ModelRecord]:
+    def get_model_by_id(self, model_id: int) -> ModelRecord | None:
         """Get model by ID."""
         with self.db._get_connection() as conn:
-            row = conn.execute(
-                "SELECT * FROM models WHERE id = ?",
-                (model_id,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM models WHERE id = ?", (model_id,)).fetchone()
             return self._row_to_model(row) if row else None
 
     def get_model_by_provider_and_model_id(
         self, provider_id: int, model_id: str
-    ) -> Optional[ModelRecord]:
+    ) -> ModelRecord | None:
         """Get model by provider_id and model_id."""
         with self.db._get_connection() as conn:
             row = conn.execute(
                 "SELECT * FROM models WHERE provider_id = ? AND model_id = ?",
-                (provider_id, model_id)
+                (provider_id, model_id),
             ).fetchone()
             return self._row_to_model(row) if row else None
 
-    def get_default_model(self, provider_id: int) -> Optional[ModelRecord]:
+    def get_default_model(self, provider_id: int) -> ModelRecord | None:
         """Get default model for a provider."""
         with self.db._get_connection() as conn:
             row = conn.execute(
                 "SELECT * FROM models WHERE provider_id = ? AND is_default = 1 LIMIT 1",
-                (provider_id,)
+                (provider_id,),
             ).fetchone()
             return self._row_to_model(row) if row else None
 
@@ -314,15 +307,24 @@ class ModelRepository:
                     max_tokens, context_window, supports_vision, supports_function_calling,
                     supports_streaming, enabled, is_default, config_json, created_at, updated_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
-                (provider_id, model_id, display_name, json.dumps(model_types), group_name,
-                 max_tokens, context_window, supports_vision, supports_function_calling,
-                 supports_streaming, enabled, is_default, json.dumps(config_json))
+                (
+                    provider_id,
+                    model_id,
+                    display_name,
+                    json.dumps(model_types),
+                    group_name,
+                    max_tokens,
+                    context_window,
+                    supports_vision,
+                    supports_function_calling,
+                    supports_streaming,
+                    enabled,
+                    is_default,
+                    json.dumps(config_json),
+                ),
             )
 
-            row = conn.execute(
-                "SELECT * FROM models WHERE id = ?",
-                (cursor.lastrowid,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM models WHERE id = ?", (cursor.lastrowid,)).fetchone()
 
             logger.info(f"Added model: {model_id} for provider {provider_id}")
             return self._row_to_model(row)
@@ -393,18 +395,14 @@ class ModelRepository:
 
         with self.db._get_connection() as conn:
             cursor = conn.execute(
-                f"UPDATE models SET {', '.join(updates)} WHERE id = ?",
-                tuple(params)
+                f"UPDATE models SET {', '.join(updates)} WHERE id = ?", tuple(params)
             )
             return cursor.rowcount > 0
 
     def delete_model(self, model_id: int) -> bool:
         """Delete a model."""
         with self.db._get_connection() as conn:
-            cursor = conn.execute(
-                "DELETE FROM models WHERE id = ?",
-                (model_id,)
-            )
+            cursor = conn.execute("DELETE FROM models WHERE id = ?", (model_id,))
             if cursor.rowcount > 0:
                 logger.info(f"Deleted model id: {model_id}")
                 return True
@@ -413,25 +411,22 @@ class ModelRepository:
     def _clear_default_models(self, provider_id: int) -> None:
         """Clear default flag from all models of a provider."""
         with self.db._get_connection() as conn:
-            conn.execute(
-                "UPDATE models SET is_default = 0 WHERE provider_id = ?",
-                (provider_id,)
-            )
+            conn.execute("UPDATE models SET is_default = 0 WHERE provider_id = ?", (provider_id,))
 
     def _row_to_model(self, row) -> ModelRecord:
         """Convert database row to ModelRecord."""
         # Parse model_types from JSON string
         # sqlite3.Row supports both dict-style access and index access
-        model_types_str = row["model_types"] if "model_types" in row.keys() else None
+        model_types_str = row.get("model_types", None)
         try:
             model_types = json.loads(model_types_str) if model_types_str else None
         except (json.JSONDecodeError, TypeError):
             model_types = None
-        
+
         # Fallback to default if model_types is not set
         if not model_types:
             model_types = ["chat"]
-        
+
         return ModelRecord(
             id=row["id"],
             provider_id=row["provider_id"],
@@ -446,8 +441,12 @@ class ModelRepository:
             supports_streaming=bool(row["supports_streaming"]),
             enabled=bool(row["enabled"]),
             is_default=bool(row["is_default"]),
-            description=row["description"] if "description" in row.keys() else None,
-            pricing_json=json.loads(row["pricing_json"]) if "pricing_json" in row.keys() and row["pricing_json"] else None,
+            description=row.get("description", None),
+            pricing_json=(
+                json.loads(row["pricing_json"])
+                if "pricing_json" in row and row["pricing_json"]
+                else None
+            ),
             config_json=json.loads(row["config_json"] or "{}"),
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
@@ -460,21 +459,17 @@ class SettingsRepository:
     def __init__(self, db: Database):
         self.db = db
 
-    def get_setting(self, key: str) -> Optional[str]:
+    def get_setting(self, key: str) -> str | None:
         """Get a setting value by key."""
         with self.db._get_connection() as conn:
-            row = conn.execute(
-                "SELECT value FROM user_settings WHERE key = ?",
-                (key,)
-            ).fetchone()
+            row = conn.execute("SELECT value FROM user_settings WHERE key = ?", (key,)).fetchone()
             return row["value"] if row else None
 
     def get_setting_typed(self, key: str) -> Any:
         """Get a setting value with type conversion."""
         with self.db._get_connection() as conn:
             row = conn.execute(
-                "SELECT value, value_type FROM user_settings WHERE key = ?",
-                (key,)
+                "SELECT value, value_type FROM user_settings WHERE key = ?", (key,)
             ).fetchone()
 
             if not row:
@@ -497,9 +492,7 @@ class SettingsRepository:
                     return None
             return value
 
-    def set_setting(
-        self, key: str, value: Any, value_type: str = "string"
-    ) -> bool:
+    def set_setting(self, key: str, value: Any, value_type: str = "string") -> bool:
         """Set a setting value."""
         if value_type == "string":
             str_value = str(value) if value is not None else ""
@@ -520,17 +513,14 @@ class SettingsRepository:
                    value = excluded.value,
                    value_type = excluded.value_type,
                    updated_at = excluded.updated_at""",
-                (key, str_value, value_type)
+                (key, str_value, value_type),
             )
             return cursor.rowcount > 0
 
     def delete_setting(self, key: str) -> bool:
         """Delete a setting."""
         with self.db._get_connection() as conn:
-            cursor = conn.execute(
-                "DELETE FROM user_settings WHERE key = ?",
-                (key,)
-            )
+            cursor = conn.execute("DELETE FROM user_settings WHERE key = ?", (key,))
             return cursor.rowcount > 0
 
     def get_all_settings(self) -> dict[str, Any]:
@@ -563,6 +553,7 @@ class SettingsRepository:
 @dataclass
 class AgentDefaultsRecord:
     """Agent defaults record data class."""
+
     id: int
     default_provider_id: int | None
     default_model_id: int | None
@@ -605,12 +596,11 @@ class AgentDefaultsRepository:
                     context_compression_enabled, context_compression_turns,
                     tools, config_json, created_at, updated_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
-                ("", 8192, 0.7, 20, False, 10, "[]", "{}")
+                ("", 8192, 0.7, 20, False, 10, "[]", "{}"),
             )
 
             row = conn.execute(
-                "SELECT * FROM agent_defaults WHERE id = ?",
-                (cursor.lastrowid,)
+                "SELECT * FROM agent_defaults WHERE id = ?", (cursor.lastrowid,)
             ).fetchone()
             return self._row_to_agent_defaults(row)
 
@@ -690,10 +680,7 @@ class AgentDefaultsRepository:
         updates.append("updated_at = datetime('now', 'localtime')")
 
         with self.db._get_connection() as conn:
-            cursor = conn.execute(
-                f"UPDATE agent_defaults SET {', '.join(updates)}",
-                tuple(params)
-            )
+            cursor = conn.execute(f"UPDATE agent_defaults SET {', '.join(updates)}", tuple(params))
             return cursor.rowcount > 0
 
     def get_enabled_models_for_selection(self) -> list[dict]:
@@ -702,8 +689,7 @@ class AgentDefaultsRepository:
         Returns list of models with provider info for dropdown selection.
         """
         with self.db._get_connection() as conn:
-            rows = conn.execute(
-                """SELECT
+            rows = conn.execute("""SELECT
                     m.id as model_db_id,
                     m.model_id,
                     m.display_name as model_display_name,
@@ -713,8 +699,7 @@ class AgentDefaultsRepository:
                 FROM models m
                 JOIN providers p ON m.provider_id = p.id
                 WHERE m.enabled = 1 AND p.enabled = 1
-                ORDER BY p.display_name ASC, m.display_name ASC"""
-            ).fetchall()
+                ORDER BY p.display_name ASC, m.display_name ASC""").fetchall()
 
             return [
                 {
@@ -746,10 +731,22 @@ class AgentDefaultsRepository:
             context_compression_enabled=bool(row["context_compression_enabled"]),
             context_compression_turns=row["context_compression_turns"] or 10,
             context_compression_token_threshold=row["context_compression_token_threshold"] or 8000,
-            llm_max_retries=row["llm_max_retries"] if "llm_max_retries" in row.keys() and row["llm_max_retries"] is not None else 3,
-            llm_retry_base_delay=row["llm_retry_base_delay"] if "llm_retry_base_delay" in row.keys() and row["llm_retry_base_delay"] is not None else 1.0,
-            llm_retry_max_delay=row["llm_retry_max_delay"] if "llm_retry_max_delay" in row.keys() and row["llm_retry_max_delay"] is not None else 30.0,
-            tools=json.loads(row["tools"] or "[]") if "tools" in row.keys() else [],
+            llm_max_retries=(
+                row["llm_max_retries"]
+                if "llm_max_retries" in row and row["llm_max_retries"] is not None
+                else 3
+            ),
+            llm_retry_base_delay=(
+                row["llm_retry_base_delay"]
+                if "llm_retry_base_delay" in row and row["llm_retry_base_delay"] is not None
+                else 1.0
+            ),
+            llm_retry_max_delay=(
+                row["llm_retry_max_delay"]
+                if "llm_retry_max_delay" in row and row["llm_retry_max_delay"] is not None
+                else 30.0
+            ),
+            tools=json.loads(row["tools"] or "[]") if "tools" in row else [],
             config_json=json.loads(row["config_json"] or "{}"),
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
@@ -758,9 +755,11 @@ class AgentDefaultsRepository:
 
 # ========== Channel Config Repository ==========
 
+
 @dataclass
 class ChannelConfigRecord:
     """Channel config record data class."""
+
     id: int
     channel_name: str
     channel_type: str
@@ -785,8 +784,7 @@ class ChannelConfigRepository:
         """Get channel config by name."""
         with self.db._get_connection() as conn:
             row = conn.execute(
-                "SELECT * FROM channel_configs WHERE channel_name = ?",
-                (channel_name,)
+                "SELECT * FROM channel_configs WHERE channel_name = ?", (channel_name,)
             ).fetchone()
             return self._row_to_channel_config(row) if row else None
 
@@ -828,8 +826,17 @@ class ChannelConfigRepository:
                    allow_from = excluded.allow_from,
                    config_json = excluded.config_json,
                    updated_at = excluded.updated_at""",
-                (channel_name, channel_type, enabled, app_id, app_secret, encrypt_key,
-                 verification_token, json.dumps(allow_from), json.dumps(config_json))
+                (
+                    channel_name,
+                    channel_type,
+                    enabled,
+                    app_id,
+                    app_secret,
+                    encrypt_key,
+                    verification_token,
+                    json.dumps(allow_from),
+                    json.dumps(config_json),
+                ),
             )
             return cursor.rowcount > 0
 
@@ -837,8 +844,7 @@ class ChannelConfigRepository:
         """Delete channel config."""
         with self.db._get_connection() as conn:
             cursor = conn.execute(
-                "DELETE FROM channel_configs WHERE channel_name = ?",
-                (channel_name,)
+                "DELETE FROM channel_configs WHERE channel_name = ?", (channel_name,)
             )
             return cursor.rowcount > 0
 
@@ -862,9 +868,11 @@ class ChannelConfigRepository:
 
 # ========== Tool Config Repository ==========
 
+
 @dataclass
 class ToolConfigRecord:
     """Tool config record data class."""
+
     id: int
     tool_name: str
     enabled: bool
@@ -887,8 +895,7 @@ class ToolConfigRepository:
         """Get tool config by name."""
         with self.db._get_connection() as conn:
             row = conn.execute(
-                "SELECT * FROM tool_configs WHERE tool_name = ?",
-                (tool_name,)
+                "SELECT * FROM tool_configs WHERE tool_name = ?", (tool_name,)
             ).fetchone()
             return self._row_to_tool_config(row) if row else None
 
@@ -925,8 +932,15 @@ class ToolConfigRepository:
                    search_max_results = excluded.search_max_results,
                    config_json = excluded.config_json,
                    updated_at = excluded.updated_at""",
-                (tool_name, enabled, timeout, restrict_to_workspace, search_api_key,
-                 search_max_results, json.dumps(config_json))
+                (
+                    tool_name,
+                    enabled,
+                    timeout,
+                    restrict_to_workspace,
+                    search_api_key,
+                    search_max_results,
+                    json.dumps(config_json),
+                ),
             )
             return cursor.rowcount > 0
 
@@ -948,9 +962,11 @@ class ToolConfigRepository:
 
 # ========== Image Service Config Repository ==========
 
+
 @dataclass
 class ImageServiceConfigRecord:
     """Image service config record."""
+
     id: int
     config_type: str  # 'understanding' or 'generation'
     default_model_id: int | None
@@ -969,29 +985,38 @@ class ImageServiceConfigRepository:
     """
 
     # Provider types that support image understanding (基于图片中的8种类型)
-    UNDERSTANDING_PROVIDER_TYPES = {'openai', 'openai-response', 'gemini', 'anthropic', 'azure-openai', 'new-api', 'cherryln', 'ollama'}
+    UNDERSTANDING_PROVIDER_TYPES = {
+        "openai",
+        "openai-response",
+        "gemini",
+        "anthropic",
+        "azure-openai",
+        "new-api",
+        "cherryln",
+        "ollama",
+    }
     # Provider types that support image generation
-    GENERATION_PROVIDER_TYPES = {'openai', 'openai-response', 'azure-openai', 'new-api', 'cherryln'}
+    GENERATION_PROVIDER_TYPES = {"openai", "openai-response", "azure-openai", "new-api", "cherryln"}
 
     # Default models for image understanding by provider type
     DEFAULT_UNDERSTANDING_MODELS = {
-        'openai': 'gpt-4o',
-        'openai-response': 'gpt-4o',
-        'gemini': 'gemini-pro-vision',
-        'anthropic': 'claude-3-opus-4-5',
-        'azure-openai': 'gpt-4o',
-        'new-api': 'gpt-4o',
-        'cherryln': 'gpt-4o',
-        'ollama': 'llava'
+        "openai": "gpt-4o",
+        "openai-response": "gpt-4o",
+        "gemini": "gemini-pro-vision",
+        "anthropic": "claude-3-opus-4-5",
+        "azure-openai": "gpt-4o",
+        "new-api": "gpt-4o",
+        "cherryln": "gpt-4o",
+        "ollama": "llava",
     }
 
     # Default models for image generation by provider type
     DEFAULT_GENERATION_MODELS = {
-        'openai': 'dall-e-3',
-        'openai-response': 'dall-e-3',
-        'azure-openai': 'dall-e-3',
-        'new-api': 'dall-e-3',
-        'cherryln': 'dall-e-3'
+        "openai": "dall-e-3",
+        "openai-response": "dall-e-3",
+        "azure-openai": "dall-e-3",
+        "new-api": "dall-e-3",
+        "cherryln": "dall-e-3",
     }
 
     def __init__(self, db: Database):
@@ -1001,8 +1026,7 @@ class ImageServiceConfigRepository:
         """Get image service config by type."""
         with self.db._get_connection() as conn:
             row = conn.execute(
-                "SELECT * FROM image_service_config WHERE config_type = ?",
-                (config_type,)
+                "SELECT * FROM image_service_config WHERE config_type = ?", (config_type,)
             ).fetchone()
             return self._row_to_config(row) if row else None
 
@@ -1040,7 +1064,7 @@ class ImageServiceConfigRepository:
         with self.db._get_connection() as conn:
             cursor = conn.execute(
                 f"UPDATE image_service_config SET {', '.join(updates)} WHERE config_type = ?",
-                tuple(params)
+                tuple(params),
             )
             return cursor.rowcount > 0
 
@@ -1050,15 +1074,15 @@ class ImageServiceConfigRepository:
         Returns models from providers that support the specified service type.
         Only models with supports_vision=1 or model_types containing 'vision' are returned.
         """
-        if config_type == 'understanding':
+        if config_type == "understanding":
             provider_types = self.UNDERSTANDING_PROVIDER_TYPES
-        elif config_type == 'generation':
+        elif config_type == "generation":
             provider_types = self.GENERATION_PROVIDER_TYPES
         else:
             return []
 
         # Build IN clause
-        placeholders = ','.join('?' * len(provider_types))
+        placeholders = ",".join("?" * len(provider_types))
 
         with self.db._get_connection() as conn:
             rows = conn.execute(
@@ -1079,7 +1103,7 @@ class ImageServiceConfigRepository:
                 WHERE m.enabled = 1 AND p.enabled = 1 AND p.provider_type IN ({placeholders})
                   AND (m.supports_vision = 1 OR m.model_types LIKE '%vision%')
                 ORDER BY p.display_name ASC, m.display_name ASC""",
-                tuple(provider_types)
+                tuple(provider_types),
             ).fetchall()
 
             return [
@@ -1121,7 +1145,7 @@ class ImageServiceConfigRepository:
                 JOIN models m ON isc.default_model_id = m.id
                 JOIN providers p ON m.provider_id = p.id
                 WHERE isc.config_type = ? AND m.enabled = 1 AND p.enabled = 1""",
-                (config_type,)
+                (config_type,),
             ).fetchone()
 
             if row:
@@ -1157,6 +1181,7 @@ class ImageServiceConfigRepository:
 @dataclass
 class TTSServiceConfigRecord:
     """TTS service config record."""
+
     id: int
     config_type: str
     default_model_id: int | None
@@ -1213,12 +1238,12 @@ class TTSServiceConfigRepository:
             return False
 
         updates.append("updated_at = datetime('now', 'localtime')")
-        params.append('tts')
+        params.append("tts")
 
         with self.db._get_connection() as conn:
             cursor = conn.execute(
                 f"UPDATE tts_service_config SET {', '.join(updates)} WHERE config_type = ?",
-                tuple(params)
+                tuple(params),
             )
             return cursor.rowcount > 0
 
@@ -1228,8 +1253,7 @@ class TTSServiceConfigRepository:
         Returns models with model_types containing 'audio' or 'tts'.
         """
         with self.db._get_connection() as conn:
-            rows = conn.execute(
-                """SELECT
+            rows = conn.execute("""SELECT
                     m.id as model_db_id,
                     m.model_id,
                     m.display_name as model_display_name,
@@ -1244,8 +1268,7 @@ class TTSServiceConfigRepository:
                 JOIN providers p ON m.provider_id = p.id
                 WHERE m.enabled = 1 AND p.enabled = 1
                   AND (m.model_types LIKE '%"audio"%' OR m.model_types LIKE '%"tts"%')
-                ORDER BY p.display_name ASC, m.display_name ASC"""
-            ).fetchall()
+                ORDER BY p.display_name ASC, m.display_name ASC""").fetchall()
 
             return [
                 {
@@ -1268,8 +1291,7 @@ class TTSServiceConfigRepository:
     def get_default_model(self) -> dict | None:
         """Get default model for TTS service."""
         with self.db._get_connection() as conn:
-            row = conn.execute(
-                """SELECT
+            row = conn.execute("""SELECT
                     m.id as model_db_id,
                     m.model_id,
                     m.display_name as model_display_name,
@@ -1284,8 +1306,7 @@ class TTSServiceConfigRepository:
                 FROM tts_service_config tsc
                 JOIN models m ON tsc.default_model_id = m.id
                 JOIN providers p ON m.provider_id = p.id
-                WHERE tsc.config_type = 'tts' AND m.enabled = 1 AND p.enabled = 1"""
-            ).fetchone()
+                WHERE tsc.config_type = 'tts' AND m.enabled = 1 AND p.enabled = 1""").fetchone()
 
             if row:
                 return {

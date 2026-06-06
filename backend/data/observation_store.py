@@ -3,7 +3,7 @@
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -13,6 +13,7 @@ from backend.data.database import Database
 @dataclass
 class ObservationRecord:
     """Structured observation extracted from conversation."""
+
     id: int | None = None
     session_instance_id: int | None = None
     type: str = "general"
@@ -149,7 +150,12 @@ class ObservationRepository:
                 ORDER BY created_at DESC
                 LIMIT ?
                 """,
-                (anchor.session_instance_id, anchor.created_at.isoformat(), anchor_id, depth_before),
+                (
+                    anchor.session_instance_id,
+                    anchor.created_at.isoformat(),
+                    anchor_id,
+                    depth_before,
+                ),
             ).fetchall()
             # After
             after_rows = conn.execute(

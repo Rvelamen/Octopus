@@ -1,6 +1,7 @@
 """Email channel implementation using IMAP + SMTP."""
 
 import asyncio
+import contextlib
 import email as email_lib
 import imaplib
 import smtplib
@@ -8,13 +9,12 @@ from collections import OrderedDict
 from email.header import decode_header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Any
 
 from loguru import logger
 
-from backend.core.events.types import OutboundMessage
-from backend.core.events.bus import MessageBus
 from backend.channels.base import BaseChannel
+from backend.core.events.bus import MessageBus
+from backend.core.events.types import OutboundMessage
 
 
 class EmailChannel(BaseChannel):
@@ -25,20 +25,16 @@ class EmailChannel(BaseChannel):
     def __init__(self, config, bus: MessageBus):
         super().__init__(config, bus)
         self._imap_host = (
-            getattr(self.config.config, "imap_host", "imap.gmail.com")
-            or "imap.gmail.com"
+            getattr(self.config.config, "imap_host", "imap.gmail.com") or "imap.gmail.com"
         )
         self._imap_port = getattr(self.config.config, "imap_port", 993) or 993
         self._smtp_host = (
-            getattr(self.config.config, "smtp_host", "smtp.gmail.com")
-            or "smtp.gmail.com"
+            getattr(self.config.config, "smtp_host", "smtp.gmail.com") or "smtp.gmail.com"
         )
         self._smtp_port = getattr(self.config.config, "smtp_port", 587) or 587
         self._address = getattr(self.config.config, "address", "") or ""
         self._password = getattr(self.config.config, "password", "") or ""
-        self._poll_interval = (
-            getattr(self.config.config, "poll_interval", 15) or 15
-        )
+        self._poll_interval = getattr(self.config.config, "poll_interval", 15) or 15
         self._seen_uids: OrderedDict[str, None] = OrderedDict()
         self._poll_task: asyncio.Task | None = None
 
@@ -57,10 +53,8 @@ class EmailChannel(BaseChannel):
         self._running = False
         if self._poll_task:
             self._poll_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._poll_task
-            except asyncio.CancelledError:
-                pass
         logger.info("Email channel stopped")
 
     async def _poll_loop(self) -> None:
@@ -106,8 +100,7 @@ class EmailChannel(BaseChannel):
                     sender_match = email_lib.utils.parseaddr(from_header)[1]
 
                     if any(
-                        k in sender_match.lower()
-                        for k in ("noreply", "no-reply", "mailer-daemon")
+                        k in sender_match.lower() for k in ("noreply", "no-reply", "mailer-daemon")
                     ):
                         continue
                     if sender_match.lower() == self._address.lower():
@@ -120,9 +113,7 @@ class EmailChannel(BaseChannel):
                         parts = []
                         for part, charset in decoded:
                             if isinstance(part, bytes):
-                                parts.append(
-                                    part.decode(charset or "utf-8", errors="replace")
-                                )
+                                parts.append(part.decode(charset or "utf-8", errors="replace"))
                             else:
                                 parts.append(part)
                         subject = "".join(parts)

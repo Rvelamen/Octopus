@@ -1,110 +1,109 @@
 """Desktop channel message handlers."""
 
 # Base classes
+# Agent handlers
+from backend.channels.desktop.handlers.agent import (
+    AgentDeleteHandler,
+    AgentGetListHandler,
+    AgentGetSoulHandler,
+    AgentGetSystemFileHandler,
+    AgentGetSystemFilesHandler,
+    AgentSaveSoulHandler,
+    AgentSaveSystemFileHandler,
+)
 from backend.channels.desktop.handlers.base import MessageHandler
-from backend.channels.desktop.handlers.registry import HandlerRegistry
 
 # Chat handlers
 from backend.channels.desktop.handlers.chat import ChatHandler
 
-# Slash commands handler
-from backend.channels.desktop.handlers.slash_commands import GetSlashCommandsHandler
-
 # Config handlers
 from backend.channels.desktop.handlers.config import (
     GetConfigHandler,
-    SaveConfigHandler,
     PingHandler,
+    SaveConfigHandler,
     StopAgentsHandler,
-)
-
-# Models handlers
-from backend.channels.desktop.handlers.models import GetModelsHandler
-
-# MCP handlers
-from backend.channels.desktop.handlers.mcp import (
-    MCPGetStatusHandler,
-    TTSHandler,
-    MCPGetServersHandler,
-    MCPGetServerToolsHandler,
-    MCPAddServerHandler,
-    MCPDeleteServerHandler,
-    MCPUpdateServerHandler,
-    MCPUpdateToolHandler,
-    MCPDiscoverToolsHandler,
-    MCPConnectServerHandler,
-    MCPDisconnectServerHandler,
-    MCPReconnectServerHandler,
-    MCPCallToolHandler,
-    MCPGetConfigHandler,
-    MCPUpdateConfigHandler,
-)
-
-# Session handlers
-from backend.channels.desktop.handlers.session import (
-    SessionGetChannelsHandler,
-    SessionGetChannelSessionsHandler,
-    SessionGetSessionDetailHandler,
-    SessionGetMessagesHandler,
-    SessionDeleteInstanceHandler,
-    SessionCreateHandler,
-    SessionSetActiveHandler,
-    SessionGetInstancesHandler,
-    SessionCompressContextHandler,
-    SessionGetContextStatsHandler,
-)
-
-# Workspace handlers
-from backend.channels.desktop.handlers.workspace import (
-    WorkspaceGetRootHandler,
-    WorkspaceListHandler,
-    WorkspaceReadHandler,
-    WorkspaceWriteHandler,
-    WorkspaceDeleteHandler,
-    WorkspaceMkdirHandler,
-    WorkspaceRenameHandler,
 )
 
 # Cron handlers
 from backend.channels.desktop.handlers.cron import (
-    CronGetJobsHandler,
     CronAddJobHandler,
     CronDeleteJobHandler,
-    CronToggleJobHandler,
+    CronGetJobsHandler,
     CronRunJobHandler,
+    CronToggleJobHandler,
 )
 
-# Agent handlers
-from backend.channels.desktop.handlers.agent import (
-    AgentGetListHandler,
-    AgentGetSoulHandler,
-    AgentSaveSoulHandler,
-    AgentDeleteHandler,
-    AgentGetSystemFilesHandler,
-    AgentGetSystemFileHandler,
-    AgentSaveSystemFileHandler,
+# Image handlers
+from backend.channels.desktop.handlers.image import (
+    FileUploadHandler,
+    ImageAnalyzeHandler,
+    ImageGenerateHandler,
+    ImageGetGenerationProvidersHandler,
+    ImageGetUnderstandingProvidersHandler,
+    ImageUploadHandler,
 )
+from backend.channels.desktop.handlers.library import LibraryHandler
+
+# MCP handlers
+from backend.channels.desktop.handlers.mcp import (
+    MCPAddServerHandler,
+    MCPCallToolHandler,
+    MCPConnectServerHandler,
+    MCPDeleteServerHandler,
+    MCPDisconnectServerHandler,
+    MCPDiscoverToolsHandler,
+    MCPGetConfigHandler,
+    MCPGetServersHandler,
+    MCPGetServerToolsHandler,
+    MCPGetStatusHandler,
+    MCPReconnectServerHandler,
+    MCPUpdateConfigHandler,
+    MCPUpdateServerHandler,
+    MCPUpdateToolHandler,
+    TTSHandler,
+)
+
+# Models handlers
+from backend.channels.desktop.handlers.models import GetModelsHandler
+from backend.channels.desktop.handlers.registry import HandlerRegistry
+
+# Session handlers
+from backend.channels.desktop.handlers.session import (
+    SessionCompressContextHandler,
+    SessionCreateHandler,
+    SessionDeleteInstanceHandler,
+    SessionGetChannelSessionsHandler,
+    SessionGetChannelsHandler,
+    SessionGetContextStatsHandler,
+    SessionGetInstancesHandler,
+    SessionGetMessagesHandler,
+    SessionGetSessionDetailHandler,
+    SessionSetActiveHandler,
+)
+
+# Slash commands handler
+from backend.channels.desktop.handlers.slash_commands import GetSlashCommandsHandler
 
 # Subagent handlers
 from backend.channels.desktop.handlers.subagent import (
-    SubagentGetAvailableToolsHandler,
     SubagentGetAvailableExtensionsHandler,
+    SubagentGetAvailableToolsHandler,
     SubagentGetProviderModelsHandler,
 )
 
 # Token handlers
 from backend.channels.desktop.handlers.token import TokenUsageHandler
 
-# Image handlers
-from backend.channels.desktop.handlers.image import (
-    ImageUploadHandler,
-    FileUploadHandler,
-    ImageAnalyzeHandler,
-    ImageGenerateHandler,
-    ImageGetUnderstandingProvidersHandler,
-    ImageGetGenerationProvidersHandler,
+# Workspace handlers
+from backend.channels.desktop.handlers.workspace import (
+    WorkspaceDeleteHandler,
+    WorkspaceGetRootHandler,
+    WorkspaceListHandler,
+    WorkspaceMkdirHandler,
+    WorkspaceReadHandler,
+    WorkspaceRenameHandler,
+    WorkspaceWriteHandler,
 )
-from backend.channels.desktop.handlers.library import LibraryHandler
 
 __all__ = [
     # Base

@@ -1,17 +1,19 @@
 """Slack channel implementation using slack-bolt Socket Mode."""
 
 import asyncio
+import contextlib
 from typing import Any
 
 from loguru import logger
 
-from backend.core.events.types import OutboundMessage
-from backend.core.events.bus import MessageBus
 from backend.channels.base import BaseChannel
+from backend.core.events.bus import MessageBus
+from backend.core.events.types import OutboundMessage
 
 try:
-    from slack_bolt.async_app import AsyncApp
     from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
+    from slack_bolt.async_app import AsyncApp
+
     SLACK_AVAILABLE = True
 except ImportError:
     SLACK_AVAILABLE = False
@@ -62,10 +64,8 @@ class SlackChannel(BaseChannel):
                 logger.warning(f"Error closing Slack handler: {e}")
         if self._handler_task:
             self._handler_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._handler_task
-            except asyncio.CancelledError:
-                pass
         logger.info("Slack channel stopped")
 
     async def _on_event(self, event: dict) -> None:

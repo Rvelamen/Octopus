@@ -4,31 +4,37 @@ Built on top of SubagentManager patterns but designed for multi-turn real-time c
 instead of background task execution.
 """
 
+import contextlib
 import json
-import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable
+from typing import Any
 
 from loguru import logger
 
-from backend.core.providers.base import LLMProvider
 from backend.agent.config_service import AgentConfigService
-from backend.agent.loader import SubAgentLoader, SubAgentConfig
-from backend.data.provider_store import ProviderRepository, ModelRepository
-from backend.data import Database
-from backend.core.config.schema import AgentDefaults, ProviderConfig
-from backend.core.providers.factory import create_provider
-from backend.tools.registry import ToolRegistry
-from backend.tools.filesystem import ReadFileTool, WriteFileTool, ListDirTool, EditFileTool
-from backend.tools.shell import ExecTool
-from backend.tools.action import ActionTool
-from backend.tools.message import MessageTool
-from backend.tools.library_knowledge import LibrarySearchTool, LibraryReadNoteTool, LibraryListLinksTool, LibraryTimelineTool
-from backend.tools.memory_write import MemoryWriteTool
-from backend.tools.memory import MemorySearchTool, MemoryReadTool, MemoryTimelineTool
+from backend.agent.loader import SubAgentConfig, SubAgentLoader
 from backend.agent.memory import MemoryStore
+from backend.core.config.schema import AgentDefaults, ProviderConfig
+from backend.core.providers.base import LLMProvider
+from backend.core.providers.factory import create_provider
+from backend.data import Database
+from backend.data.provider_store import ModelRepository, ProviderRepository
 from backend.extensions.loader import SkillsLoader
-from backend.services.pdf_chat_service import PdfChatService, PdfChatMessage
+from backend.services.pdf_chat_service import PdfChatService
+from backend.tools.action import ActionTool
+from backend.tools.filesystem import EditFileTool, ListDirTool, ReadFileTool, WriteFileTool
+from backend.tools.library_knowledge import (
+    LibraryListLinksTool,
+    LibraryReadNoteTool,
+    LibrarySearchTool,
+    LibraryTimelineTool,
+)
+from backend.tools.memory import MemoryReadTool, MemorySearchTool, MemoryTimelineTool
+from backend.tools.memory_write import MemoryWriteTool
+from backend.tools.message import MessageTool
+from backend.tools.registry import ToolRegistry
+from backend.tools.shell import ExecTool
 
 
 class PdfChatAgent:
@@ -84,15 +90,21 @@ class PdfChatAgent:
         agent_config = self._load_agent_config(session.agent_config_id)
 
         # Get provider, model, tools
-        provider, model, provider_type, max_tokens, temperature = self._get_provider_for_config(agent_config)
+        provider, model, provider_type, max_tokens, temperature = self._get_provider_for_config(
+            agent_config
+        )
         tools = self._build_tools_for_config(agent_config)
 
         # Collect all referenced passages from session history for persistent context
         referenced_passages = self._collect_referenced_passages(session_id)
-        system_prompt = self._build_system_prompt(agent_config, session.title, session.pdf_path, referenced_passages)
+        system_prompt = self._build_system_prompt(
+            agent_config, session.title, session.pdf_path, referenced_passages
+        )
 
         # Build messages
-        messages = self._build_messages(session_id, system_prompt, user_content, page_number, selected_text)
+        messages = self._build_messages(
+            session_id, system_prompt, user_content, page_number, selected_text
+        )
 
         # Run LLM with tool support
         final_content = ""
@@ -117,10 +129,8 @@ class PdfChatAgent:
                     if chunk.content:
                         full_content += chunk.content
                         if on_token:
-                            try:
+                            with contextlib.suppress(Exception):
                                 on_token(chunk.content)
-                            except Exception:
-                                pass
 
                     # DeepSeek reasoning content
                     if chunk.reasoning_content:
@@ -135,14 +145,14 @@ class PdfChatAgent:
                                     "arguments": tc.arguments,
                                 }
                                 if on_tool_start:
-                                    try:
-                                        on_tool_start({
-                                            "tool": tc.name,
-                                            "args": tc.arguments,
-                                            "tool_call_id": tc.id,
-                                        })
-                                    except Exception:
-                                        pass
+                                    with contextlib.suppress(Exception):
+                                        on_tool_start(
+                                            {
+                                                "tool": tc.name,
+                                                "args": tc.arguments,
+                                                "tool_call_id": tc.id,
+                                            }
+                                        )
                             else:
                                 tool_calls_buffer[tc.id]["arguments"].update(tc.arguments)
 
@@ -154,14 +164,16 @@ class PdfChatAgent:
                 # Build assistant message with tool_calls (required by OpenAI API)
                 tool_calls_list = []
                 for tc_data in tool_calls_buffer.values():
-                    tool_calls_list.append({
-                        "id": tc_data["id"],
-                        "type": "function",
-                        "function": {
-                            "name": tc_data["name"],
-                            "arguments": json.dumps(tc_data["arguments"], ensure_ascii=False),
-                        },
-                    })
+                    tool_calls_list.append(
+                        {
+                            "id": tc_data["id"],
+                            "type": "function",
+                            "function": {
+                                "name": tc_data["name"],
+                                "arguments": json.dumps(tc_data["arguments"], ensure_ascii=False),
+                            },
+                        }
+                    )
                 assistant_msg: dict[str, Any] = {
                     "role": "assistant",
                     "content": full_content or None,
@@ -211,20 +223,22 @@ class PdfChatAgent:
                     result = f"Error: {e}"
 
                 if on_tool_result:
-                    try:
-                        on_tool_result({
-                            "tool": tc_data["name"],
-                            "result": result,
-                            "tool_call_id": tc_data["id"],
-                        })
-                    except Exception:
-                        pass
+                    with contextlib.suppress(Exception):
+                        on_tool_result(
+                            {
+                                "tool": tc_data["name"],
+                                "result": result,
+                                "tool_call_id": tc_data["id"],
+                            }
+                        )
 
-                messages.append({
-                    "role": "tool",
-                    "content": str(result),
-                    "tool_call_id": tc_data["id"],
-                })
+                messages.append(
+                    {
+                        "role": "tool",
+                        "content": str(result),
+                        "tool_call_id": tc_data["id"],
+                    }
+                )
 
                 # Persist tool result
                 self.pdf_chat_service.add_message(
@@ -243,6 +257,7 @@ class PdfChatAgent:
         """Load agent config. Fallback to default if not found."""
         if agent_config_id:
             from backend.data.subagent_store import SubagentRepository
+
             repo = SubagentRepository(self.db)
             record = repo.get_subagent_by_id(agent_config_id)
             if record:
@@ -278,7 +293,9 @@ class PdfChatAgent:
             ),
         )
 
-    def _get_provider_for_config(self, config: SubAgentConfig | None) -> tuple[LLMProvider, str, str, int, float]:
+    def _get_provider_for_config(
+        self, config: SubAgentConfig | None
+    ) -> tuple[LLMProvider, str, str, int, float]:
         """Get provider and model for the agent config."""
         defaults = self._config_service._get_agent_defaults_repo().get_or_create_defaults()
         max_tokens = getattr(defaults, "max_tokens", 8192) or 8192
@@ -307,7 +324,13 @@ class PdfChatAgent:
                 )
                 providers_dict = {provider_record.name: provider_config}
                 provider = create_provider(providers_dict, agent_defaults)
-                return provider, model_record.model_id, provider_record.provider_type, max_tokens, config.temperature
+                return (
+                    provider,
+                    model_record.model_id,
+                    provider_record.provider_type,
+                    max_tokens,
+                    config.temperature,
+                )
 
         # Fallback to default
         return self._config_service.get_default_provider_and_model()
@@ -327,10 +350,16 @@ class PdfChatAgent:
             ),
             "action": ActionTool,
             "message": lambda: MessageTool(send_callback=lambda x: None),
-            "kb_search": lambda: LibrarySearchTool(vault_filter="library", name_override="kb_search"),
-            "kb_timeline": lambda: LibraryTimelineTool(vault_filter="library", name_override="kb_timeline"),
+            "kb_search": lambda: LibrarySearchTool(
+                vault_filter="library", name_override="kb_search"
+            ),
+            "kb_timeline": lambda: LibraryTimelineTool(
+                vault_filter="library", name_override="kb_timeline"
+            ),
             "kb_read_note": lambda: LibraryReadNoteTool(name_override="kb_read_note"),
-            "kb_list_links": lambda: LibraryListLinksTool(vault_filter="library", name_override="kb_list_links"),
+            "kb_list_links": lambda: LibraryListLinksTool(
+                vault_filter="library", name_override="kb_list_links"
+            ),
             "library_search": lambda: LibrarySearchTool(vault_filter="library"),
             "library_timeline": lambda: LibraryTimelineTool(vault_filter="library"),
             "library_read_note": LibraryReadNoteTool,
@@ -363,8 +392,8 @@ class PdfChatAgent:
         referenced_passages: list[dict[str, Any]] | None = None,
     ) -> str:
         """Build system prompt for the PDF chat agent."""
-        base_prompt = config.system_prompt if config else (
-            "You are a helpful PDF reading assistant."
+        base_prompt = (
+            config.system_prompt if config else ("You are a helpful PDF reading assistant.")
         )
 
         skills_section = ""
@@ -377,8 +406,8 @@ class PdfChatAgent:
         if referenced_passages:
             lines = []
             for i, p in enumerate(referenced_passages, 1):
-                page_info = f" (Page {p['page']})" if p.get('page') else ""
-                text = p.get('text', '')
+                page_info = f" (Page {p['page']})" if p.get("page") else ""
+                text = p.get("text", "")
                 # Truncate very long passages to avoid blowing up the prompt
                 if len(text) > 800:
                     text = text[:800] + "..."
@@ -465,7 +494,7 @@ When answering, be concise but thorough. If you reference specific content from 
         if page_number is not None:
             context_parts.append(f"[Page {page_number}]")
         if selected_text:
-            context_parts.append(f"Selected text: \"{selected_text}\"")
+            context_parts.append(f'Selected text: "{selected_text}"')
 
         if context_parts:
             full_content = "\n\n".join(context_parts) + f"\n\nQuestion: {user_content}"
@@ -483,10 +512,12 @@ When answering, be concise but thorough. If you reference specific content from 
         for msg in history:
             if msg.selected_text and msg.selected_text not in seen:
                 seen.add(msg.selected_text)
-                passages.append({
-                    "text": msg.selected_text,
-                    "page": msg.page_number,
-                })
+                passages.append(
+                    {
+                        "text": msg.selected_text,
+                        "page": msg.page_number,
+                    }
+                )
         return passages
 
     def _inject_tool_args(self, tc_data: dict, session_id: int) -> dict[str, Any]:

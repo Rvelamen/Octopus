@@ -3,45 +3,43 @@
 Built on top of PdfChatAgent patterns but specialized for visual workflow authoring.
 """
 
+import contextlib
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from loguru import logger
 
-from backend.core.providers.base import LLMProvider
 from backend.agent.config_service import AgentConfigService
-from backend.agent.loader import SubAgentLoader, SubAgentConfig
-from backend.data.provider_store import ProviderRepository, ModelRepository
-from backend.data import Database
+from backend.agent.loader import SubAgentConfig, SubAgentLoader
 from backend.core.config.schema import AgentDefaults, ProviderConfig
 from backend.core.providers.factory import create_provider
-from backend.tools.registry import ToolRegistry
-from backend.tools.filesystem import ReadFileTool, WriteFileTool, ListDirTool, EditFileTool
-from backend.tools.shell import ExecTool
-from backend.tools.action import ActionTool
-from backend.tools.message import MessageTool
+from backend.data import Database
+from backend.data.provider_store import ModelRepository, ProviderRepository
 from backend.extensions.loader import SkillsLoader
-from backend.services.workflow_design_chat_service import WorkflowDesignChatService, WorkflowDesignMessage
+from backend.services.workflow_design_chat_service import (
+    WorkflowDesignChatService,
+)
+from backend.tools.registry import ToolRegistry
 from backend.tools.workflow_designer import (
-    WorkflowAddNodeTool,
-    WorkflowConnectNodesTool,
-    WorkflowSetVariableTool,
     WorkflowAddInputTool,
+    WorkflowAddNodeTool,
     WorkflowAddOutputTool,
-    WorkflowRemoveVariableTool,
+    WorkflowAutoLayoutTool,
+    WorkflowConnectNodesTool,
     WorkflowGetNodeIOTool,
     WorkflowGetNodesTool,
+    WorkflowGetVariableContextTool,
     WorkflowListDatabaseTablesTool,
     WorkflowRemoveNodeTool,
-    WorkflowUpdateNodeTool,
-    WorkflowAutoLayoutTool,
-    WorkflowValidateTool,
+    WorkflowRemoveVariableTool,
     WorkflowRunTestTool,
-    WorkflowGetVariableContextTool,
+    WorkflowSetVariableTool,
+    WorkflowUpdateNodeTool,
+    WorkflowValidateTool,
     _WorkflowToolBase,
 )
-from backend.services.workflow.auto_binding import build_variable_context
 
 
 class WorkflowDesignerAgent:
@@ -95,7 +93,9 @@ class WorkflowDesignerAgent:
         agent_config = self._load_agent_config(agent_config_id)
 
         # Get provider, model, tools
-        provider, model, provider_type, max_tokens, temperature = self._get_provider_for_config(agent_config)
+        provider, model, provider_type, max_tokens, temperature = self._get_provider_for_config(
+            agent_config
+        )
         tools = self._build_tools_for_config(agent_config)
 
         # Inject workflow_id into all workflow tools (AI does not need to pass it)
@@ -113,8 +113,12 @@ class WorkflowDesignerAgent:
         # Build initial messages
         definition = self.design_service.get_workflow_definition(workflow_id)
         canvas_context = self._build_canvas_context(workflow_id, definition)
-        system_prompt = self._build_system_prompt(agent_config, canvas_context, workflow_id, definition, selected_nodes)
-        messages = self._build_messages(session_id, system_prompt, user_content, workflow_id, selected_nodes)
+        system_prompt = self._build_system_prompt(
+            agent_config, canvas_context, workflow_id, definition, selected_nodes
+        )
+        messages = self._build_messages(
+            session_id, system_prompt, user_content, workflow_id, selected_nodes
+        )
 
         while iteration < max_iterations:
             iteration += 1
@@ -126,7 +130,9 @@ class WorkflowDesignerAgent:
             # so the LLM sees the latest canvas state after tool modifications
             definition = self.design_service.get_workflow_definition(workflow_id)
             canvas_context = self._build_canvas_context(workflow_id, definition)
-            system_prompt = self._build_system_prompt(agent_config, canvas_context, workflow_id, definition, selected_nodes)
+            system_prompt = self._build_system_prompt(
+                agent_config, canvas_context, workflow_id, definition, selected_nodes
+            )
             messages[0] = {"role": "system", "content": system_prompt}
 
             try:
@@ -140,10 +146,8 @@ class WorkflowDesignerAgent:
                     if chunk.content:
                         full_content += chunk.content
                         if on_token:
-                            try:
+                            with contextlib.suppress(Exception):
                                 on_token(chunk.content)
-                            except Exception:
-                                pass
 
                     if chunk.reasoning_content:
                         accumulated_reasoning += chunk.reasoning_content
@@ -157,14 +161,14 @@ class WorkflowDesignerAgent:
                                     "arguments": tc.arguments,
                                 }
                                 if on_tool_start:
-                                    try:
-                                        on_tool_start({
-                                            "tool": tc.name,
-                                            "args": tc.arguments,
-                                            "tool_call_id": tc.id,
-                                        })
-                                    except Exception:
-                                        pass
+                                    with contextlib.suppress(Exception):
+                                        on_tool_start(
+                                            {
+                                                "tool": tc.name,
+                                                "args": tc.arguments,
+                                                "tool_call_id": tc.id,
+                                            }
+                                        )
                             else:
                                 tool_calls_buffer[tc.id]["arguments"].update(tc.arguments)
 
@@ -175,14 +179,16 @@ class WorkflowDesignerAgent:
             if tool_calls_buffer:
                 tool_calls_list = []
                 for tc_data in tool_calls_buffer.values():
-                    tool_calls_list.append({
-                        "id": tc_data["id"],
-                        "type": "function",
-                        "function": {
-                            "name": tc_data["name"],
-                            "arguments": json.dumps(tc_data["arguments"], ensure_ascii=False),
-                        },
-                    })
+                    tool_calls_list.append(
+                        {
+                            "id": tc_data["id"],
+                            "type": "function",
+                            "function": {
+                                "name": tc_data["name"],
+                                "arguments": json.dumps(tc_data["arguments"], ensure_ascii=False),
+                            },
+                        }
+                    )
                 assistant_msg: dict[str, Any] = {
                     "role": "assistant",
                     "content": full_content or None,
@@ -229,20 +235,22 @@ class WorkflowDesignerAgent:
                     result = f"Error: {e}"
 
                 if on_tool_result:
-                    try:
-                        on_tool_result({
-                            "tool": tc_data["name"],
-                            "result": result,
-                            "tool_call_id": tc_data["id"],
-                        })
-                    except Exception:
-                        pass
+                    with contextlib.suppress(Exception):
+                        on_tool_result(
+                            {
+                                "tool": tc_data["name"],
+                                "result": result,
+                                "tool_call_id": tc_data["id"],
+                            }
+                        )
 
-                messages.append({
-                    "role": "tool",
-                    "content": str(result),
-                    "tool_call_id": tc_data["id"],
-                })
+                messages.append(
+                    {
+                        "role": "tool",
+                        "content": str(result),
+                        "tool_call_id": tc_data["id"],
+                    }
+                )
 
                 # Serialize result for metadata storage
                 result_for_meta = result
@@ -254,7 +262,11 @@ class WorkflowDesignerAgent:
                     role="tool",
                     content=str(result),
                     tool_call_id=tc_data["id"],
-                    metadata={"tool": tc_data["name"], "args": tc_data["arguments"], "result": result_for_meta},
+                    metadata={
+                        "tool": tc_data["name"],
+                        "args": tc_data["arguments"],
+                        "result": result_for_meta,
+                    },
                 )
 
         return final_content
@@ -265,6 +277,7 @@ class WorkflowDesignerAgent:
         """Load agent config. Fallback to default if not found."""
         if agent_config_id:
             from backend.data.subagent_store import SubagentRepository
+
             repo = SubagentRepository(self.db)
             record = repo.get_subagent_by_id(agent_config_id)
             if record:
@@ -290,10 +303,21 @@ class WorkflowDesignerAgent:
             name="workflow-designer",
             description="Workflow design assistant",
             tools=[
-                "add_node", "connect_nodes", "set_variable", "remove_node", "update_node",
-                "auto_layout", "validate_workflow", "run_test", "get_variable_context",
-                "get_node_io", "get_nodes", "list_database_tables",
-                "add_input_variable", "add_output_variable", "remove_variable",
+                "add_node",
+                "connect_nodes",
+                "set_variable",
+                "remove_node",
+                "update_node",
+                "auto_layout",
+                "validate_workflow",
+                "run_test",
+                "get_variable_context",
+                "get_node_io",
+                "get_nodes",
+                "list_database_tables",
+                "add_input_variable",
+                "add_output_variable",
+                "remove_variable",
             ],
             max_iterations=15,
             temperature=0.3,
@@ -329,7 +353,13 @@ class WorkflowDesignerAgent:
                 )
                 providers_dict = {provider_record.name: provider_config}
                 provider = create_provider(providers_dict, agent_defaults)
-                return provider, model_record.model_id, provider_record.provider_type, max_tokens, config.temperature
+                return (
+                    provider,
+                    model_record.model_id,
+                    provider_record.provider_type,
+                    max_tokens,
+                    config.temperature,
+                )
 
         return self._config_service.get_default_provider_and_model()
 
@@ -365,7 +395,9 @@ class WorkflowDesignerAgent:
                     tool = tool_mapping[tool_name_lower]()
                     tools.register(tool)
                 except Exception as e:
-                    logger.warning(f"[WorkflowDesignerAgent] Failed to register tool '{tool_name}': {e}")
+                    logger.warning(
+                        f"[WorkflowDesignerAgent] Failed to register tool '{tool_name}': {e}"
+                    )
             else:
                 logger.warning(f"[WorkflowDesignerAgent] Unknown tool '{tool_name}'")
 
@@ -381,8 +413,8 @@ class WorkflowDesignerAgent:
     ) -> str:
         """Build system prompt for the workflow designer agent."""
         base_prompt = config.system_prompt if config else self._default_system_prompt()
-        workflow_name = definition.get('name', '未命名')
-        node_count = len(definition.get('nodes', []))
+        workflow_name = definition.get("name", "未命名")
+        node_count = len(definition.get("nodes", []))
 
         selected_section = ""
         if selected_nodes:
@@ -458,18 +490,24 @@ class WorkflowDesignerAgent:
                     if default is not None:
                         parts.append(f"默认: {default}")
                     if options:
-                        opts = ", ".join(f"{o.get('value')}={o.get('label', o.get('value'))}" for o in options)
+                        opts = ", ".join(
+                            f"{o.get('value')}={o.get('label', o.get('value'))}" for o in options
+                        )
                         parts.append(f"可选: {opts}")
                     lines.append(f"    - {key}: {'; '.join(parts)}")
             # Inputs / outputs
             if info.inputs:
                 lines.append("  输入:")
                 for inp in info.inputs:
-                    lines.append(f"    - {inp.get('key')} ({inp.get('label', '')}) [{inp.get('type', 'string')}]")
+                    lines.append(
+                        f"    - {inp.get('key')} ({inp.get('label', '')}) [{inp.get('type', 'string')}]"
+                    )
             if info.outputs:
                 lines.append("  输出:")
                 for out in info.outputs:
-                    lines.append(f"    - {out.get('key')} ({out.get('label', '')}) [{out.get('type', 'string')}]")
+                    lines.append(
+                        f"    - {out.get('key')} ({out.get('label', '')}) [{out.get('type', 'string')}]"
+                    )
             node_guide_lines.append("\n".join(lines))
 
         node_guide = "\n\n".join(node_guide_lines)
@@ -508,7 +546,7 @@ class WorkflowDesignerAgent:
             "9. After any add, remove, connect, or update operation, call validate_workflow, then auto_layout\n"
             "10. **Node type selection**: database operations (INSERT/UPDATE/DELETE/QUERY) MUST use the 'database' node; HTTP/REST API calls MUST use 'httpRequest468'; LLM inference MUST use 'chatNode'; code execution MUST use 'code'\n"
             "11. **Before configuring a database node**, call list_database_tables to see available tables and columns. Then use the exact table name and column names in fieldMappings.\n"
-            "12. **database node config format**: fieldMappings MUST be an array of objects: [{\"name\":\"column\",\"value\":\"{{nodeId.output}}\"}]. Do NOT put column names as top-level config keys.\n\n"
+            '12. **database node config format**: fieldMappings MUST be an array of objects: [{"name":"column","value":"{{nodeId.output}}"}]. Do NOT put column names as top-level config keys.\n\n'
             "## Variable Binding\n"
             "- Syntax: {{nodeId.outputKey}}\n"
             "- Example: {{workflowStart-1.input}}, {{chatNode-1.answerText}}\n"
@@ -583,9 +621,9 @@ class WorkflowDesignerAgent:
             if config.get("system_httpMethod"):
                 items.append(f"method={config['system_httpMethod']}")
             if config.get("system_httpReqHeader"):
-                items.append(f"hasHeader=True")
+                items.append("hasHeader=True")
             if config.get("system_httpReqBody"):
-                items.append(f"hasBody=True")
+                items.append("hasBody=True")
 
         elif node_type == "code":
             if config.get("code"):
@@ -687,14 +725,33 @@ class WorkflowDesignerAgent:
 
         # Generic: show any other non-system, non-input/output config keys
         for k, v in config.items():
-            if k in ("inputs", "outputs", "name", "intro", "showTargetHandle", "showSourceHandle",
-                     "forbidDelete", "avatar", "colorSchema"):
+            if k in (
+                "inputs",
+                "outputs",
+                "name",
+                "intro",
+                "showTargetHandle",
+                "showSourceHandle",
+                "forbidDelete",
+                "avatar",
+                "colorSchema",
+            ):
                 continue
             if k.startswith("system_") and k not in (
-                "systemPrompt", "userPrompt", "system_httpReqUrl", "system_httpMethod",
-                "system_httpReqHeader", "system_httpReqBody", "system_code", "system_codeLanguage",
-                "system_ifelse", "system_text", "system_database", "system_databaseSql",
-                "system_classify", "system_content",
+                "systemPrompt",
+                "userPrompt",
+                "system_httpReqUrl",
+                "system_httpMethod",
+                "system_httpReqHeader",
+                "system_httpReqBody",
+                "system_code",
+                "system_codeLanguage",
+                "system_ifelse",
+                "system_text",
+                "system_database",
+                "system_databaseSql",
+                "system_classify",
+                "system_content",
             ):
                 items.append(f"{k}={_trunc(v)}")
 
@@ -721,9 +778,13 @@ class WorkflowDesignerAgent:
 
             lines.append(f"- {node_id} ({node_type}, 名称: {label})")
             if outputs:
-                lines.append(f"  输出: {', '.join(o.get('key', '') + '[' + o.get('type', 'string') + ']' for o in outputs)}")
+                lines.append(
+                    f"  输出: {', '.join(o.get('key', '') + '[' + o.get('type', 'string') + ']' for o in outputs)}"
+                )
             if inputs:
-                bound = [f"{i.get('key', '')}={i.get('value', '')}" for i in inputs if i.get('value')]
+                bound = [
+                    f"{i.get('key', '')}={i.get('value', '')}" for i in inputs if i.get("value")
+                ]
                 if bound:
                     lines.append(f"  输入绑定: {', '.join(bound)}")
             # 关键配置

@@ -35,34 +35,38 @@ class DBTableHandler(MessageHandler):
         if handler:
             await handler(websocket, message)
         else:
-            await websocket.send_json(WSMessage(
-                type=MessageType.ERROR,
-                request_id=message.request_id,
-                data={"error": f"Unsupported DB operation: {message.type.value}"}
-            ).to_dict())
+            await websocket.send_json(
+                WSMessage(
+                    type=MessageType.ERROR,
+                    request_id=message.request_id,
+                    data={"error": f"Unsupported DB operation: {message.type.value}"},
+                ).to_dict()
+            )
 
     # ── Table Operations ──
 
     async def _handle_table_list(self, websocket: WebSocket, message: WSMessage) -> None:
         try:
             tables = self.repo.list_tables()
-            await websocket.send_json(WSMessage(
-                type=MessageType.DB_TABLE_LIST,
-                request_id=message.request_id,
-                data={
-                    "tables": [
-                        {
-                            "id": t.id,
-                            "name": t.name,
-                            "description": t.description,
-                            "fields": self.repo._safe_json_load(t.fields_json),
-                            "created_at": t.created_at,
-                            "updated_at": t.updated_at,
-                        }
-                        for t in tables
-                    ]
-                }
-            ).to_dict())
+            await websocket.send_json(
+                WSMessage(
+                    type=MessageType.DB_TABLE_LIST,
+                    request_id=message.request_id,
+                    data={
+                        "tables": [
+                            {
+                                "id": t.id,
+                                "name": t.name,
+                                "description": t.description,
+                                "fields": self.repo._safe_json_load(t.fields_json),
+                                "created_at": t.created_at,
+                                "updated_at": t.updated_at,
+                            }
+                            for t in tables
+                        ]
+                    },
+                ).to_dict()
+            )
         except Exception as e:
             logger.error(f"[DBTableHandler] list_tables error: {e}")
             await self._send_error(websocket, message.request_id, str(e))
@@ -80,18 +84,20 @@ class DBTableHandler(MessageHandler):
                 raise ValueError("At least one field is required")
 
             table = self.repo.create_table(name, description, fields)
-            await websocket.send_json(WSMessage(
-                type=MessageType.DB_TABLE_CREATE,
-                request_id=message.request_id,
-                data={
-                    "id": table.id,
-                    "name": table.name,
-                    "description": table.description,
-                    "fields": self.repo._safe_json_load(table.fields_json),
-                    "created_at": table.created_at,
-                    "updated_at": table.updated_at,
-                }
-            ).to_dict())
+            await websocket.send_json(
+                WSMessage(
+                    type=MessageType.DB_TABLE_CREATE,
+                    request_id=message.request_id,
+                    data={
+                        "id": table.id,
+                        "name": table.name,
+                        "description": table.description,
+                        "fields": self.repo._safe_json_load(table.fields_json),
+                        "created_at": table.created_at,
+                        "updated_at": table.updated_at,
+                    },
+                ).to_dict()
+            )
         except Exception as e:
             logger.error(f"[DBTableHandler] create_table error: {e}")
             await self._send_error(websocket, message.request_id, str(e))
@@ -103,18 +109,20 @@ class DBTableHandler(MessageHandler):
             table = self.repo.get_table(name)
             if not table:
                 raise ValueError(f"Table '{name}' not found")
-            await websocket.send_json(WSMessage(
-                type=MessageType.DB_TABLE_GET,
-                request_id=message.request_id,
-                data={
-                    "id": table.id,
-                    "name": table.name,
-                    "description": table.description,
-                    "fields": self.repo._safe_json_load(table.fields_json),
-                    "created_at": table.created_at,
-                    "updated_at": table.updated_at,
-                }
-            ).to_dict())
+            await websocket.send_json(
+                WSMessage(
+                    type=MessageType.DB_TABLE_GET,
+                    request_id=message.request_id,
+                    data={
+                        "id": table.id,
+                        "name": table.name,
+                        "description": table.description,
+                        "fields": self.repo._safe_json_load(table.fields_json),
+                        "created_at": table.created_at,
+                        "updated_at": table.updated_at,
+                    },
+                ).to_dict()
+            )
         except Exception as e:
             logger.error(f"[DBTableHandler] get_table error: {e}")
             await self._send_error(websocket, message.request_id, str(e))
@@ -139,18 +147,20 @@ class DBTableHandler(MessageHandler):
             if not table:
                 raise ValueError(f"Table id={table_id} not found")
 
-            await websocket.send_json(WSMessage(
-                type=MessageType.DB_TABLE_UPDATE,
-                request_id=message.request_id,
-                data={
-                    "id": table.id,
-                    "name": table.name,
-                    "description": table.description,
-                    "fields": self.repo._safe_json_load(table.fields_json),
-                    "created_at": table.created_at,
-                    "updated_at": table.updated_at,
-                }
-            ).to_dict())
+            await websocket.send_json(
+                WSMessage(
+                    type=MessageType.DB_TABLE_UPDATE,
+                    request_id=message.request_id,
+                    data={
+                        "id": table.id,
+                        "name": table.name,
+                        "description": table.description,
+                        "fields": self.repo._safe_json_load(table.fields_json),
+                        "created_at": table.created_at,
+                        "updated_at": table.updated_at,
+                    },
+                ).to_dict()
+            )
         except Exception as e:
             logger.error(f"[DBTableHandler] update_table error: {e}")
             await self._send_error(websocket, message.request_id, str(e))
@@ -162,11 +172,13 @@ class DBTableHandler(MessageHandler):
             if not name:
                 raise ValueError("Table name is required")
             self.repo.delete_table(name)
-            await websocket.send_json(WSMessage(
-                type=MessageType.DB_TABLE_DELETE,
-                request_id=message.request_id,
-                data={"success": True}
-            ).to_dict())
+            await websocket.send_json(
+                WSMessage(
+                    type=MessageType.DB_TABLE_DELETE,
+                    request_id=message.request_id,
+                    data={"success": True},
+                ).to_dict()
+            )
         except Exception as e:
             logger.error(f"[DBTableHandler] delete_table error: {e}")
             await self._send_error(websocket, message.request_id, str(e))
@@ -196,11 +208,11 @@ class DBTableHandler(MessageHandler):
                 }
                 for r in result["records"]
             ]
-            await websocket.send_json(WSMessage(
-                type=MessageType.DB_RECORD_LIST,
-                request_id=message.request_id,
-                data=result
-            ).to_dict())
+            await websocket.send_json(
+                WSMessage(
+                    type=MessageType.DB_RECORD_LIST, request_id=message.request_id, data=result
+                ).to_dict()
+            )
         except Exception as e:
             logger.error(f"[DBTableHandler] record_list error: {e}")
             await self._send_error(websocket, message.request_id, str(e))
@@ -219,17 +231,19 @@ class DBTableHandler(MessageHandler):
             fields = self.repo._safe_json_load(table.fields_json) if table else []
 
             record = self.repo.create_record(table_name, record_data, fields)
-            await websocket.send_json(WSMessage(
-                type=MessageType.DB_RECORD_CREATE,
-                request_id=message.request_id,
-                data={
-                    "id": record.id,
-                    "table_name": record.table_name,
-                    "record_data": record.record_data,
-                    "created_at": record.created_at,
-                    "updated_at": record.updated_at,
-                }
-            ).to_dict())
+            await websocket.send_json(
+                WSMessage(
+                    type=MessageType.DB_RECORD_CREATE,
+                    request_id=message.request_id,
+                    data={
+                        "id": record.id,
+                        "table_name": record.table_name,
+                        "record_data": record.record_data,
+                        "created_at": record.created_at,
+                        "updated_at": record.updated_at,
+                    },
+                ).to_dict()
+            )
         except Exception as e:
             logger.error(f"[DBTableHandler] record_create error: {e}")
             await self._send_error(websocket, message.request_id, str(e))
@@ -247,17 +261,19 @@ class DBTableHandler(MessageHandler):
             if not record:
                 raise ValueError(f"Record id={record_id} not found")
 
-            await websocket.send_json(WSMessage(
-                type=MessageType.DB_RECORD_UPDATE,
-                request_id=message.request_id,
-                data={
-                    "id": record.id,
-                    "table_name": record.table_name,
-                    "record_data": record.record_data,
-                    "created_at": record.created_at,
-                    "updated_at": record.updated_at,
-                }
-            ).to_dict())
+            await websocket.send_json(
+                WSMessage(
+                    type=MessageType.DB_RECORD_UPDATE,
+                    request_id=message.request_id,
+                    data={
+                        "id": record.id,
+                        "table_name": record.table_name,
+                        "record_data": record.record_data,
+                        "created_at": record.created_at,
+                        "updated_at": record.updated_at,
+                    },
+                ).to_dict()
+            )
         except Exception as e:
             logger.error(f"[DBTableHandler] record_update error: {e}")
             await self._send_error(websocket, message.request_id, str(e))
@@ -269,11 +285,13 @@ class DBTableHandler(MessageHandler):
             if not record_id:
                 raise ValueError("Record id is required")
             self.repo.delete_record(record_id)
-            await websocket.send_json(WSMessage(
-                type=MessageType.DB_RECORD_DELETE,
-                request_id=message.request_id,
-                data={"success": True}
-            ).to_dict())
+            await websocket.send_json(
+                WSMessage(
+                    type=MessageType.DB_RECORD_DELETE,
+                    request_id=message.request_id,
+                    data={"success": True},
+                ).to_dict()
+            )
         except Exception as e:
             logger.error(f"[DBTableHandler] record_delete error: {e}")
             await self._send_error(websocket, message.request_id, str(e))
@@ -300,11 +318,11 @@ class DBTableHandler(MessageHandler):
                 }
                 for r in result["records"]
             ]
-            await websocket.send_json(WSMessage(
-                type=MessageType.DB_RECORD_SEARCH,
-                request_id=message.request_id,
-                data=result
-            ).to_dict())
+            await websocket.send_json(
+                WSMessage(
+                    type=MessageType.DB_RECORD_SEARCH, request_id=message.request_id, data=result
+                ).to_dict()
+            )
         except Exception as e:
             logger.error(f"[DBTableHandler] record_search error: {e}")
             await self._send_error(websocket, message.request_id, str(e))
@@ -312,8 +330,8 @@ class DBTableHandler(MessageHandler):
     # ── Helpers ──
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
-        await websocket.send_json(WSMessage(
-            type=MessageType.ERROR,
-            request_id=request_id,
-            data={"error": error}
-        ).to_dict())
+        await websocket.send_json(
+            WSMessage(
+                type=MessageType.ERROR, request_id=request_id, data={"error": error}
+            ).to_dict()
+        )

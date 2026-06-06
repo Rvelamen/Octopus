@@ -157,20 +157,28 @@ def _ensure_columns(conn: sqlite3.Connection) -> None:
     cursor = conn.execute("PRAGMA table_info(workflow_run_nodes)")
     existing_run_node_cols = {row[1] for row in cursor.fetchall()}
     if "created_at" not in existing_run_node_cols:
-        conn.execute("ALTER TABLE workflow_run_nodes ADD COLUMN created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))")
+        conn.execute(
+            "ALTER TABLE workflow_run_nodes ADD COLUMN created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))"
+        )
 
     cursor = conn.execute("PRAGMA table_info(workflow_nodes)")
     existing_node_cols = {row[1] for row in cursor.fetchall()}
     if "parent_id" not in existing_node_cols:
-        conn.execute("ALTER TABLE workflow_nodes ADD COLUMN parent_id TEXT REFERENCES workflow_nodes(id) ON DELETE SET NULL")
+        conn.execute(
+            "ALTER TABLE workflow_nodes ADD COLUMN parent_id TEXT REFERENCES workflow_nodes(id) ON DELETE SET NULL"
+        )
 
     cursor = conn.execute("PRAGMA table_info(workflow_variables)")
     existing_var_cols = {row[1] for row in cursor.fetchall()}
     if "created_at" not in existing_var_cols:
-        conn.execute("ALTER TABLE workflow_variables ADD COLUMN created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))")
+        conn.execute(
+            "ALTER TABLE workflow_variables ADD COLUMN created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))"
+        )
 
     # Migrate workflow_variables id column from INTEGER to TEXT (store.py uses UUID strings)
-    col_info = {row[1]: row for row in conn.execute("PRAGMA table_info(workflow_variables)").fetchall()}
+    col_info = {
+        row[1]: row for row in conn.execute("PRAGMA table_info(workflow_variables)").fetchall()
+    }
     id_col = col_info.get("id")
     if id_col and id_col[2].upper() == "INTEGER":
         conn.execute("""
@@ -196,7 +204,9 @@ def _ensure_columns(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE workflow_variables_new RENAME TO workflow_variables")
 
     # Migrate id column from INTEGER to TEXT (store.py uses UUID strings)
-    col_info = {row[1]: row for row in conn.execute("PRAGMA table_info(workflow_run_nodes)").fetchall()}
+    col_info = {
+        row[1]: row for row in conn.execute("PRAGMA table_info(workflow_run_nodes)").fetchall()
+    }
     id_col = col_info.get("id")
     if id_col and id_col[2].upper() == "INTEGER":
         conn.execute("""
@@ -225,17 +235,35 @@ def _ensure_columns(conn: sqlite3.Connection) -> None:
 
 def create_indexes(conn: sqlite3.Connection) -> None:
     _ensure_columns(conn)
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_workflow_versions_wf ON workflow_versions(workflow_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_workflow_nodes_version ON workflow_nodes(version_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_workflow_edges_version ON workflow_edges(version_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_workflow_variables_version ON workflow_variables(version_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_workflow_triggers_wf ON workflow_triggers(workflow_id)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_workflow_versions_wf ON workflow_versions(workflow_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_workflow_nodes_version ON workflow_nodes(version_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_workflow_edges_version ON workflow_edges(version_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_workflow_variables_version ON workflow_variables(version_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_workflow_triggers_wf ON workflow_triggers(workflow_id)"
+    )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_workflow_runs_wf ON workflow_runs(workflow_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_workflow_runs_status ON workflow_runs(status)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_workflow_runs_session ON workflow_runs(session_instance_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_workflow_run_nodes_run ON workflow_run_nodes(run_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_workflow_run_nodes_node ON workflow_run_nodes(node_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_workflow_run_vars_run ON workflow_run_variables(run_id)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_workflow_runs_session ON workflow_runs(session_instance_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_workflow_run_nodes_run ON workflow_run_nodes(run_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_workflow_run_nodes_node ON workflow_run_nodes(node_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_workflow_run_vars_run ON workflow_run_variables(run_id)"
+    )
 
 
 def seed_data(conn: sqlite3.Connection) -> None:

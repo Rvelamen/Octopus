@@ -4,12 +4,13 @@ Manages library_items, collections, attachments, and FTS5 indexing
 within the workspace/knowledge/library/ directory.
 """
 
+import contextlib
 import json
 import re
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import aiohttp
 from loguru import logger
@@ -63,7 +64,9 @@ class LibraryEngine:
         slug = re.sub(r"[-\s]+", "_", slug).strip("_")
         return slug[:50] if slug else "untitled"
 
-    def _ensure_unique_citekey(self, citekey: Optional[str], exclude_item_id: Optional[int] = None) -> Optional[str]:
+    def _ensure_unique_citekey(
+        self, citekey: str | None, exclude_item_id: int | None = None
+    ) -> str | None:
         """Ensure citekey is unique by appending _2, _3, etc. if needed."""
         if not citekey:
             return None
@@ -94,7 +97,7 @@ class LibraryEngine:
         item_dir.mkdir(parents=True, exist_ok=True)
         return item_dir
 
-    def _item_dir(self, item_id: int) -> Optional[Path]:
+    def _item_dir(self, item_id: int) -> Path | None:
         """Find existing item directory by item_id."""
         for entry in self.library_dir.iterdir():
             if entry.is_dir() and entry.name.startswith(f"{item_id:05d}_"):
@@ -141,6 +144,7 @@ class LibraryEngine:
         """Heuristic title extraction from first page of PDF."""
         try:
             import fitz
+
             doc = fitz.open(str(pdf_path))
             if len(doc) == 0:
                 doc.close()
@@ -159,7 +163,9 @@ class LibraryEngine:
                 # Skip lines that look like headers/footers/page numbers
                 if re.match(r"^\d+$", line):
                     continue
-                if re.match(r"^(arXiv:|doi:|http|www\.|©|Copyright|Received|Accepted|Published)", line, re.I):
+                if re.match(
+                    r"^(arXiv:|doi:|http|www\.|©|Copyright|Received|Accepted|Published)", line, re.I
+                ):
                     continue
                 if len(line) < 10:
                     continue
@@ -172,7 +178,7 @@ class LibraryEngine:
         except Exception:
             return pdf_path.stem
 
-    def _try_parse_arxiv_from_filename(self, filename: str) -> Optional[str]:
+    def _try_parse_arxiv_from_filename(self, filename: str) -> str | None:
         """Extract arXiv ID from filename like '2511.04550v1.pdf' or '_tmp_xxx_2511.04550v1.pdf'."""
         m = re.search(r"(\d{4}\.\d{4,5}(?:v\d+)?)", filename)
         if m:
@@ -181,9 +187,9 @@ class LibraryEngine:
 
     def create_item(
         self,
-        pdf_path: Optional[Path] = None,
-        metadata: Optional[dict] = None,
-        collection_ids: Optional[list[int]] = None,
+        pdf_path: Path | None = None,
+        metadata: dict | None = None,
+        collection_ids: list[int] | None = None,
     ) -> dict:
         """Create a new library item from an optional PDF file.
 
@@ -295,12 +301,11 @@ class LibraryEngine:
             # Copy PDF from temp location
             if pdf_temp_path.exists():
                 import shutil
+
                 shutil.copy2(pdf_temp_path, main_pdf)
                 # Clean up temp file
-                try:
+                with contextlib.suppress(Exception):
                     pdf_temp_path.unlink()
-                except Exception:
-                    pass
             elif not main_pdf.exists():
                 logger.warning(f"Background PDF processing: temp PDF not found for item {item_id}")
                 self._set_chunk_status(item_id, "failed")
@@ -346,6 +351,7 @@ class LibraryEngine:
         except Exception as e:
             logger.error(f"Background PDF processing failed for item {item_id}: {e}")
             import traceback
+
             logger.error(traceback.format_exc())
             self._set_chunk_status(item_id, "failed")
             self.db.commit()
@@ -472,6 +478,7 @@ class LibraryEngine:
         item_dir = self._item_dir(item_id)
         if item_dir and item_dir.exists():
             import shutil
+
             shutil.rmtree(item_dir)
 
         self.db.execute("DELETE FROM library_items WHERE id = ?", (item_id,))
@@ -500,8 +507,8 @@ class LibraryEngine:
 
     def list_items(
         self,
-        collection_id: Optional[int] = None,
-        query: Optional[str] = None,
+        collection_id: int | None = None,
+        query: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[dict], int]:
@@ -560,22 +567,24 @@ class LibraryEngine:
 
         items = []
         for row in rows:
-            items.append({
-                "id": row["id"],
-                "citekey": row["citekey"],
-                "title": row["title"],
-                "authors": json.loads(row["authors_json"]) if row["authors_json"] else [],
-                "year": row["year"],
-                "venue": row["venue"],
-                "doi": row["doi"],
-                "url": row["url"],
-                "abstract": row["abstract"],
-                "tags": json.loads(row["tags_json"]) if row["tags_json"] else [],
-                "library_path": row["library_path"],
-                "pdf_sha256": row["pdf_sha256"],
-                "chunk_status": row["chunk_status"],
-                "created_at": row["created_at"],
-            })
+            items.append(
+                {
+                    "id": row["id"],
+                    "citekey": row["citekey"],
+                    "title": row["title"],
+                    "authors": json.loads(row["authors_json"]) if row["authors_json"] else [],
+                    "year": row["year"],
+                    "venue": row["venue"],
+                    "doi": row["doi"],
+                    "url": row["url"],
+                    "abstract": row["abstract"],
+                    "tags": json.loads(row["tags_json"]) if row["tags_json"] else [],
+                    "library_path": row["library_path"],
+                    "pdf_sha256": row["pdf_sha256"],
+                    "chunk_status": row["chunk_status"],
+                    "created_at": row["created_at"],
+                }
+            )
 
         # Check for AI-generated notes in each item's notes/ directory
         for item in items:
@@ -591,15 +600,24 @@ class LibraryEngine:
     # Collection management
     # ------------------------------------------------------------------
 
-    def create_collection(self, name: str, parent_id: Optional[int] = None, color: Optional[str] = None) -> dict:
+    def create_collection(
+        self, name: str, parent_id: int | None = None, color: str | None = None
+    ) -> dict:
         cursor = self.db.execute(
             "INSERT INTO library_collections (name, parent_id, color) VALUES (?, ?, ?)",
             (name, parent_id, color or "#1890ff"),
         )
         self.db.commit()
-        return {"id": cursor.lastrowid, "name": name, "parent_id": parent_id, "color": color or "#1890ff"}
+        return {
+            "id": cursor.lastrowid,
+            "name": name,
+            "parent_id": parent_id,
+            "color": color or "#1890ff",
+        }
 
-    def update_collection(self, collection_id: int, name: Optional[str] = None, color: Optional[str] = None) -> dict:
+    def update_collection(
+        self, collection_id: int, name: str | None = None, color: str | None = None
+    ) -> dict:
         updates = []
         params = []
         if name is not None:
@@ -620,7 +638,7 @@ class LibraryEngine:
         self.db.commit()
         return True
 
-    def move_collection(self, collection_id: int, new_parent_id: Optional[int]) -> dict:
+    def move_collection(self, collection_id: int, new_parent_id: int | None) -> dict:
         self.db.execute(
             "UPDATE library_collections SET parent_id = ? WHERE id = ?",
             (new_parent_id, collection_id),
@@ -714,6 +732,7 @@ class LibraryEngine:
         # Extract text from first 3 pages
         try:
             import fitz
+
             doc = fitz.open(str(main_pdf))
             text_pages = []
             for i in range(min(3, len(doc))):
@@ -731,9 +750,13 @@ class LibraryEngine:
         if len(pdf_text) > max_chars:
             pdf_text = pdf_text[:max_chars] + "\n...[truncated]"
 
-        from backend.services.llm_service import LLMService
         from backend.data.database import Database
-        from backend.data.provider_store import AgentDefaultsRepository, ProviderRepository, ModelRepository
+        from backend.data.provider_store import (
+            AgentDefaultsRepository,
+            ModelRepository,
+            ProviderRepository,
+        )
+        from backend.services.llm_service import LLMService
 
         # Load library extract provider/model/language from agent defaults
         db = Database()
@@ -744,7 +767,7 @@ class LibraryEngine:
         defaults = agent_repo.get_or_create_defaults()
 
         # Get language setting
-        extract_language = getattr(defaults, 'library_extract_language', 'English') or 'English'
+        extract_language = getattr(defaults, "library_extract_language", "English") or "English"
 
         prompt = f"""You are an expert academic librarian. Extract bibliographic metadata from the following academic paper text.
 
@@ -799,6 +822,7 @@ JSON output:"""
         # Final fallback to config file
         if not provider_id or not model_id:
             from backend.core.config.loader import load_config
+
             config = load_config()
             config_defaults = config.agents.defaults if config.agents else None
             model_id = config_defaults.model if config_defaults else "anthropic/claude-opus-4-5"
@@ -818,19 +842,16 @@ JSON output:"""
         try:
             # Find JSON block
             json_match = re.search(r"\{.*\}", content, re.DOTALL)
-            if json_match:
-                extracted = json.loads(json_match.group(0))
-            else:
-                extracted = json.loads(content)
+            extracted = json.loads(json_match.group(0)) if json_match else json.loads(content)
         except json.JSONDecodeError as e:
             # Try to fix truncated JSON by adding missing closing brackets/quotes
             fixed_content = content
             # Balance braces
-            open_braces = fixed_content.count('{') - fixed_content.count('}')
-            fixed_content += '}' * open_braces
+            open_braces = fixed_content.count("{") - fixed_content.count("}")
+            fixed_content += "}" * open_braces
             # Balance brackets
-            open_brackets = fixed_content.count('[') - fixed_content.count(']')
-            fixed_content += ']' * open_brackets
+            open_brackets = fixed_content.count("[") - fixed_content.count("]")
+            fixed_content += "]" * open_brackets
             # Fix unterminated strings: find last unmatched quote
             # Simple heuristic: if content ends mid-string, try to close it
             if fixed_content.count('"') % 2 == 1:
@@ -840,7 +861,7 @@ JSON output:"""
                     # Check if this quote is escaped
                     escaped = False
                     i = last_quote - 1
-                    while i >= 0 and fixed_content[i] == '\\':
+                    while i >= 0 and fixed_content[i] == "\\":
                         escaped = not escaped
                         i -= 1
                     if not escaped:
@@ -853,7 +874,9 @@ JSON output:"""
                     extracted = json.loads(fixed_content)
                 logger.info(f"Fixed truncated JSON for item {item_id}")
             except json.JSONDecodeError:
-                logger.warning(f"LLM returned invalid JSON for item {item_id}: {e}\nContent: {content[:500]}")
+                logger.warning(
+                    f"LLM returned invalid JSON for item {item_id}: {e}\nContent: {content[:500]}"
+                )
                 # Try to extract individual fields with regex as last resort
                 extracted = self._extract_metadata_from_text(content, item)
 
@@ -907,7 +930,7 @@ JSON output:"""
         # abstract
         m = re.search(r'"abstract"\s*:\s*"([^"]*)"', text, re.DOTALL)
         if m:
-            result["abstract"] = m.group(1).replace('\\n', '\n')
+            result["abstract"] = m.group(1).replace("\\n", "\n")
         # tags
         m = re.search(r'"tags"\s*:\s*\[(.*?)\]', text, re.DOTALL)
         if m:
@@ -972,7 +995,7 @@ JSON output:"""
                         return self._parse_arxiv_atom(text, arxiv_id)
                     if resp.status == 429:
                         if attempt < max_retries - 1:
-                            delay = base_delay * (2 ** attempt)
+                            delay = base_delay * (2**attempt)
                             logger.warning(
                                 f"arXiv API rate limited (429), retrying in {delay}s (attempt {attempt + 1}/{max_retries})"
                             )
@@ -1011,7 +1034,9 @@ JSON output:"""
                 pdf_url = link.get("href", "")
                 break
 
-        categories = [cat.get("term", "") for cat in entry.findall("atom:category", ns) if cat.get("term")]
+        categories = [
+            cat.get("term", "") for cat in entry.findall("atom:category", ns) if cat.get("term")
+        ]
 
         return {
             "title": title,
@@ -1053,7 +1078,7 @@ JSON output:"""
                         return dest_path
                     if resp.status == 429:
                         if attempt < max_retries - 1:
-                            delay = base_delay * (2 ** attempt)
+                            delay = base_delay * (2**attempt)
                             logger.warning(
                                 f"arXiv PDF download rate limited (429), retrying in {delay}s (attempt {attempt + 1}/{max_retries})"
                             )
@@ -1069,8 +1094,10 @@ JSON output:"""
     # Attachments
     # ------------------------------------------------------------------
 
-    def add_attachment(self, item_id: int, file_path: Path, file_type: str = "supplementary") -> dict:
-        item = self.get_item(item_id)
+    def add_attachment(
+        self, item_id: int, file_path: Path, file_type: str = "supplementary"
+    ) -> dict:
+        self.get_item(item_id)
         item_dir = self._item_dir(item_id)
         if not item_dir:
             raise ValueError(f"Item directory not found for {item_id}")
@@ -1094,7 +1121,12 @@ JSON output:"""
             (item_id, file_path.name, file_type, sha256, rel, dest.stat().st_size),
         )
         self.db.commit()
-        return {"id": cursor.lastrowid, "filename": file_path.name, "file_type": file_type, "rel_path": rel}
+        return {
+            "id": cursor.lastrowid,
+            "filename": file_path.name,
+            "file_type": file_type,
+            "rel_path": rel,
+        }
 
     # ------------------------------------------------------------------
     # Annotations
@@ -1117,6 +1149,7 @@ JSON output:"""
             if annot.get("rects"):
                 try:
                     import json
+
                     annot["rects"] = json.loads(annot["rects"])
                 except Exception:
                     annot["rects"] = []
@@ -1166,7 +1199,12 @@ JSON output:"""
             (item_id, note_path, relation),
         )
         self.db.commit()
-        return {"id": cursor.lastrowid, "item_id": item_id, "note_path": note_path, "relation": relation}
+        return {
+            "id": cursor.lastrowid,
+            "item_id": item_id,
+            "note_path": note_path,
+            "relation": relation,
+        }
 
     def unlink_note(self, link_id: int) -> bool:
         self.db.execute("DELETE FROM library_item_notes WHERE id = ?", (link_id,))
@@ -1181,7 +1219,7 @@ JSON output:"""
         """Extract text from PDF and split into chunks. Returns list of chunks."""
         import fitz
 
-        item = self.get_item(item_id)
+        self.get_item(item_id)
         item_dir = self._item_dir(item_id)
         if not item_dir:
             self._set_chunk_status(item_id, "failed")
@@ -1215,14 +1253,16 @@ JSON output:"""
                 # Skip very short fragments (likely headers/footers)
                 if len(para) < 20:
                     continue
-                chunks.append({
-                    "item_id": item_id,
-                    "chunk_index": chunk_index,
-                    "page": page_num + 1,
-                    "section": "",  # TODO: detect section headers
-                    "text": para,
-                    "token_count": len(para.split()),
-                })
+                chunks.append(
+                    {
+                        "item_id": item_id,
+                        "chunk_index": chunk_index,
+                        "page": page_num + 1,
+                        "section": "",  # TODO: detect section headers
+                        "text": para,
+                        "token_count": len(para.split()),
+                    }
+                )
                 chunk_index += 1
 
             # Update progress every 5 pages or on the last page
@@ -1239,7 +1279,14 @@ JSON output:"""
                 INSERT INTO library_chunks (item_id, chunk_index, page, section, text, token_count)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (chunk["item_id"], chunk["chunk_index"], chunk["page"], chunk["section"], chunk["text"], chunk["token_count"]),
+                (
+                    chunk["item_id"],
+                    chunk["chunk_index"],
+                    chunk["page"],
+                    chunk["section"],
+                    chunk["text"],
+                    chunk["token_count"],
+                ),
             )
         self.db.commit()
 
@@ -1293,7 +1340,9 @@ JSON output:"""
     # Paper Graph
     # ------------------------------------------------------------------
 
-    def get_paper_graph(self, collection_id: int = None, center_item_id: int = None, limit: int = 300) -> dict:
+    def get_paper_graph(
+        self, collection_id: int = None, center_item_id: int = None, limit: int = 300
+    ) -> dict:
         """Return graph of library notes related to library items.
 
         Queries the dedicated library_notes / library_note_links tables.

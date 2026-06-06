@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 from loguru import logger
 
@@ -10,6 +9,7 @@ from loguru import logger
 @dataclass
 class SubAgentConfig:
     """Configuration for a SubAgent role."""
+
     name: str
     description: str
     provider: str = "openai"
@@ -21,7 +21,7 @@ class SubAgentConfig:
     system_prompt: str = ""
     provider_id: int | None = None
     model_id: int | None = None
-    
+
     @property
     def display_name(self) -> str:
         """Get display name for the subagent."""
@@ -41,6 +41,7 @@ class SubAgentLoader:
         """Get database instance."""
         if self._db is None:
             from backend.data import Database
+
             self._db = Database()
         return self._db
 
@@ -48,6 +49,7 @@ class SubAgentLoader:
         """Get subagent repository instance."""
         if self._subagent_repo is None:
             from backend.data.subagent_store import SubagentRepository
+
             self._subagent_repo = SubagentRepository(self._get_db())
         return self._subagent_repo
 
@@ -75,33 +77,33 @@ class SubAgentLoader:
 
     def _load_all_from_database(self) -> list[SubAgentConfig]:
         """Load all subagent configurations from database.
-        
+
         Returns:
             List of SubAgentConfig instances.
         """
-        from backend.data.provider_store import ProviderRepository, ModelRepository
-        
+        from backend.data.provider_store import ModelRepository, ProviderRepository
+
         repo = self._get_subagent_repo()
         provider_repo = ProviderRepository(self._get_db())
         model_repo = ModelRepository(self._get_db())
-        
+
         records = repo.get_enabled_subagents()
         configs = []
-        
+
         for record in records:
             provider_name = "openai"
             model_name = None
-            
+
             if record.provider_id:
                 provider = provider_repo.get_provider_by_id(record.provider_id)
                 if provider:
                     provider_name = provider.name
-            
+
             if record.model_id:
                 model = model_repo.get_model_by_id(record.model_id)
                 if model:
                     model_name = model.model_id
-            
+
             config = SubAgentConfig(
                 name=record.name,
                 description=record.description,
@@ -116,9 +118,9 @@ class SubAgentLoader:
                 model_id=record.model_id,
             )
             configs.append(config)
-        
+
         return configs
-    
+
     def get(self, name: str, reload: bool = False) -> SubAgentConfig | None:
         """Get a subagent configuration by name.
 
@@ -141,10 +143,10 @@ class SubAgentLoader:
                 return config
 
         return None
-    
+
     def list_agents(self) -> list[dict[str, str]]:
         """List all available subagents.
-        
+
         Returns:
             List of agent info dicts with 'name', 'description'
         """
@@ -156,17 +158,17 @@ class SubAgentLoader:
             }
             for config in configs
         ]
-    
+
     def build_agents_summary(self) -> str:
         """Build a summary of all subagents for system prompt.
-        
+
         Returns:
             XML-formatted subagents summary
         """
         configs = self.load_all()
         if not configs:
             return ""
-        
+
         lines = ["<subagents>"]
         for config in configs:
             lines.append(f'  <subagent name="{config.name}">')
@@ -175,9 +177,9 @@ class SubAgentLoader:
             lines.append(f"    <extensions>{', '.join(config.extensions)}</extensions>")
             lines.append("  </subagent>")
         lines.append("</subagents>")
-        
+
         return "\n".join(lines)
-    
+
     def clear_cache(self) -> None:
         """Clear the configuration cache."""
         self._cache.clear()

@@ -1,11 +1,9 @@
 """SQLite-based task queue for knowledge distillation jobs."""
 
-import sqlite3
 import json
+import sqlite3
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from loguru import logger
 
@@ -18,14 +16,14 @@ class DistillTask:
     request_id: str
     source_path: str
     prompt: str
-    output_path: Optional[str]
+    output_path: str | None
     template: str
     status: str
     stage: str
     message: str
     progress: float
-    result_path: Optional[str]
-    error: Optional[str]
+    result_path: str | None
+    error: str | None
     vault: str
     created_at: str
     updated_at: str
@@ -52,7 +50,7 @@ class KnowledgeTaskQueue:
         request_id: str,
         source_path: str,
         prompt: str,
-        output_path: Optional[str] = None,
+        output_path: str | None = None,
         template: str = "custom",
         vault: str = "default",
     ) -> int:
@@ -69,16 +67,14 @@ class KnowledgeTaskQueue:
             logger.info(f"Enqueued distill task {request_id} for {source_path} (vault={vault})")
             return cursor.lastrowid
 
-    def dequeue_for_run(self) -> Optional[DistillTask]:
+    def dequeue_for_run(self) -> DistillTask | None:
         with self._connection() as conn:
-            cursor = conn.execute(
-                """
+            cursor = conn.execute("""
                 SELECT * FROM knowledge_distill_tasks
                 WHERE status = 'pending'
                 ORDER BY created_at ASC
                 LIMIT 1
-                """
-            )
+                """)
             row = cursor.fetchone()
             if not row:
                 return None
@@ -99,12 +95,12 @@ class KnowledgeTaskQueue:
     def update_status(
         self,
         task_id: int,
-        status: Optional[str] = None,
-        stage: Optional[str] = None,
-        message: Optional[str] = None,
-        progress: Optional[float] = None,
-        result_path: Optional[str] = None,
-        error: Optional[str] = None,
+        status: str | None = None,
+        stage: str | None = None,
+        message: str | None = None,
+        progress: float | None = None,
+        result_path: str | None = None,
+        error: str | None = None,
     ) -> None:
         fields = ["updated_at = CURRENT_TIMESTAMP"]
         values: list = []
@@ -159,9 +155,7 @@ class KnowledgeTaskQueue:
         """
         with self._connection() as conn:
             # Get total count
-            total = conn.execute(
-                "SELECT COUNT(*) FROM knowledge_distill_tasks"
-            ).fetchone()[0]
+            total = conn.execute("SELECT COUNT(*) FROM knowledge_distill_tasks").fetchone()[0]
 
             # Get paginated data
             cursor = conn.execute(
@@ -175,7 +169,7 @@ class KnowledgeTaskQueue:
             tasks = [self._row_to_task(row) for row in cursor.fetchall()]
             return tasks, total
 
-    def get_by_request_id(self, request_id: str) -> Optional[DistillTask]:
+    def get_by_request_id(self, request_id: str) -> DistillTask | None:
         with self._connection() as conn:
             cursor = conn.execute(
                 "SELECT * FROM knowledge_distill_tasks WHERE request_id = ?",
@@ -201,9 +195,13 @@ class KnowledgeTaskQueue:
                         iter_data.get("iteration"),
                         iter_data.get("reasoning"),
                         json.dumps(iter_data.get("tools", [])),
-                        json.dumps(iter_data.get("token_usage")) if iter_data.get("token_usage") else None,
+                        (
+                            json.dumps(iter_data.get("token_usage"))
+                            if iter_data.get("token_usage")
+                            else None
+                        ),
                         iter_data.get("duration"),
-                    )
+                    ),
                 )
             conn.commit()
 
@@ -223,18 +221,21 @@ class KnowledgeTaskQueue:
                     iter_data.get("iteration"),
                     iter_data.get("reasoning"),
                     json.dumps(iter_data.get("tools", [])),
-                    json.dumps(iter_data.get("token_usage")) if iter_data.get("token_usage") else None,
+                    (
+                        json.dumps(iter_data.get("token_usage"))
+                        if iter_data.get("token_usage")
+                        else None
+                    ),
                     iter_data.get("duration"),
-                )
+                ),
             )
             conn.commit()
 
-    def get_task_with_iterations(self, task_id: int) -> Optional[dict]:
+    def get_task_with_iterations(self, task_id: int) -> dict | None:
         """Get task with its iterations for detail view."""
         with self._connection() as conn:
             task_row = conn.execute(
-                "SELECT * FROM knowledge_distill_tasks WHERE id = ?",
-                (task_id,)
+                "SELECT * FROM knowledge_distill_tasks WHERE id = ?", (task_id,)
             ).fetchone()
 
             if not task_row:
@@ -242,7 +243,7 @@ class KnowledgeTaskQueue:
 
             iter_rows = conn.execute(
                 "SELECT * FROM knowledge_distill_task_iterations WHERE task_id = ? ORDER BY iteration_num",
-                (task_id,)
+                (task_id,),
             ).fetchall()
 
             return {
@@ -264,11 +265,13 @@ class KnowledgeTaskQueue:
                         "iteration": row["iteration_num"],
                         "reasoning": row["reasoning"],
                         "tools": json.loads(row["tools"]),
-                        "token_usage": json.loads(row["token_usage"]) if row["token_usage"] else None,
+                        "token_usage": (
+                            json.loads(row["token_usage"]) if row["token_usage"] else None
+                        ),
                         "duration": row["duration"],
                     }
                     for row in iter_rows
-                ]
+                ],
             }
 
     @staticmethod

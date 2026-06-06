@@ -3,7 +3,7 @@
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -13,6 +13,7 @@ from backend.data.database import Database
 @dataclass
 class SubagentRecord:
     """Subagent record data class."""
+
     id: int
     name: str
     description: str
@@ -32,6 +33,7 @@ class SubagentRecord:
 @dataclass
 class AvailableToolRecord:
     """Available tool record data class."""
+
     id: int
     name: str
     display_name: str
@@ -45,6 +47,7 @@ class AvailableToolRecord:
 @dataclass
 class AvailableExtensionRecord:
     """Available extension record data class."""
+
     id: int
     name: str
     display_name: str
@@ -64,9 +67,7 @@ class SubagentRepository:
     def get_all_subagents(self) -> list[SubagentRecord]:
         """Get all subagents."""
         with self.db._get_connection() as conn:
-            rows = conn.execute(
-                "SELECT * FROM subagents ORDER BY name ASC"
-            ).fetchall()
+            rows = conn.execute("SELECT * FROM subagents ORDER BY name ASC").fetchall()
             return [self._row_to_subagent(row) for row in rows]
 
     def get_enabled_subagents(self) -> list[SubagentRecord]:
@@ -77,22 +78,16 @@ class SubagentRepository:
             ).fetchall()
             return [self._row_to_subagent(row) for row in rows]
 
-    def get_subagent_by_id(self, subagent_id: int) -> Optional[SubagentRecord]:
+    def get_subagent_by_id(self, subagent_id: int) -> SubagentRecord | None:
         """Get subagent by ID."""
         with self.db._get_connection() as conn:
-            row = conn.execute(
-                "SELECT * FROM subagents WHERE id = ?",
-                (subagent_id,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM subagents WHERE id = ?", (subagent_id,)).fetchone()
             return self._row_to_subagent(row) if row else None
 
-    def get_subagent_by_name(self, name: str) -> Optional[SubagentRecord]:
+    def get_subagent_by_name(self, name: str) -> SubagentRecord | None:
         """Get subagent by name."""
         with self.db._get_connection() as conn:
-            row = conn.execute(
-                "SELECT * FROM subagents WHERE name = ?",
-                (name,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM subagents WHERE name = ?", (name,)).fetchone()
             return self._row_to_subagent(row) if row else None
 
     def create_subagent(
@@ -119,13 +114,23 @@ class SubagentRepository:
                    (name, description, provider_id, model_id, tools, extensions,
                     max_iterations, temperature, system_prompt, enabled, is_builtin, created_at, updated_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
-                (name, description, provider_id, model_id, json.dumps(tools),
-                 json.dumps(extensions), max_iterations, temperature, system_prompt, enabled, is_builtin)
+                (
+                    name,
+                    description,
+                    provider_id,
+                    model_id,
+                    json.dumps(tools),
+                    json.dumps(extensions),
+                    max_iterations,
+                    temperature,
+                    system_prompt,
+                    enabled,
+                    is_builtin,
+                ),
             )
 
             row = conn.execute(
-                "SELECT * FROM subagents WHERE id = ?",
-                (cursor.lastrowid,)
+                "SELECT * FROM subagents WHERE id = ?", (cursor.lastrowid,)
             ).fetchone()
 
             logger.info(f"Created subagent: {name}")
@@ -192,8 +197,7 @@ class SubagentRepository:
 
         with self.db._get_connection() as conn:
             cursor = conn.execute(
-                f"UPDATE subagents SET {', '.join(updates)} WHERE id = ?",
-                tuple(params)
+                f"UPDATE subagents SET {', '.join(updates)} WHERE id = ?", tuple(params)
             )
             return cursor.rowcount > 0
 
@@ -202,16 +206,12 @@ class SubagentRepository:
         with self.db._get_connection() as conn:
             # Check if built-in
             row = conn.execute(
-                "SELECT is_builtin FROM subagents WHERE id = ?",
-                (subagent_id,)
+                "SELECT is_builtin FROM subagents WHERE id = ?", (subagent_id,)
             ).fetchone()
             if row and row["is_builtin"]:
                 logger.warning(f"Cannot delete built-in subagent id: {subagent_id}")
                 return False
-            cursor = conn.execute(
-                "DELETE FROM subagents WHERE id = ?",
-                (subagent_id,)
-            )
+            cursor = conn.execute("DELETE FROM subagents WHERE id = ?", (subagent_id,))
             if cursor.rowcount > 0:
                 logger.info(f"Deleted subagent id: {subagent_id}")
                 return True
@@ -222,16 +222,12 @@ class SubagentRepository:
         with self.db._get_connection() as conn:
             # Check if built-in
             row = conn.execute(
-                "SELECT is_builtin FROM subagents WHERE name = ?",
-                (name,)
+                "SELECT is_builtin FROM subagents WHERE name = ?", (name,)
             ).fetchone()
             if row and row["is_builtin"]:
                 logger.warning(f"Cannot delete built-in subagent: {name}")
                 return False
-            cursor = conn.execute(
-                "DELETE FROM subagents WHERE name = ?",
-                (name,)
-            )
+            cursor = conn.execute("DELETE FROM subagents WHERE name = ?", (name,))
             if cursor.rowcount > 0:
                 logger.info(f"Deleted subagent: {name}")
                 return True
@@ -240,8 +236,7 @@ class SubagentRepository:
     def get_subagents_with_details(self) -> list[dict[str, Any]]:
         """Get all subagents with provider and model details for frontend display."""
         with self.db._get_connection() as conn:
-            rows = conn.execute(
-                """SELECT 
+            rows = conn.execute("""SELECT
                     s.id,
                     s.name,
                     s.description,
@@ -263,8 +258,7 @@ class SubagentRepository:
                 FROM subagents s
                 LEFT JOIN providers p ON s.provider_id = p.id
                 LEFT JOIN models m ON s.model_id = m.id
-                ORDER BY s.name ASC"""
-            ).fetchall()
+                ORDER BY s.name ASC""").fetchall()
 
             return [
                 {
@@ -360,12 +354,11 @@ class AvailableToolRepository:
                 """INSERT INTO available_tools
                    (name, display_name, description, category, enabled, sort_order, created_at)
                    VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))""",
-                (name, display_name, description, category, enabled, sort_order)
+                (name, display_name, description, category, enabled, sort_order),
             )
 
             row = conn.execute(
-                "SELECT * FROM available_tools WHERE id = ?",
-                (cursor.lastrowid,)
+                "SELECT * FROM available_tools WHERE id = ?", (cursor.lastrowid,)
             ).fetchone()
 
             logger.info(f"Created available tool: {name}")
@@ -435,12 +428,11 @@ class AvailableExtensionRepository:
                 """INSERT INTO available_extensions
                    (name, display_name, description, extension_type, enabled, sort_order, created_at)
                    VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))""",
-                (name, display_name, description, extension_type, enabled, sort_order)
+                (name, display_name, description, extension_type, enabled, sort_order),
             )
 
             row = conn.execute(
-                "SELECT * FROM available_extensions WHERE id = ?",
-                (cursor.lastrowid,)
+                "SELECT * FROM available_extensions WHERE id = ?", (cursor.lastrowid,)
             ).fetchone()
 
             logger.info(f"Created available extension: {name}")

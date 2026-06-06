@@ -1,14 +1,14 @@
 """Channel manager for coordinating chat channels."""
 
 import asyncio
+import contextlib
 from pathlib import Path
 from typing import Any
 
 from loguru import logger
 
-from backend.core.events.types import OutboundMessage
-from backend.core.events.bus import MessageBus
 from backend.channels.base import BaseChannel
+from backend.core.events.bus import MessageBus
 
 
 class ChannelManager:
@@ -23,7 +23,12 @@ class ChannelManager:
 
     _global_instance = None
 
-    def __init__(self, bus: MessageBus, workspace: Path | None = None, custom_channels: dict[str, BaseChannel] | None = None):
+    def __init__(
+        self,
+        bus: MessageBus,
+        workspace: Path | None = None,
+        custom_channels: dict[str, BaseChannel] | None = None,
+    ):
         self.bus = bus
         self.workspace = workspace
         self.channels: dict[str, BaseChannel] = {}
@@ -34,14 +39,14 @@ class ChannelManager:
         if custom_channels:
             self.channels.update(custom_channels)
             logger.info(f"Added {len(custom_channels)} custom channels")
-        
+
         ChannelManager._global_instance = self
-    
+
     @classmethod
     def _get_global_instance(cls):
         """Get the global ChannelManager instance."""
         return cls._global_instance
-    
+
     def _init_channels(self) -> None:
         """Initialize channels based on database config."""
 
@@ -75,13 +80,11 @@ class ChannelManager:
                 )
                 channel_config = FeishuConfig(enabled=True, config=inner)
 
-                self.channels["feishu"] = FeishuChannel(
-                    channel_config, self.bus, self.workspace
-                )
+                self.channels["feishu"] = FeishuChannel(channel_config, self.bus, self.workspace)
                 logger.info("Feishu channel initialized")
             except ImportError as e:
                 logger.warning(f"Feishu channel not available: {e}")
-        
+
         wechat_config = db_channel_configs.get("wechat")
         if wechat_config and wechat_config.enabled:
             try:
@@ -101,11 +104,51 @@ class ChannelManager:
                 logger.warning(f"WeChat channel not available: {e}")
 
         # --- New channels initialized from config_json ---
-        self._init_generic_channel(db_channel_configs, "telegram", "backend.channels.telegram.channel", "TelegramChannel", "backend.core.config.schema", "TelegramConfig", "TelegramInnerConfig")
-        self._init_generic_channel(db_channel_configs, "dingtalk", "backend.channels.dingtalk.channel", "DingTalkChannel", "backend.core.config.schema", "DingTalkConfig", "DingTalkInnerConfig")
-        self._init_generic_channel(db_channel_configs, "slack", "backend.channels.slack.channel", "SlackChannel", "backend.core.config.schema", "SlackConfig", "SlackInnerConfig")
-        self._init_generic_channel(db_channel_configs, "discord", "backend.channels.discord.channel", "DiscordChannel", "backend.core.config.schema", "DiscordConfig", "DiscordInnerConfig")
-        self._init_generic_channel(db_channel_configs, "email", "backend.channels.email.channel", "EmailChannel", "backend.core.config.schema", "EmailConfig", "EmailInnerConfig")
+        self._init_generic_channel(
+            db_channel_configs,
+            "telegram",
+            "backend.channels.telegram.channel",
+            "TelegramChannel",
+            "backend.core.config.schema",
+            "TelegramConfig",
+            "TelegramInnerConfig",
+        )
+        self._init_generic_channel(
+            db_channel_configs,
+            "dingtalk",
+            "backend.channels.dingtalk.channel",
+            "DingTalkChannel",
+            "backend.core.config.schema",
+            "DingTalkConfig",
+            "DingTalkInnerConfig",
+        )
+        self._init_generic_channel(
+            db_channel_configs,
+            "slack",
+            "backend.channels.slack.channel",
+            "SlackChannel",
+            "backend.core.config.schema",
+            "SlackConfig",
+            "SlackInnerConfig",
+        )
+        self._init_generic_channel(
+            db_channel_configs,
+            "discord",
+            "backend.channels.discord.channel",
+            "DiscordChannel",
+            "backend.core.config.schema",
+            "DiscordConfig",
+            "DiscordInnerConfig",
+        )
+        self._init_generic_channel(
+            db_channel_configs,
+            "email",
+            "backend.channels.email.channel",
+            "EmailChannel",
+            "backend.core.config.schema",
+            "EmailConfig",
+            "EmailInnerConfig",
+        )
 
     def _init_generic_channel(
         self,
@@ -172,11 +215,36 @@ class ChannelManager:
 
             # Generic channel ensure for new channels
             generic_channels = {
-                "telegram": ("backend.channels.telegram.channel", "TelegramChannel", "TelegramConfig", "TelegramInnerConfig"),
-                "dingtalk": ("backend.channels.dingtalk.channel", "DingTalkChannel", "DingTalkConfig", "DingTalkInnerConfig"),
-                "slack": ("backend.channels.slack.channel", "SlackChannel", "SlackConfig", "SlackInnerConfig"),
-                "discord": ("backend.channels.discord.channel", "DiscordChannel", "DiscordConfig", "DiscordInnerConfig"),
-                "email": ("backend.channels.email.channel", "EmailChannel", "EmailConfig", "EmailInnerConfig"),
+                "telegram": (
+                    "backend.channels.telegram.channel",
+                    "TelegramChannel",
+                    "TelegramConfig",
+                    "TelegramInnerConfig",
+                ),
+                "dingtalk": (
+                    "backend.channels.dingtalk.channel",
+                    "DingTalkChannel",
+                    "DingTalkConfig",
+                    "DingTalkInnerConfig",
+                ),
+                "slack": (
+                    "backend.channels.slack.channel",
+                    "SlackChannel",
+                    "SlackConfig",
+                    "SlackInnerConfig",
+                ),
+                "discord": (
+                    "backend.channels.discord.channel",
+                    "DiscordChannel",
+                    "DiscordConfig",
+                    "DiscordInnerConfig",
+                ),
+                "email": (
+                    "backend.channels.email.channel",
+                    "EmailChannel",
+                    "EmailConfig",
+                    "EmailInnerConfig",
+                ),
             }
 
             if channel_name in generic_channels:
@@ -184,12 +252,18 @@ class ChannelManager:
                 channel_module = __import__(mod_path, fromlist=[cls_name])
                 ChannelClass = getattr(channel_module, cls_name)
                 from backend.core.config.schema import (
-                    TelegramConfig, TelegramInnerConfig,
-                    DingTalkConfig, DingTalkInnerConfig,
-                    SlackConfig, SlackInnerConfig,
-                    DiscordConfig, DiscordInnerConfig,
-                    EmailConfig, EmailInnerConfig,
+                    DingTalkConfig,
+                    DingTalkInnerConfig,
+                    DiscordConfig,
+                    DiscordInnerConfig,
+                    EmailConfig,
+                    EmailInnerConfig,
+                    SlackConfig,
+                    SlackInnerConfig,
+                    TelegramConfig,
+                    TelegramInnerConfig,
                 )
+
                 schema_map = {
                     "telegram": (TelegramConfig, TelegramInnerConfig),
                     "dingtalk": (DingTalkConfig, DingTalkInnerConfig),
@@ -219,20 +293,21 @@ class ChannelManager:
 
         channel = self.channels[channel_name]
         logger.info(f"Found channel {channel_name}: {channel}")
-        if hasattr(channel, '_running') and channel._running:
+        if hasattr(channel, "_running") and channel._running:
             logger.info(f"Channel {channel_name} already running")
             return True
 
         try:
             logger.info(f"Creating task to start channel {channel_name}")
             task = asyncio.create_task(channel.start())
-            if hasattr(channel, '_poll_task'):
+            if hasattr(channel, "_poll_task"):
                 channel._poll_task = task
             logger.info(f"Started channel {channel_name}, task: {task}")
             return True
         except Exception as e:
             logger.error(f"Failed to start channel {channel_name}: {e}")
             import traceback
+
             logger.error(traceback.format_exc())
         return False
 
@@ -241,31 +316,29 @@ class ChannelManager:
         if not self.channels:
             logger.warning("No channels enabled")
             return
-        
+
         # Start outbound dispatcher
         self._dispatch_task = asyncio.create_task(self._dispatch_outbound())
-        
+
         # Start all channels
         tasks = []
         for name, channel in self.channels.items():
             logger.info(f"Starting {name} channel...")
             tasks.append(asyncio.create_task(channel.start()))
-        
+
         # Wait for all to complete (they should run forever)
         await asyncio.gather(*tasks, return_exceptions=True)
-    
+
     async def stop_all(self) -> None:
         """Stop all channels and the dispatcher."""
         logger.info("Stopping all channels...")
-        
+
         # Stop dispatcher
         if self._dispatch_task:
             self._dispatch_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._dispatch_task
-            except asyncio.CancelledError:
-                pass
-        
+
         # Stop all channels
         for name, channel in self.channels.items():
             try:
@@ -273,18 +346,15 @@ class ChannelManager:
                 logger.info(f"Stopped {name} channel")
             except Exception as e:
                 logger.error(f"Error stopping {name}: {e}")
-    
+
     async def _dispatch_outbound(self) -> None:
         """Dispatch outbound messages to the appropriate channel."""
         logger.info("Outbound dispatcher started")
-        
+
         while True:
             try:
-                msg = await asyncio.wait_for(
-                    self.bus.consume_outbound(),
-                    timeout=1.0
-                )
-                
+                msg = await asyncio.wait_for(self.bus.consume_outbound(), timeout=1.0)
+
                 channel = self.channels.get(msg.channel)
                 if channel:
                     try:
@@ -293,26 +363,23 @@ class ChannelManager:
                         logger.error(f"Error sending to {msg.channel}: {e}")
                 else:
                     logger.warning(f"Unknown channel: {msg.channel}")
-                    
+
             except asyncio.TimeoutError:
                 continue
             except asyncio.CancelledError:
                 break
-    
+
     def get_channel(self, name: str) -> BaseChannel | None:
         """Get a channel by name."""
         return self.channels.get(name)
-    
+
     def get_status(self) -> dict[str, Any]:
         """Get status of all channels."""
         return {
-            name: {
-                "enabled": True,
-                "running": channel.is_running
-            }
+            name: {"enabled": True, "running": channel.is_running}
             for name, channel in self.channels.items()
         }
-    
+
     @property
     def enabled_channels(self) -> list[str]:
         """Get list of enabled channel names."""

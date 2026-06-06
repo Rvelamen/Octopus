@@ -35,6 +35,12 @@ def create_tables(conn: sqlite3.Connection) -> None:
 
 
 def create_indexes(conn: sqlite3.Connection) -> None:
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_pdf_chat_sessions_item ON pdf_chat_sessions(item_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_pdf_chat_sessions_pdf_path ON pdf_chat_sessions(pdf_path)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_pdf_chat_messages_session ON pdf_chat_messages(session_id)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pdf_chat_sessions_item ON pdf_chat_sessions(item_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pdf_chat_sessions_pdf_path ON pdf_chat_sessions(pdf_path)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pdf_chat_messages_session ON pdf_chat_messages(session_id)"
+    )

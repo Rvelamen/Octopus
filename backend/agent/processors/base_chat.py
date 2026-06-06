@@ -12,8 +12,9 @@ from typing import Any
 
 from loguru import logger
 
-from backend.core.events.types import InboundMessage, OutboundMessage, AgentEvent
 from backend.agent.shared import _normalize_usage
+from backend.core.events.types import AgentEvent, InboundMessage, OutboundMessage
+
 from .base import MessageProcessor
 
 
@@ -202,7 +203,11 @@ class BaseChatProcessor(MessageProcessor):
 
             await self.agent_loop._emit(
                 "agent_thinking",
-                {"iteration": iteration, "session": session.key, "session_instance_id": session_instance_id},
+                {
+                    "iteration": iteration,
+                    "session": session.key,
+                    "session_instance_id": session_instance_id,
+                },
                 channel=msg.channel,
             )
 
@@ -259,7 +264,9 @@ class BaseChatProcessor(MessageProcessor):
                             session_instance_id,
                             {
                                 "usage": self._build_usage_dict(
-                                    total_prompt_tokens, total_completion_tokens, total_cached_tokens
+                                    total_prompt_tokens,
+                                    total_completion_tokens,
+                                    total_cached_tokens,
                                 )
                             },
                         ),
@@ -302,14 +309,21 @@ class BaseChatProcessor(MessageProcessor):
                                 result = await self.agent_loop.tools.execute(tc.name, tool_args)
                             except Exception as e:
                                 import traceback
+
                                 traceback.print_exc()
                                 logger.error(f"Tool execution error: {tc.name} - {e}")
                                 result = self._get_tool_error_message(tc.name, e)
-                                await self._on_tool_execution_error(tc, e, iteration, session_instance_id, msg)
+                                await self._on_tool_execution_error(
+                                    tc, e, iteration, session_instance_id, msg
+                                )
                             else:
-                                await self._on_tool_execution_success(tc, result, iteration, session_instance_id, msg)
+                                await self._on_tool_execution_success(
+                                    tc, result, iteration, session_instance_id, msg
+                                )
 
-                            early_stop_content = self._check_tool_early_stop(tc, tool_args, result, msg)
+                            early_stop_content = self._check_tool_early_stop(
+                                tc, tool_args, result, msg
+                            )
                             if early_stop_content is not None:
                                 should_stop = True
                                 final_content = early_stop_content
@@ -319,8 +333,11 @@ class BaseChatProcessor(MessageProcessor):
 
                         except Exception as outer_e:
                             import traceback
+
                             traceback.print_exc()
-                            logger.error(f"Unexpected error in tool call processing: {tc.name} - {outer_e}")
+                            logger.error(
+                                f"Unexpected error in tool call processing: {tc.name} - {outer_e}"
+                            )
                             result = f"Unexpected error processing tool {tc.name}: {str(outer_e)}"
 
                         if result is not None:
@@ -356,7 +373,9 @@ class BaseChatProcessor(MessageProcessor):
                                 "status": "completed",
                                 "session_instance_id": session_instance_id,
                                 "token_usage": self._build_usage_dict(
-                                    total_prompt_tokens, total_completion_tokens, total_cached_tokens
+                                    total_prompt_tokens,
+                                    total_completion_tokens,
+                                    total_cached_tokens,
                                 ),
                                 "messages": session.messages[-20:],
                             },
@@ -364,7 +383,9 @@ class BaseChatProcessor(MessageProcessor):
                         )
                 else:
                     final_content = llm_response.content
-                    usage = self._build_usage_dict(total_prompt_tokens, total_completion_tokens, total_cached_tokens)
+                    usage = self._build_usage_dict(
+                        total_prompt_tokens, total_completion_tokens, total_cached_tokens
+                    )
                     session.add_message(
                         "assistant",
                         final_content or "",
@@ -388,6 +409,7 @@ class BaseChatProcessor(MessageProcessor):
 
             except Exception as e:
                 import traceback
+
                 logger.error(f"[{self.__class__.__name__}] Error in agent loop: {e}")
                 logger.error(traceback.format_exc())
                 final_content = f"Error: {str(e)}"
@@ -427,7 +449,7 @@ class BaseChatProcessor(MessageProcessor):
         if final_content is None:
             final_content = (
                 f"⚠️ 当前任务已达到最大迭代次数限制（{self.agent_loop.max_iterations} 次），未能完成所有操作。"
-                f"\n\n您可以回复 **\"继续\"** 让 Agent 接着处理剩余步骤。"
+                f'\n\n您可以回复 **"继续"** 让 Agent 接着处理剩余步骤。'
             )
 
         elapsed_ms = int((time.time() - start_time) * 1000)
@@ -441,7 +463,9 @@ class BaseChatProcessor(MessageProcessor):
         tts_config = {}
         if session_instance_id:
             try:
-                tts_result = self.agent_loop.tts_service.get_instance_tts_config(session_instance_id)
+                tts_result = self.agent_loop.tts_service.get_instance_tts_config(
+                    session_instance_id
+                )
                 tts_enabled = tts_result.get("enabled", False)
                 tts_config = tts_result.get("config", {})
             except Exception as tts_err:
@@ -468,10 +492,13 @@ class BaseChatProcessor(MessageProcessor):
         except Exception as e:
             logger.error(f"[{self.__class__.__name__}] Failed to publish agent_finish event: {e}")
             import traceback
+
             traceback.print_exc()
 
         # ---- Post-finish hook (e.g. send stream chunks for non-streaming) ----
-        await self._post_agent_finish(final_content, current_session, msg.channel, session_instance_id)
+        await self._post_agent_finish(
+            final_content, current_session, msg.channel, session_instance_id
+        )
 
         # ---- Cleanup: compression + memory sync ----
         model_context_window = 0

@@ -2,7 +2,7 @@
 
 from loguru import logger
 
-from .base import Extension, SkillExtension, PluginExtension
+from .base import Extension, PluginExtension, SkillExtension
 
 
 class ExtensionRegistry:
@@ -76,9 +76,8 @@ class ExtensionRegistry:
 
         # Remove from capability index
         for cap in ext.capabilities:
-            if cap in self._capability_index:
-                if name in self._capability_index[cap]:
-                    self._capability_index[cap].remove(name)
+            if cap in self._capability_index and name in self._capability_index[cap]:
+                self._capability_index[cap].remove(name)
 
         logger.info(f"[ExtensionRegistry] Unregistered extension: {name}")
 
@@ -191,6 +190,7 @@ class ExtensionRegistry:
         Returns:
             XML-formatted skills summary
         """
+
         def escape_xml(s: str) -> str:
             return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
@@ -204,13 +204,13 @@ class ExtensionRegistry:
             all_extensions = [ext for ext in all_extensions if ext.type not in exclude_types]
 
         for ext in all_extensions:
-            lines.append('  <skill>')
-            lines.append(f'    <name>{escape_xml(ext.name)}</name>')
-            lines.append(f'    <description>{escape_xml(ext.description)}</description>')
-            lines.append(f'    <location>{escape_xml(str(ext.directory))}</location>')
+            lines.append("  <skill>")
+            lines.append(f"    <name>{escape_xml(ext.name)}</name>")
+            lines.append(f"    <description>{escape_xml(ext.description)}</description>")
+            lines.append(f"    <location>{escape_xml(str(ext.directory))}</location>")
             skill_doc = ext.directory / "SKILL.md"
-            lines.append(f'    <skill_doc>{escape_xml(str(skill_doc))}</skill_doc>')
-            lines.append('  </skill>')
+            lines.append(f"    <skill_doc>{escape_xml(str(skill_doc))}</skill_doc>")
+            lines.append("  </skill>")
 
         lines.append("</skills>")
         return "\n".join(lines)
@@ -244,6 +244,7 @@ def get_registry() -> ExtensionRegistry:
 def _auto_load_extensions(registry: ExtensionRegistry) -> None:
     """Auto-load extensions from workspace and builtin directories."""
     from pathlib import Path
+
     from .loader import ExtensionLoader
 
     workspace = Path.cwd()

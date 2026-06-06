@@ -1,16 +1,18 @@
 """Discord channel implementation using discord.py."""
 
 import asyncio
+import contextlib
 from typing import Any
 
 from loguru import logger
 
-from backend.core.events.types import OutboundMessage
-from backend.core.events.bus import MessageBus
 from backend.channels.base import BaseChannel
+from backend.core.events.bus import MessageBus
+from backend.core.events.types import OutboundMessage
 
 try:
     import discord
+
     DISCORD_AVAILABLE = True
 except ImportError:
     DISCORD_AVAILABLE = False
@@ -70,10 +72,8 @@ class DiscordChannel(BaseChannel):
             await self._client.close()
         if self._task:
             self._task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._task
-            except asyncio.CancelledError:
-                pass
         logger.info("Discord channel stopped")
 
     async def send(self, msg: OutboundMessage) -> None:
