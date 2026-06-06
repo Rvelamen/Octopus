@@ -740,7 +740,7 @@ class LibraryEngine:
             doc.close()
             pdf_text = "\n\n".join(text_pages)
         except Exception as e:
-            raise ValueError(f"Failed to extract PDF text: {e}")
+            raise ValueError(f"Failed to extract PDF text: {e}") from e
 
         if not pdf_text.strip():
             raise ValueError("PDF contains no extractable text")

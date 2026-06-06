@@ -331,7 +331,7 @@ class WorkflowEngine:
                 run.completed_at = datetime.now()
             if on_node_update:
                 await on_node_update(run.id, None, "cancelled", {})
-            raise WorkflowCancelledError(f"Run {run.id} was cancelled")
+            raise WorkflowCancelledError(f"Run {run.id} was cancelled") from None
 
         except WorkflowCancelledError:
             # Already handled above, just re-raise

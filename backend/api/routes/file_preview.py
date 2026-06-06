@@ -40,7 +40,7 @@ def _convert_with_soffice(input_path: Path, output_dir: Path) -> Path:
             logger.error(f"LibreOffice conversion failed: {result.stderr}")
             raise RuntimeError(f"LibreOffice conversion failed: {result.stderr}")
     except subprocess.TimeoutExpired:
-        raise RuntimeError("LibreOffice conversion timed out (> 120s)")
+        raise RuntimeError("LibreOffice conversion timed out (> 120s)") from None
 
     # Output file has same base name with .pdf extension
     output_path = output_dir / (input_path.stem + ".pdf")
@@ -66,7 +66,7 @@ async def get_pdf_preview(path: str = Query(..., description="Relative path to t
         if not str(full_path).startswith(str(workspace_root)):
             raise HTTPException(status_code=403, detail="Access denied: path outside workspace")
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid path")
+        raise HTTPException(status_code=400, detail="Invalid path") from None
 
     if not full_path.exists():
         raise HTTPException(status_code=404, detail="File not found")
