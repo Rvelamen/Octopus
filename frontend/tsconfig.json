@@ -5,6 +5,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
+    "types": ["vite/client"],
     "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
