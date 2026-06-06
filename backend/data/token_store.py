@@ -125,6 +125,10 @@ class TokenUsageRepository:
             The created TokenUsageRecord
         """
         total_tokens = prompt_tokens + completion_tokens
+
+        # Try to get pricing from database first, fallback to hardcoded table
+        db_pricing = self._get_model_pricing(model_id)
+
         cost_usd = None
         try:
             cost_usd = calculate_cost(
@@ -133,6 +137,7 @@ class TokenUsageRepository:
                 completion_tokens=completion_tokens,
                 cached_tokens=cached_tokens,
                 cache_creation_tokens=cache_creation_tokens,
+                db_pricing=db_pricing,
             )
         except Exception as e:
             logger.debug(f"Failed to calculate cost for {model_id}: {e}")

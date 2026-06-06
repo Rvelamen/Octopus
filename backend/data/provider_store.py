@@ -291,6 +291,8 @@ class ModelRepository:
         supports_streaming: bool = True,
         enabled: bool = True,
         is_default: bool = False,
+        description: str | None = None,
+        pricing_json: dict[str, Any] | None = None,
         config_json: dict[str, Any] | None = None,
     ) -> ModelRecord:
         """Add a new model."""
@@ -305,8 +307,9 @@ class ModelRepository:
                 """INSERT INTO models
                    (provider_id, model_id, display_name, model_types, group_name,
                     max_tokens, context_window, supports_vision, supports_function_calling,
-                    supports_streaming, enabled, is_default, config_json, created_at, updated_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
+                    supports_streaming, enabled, is_default, description, pricing_json,
+                    config_json, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))""",
                 (
                     provider_id,
                     model_id,
@@ -320,6 +323,8 @@ class ModelRepository:
                     supports_streaming,
                     enabled,
                     is_default,
+                    description,
+                    json.dumps(pricing_json) if pricing_json else None,
                     json.dumps(config_json),
                 ),
             )
@@ -342,6 +347,8 @@ class ModelRepository:
         supports_streaming: bool | None = None,
         enabled: bool | None = None,
         is_default: bool | None = None,
+        description: str | None = None,
+        pricing_json: dict[str, Any] | None = None,
         config_json: dict[str, Any] | None = None,
     ) -> bool:
         """Update model."""
@@ -383,6 +390,12 @@ class ModelRepository:
         if is_default is not None:
             updates.append("is_default = ?")
             params.append(is_default)
+        if description is not None:
+            updates.append("description = ?")
+            params.append(description)
+        if pricing_json is not None:
+            updates.append("pricing_json = ?")
+            params.append(json.dumps(pricing_json))
         if config_json is not None:
             updates.append("config_json = ?")
             params.append(json.dumps(config_json))
@@ -417,7 +430,7 @@ class ModelRepository:
         """Convert database row to ModelRecord."""
         # Parse model_types from JSON string
         # sqlite3.Row supports both dict-style access and index access
-        model_types_str = row.get("model_types", None)
+        model_types_str = row["model_types"] if "model_types" in row else None
         try:
             model_types = json.loads(model_types_str) if model_types_str else None
         except (json.JSONDecodeError, TypeError):
@@ -441,7 +454,7 @@ class ModelRepository:
             supports_streaming=bool(row["supports_streaming"]),
             enabled=bool(row["enabled"]),
             is_default=bool(row["is_default"]),
-            description=row.get("description", None),
+            description=row["description"] if "description" in row else None,
             pricing_json=(
                 json.loads(row["pricing_json"])
                 if "pricing_json" in row and row["pricing_json"]
@@ -723,17 +736,17 @@ class AgentDefaultsRepository:
             default_model_id=row["default_model_id"],
             library_extract_provider_id=(
                 row["library_extract_provider_id"]
-                if "library_extract_provider_id" in row.keys()
+                if "library_extract_provider_id" in row
                 else None
             ),
             library_extract_model_id=(
                 row["library_extract_model_id"]
-                if "library_extract_model_id" in row.keys()
+                if "library_extract_model_id" in row
                 else None
             ),
             library_extract_language=(
                 row["library_extract_language"]
-                if "library_extract_language" in row.keys()
+                if "library_extract_language" in row
                 else "English"
             ),
             workspace_path=row["workspace_path"] or "",

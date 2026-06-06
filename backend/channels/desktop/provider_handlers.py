@@ -380,6 +380,8 @@ class ModelHandler:
             supports_streaming=data.get("supportsStreaming", True),
             enabled=data.get("enabled", True),
             is_default=data.get("isDefault", False),
+            description=data.get("description"),
+            pricing_json=data.get("pricing"),
         )
 
         await websocket.send_json(
@@ -413,6 +415,8 @@ class ModelHandler:
             supports_streaming=data.get("supportsStreaming"),
             enabled=data.get("enabled"),
             is_default=data.get("isDefault"),
+            description=data.get("description"),
+            pricing_json=data.get("pricing"),
             config_json=data.get("config"),
         )
 

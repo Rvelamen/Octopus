@@ -625,20 +625,19 @@ class WorkflowEngine:
                 if (
                     key not in ("inputs", "outputs", "_parentId", "__parentId")
                     and value is not None
-                ):
-                    if key not in inputs or inputs[key] is None or inputs[key] == "":
-                        # Only resolve values that don't contain variable references;
-                        # leave {{...}} refs for the executor to resolve later.
-                        if self._contains_var_ref(value):
-                            inputs[key] = value
-                            logger.info(
-                                f"[_execute_node] fallback injected (raw ref): {key} = {value}"
-                            )
-                        else:
-                            inputs[key] = context.resolve_value(value)
-                            logger.info(
-                                f"[_execute_node] fallback injected (resolved): {key} = {inputs[key]}"
-                            )
+                ) and (key not in inputs or inputs[key] is None or inputs[key] == ""):
+                    # Only resolve values that don't contain variable references;
+                    # leave {{...}} refs for the executor to resolve later.
+                    if self._contains_var_ref(value):
+                        inputs[key] = value
+                        logger.info(
+                            f"[_execute_node] fallback injected (raw ref): {key} = {value}"
+                        )
+                    else:
+                        inputs[key] = context.resolve_value(value)
+                        logger.info(
+                            f"[_execute_node] fallback injected (resolved): {key} = {inputs[key]}"
+                        )
             logger.info(f"[_execute_node] inputs after fallback: {inputs}")
 
         # Record resolved inputs into the trace so the outer loop can reference them

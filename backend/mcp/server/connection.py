@@ -575,7 +575,7 @@ class MCPConnection:
                 self._transport.terminate()
                 try:
                     self._transport.wait(timeout=5)
-                except:
+                except Exception:
                     self._transport.kill()
 
             elif self.config.protocol == "sse":

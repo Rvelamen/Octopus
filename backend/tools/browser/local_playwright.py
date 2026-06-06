@@ -17,7 +17,7 @@ from .base import BrowserBackend
 
 # Try to import playwright
 try:
-    from playwright.async_api import Browser, BrowserContext, Page, Playwright, async_playwright
+    from playwright.async_api import Browser, Page, Playwright, async_playwright
 
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:

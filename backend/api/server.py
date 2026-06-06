@@ -212,17 +212,17 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # Register Chrome Extension clip API
-from backend.api.routes import knowledge_clip
+from backend.api.routes import knowledge_clip  # noqa: E402
 
 app.include_router(knowledge_clip.router)
 
 # Register file preview conversion API
-from backend.api.routes import file_preview
+from backend.api.routes import file_preview  # noqa: E402
 
 app.include_router(file_preview.router)
 
 # Register library upload API (HTTP multipart for large PDFs)
-from backend.api.routes import library_upload
+from backend.api.routes import library_upload  # noqa: E402
 
 app.include_router(library_upload.router)
 
@@ -268,7 +268,7 @@ async def chrome_extension_cors(request, call_next):
 
 # Mount wechat qrcodes directory upfront
 
-from backend.utils.helpers import get_data_path
+from backend.utils.helpers import get_data_path  # noqa: E402
 
 wechat_qrcodes_dir = get_data_path() / "wechat_qrcodes"
 wechat_qrcodes_dir.mkdir(parents=True, exist_ok=True)
@@ -397,7 +397,7 @@ async def claude_code_hook_legacy(request: dict):
 
 logger.info("Octopus Desktop Service initialized.")
 
-import uvicorn
+import uvicorn  # noqa: E402
 
 PORT = int(os.environ.get("OCTOPUS_PORT", 18791))
 

@@ -97,22 +97,21 @@ def create_provider(
 
     requested_provider = agent_defaults.provider
 
-    if requested_provider:
-        if requested_provider in providers_dict:
-            provider_config = providers_dict[requested_provider]
-            if provider_config.api_key and getattr(provider_config, "enabled", True):
-                provider_type = provider_config.type or "openai"
-                logger.info(
-                    f"Using requested provider: {requested_provider} (type: {provider_type})"
+    if requested_provider and requested_provider in providers_dict:
+        provider_config = providers_dict[requested_provider]
+        if provider_config.api_key and getattr(provider_config, "enabled", True):
+            provider_type = provider_config.type or "openai"
+            logger.info(
+                f"Using requested provider: {requested_provider} (type: {provider_type})"
+            )
+        else:
+            if not provider_config.api_key:
+                logger.warning(
+                    f"Requested provider '{requested_provider}' has no API key configured"
                 )
-            else:
-                if not provider_config.api_key:
-                    logger.warning(
-                        f"Requested provider '{requested_provider}' has no API key configured"
-                    )
-                if not getattr(provider_config, "enabled", True):
-                    logger.warning(f"Requested provider '{requested_provider}' is disabled")
-                provider_config = None
+            if not getattr(provider_config, "enabled", True):
+                logger.warning(f"Requested provider '{requested_provider}' is disabled")
+            provider_config = None
 
     if provider_config is None:
         for name, config in providers_dict.items():

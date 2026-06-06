@@ -1,9 +1,9 @@
 """Model pricing data for cost calculation."""
 
-from loguru import logger
 
-# Pricing in USD per 1M tokens
-MODEL_PRICING: dict[str, dict] = {
+
+# Fallback pricing in USD per 1M tokens (used when DB has no pricing)
+FALLBACK_PRICING: dict[str, dict] = {
     # Anthropic
     "claude-opus-4-7": {"input": 15.0, "output": 75.0, "cached_input": 1.50},
     "claude-opus-4-6": {"input": 15.0, "output": 75.0, "cached_input": 1.50},
@@ -52,21 +52,17 @@ MODEL_PRICING: dict[str, dict] = {
 }
 
 
-def get_model_pricing(model_id: str) -> dict:
-    """Get pricing for a model ID. Falls back to default if not found."""
-    # Exact match
-    if model_id in MODEL_PRICING:
-        return MODEL_PRICING[model_id]
-    # Try prefix match (e.g., "claude-sonnet-4-6-20251001" matches "claude-sonnet-4-6")
-    for key in sorted(MODEL_PRICING.keys(), key=len, reverse=True):
+def get_fallback_pricing(model_id: str) -> dict:
+    """Get fallback pricing for a model ID from hardcoded table."""
+    if model_id in FALLBACK_PRICING:
+        return FALLBACK_PRICING[model_id]
+    for key in sorted(FALLBACK_PRICING.keys(), key=len, reverse=True):
         if key != "default" and model_id.startswith(key):
-            return MODEL_PRICING[key]
-    # Substring match (e.g., "gpt-4o-2024-08-06" contains "gpt-4o")
-    for key in sorted(MODEL_PRICING.keys(), key=len, reverse=True):
+            return FALLBACK_PRICING[key]
+    for key in sorted(FALLBACK_PRICING.keys(), key=len, reverse=True):
         if key != "default" and key in model_id:
-            return MODEL_PRICING[key]
-    logger.debug(f"No pricing found for model '{model_id}', using default")
-    return MODEL_PRICING["default"]
+            return FALLBACK_PRICING[key]
+    return FALLBACK_PRICING["default"]
 
 
 def calculate_cost(
@@ -75,6 +71,7 @@ def calculate_cost(
     completion_tokens: int,
     cached_tokens: int = 0,
     cache_creation_tokens: int = 0,
+    db_pricing: dict | None = None,
 ) -> float:
     """Calculate cost in USD for a given token usage.
 
@@ -84,16 +81,20 @@ def calculate_cost(
         completion_tokens: Output/completion tokens
         cached_tokens: Cache hit tokens (read from cache)
         cache_creation_tokens: Cache write tokens (creating cache)
+        db_pricing: Optional pricing from database (overrides hardcoded table)
 
     Returns:
         Cost in USD
     """
-    pricing = get_model_pricing(model_id)
-    input_price = pricing["input"]
-    output_price = pricing["output"]
-    cached_price = pricing.get("cached_input", input_price * 0.25)
+    if db_pricing:
+        pricing = db_pricing
+    else:
+        pricing = get_fallback_pricing(model_id)
 
-    # Non-cached prompt tokens
+    input_price = pricing.get("input", pricing.get("prompt", 3.0))
+    output_price = pricing.get("output", pricing.get("completion", 12.0))
+    cached_price = pricing.get("cached_input", pricing.get("cached", input_price * 0.25))
+
     non_cached_prompt = max(0, prompt_tokens - cached_tokens - cache_creation_tokens)
 
     cost = (

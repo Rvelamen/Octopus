@@ -555,6 +555,8 @@ class ModelAddRequest(BaseRequest):
     supportsFunctionCalling: bool = True
     supportsStreaming: bool = True
     enabled: bool = True
+    description: str | None = None
+    pricing: dict[str, Any] | None = None
 
 
 class ModelUpdateRequest(BaseRequest):
@@ -569,6 +571,8 @@ class ModelUpdateRequest(BaseRequest):
     supportsFunctionCalling: bool | None = None
     supportsStreaming: bool | None = None
     enabled: bool | None = None
+    description: str | None = None
+    pricing: dict[str, Any] | None = None
 
 
 class ModelDeleteRequest(BaseRequest):
@@ -786,7 +790,7 @@ class FilePreviewPDFRequest(BaseRequest):
 # ============================================================================
 # Mapping from MessageType to schema
 # ============================================================================
-from backend.channels.desktop.protocol import MessageType
+from backend.channels.desktop.protocol import MessageType  # noqa: E402
 
 MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.CHAT: ChatRequest,

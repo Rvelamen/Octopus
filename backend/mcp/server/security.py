@@ -141,7 +141,7 @@ class MCPPermissionManager:
 
             parsed = urlparse(origin)
             host = parsed.hostname or origin
-        except:
+        except Exception:
             host = origin
 
         return host in self.config.allowed_origins or origin in self.config.allowed_origins

@@ -69,20 +69,15 @@ from backend.channels.desktop.handlers.registry import HandlerRegistry
 
 # Session handlers
 from backend.channels.desktop.handlers.session import (
-    SessionCompressContextHandler,
     SessionCreateHandler,
     SessionDeleteInstanceHandler,
     SessionGetChannelSessionsHandler,
     SessionGetChannelsHandler,
-    SessionGetContextStatsHandler,
     SessionGetInstancesHandler,
     SessionGetMessagesHandler,
     SessionGetSessionDetailHandler,
     SessionSetActiveHandler,
 )
-
-# Slash commands handler
-from backend.channels.desktop.handlers.slash_commands import GetSlashCommandsHandler
 
 # Subagent handlers
 from backend.channels.desktop.handlers.subagent import (
