@@ -678,27 +678,27 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
   const startWechatPolling = (qrcodeToken, channelName) => {
     setIsWechatPolling(true);
     wechatPollingActiveRef.current = true;
-    console.log('WeChat polling started, token:', qrcodeToken);
+// Removed debug log
     
     const poll = async () => {
       if (!wechatPollingActiveRef.current) {
-        console.log('WeChat polling stopped');
+// Removed debug log
         return;
       }
       
       try {
-        console.log('WeChat polling for status...');
+// Removed debug log
         const response = await sendWSMessage('wechat_check_status', { 
           qrcode_token: qrcodeToken, 
           channelName 
         }, 10000);
         
-        console.log('WeChat poll response:', response);
+// Removed debug log
         
         if (response.data?.success) {
           const status = response.data.status;
           setWechatStatus(status);
-          console.log('WeChat status:', status);
+// Removed debug log
           
           if (status === 'confirmed') {
             setIsWechatPolling(false);

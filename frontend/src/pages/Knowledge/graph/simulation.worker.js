@@ -804,7 +804,7 @@ const SIM_CODE = `( () => {
     }().radius(60).strength(.5),
     b = [_, N, q, R, k],
     J = q.strength(),
-    console.log("Using fallback d3 simulator"),
+// Removed debug log
     function() {
         d && (b.forEach((function(A) {
             return A.initialize && A.initialize(M, U)

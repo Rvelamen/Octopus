@@ -19,6 +19,9 @@ const AddModelPopup = ({ isOpen, onClose, onAdd, provider }) => {
     groupName: 'Chat Models',
     contextWindow: 128,
     enabled: true,
+    pricingInput: '',
+    pricingOutput: '',
+    pricingCached: '',
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,6 +35,9 @@ const AddModelPopup = ({ isOpen, onClose, onAdd, provider }) => {
         groupName: 'Chat Models',
         contextWindow: 128,
         enabled: true,
+        pricingInput: '',
+        pricingOutput: '',
+        pricingCached: '',
       });
       setErrors({});
       setIsSubmitting(false);
@@ -70,6 +76,11 @@ const AddModelPopup = ({ isOpen, onClose, onAdd, provider }) => {
     
     setIsSubmitting(true);
     try {
+      const pricing = {};
+      if (formData.pricingInput) pricing.input = Number(formData.pricingInput);
+      if (formData.pricingOutput) pricing.output = Number(formData.pricingOutput);
+      if (formData.pricingCached) pricing.cached_input = Number(formData.pricingCached);
+
       await onAdd({
         providerId: provider?.id,
         modelId: formData.modelId.trim(),
@@ -79,6 +90,7 @@ const AddModelPopup = ({ isOpen, onClose, onAdd, provider }) => {
         groupName: formData.groupName.trim(),
         contextWindow: (Number(formData.contextWindow) >= 1000 ? Number(formData.contextWindow) : Number(formData.contextWindow) * 1000) || 128000,
         enabled: formData.enabled,
+        pricing: Object.keys(pricing).length > 0 ? pricing : undefined,
       });
       onClose();
     } catch (error) {
@@ -226,6 +238,52 @@ const AddModelPopup = ({ isOpen, onClose, onAdd, provider }) => {
           </div>
           
           <div className="form-item">
+            <label className="form-label">Pricing (per 1M tokens, USD)</label>
+            <div className="pricing-inputs">
+              <div className="pricing-field">
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={formData.pricingInput}
+                  onChange={(e) => handleChange('pricingInput', e.target.value)}
+                  placeholder="0.00"
+                  className="form-input"
+                  disabled={isSubmitting}
+                />
+                <span className="pricing-label">Input</span>
+              </div>
+              <div className="pricing-field">
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={formData.pricingOutput}
+                  onChange={(e) => handleChange('pricingOutput', e.target.value)}
+                  placeholder="0.00"
+                  className="form-input"
+                  disabled={isSubmitting}
+                />
+                <span className="pricing-label">Output</span>
+              </div>
+              <div className="pricing-field">
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={formData.pricingCached}
+                  onChange={(e) => handleChange('pricingCached', e.target.value)}
+                  placeholder="0.00"
+                  className="form-input"
+                  disabled={isSubmitting}
+                />
+                <span className="pricing-label">Cached</span>
+              </div>
+            </div>
+            <span className="form-hint">Leave empty to use default pricing</span>
+          </div>
+
+          <div className="form-item">
             <label className="switch-row">
               <div className="switch-label-content">
                 <span className="switch-label-text">Enabled</span>
@@ -240,7 +298,7 @@ const AddModelPopup = ({ isOpen, onClose, onAdd, provider }) => {
               <span className="switch-slider"></span>
             </label>
           </div>
-          
+
           <div className="form-actions">
             <button 
               type="button" 

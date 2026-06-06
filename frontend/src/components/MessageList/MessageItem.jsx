@@ -83,7 +83,7 @@ function MessageItem({
               src={img.path ? `${API_BASE}/workspace/${img.path}` : ''}
               alt={img.name || `Image ${idx + 1}`}
               onError={(e) => {
-                console.log('Image load error, path:', img.path);
+                // logger.warn('Image load error, path:', img.path);
                 e.target.src = '';
                 e.target.style.display = 'none';
               }}

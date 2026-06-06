@@ -347,7 +347,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
       return;
     }
     const last = previewHistory[previewHistory.length - 1];
-    console.log('[handlePreviewBack] popping last:', last);
+// Removed debug log
     setPreviewFile(last.file);
     setPreviewContent(last.content);
     setPreviewHistory((prev) => prev.slice(0, -1));

@@ -1040,10 +1040,10 @@ const ExpressionEditorField = ({
 
   // 获取当前节点的所有上游节点
   const availableNodes = useMemo(() => {
-    console.log('[ExpressionEditorField] currentNodeId:', currentNodeId, 'nodes count:', nodes?.length, 'edges count:', edges?.length);
+// Removed debug log
     if (!currentNodeId) return [];
     const result = getUpstreamNodes(currentNodeId, nodes, edges);
-    console.log('[ExpressionEditorField] availableNodes:', result.map(n => ({ id: n.id, type: n.type, name: n.data?.name })));
+// Removed debug log
     return result;
   }, [currentNodeId, nodes, edges]);
 

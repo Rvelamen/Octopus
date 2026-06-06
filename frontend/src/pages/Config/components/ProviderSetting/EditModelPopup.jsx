@@ -17,7 +17,10 @@ const EditModelPopup = ({ isOpen, onClose, model, onSave }) => {
     modelTypes: ['chat'],
     groupName: 'Chat Models',
     contextWindow: 128,
-    enabled: true
+    enabled: true,
+    pricingInput: '',
+    pricingOutput: '',
+    pricingCached: '',
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,14 +29,18 @@ const EditModelPopup = ({ isOpen, onClose, model, onSave }) => {
     if (model) {
       // Handle modelTypes - convert from single type to array if needed
       const types = model.modelTypes || [model.modelType || 'chat'];
-      
+      const pricing = model.pricing || {};
+
       setFormData({
         modelId: model.modelId || '',
         displayName: model.displayName || '',
         modelTypes: types,
         groupName: model.groupName || 'Chat Models',
         contextWindow: model.contextWindow ? model.contextWindow / 1000 : 128,
-        enabled: model.enabled !== false
+        enabled: model.enabled !== false,
+        pricingInput: pricing.input || pricing.prompt || '',
+        pricingOutput: pricing.output || pricing.completion || '',
+        pricingCached: pricing.cached_input || pricing.cached || '',
       });
       setErrors({});
       setIsSubmitting(false);
@@ -72,6 +79,11 @@ const EditModelPopup = ({ isOpen, onClose, model, onSave }) => {
     
     setIsSubmitting(true);
     try {
+      const pricing = {};
+      if (formData.pricingInput) pricing.input = Number(formData.pricingInput);
+      if (formData.pricingOutput) pricing.output = Number(formData.pricingOutput);
+      if (formData.pricingCached) pricing.cached_input = Number(formData.pricingCached);
+
       await onSave({
         ...model,
         id: model.id, // Include model ID for update
@@ -81,6 +93,7 @@ const EditModelPopup = ({ isOpen, onClose, model, onSave }) => {
         groupName: formData.groupName.trim(),
         contextWindow: (Number(formData.contextWindow) >= 1000 ? Number(formData.contextWindow) : Number(formData.contextWindow) * 1000) || 128000,
         enabled: formData.enabled,
+        pricing: Object.keys(pricing).length > 0 ? pricing : undefined,
       });
       onClose();
     } catch (error) {

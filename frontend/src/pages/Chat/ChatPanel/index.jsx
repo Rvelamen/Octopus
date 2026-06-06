@@ -107,7 +107,7 @@ function ChatPanel({
         !isCreatingNew &&
         sendWSMessage
       ) {
-        console.log('Auto-selecting first instance:', instances[0].id);
+// Removed debug log
         hasAutoSelectedRef.current = true;
         
         try {
@@ -151,7 +151,7 @@ function ChatPanel({
     const wasStreaming = prevStreamingContentRef.current && prevStreamingContentRef.current.length > 0;
     const isDone = !streamingContent || streamingContent.length === 0;
     if (wasStreaming && isDone && selectedInstance) {
-      console.log('Streaming finished, refreshing messages for instance:', selectedInstance.id);
+// Removed debug log
       fetchInstanceMessages(selectedInstance.id);
     }
     prevStreamingContentRef.current = streamingContent || '';
@@ -159,7 +159,7 @@ function ChatPanel({
 
   useEffect(() => {
     if (prevIsProcessingRef.current && !isProcessing && selectedInstance) {
-      console.log('Agent finished processing, refreshing messages for instance:', selectedInstance.id);
+// Removed debug log
       fetchInstanceMessages(selectedInstance.id);
       fetchInstanceTokenUsage(selectedInstance.id);
     }
@@ -169,7 +169,7 @@ function ChatPanel({
   // 监听 refreshInstanceId 变化，在迭代完成时刷新消息和 token 统计
   useEffect(() => {
     if (refreshInstanceId) {
-      console.log('Iteration complete, refreshing messages for instance:', refreshInstanceId);
+// Removed debug log
       fetchInstanceMessages(refreshInstanceId);
       fetchInstanceTokenUsage(refreshInstanceId);
     }

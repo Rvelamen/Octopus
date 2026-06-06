@@ -315,7 +315,7 @@ export const useWorkflowStore = create(
             y: LOOP_HEADER_OFFSET + CHILD_NODE_PADDING_TOP, // 距离顶部 header 区域 8px
           };
 
-          console.log('[setNodeParent] 设置子节点初始位置', {
+// Removed debug log
             childId,
             parentId,
             relativePosition: newPosition,
@@ -501,7 +501,7 @@ export const useWorkflowStore = create(
                   const dx = Math.abs(change.position.x - (node.position?.x || 0));
                   const dy = Math.abs(change.position.y - (node.position?.y || 0));
                   if ((dx > 100 || dy > 100) && (change.position.x > parentW + 50 || change.position.y > parentH + 50)) {
-                    console.log('[Boundary] 忽略异常坐标跳跃', {
+// Removed debug log
                       nodeId: node.id,
                       oldPos: node.position,
                       newPos: change.position,
@@ -524,7 +524,7 @@ export const useWorkflowStore = create(
                 const clampedY = Math.min(newY, maxY);
 
                 if (clampedX !== change.position.x || clampedY !== change.position.y) {
-                  console.log('[Boundary] 限制子节点位置', {
+// Removed debug log
                     nodeId: node.id,
                     original: change.position.x,
                     clamped: { x: clampedX, y: clampedY },
@@ -600,7 +600,7 @@ export const useWorkflowStore = create(
 
                 // ⭐ 满足任一条件即可移入循环体
                 if (isInBodyArea || overlapRatio >= 0.3) {
-                  console.log(`[LoopCollision] 节点 ${node.id} 移入循环体 ${loopNode.id}`, {
+// Removed debug log
                     nodeCenter: { x: nodeCenterX, y: nodeCenterY },
                     bodyArea: { x: bodyX, y: bodyY, w: bodyW, h: bodyH },
                     overlapRatio,
@@ -618,7 +618,7 @@ export const useWorkflowStore = create(
                   const absoluteX = loopNode.position.x + relX;
                   const absoluteY = loopNode.position.y + relY;
 
-                  console.log(`[LoopCollision] 计算子节点绝对坐标`, {
+// Removed debug log
                     relativePosition: { x: relX, y: relY },
                     parentPosition: loopNode.position,
                     absolutePosition: { x: absoluteX, y: absoluteY },
@@ -646,7 +646,7 @@ export const useWorkflowStore = create(
                       : n
                   );
 
-                  console.log(`[LoopCollision] 设置后的子节点数据`, {
+// Removed debug log
                     parentId: loopNode.id,
                     relativePosition: { x: relX, y: relY },
                     positionAbsolute: { x: absoluteX, y: absoluteY },

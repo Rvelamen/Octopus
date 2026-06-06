@@ -94,7 +94,7 @@ const LoopNode = memo(({ id, data, selected }) => {
   const childEdgesCount = childEdges.length;
 
   // ⭐ 调试日志：输出当前节点的关键信息
-  console.log(`[LoopNode ${id}] 渲染信息`, {
+// Removed debug log
     nodeWidth,
     nodeHeight,
     measured: currentNode?.measured,

@@ -137,12 +137,12 @@ const XlsxViewer = ({ file, content }) => {
 
   useEffect(() => {
     try {
-      console.log('XlsxViewer - file.encoding:', file.encoding, 'content length:', content?.length);
+// Removed debug log
 
       let byteArray;
       if (file.encoding === 'hex') {
         const hexString = (content || '').replace(/\s/g, ''); // 移除空白字符
-        console.log('Parsing hex string, length:', hexString.length);
+// Removed debug log
         const pairs = hexString.match(/.{1,2}/g);
         if (!pairs) throw new Error('Invalid hex content');
         byteArray = new Uint8Array(pairs.map(byte => parseInt(byte, 16)));
@@ -156,7 +156,7 @@ const XlsxViewer = ({ file, content }) => {
         byteArray = new TextEncoder().encode(content);
       }
 
-      console.log('Byte array length:', byteArray.length);
+// Removed debug log
       const workbook = XLSX.read(byteArray, { type: 'array' });
 
       const firstSheetName = workbook.SheetNames[0];

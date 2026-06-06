@@ -57,7 +57,7 @@ export function WebSocketProvider({ children }) {
 
       // Not connected or closed — retry a few times
       if (retryCount < 3) {
-        console.log(`[WebSocket] Not connected, retrying ${type} (attempt ${retryCount + 1})`);
+        // logger.debug(`[WebSocket] Not connected, retrying ${type} (attempt ${retryCount + 1})`);
         setTimeout(() => {
           sendMessage(type, data, timeout, retryCount + 1)
             .then(resolve)
@@ -79,7 +79,7 @@ export function WebSocketProvider({ children }) {
       }
 
       window.electronAPI.onBackendReady((port) => {
-        console.log('[App] Backend ready on port:', port);
+        // logger.info('[App] Backend ready on port:', port);
         if (port) setWsPort(port);
       });
       window.electronAPI.onBackendError((error) => {

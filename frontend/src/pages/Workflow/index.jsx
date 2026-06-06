@@ -570,7 +570,7 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
       let { source, target, sourceHandle, targetHandle } = params;
 
       if (!isValidLoopConnection({ source, target, sourceHandle, targetHandle })) {
-        console.warn('[onConnect] 连接被拒绝:', { source, target, sourceHandle, targetHandle });
+// Removed debug log
         return;
       }
 
@@ -626,7 +626,7 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
 
   // 保存工作流到后端
   const handleSave = useCallback(async () => {
-    console.log('[handleSave] workflowId:', workflowId, 'versionId:', versionId);
+// Removed debug log
     if (!workflowId || !versionId) {
       message.warning('请先创建或加载一个工作流');
       return;
@@ -660,7 +660,7 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
           __parentId: node.parentId || undefined,
         };
 
-        console.log('[handleSave] node:', node.id, 'code:', node.data?.code);
+// Removed debug log
 
         return {
           id: node.id,
@@ -688,7 +688,7 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
           targetHandle: edge.targetHandle || `${edge.target}-target`,
         }));
 
-      console.log('[handleSave] saving nodesData:', JSON.stringify(nodesData, null, 2));
+// Removed debug log
 
       // 提取 workflowStart 节点的输入变量，同步到 workflow_variables 表
       const startNode = nodesData.find((n) => n.type === 'workflowStart');
@@ -976,7 +976,7 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
 
     let currentRunId = null;
     const handleNodeUpdate = (data) => {
-      console.log('[handleNodeUpdate] received:', data);
+// Removed debug log
       if (!data?.run_id) return;
       if (!currentRunId) {
         currentRunId = data.run_id;
@@ -992,14 +992,14 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
       }
     };
     const unsub = subscribe('workflow_node_update', handleNodeUpdate);
-    console.log('[handleRun] subscribed, calling runWorkflow...');
+// Removed debug log
 
     try {
       const result = await api.runWorkflow(workflowId, {
         version_id: versionId,
         input_variables: {},
       });
-      console.log('[handleRun] runWorkflow returned:', result);
+// Removed debug log
       if (result?.run_id) {
         currentRunId = result.run_id;
       }
@@ -1016,7 +1016,7 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
 
   // 带输入变量的运行确认（已在 handleRun 中保存过，此处直接运行）
   const handleRunWithInputs = useCallback(async (inputValues) => {
-    console.log('[handleRunWithInputs] called, inputValues:', inputValues);
+// Removed debug log
     setIsRunDialogOpen(false);
 
     // ⭐ 注意：工作流已在 handleRun 中保存过，这里直接运行，无需再次保存
@@ -1026,7 +1026,7 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
 
     let currentRunId = null;
     const handleNodeUpdate = (data) => {
-      console.log('[handleNodeUpdate] received:', data);
+// Removed debug log
       if (!data?.run_id) return;
       if (!currentRunId) {
         currentRunId = data.run_id;
@@ -1042,14 +1042,14 @@ const WorkflowEditor = ({ style, initialWorkflowId, initialVersionId, initialWor
       }
     };
     const unsub = subscribe('workflow_node_update', handleNodeUpdate);
-    console.log('[handleRunWithInputs] subscribed, calling runWorkflow...');
+// Removed debug log
 
     try {
       const result = await api.runWorkflow(workflowId, {
         version_id: versionId,
         input_variables: inputValues,
       });
-      console.log('[handleRunWithInputs] runWorkflow returned:', result);
+// Removed debug log
       if (result?.run_id) {
         currentRunId = result.run_id;
       }

@@ -160,7 +160,7 @@ const ExtensionCard = ({ extension, onClick, isSelected, isInstalled, isInstalli
 const ExtensionDetailSidebar = ({ extension, onClose, isInstalled, isInstalling, onInstall, onRun, onRemove }) => {
   if (!extension) return null;
 
-  console.log('ExtensionDetailSidebar received:', extension.id, 'skill_md:', extension.skill_md ? 'present' : 'missing');
+// Removed debug log
 
   const [runQuery, setRunQuery] = useState('');
   const [showRunInput, setShowRunInput] = useState(false);
@@ -793,7 +793,7 @@ const ExtensionsPanel = ({ sendWSMessage, ws }) => {
       if (!response.ok) throw new Error('Failed to fetch extension detail');
 
       const result = await response.json();
-      console.log('Extension detail fetched:', result.data?.id, 'skill_md length:', result.data?.skill_md?.length || 0);
+// Removed debug log
       setSelectedExtension(result.data || null);
     } catch (err) {
       console.error('Failed to fetch extension detail:', err);
