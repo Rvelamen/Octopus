@@ -231,9 +231,7 @@ class WorkflowContext:
                     if fallback is not None:
                         return fallback
                     logger.warning(
-                        f"未解析的节点输出引用: {{{ref}}}, "
-                        "节点ID=%s, 输出Key=%s, "
-                        "可用节点=%s",
+                        f"未解析的节点输出引用: {{{ref}}}, 节点ID=%s, 输出Key=%s, 可用节点=%s",
                         node_id,
                         output_key,
                         list(self._node_outputs.keys()),

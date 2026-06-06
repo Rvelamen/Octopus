@@ -721,9 +721,21 @@ class AgentDefaultsRepository:
             id=row["id"],
             default_provider_id=row["default_provider_id"],
             default_model_id=row["default_model_id"],
-            library_extract_provider_id=row["library_extract_provider_id"] if "library_extract_provider_id" in row.keys() else None,
-            library_extract_model_id=row["library_extract_model_id"] if "library_extract_model_id" in row.keys() else None,
-            library_extract_language=row["library_extract_language"] if "library_extract_language" in row.keys() else "English",
+            library_extract_provider_id=(
+                row["library_extract_provider_id"]
+                if "library_extract_provider_id" in row.keys()
+                else None
+            ),
+            library_extract_model_id=(
+                row["library_extract_model_id"]
+                if "library_extract_model_id" in row.keys()
+                else None
+            ),
+            library_extract_language=(
+                row["library_extract_language"]
+                if "library_extract_language" in row.keys()
+                else "English"
+            ),
             workspace_path=row["workspace_path"] or "",
             max_tokens=row["max_tokens"] or 8192,
             temperature=row["temperature"] or 0.7,

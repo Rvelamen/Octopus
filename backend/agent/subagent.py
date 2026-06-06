@@ -1148,7 +1148,7 @@ When you have completed the task, provide a clear summary of your findings or ac
                     for i, tool_call in enumerate(response.tool_calls):
                         args_str = json.dumps(tool_call.arguments, ensure_ascii=False)
                         logger.info(
-                            f"[Subagent:{task_id}] Executing tool {i+1}/{len(response.tool_calls)}: {tool_call.name}"
+                            f"[Subagent:{task_id}] Executing tool {i + 1}/{len(response.tool_calls)}: {tool_call.name}"
                         )
                         logger.info(f"[Subagent:{task_id}] Tool args: {args_str[:500]}")
 

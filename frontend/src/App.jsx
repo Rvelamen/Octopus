@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Routes,
   Route,
@@ -7,7 +7,6 @@ import {
 } from "react-router-dom";
 import { createPortal } from "react-dom";
 import {
-  MessageSquare,
   Settings,
   Server,
   Bot,
@@ -29,7 +28,6 @@ import {
   GitBranch,
 } from "lucide-react";
 import octopusLogo from "./assets/octopus-logo.png";
-import WindowDots from "./components/layout/WindowDots";
 import Chat from "./pages/Chat/ChatPanel";
 import Config from "./pages/Config";
 import "./components/ui/TTSPlayer.css";
@@ -174,31 +172,9 @@ function TTSPlayer({ audioData, format, text, durationMs, onClose }) {
  * App 主组件
  */
 function App() {
-  // PDF / Markdown 独立窗口：不渲染主应用外壳
-  const hash = window.location.hash;
-  const isPdfWindow =
-    window.location.pathname === '/pdf-viewer' ||
-    hash.startsWith('#pdf-viewer') ||
-    hash.startsWith('#/pdf-viewer');
-  if (isPdfWindow) {
-    return <PdfViewerWindow />;
-  }
-
-  const isMarkdownWindow =
-    window.location.pathname === '/markdown-editor' ||
-    hash.startsWith('#markdown-editor') ||
-    hash.startsWith('#/markdown-editor');
-  if (isMarkdownWindow) {
-    return <MarkdownEditorWindow />;
-  }
-
-  const isWorkflowWindow =
-    window.location.pathname === '/workflow-window' ||
-    hash.startsWith('#workflow-window') ||
-    hash.startsWith('#/workflow-window');
-  if (isWorkflowWindow) {
-    return <WorkflowWindow />;
-  }
+  // Hooks must be called before any early return
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const { sendMessage, connectionStatus, showLoadingOverlay, ws } = useWebSocket();
   const chat = useChatState();
@@ -235,6 +211,32 @@ function App() {
       chat.syncStreamingContent();
     }
   }, [activeTab, chat.syncStreamingContent]);
+
+  // ===== 独立窗口检测（hooks 之后）=====
+  const hash = window.location.hash;
+  const isPdfWindow =
+    window.location.pathname === '/pdf-viewer' ||
+    hash.startsWith('#pdf-viewer') ||
+    hash.startsWith('#/pdf-viewer');
+  if (isPdfWindow) {
+    return <PdfViewerWindow />;
+  }
+
+  const isMarkdownWindow =
+    window.location.pathname === '/markdown-editor' ||
+    hash.startsWith('#markdown-editor') ||
+    hash.startsWith('#/markdown-editor');
+  if (isMarkdownWindow) {
+    return <MarkdownEditorWindow />;
+  }
+
+  const isWorkflowWindow =
+    window.location.pathname === '/workflow-window' ||
+    hash.startsWith('#workflow-window') ||
+    hash.startsWith('#/workflow-window');
+  if (isWorkflowWindow) {
+    return <WorkflowWindow />;
+  }
 
   // ===== 发送消息 =====
   const handleSendMessage = async (messageData, instanceId = null) => {
@@ -310,10 +312,6 @@ function App() {
       setIsRestarting(false);
     }
   };
-
-  // ===== 路由导航 =====
-  const navigate = useNavigate();
-  const location = useLocation();
 
   // 同步 activeTab 与路由
   useEffect(() => {

@@ -580,7 +580,6 @@ class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         try:
-
             source_path = message.data["source_path"]
             prompt = message.data.get("prompt", "")
             template = message.data.get("template", "custom")
@@ -629,7 +628,6 @@ class KnowledgeDistillHandler(_KnowledgeHandlerMixin, MessageHandler):
         self, websocket: WebSocket, message: WSMessage, validated: KnowledgeDistillRequest
     ) -> None:
         try:
-
             source_path = validated.source_path
             prompt = validated.options.get("prompt", "")
             template = validated.options.get("template", "custom")

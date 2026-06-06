@@ -99,8 +99,8 @@ async def _extract_pdf_metadata(
 
     prompt = f"""Analyze the first page of an academic PDF and extract metadata.
 
-Title hint: {title_hint or 'N/A'}
-Source URL: {url or 'N/A'}
+Title hint: {title_hint or "N/A"}
+Source URL: {url or "N/A"}
 
 First page text:
 ---

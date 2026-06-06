@@ -332,8 +332,7 @@ class FeishuChannel(BaseChannel):
 
             if not response.success():
                 logger.error(
-                    f"Failed to send Feishu audio message: code={response.code}, "
-                    f"msg={response.msg}"
+                    f"Failed to send Feishu audio message: code={response.code}, msg={response.msg}"
                 )
                 return False
             else:
@@ -377,8 +376,7 @@ class FeishuChannel(BaseChannel):
 
             if not response.success():
                 logger.error(
-                    f"Failed to send Feishu file message: code={response.code}, "
-                    f"msg={response.msg}"
+                    f"Failed to send Feishu file message: code={response.code}, msg={response.msg}"
                 )
                 return False
             else:

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Activity, Calendar, RefreshCw, Database,
   DollarSign, Clock, Gauge, BarChart3, Layers, AlertTriangle,
-  Server, Wallet, Timer, TrendingUp, TrendingDown
+  Server, Wallet, Timer, TrendingUp, TrendingDown, Zap
 } from 'lucide-react';
 import WindowDots from '@components/layout/WindowDots';
 

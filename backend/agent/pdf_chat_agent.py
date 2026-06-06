@@ -430,7 +430,7 @@ class PdfChatAgent:
                     f"{resolved_pdf_path}"
                 )
 
-        return f"""# {config.display_name if config else 'PDF Chat Agent'}
+        return f"""# {config.display_name if config else "PDF Chat Agent"}
 
 {base_prompt}
 

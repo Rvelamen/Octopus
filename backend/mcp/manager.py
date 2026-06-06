@@ -262,7 +262,8 @@ class MCPManager:
         """Connect to a server with timeout to avoid blocking."""
         try:
             connection = await asyncio.wait_for(
-                self.create_connection(server_config, on_state_change), timeout=10.0  # 10秒超时
+                self.create_connection(server_config, on_state_change),
+                timeout=10.0,  # 10秒超时
             )
             if connection and connection.is_available:
                 asyncio.create_task(self._auto_discover_tools(server_name))

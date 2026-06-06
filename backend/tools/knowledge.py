@@ -79,7 +79,7 @@ class KBSearchTool(Tool):
             rank_info = f", relevance: {r['rank']}" if "rank" in r else ""
             estimated_tokens = int((r.get("word_count") or 0) * 1.5)
             lines.append(
-                f'- {r["path"]} (title: {r["title"]}{rank_info}, estimated_tokens: ~{estimated_tokens})'
+                f"- {r['path']} (title: {r['title']}{rank_info}, estimated_tokens: ~{estimated_tokens})"
             )
         return "\n".join(lines)
 

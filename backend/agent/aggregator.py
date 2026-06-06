@@ -50,10 +50,10 @@ class TaskGroup:
         for subagent_id, data in self.results.items():
             status_icon = "✅" if data["status"] == "ok" else "❌"
             parts.append(f"""
-{status_icon} **{data['label']}** (ID: {subagent_id})
-Task: {data['task']}
+{status_icon} **{data["label"]}** (ID: {subagent_id})
+Task: {data["task"]}
 Result:
-{data['result']}
+{data["result"]}
 """)
         return "\n---\n".join(parts)
 

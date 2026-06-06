@@ -818,7 +818,6 @@ class NodeExecutor:
         item_var = inputs.get("loopItemVariable", "item")
 
         for idx, item in enumerate(loop_input):
-
             if engine and child_nodes:
                 try:
                     # 将当前元素和索引注入上下文
