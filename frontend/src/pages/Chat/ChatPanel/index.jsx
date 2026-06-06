@@ -12,6 +12,7 @@ import { useInstances } from './hooks/useInstances';
 import { useMessages } from './hooks/useMessages';
 import { useFileUpload } from './hooks/useFileUpload';
 import { useTTS } from './hooks/useTTS';
+import { API_BASE } from '../../../config/constants';
 import './ChatPanel.css';
 import '../../../components/ui/ImageModal.css';
 
@@ -453,7 +454,7 @@ function ChatPanel({
           id: `generated-${Date.now()}`,
           path: response.data.file_path,
           name: response.data.file_path.split('/').pop(),
-          preview: `http://localhost:18791/workspace/${response.data.file_path}`,
+          preview: `${API_BASE}/workspace/${response.data.file_path}`,
           isGenerated: true
         };
         setPendingImages(prev => [...prev, generatedImage]);

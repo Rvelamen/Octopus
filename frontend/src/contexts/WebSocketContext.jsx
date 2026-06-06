@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useRef, useCallback, useEffect, useState } from 'react';
+import { BACKEND_PORT } from '../config/constants';
 
 const WebSocketContext = createContext(null);
 
@@ -9,7 +10,7 @@ export function WebSocketProvider({ children }) {
   const messageQueue = useRef([]);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(true);
-  const [wsPort, setWsPort] = useState(18791);
+  const [wsPort, setWsPort] = useState(BACKEND_PORT);
   const overlayShowTimeRef = useRef(Date.now());
 
   const generateRequestId = () => {

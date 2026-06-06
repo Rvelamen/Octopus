@@ -2,8 +2,7 @@ import React from 'react';
 import { FileText, Sparkle, Copy, Check } from 'lucide-react';
 import TTSPlayer from '@components/TTSPlayer/index.jsx';
 import octopusAvatar from '@assets/images/octopus.png';
-
-const API_BASE = 'http://localhost:18791';
+import { API_BASE } from '../../config/constants';
 
 function MessageItem({ 
   message, 
