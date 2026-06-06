@@ -1749,3 +1749,27 @@
   flex-shrink: 0;
   color: #ef4444;
 }
+
+/* Pricing Inputs */
+.pricing-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-3, 12px);
+}
+
+.pricing-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pricing-field .form-input {
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+.pricing-label {
+  font-size: 11px;
+  color: var(--text-3, #999);
+  text-align: center;
+}

@@ -241,6 +241,52 @@ const EditModelPopup = ({ isOpen, onClose, model, onSave }) => {
           </div>
           
           <div className="form-item">
+            <label className="form-label">Pricing (per 1M tokens, USD)</label>
+            <div className="pricing-inputs">
+              <div className="pricing-field">
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={formData.pricingInput}
+                  onChange={(e) => handleChange('pricingInput', e.target.value)}
+                  placeholder="0.00"
+                  className="form-input"
+                  disabled={isSubmitting}
+                />
+                <span className="pricing-label">Input</span>
+              </div>
+              <div className="pricing-field">
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={formData.pricingOutput}
+                  onChange={(e) => handleChange('pricingOutput', e.target.value)}
+                  placeholder="0.00"
+                  className="form-input"
+                  disabled={isSubmitting}
+                />
+                <span className="pricing-label">Output</span>
+              </div>
+              <div className="pricing-field">
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={formData.pricingCached}
+                  onChange={(e) => handleChange('pricingCached', e.target.value)}
+                  placeholder="0.00"
+                  className="form-input"
+                  disabled={isSubmitting}
+                />
+                <span className="pricing-label">Cached</span>
+              </div>
+            </div>
+            <span className="form-hint">Leave empty to use default pricing</span>
+          </div>
+
+          <div className="form-item">
             <label className="switch-row">
               <div className="switch-label-content">
                 <span className="switch-label-text">Enabled</span>
