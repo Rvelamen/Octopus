@@ -16,6 +16,7 @@ from backend.data.schema import (
     workflow,
     db,
     library_chat,
+    notes_chat,
 )
 
 __all__ = [
@@ -34,4 +35,5 @@ __all__ = [
     "workflow",
     "db",
     "library_chat",
+    "notes_chat",
 ]

@@ -358,7 +358,7 @@ function AgentsPanel({ sendWSMessage }) {
                         </div>
                         <div className="agent-desc">{agent.description}</div>
                       </div>
-                      {!agent.is_builtin && (
+                      {!agent.is_builtin && !isChatAgent && (
                         <Trash2
                           className="delete-btn"
                           size={16}

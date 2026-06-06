@@ -1,0 +1,290 @@
+.mindmap-diagram-wrapper {
+  margin: 0.5em 0;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-secondary, #f9fafb);
+}
+
+/* Toolbar */
+.mindmap-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--bg-tertiary, #f3f4f6);
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  gap: 8px;
+}
+
+.mindmap-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mindmap-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #6b7280);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mindmap-toolbar-btn:hover {
+  background: var(--bg-hover, #e5e7eb);
+  color: var(--text-primary, #374151);
+}
+
+.mindmap-toolbar-btn.active {
+  background: var(--bg-primary, #ffffff);
+  color: var(--accent, #3b82f6);
+  border-color: var(--border-color, #e5e7eb);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* Diagram view */
+.mindmap-diagram-container {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  background: linear-gradient(135deg, #fafbfc 0%, #f3f4f6 100%);
+  overflow: hidden;
+  width: 100%;
+}
+
+.mindmap-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.mindmap-diagram-zoom-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(74, 158, 255, 0.1);
+  color: #4a9eff;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: auto;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.mindmap-diagram-zoom-hint:hover {
+  background: rgba(74, 158, 255, 0.2);
+}
+
+.mindmap-diagram-container:hover .mindmap-diagram-zoom-hint {
+  opacity: 1;
+}
+
+/* Toolbar overflow menu */
+.mindmap-toolbar-overflow {
+  position: relative;
+}
+
+.mindmap-toolbar-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 150px;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.mindmap-toolbar-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: #374151;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.mindmap-toolbar-menu button:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* Fullscreen overlay */
+.mindmap-fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #1a1a1a;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease-out;
+  user-select: none;
+}
+
+.mindmap-fs-wrapper {
+  position: absolute;
+  inset: 40px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border-radius: 12px;
+}
+
+.mindmap-fullscreen-close {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  cursor: pointer;
+  z-index: 10000;
+  transition: all 0.15s ease;
+}
+
+.mindmap-fullscreen-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Zoom toolbar */
+.mindmap-zoom-toolbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(30, 30, 30, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  z-index: 10000;
+  backdrop-filter: blur(8px);
+}
+
+.mindmap-zoom-toolbar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #b0b0b0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mindmap-zoom-toolbar button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.mindmap-zoom-level {
+  min-width: 48px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  user-select: none;
+}
+
+/* Code view */
+.mindmap-code-view {
+  padding: 0;
+  overflow-x: auto;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.mindmap-code-view pre {
+  margin: 0;
+  padding: 1em;
+  background: var(--code-bg, #1f2937);
+  color: var(--code-text, #e5e7eb);
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.mindmap-code-view code {
+  font-family: inherit;
+}
+
+/* Error state */
+.mindmap-diagram-error {
+  padding: 1em;
+  background: var(--error-bg, #fef2f2);
+  border: 1px solid var(--error-border, #fecaca);
+  border-radius: 8px;
+  color: var(--error-text, #991b1b);
+}
+
+.mindmap-error-title {
+  font-weight: 600;
+  margin-bottom: 0.25em;
+}
+
+.mindmap-error-msg {
+  font-size: 0.875rem;
+  margin-bottom: 0.5em;
+  opacity: 0.9;
+}
+
+.mindmap-error-source {
+  margin: 0;
+  padding: 0.75em;
+  background: var(--code-bg, #1f2937);
+  color: var(--code-text, #e5e7eb);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

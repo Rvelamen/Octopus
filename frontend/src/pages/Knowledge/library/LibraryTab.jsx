@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Library, Search, Upload, Plus, Grid3X3, List, Table2, GitGraph, Sparkles, StickyNote, CheckSquare, Square, Trash2, Bot } from 'lucide-react';
 import { Input, Button, Segmented, Drawer, message, Progress } from 'antd';
 import { useDistillTasks } from '@contexts/DistillTaskContext';
@@ -8,6 +8,7 @@ import TaskDetailModal from '@components/TaskIndicator/TaskDetailModal';
 import useLibraryWS from './hooks/useLibraryWS';
 import useLibrary from './hooks/useLibrary';
 import { useLibraryChat } from './hooks/useLibraryChat';
+import { useChatDrawer } from '../hooks/useChatDrawer';
 import LibrarySidebar from './LibrarySidebar';
 import LibraryListView from './LibraryListView';
 import LibraryItemDetail from './LibraryItemDetail';
@@ -61,39 +62,7 @@ const LibraryTab = ({ sendWSMessage }) => {
   const [batchProgress, setBatchProgress] = useState(null); // { type, total, done, current, success, fail }
 
   // ── Library Chat ──
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatDrawerWidth, setChatDrawerWidth] = useState(480);
-  const chatResizeStateRef = useRef(null);
-
-  const startChatResize = useCallback((e) => {
-    e.preventDefault();
-    chatResizeStateRef.current = {
-      startX: e.clientX,
-      startWidth: chatDrawerWidth,
-    };
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, [chatDrawerWidth]);
-
-  useEffect(() => {
-    const handleMove = (e) => {
-      const state = chatResizeStateRef.current;
-      if (!state) return;
-      const delta = state.startX - e.clientX;
-      setChatDrawerWidth(Math.max(280, Math.min(900, state.startWidth + delta)));
-    };
-    const handleUp = () => {
-      chatResizeStateRef.current = null;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-    document.addEventListener('mousemove', handleMove);
-    document.addEventListener('mouseup', handleUp);
-    return () => {
-      document.removeEventListener('mousemove', handleMove);
-      document.removeEventListener('mouseup', handleUp);
-    };
-  }, []);
+  const { chatOpen, setChatOpen, chatDrawerWidth, startChatResize } = useChatDrawer(480);
 
   // Compute chat scope based on selection and current collection
   const chatScope = useCallback(() => {

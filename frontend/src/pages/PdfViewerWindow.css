@@ -884,6 +884,45 @@
   margin: 0.8em 0;
 }
 
+/* ── Message actions (copy button) ── */
+.pdfv-chat-msg-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+  padding-top: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.pdfv-chat-msg:hover .pdfv-chat-msg-actions {
+  opacity: 1;
+}
+
+.pdfv-chat-msg-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #2a2a2a;
+  color: #888;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.pdfv-chat-msg-copy-btn:hover {
+  background: #333;
+  color: #ccc;
+  border-color: #555;
+}
+
+.pdfv-chat-msg-copy-btn:active {
+  transform: scale(0.96);
+}
+
 /* ── User message quote (selected text) ── */
 .pdfv-chat-msg-quote {
   background: rgba(74, 158, 255, 0.08);

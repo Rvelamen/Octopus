@@ -10,13 +10,20 @@ import {
   Send,
   Trash2,
   Sparkles,
+  Copy,
+  Check,
+  Network,
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import { usePdfChat } from './Knowledge/library/hooks/usePdfChat';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import MermaidDiagram from '../components/MermaidDiagram';
+import MindmapDiagram from '../components/MindmapDiagram';
 import './PdfViewerWindow.css';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -553,6 +560,7 @@ const PdfViewerWindow = () => {
 
   // ── Chat actions ──
   const [chatSelection, setChatSelection] = useState(null);
+  const [copiedMsgId, setCopiedMsgId] = useState(null);
 
   const openChatWithSelection = useCallback(() => {
     if (!selection?.text) return;
@@ -576,6 +584,16 @@ const PdfViewerWindow = () => {
     });
     // Keep chatSelection so user can ask follow-up questions about the same selection
   }, [chatLoading, chatSelection, sendPdfChat]);
+
+  const handleCopyMessage = async (msgId, text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMsgId(msgId);
+      setTimeout(() => setCopiedMsgId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   if (loading) {
     return (
@@ -817,25 +835,53 @@ const PdfViewerWindow = () => {
                           </div>
                         )}
                         {msg.role === 'assistant' ? (
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={{
-                              pre({ children }) {
-                                const childArray = React.Children.toArray(children);
-                                const codeChild = childArray.find((c) => c?.type === 'code');
-                                if (codeChild) {
-                                  const lang = codeChild.props?.className?.replace('language-', '') || '';
-                                  const text = String(codeChild.props.children).replace(/\n$/, '').trim();
-                                  if (lang === 'mermaid') {
-                                    return <MermaidDiagram source={text} />;
+                          <>
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm, remarkMath]}
+                              rehypePlugins={[rehypeKatex]}
+                              components={{
+                                pre({ children }) {
+                                  const childArray = React.Children.toArray(children);
+                                  const codeChild = childArray.find((c) => c?.type === 'code');
+                                  if (codeChild) {
+                                    const lang = codeChild.props?.className?.replace('language-', '') || '';
+                                    const text = String(codeChild.props.children).replace(/\n$/, '').trim();
+                                    if (lang === 'mermaid') {
+                                      return <MermaidDiagram source={text} />;
+                                    }
+                                    if (lang === 'mindmap') {
+                                      return <MindmapDiagram source={text} />;
+                                    }
                                   }
-                                }
-                                return <pre>{children}</pre>;
-                              },
-                            }}
-                          >
-                            {msg.content || ''}
-                          </ReactMarkdown>
+                                  return <pre>{children}</pre>;
+                                },
+                              }}
+                            >
+                              {msg.content || ''}
+                            </ReactMarkdown>
+                            {msg.content?.trim() && (
+                              <div className="pdfv-chat-msg-actions">
+                                <button
+                                  type="button"
+                                  className="pdfv-chat-msg-copy-btn"
+                                  onClick={() => handleCopyMessage(msg.id, msg.content)}
+                                  title="复制内容"
+                                >
+                                  {copiedMsgId === msg.id ? (
+                                    <>
+                                      <Check size={12} />
+                                      <span>已复制</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy size={12} />
+                                      <span>复制</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            )}
+                          </>
                         ) : (
                           <div>{msg.content}</div>
                         )}
@@ -850,7 +896,34 @@ const PdfViewerWindow = () => {
                     <div className="pdfv-chat-msg-avatar"><Bot size={12} /></div>
                     <div className="pdfv-chat-msg-content">
                       {chatStreaming ? (
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm, remarkMath]}
+                          rehypePlugins={[rehypeKatex]}
+                          components={{
+                            pre({ children }) {
+                              const childArray = React.Children.toArray(children);
+                              const codeChild = childArray.find((c) => c?.type === 'code');
+                              if (codeChild) {
+                                const lang = codeChild.props?.className?.replace('language-', '') || '';
+                                const text = String(codeChild.props.children).replace(/\n$/, '').trim();
+                                // 流式中不渲染未完成的脑图（避免抖动）
+                                // 检测当前代码块是否已在 chatStreaming 中完整出现（有闭合围栏）
+                                const isClosed = (() => {
+                                  const startIdx = chatStreaming.lastIndexOf('```' + lang);
+                                  if (startIdx === -1) return false;
+                                  return chatStreaming.slice(startIdx + ('```' + lang).length).includes('\n```');
+                                })();
+                                if (lang === 'mermaid' && isClosed) {
+                                  return <MermaidDiagram source={text} />;
+                                }
+                                if (lang === 'mindmap' && isClosed) {
+                                  return <MindmapDiagram source={text} />;
+                                }
+                              }
+                              return <pre>{children}</pre>;
+                            },
+                          }}
+                        >
                           {chatStreaming}
                         </ReactMarkdown>
                       ) : (
@@ -880,6 +953,14 @@ const PdfViewerWindow = () => {
                 >
                   <Bot size={12} />
                   生成脑图
+                </button>
+                <button
+                  className="pdfv-quick-action-btn"
+                  onClick={() => handleSendChat('请基于这篇论文的结构，生成一个**树状思维导图**。请用 **Markdown 大纲** 格式输出（用 `#` 表示层级，一级一个标题，二级一个子标题，三级一个叶子），并将完整大纲放在 ```mindmap 代码块中。要点：1) 自上而下、层级分明；2) 包含研究背景、核心方法、实验设计、主要结论、未来工作等关键节点；3) 每个标题用 4–12 个中文字概括。')}
+                  disabled={chatLoading}
+                >
+                  <Network size={12} />
+                  树状脑图
                 </button>
                 <button
                   className="pdfv-quick-action-btn"

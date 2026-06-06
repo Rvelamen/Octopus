@@ -99,6 +99,9 @@ class MessageType(Enum):
     # Library Chat - Client -> Server
     LIBRARY_CHAT = "library_chat"                            # Library chat operations
 
+    # Notes Chat - Client -> Server
+    NOTES_CHAT = "notes_chat"                                # Notes chat operations
+
     # Workflow Design Chat - Client -> Server
     WORKFLOW_DESIGN = "workflow_design"                      # AI-assisted workflow design chat
 
@@ -594,6 +597,7 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.LIBRARY_AI_EXTRACT_META,
     MessageType.LIBRARY_GRAPH,
     MessageType.LIBRARY_CHAT,
+    MessageType.NOTES_CHAT,
     MessageType.FILE_PREVIEW_PDF,
     MessageType.WORKSPACE_LIST,
     MessageType.WORKSPACE_READ,

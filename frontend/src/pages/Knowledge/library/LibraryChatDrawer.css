@@ -411,6 +411,45 @@
   margin: 1em 0;
 }
 
+/* ── Message actions (copy button) ── */
+.libchat-msg-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+  padding-top: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.libchat-msg:hover .libchat-msg-actions {
+  opacity: 1;
+}
+
+.libchat-msg-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border, #e8e8e8);
+  background: var(--bg-secondary, #f5f7fa);
+  color: var(--text-muted, #999);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.libchat-msg-copy-btn:hover {
+  background: var(--bg-primary, #fff);
+  color: var(--text-secondary, #666);
+  border-color: #d0d7de;
+}
+
+.libchat-msg-copy-btn:active {
+  transform: scale(0.96);
+}
+
 /* ── Typing indicator ── */
 .libchat-typing {
   display: inline-flex;

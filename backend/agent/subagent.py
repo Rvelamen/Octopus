@@ -591,6 +591,10 @@ When you have completed the task, provide a clear summary of your findings or ac
                 
                 iter_record: dict[str, Any] = {"iteration": iteration, "tools": []}
                 
+                msg = f"[Subagent:sync:{task_id}] === Iteration {iteration}/{max_iterations} ==="
+                logger.info(msg)
+                print(msg, flush=True)
+                
                 # 使用流式 API，边接收边 emit token 给前端
                 full_content = ""
                 accumulated_reasoning = ""
@@ -653,6 +657,9 @@ When you have completed the task, provide a clear summary of your findings or ac
 
                 if full_content:
                     iter_record["reasoning"] = full_content
+                    msg = f"[Subagent:sync:{task_id}] Iteration {iteration} LLM response:\n{full_content[:1000]}"
+                    logger.info(msg)
+                    print(msg, flush=True)
 
                 if tool_calls_buffer:
                     tool_call_dicts = [
@@ -677,6 +684,9 @@ When you have completed the task, provide a clear summary of your findings or ac
                     messages.append(assistant_msg)
 
                     for tc_id, tc_data in tool_calls_buffer.items():
+                        msg = f"[Subagent:sync:{task_id}] Iteration {iteration} Tool Call: {tc_data['name']}({json.dumps(tc_data['arguments'], ensure_ascii=False)})"
+                        logger.info(msg)
+                        print(msg, flush=True)
                         try:
                             result = await tools.execute(tc_data["name"], tc_data["arguments"])
 
@@ -687,6 +697,10 @@ When you have completed the task, provide a clear summary of your findings or ac
                                 "result": result[:2000] if len(result) > 2000 else result,
                                 "status": "completed",
                             })
+
+                            msg = f"[Subagent:sync:{task_id}] Iteration {iteration} Tool Result [{tc_data['name']}]: {result[:500]}"
+                            logger.info(msg)
+                            print(msg, flush=True)
 
                             result_preview = result[:500] + "..." if len(result) > 500 else result
                             await self._emit("subagent_tool_result", {
@@ -699,6 +713,9 @@ When you have completed the task, provide a clear summary of your findings or ac
                             }, task_id)
                         except Exception as e:
                             result = f"Error: {str(e)}"
+                            msg = f"[Subagent:sync:{task_id}] Iteration {iteration} Tool Error [{tc_data['name']}]: {e}"
+                            logger.error(msg)
+                            print(msg, flush=True)
                             iter_record["tools"].append({
                                 "toolCallId": tc_id,
                                 "toolName": tc_data["name"],
@@ -725,6 +742,9 @@ When you have completed the task, provide a clear summary of your findings or ac
                 else:
                     final_result = full_content
                     iterations.append(iter_record)
+                    msg = f"[Subagent:sync:{task_id}] Iteration {iteration} final response (no tool calls)"
+                    logger.info(msg)
+                    print(msg, flush=True)
                     # DeepSeek requires reasoning_content to be passed back
                     if accumulated_reasoning:
                         messages.append({
@@ -757,6 +777,16 @@ When you have completed the task, provide a clear summary of your findings or ac
 
             if final_result is None:
                 final_result = "Task completed but no final response was generated."
+
+            # 打印完整的 iterations 摘要
+            summary_msg = f"[Subagent:sync:{task_id}] === ReAct Summary ({len(iterations)} iterations) ==="
+            logger.info(summary_msg)
+            print(summary_msg, flush=True)
+            for it in iterations:
+                tool_names = [t['toolName'] for t in it.get('tools', [])]
+                line = f"  Iteration {it['iteration']}: tools={tool_names}, reasoning_len={len(it.get('reasoning', ''))}"
+                logger.info(line)
+                print(line, flush=True)
 
             duration = time.time() - start_time
             

@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Bot, X, Plus, Send, Loader2, BookOpen } from 'lucide-react';
+import { Bot, X, Plus, Send, Loader2, BookOpen, Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import './LibraryChatDrawer.css';
 
 const LibraryChatDrawer = ({
@@ -17,9 +20,11 @@ const LibraryChatDrawer = ({
   scopeLabel,
   width,
   onResizeStart,
+  title = 'Library Chat',
 }) => {
   const [input, setInput] = useState('');
   const [showSessions, setShowSessions] = useState(false);
+  const [copiedMsgId, setCopiedMsgId] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -46,7 +51,23 @@ const LibraryChatDrawer = ({
     }
   };
 
+  const handleCopyMessage = async (msgId, text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMsgId(msgId);
+      setTimeout(() => setCopiedMsgId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
   const currentSession = sessions.find((s) => s.id === currentSessionId);
+
+  // Only the last assistant message gets a copy button
+  const lastAssistantMsgId = messages.reduce((lastId, m) => {
+    if (m.role === 'assistant' && m.content?.trim()) return m.id;
+    return lastId;
+  }, null);
 
   return (
     <div className="libchat-drawer" style={{ width, minWidth: width }}>
@@ -56,7 +77,7 @@ const LibraryChatDrawer = ({
           <div className="libchat-title-icon">
             <Bot size={15} />
           </div>
-          <span>Library Chat</span>
+          <span>{title}</span>
           {scopeLabel && (
             <span className="libchat-scope-badge" title={scopeLabel}>
               {scopeLabel}
@@ -129,64 +150,65 @@ const LibraryChatDrawer = ({
         )}
 
         {messages.map((msg) => {
-          // Skip empty assistant messages (they only carry tool_calls in the backend)
-          if (msg.role === 'assistant' && !msg.content?.trim()) {
-            return null;
-          }
-          if (msg.role === 'tool') {
-            const isRunning = msg.metadata?.status === 'running';
-            return (
-              <div key={msg.id} className="libchat-msg">
-                <details className="libchat-tool-card" open={isRunning}>
-                  <summary className="libchat-tool-header">
-                    <span className="libchat-tool-name">
-                      <span className="libchat-tool-icon">🔧</span>
-                      {msg.metadata?.tool || 'Tool'}
-                    </span>
-                    <span className={`libchat-tool-status libchat-tool-status-${isRunning ? 'running' : 'done'}`}>
-                      {isRunning ? (
-                        <>
-                          <Loader2 size={11} className="libchat-spinner" />
-                          Running
-                        </>
-                      ) : (
-                        <>
-                          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                            <circle cx="5.5" cy="5.5" r="5.5" fill="currentColor" opacity="0.15"/>
-                            <path d="M3 5.5L4.75 7.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          Done
-                        </>
+            // Skip empty assistant messages (they only carry tool_calls in the backend)
+            if (msg.role === 'assistant' && !msg.content?.trim()) {
+              return null;
+            }
+            if (msg.role === 'tool') {
+              const isRunning = msg.metadata?.status === 'running';
+              return (
+                <div key={msg.id} className="libchat-msg">
+                  <details className="libchat-tool-card" open={isRunning}>
+                    <summary className="libchat-tool-header">
+                      <span className="libchat-tool-name">
+                        <span className="libchat-tool-icon">🔧</span>
+                        {msg.metadata?.tool || 'Tool'}
+                      </span>
+                      <span className={`libchat-tool-status libchat-tool-status-${isRunning ? 'running' : 'done'}`}>
+                        {isRunning ? (
+                          <>
+                            <Loader2 size={11} className="libchat-spinner" />
+                            Running
+                          </>
+                        ) : (
+                          <>
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                              <circle cx="5.5" cy="5.5" r="5.5" fill="currentColor" opacity="0.15"/>
+                              <path d="M3 5.5L4.75 7.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            Done
+                          </>
+                        )}
+                      </span>
+                    </summary>
+                    <div className="libchat-tool-body">
+                      {msg.metadata?.args && (
+                        <details className="libchat-tool-details" open>
+                          <summary>Arguments</summary>
+                          <pre className="libchat-tool-code">
+                            {JSON.stringify(msg.metadata.args, null, 2)}
+                          </pre>
+                        </details>
                       )}
-                    </span>
-                  </summary>
-                  <div className="libchat-tool-body">
-                    {msg.metadata?.args && (
-                      <details className="libchat-tool-details" open>
-                        <summary>Arguments</summary>
-                        <pre className="libchat-tool-code">
-                          {JSON.stringify(msg.metadata.args, null, 2)}
-                        </pre>
-                      </details>
-                    )}
-                    {(msg.metadata?.result || msg.content) && !isRunning && (
-                      <details className="libchat-tool-details" open>
-                        <summary>Result</summary>
-                        <pre className="libchat-tool-code">
-                          {typeof (msg.metadata?.result || msg.content) === 'string'
-                            ? (msg.metadata?.result || msg.content)
-                            : JSON.stringify(msg.metadata?.result || msg.content, null, 2)}
-                        </pre>
-                      </details>
-                    )}
-                  </div>
-                </details>
-              </div>
-            );
-          }
+                      {(msg.metadata?.result || msg.content) && !isRunning && (
+                        <details className="libchat-tool-details" open>
+                          <summary>Result</summary>
+                          <pre className="libchat-tool-code">
+                            {typeof (msg.metadata?.result || msg.content) === 'string'
+                              ? (msg.metadata?.result || msg.content)
+                              : JSON.stringify(msg.metadata?.result || msg.content, null, 2)}
+                          </pre>
+                        </details>
+                      )}
+                    </div>
+                  </details>
+                </div>
+              );
+            }
 
-          const isUser = msg.role === 'user';
-          return (
+            const isUser = msg.role === 'user';
+            const canCopy = !isUser && msg.content?.trim() && msg.id === lastAssistantMsgId;
+            return (
             <div key={msg.id} className={`libchat-msg libchat-msg-${msg.role}`}>
               <div className="libchat-msg-bubble">
                 {msg.role === 'assistant' && (
@@ -198,7 +220,29 @@ const LibraryChatDrawer = ({
                   {isUser ? (
                     msg.content
                   ) : (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{msg.content}</ReactMarkdown>
+                  )}
+                  {canCopy && (
+                    <div className="libchat-msg-actions">
+                      <button
+                        type="button"
+                        className="libchat-msg-copy-btn"
+                        onClick={() => handleCopyMessage(msg.id, msg.content)}
+                        title="复制内容"
+                      >
+                        {copiedMsgId === msg.id ? (
+                          <>
+                            <Check size={12} />
+                            <span>已复制</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={12} />
+                            <span>复制</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -213,7 +257,7 @@ const LibraryChatDrawer = ({
                 <Bot size={12} />
               </div>
               <div className="libchat-msg-content">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{streamingContent}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{streamingContent}</ReactMarkdown>
                 <span className="libchat-streaming-cursor" />
               </div>
             </div>

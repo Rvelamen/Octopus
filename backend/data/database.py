@@ -28,6 +28,7 @@ from backend.data.schema import (
     pdf_chat,
     workflow_design_chat,
     library_chat,
+    notes_chat,
 )
 
 
@@ -158,6 +159,7 @@ class Database:
             pdf_chat.create_tables(conn)
             workflow_design_chat.create_tables(conn)
             library_chat.create_tables(conn)
+            notes_chat.create_tables(conn)
 
             # Create indexes
             apscheduler.create_indexes(conn)
@@ -176,6 +178,7 @@ class Database:
             db.create_indexes(conn)
             workflow_design_chat.create_indexes(conn)
             library_chat.create_indexes(conn)
+            notes_chat.create_indexes(conn)
 
             # Seed default data
             provider.seed_data(conn)

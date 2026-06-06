@@ -1,0 +1,51 @@
+.dialog-header {
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface-2);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ── Sidebar action buttons (Chat + Distill) ── */
+.sidebar-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: none;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sidebar-action-btn:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.sidebar-action-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.sidebar-action-btn-primary {
+  background: var(--accent);
+  color: var(--text-invert);
+}
+
+.sidebar-action-btn-primary:hover {
+  background: var(--accent);
+  opacity: 0.9;
+}

@@ -1,8 +1,38 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Editor from '@monaco-editor/react';
-import MarkdownRenderer from '@components/MarkdownRenderer';
-import { Edit3, Save, Columns, Share2, ChevronRight, FileText, ExternalLink } from 'lucide-react';
+import { MDXEditor } from '@mdxeditor/editor';
+import {
+  headingsPlugin,
+  listsPlugin,
+  quotePlugin,
+  thematicBreakPlugin,
+  markdownShortcutPlugin,
+  linkPlugin,
+  imagePlugin,
+  tablePlugin,
+  codeBlockPlugin,
+  codeMirrorPlugin,
+  toolbarPlugin,
+
+  diffSourcePlugin,
+  directivesPlugin,
+  AdmonitionDirectiveDescriptor,
+  UndoRedo,
+  BoldItalicUnderlineToggles,
+  CodeToggle,
+  HighlightToggle,
+  ListsToggle,
+  BlockTypeSelect,
+  CreateLink,
+  InsertImage,
+  InsertTable,
+  InsertCodeBlock,
+  InsertThematicBreak,
+  Separator,
+} from '@mdxeditor/editor';
+import { Save, Share2, ChevronRight, FileText, ExternalLink, X, Bot } from 'lucide-react';
 import './SimpleEditor.css';
+import '@mdxeditor/editor/style.css';
 
 // 获取语言
 const getLanguage = (filename) => {
@@ -37,6 +67,44 @@ const getLanguage = (filename) => {
   return map[ext] || 'plaintext';
 };
 
+// MDXEditor 静态 plugins（不依赖组件状态，避免 hooks 条件调用问题）
+const MDX_PLUGINS = [
+  toolbarPlugin({
+    toolbarContents: () => (
+      <div className="simple-mdx-toolbar">
+        <UndoRedo />
+        <Separator />
+        <BoldItalicUnderlineToggles />
+        <CodeToggle />
+        <HighlightToggle />
+        <Separator />
+        <ListsToggle />
+        <Separator />
+        <BlockTypeSelect />
+        <Separator />
+        <CreateLink />
+        <InsertImage />
+        <InsertTable />
+        <InsertCodeBlock />
+        <InsertThematicBreak />
+      </div>
+    ),
+  }),
+  headingsPlugin(),
+  listsPlugin(),
+  quotePlugin(),
+  thematicBreakPlugin(),
+  markdownShortcutPlugin(),
+  linkPlugin(),
+  imagePlugin(),
+  tablePlugin(),
+  codeBlockPlugin(),
+  codeMirrorPlugin(),
+
+  diffSourcePlugin(),
+  directivesPlugin({ directiveDescriptors: [AdmonitionDirectiveDescriptor] }),
+];
+
 // 面包屑导航
 const Breadcrumbs = ({ path, onNavigate }) => {
   if (!path) return null;
@@ -67,34 +135,56 @@ export default function SimpleEditor({
   onSave,
   sendWSMessage,
   onViewInGraph,
+  onClose,
+  onToggleChat,
+  chatOpen,
 }) {
   const [content, setContent] = useState('');
+  const [originalContent, setOriginalContent] = useState('');
   const [isDirty, setIsDirty] = useState(false);
-  const [isSplit, setIsSplit] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const editorRef = useRef(null);
+  const monacoRef = useRef(null);
+  const mdxRef = useRef(null);
 
   // 当文件变化时重置内容
   useEffect(() => {
     if (file) {
-      setContent(file.content || '');
+      const nextContent = file.content || '';
+      setContent(nextContent);
+      setOriginalContent(nextContent);
       setIsDirty(false);
+      // MDXEditor 的 markdown prop 只在初始化时读取，切换文件需显式 setMarkdown
+      if (mdxRef.current) {
+        mdxRef.current.setMarkdown(nextContent);
+      }
     }
   }, [file?.path]);
 
-  // 处理内容变更
+  // Monaco 内容变更
   const handleContentChange = useCallback((value) => {
     setContent(value);
     setIsDirty(true);
   }, []);
 
+  // MDXEditor 内容变更
+  const handleMdxChange = useCallback((value) => {
+    setContent(value);
+    setIsDirty(value !== originalContent);
+  }, [originalContent]);
+
   // 处理保存
   const handleSave = useCallback(async () => {
     if (!file || !isDirty || isSaving) return;
 
+    const isMarkdown = file.name?.endsWith('.md');
+    const saveContent = isMarkdown && mdxRef.current
+      ? mdxRef.current.getMarkdown()
+      : content;
+
     setIsSaving(true);
     try {
-      await onSave?.(file.path, content);
+      await onSave?.(file.path, saveContent);
+      setOriginalContent(saveContent);
       setIsDirty(false);
     } catch (err) {
       console.error('Save failed:', err);
@@ -117,83 +207,7 @@ export default function SimpleEditor({
 
   // Monaco Editor 挂载
   const handleEditorDidMount = (editor, monaco) => {
-    editorRef.current = editor;
-
-    // 添加 [[链接]] 自动补全
-    if (file?.name?.endsWith('.md')) {
-      monaco.languages.registerCompletionItemProvider('markdown', {
-        triggerCharacters: ['['],
-        provideCompletionItems: async (model, position) => {
-          const lineContent = model.getLineContent(position.lineNumber);
-          const textBeforeCursor = lineContent.substring(0, position.column - 1);
-          const match = textBeforeCursor.match(/\[\[([^\[\]]*)$/);
-          if (!match) return { suggestions: [] };
-
-          const query = match[1].trim();
-          try {
-            const resp = await sendWSMessage('knowledge_search', { query });
-            const results = resp.data?.results || [];
-            const suggestions = results.map((r) => {
-              const label = r.title || r.path.split('/').pop();
-              return {
-                label: `[[${label}]]`,
-                kind: monaco.languages.CompletionItemKind.Reference,
-                insertText: `[[${label}]]`,
-                range: new monaco.Range(
-                  position.lineNumber,
-                  position.column - match[0].length,
-                  position.lineNumber,
-                  position.column
-                ),
-              };
-            });
-            return { suggestions };
-          } catch {
-            return { suggestions: [] };
-          }
-        },
-      });
-
-      // 添加 @citekey 文献引用自动补全
-      monaco.languages.registerCompletionItemProvider('markdown', {
-        triggerCharacters: ['@'],
-        provideCompletionItems: async (model, position) => {
-          const lineContent = model.getLineContent(position.lineNumber);
-          const textBeforeCursor = lineContent.substring(0, position.column - 1);
-          const match = textBeforeCursor.match(/@([\w\-:]*)$/);
-          if (!match) return { suggestions: [] };
-
-          const query = match[1].trim();
-          try {
-            const resp = await sendWSMessage('library_search', { query, limit: 20 });
-            const items = resp.data?.items || [];
-            const suggestions = items.map((item) => {
-              const citekey = item.citekey || `item_${item.id}`;
-              const label = item.title || citekey;
-              const authorYear = `${item.authors?.[0]?.split(' ')?.pop() || ''} ${item.year || ''}`;
-              return {
-                label: `@${citekey} — ${label} (${authorYear.trim()})`,
-                kind: monaco.languages.CompletionItemKind.Reference,
-                insertText: `[[@${citekey}]]`,
-                detail: `${item.authors?.join(', ') || ''} · ${item.venue || ''}`,
-                documentation: item.abstract?.slice(0, 200) || '',
-                range: new monaco.Range(
-                  position.lineNumber,
-                  position.column - match[0].length,
-                  position.lineNumber,
-                  position.column
-                ),
-              };
-            });
-            return { suggestions };
-          } catch {
-            return { suggestions: [] };
-          }
-        },
-      });
-    }
-
-    // 绑定保存快捷键
+    monacoRef.current = editor;
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       handleSave();
     });
@@ -213,7 +227,6 @@ export default function SimpleEditor({
   const isMarkdown = file.name?.endsWith('.md');
   const language = getLanguage(file.name);
   const sourceUrl = file.meta?.source;
-  const archivePath = file.meta?.archive;
   const hasSource = sourceUrl && typeof sourceUrl === 'string' && sourceUrl.startsWith('http');
 
   return (
@@ -252,12 +265,6 @@ export default function SimpleEditor({
             {sourceUrl.length > 60 ? sourceUrl.slice(0, 60) + '...' : sourceUrl}
             <ExternalLink size={12} />
           </a>
-          {archivePath && (
-            <>
-              <span style={{ color: 'var(--text-3)' }}>|</span>
-              <span style={{ color: 'var(--text-3)' }}>📄 本地存档: {archivePath}</span>
-            </>
-          )}
         </div>
       )}
 
@@ -268,25 +275,23 @@ export default function SimpleEditor({
           {isDirty && <span className="simple-editor-dirty">● modified</span>}
         </div>
         <div className="simple-editor-actions">
+          <button
+            className={`simple-editor-btn ${chatOpen ? 'active' : ''}`}
+            onClick={onToggleChat}
+            title="Toggle chat"
+          >
+            <Bot size={14} />
+            <span>Chat</span>
+          </button>
           {isMarkdown && (
-            <>
-              <button
-                className={`simple-editor-btn ${isSplit ? 'active' : ''}`}
-                onClick={() => setIsSplit((s) => !s)}
-                title={isSplit ? 'Focus edit' : 'Split view'}
-              >
-                {isSplit ? <Edit3 size={14} /> : <Columns size={14} />}
-                <span>{isSplit ? 'Edit' : 'Split'}</span>
-              </button>
-              <button
-                className="simple-editor-btn"
-                onClick={() => onViewInGraph?.(file.path)}
-                title="View in Graph"
-              >
-                <Share2 size={14} />
-                <span>Graph</span>
-              </button>
-            </>
+            <button
+              className="simple-editor-btn"
+              onClick={() => onViewInGraph?.(file.path)}
+              title="View in Graph"
+            >
+              <Share2 size={14} />
+              <span>Graph</span>
+            </button>
           )}
           <button
             className="simple-editor-btn"
@@ -296,59 +301,60 @@ export default function SimpleEditor({
             <Save size={14} />
             <span>{isSaving ? 'Saving...' : 'Save'}</span>
           </button>
+          <button
+            className="simple-editor-btn simple-editor-btn-close"
+            onClick={onClose}
+            title="Close file"
+          >
+            <X size={14} />
+          </button>
         </div>
       </div>
 
       {/* 编辑器内容区 */}
       <div className="simple-editor-content">
-        <div
-          className="simple-editor-pane"
-          style={{
-            display: 'flex',
-            flexDirection: isMarkdown && isSplit ? 'row' : 'column',
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0, height: '100%' }}>
-            <Editor
-              height="100%"
-              width="100%"
-              language={language}
-              value={content}
-              onChange={handleContentChange}
-              onMount={handleEditorDidMount}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                fontFamily: 'var(--font-mono)',
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                tabSize: 2,
-                insertSpaces: true,
-                wordWrap: 'on',
-                lineNumbers: 'on',
-                renderWhitespace: 'selection',
-                folding: true,
-                bracketPairColorization: { enabled: true },
-                formatOnPaste: true,
-                formatOnType: true,
-                suggestOnTriggerCharacters: true,
-                quickSuggestions: true,
-                snippetSuggestions: 'inline',
-                readOnly: false,
-              }}
-              theme="vs"
-            />
-          </div>
-          {isMarkdown && isSplit && (
-            <div
-              style={{
-                flex: 1,
-                borderLeft: '1px solid var(--border)',
-                overflow: 'hidden',
-                height: '100%',
-              }}
-            >
-              <MarkdownRenderer content={content} sendWSMessage={sendWSMessage} />
+        <div className="simple-editor-pane">
+          {isMarkdown ? (
+            <div className="simple-mdx-editor">
+              <MDXEditor
+                ref={mdxRef}
+                markdown={content}
+                onChange={handleMdxChange}
+                plugins={MDX_PLUGINS}
+                contentEditableClassName="simple-mdx-content"
+              />
+            </div>
+          ) : (
+            <div style={{ flex: 1, minWidth: 0, height: '100%' }}>
+              <Editor
+                height="100%"
+                width="100%"
+                language={language}
+                value={content}
+                onChange={handleContentChange}
+                onMount={handleEditorDidMount}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  fontFamily: 'var(--font-mono)',
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  tabSize: 2,
+                  insertSpaces: true,
+                  wordWrap: 'on',
+                  lineNumbers: 'on',
+                  renderWhitespace: 'selection',
+                  folding: true,
+                  bracketPairColorization: { enabled: true },
+                  formatOnPaste: true,
+                  formatOnType: true,
+                  suggestOnTriggerCharacters: true,
+                  quickSuggestions: true,
+                  snippetSuggestions: 'inline',
+                  readOnly: false,
+                }}
+                theme="vs"
+              />
             </div>
           )}
         </div>

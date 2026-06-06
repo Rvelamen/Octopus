@@ -113,7 +113,7 @@ https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 
 📄 Multi-format documents
 📝 Markdown notes
-🕸️ Knowledge graph
+🤖 Notes Chat (scoped AI)
 🧠 AI-powered distillation
 
 </td>
@@ -182,7 +182,7 @@ https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 📑 PDF / DOCX / XLSX
 📊 PPTX preview
 🖼️ Image understanding
-🗜️ Context compression
+🧠 PDF Mindmap rendering
 
 </td>
 </tr>
@@ -236,11 +236,41 @@ A complete knowledge management system with AI-powered capabilities:
 - **Vault system**: Create and manage multiple knowledge vaults
 - **Obsidian compatible**: Import existing Obsidian vaults
 
+### Notes Chat
+
+Chat with your knowledge base using a dedicated, configurable AI agent:
+
+- **Scoped access**: Restrict the agent to a specific path or vault for focused conversations
+- **Persistent sessions**: Chat history is saved per scope and can be resumed anytime
+- **Configurable agent**: Reuse any registered SubAgent configuration (model, tools, system prompt)
+- **KB-aware tools**: Built-in full-text search, note read, link listing, and timeline traversal
+- **Memory integration**: Optionally writes long-term memory and timeline observations
+- **WebSocket streaming**: Real-time token streaming with tool-call visibility
+
+### Library Chat Drawer
+
+A resizable in-library chat panel for ad-hoc Q&A without leaving the Knowledge view:
+
+- **Drag-to-resize**: Adjust the drawer width to fit your reading flow
+- **Session list**: Quick switch between recent chat sessions
+- **Markdown + KaTeX**: Rich math and code rendering in replies
+- **Streaming UX**: Live token streaming with copy-to-clipboard support
+
 ### Knowledge Graph
 
 - **Visual exploration**: WebGL-powered graph visualization (PixiJS)
 - **Force-directed layout**: Interactive node positioning
 - **Relationship mapping**: Discover connections between knowledge nodes
+
+### PDF Mindmap
+
+Turn any PDF into a navigable mindmap:
+
+- **Outline extraction**: Parses PDF bookmarks / headings into a tree
+- **Interactive rendering**: Pan, zoom, and collapse/expand nodes
+- **Standalone window**: Open the PDF viewer in its own Electron window
+- **Inline annotations**: Highlight & underline while you read
+- **AI chat with PDF**: Ask questions grounded in the current document
 
 ***
 
@@ -479,6 +509,7 @@ npm run dev
 | `npm run dist`     | Package current platform | Auto-select by platform                 |
 | `npm run dist:mac` | macOS package            | DMG + ZIP (universal: x64/arm64)        |
 | `npm run dist:win` | Windows package          | NSIS installer + portable               |
+| `npm run dist:linux` | Linux package          | AppImage + DEB                          |
 
 > 📂 Output: `dist-electron/`
 > 📖 Detailed guide: [README\_BUILD.md](./README_BUILD.md)
@@ -498,7 +529,8 @@ octopus/
 │   ├── agent/              Agent core logic
 │   │   ├── processors/     Streaming / non-streaming / longtask processors
 │   │   ├── compressor.py   Context compression
-│   │   ├── subagent.py     SubAgent dispatch
+│   │   ├── subagent.py     SubAgent dispatch (with ReAct sync logging)
+│   │   ├── notes_chat_agent.py  Notes Chat scoped agent
 │   │   └── observation_*.py Observation extraction & management
 │   ├── api/                FastAPI service interface
 │   ├── channels/           Multi-channel support
@@ -531,6 +563,8 @@ octopus/
 │   │   ├── tts/            Text-to-speech (OpenAI/MiMo engines)
 │   │   ├── workflow/       Workflow engine & executor
 │   │   ├── knowledge_*.py  Knowledge base services
+│   │   ├── knowledge_task_worker.py Distill task worker (ReAct logging)
+│   │   ├── notes_chat_service.py   Notes Chat session/message service
 │   │   ├── image_service.py Image generation service
 │   │   └── llm_service.py  LLM invocation service
 │   ├── tools/              Built-in tools
@@ -557,6 +591,9 @@ octopus/
 │   │   │   ├── Config/     Settings (providers/agent/channels/multimodal)
 │   │   │   ├── Workflow/   Visual workflow editor (ReactFlow)
 │   │   │   ├── Knowledge/  Knowledge base (documents/notes/graph)
+│   │   │   │   ├── library/LibraryChatDrawer  In-library chat drawer
+│   │   │   │   └── hooks/  Knowledge hooks (useNotesChat, useChat, useChatDrawer)
+│   │   │   ├── PdfViewerWindow  Standalone PDF reader + mindmap
 │   │   │   ├── Agents/     SubAgent management
 │   │   │   ├── MCP/        MCP server & tool management
 │   │   │   ├── Extensions/ Extension marketplace
@@ -569,7 +606,8 @@ octopus/
 │   │   │   ├── MessageList/ Message rendering with iteration folds
 │   │   │   ├── TTSPlayer/  Audio playback
 │   │   │   ├── TaskIndicator/ Task status indicator
-│   │   │   └── MermaidDiagram/ Mermaid chart rendering
+│   │   │   ├── MermaidDiagram/ Mermaid chart rendering
+│   │   │   └── MindmapDiagram/   PDF mindmap (react-d3-tree)
 │   │   ├── workflow/       Workflow engine
 │   │   │   ├── components/ Node components (13 registered types)
 │   │   │   ├── hooks/      Zustand workflow store
@@ -596,6 +634,7 @@ octopus/
 |              | Monaco Editor             | Code editor                        |
 |              | ECharts 6                 | Data visualization                 |
 |              | PixiJS                    | Knowledge graph WebGL rendering    |
+|              | react-d3-tree             | PDF mindmap rendering              |
 |              | Zustand                   | Workflow state management          |
 | **Backend**  | Python 3.10+ + FastAPI    | High-performance async web service |
 |              | SQLite + SQLAlchemy       | Local lightweight database         |
@@ -735,6 +774,18 @@ Issues and Pull Requests welcome:
 ***
 
 ## 📋 Changelog
+
+### 2026-06
+
+| Date       | Version | Changes                                                    |
+| :--------- | :------ | :--------------------------------------------------------- |
+| 2026-06-06 | v1.1.0  | 💬 New: Notes Chat — scoped AI agent for knowledge notes   |
+| 2026-06-06 | v1.1.0  | 📚 New: Library Chat Drawer — resizable in-library chat   |
+| 2026-06-06 | v1.1.0  | 🧠 New: PDF Mindmap rendering (react-d3-tree)              |
+| 2026-06-06 | v1.1.0  | 📄 New: Standalone PDF Viewer window (annotations + chat) |
+| 2026-06-06 | v1.1.0  | 🐧 New: Linux packaging (AppImage + DEB)                   |
+| 2026-06-06 | v1.1.0  | 🔧 Improve: SubAgent / Distill ReAct execution logging     |
+| 2026-06-06 | v1.1.0  | 🧹 Cleanup: removed legacy pixel-theme backup file        |
 
 ### 2026-05
 

@@ -5,6 +5,7 @@
   flex-direction: column;
   height: 100%;
   background: var(--surface);
+  width: -webkit-fill-available;
 }
 
 /* 面包屑导航 */
@@ -77,6 +78,16 @@
   cursor: not-allowed;
 }
 
+.simple-editor-btn-close {
+  padding: 4px 6px;
+  color: var(--text-3);
+}
+
+.simple-editor-btn-close:hover {
+  background: rgba(255, 77, 79, 0.08);
+  color: #ff4d4f;
+}
+
 /* 编辑器内容区 */
 .simple-editor-content {
   flex: 1;
@@ -107,4 +118,130 @@
 .simple-editor-dirty {
   color: var(--accent);
   font-size: 11px;
+}
+
+/* ── MDXEditor 暗色主题覆盖 ── */
+
+.simple-mdx-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.simple-mdx-editor {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  background: var(--surface);
+}
+
+.simple-mdx-editor .mdxeditor {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-height: 100%;
+}
+
+/* Toolbar */
+.simple-mdx-editor .mdxeditor-toolbar {
+  background: var(--surface-2) !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 4px 8px !important;
+}
+
+.simple-mdx-editor .mdxeditor-toolbar button,
+.simple-mdx-editor .mdxeditor-toolbar [role="button"],
+.simple-mdx-editor .mdxeditor-toolbar [class*="selectTrigger"],
+.simple-mdx-editor .mdxeditor-toolbar select {
+  color: var(--text-2) !important;
+  background: transparent !important;
+  border-color: var(--border) !important;
+  height: 28px !important;
+  min-height: 28px !important;
+}
+
+.simple-mdx-editor .mdxeditor-toolbar button:hover,
+.simple-mdx-editor .mdxeditor-toolbar [role="button"]:hover,
+.simple-mdx-editor .mdxeditor-toolbar [class*="selectTrigger"]:hover {
+  background: var(--surface-3) !important;
+  color: var(--text) !important;
+}
+
+.simple-mdx-editor .mdxeditor-toolbar button[data-active="true"],
+.simple-mdx-editor .mdxeditor-toolbar [aria-pressed="true"] {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+}
+
+.simple-mdx-editor .mdxeditor-toolbar [class*="separator"] {
+  background: var(--border) !important;
+  height: 20px !important;
+  margin: 0 2px !important;
+}
+
+/* Dropdowns / popups */
+.simple-mdx-editor .mdxeditor-popup-container,
+.simple-mdx-editor .mdxeditor-toolbar [class*="popoverContent"],
+.simple-mdx-editor .mdxeditor-toolbar [class*="dropdownMenu"] {
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+
+.simple-mdx-editor .mdxeditor-toolbar [class*="popoverContent"] button,
+.simple-mdx-editor .mdxeditor-toolbar [class*="dropdownMenu"] button {
+  color: var(--text-2) !important;
+}
+
+.simple-mdx-editor .mdxeditor-toolbar [class*="popoverContent"] button:hover,
+.simple-mdx-editor .mdxeditor-toolbar [class*="dropdownMenu"] button:hover {
+  background: var(--surface-3) !important;
+  color: var(--text) !important;
+}
+
+/* Diff source tab buttons */
+.simple-mdx-editor .mdxeditor-diff-source-wrapper [class*="tab"] {
+  background: var(--surface-2) !important;
+  color: var(--text-2) !important;
+  border-color: var(--border) !important;
+}
+
+.simple-mdx-editor .mdxeditor-diff-source-wrapper [class*="tab"][data-active="true"] {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+}
+
+/* Content area */
+.simple-mdx-content {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  padding: 16px;
+}
+
+/* Nested content colors */
+.simple-mdx-editor .mdxeditor blockquote {
+  border-left: 3px solid var(--border);
+  color: var(--text-2);
+}
+
+.simple-mdx-editor .mdxeditor a {
+  color: var(--accent);
+}
+
+.simple-mdx-editor .mdxeditor hr {
+  border-color: var(--border);
+}
+
+.simple-mdx-editor .mdxeditor code {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.simple-mdx-editor .mdxeditor pre {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
 }

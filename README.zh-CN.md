@@ -113,7 +113,7 @@ https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 
 📄 多格式文档
 📝 Markdown 笔记
-🕸️ 知识图谱
+💬 Notes Chat（限定范围 AI）
 🧠 AI 智能蒸馏
 
 </td>
@@ -182,7 +182,7 @@ https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 📑 PDF / DOCX / XLSX
 📊 PPTX 预览
 🖼️ 图像理解
-🗜️ 上下文压缩
+🧠 PDF 思维导图渲染
 
 </td>
 </tr>
@@ -236,11 +236,41 @@ https://github.com/user-attachments/assets/1de4e3d3-3397-46f8-a6b5-8f9dfef2b580
 - **Vault 系统**：创建和管理多个知识库
 - **Obsidian 兼容**：导入已有 Obsidian vault
 
+### Notes Chat
+
+用专属 AI 代理与你的知识库对话：
+
+- **限定范围**：可按路径或 vault 限定 Agent 访问范围，让对话更聚焦
+- **会话持久化**：按 scope 维度保存历史，可随时继续
+- **可配置 Agent**：复用任意已注册的 SubAgent 配置（模型、工具、系统提示）
+- **内置知识库工具**：全文检索、笔记读取、链接列表、时间线遍历
+- **记忆联动**：可选写入长期记忆与时间线观察
+- **WebSocket 流式**：实时 token 流式输出，可见工具调用过程
+
+### Library Chat Drawer
+
+知识库内可调宽度的聊天侧拉面板，原地问答不打断阅读：
+
+- **拖拽调宽**：抽屉宽度可自由调整
+- **会话列表**：快速切换历史会话
+- **Markdown + KaTeX**：回复中支持公式与代码高亮
+- **流式体验**：实时输出，附一键复制
+
 ### 知识图谱
 
 - **可视化探索**：基于 PixiJS 的 WebGL 图谱渲染
 - **力导向布局**：交互式节点定位
 - **关系映射**：发现知识节点之间的关联
+
+### PDF 思维导图
+
+把任意 PDF 一键变可导航的思维导图：
+
+- **大纲抽取**：解析 PDF 书签/标题为树形结构
+- **交互渲染**：支持平移、缩放、折叠/展开
+- **独立窗口**：可在 Electron 中单独打开 PDF 阅读器
+- **内联批注**：阅读时高亮、下划线标注
+- **PDF AI 问答**：基于当前文档内容回答问题
 
 ***
 
@@ -479,6 +509,7 @@ npm run dev
 | `npm run dist`     | 当前平台打包     | 根据平台自动选择                      |
 | `npm run dist:mac` | macOS 打包   | DMG + ZIP（通用二进制：x64/arm64）    |
 | `npm run dist:win` | Windows 打包 | NSIS 安装包 + 便携版                |
+| `npm run dist:linux` | Linux 打包 | AppImage + DEB 安装包               |
 
 > 📂 输出目录：`dist-electron/`
 > 📖 详细构建指南：[README\_BUILD.md](./README_BUILD.md)
@@ -498,7 +529,8 @@ octopus/
 │   ├── agent/              Agent 核心逻辑
 │   │   ├── processors/     流式/非流式/长任务处理器
 │   │   ├── compressor.py   上下文压缩
-│   │   ├── subagent.py     SubAgent 调度
+│   │   ├── subagent.py     SubAgent 调度（含 ReAct 同步日志）
+│   │   ├── notes_chat_agent.py Notes Chat 限定范围 Agent
 │   │   └── observation_*.py 观察提取与管理
 │   ├── api/                FastAPI 服务接口
 │   ├── channels/           多通道支持
@@ -531,6 +563,8 @@ octopus/
 │   │   ├── tts/            文本转语音（OpenAI/MiMo 引擎）
 │   │   ├── workflow/       工作流引擎与执行器
 │   │   ├── knowledge_*.py  知识库服务
+│   │   ├── knowledge_task_worker.py 蒸馏任务 Worker（含 ReAct 日志）
+│   │   ├── notes_chat_service.py    Notes Chat 会话/消息服务
 │   │   ├── image_service.py 图像生成服务
 │   │   └── llm_service.py  LLM 调用服务
 │   ├── tools/              内置工具集
@@ -557,6 +591,9 @@ octopus/
 │   │   │   ├── Config/     设置（提供商/Agent/通道/多模态）
 │   │   │   ├── Workflow/   可视化工作流编辑器（ReactFlow）
 │   │   │   ├── Knowledge/  知识库（文档/笔记/图谱）
+│   │   │   │   ├── library/LibraryChatDrawer  库内聊天抽屉
+│   │   │   │   └── hooks/  知识库 Hooks（useNotesChat、useChat、useChatDrawer）
+│   │   │   ├── PdfViewerWindow 独立 PDF 阅读器（含思维导图）
 │   │   │   ├── Agents/     SubAgent 管理
 │   │   │   ├── MCP/        MCP 服务器与工具管理
 │   │   │   ├── Extensions/ 扩展市场
@@ -569,7 +606,8 @@ octopus/
 │   │   │   ├── MessageList/ 消息渲染（迭代折叠）
 │   │   │   ├── TTSPlayer/  音频播放
 │   │   │   ├── TaskIndicator/ 任务状态指示器
-│   │   │   └── MermaidDiagram/ Mermaid 图表渲染
+│   │   │   ├── MermaidDiagram/ Mermaid 图表渲染
+│   │   │   └── MindmapDiagram/   PDF 思维导图（react-d3-tree）
 │   │   ├── workflow/       工作流引擎
 │   │   │   ├── components/ 节点组件（13 种已注册类型）
 │   │   │   ├── hooks/      Zustand 工作流状态管理
@@ -596,6 +634,7 @@ octopus/
 |        | Monaco Editor           | 代码编辑器          |
 |        | ECharts 6               | 数据可视化          |
 |        | PixiJS                  | 知识图谱 WebGL 渲染  |
+|        | react-d3-tree           | PDF 思维导图渲染     |
 |        | Zustand                 | 工作流状态管理        |
 | **后端** | Python 3.10+ + FastAPI  | 高性能异步 Web 服务   |
 |        | SQLite + SQLAlchemy     | 本地轻量数据库        |
@@ -735,6 +774,18 @@ octopus/
 ***
 
 ## 📋 更新日志
+
+### 2026-06
+
+| 日期         | 版本     | 更新内容                                    |
+| :--------- | :----- | :-------------------------------------- |
+| 2026-06-06 | v1.1.0 | 💬 新增：Notes Chat — 限定范围的笔记对话 AI 代理       |
+| 2026-06-06 | v1.1.0 | 📚 新增：Library Chat Drawer — 库内可调宽度的聊天抽屉    |
+| 2026-06-06 | v1.1.0 | 🧠 新增：PDF 思维导图渲染（react-d3-tree）           |
+| 2026-06-06 | v1.1.0 | 📄 新增：独立 PDF 阅读器窗口（标注 + 问答）             |
+| 2026-06-06 | v1.1.0 | 🐧 新增：Linux 打包支持（AppImage + DEB）          |
+| 2026-06-06 | v1.1.0 | 🔧 优化：SubAgent / 蒸馏任务 ReAct 执行日志           |
+| 2026-06-06 | v1.1.0 | 🧹 清理：移除遗留的 pixel-theme 备份文件               |
 
 ### 2026-05
 

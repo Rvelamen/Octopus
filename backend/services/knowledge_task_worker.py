@@ -230,6 +230,32 @@ Be concise but complete. If information is not found in the document, state it e
 
                 output_path = task.output_path
 
+                # ✅ 打印 ReAct 调用日志
+                if result and "iterations" in result:
+                    header = f"[DistillTask:{task.id}] === ReAct Tool Call Log ==="
+                    logger.info(header)
+                    print(header, flush=True)
+                    for it in result["iterations"]:
+                        tools_info = []
+                        for t in it.get("tools", []):
+                            status = t.get("status", "unknown")
+                            tools_info.append(f"{t['toolName']}({status})")
+                        line = (
+                            f"[DistillTask:{task.id}] Iteration {it['iteration']}: "
+                            f"tools={tools_info}, "
+                            f"reasoning_len={len(it.get('reasoning', ''))}"
+                        )
+                        logger.info(line)
+                        print(line, flush=True)
+                        for t in it.get("tools", []):
+                            line_in = f"[DistillTask:{task.id}]   -> {t['toolName']} args={json.dumps(t.get('args', {}), ensure_ascii=False)[:200]}"
+                            logger.info(line_in)
+                            print(line_in, flush=True)
+                            res = t.get("result", "")
+                            line_out = f"[DistillTask:{task.id}]   <- {t['toolName']} result={res[:300]}{'...' if len(res) > 300 else ''}"
+                            logger.info(line_out)
+                            print(line_out, flush=True)
+
                 # ✅ 保存 iterations 到数据库
                 if result and "iterations" in result:
                     try:

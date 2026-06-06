@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FolderPlus } from 'lucide-react';
+import '../../KnowledgePanel.css';
 
 export default function CreateVaultModal({ visible, onCancel, onConfirm }) {
   const [vaultName, setVaultName] = useState('');

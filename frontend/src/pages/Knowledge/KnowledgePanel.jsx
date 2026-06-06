@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, X, FileText, StickyNote, GitGraph } from 'lucide-react';
+import { Sparkles, X, FileText, StickyNote, GitGraph, Bot } from 'lucide-react';
 import { message, Modal } from 'antd';
 import WindowDots from '@components/layout/WindowDots';
 import TaskIndicator from '@components/TaskIndicator';
 import { useDistillTasks } from '@contexts/DistillTaskContext';
+import { useWebSocket } from '@contexts/WebSocketContext';
 import KnowledgeGraphTab from './graph/KnowledgeGraphTab';
 import DistillDialog from './distill/DistillDialog';
 import SimpleFileTree from './components/file-tree/SimpleFileTree';
@@ -15,6 +16,9 @@ import TaskDetailModal from '@components/TaskIndicator/TaskDetailModal';
 import PreviewDrawer from './components/preview/PreviewDrawer';
 import ImportObsidianModal from './components/import/ImportObsidianModal';
 import CreateVaultModal from './components/vault/CreateVaultModal';
+import LibraryChatDrawer from './library/LibraryChatDrawer';
+import { useNotesChat } from './hooks/useNotesChat';
+import { useChatDrawer } from './hooks/useChatDrawer';
 
 const TABS = [
   { key: 'documents', label: 'DOCUMENTS', icon: FileText },
@@ -25,6 +29,7 @@ const TABS = [
 const DEFAULT_PAGE_SIZE = 20;
 
 export default function KnowledgePanel({ sendWSMessage }) {
+  const { subscribe, unsubscribe } = useWebSocket();
   const { registerSyncTasks, syncTasksFromBackend } = useDistillTasks();
   const [activeTab, setActiveTab] = useState('documents');
   const [treeItems, setTreeItems] = useState({});
@@ -48,6 +53,9 @@ export default function KnowledgePanel({ sendWSMessage }) {
 
   const [batchDistillPaths, setBatchDistillPaths] = useState([]);
 
+  // ── Notes Chat ──
+  const { chatOpen, setChatOpen, chatDrawerWidth, startChatResize } = useChatDrawer(480);
+
   // 预览抽屉状态
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
@@ -64,6 +72,42 @@ export default function KnowledgePanel({ sendWSMessage }) {
   // 当前打开的文件（单文件模式）
   const [currentFile, setCurrentFile] = useState(null);
 
+  // ── Notes Chat scope & hook (must be after currentFile/selectedVault declaration) ──
+  const notesChatScope = useCallback(() => {
+    if (currentFile) {
+      return { type: 'file', file_path: currentFile.path, vault: selectedVault || 'default' };
+    }
+    if (selectedVault) {
+      return { type: 'vault', vault: selectedVault };
+    }
+    return { type: 'global' };
+  }, [currentFile, selectedVault]);
+
+  const {
+    sessions: chatSessions,
+    currentSessionId: chatSessionId,
+    setCurrentSessionId: setChatSessionId,
+    messages: chatMessages,
+    loading: chatLoading,
+    streamingContent: chatStreamingContent,
+    createSession: createChatSession,
+    deleteSession: deleteChatSession,
+    sendChat: sendNotesChat,
+  } = useNotesChat({
+    sendMessage: sendWSMessage,
+    subscribe,
+    unsubscribe,
+    scope: notesChatScope(),
+  });
+
+  // Notes Chat scope label
+  const notesChatScopeLabel = useCallback(() => {
+    const scope = notesChatScope();
+    if (scope.type === 'file') return scope.file_path.split('/').pop() || 'Current file';
+    if (scope.type === 'vault') return scope.vault;
+    return 'All notes';
+  }, [notesChatScope]);
+
   // Sidebar 宽度状态
   const [sidebarWidth, setSidebarWidth] = useState(240);
   const isResizingRef = useRef(false);
@@ -74,6 +118,8 @@ export default function KnowledgePanel({ sendWSMessage }) {
   // Sidebar 拖拽调整宽度
   const startXRef = useRef(0);
   const startWidthRef = useRef(240);
+
+  // ── Chat Drawer resize handled by useChatDrawer ──
 
   const handleResizeStart = useCallback((e) => {
     e.preventDefault();
@@ -850,7 +896,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
         const sourceName = sourcePath.split('/').pop();
         const safe = sourceName.replace(/[^\w\u4e00-\u9fa5\-]+/g, '_').slice(0, 60) || 'untitled';
         const timestamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
-        const fileTargetPath = `${targetPath}/${timestamp}_${safe}.md`;
+        const fileTargetPath = `${targetPath}/${safe}_${timestamp}.md`;
         const response = await sendWSMessage('knowledge_distill', {
           source_path: sourcePath,
           options: {
@@ -1147,187 +1193,230 @@ export default function KnowledgePanel({ sendWSMessage }) {
             />
           </div>
         ) : (
-          <>
-            {/* Sidebar - resizable */}
-            <div
-              ref={sidebarRef}
-              style={{
-                width: sidebarWidth,
-                flexShrink: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                background: 'var(--surface-2)',
-                borderRight: '1px solid var(--border)',
-                position: 'relative',
-              }}
-            >
-              <UploadDropzone
-                activeTab={activeTab}
-                isUploading={isUploading}
-                uploadProgress={uploadProgress}
-                onFileSelect={uploadFile}
-                onNewNoteClick={() => setIsNewNoteModalOpen(true)}
-                onExport={handleExport}
-                onImport={handleImport}
-                onImportObsidian={handleImportObsidian}
-              />
-              {/* Vault selector - shown on Notes tab */}
-              {activeTab === 'notes' && (
-                <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: vaults.length > 0 ? 4 : 0 }}>
-                    <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Vault</div>
-                    {vaults.length > 0 && (
+          <div style={{ flex: 1, display: 'flex', minWidth: 0 }}>
+              {/* Sidebar - resizable */}
+              <div
+                ref={sidebarRef}
+                style={{
+                  width: sidebarWidth,
+                  flexShrink: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  background: 'var(--surface-2)',
+                  borderRight: '1px solid var(--border)',
+                  position: 'relative',
+                }}
+              >
+                <UploadDropzone
+                  activeTab={activeTab}
+                  isUploading={isUploading}
+                  uploadProgress={uploadProgress}
+                  onFileSelect={uploadFile}
+                  onNewNoteClick={() => setIsNewNoteModalOpen(true)}
+                  onExport={handleExport}
+                  onImport={handleImport}
+                  onImportObsidian={handleImportObsidian}
+                />
+                {/* Vault selector - shown on Notes tab */}
+                {activeTab === 'notes' && (
+                  <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: vaults.length > 0 ? 4 : 0 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Vault</div>
+                      {vaults.length > 0 && (
+                        <button
+                          onClick={() => setCreateVaultModalVisible(true)}
+                          title="Create new vault"
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--text-3)',
+                            cursor: 'pointer',
+                            padding: '1px 4px',
+                            borderRadius: 3,
+                            display: 'flex',
+                            alignItems: 'center',
+                            fontSize: 14,
+                            lineHeight: 1,
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-3)')}
+                        >
+                          +
+                        </button>
+                      )}
+                    </div>
+                    {vaults.length > 0 ? (
+                      <select
+                        value={selectedVault || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSelectedVault(val || null);
+                          setCurrentFile(null);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '4px 6px',
+                          fontSize: 12,
+                          borderRadius: 4,
+                          border: '1px solid var(--border)',
+                          background: 'var(--surface)',
+                          color: 'var(--text)',
+                        }}
+                      >
+                        <option value="">All vaults</option>
+                        {vaults.map((v) => (
+                          <option key={v.name} value={v.name}>
+                            {v.name} ({v.note_count})
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
                       <button
                         onClick={() => setCreateVaultModalVisible(true)}
-                        title="Create new vault"
                         style={{
-                          background: 'transparent',
-                          border: 'none',
+                          width: '100%',
+                          padding: '6px 8px',
+                          fontSize: 12,
+                          borderRadius: 4,
+                          border: '1px dashed var(--border)',
+                          background: 'var(--surface)',
                           color: 'var(--text-3)',
                           cursor: 'pointer',
-                          padding: '1px 4px',
-                          borderRadius: 3,
-                          display: 'flex',
-                          alignItems: 'center',
-                          fontSize: 14,
-                          lineHeight: 1,
+                          textAlign: 'left',
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-3)')}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = 'var(--accent)';
+                          e.currentTarget.style.color = 'var(--accent)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = 'var(--border)';
+                          e.currentTarget.style.color = 'var(--text-3)';
+                        }}
                       >
-                        +
+                        + Create your first vault
                       </button>
                     )}
                   </div>
-                  {vaults.length > 0 ? (
-                    <select
-                      value={selectedVault || ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSelectedVault(val || null);
-                      }}
-                      style={{
-                        width: '100%',
-                        padding: '4px 6px',
-                        fontSize: 12,
-                        borderRadius: 4,
-                        border: '1px solid var(--border)',
-                        background: 'var(--surface)',
-                        color: 'var(--text)',
-                      }}
-                    >
-                      <option value="">All vaults</option>
-                      {vaults.map((v) => (
-                        <option key={v.name} value={v.name}>
-                          {v.name} ({v.note_count})
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
+                )}
+                <div style={{ flex: 1, overflow: 'auto' }}>
+                  <SimpleFileTree
+                    rootPath={rootPath}
+                    treeItems={treeItems}
+                    selectedPath={currentFile?.path}
+                    expandedPaths={expandedPaths}
+                    onSelect={handleOpenNoteFile}
+                    onToggle={handleToggle}
+                    onCreateFile={handleCreateFile}
+                    onCreateFolder={handleCreateFolder}
+                    onRename={handleRename}
+                    onDelete={handleDelete}
+                    onRefresh={loadDirectory}
+                    onMove={handleMove}
+                  />
+                </div>
+                <div style={{ padding: 8, borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <button
+                    className={`sidebar-action-btn ${chatOpen ? 'active' : ''}`}
+                    onClick={() => setChatOpen((v) => !v)}
+                    title="Toggle chat"
+                  >
+                    <Bot size={12} />
+                    <span>Chat</span>
+                  </button>
+                  {activeTab === 'documents' && (
                     <button
-                      onClick={() => setCreateVaultModalVisible(true)}
+                      disabled={!canDistill}
+                      onClick={() => canDistill && setDistillDialogVisible(true)}
+                      className="sidebar-action-btn sidebar-action-btn-primary"
                       style={{
-                        width: '100%',
-                        padding: '6px 8px',
-                        fontSize: 12,
-                        borderRadius: 4,
-                        border: '1px dashed var(--border)',
-                        background: 'var(--surface)',
-                        color: 'var(--text-3)',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--accent)';
-                        e.currentTarget.style.color = 'var(--accent)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--border)';
-                        e.currentTarget.style.color = 'var(--text-3)';
+                        opacity: canDistill ? 1 : 0.5,
+                        cursor: canDistill ? 'pointer' : 'not-allowed',
                       }}
                     >
-                      + Create your first vault
+                      <Sparkles size={12} />
+                      <span>Distill</span>
                     </button>
                   )}
                 </div>
-              )}
-              <div style={{ flex: 1, overflow: 'auto' }}>
-                <SimpleFileTree
-                  rootPath={rootPath}
-                  treeItems={treeItems}
-                  selectedPath={currentFile?.path}
-                  expandedPaths={expandedPaths}
-                  onSelect={handleOpenNoteFile}
-                  onToggle={handleToggle}
-                  onCreateFile={handleCreateFile}
-                  onCreateFolder={handleCreateFolder}
-                  onRename={handleRename}
-                  onDelete={handleDelete}
-                  onRefresh={loadDirectory}
-                  onMove={handleMove}
+                {/* Resize handle */}
+                <div
+                  onMouseDown={handleResizeStart}
+                  className="sidebar-resize-handle"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 4,
+                    cursor: 'col-resize',
+                    background: 'transparent',
+                    transition: 'background 0.15s',
+                    zIndex: 10,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--accent)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                  }}
                 />
               </div>
-              {activeTab === 'documents' && (
-                <div style={{ padding: 8, borderTop: '1px solid var(--border)' }}>
-                  <button
-                    disabled={!canDistill}
-                    onClick={() => canDistill && setDistillDialogVisible(true)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: 4,
-                      border: 'none',
-                      background: canDistill ? 'var(--accent)' : 'var(--surface)',
-                      color: canDistill ? 'var(--text-invert)' : 'var(--text-3)',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: canDistill ? 'pointer' : 'not-allowed',
-                      opacity: canDistill ? 1 : 0.5,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 4,
-                    }}
-                  >
-                    <Sparkles size={12} />
-                    <span>Distill</span>
-                  </button>
-                </div>
-              )}
-              {/* Resize handle */}
-              <div
-                onMouseDown={handleResizeStart}
-                className="sidebar-resize-handle"
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: 4,
-                  cursor: 'col-resize',
-                  background: 'transparent',
-                  transition: 'background 0.15s',
-                  zIndex: 10,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--accent)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                }}
-              />
-            </div>
 
-            {/* Main Editor Area */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--bg)' }}>
-              <SimpleEditor
-                file={currentFile}
-                onSave={writeFile}
-                sendWSMessage={sendWSMessage}
-                onViewInGraph={() => setActiveTab('graph')}
-              />
-            </div>
-          </>
+              {/* Main Editor Area */}
+              <div style={{ flex: 1, display: 'flex', minWidth: 0, background: 'var(--bg)', position: 'relative' }}>
+                <SimpleEditor
+                  file={currentFile}
+                  onSave={writeFile}
+                  sendWSMessage={sendWSMessage}
+                  onViewInGraph={() => setActiveTab('graph')}
+                  onClose={handleCloseFile}
+                  onToggleChat={() => setChatOpen((v) => !v)}
+                  chatOpen={chatOpen}
+                />
+                {chatOpen && (
+                  <>
+                    <div
+                      className="libchat-resizer"
+                      style={{
+                        position: 'absolute',
+                        right: chatDrawerWidth,
+                        top: 0,
+                        bottom: 0,
+                        zIndex: 11,
+                      }}
+                      onMouseDown={startChatResize}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        right: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: chatDrawerWidth,
+                        zIndex: 10,
+                        background: 'var(--bg)',
+                        boxShadow: '-4px 0 24px rgba(0,0,0,0.12)',
+                      }}
+                    >
+                      <LibraryChatDrawer
+                        sessions={chatSessions}
+                        currentSessionId={chatSessionId}
+                        setCurrentSessionId={setChatSessionId}
+                        messages={chatMessages}
+                        loading={chatLoading}
+                        streamingContent={chatStreamingContent}
+                        onSend={sendNotesChat}
+                        onNewSession={createChatSession}
+                        onDeleteSession={deleteChatSession}
+                        scopeLabel={notesChatScopeLabel()}
+                        width="100%"
+                        title="Note Chat"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+          </div>
         )}
 
         {activeTab === 'documents' && !docPreviewFile && (
@@ -1393,19 +1482,11 @@ export default function KnowledgePanel({ sendWSMessage }) {
         visible={distillDialogVisible}
         sourceFile={effectiveSelectedPath || ''}
         sourceFiles={batchDistillPaths.length > 0 ? batchDistillPaths : undefined}
-        sourceTitle={
-          batchDistillPaths.length > 1
-            ? `${batchDistillPaths.length} files`
-            : activeTab === 'documents'
-              ? (docMetas[selectedDocItem?.sha256]?.title || selectedDocItem?.name || '')
-              : (currentFile?.name || '')
-        }
         onCancel={() => {
           setDistillDialogVisible(false);
           setBatchDistillPaths([]);
         }}
         onStartDistill={handleStartDistill}
-        sendWSMessage={sendWSMessage}
         vaults={vaults}
       />
 
