@@ -851,7 +851,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           background: var(--surface-2);
           border: 1px solid var(--border);
           border-radius: var(--r-md);
-          padding: var(--s-3);
+          padding: 0;
         }
 
         .daily-bar-container {
@@ -947,7 +947,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
 
         .model-provider {
           color: var(--text-3);
-          font-size: 10px;
+          font-size: 8px;
         }
 
         .empty-state {
@@ -1012,7 +1012,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         .type-badge {
           display: inline-block;
           padding: 2px 8px;
-          border-radius: 4px;
+          border-radius: 2px;
           font-size: 11px;
           font-weight: 500;
           text-transform: uppercase;
@@ -1056,9 +1056,9 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         /* Calendar Heatmap */
         .calendar-heatmap {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: var(--s-5);
-          padding: var(--s-3);
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: var(--s-2);
+          padding: 0;
         }
 
         .calendar-month {
@@ -1069,7 +1069,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           font-size: 12px;
           font-weight: 600;
           color: var(--text);
-          margin-bottom: var(--s-2);
+          margin-bottom: var(--s-1);
           font-family: var(--font-mono);
         }
 
@@ -1077,26 +1077,26 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           display: grid;
           grid-template-columns: repeat(7, 1fr);
           width: 100%;
-          gap: 3px;
+          gap: 1px;
         }
 
         .calendar-weekday-label {
-          font-size: 10px;
+          font-size: 8px;
           color: var(--text-3);
           text-align: center;
-          line-height: 20px;
+          line-height: 14px;
         }
 
         .calendar-day {
           aspect-ratio: 1;
-          border-radius: 4px;
+          border-radius: 2px;
           display: flex;
           align-items: center;
           justify-content: center;
           position: relative;
           cursor: pointer;
           transition: transform 0.1s ease;
-          min-height: 28px;
+          min-height: 18px;
         }
 
         .calendar-day:hover {
@@ -1110,7 +1110,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .calendar-day-num {
-          font-size: 10px;
+          font-size: 8px;
           color: var(--text-2);
         }
 
@@ -1118,8 +1118,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           display: flex;
           align-items: center;
           gap: 4px;
-          margin-top: var(--s-3);
-          padding-left: var(--s-3);
+          margin-top: var(--s-1);
+          padding-left: 0;
         }
 
         .legend-label {
@@ -1137,7 +1137,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         .hourly-heatmap {
           display: grid;
           grid-template-columns: 50px repeat(24, 1fr);
-          gap: 2px;
+          gap: 1px;
           width: 100%;
         }
 
@@ -1165,7 +1165,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .hourly-cell.header {
-          font-size: 10px;
+          font-size: 8px;
           color: var(--text-3);
           display: flex;
           align-items: center;

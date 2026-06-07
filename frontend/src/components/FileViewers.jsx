@@ -209,47 +209,13 @@ const XlsxViewer = ({ file, content }) => {
 const PdfViewer = ({ file, content }) => {
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const pdfContentRef = useRef(null);
   const pageRefs = useRef([]);
   const [pageWidth, setPageWidth] = useState(null);
-
-  const { pdfUrl, error } = useMemo(() => {
-    if (!content) {
-      return { pdfUrl: null, error: null };
-    }
-    try {
-      let byteArray;
-      if (file.encoding === 'hex') {
-        const hexString = content.replace(/\s/g, '');
-        if (!hexString || hexString.length % 2 !== 0) {
-          throw new Error('Invalid hex content');
-        }
-        byteArray = new Uint8Array(hexString.length / 2);
-        for (let i = 0; i < hexString.length; i += 2) {
-          byteArray[i / 2] = parseInt(hexString.substring(i, i + 2), 16);
-        }
-      } else {
-        const binaryData = atob(content);
-        byteArray = new Uint8Array(binaryData.length);
-        for (let i = 0; i < binaryData.length; i++) {
-          byteArray[i] = binaryData.charCodeAt(i);
-        }
-      }
-      const blob = new Blob([byteArray], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      return { pdfUrl: url, error: null };
-    } catch (err) {
-      console.error('Failed to load pdf:', err);
-      return { pdfUrl: null, error: 'Failed to load PDF file' };
-    }
-  }, [content, file.encoding]);
-
-  useEffect(() => {
-    return () => {
-      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-    };
-  }, [pdfUrl]);
 
   useLayoutEffect(() => {
     if (!pdfUrl) return;
@@ -275,6 +241,47 @@ const PdfViewer = ({ file, content }) => {
     return () => ro.disconnect();
   }, [pdfUrl]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    try {
+      if (!content) {
+        setLoading(true);
+        return;
+      }
+      let byteArray;
+      if (file.encoding === 'hex') {
+        const hexString = content.replace(/\s/g, '');
+        if (!hexString || hexString.length % 2 !== 0) {
+          throw new Error('Invalid hex content');
+        }
+        byteArray = new Uint8Array(hexString.length / 2);
+        for (let i = 0; i < hexString.length; i += 2) {
+          byteArray[i / 2] = parseInt(hexString.substring(i, i + 2), 16);
+        }
+      } else {
+        const binaryData = atob(content);
+        byteArray = new Uint8Array(binaryData.length);
+        for (let i = 0; i < binaryData.length; i++) {
+          byteArray[i] = binaryData.charCodeAt(i);
+        }
+      }
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      setPdfUrl(url);
+      setLoading(false);
+      setError(null);
+
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } catch (err) {
+      console.error('Failed to load pdf:', err);
+      setError('Failed to load PDF file');
+      setLoading(false);
+    }
+  }, [content, file.encoding]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   const onDocumentLoadSuccess = ({ numPages: total }) => {
     setNumPages(total);
     setPdfLoaded(true);
@@ -282,6 +289,7 @@ const PdfViewer = ({ file, content }) => {
 
   const onDocumentLoadError = (err) => {
     console.error('PDF document load error:', err);
+    setError('Failed to load PDF document');
     setPdfLoaded(false);
   };
 

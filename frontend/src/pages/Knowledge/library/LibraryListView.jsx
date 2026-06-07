@@ -1,6 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FileText, Calendar, Users, Tag, MoreVertical, Trash2, FolderInput, StickyNote, Sparkles, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { Dropdown, Empty, Spin, Table, Popconfirm, Checkbox } from 'antd';
+
+const getApiPort = () => {
+  if (window.electronAPI?.getApiPort) {
+    // Will be resolved async, but for initial render use location.port
+    return window.location.port || '18791';
+  }
+  return window.location.port || '18791';
+};
+
+const getThumbnailUrl = (thumbnailPath) => {
+  if (!thumbnailPath) return null;
+  const port = getApiPort();
+  return `http://127.0.0.1:${port}/workspace/${thumbnailPath}`;
+};
+
+const ThumbnailImage = ({ thumbnailPath, fallbackSize = 32, style = {} }) => {
+  const [error, setError] = useState(false);
+
+  if (!thumbnailPath || error) {
+    return <FileText size={fallbackSize} opacity={0.3} />;
+  }
+
+  return (
+    <img
+      src={getThumbnailUrl(thumbnailPath)}
+      alt=""
+      style={{ width: '100%', height: '100%', objectFit: 'cover', ...style }}
+      onError={() => setError(true)}
+    />
+  );
+};
 
 const ParseStatusBadge = ({ status }) => {
   if (!status) return null;
@@ -79,7 +110,7 @@ const CardView = ({ items, selectedId, onSelect, onMoveToCollection, collections
 
           {/* Content area — clicking here opens the detail drawer */}
           <div onClick={() => onSelect(item.id)} style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, position: 'relative' }}>
-            {/* Thumbnail placeholder */}
+            {/* Thumbnail */}
             <div
               style={{
                 height: 100,
@@ -90,9 +121,10 @@ const CardView = ({ items, selectedId, onSelect, onMoveToCollection, collections
                 justifyContent: 'center',
                 color: 'var(--text-muted)',
                 position: 'relative',
+                overflow: 'hidden',
               }}
             >
-              <FileText size={32} opacity={0.3} />
+              <ThumbnailImage thumbnailPath={item.thumbnail_path} fallbackSize={32} />
               {item.has_notes && (
                 <span
                   style={{
@@ -257,8 +289,8 @@ const ListView = ({ items, selectedId, onSelect, onMoveToCollection, collections
 
           {/* Content area — clicking here opens the detail drawer */}
           <div onClick={() => onSelect(item.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 48, borderRadius: 4, background: 'var(--bg)', color: 'var(--text-muted)', flexShrink: 0 }}>
-              <FileText size={20} opacity={0.4} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 48, borderRadius: 4, background: 'var(--bg)', color: 'var(--text-muted)', flexShrink: 0, overflow: 'hidden' }}>
+              <ThumbnailImage thumbnailPath={item.thumbnail_path} fallbackSize={20} />
             </div>
 
             <div style={{ flex: 1, minWidth: 0 }}>

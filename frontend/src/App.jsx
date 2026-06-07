@@ -248,7 +248,7 @@ function App() {
         onClick={() => handleNavClick(key)}
         title={label}
       >
-        <Icon size={18} />
+        <Icon size={20} />
         {!sidebarCollapsed && <span>{label}</span>}
       </button>
     ));
@@ -314,38 +314,39 @@ function App() {
             <nav>
               {/* 核心 */}
               {renderNavItems([
-                { key: 'chat', icon: Bot, label: 'CHAT' },
-                { key: 'knowledge', icon: BookOpen, label: 'KNOWLEDGE' },
-                { key: 'workspaces', icon: FolderOpen, label: 'WORKSPACE' },
+                { key: 'chat', icon: Bot, label: 'Chat' },
+                { key: 'knowledge', icon: BookOpen, label: 'Knowledge' },
+                { key: 'workspaces', icon: FolderOpen, label: 'Workspace' },
               ])}
               {/* 系统 */}
               {renderNavItems([
-                { key: 'config', icon: Settings, label: 'CONFIG' },
-                { key: 'agents', icon: Users, label: 'AGENTS' },
+                { key: 'config', icon: Settings, label: 'Config' },
+                { key: 'agents', icon: Users, label: 'Agents' },
                 { key: 'mcp', icon: Server, label: 'MCP' },
               ])}
               {/* 集成 */}
               {renderNavItems([
-                { key: 'extensions', icon: Package, label: 'EXTENSIONS' },
-                { key: 'cron', icon: Clock, label: 'CRON' },
+                { key: 'extensions', icon: Package, label: 'Extensions' },
+                { key: 'cron', icon: Clock, label: 'Cron' },
               ])}
               {/* 数据 */}
               {renderNavItems([
-                { key: 'history', icon: HistoryIcon, label: 'HISTORY' },
-                { key: 'memory', icon: Brain, label: 'MEMORY' },
-                { key: 'library', icon: Library, label: 'LIBRARY' },
-                { key: 'tokens', icon: Zap, label: 'TOKENS' },
+                { key: 'history', icon: HistoryIcon, label: 'History' },
+                { key: 'memory', icon: Brain, label: 'Memory' },
+                { key: 'library', icon: Library, label: 'Library' },
+                { key: 'tokens', icon: Zap, label: 'Tokens' },
               ])}
               {/* 工作流 */}
               {renderNavItems([
-                { key: 'workflows', icon: GitBranch, label: 'WORKFLOWS' },
+                { key: 'workflows', icon: GitBranch, label: 'Workflows' },
               ])}
             </nav>
             {!sidebarCollapsed && (
-              <div className="status-panel">
-                <div
-                  className={`status-dot ${connectionStatus}`}
-                  title={connectionStatus === 'connected' ? 'Connected' : connectionStatus === 'connecting' ? 'Connecting...' : 'Offline'}
+              <div className="sidebar-footer">
+                <span className="footer-version">v1.0.0</span>
+                <span
+                  className={`footer-status-dot ${connectionStatus}`}
+                  title={connectionStatus === 'connected' ? 'Online' : connectionStatus === 'connecting' ? 'Connecting...' : 'Offline'}
                 />
               </div>
             )}
