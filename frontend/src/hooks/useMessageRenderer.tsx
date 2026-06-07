@@ -3,14 +3,28 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { looksLikeWorkspaceFilePath } from '@pages/Chat/ChatPanel/utils/workspacePathUtils';
 
+interface CodeProps {
+  className?: string;
+  children?: React.ReactNode;
+  inline?: boolean;
+}
+
+interface PreProps {
+  children?: React.ReactNode;
+}
+
+interface TableProps {
+  children?: React.ReactNode;
+}
+
 /**
  * Shared hook for rendering message content with ReactMarkdown.
  * Returns render function + workspace preview state for clickable paths.
  */
 export function useMessageRenderer() {
-  const [workspacePreviewPath, setWorkspacePreviewPath] = useState(null);
+  const [workspacePreviewPath, setWorkspacePreviewPath] = useState<string | null>(null);
 
-  const renderMessageContent = useCallback((content) => {
+  const renderMessageContent = useCallback((content: string): React.ReactNode => {
     if (!content) return null;
     return (
       <ReactMarkdown
@@ -28,9 +42,9 @@ export function useMessageRenderer() {
           ),
           p({ children }) {
             const hasBlock = React.Children.toArray(children).some((child) => {
-              if (typeof child === 'object' && child?.type) {
+              if (React.isValidElement(child)) {
                 const tag = typeof child.type === 'string' ? child.type : child.type?.name;
-                if (['pre', 'div', 'table', 'ul', 'ol', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) {
+                if (tag && ['pre', 'div', 'table', 'ul', 'ol', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) {
                   return true;
                 }
                 // react-markdown v9: 代码块的 code 有 className，行内代码没有
@@ -45,11 +59,11 @@ export function useMessageRenderer() {
             }
             return <p>{children}</p>;
           },
-          code({ className, children, inline, ...props }) {
+          code({ className, children, inline, ...props }: CodeProps) {
             // react-markdown v9: 行内代码没有 className，代码块有 className (如 "language-js")
             // 行内代码直接由 code 组件渲染，代码块由 pre > code 渲染
             const isInlineCode = !className;
-            
+
             if (isInlineCode) {
               const inlineText = String(children).trim();
               if (looksLikeWorkspaceFilePath(inlineText)) {
@@ -70,7 +84,7 @@ export function useMessageRenderer() {
                 </code>
               );
             }
-            
+
             // 代码块 - 由 pre 组件处理，这里只返回 code 内容
             return (
               <code className={className} {...props}>
@@ -78,13 +92,13 @@ export function useMessageRenderer() {
               </code>
             );
           },
-          pre({ children }) {
+          pre({ children }: PreProps) {
             // 代码块 (```) - 包裹在 md-code-block div 中
             const childArray = React.Children.toArray(children);
-            const codeChild = childArray.find(child => child?.type === 'code');
-            
+            const codeChild = childArray.find(child => (child as React.ReactElement)?.type === 'code');
+
             if (codeChild) {
-              const text = String(codeChild.props.children).replace(/\n$/, '').trim();
+              const text = String((codeChild as React.ReactElement).props.children).replace(/\n$/, '').trim();
               if (looksLikeWorkspaceFilePath(text)) {
                 return (
                   <button
@@ -103,10 +117,10 @@ export function useMessageRenderer() {
                 </div>
               );
             }
-            
+
             return <pre>{children}</pre>;
           },
-          table({ children }) {
+          table({ children }: TableProps) {
             return (
               <div className="md-table-wrapper">
                 <table className="md-table">{children}</table>
@@ -120,7 +134,7 @@ export function useMessageRenderer() {
     );
   }, []);
 
-  const renderPlainContent = useCallback((content) => {
+  const renderPlainContent = useCallback((content: string): React.ReactNode => {
     if (!content) return null;
     return <span className="plain-text-content">{content}</span>;
   }, []);

@@ -3,9 +3,11 @@
  * Use this instead of raw console.log/console.warn.
  */
 
-const isDev = import.meta.env?.DEV ?? true;
+const isDev = (import.meta.env?.DEV as boolean | undefined) ?? true;
 
-export const logger = {
+type LogMethod = (...args: unknown[]) => void;
+
+export const logger: Record<string, LogMethod> = {
   debug: (...args) => {
     if (isDev) console.debug("[DEBUG]", ...args);
   },

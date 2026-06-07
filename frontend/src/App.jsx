@@ -22,6 +22,8 @@ import {
   Library,
   Brain,
   GitBranch,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import Chat from "./pages/Chat/ChatPanel";
 import Config from "./pages/Config";
@@ -45,17 +47,19 @@ import { useWebSocket } from "./contexts/WebSocketContext";
 import { useChatState } from "./hooks/useChatState";
 
 const APP_TITLE_BY_TAB = {
-  chat: "TERMINAL_SESSION",
-  config: "CONFIG_EDITOR",
-  mcp: "MCP_SERVERS",
-  extensions: "EXTENSIONS",
-  cron: "CRON",
-  agents: "AGENTS",
-  workspaces: "WORKSPACE_EXPLORER",
-  history: "HISTORY",
-  memory: "MEMORY_STREAM",
-  tokens: "TOKENS",
-  workflows: "WORKFLOWS",
+  chat: "Chat",
+  config: "System",
+  mcp: "MCP Servers",
+  extensions: "Extensions",
+  cron: "Cron Jobs",
+  agents: "Agents",
+  workspaces: "Workspace",
+  history: "History",
+  memory: "Memory",
+  tokens: "Tokens",
+  workflows: "Workflows",
+  library: "Library",
+  knowledge: "Knowledge",
 };
 
 function App() {
@@ -68,6 +72,12 @@ function App() {
 
   // ===== 状态 =====
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState({
+    core: true,
+    system: false,
+    integrations: false,
+    data: false,
+  });
   const [config, setConfig] = useState({
     providers: {},
     agents: { defaults: { model: "deepseek-chat", workspace: "" } },
@@ -76,6 +86,11 @@ function App() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
+
+  const toggleGroup = (groupKey) => {
+    if (sidebarCollapsed) return;
+    setExpandedGroups(prev => ({ ...prev, [groupKey]: !prev[groupKey] }));
+  };
 
   // activeTab 从路由派生，避免 useEffect 中 setState
   const activeTab = useMemo(() => {
@@ -236,6 +251,49 @@ function App() {
 
   const appTitleBarText = APP_TITLE_BY_TAB[activeTab] ?? "OCTOPUS";
 
+  // 渲染导航分组
+  const renderNavGroup = (groupKey, groupLabel, items) => {
+    if (sidebarCollapsed) {
+      return items.map(({ key, icon: Icon, label }) => (
+        <button
+          key={key}
+          className={`nav-item ${activeTab === key ? "active" : ""}`}
+          onClick={() => handleNavClick(key)}
+          title={label}
+        >
+          <Icon size={18} />
+        </button>
+      ));
+    }
+    const isExpanded = expandedGroups[groupKey];
+    const isActiveInGroup = items.some(item => activeTab === item.key);
+    return (
+      <div key={groupKey} className={`nav-group ${isActiveInGroup ? 'has-active' : ''}`}>
+        <button
+          className="nav-group-header"
+          onClick={() => toggleGroup(groupKey)}
+        >
+          <span className="nav-group-label">{groupLabel}</span>
+          {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+        </button>
+        {isExpanded && (
+          <div className="nav-group-items">
+            {items.map(({ key, icon: Icon, label }) => (
+              <button
+                key={key}
+                className={`nav-item ${activeTab === key ? "active" : ""}`}
+                onClick={() => handleNavClick(key)}
+              >
+                <Icon size={16} />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // ===== 渲染 =====
   return (
     <div className="app-container">
@@ -294,34 +352,38 @@ function App() {
         <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
           <div className="sidebar-nav">
             <nav>
-              {[
+              {renderNavGroup('core', '核心', [
                 { key: 'chat', icon: Bot, label: 'CHAT' },
-                { key: 'config', icon: Settings, label: 'SYSTEM' },
-                { key: 'mcp', icon: Server, label: 'SERVERS' },
+                { key: 'knowledge', icon: BookOpen, label: 'KNOWLEDGE' },
+                { key: 'workspaces', icon: FolderOpen, label: 'WORKSPACE' },
+              ])}
+              {renderNavGroup('system', '系统', [
+                { key: 'config', icon: Settings, label: 'CONFIG' },
+                { key: 'agents', icon: Users, label: 'AGENTS' },
+                { key: 'mcp', icon: Server, label: 'MCP' },
+              ])}
+              {renderNavGroup('integrations', '集成', [
                 { key: 'extensions', icon: Package, label: 'EXTENSIONS' },
                 { key: 'cron', icon: Clock, label: 'CRON' },
-                { key: 'agents', icon: Users, label: 'AGENTS' },
-                { key: 'workspaces', icon: FolderOpen, label: 'WORKSPACE' },
-                { key: 'library', icon: Library, label: 'LIBRARY' },
-                { key: 'knowledge', icon: BookOpen, label: 'KNOWLEDGE' },
-                { key: 'workflows', icon: GitBranch, label: 'WORKFLOWS' },
+              ])}
+              {renderNavGroup('data', '数据', [
                 { key: 'history', icon: HistoryIcon, label: 'HISTORY' },
                 { key: 'memory', icon: Brain, label: 'MEMORY' },
+                { key: 'library', icon: Library, label: 'LIBRARY' },
                 { key: 'tokens', icon: Zap, label: 'TOKENS' },
-              ].map(({ key, icon: Icon, label }) => (
-                <button
-                  key={key}
-                  className={`nav-item ${activeTab === key ? "active" : ""}`}
-                  onClick={() => handleNavClick(key)}
-                >
-                  <Icon size={18} />
-                  <span>{label}</span>
-                </button>
-              ))}
+              ])}
+              {renderNavGroup('workflows', '工作流', [
+                { key: 'workflows', icon: GitBranch, label: 'WORKFLOWS' },
+              ])}
             </nav>
-            <div className="status-panel">
-              <div className="status-line">VER: 1.0.0</div>
-            </div>
+            {!sidebarCollapsed && (
+              <div className="status-panel">
+                <div className="status-line">
+                  <span className={`connection-dot ${connectionStatus}`} /> {connectionStatus === 'connected' ? '已连接' : connectionStatus === 'connecting' ? '连接中...' : '离线'}
+                </div>
+                <div className="status-line version">v1.0.0</div>
+              </div>
+            )}
           </div>
         </aside>
 

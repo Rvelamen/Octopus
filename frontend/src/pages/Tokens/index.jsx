@@ -635,7 +635,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
       <style>{`
         .token-usage-panel {
           height: 100%;
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           flex-direction: column;
           background: var(--surface);
           border: 1px solid var(--board);
@@ -644,7 +645,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .window-header {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           align-items: center;
           gap: var(--s-3);
           padding: var(--s-3) var(--s-4);
@@ -666,7 +668,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           border-radius: var(--r-sm);
           cursor: pointer;
           color: var(--text-2);
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           align-items: center;
           justify-content: center;
         }
@@ -690,7 +693,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .tab-bar {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           gap: var(--s-1);
           padding: var(--s-2) var(--s-4);
           background: var(--surface);
@@ -699,7 +703,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .tab-btn {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           align-items: center;
           gap: var(--s-1);
           padding: var(--s-2) var(--s-3);
@@ -732,7 +737,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .loading-inline {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           align-items: center;
           justify-content: center;
           padding: var(--s-6);
@@ -758,7 +764,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           border: 1px solid var(--border);
           border-radius: var(--r-md);
           padding: var(--s-4);
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           gap: var(--s-3);
         }
 
@@ -774,7 +781,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           width: 48px;
           height: 48px;
           border-radius: 8px;
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
@@ -818,7 +826,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .usage-section h3 {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           align-items: center;
           gap: var(--s-2);
           font-size: 14px;
@@ -828,7 +837,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .section-header {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           align-items: center;
           justify-content: space-between;
           margin-bottom: var(--s-3);
@@ -876,7 +886,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           height: 16px;
           background: var(--surface-3);
           border-radius: var(--r-sm);
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           overflow: hidden;
         }
 
@@ -985,7 +996,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           border-radius: 8px;
           background: rgba(59, 130, 246, 0.1);
           color: #3b82f6;
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           align-items: center;
           justify-content: center;
           margin: 0 auto var(--s-2);
@@ -1026,7 +1038,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         .type-badge.observation { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
 
         .pct-bar {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           align-items: center;
           gap: 6px;
         }
@@ -1055,15 +1068,14 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
 
         /* Calendar Heatmap */
         .calendar-heatmap {
-          display: flex;
-          flex-wrap: nowrap;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           gap: var(--s-5);
           padding: var(--s-3);
-          overflow-x: auto;
         }
 
         .calendar-month {
-          flex: 0 0 auto;
+          min-width: 0;
         }
 
         .calendar-month-label {
@@ -1076,7 +1088,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
 
         .calendar-grid {
           display: grid;
-          grid-template-columns: repeat(7, 28px);
+          grid-template-columns: repeat(7, 1fr);
+          width: 100%;
           gap: 3px;
         }
 
@@ -1088,8 +1101,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .calendar-day {
-          width: 28px;
-          height: 28px;
+          aspect-ratio: 1;
           border-radius: 4px;
           display: flex;
           align-items: center;
@@ -1097,6 +1109,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           position: relative;
           cursor: pointer;
           transition: transform 0.1s ease;
+          min-height: 28px;
         }
 
         .calendar-day:hover {
@@ -1115,7 +1128,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .calendar-legend {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           align-items: center;
           gap: 4px;
           margin-top: var(--s-3);
@@ -1135,16 +1149,17 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
 
         /* Hourly Heatmap */
         .hourly-heatmap {
-          overflow-x: auto;
           padding: var(--s-2);
         }
 
         .hourly-header {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         }
 
         .hourly-row {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         }
 
         .hourly-cell {
@@ -1171,7 +1186,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         .hourly-cell.header {
           font-size: 10px;
           color: var(--text-3);
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           align-items: center;
           justify-content: center;
           width: 36px;
@@ -1181,7 +1197,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           width: 48px;
           font-size: 11px;
           color: var(--text-2);
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           align-items: center;
           justify-content: flex-end;
           padding-right: 8px;

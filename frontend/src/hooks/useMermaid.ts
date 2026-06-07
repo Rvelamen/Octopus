@@ -1,10 +1,12 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 
-let mermaidModule = null;
-let mermaidLoading = false;
-let mermaidLoadPromise = null;
+type MermaidApi = any; // dynamically imported mermaid module
 
-const loadMermaidModule = async () => {
+let mermaidModule: MermaidApi | null = null;
+let mermaidLoading = false;
+let mermaidLoadPromise: Promise<MermaidApi> | null = null;
+
+const loadMermaidModule = async (): Promise<MermaidApi> => {
   if (mermaidModule) return mermaidModule;
   if (mermaidLoading && mermaidLoadPromise) return mermaidLoadPromise;
 
@@ -15,7 +17,7 @@ const loadMermaidModule = async () => {
       mermaidLoading = false;
       return mermaidModule;
     })
-    .catch((error) => {
+    .catch((error: unknown) => {
       mermaidLoading = false;
       throw error;
     });
@@ -23,16 +25,23 @@ const loadMermaidModule = async () => {
   return mermaidLoadPromise;
 };
 
-const getIsDarkMode = () => {
+const getIsDarkMode = (): boolean => {
   if (typeof document === 'undefined') return false;
   return document.documentElement.classList.contains('dark');
 };
 
-export function useMermaid() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [forceRenderKey, setForceRenderKey] = useState(0);
-  const observerRef = useRef(null);
+interface UseMermaidReturn {
+  mermaid: MermaidApi | null;
+  isLoading: boolean;
+  error: string | null;
+  forceRenderKey: number;
+}
+
+export function useMermaid(): UseMermaidReturn {
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [forceRenderKey, setForceRenderKey] = useState<number>(0);
+  const observerRef = useRef<MutationObserver | null>(null);
 
   const initialize = useCallback(async () => {
     try {
