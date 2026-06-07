@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Activity, Calendar, RefreshCw, Database,
   DollarSign, Clock, Gauge, BarChart3, Layers, AlertTriangle,
-  Server, Wallet, Timer, TrendingUp, TrendingDown, Zap
+  Server, Wallet, Timer, TrendingUp, TrendingDown, Zap, Flame
 } from 'lucide-react';
 import WindowDots from '@components/layout/WindowDots';
 
@@ -35,6 +35,7 @@ const TAB_CONFIG = [
   { key: 'efficiency', label: 'Efficiency', icon: Gauge },
   { key: 'cost', label: 'Cost', icon: DollarSign },
   { key: 'models', label: 'Models', icon: BarChart3 },
+  { key: 'heatmap', label: 'Heatmap', icon: Flame },
 ];
 
 const TokenUsagePanel = ({ sendWSMessage }) => {
@@ -62,6 +63,9 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
 
   // Models data
   const [modelComparison, setModelComparison] = useState([]);
+
+  // Heatmap data
+  const [heatmap, setHeatmap] = useState({ calendar: { data: [], max_tokens: 1 }, hourly: { matrix: [], max_tokens: 1 }, months: 6 });
 
   const fetchOverview = useCallback(async () => {
     if (!sendWSMessage) return;
@@ -109,6 +113,16 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
     }
   }, [sendWSMessage]);
 
+  const fetchHeatmap = useCallback(async () => {
+    if (!sendWSMessage) return;
+    try {
+      const response = await sendWSMessage('token_get_heatmap', { months: 6 });
+      if (response.data) setHeatmap(response.data);
+    } catch (err) {
+      console.error('Failed to fetch heatmap:', err);
+    }
+  }, [sendWSMessage]);
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     await Promise.all([
@@ -116,9 +130,10 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
       fetchEfficiency(),
       fetchCostTrend(),
       fetchModelComparison(),
+      fetchHeatmap(),
     ]);
     setLoading(false);
-  }, [fetchOverview, fetchEfficiency, fetchCostTrend, fetchModelComparison]);
+  }, [fetchOverview, fetchEfficiency, fetchCostTrend, fetchModelComparison, fetchHeatmap]);
 
   useEffect(() => {
     fetchAll();

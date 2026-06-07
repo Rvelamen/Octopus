@@ -142,6 +142,7 @@ from backend.channels.desktop.handlers.token_analytics import (
     TokenModelComparisonHandler,
     TokenSessionWaterfallHandler,
 )
+from backend.channels.desktop.handlers.token_heatmap import TokenHeatmapHandler
 
 # Import workflow handler
 from backend.channels.desktop.handlers.workflow import WorkflowHandler
@@ -262,6 +263,7 @@ class HandlerRegistry:
                 MessageType.TOKEN_GET_SESSION_WATERFALL: TokenSessionWaterfallHandler(bus, self.db),
                 MessageType.TOKEN_GET_CACHE_ANALYTICS: TokenCacheAnalyticsHandler(bus, self.db),
                 MessageType.TOKEN_GET_MODEL_COMPARISON: TokenModelComparisonHandler(bus, self.db),
+                MessageType.TOKEN_GET_HEATMAP: TokenHeatmapHandler(bus, self.db),
             }
         )
 

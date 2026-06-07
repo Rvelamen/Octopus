@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Server, Wrench, Activity, Plus, RefreshCw, Eye, Search, Pencil, X, ChevronDown, ChevronRight, Cpu, Plug, BarChart3 } from 'lucide-react';
+import { Server, Wrench, Activity, Plus, RefreshCw, Eye, Search, Pencil, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { ConfigCard, DynamicItemCard } from '@components/config';
 import { SwitchField, InputField } from '@components/forms';
 import { ToastContainer } from '@components/ui/Toast';
 import WindowDots from '@components/layout/WindowDots';
 import AddServerDialog from './components/AddServerDialog';
+import MCPStatusPanel from './components/MCPStatusPanel';
 import './MCPPanel.css';
 
 /**
@@ -432,107 +433,6 @@ const MCP_TABS = [
     });
   };
 
-  // 渲染状态面板
-  const renderStatus = () => {
-    if (!mcpStatus) {
-      return (
-        <div className="mcp-empty">
-          <span>Loading MCP status...</span>
-        </div>
-      );
-    }
-
-    return (
-      <div className="mcp-status-grid">
-        <div className="mcp-status-card">
-          <div className="status-header">
-            <Cpu size={14} />
-            <span className="status-title">SYSTEM</span>
-          </div>
-          <div className="status-content">
-            <div className="status-row">
-              <span className="status-label">Enabled:</span>
-              <span className={`status-value ${mcpStatus.enabled ? 'enabled' : 'disabled'}`}>
-                {mcpStatus.enabled ? 'YES' : 'NO'}
-              </span>
-            </div>
-            <div className="status-row">
-              <span className="status-label">Initialized:</span>
-              <span className={`status-value ${mcpStatus.initialized ? 'enabled' : 'disabled'}`}>
-                {mcpStatus.initialized ? 'YES' : 'NO'}
-              </span>
-            </div>
-            <div className="status-row">
-              <span className="status-label">Running:</span>
-              <span className={`status-value ${mcpStatus.running ? 'enabled' : 'disabled'}`}>
-                {mcpStatus.running ? 'YES' : 'NO'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mcp-status-card">
-          <div className="status-header">
-            <Plug size={14} />
-            <span className="status-title">CONNECTIONS</span>
-          </div>
-          <div className="status-content">
-            <div className="status-row">
-              <span className="status-label">Total:</span>
-              <span className="status-value">{mcpStatus.connections?.total || 0}</span>
-            </div>
-            <div className="status-row">
-              <span className="status-label">Connected:</span>
-              <span className="status-value enabled">{mcpStatus.connections?.connected || 0}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mcp-status-card">
-          <div className="status-header">
-            <Wrench size={14} />
-            <span className="status-title">TOOLS</span>
-          </div>
-          <div className="status-content">
-            <div className="status-row">
-              <span className="status-label">Total:</span>
-              <span className="status-value">{mcpStatus.tools?.total || 0}</span>
-            </div>
-            <div className="status-row">
-              <span className="status-label">Enabled:</span>
-              <span className="status-value enabled">{mcpStatus.tools?.enabled || 0}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mcp-status-card wide">
-          <div className="status-header">
-            <BarChart3 size={14} />
-            <span className="status-title">METRICS</span>
-          </div>
-          <div className="status-content">
-            <div className="status-row">
-              <span className="status-label">Total Requests:</span>
-              <span className="status-value">{mcpStatus.metrics?.total_requests || 0}</span>
-            </div>
-            <div className="status-row">
-              <span className="status-label">Successful:</span>
-              <span className="status-value enabled">{mcpStatus.metrics?.successful_requests || 0}</span>
-            </div>
-            <div className="status-row">
-              <span className="status-label">Failed:</span>
-              <span className="status-value disabled">{mcpStatus.metrics?.failed_requests || 0}</span>
-            </div>
-            <div className="status-row">
-              <span className="status-label">Avg Latency:</span>
-              <span className="status-value">{mcpStatus.metrics?.average_latency_ms?.toFixed(2) || 0} ms</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   // 渲染服务器列表（使用 DynamicItemCard 样式）
   const renderServers = () => {
     return (
@@ -754,7 +654,7 @@ const MCP_TABS = [
       case 'tools':
         return renderTools();
       case 'status':
-        return renderStatus();
+        return <MCPStatusPanel status={mcpStatus} />;
       default:
         return renderServers();
     }
