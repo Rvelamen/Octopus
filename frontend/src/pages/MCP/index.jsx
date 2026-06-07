@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Server, Wrench, Activity, X, ChevronDown, ChevronRight } from 'lucide-react';
-import { SwitchField } from '@components/forms';
+import { Server, Wrench, Activity, X, RefreshCw } from 'lucide-react';
 import { ToastContainer } from '@components/ui/Toast';
 import WindowDots from '@components/layout/WindowDots';
 import AddServerDialog from './components/AddServerDialog';
 import MCPStatusPanel from './components/MCPStatusPanel';
 import MCPServerList from './components/MCPServerList';
+import MCPToolsPanel from './components/MCPToolsPanel';
 import './MCPPanel.css';
 
 /**
@@ -439,7 +439,18 @@ const MCP_TABS = [
       case 'servers':
         return (<MCPServerList servers={servers} discoveringServer={discoveringServer} onDiscover={discoverTools} onReconnect={reconnectServer} onEdit={openEditDialog} onDelete={deleteServer} onToggle={toggleServer} onViewTools={loadServerTools} onAdd={openAddDialog} />);
       case 'tools':
-        return renderTools();
+        return (
+          <MCPToolsPanel
+            servers={servers}
+            selectedServer={selectedServer}
+            serverTools={serverTools}
+            expandedTools={expandedTools}
+            onSelectServer={loadServerTools}
+            onDiscoverTools={discoverTools}
+            onToggleTool={toggleTool}
+            onToggleExpanded={toggleToolExpanded}
+          />
+        );
       case 'status':
         return <MCPStatusPanel status={mcpStatus} />;
       default:

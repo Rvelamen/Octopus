@@ -1148,9 +1148,9 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .hourly-cell {
-          width: 28px;
-          height: 22px;
-          border-radius: 2px;
+          width: 36px;
+          height: 28px;
+          border-radius: 3px;
           margin: 1px;
           flex-shrink: 0;
           cursor: pointer;
@@ -1164,27 +1164,27 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .hourly-cell.corner {
-          width: 40px;
+          width: 48px;
           background: transparent;
         }
 
         .hourly-cell.header {
-          font-size: 9px;
+          font-size: 10px;
           color: var(--text-3);
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 28px;
+          width: 36px;
         }
 
         .hourly-cell.row-label {
-          width: 40px;
-          font-size: 10px;
+          width: 48px;
+          font-size: 11px;
           color: var(--text-2);
           display: flex;
           align-items: center;
           justify-content: flex-end;
-          padding-right: 6px;
+          padding-right: 8px;
           background: transparent;
         }
       `}</style>
