@@ -94,15 +94,6 @@ const LoopNode = memo(({ id, data, selected }) => {
   const childEdgesCount = childEdges.length;
 
   // ⭐ 调试日志：输出当前节点的关键信息
-// Removed debug log
-    nodeWidth,
-    nodeHeight,
-    measured: currentNode?.measured,
-    dataWidth: currentNode?.width,
-    dataHeight: currentNode?.height,
-    childNodesCount,
-    selected,
-  });
 
   return (
     <div
