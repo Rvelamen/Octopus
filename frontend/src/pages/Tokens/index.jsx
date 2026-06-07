@@ -486,6 +486,120 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
     </div>
   );
 
+  // ===== Heatmap Tab =====
+  const renderHeatmap = () => {
+    const { calendar, hourly } = heatmap;
+    const maxTokens = calendar.max_tokens || 1;
+
+    // Build calendar grid: group by month, each month is a grid
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const hourLabels = Array.from({ length: 24 }, (_, i) => i);
+
+    const getColor = (value, max) => {
+      if (!max || max <= 0) return 'var(--surface-3)';
+      const ratio = value / max;
+      if (ratio === 0) return 'var(--surface-3)';
+      if (ratio < 0.15) return 'rgba(59, 130, 246, 0.15)';
+      if (ratio < 0.30) return 'rgba(59, 130, 246, 0.30)';
+      if (ratio < 0.50) return 'rgba(59, 130, 246, 0.50)';
+      if (ratio < 0.70) return 'rgba(59, 130, 246, 0.70)';
+      return 'rgba(59, 130, 246, 0.90)';
+    };
+
+    // Group calendar data by month for display
+    const byMonth = {};
+    calendar.data.forEach(d => {
+      const [y, m] = d.date.split('-');
+      const key = `${y}-${m}`;
+      if (!byMonth[key]) byMonth[key] = [];
+      byMonth[key].push(d);
+    });
+
+    const monthKeys = Object.keys(byMonth).sort();
+
+    return (
+      <>
+        <div className="usage-section">
+          <h3><Flame size={14} /> Usage Calendar</h3>
+          <div className="calendar-heatmap">
+            {monthKeys.map(monthKey => {
+              const [year, month] = monthKey.split('-');
+              const days = byMonth[monthKey];
+              const monthStart = new Date(Number(year), Number(month) - 1, 1);
+              const startWeekday = monthStart.getDay(); // 0 = Sunday
+
+              return (
+                <div key={monthKey} className="calendar-month">
+                  <div className="calendar-month-label">{monthNames[Number(month) - 1]} {year}</div>
+                  <div className="calendar-grid">
+                    {weekdayLabels.map((label, i) => (
+                      <div key={i} className="calendar-weekday-label">{label}</div>
+                    ))}
+                    {Array.from({ length: startWeekday }).map((_, i) => (
+                      <div key={`pad-${i}`} className="calendar-day empty" />
+                    ))}
+                    {days.map((day, i) => (
+                      <div
+                        key={i}
+                        className="calendar-day"
+                        style={{ background: getColor(day.total_tokens, maxTokens) }}
+                        title={`${day.date}: ${formatNumber(day.total_tokens)} tokens, ${formatCurrency(day.cost_usd)}`}
+                      >
+                        <span className="calendar-day-num">{day.date.split('-')[2]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="calendar-legend">
+            <span className="legend-label">Less</span>
+            {[
+              'var(--surface-3)',
+              'rgba(59, 130, 246, 0.15)',
+              'rgba(59, 130, 246, 0.30)',
+              'rgba(59, 130, 246, 0.50)',
+              'rgba(59, 130, 246, 0.70)',
+              'rgba(59, 130, 246, 0.90)',
+            ].map((color, i) => (
+              <div key={i} className="legend-box" style={{ background: color }} />
+            ))}
+            <span className="legend-label">More</span>
+          </div>
+        </div>
+
+        <hr className="section-divider" />
+
+        <div className="usage-section">
+          <h3><Clock size={14} /> Hourly Usage Pattern</h3>
+          <div className="hourly-heatmap">
+            <div className="hourly-header">
+              <div className="hourly-cell corner" />
+              {hourLabels.map(h => (
+                <div key={h} className="hourly-cell header">{h}</div>
+              ))}
+            </div>
+            {hourly.matrix.map((row, wd) => (
+              <div key={wd} className="hourly-row">
+                <div className="hourly-cell row-label">{weekdayLabels[wd]}</div>
+                {row.map((value, hr) => (
+                  <div
+                    key={hr}
+                    className="hourly-cell"
+                    style={{ background: getColor(value, hourly.max_tokens || 1) }}
+                    title={`${weekdayLabels[wd]} ${hr}:00: ${formatNumber(value)} tokens`}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </>
+    );
+  };
+
   return (
     <div className="panel token-usage-panel">
       <div className="window-header">
@@ -515,6 +629,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         {!loading && activeTab === 'efficiency' && renderEfficiency()}
         {!loading && activeTab === 'cost' && renderCost()}
         {!loading && activeTab === 'models' && renderModels()}
+        {!loading && activeTab === 'heatmap' && renderHeatmap()}
       </div>
 
       <style>{`
@@ -936,6 +1051,141 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         .model-table td {
           font-size: 11px;
           padding: var(--s-2);
+        }
+
+        /* Calendar Heatmap */
+        .calendar-heatmap {
+          display: flex;
+          flex-wrap: nowrap;
+          gap: var(--s-5);
+          padding: var(--s-3);
+          overflow-x: auto;
+        }
+
+        .calendar-month {
+          flex: 0 0 auto;
+        }
+
+        .calendar-month-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text);
+          margin-bottom: var(--s-2);
+          font-family: var(--font-mono);
+        }
+
+        .calendar-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 28px);
+          gap: 3px;
+        }
+
+        .calendar-weekday-label {
+          font-size: 10px;
+          color: var(--text-3);
+          text-align: center;
+          line-height: 20px;
+        }
+
+        .calendar-day {
+          width: 28px;
+          height: 28px;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          cursor: pointer;
+          transition: transform 0.1s ease;
+        }
+
+        .calendar-day:hover {
+          transform: scale(1.15);
+          z-index: 1;
+          box-shadow: 0 0 4px rgba(0,0,0,0.2);
+        }
+
+        .calendar-day.empty {
+          background: transparent !important;
+        }
+
+        .calendar-day-num {
+          font-size: 10px;
+          color: var(--text-2);
+        }
+
+        .calendar-legend {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-top: var(--s-3);
+          padding-left: var(--s-3);
+        }
+
+        .legend-label {
+          font-size: 11px;
+          color: var(--text-3);
+        }
+
+        .legend-box {
+          width: 12px;
+          height: 12px;
+          border-radius: 2px;
+        }
+
+        /* Hourly Heatmap */
+        .hourly-heatmap {
+          overflow-x: auto;
+          padding: var(--s-2);
+        }
+
+        .hourly-header {
+          display: flex;
+        }
+
+        .hourly-row {
+          display: flex;
+        }
+
+        .hourly-cell {
+          width: 28px;
+          height: 22px;
+          border-radius: 2px;
+          margin: 1px;
+          flex-shrink: 0;
+          cursor: pointer;
+          transition: transform 0.1s ease;
+        }
+
+        .hourly-cell:hover {
+          transform: scale(1.2);
+          z-index: 1;
+          box-shadow: 0 0 4px rgba(0,0,0,0.2);
+        }
+
+        .hourly-cell.corner {
+          width: 40px;
+          background: transparent;
+        }
+
+        .hourly-cell.header {
+          font-size: 9px;
+          color: var(--text-3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+        }
+
+        .hourly-cell.row-label {
+          width: 40px;
+          font-size: 10px;
+          color: var(--text-2);
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          padding-right: 6px;
+          background: transparent;
         }
       `}</style>
     </div>

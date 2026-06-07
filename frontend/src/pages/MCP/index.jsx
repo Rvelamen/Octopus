@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Server, Wrench, Activity, Plus, RefreshCw, Eye, Search, Pencil, X, ChevronDown, ChevronRight } from 'lucide-react';
-import { ConfigCard, DynamicItemCard } from '@components/config';
-import { SwitchField, InputField } from '@components/forms';
+import { Server, Wrench, Activity, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { SwitchField } from '@components/forms';
 import { ToastContainer } from '@components/ui/Toast';
 import WindowDots from '@components/layout/WindowDots';
 import AddServerDialog from './components/AddServerDialog';
 import MCPStatusPanel from './components/MCPStatusPanel';
+import MCPServerList from './components/MCPServerList';
 import './MCPPanel.css';
 
 /**
@@ -434,229 +434,16 @@ const MCP_TABS = [
   };
 
   // 渲染服务器列表（使用 DynamicItemCard 样式）
-  const renderServers = () => {
-    return (
-      <ConfigCard
-        title="MCP SERVERS"
-        icon={<Server size={14} />}
-        actions={
-          <button className="add-btn" onClick={openAddDialog} title="添加 Server">
-            <Plus size={14} />
-          </button>
-        }
-      >
-        {servers.length === 0 ? (
-          <div className="empty-config">
-            <span>暂无 MCP Server，点击 [+] 添加</span>
-          </div>
-        ) : (
-          <div className="dynamic-items-list">
-            {servers.map((server) => (
-              <DynamicItemCard
-                key={server.name}
-                title={server.name}
-                itemKey={server.name}
-                onDelete={deleteServer}
-                defaultExpanded={false}
-                enabled={server.enabled !== false}
-                onToggleEnabled={toggleServer}
-                showEnabledSwitch={true}
-              >
-                <div className="server-detail-content">
-                  <div className="server-meta-row">
-                    <span className="server-tools-badge">Tools: {server.tools?.length || 0}</span>
-                    <span className={`server-status-badge ${server.connected ? 'connected' : 'disconnected'}`}>
-                      {server.connected ? 'CONNECTED' : 'DISCONNECTED'}
-                    </span>
-                    <span className="server-protocol-badge">{server.protocol?.toUpperCase() || 'STDIO'}</span>
-                  </div>
-                  {server.protocol === 'stdio' || !server.protocol ? (
-                    <>
-                      <InputField
-                        label="Command"
-                        value={server.command || ''}
-                        disabled={true}
-                      />
-                      {server.args && server.args.length > 0 && (
-                        <div className="form-field">
-                          <label className="form-label">Arguments</label>
-                          <div className="args-display">
-                            {server.args.map((arg, idx) => (
-                              <span key={idx} className="arg-tag">{arg}</span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <InputField
-                        label="URL"
-                        value={server.url || ''}
-                        disabled={true}
-                      />
-                      <InputField
-                        label="Protocol"
-                        value={server.protocol || ''}
-                        disabled={true}
-                      />
-                    </>
-                  )}
-                  {server.env && Object.keys(server.env).length > 0 && (
-                    <div className="form-field">
-                      <label className="form-label">Environment Variables</label>
-                      <div className="env-display">
-                        {Object.keys(server.env).map((key) => (
-                          <span key={key} className="env-tag">{key}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className="server-actions-row">
-                    <button
-                      className="pixel-button small secondary"
-                      onClick={() => loadServerTools(server.name, true)}
-                      title="View Tools"
-                    >
-                      <Eye size={14} />
-                    </button>
-                    <button
-                      className={`pixel-button small ${discoveringServer === server.name ? 'loading' : ''}`}
-                      onClick={() => discoverTools(server.name)}
-                      disabled={discoveringServer === server.name}
-                      title="Discover Tools"
-                    >
-                      {discoveringServer === server.name ? '...' : <Search size={14} />}
-                    </button>
-                    <button
-                      className="pixel-button small"
-                      onClick={() => reconnectServer(server.name)}
-                      title="Reconnect"
-                    >
-                      <RefreshCw size={14} />
-                    </button>
-                    <button
-                      className="pixel-button small secondary"
-                      onClick={() => openEditDialog(server)}
-                      title="Edit"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                  </div>
-                </div>
-              </DynamicItemCard>
-            ))}
-          </div>
-        )}
-      </ConfigCard>
-    );
-  };
-
-  const renderTools = () => {
-    return (
-      <div className="mcp-tools-container">
-        <div className="mcp-tools-sidebar">
-          <div className="tools-sidebar-header">
-            <WindowDots />
-            <span>SERVERS</span>
-          </div>
-          <div className="tools-server-list">
-            {servers.map((server) => (
-              <button
-                key={server.name}
-                className={`tools-server-item ${selectedServer?.name === server.name ? 'active' : ''}`}
-                onClick={() => loadServerTools(server.name)}
-              >
-                <span className="server-item-name">{server.name}</span>
-                <span className={`server-item-status ${server.connected ? 'connected' : 'disconnected'}`}>
-                  {server.connected ? '●' : '○'}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="mcp-tools-content">
-          {selectedServer ? (
-            <>
-              <div className="tools-content-header">
-                <WindowDots />
-                <span className="tools-server-title">{selectedServer.name}</span>
-                <span className={`tools-server-badge ${selectedServer.connected ? 'connected' : 'disconnected'}`}>
-                  {selectedServer.connected ? 'CONNECTED' : 'DISCONNECTED'}
-                </span>
-              </div>
-              {serverTools.length === 0 ? (
-                <div className="mcp-empty">
-                  <span>No tools found for this server</span>
-                  <button
-                className="pixel-button"
-                onClick={() => discoverTools(selectedServer.name)}
-              >
-                <Search size={14} /> Discover
-              </button>
-                </div>
-              ) : (
-                <div className="mcp-tools-list">
-                  {serverTools.map((tool) => {
-                    const isExpanded = expandedTools.has(tool.name);
-                    return (
-                      <div key={tool.name} className={`mcp-tool-card ${isExpanded ? 'expanded' : 'collapsed'}`}>
-                        <div className="tool-header">
-                          <button
-                            className="tool-expand-btn"
-                            onClick={() => toggleToolExpanded(tool.name)}
-                            title={isExpanded ? 'Collapse' : 'Expand'}
-                          >
-                            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                            <span className="tool-name">{tool.name}</span>
-                          </button>
-                          <SwitchField
-                            label=""
-                            checked={tool.enabled}
-                            onChange={(v) => toggleTool(tool.name, selectedServer.name, v)}
-                          />
-                        </div>
-                        {isExpanded && (
-                          <>
-                            <div className="tool-description">
-                              {tool.description || 'No description'}
-                            </div>
-                            {tool.parameters && (
-                              <div className="tool-params">
-                                <span className="params-label">Parameters:</span>
-                                <pre className="params-json">
-                                  {JSON.stringify(tool.parameters, null, 2)}
-                                </pre>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="mcp-empty">
-              <span>Select a server to view its tools</span>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   const renderContent = () => {
     switch (mcpTab) {
       case 'servers':
-        return renderServers();
+        return (<MCPServerList servers={servers} discoveringServer={discoveringServer} onDiscover={discoverTools} onReconnect={reconnectServer} onEdit={openEditDialog} onDelete={deleteServer} onToggle={toggleServer} onViewTools={loadServerTools} onAdd={openAddDialog} />);
       case 'tools':
         return renderTools();
       case 'status':
         return <MCPStatusPanel status={mcpStatus} />;
       default:
-        return renderServers();
+        return (<MCPServerList servers={servers} discoveringServer={discoveringServer} onDiscover={discoverTools} onReconnect={reconnectServer} onEdit={openEditDialog} onDelete={deleteServer} onToggle={toggleServer} onViewTools={loadServerTools} onAdd={openAddDialog} />);
     }
   };
 
