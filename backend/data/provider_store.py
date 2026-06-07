@@ -430,7 +430,7 @@ class ModelRepository:
         """Convert database row to ModelRecord."""
         # Parse model_types from JSON string
         # sqlite3.Row supports both dict-style access and index access
-        model_types_str = row["model_types"] if "model_types" in row else None
+        model_types_str = row.get("model_types")
         try:
             model_types = json.loads(model_types_str) if model_types_str else None
         except (json.JSONDecodeError, TypeError):
@@ -454,7 +454,7 @@ class ModelRepository:
             supports_streaming=bool(row["supports_streaming"]),
             enabled=bool(row["enabled"]),
             is_default=bool(row["is_default"]),
-            description=row["description"] if "description" in row else None,
+            description=row.get("description"),
             pricing_json=(
                 json.loads(row["pricing_json"])
                 if "pricing_json" in row and row["pricing_json"]
@@ -734,21 +734,9 @@ class AgentDefaultsRepository:
             id=row["id"],
             default_provider_id=row["default_provider_id"],
             default_model_id=row["default_model_id"],
-            library_extract_provider_id=(
-                row["library_extract_provider_id"]
-                if "library_extract_provider_id" in row
-                else None
-            ),
-            library_extract_model_id=(
-                row["library_extract_model_id"]
-                if "library_extract_model_id" in row
-                else None
-            ),
-            library_extract_language=(
-                row["library_extract_language"]
-                if "library_extract_language" in row
-                else "English"
-            ),
+            library_extract_provider_id=row.get("library_extract_provider_id"),
+            library_extract_model_id=row.get("library_extract_model_id"),
+            library_extract_language=row.get("library_extract_language", "English"),
             workspace_path=row["workspace_path"] or "",
             max_tokens=row["max_tokens"] or 8192,
             temperature=row["temperature"] or 0.7,

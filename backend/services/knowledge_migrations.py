@@ -2,6 +2,7 @@
 
 import sqlite3
 from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -412,10 +413,8 @@ def _migration_008_separate_library_from_knowledge(conn: sqlite3.Connection) -> 
 
 def _migration_009_add_library_chunk_status(conn: sqlite3.Connection) -> None:
     """Add chunk_status column to library_items for PDF extraction progress tracking."""
-    try:
+    with suppress(sqlite3.OperationalError):
         conn.execute("ALTER TABLE library_items ADD COLUMN chunk_status TEXT DEFAULT 'pending'")
-    except sqlite3.OperationalError:
-        pass  # Column already exists
     conn.commit()
 
 

@@ -315,16 +315,6 @@ export const useWorkflowStore = create(
             y: LOOP_HEADER_OFFSET + CHILD_NODE_PADDING_TOP, // 距离顶部 header 区域 8px
           };
 
-// Removed debug log
-            childId,
-            parentId,
-            relativePosition: newPosition,
-            parentNodePosition: parentNode.position,
-            parentNodeSize: {
-              width: parentNode.measured?.width ?? parentNode.width ?? 400,
-              height: parentNode.measured?.height ?? parentNode.height ?? 280,
-            },
-          });
 
           // ⭐ 计算画布绝对坐标（用于 positionAbsolute）
           const absolutePosition = {
@@ -501,12 +491,6 @@ export const useWorkflowStore = create(
                   const dx = Math.abs(change.position.x - (node.position?.x || 0));
                   const dy = Math.abs(change.position.y - (node.position?.y || 0));
                   if ((dx > 100 || dy > 100) && (change.position.x > parentW + 50 || change.position.y > parentH + 50)) {
-// Removed debug log
-                      nodeId: node.id,
-                      oldPos: node.position,
-                      newPos: change.position,
-                      parentSize: { w: parentW, h: parentH },
-                    });
                     return { ...change, position: node.position };
                   }
                 }
@@ -524,14 +508,6 @@ export const useWorkflowStore = create(
                 const clampedY = Math.min(newY, maxY);
 
                 if (clampedX !== change.position.x || clampedY !== change.position.y) {
-// Removed debug log
-                    nodeId: node.id,
-                    original: change.position.x,
-                    clamped: { x: clampedX, y: clampedY },
-                    bounds: { minX: 10, maxX, minY: LOOP_HEADER_OFFSET + CHILD_NODE_PADDING_TOP, maxY },
-                    parentSize: { w: parentW, h: parentH },
-                    nodeSize: { w: nodeW, h: nodeH },
-                  });
                   return { ...change, position: { x: clampedX, y: clampedY } };
                 }
               }
@@ -600,14 +576,6 @@ export const useWorkflowStore = create(
 
                 // ⭐ 满足任一条件即可移入循环体
                 if (isInBodyArea || overlapRatio >= 0.3) {
-// Removed debug log
-                    nodeCenter: { x: nodeCenterX, y: nodeCenterY },
-                    bodyArea: { x: bodyX, y: bodyY, w: bodyW, h: bodyH },
-                    overlapRatio,
-                    isInBodyArea,
-                    loopNodePosition: loopNode.position,
-                    loopNodeMeasured: { width: loopW, height: loopH },
-                  });
 
                   // 移入循环体：设置 parentId、相对坐标，并同步 internals.positionAbsolute
                   const relX = CHILD_NODE_PADDING_LEFT;  // 左侧间距
@@ -618,11 +586,6 @@ export const useWorkflowStore = create(
                   const absoluteX = loopNode.position.x + relX;
                   const absoluteY = loopNode.position.y + relY;
 
-// Removed debug log
-                    relativePosition: { x: relX, y: relY },
-                    parentPosition: loopNode.position,
-                    absolutePosition: { x: absoluteX, y: absoluteY },
-                  });
 
                   newNodes = newNodes.map((n) =>
                     n.id === node.id
@@ -646,11 +609,6 @@ export const useWorkflowStore = create(
                       : n
                   );
 
-// Removed debug log
-                    parentId: loopNode.id,
-                    relativePosition: { x: relX, y: relY },
-                    positionAbsolute: { x: absoluteX, y: absoluteY },
-                  });
 
                   // RF12 要求 parent 节点在 children 之前
                   newNodes.sort((a, b) => {

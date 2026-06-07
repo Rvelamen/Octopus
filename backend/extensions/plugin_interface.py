@@ -1,6 +1,5 @@
 """Plugin interface - similar to ChannelInterface."""
 
-from abc import ABC
 from dataclasses import dataclass
 from typing import Any
 
@@ -14,7 +13,7 @@ class PluginResult:
     error: str = None
 
 
-class PluginInterface(ABC):
+class PluginInterface:
     """
     Plugin interface - symmetric design with ChannelInterface.
 

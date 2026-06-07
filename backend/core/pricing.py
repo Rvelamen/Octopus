@@ -86,10 +86,7 @@ def calculate_cost(
     Returns:
         Cost in USD
     """
-    if db_pricing:
-        pricing = db_pricing
-    else:
-        pricing = get_fallback_pricing(model_id)
+    pricing = db_pricing or get_fallback_pricing(model_id)
 
     input_price = pricing.get("input", pricing.get("prompt", 3.0))
     output_price = pricing.get("output", pricing.get("completion", 12.0))

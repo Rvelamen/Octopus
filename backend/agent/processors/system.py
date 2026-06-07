@@ -50,8 +50,7 @@ class SystemMessageProcessor(MessageProcessor):
         session = self.agent_loop.sessions.get_or_create(session_key)
 
         # If session_instance_id is provided, ensure we're using the correct instance
-        if session_instance_id and session.active_instance:
-            if session.active_instance.id != session_instance_id:
+        if session_instance_id and session.active_instance and session.active_instance.id != session_instance_id:
                 logger.warning(
                     f"Session instance mismatch: active={session.active_instance.id}, "
                     f"expected={session_instance_id}. Using provided instance_id for routing."

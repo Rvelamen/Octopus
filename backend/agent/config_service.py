@@ -184,10 +184,7 @@ class AgentConfigService:
                 enabled_models = self._get_model_repo().get_enabled_models_by_provider(
                     provider_record.id
                 )
-                if enabled_models:
-                    model_id = enabled_models[0].model_id
-                else:
-                    model_id = "gpt-4o"  # Ultimate fallback
+                model_id = enabled_models[0].model_id if enabled_models else "gpt-4o"  # Ultimate fallback
 
         max_tokens = getattr(defaults, "max_tokens", 8192) or 8192
         temperature = getattr(defaults, "temperature", 0.7) or 0.7
@@ -278,10 +275,7 @@ class AgentConfigService:
                 enabled_models = self._get_model_repo().get_enabled_models_by_provider(
                     provider_record.id
                 )
-                if enabled_models:
-                    model_id = enabled_models[0].model_id
-                else:
-                    model_id = "gpt-4o"  # Ultimate fallback
+                model_id = enabled_models[0].model_id if enabled_models else "gpt-4o"  # Ultimate fallback
 
         # Create ProviderConfig for factory
         provider_config = ProviderConfig(

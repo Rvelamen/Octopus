@@ -1,6 +1,5 @@
 """Channel interface for extended capabilities."""
 
-from abc import ABC
 from dataclasses import dataclass
 from typing import Any
 
@@ -14,7 +13,7 @@ class ChannelResult:
     error: str = None
 
 
-class ChannelInterface(ABC):
+class ChannelInterface:
     """
     Extended interface for channels that support additional actions.
 
