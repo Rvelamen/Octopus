@@ -810,14 +810,13 @@ JSON output:"""
                 provider_name = provider.name
 
         # Fallback to default provider/model if library extract not configured
-        if not provider_id or not model_id:
-            if defaults.default_provider_id and defaults.default_model_id:
-                provider = provider_repo.get_provider_by_id(defaults.default_provider_id)
-                model = model_repo.get_model_by_id(defaults.default_model_id)
-                if provider and model and provider.api_key:
-                    provider_id = provider.name
-                    model_id = model.model_id
-                    provider_name = provider.name
+        if (not provider_id or not model_id) and defaults.default_provider_id and defaults.default_model_id:
+            provider = provider_repo.get_provider_by_id(defaults.default_provider_id)
+            model = model_repo.get_model_by_id(defaults.default_model_id)
+            if provider and model and provider.api_key:
+                provider_id = provider.name
+                model_id = model.model_id
+                provider_name = provider.name
 
         # Final fallback to config file
         if not provider_id or not model_id:
@@ -941,7 +940,7 @@ JSON output:"""
     async def fetch_metadata_by_doi(self, doi: str) -> dict:
         """Fetch metadata from CrossRef API."""
         url = f"https://api.crossref.org/works/{doi}"
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession() as session:  # noqa: SIM117
             async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
                 if resp.status != 200:
                     raise ValueError(f"CrossRef API returned {resp.status}")

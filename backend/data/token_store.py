@@ -707,6 +707,82 @@ class TokenUsageRepository:
 
             return result
 
+    def get_heatmap(self, months: int = 6) -> dict:
+        """Get heatmap data for calendar and hourly usage patterns.
+
+        Args:
+            months: Number of months to look back for calendar heatmap
+
+        Returns:
+            Dict with calendar_data (list of daily stats) and hourly_matrix (7x24 grid)
+        """
+        with self.db._get_connection() as conn:
+            # Calendar heatmap: daily usage for the last N months
+            calendar_rows = conn.execute(
+                """SELECT
+                    date(created_at) as date,
+                    SUM(total_tokens) as total_tokens,
+                    SUM(cost_usd) as cost_usd,
+                    COUNT(*) as request_count,
+                    SUM(prompt_tokens) as prompt_tokens,
+                    SUM(completion_tokens) as completion_tokens
+                FROM token_usage
+                WHERE created_at >= datetime('now', 'localtime', ?)
+                GROUP BY date(created_at)
+                ORDER BY date""",
+                (f'-{months} months',)
+            ).fetchall()
+
+            calendar_data = []
+            for row in calendar_rows:
+                calendar_data.append({
+                    "date": row["date"],
+                    "total_tokens": row["total_tokens"] or 0,
+                    "cost_usd": round(row["cost_usd"] or 0, 6),
+                    "request_count": row["request_count"] or 0,
+                    "prompt_tokens": row["prompt_tokens"] or 0,
+                    "completion_tokens": row["completion_tokens"] or 0,
+                })
+
+            # Hourly heatmap: usage by weekday (0=Sun) and hour
+            hourly_rows = conn.execute(
+                """SELECT
+                    CAST(strftime('%w', created_at) AS INTEGER) as weekday,
+                    CAST(strftime('%H', created_at) AS INTEGER) as hour,
+                    SUM(total_tokens) as total_tokens,
+                    COUNT(*) as request_count,
+                    SUM(cost_usd) as cost_usd
+                FROM token_usage
+                WHERE created_at >= datetime('now', 'localtime', ?)
+                GROUP BY weekday, hour""",
+                (f'-{months} months',)
+            ).fetchall()
+
+            # Build 7x24 matrix (weekday x hour)
+            hourly_matrix = [[0 for _ in range(24)] for _ in range(7)]
+            for row in hourly_rows:
+                wd = row["weekday"]  # 0=Sunday, 1=Monday, ..., 6=Saturday
+                hr = row["hour"]
+                hourly_matrix[wd][hr] = row["total_tokens"] or 0
+
+            # Get max values for normalization
+            max_daily_tokens = max((d["total_tokens"] for d in calendar_data), default=1)
+            max_hourly_tokens = max(max(row) for row in hourly_matrix) if hourly_matrix else 1
+            if max_hourly_tokens == 0:
+                max_hourly_tokens = 1
+
+            return {
+                "calendar": {
+                    "data": calendar_data,
+                    "max_tokens": max_daily_tokens,
+                },
+                "hourly": {
+                    "matrix": hourly_matrix,
+                    "max_tokens": max_hourly_tokens,
+                },
+                "months": months,
+            }
+
     def _row_to_record(self, row) -> TokenUsageRecord:
         """Convert database row to TokenUsageRecord."""
         return TokenUsageRecord(

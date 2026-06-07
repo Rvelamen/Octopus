@@ -488,6 +488,7 @@ class MessageType(Enum):
     TOKEN_GET_SESSION_WATERFALL = "token_get_session_waterfall"  # Get session waterfall
     TOKEN_GET_CACHE_ANALYTICS = "token_get_cache_analytics"  # Get cache analytics
     TOKEN_GET_MODEL_COMPARISON = "token_get_model_comparison"  # Get model comparison
+    TOKEN_GET_HEATMAP = "token_get_heatmap"  # Get heatmap data
 
     # Image Provider - Server -> Client
     IMAGE_PROVIDERS = "image_providers"  # Image providers list
@@ -501,6 +502,7 @@ class MessageType(Enum):
     TOKEN_SESSION_WATERFALL = "token_session_waterfall"  # Session waterfall data
     TOKEN_CACHE_ANALYTICS = "token_cache_analytics"  # Cache analytics data
     TOKEN_MODEL_COMPARISON = "token_model_comparison"  # Model comparison data
+    TOKEN_HEATMAP = "token_heatmap"  # Heatmap data
 
     # TTS - Client -> Server
     TTS_GET_INSTANCE_CONFIG = "tts_get_instance_config"  # Get TTS config for session instance
@@ -709,6 +711,7 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.TOKEN_GET_SESSION_WATERFALL,
     MessageType.TOKEN_GET_CACHE_ANALYTICS,
     MessageType.TOKEN_GET_MODEL_COMPARISON,
+    MessageType.TOKEN_GET_HEATMAP,
     # Subagent Options
     MessageType.SUBAGENT_GET_AVAILABLE_TOOLS,
     MessageType.SUBAGENT_GET_AVAILABLE_EXTENSIONS,
@@ -838,6 +841,7 @@ SERVER_MESSAGE_TYPES = {
     MessageType.TOKEN_SESSION_WATERFALL,
     MessageType.TOKEN_CACHE_ANALYTICS,
     MessageType.TOKEN_MODEL_COMPARISON,
+    MessageType.TOKEN_HEATMAP,
     # Model workflow
     MessageType.MODEL_PROVIDERS_LIST,
     MessageType.MODEL_MODELS_LIST,

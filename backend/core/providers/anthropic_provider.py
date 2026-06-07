@@ -194,8 +194,7 @@ class AnthropicProvider(RetryableProvider):
                             )
                             current_tool_call._raw_args = ""
 
-                    elif event.type == "content_block_stop":
-                        if current_tool_call:
+                    elif event.type == "content_block_stop" and current_tool_call:
                             raw = getattr(current_tool_call, "_raw_args", "{}")
                             try:
                                 current_tool_call.arguments = json.loads(raw) if raw else {}

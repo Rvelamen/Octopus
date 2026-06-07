@@ -446,9 +446,8 @@ class CronService:
         next_wake = None
 
         for job in jobs:
-            if job.enabled and job.next_run_at_ms:
-                if next_wake is None or job.next_run_at_ms < next_wake:
-                    next_wake = job.next_run_at_ms
+            if job.enabled and job.next_run_at_ms and (next_wake is None or job.next_run_at_ms < next_wake):
+                next_wake = job.next_run_at_ms
 
         return {
             "enabled": self._running,

@@ -475,8 +475,7 @@ class WorkflowEngine:
             for cfg_value in config.values():
                 refs = self._extract_node_refs_from_value(cfg_value)
                 for ref_node_id in refs:
-                    if ref_node_id in graph and ref_node_id != node.id:
-                        if node.id not in graph[ref_node_id]:
+                    if ref_node_id in graph and ref_node_id != node.id and node.id not in graph[ref_node_id]:
                             graph[ref_node_id].append(node.id)
                             in_degree[node.id] += 1
                             logger.info(

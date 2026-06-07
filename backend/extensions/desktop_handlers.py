@@ -327,7 +327,7 @@ class SkillInstallHandler:
         """Fetch extension details from Extension Market API."""
         try:
             url = f"{EXTENSION_MARKET_API_BASE}/api/extensions/{extension_id}"
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient() as client:  # noqa: SIM117
                 response = await client.get(url)
                 if response.status_code == 200:
                     data = response.json()
@@ -345,7 +345,7 @@ class SkillInstallHandler:
     async def _download_zip(self, url: str, dest_path: Path) -> bool:
         """Download ZIP file from URL to destination path."""
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient() as client:  # noqa: SIM117
                 async with client.stream("GET", url) as response:
                     if response.status_code == 200:
                         with open(dest_path, "wb") as f:
@@ -528,7 +528,7 @@ class ExtensionGetListHandler:
             if extension_type:
                 params["type"] = extension_type
 
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient() as client:  # noqa: SIM117
                 response = await client.get(url, params=params)
                 if response.status_code == 200:
                     data = response.json()
@@ -941,7 +941,7 @@ class ExtensionInstallHandler:
         """Fetch extension details from Extension Market API."""
         try:
             url = f"{EXTENSION_MARKET_API_BASE}/api/extensions/{extension_id}"
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient() as client:  # noqa: SIM117
                 response = await client.get(url)
                 if response.status_code == 200:
                     data = response.json()
@@ -957,7 +957,7 @@ class ExtensionInstallHandler:
     async def _download_zip(self, url: str, dest_path: Path) -> bool:
         """Download ZIP file from URL to destination path."""
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient() as client:  # noqa: SIM117
                 async with client.stream("GET", url) as response:
                     if response.status_code == 200:
                         with open(dest_path, "wb") as f:
@@ -1998,7 +1998,7 @@ class PluginInstallHandler:
         """Fetch plugin details from Market API."""
         try:
             url = f"{EXTENSION_MARKET_API_BASE}/api/plugins/{plugin_id}"
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient() as client:  # noqa: SIM117
                 response = await client.get(url)
                 if response.status_code == 200:
                     return response.json()
@@ -2010,7 +2010,7 @@ class PluginInstallHandler:
     async def _download_zip(self, url: str, dest_path: Path) -> bool:
         """Download ZIP file."""
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient() as client:  # noqa: SIM117
                 async with client.stream("GET", url) as response:
                     if response.status_code == 200:
                         with open(dest_path, "wb") as f:

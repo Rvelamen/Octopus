@@ -594,10 +594,8 @@ The output can be in plain text or Markdown format."""
             elif tag_name in ("div", "span"):
                 # 处理 div/span 中的文本，但避免重复
                 text = get_text(element)
-                if text and len(text) > 10:
-                    # 检查是否已经有这个文本（避免重复）
-                    if text not in "".join(markdown_parts):
-                        markdown_parts.append(text + "\n")
+                if text and len(text) > 10 and text not in "".join(markdown_parts):
+                    markdown_parts.append(text + "\n")
 
         result = "".join(markdown_parts)
 

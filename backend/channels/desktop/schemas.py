@@ -715,6 +715,10 @@ class TokenGetModelComparisonRequest(BaseRequest):
     days: int = 30
 
 
+class TokenGetHeatmapRequest(BaseRequest):
+    months: int = 6
+
+
 # ============================================================================
 # TTS
 # ============================================================================
@@ -915,6 +919,7 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.TOKEN_GET_SESSION_WATERFALL: TokenGetSessionWaterfallRequest,
     MessageType.TOKEN_GET_CACHE_ANALYTICS: TokenGetCacheAnalyticsRequest,
     MessageType.TOKEN_GET_MODEL_COMPARISON: TokenGetModelComparisonRequest,
+    MessageType.TOKEN_GET_HEATMAP: TokenGetHeatmapRequest,
     MessageType.TTS_GET_INSTANCE_CONFIG: TTSGetInstanceConfigRequest,
     MessageType.TTS_UPDATE_INSTANCE_CONFIG: TTSUpdateInstanceConfigRequest,
     MessageType.TTS_GET_DEFAULTS: TTSGetDefaultsRequest,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { API_BASE } from '../../../../config/constants';
+import { API_BASE } from '../../../../../config/constants';
 
 function ImageModal({ image, onClose }) {
   const [imageLoading, setImageLoading] = useState(true);

@@ -147,9 +147,8 @@ class MessageAdapter:
                 if "tool_use_id" not in adapted_msg and "tool_call_id" in adapted_msg:
                     adapted_msg["tool_use_id"] = adapted_msg.pop("tool_call_id")
 
-            elif role == "assistant":
+            elif role == "assistant" and "tool_calls" in adapted_msg and "tool_use" not in adapted_msg:
                 # Convert OpenAI tool_calls to Anthropic tool_use
-                if "tool_calls" in adapted_msg and "tool_use" not in adapted_msg:
                     tool_use = []
                     for tc in adapted_msg.pop("tool_calls", []):
                         func = tc.get("function", {})

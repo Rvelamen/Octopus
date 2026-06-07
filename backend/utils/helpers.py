@@ -47,10 +47,8 @@ def _find_project_workspace() -> Path | None:
     # Walk up looking for workspace directory
     for parent in [current, *current.parents]:
         workspace = parent / "workspace"
-        if workspace.exists() and workspace.is_dir():
-            # Check if it contains expected subdirectories
-            if (workspace / "system").exists() or (workspace / "extensions").exists():
-                return workspace
+        if workspace.exists() and workspace.is_dir() and ((workspace / "system").exists() or (workspace / "extensions").exists()):
+            return workspace
 
     return None
 

@@ -51,12 +51,11 @@ class ExtensionLoader:
         if self.builtin_dir.exists():
             logger.info(f"Loading builtin extensions from {self.builtin_dir}")
             for ext_dir in sorted(self.builtin_dir.iterdir()):
-                if ext_dir.is_dir() and not ext_dir.name.startswith("."):
-                    if ext_dir.name not in seen_names:
-                        ext = self._load_from_directory(ext_dir)
-                        if ext:
-                            extensions.append(ext)
-                            seen_names.add(ext.name)
+                if ext_dir.is_dir() and not ext_dir.name.startswith(".") and ext_dir.name not in seen_names:
+                    ext = self._load_from_directory(ext_dir)
+                    if ext:
+                        extensions.append(ext)
+                        seen_names.add(ext.name)
 
         logger.info(f"Loaded {len(extensions)} extensions total")
         return extensions

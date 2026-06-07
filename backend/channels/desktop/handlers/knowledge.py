@@ -931,9 +931,8 @@ class KnowledgeListVaultsHandler(_KnowledgeHandlerMixin, MessageHandler):
         # Also scan filesystem for vault directories (may not be indexed yet)
         if notes_dir.exists() and notes_dir.is_dir():
             for item in notes_dir.iterdir():
-                if item.is_dir() and item.name != "__pycache__":
-                    if item.name not in indexed:
-                        indexed[item.name] = {"name": item.name, "note_count": 0}
+                if item.is_dir() and item.name != "__pycache__" and item.name not in indexed:
+                    indexed[item.name] = {"name": item.name, "note_count": 0}
 
         # Sort by name
         result = list(indexed.values())
