@@ -851,7 +851,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           background: var(--surface-2);
           border: 1px solid var(--border);
           border-radius: var(--r-md);
-          padding: 0;
+          padding: var(--s-3);
         }
 
         .daily-bar-container {
@@ -947,7 +947,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
 
         .model-provider {
           color: var(--text-3);
-          font-size: 8px;
+          font-size: 10px;
         }
 
         .empty-state {
@@ -1057,12 +1057,19 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         .calendar-heatmap {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: var(--s-2);
-          padding: 0;
+          gap: var(--s-5);
+          padding: var(--s-3);
         }
 
         .calendar-month {
           min-width: 0;
+          padding-right: var(--s-4);
+          border-right: 1px solid var(--border);
+        }
+
+        .calendar-month:last-child {
+          border-right: none;
+          padding-right: 0;
         }
 
         .calendar-month-label {
@@ -1118,8 +1125,8 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           display: flex;
           align-items: center;
           gap: 4px;
-          margin-top: var(--s-1);
-          padding-left: 0;
+          margin-top: var(--s-3);
+          padding-left: var(--s-3);
         }
 
         .legend-label {
@@ -1136,7 +1143,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         /* Hourly Heatmap */
         .hourly-heatmap {
           display: grid;
-          grid-template-columns: 50px repeat(24, 1fr);
+          grid-template-columns: 42px repeat(24, 1fr);
           gap: 1px;
           width: 100%;
         }
@@ -1147,17 +1154,16 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .hourly-cell {
-          aspect-ratio: 1.3;
-          border-radius: 3px;
-          min-height: 20px;
+          border-radius: 2px;
+          min-height: 18px;
           cursor: pointer;
           transition: transform 0.1s ease;
         }
 
         .hourly-cell:hover {
-          transform: scale(1.15);
+          transform: scale(1.12);
           z-index: 1;
-          box-shadow: 0 0 4px rgba(0,0,0,0.2);
+          box-shadow: 0 0 3px rgba(0,0,0,0.2);
         }
 
         .hourly-cell.corner {
@@ -1173,12 +1179,12 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .hourly-cell.row-label {
-          font-size: 11px;
+          font-size: 10px;
           color: var(--text-2);
           display: flex;
           align-items: center;
           justify-content: flex-end;
-          padding-right: 8px;
+          padding-right: 6px;
           background: transparent;
         }
       `}</style>    </div>

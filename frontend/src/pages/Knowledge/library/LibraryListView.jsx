@@ -2,18 +2,10 @@ import React, { useState } from 'react';
 import { FileText, Calendar, Users, Tag, MoreVertical, Trash2, FolderInput, StickyNote, Sparkles, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { Dropdown, Empty, Spin, Table, Popconfirm, Checkbox } from 'antd';
 
-const getApiPort = () => {
-  if (window.electronAPI?.getApiPort) {
-    // Will be resolved async, but for initial render use location.port
-    return window.location.port || '18791';
-  }
-  return window.location.port || '18791';
-};
-
 const getThumbnailUrl = (thumbnailPath) => {
   if (!thumbnailPath) return null;
-  const port = getApiPort();
-  return `http://127.0.0.1:${port}/workspace/${thumbnailPath}`;
+  // Use relative path so Vite dev proxy or Electron serve both work
+  return `/workspace/${thumbnailPath}`;
 };
 
 const ThumbnailImage = ({ thumbnailPath, fallbackSize = 32, style = {} }) => {

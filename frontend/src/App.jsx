@@ -41,6 +41,7 @@ import WorkflowWindow from "./pages/WorkflowWindow";
 import WorkflowTabTitle from "./workflow/components/WorkflowTabTitle";
 import GlobalLoadingOverlay from "./components/GlobalLoadingOverlay";
 import TTSPlayer from "./components/TTSPlayer";
+import octopusLogo from "./assets/octopus-logo.png";
 import { useWebSocket } from "./contexts/WebSocketContext";
 import { useChatState } from "./hooks/useChatState";
 
@@ -240,18 +241,34 @@ function App() {
   const appTitleBarText = APP_TITLE_BY_TAB[activeTab] ?? "OCTOPUS";
 
   // 渲染导航分组
-  const renderNavItems = (items) => {
-    return items.map(({ key, icon: Icon, label }) => (
-      <button
-        key={key}
-        className={`nav-item ${activeTab === key ? "active" : ""}`}
-        onClick={() => handleNavClick(key)}
-        title={label}
-      >
-        <Icon size={20} />
-        {!sidebarCollapsed && <span>{label}</span>}
-      </button>
-    ));
+  const renderNavGroup = (groupLabel, items) => {
+    if (sidebarCollapsed) {
+      return items.map(({ key, icon: Icon, label }) => (
+        <button
+          key={key}
+          className={`nav-item ${activeTab === key ? "active" : ""}`}
+          onClick={() => handleNavClick(key)}
+          title={label}
+        >
+          <Icon size={18} />
+        </button>
+      ));
+    }
+    return (
+      <div className="nav-group" key={groupLabel}>
+        <div className="nav-group-label">{groupLabel}</div>
+        {items.map(({ key, icon: Icon, label }) => (
+          <button
+            key={key}
+            className={`nav-item ${activeTab === key ? "active" : ""}`}
+            onClick={() => handleNavClick(key)}
+          >
+            <Icon size={16} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+    );
   };
 
   // ===== 渲染 =====
@@ -261,13 +278,25 @@ function App() {
       {showLoadingOverlay && <GlobalLoadingOverlay />}
 
       {/* 整窗顶栏 */}
-      <header className="app-titlebar">
+      <header className={`app-titlebar ${sidebarCollapsed ? 'app-titlebar-collapsed' : ''}`}>
         <div className="app-titlebar-brand">
-          <div className="app-titlebar-logo-pill">
-            <div className="logo app-titlebar-logo">
-              <span className="logo-text">OCTOPUS</span>
+          {sidebarCollapsed ? (
+            <img
+              src={octopusLogo}
+              alt="OCTOPUS"
+              className="app-titlebar-logo-img"
+              draggable={false}
+            />
+          ) : (
+            <div className="app-titlebar-logo-pill">
+              <div className="logo app-titlebar-logo">
+                <span className="logo-text">OCTOPUS</span>
+              </div>
             </div>
-          </div>
+          )}
+        </div>
+        <div className="app-titlebar-sep" aria-hidden />
+        <div className="tab-title">
           <button
             type="button"
             className="sidebar-toggle-btn"
@@ -276,9 +305,6 @@ function App() {
           >
             {sidebarCollapsed ? <PanelRight size={14} /> : <PanelLeftClose size={14} />}
           </button>
-        </div>
-        <div className="app-titlebar-sep" aria-hidden />
-        <div className="tab-title">
           {activeTab === 'workflows' ? (
             <WorkflowTabTitle />
           ) : (
@@ -312,42 +338,37 @@ function App() {
         <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
           <div className="sidebar-nav">
             <nav>
-              {/* 核心 */}
-              {renderNavItems([
+              {renderNavGroup('CORE', [
                 { key: 'chat', icon: Bot, label: 'Chat' },
-                { key: 'knowledge', icon: BookOpen, label: 'Knowledge' },
                 { key: 'workspaces', icon: FolderOpen, label: 'Workspace' },
               ])}
-              {/* 系统 */}
-              {renderNavItems([
-                { key: 'config', icon: Settings, label: 'Config' },
-                { key: 'agents', icon: Users, label: 'Agents' },
-                { key: 'mcp', icon: Server, label: 'MCP' },
+              {renderNavGroup('KNOWLEDGE', [
+                { key: 'knowledge', icon: BookOpen, label: 'Knowledge' },
+                { key: 'library', icon: Library, label: 'Library' },
               ])}
-              {/* 集成 */}
-              {renderNavItems([
-                { key: 'extensions', icon: Package, label: 'Extensions' },
+              {renderNavGroup('AUTOMATION', [
+                { key: 'agents', icon: Users, label: 'Agents' },
+                { key: 'workflows', icon: GitBranch, label: 'Workflows' },
                 { key: 'cron', icon: Clock, label: 'Cron' },
               ])}
-              {/* 数据 */}
-              {renderNavItems([
+              {renderNavGroup('INTEGRATIONS', [
+                { key: 'mcp', icon: Server, label: 'MCP' },
+                { key: 'extensions', icon: Package, label: 'Extensions' },
+              ])}
+              {renderNavGroup('SYSTEM', [
                 { key: 'history', icon: HistoryIcon, label: 'History' },
                 { key: 'memory', icon: Brain, label: 'Memory' },
-                { key: 'library', icon: Library, label: 'Library' },
                 { key: 'tokens', icon: Zap, label: 'Tokens' },
-              ])}
-              {/* 工作流 */}
-              {renderNavItems([
-                { key: 'workflows', icon: GitBranch, label: 'Workflows' },
+                { key: 'config', icon: Settings, label: 'Config' },
               ])}
             </nav>
             {!sidebarCollapsed && (
               <div className="sidebar-footer">
                 <span className="footer-version">v1.0.0</span>
-                <span
-                  className={`footer-status-dot ${connectionStatus}`}
-                  title={connectionStatus === 'connected' ? 'Online' : connectionStatus === 'connecting' ? 'Connecting...' : 'Offline'}
-                />
+                <span className={`footer-status ${connectionStatus}`}>
+                  <span className="footer-status-dot" />
+                  {connectionStatus === 'connected' ? 'ONLINE' : connectionStatus === 'connecting' ? 'CONNECTING...' : 'OFFLINE'}
+                </span>
               </div>
             )}
           </div>

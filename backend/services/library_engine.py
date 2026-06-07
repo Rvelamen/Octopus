@@ -192,8 +192,8 @@ class LibraryEngine:
                 return None
 
             page = doc[0]
-            # Render at 200px width for list view display
-            zoom = 200 / page.rect.width
+            # Render at 600px width for sharp display in both card and list views
+            zoom = 600 / page.rect.width
             mat = fitz.Matrix(zoom, zoom)
             pix = page.get_pixmap(matrix=mat)
             thumbnail_path = item_dir / "thumbnail.png"

@@ -167,7 +167,8 @@ hr {
   overflow: hidden;
 }
 
-.app-body.sidebar-is-collapsed {
+.app-body.sidebar-is-collapsed,
+.app-titlebar-collapsed {
   --app-sidebar-width: 80px;
 }
 
@@ -201,6 +202,11 @@ hr {
 
 [data-platform="darwin"] .app-titlebar-brand {
   /* -webkit-app-region: drag; */
+}
+
+.app-titlebar-collapsed .app-titlebar-brand {
+  justify-content: center;
+  padding: 0;
 }
 
 .app-titlebar-logo-pill {
@@ -248,7 +254,7 @@ hr {
   border-right: 1px solid var(--board);
   display: flex;
   flex-direction: column;
-  padding: var(--s-4);
+  padding: 16px 16px 0px;
   flex-shrink: 0;
   -webkit-app-region: drag;
   border-radius: 0 0 0 8px;
@@ -309,12 +315,12 @@ hr {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text-2);
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-3);
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
@@ -323,13 +329,12 @@ hr {
 
 .sidebar-toggle-btn:hover {
   background: var(--surface-3);
-  border-color: var(--accent);
-  color: var(--accent);
+  color: var(--text);
 }
 
 .sidebar-is-collapsed .sidebar-toggle-btn {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
 }
 
 .app-titlebar .tab-title {
@@ -338,8 +343,18 @@ hr {
   flex: 1;
   min-width: 0;
   padding: 0 var(--s-4);
-  /* 不再设置 no-drag，由子组件控制 */
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
   background: var(--surface);
+}
+
+.app-titlebar-collapsed .tab-title {
+  padding-left: 12px;
+}
+
+.app-titlebar-collapsed .app-titlebar-sep {
+  display: block;
 }
 
 .app-titlebar .tab-title > span {
@@ -347,6 +362,13 @@ hr {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.app-titlebar-logo-img {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .app-titlebar .top-actions {
@@ -379,9 +401,26 @@ hr {
   color: var(--text-3);
 }
 
+/* ===== Sidebar Navigation (Reference Style) ===== */
 .sidebar-nav nav {
   display: flex;
   flex-direction: column;
+  gap: 20px;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 0 4px;
+  margin-bottom: 6px;
 }
 
 .nav-item {
@@ -391,27 +430,28 @@ hr {
   width: 100%;
   text-align: left;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
+  border-left: 3px solid transparent;
   color: var(--text-2);
   font-family: var(--font-sans);
   font-size: 16px;
-  font-weight: 500;
-  padding: 14px 18px;
+  font-weight: 400;
+  padding: 9px 16px;
   cursor: pointer;
   transition: all 0.15s ease;
-  border-radius: var(--r-sm);
+  border-radius: 8px;
 }
 
 .nav-item:hover {
-  background: var(--surface-2);
+  background: rgba(180, 106, 87, 0.06);
   color: var(--text);
-  text-decoration: none;
 }
 
 .nav-item.active {
-  background: rgba(180, 106, 87, 0.1);
-  border: 1px solid rgba(180, 106, 87, 0.2);
+  background: rgba(180, 106, 87, 0.08);
+  border-left: 3px solid transparent;
   color: var(--accent);
+  font-weight: 500;
 }
 
 /* Sidebar Footer */
@@ -427,27 +467,32 @@ hr {
 .footer-version {
   font-size: 11px;
   color: var(--text-3);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+}
+
+.footer-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.footer-status.connecting {
+  color: var(--warn);
+}
+
+.footer-status.disconnected {
+  color: var(--danger);
 }
 
 .footer-status-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
-}
-
-.footer-status-dot.connected {
-  background: var(--success);
-}
-
-.footer-status-dot.connecting {
-  background: var(--warn);
-  animation: pulse 1.5s infinite;
-}
-
-.footer-status-dot.disconnected {
-  background: var(--danger);
+  background: currentColor;
 }
 
 .top-bar {
