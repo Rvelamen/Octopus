@@ -22,8 +22,6 @@ import {
   Library,
   Brain,
   GitBranch,
-  ChevronDown,
-  ChevronRight,
 } from "lucide-react";
 import Chat from "./pages/Chat/ChatPanel";
 import Config from "./pages/Config";
@@ -72,12 +70,6 @@ function App() {
 
   // ===== 状态 =====
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState({
-    core: true,
-    system: false,
-    integrations: false,
-    data: false,
-  });
   const [config, setConfig] = useState({
     providers: {},
     agents: { defaults: { model: "deepseek-chat", workspace: "" } },
@@ -86,11 +78,6 @@ function App() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
-
-  const toggleGroup = (groupKey) => {
-    if (sidebarCollapsed) return;
-    setExpandedGroups(prev => ({ ...prev, [groupKey]: !prev[groupKey] }));
-  };
 
   // activeTab 从路由派生，避免 useEffect 中 setState
   const activeTab = useMemo(() => {
@@ -117,6 +104,7 @@ function App() {
     if (activeTab === 'chat') {
       chat.syncStreamingContent();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, chat.syncStreamingContent]);
 
   // ===== 独立窗口检测（hooks 之后）=====
@@ -252,46 +240,18 @@ function App() {
   const appTitleBarText = APP_TITLE_BY_TAB[activeTab] ?? "OCTOPUS";
 
   // 渲染导航分组
-  const renderNavGroup = (groupKey, groupLabel, items) => {
-    if (sidebarCollapsed) {
-      return items.map(({ key, icon: Icon, label }) => (
-        <button
-          key={key}
-          className={`nav-item ${activeTab === key ? "active" : ""}`}
-          onClick={() => handleNavClick(key)}
-          title={label}
-        >
-          <Icon size={18} />
-        </button>
-      ));
-    }
-    const isExpanded = expandedGroups[groupKey];
-    const isActiveInGroup = items.some(item => activeTab === item.key);
-    return (
-      <div key={groupKey} className={`nav-group ${isActiveInGroup ? 'has-active' : ''}`}>
-        <button
-          className="nav-group-header"
-          onClick={() => toggleGroup(groupKey)}
-        >
-          <span className="nav-group-label">{groupLabel}</span>
-          {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-        </button>
-        {isExpanded && (
-          <div className="nav-group-items">
-            {items.map(({ key, icon: Icon, label }) => (
-              <button
-                key={key}
-                className={`nav-item ${activeTab === key ? "active" : ""}`}
-                onClick={() => handleNavClick(key)}
-              >
-                <Icon size={16} />
-                <span>{label}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
+  const renderNavItems = (items) => {
+    return items.map(({ key, icon: Icon, label }) => (
+      <button
+        key={key}
+        className={`nav-item ${activeTab === key ? "active" : ""}`}
+        onClick={() => handleNavClick(key)}
+        title={label}
+      >
+        <Icon size={18} />
+        {!sidebarCollapsed && <span>{label}</span>}
+      </button>
+    ));
   };
 
   // ===== 渲染 =====
@@ -352,36 +312,41 @@ function App() {
         <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
           <div className="sidebar-nav">
             <nav>
-              {renderNavGroup('core', '核心', [
+              {/* 核心 */}
+              {renderNavItems([
                 { key: 'chat', icon: Bot, label: 'CHAT' },
                 { key: 'knowledge', icon: BookOpen, label: 'KNOWLEDGE' },
                 { key: 'workspaces', icon: FolderOpen, label: 'WORKSPACE' },
               ])}
-              {renderNavGroup('system', '系统', [
+              {/* 系统 */}
+              {renderNavItems([
                 { key: 'config', icon: Settings, label: 'CONFIG' },
                 { key: 'agents', icon: Users, label: 'AGENTS' },
                 { key: 'mcp', icon: Server, label: 'MCP' },
               ])}
-              {renderNavGroup('integrations', '集成', [
+              {/* 集成 */}
+              {renderNavItems([
                 { key: 'extensions', icon: Package, label: 'EXTENSIONS' },
                 { key: 'cron', icon: Clock, label: 'CRON' },
               ])}
-              {renderNavGroup('data', '数据', [
+              {/* 数据 */}
+              {renderNavItems([
                 { key: 'history', icon: HistoryIcon, label: 'HISTORY' },
                 { key: 'memory', icon: Brain, label: 'MEMORY' },
                 { key: 'library', icon: Library, label: 'LIBRARY' },
                 { key: 'tokens', icon: Zap, label: 'TOKENS' },
               ])}
-              {renderNavGroup('workflows', '工作流', [
+              {/* 工作流 */}
+              {renderNavItems([
                 { key: 'workflows', icon: GitBranch, label: 'WORKFLOWS' },
               ])}
             </nav>
             {!sidebarCollapsed && (
               <div className="status-panel">
-                <div className="status-line">
-                  <span className={`connection-dot ${connectionStatus}`} /> {connectionStatus === 'connected' ? '已连接' : connectionStatus === 'connecting' ? '连接中...' : '离线'}
-                </div>
-                <div className="status-line version">v1.0.0</div>
+                <div
+                  className={`status-dot ${connectionStatus}`}
+                  title={connectionStatus === 'connected' ? 'Connected' : connectionStatus === 'connecting' ? 'Connecting...' : 'Offline'}
+                />
               </div>
             )}
           </div>

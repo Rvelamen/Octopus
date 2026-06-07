@@ -4,7 +4,7 @@ import WindowDots from '@components/layout/WindowDots';
 import MessageList from '@components/MessageList/index.jsx';
 import ImageModal from '../Chat/ChatPanel/components/Modals/ImageModal.jsx';
 import WorkspaceFilePreviewModal from '../Chat/ChatPanel/components/Modals/WorkspaceFilePreviewModal.jsx';
-import { useMessageRenderer } from '@hooks/useMessageRenderer.jsx';
+import { useMessageRenderer } from '@hooks/useMessageRenderer';
 import './HistoryPanel.css';
 
 /**

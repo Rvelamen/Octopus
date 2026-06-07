@@ -7,7 +7,7 @@ import ChatInput from './components/ChatInput/index.jsx';
 import ImageModal from './components/Modals/ImageModal.jsx';
 import GenerateImageModal from './components/Modals/GenerateImageModal.jsx';
 import WorkspaceFilePreviewModal from './components/Modals/WorkspaceFilePreviewModal.jsx';
-import { useMessageRenderer } from '@hooks/useMessageRenderer.jsx';
+import { useMessageRenderer } from '@hooks/useMessageRenderer';
 import { useInstances } from './hooks/useInstances';
 import { useMessages } from './hooks/useMessages';
 import { useFileUpload } from './hooks/useFileUpload';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Library, Search, Upload, Plus, Grid3X3, List, Table2, GitGraph, Sparkles, StickyNote, CheckSquare, Square, Trash2, Bot } from 'lucide-react';
 import { Input, Button, Segmented, Drawer, message, Progress } from 'antd';
 import { useDistillTasks } from '@contexts/DistillTaskContext';
@@ -163,23 +163,56 @@ const LibraryTab = ({ sendWSMessage }) => {
     return () => window.removeEventListener('knowledge-distill-progress', handler);
   }, [loadDistillTasks]);
 
-  // Poll chunk parse status for items that are pending/processing
+  // Poll chunk parse status with exponential backoff
+  const pollBackoffRef = useRef(3000);
+  const pollTimerRef = useRef(null);
+
   useEffect(() => {
-    const interval = setInterval(() => {
+    const schedulePoll = () => {
       const hasParsing = items.some(
         (i) => i.chunk_status && (i.chunk_status === 'pending' || i.chunk_status.startsWith('processing:'))
       );
       const selectedParsing =
         selectedItem?.chunk_status &&
         (selectedItem.chunk_status === 'pending' || selectedItem.chunk_status.startsWith('processing:'));
-      if (hasParsing || selectedParsing) {
-        loadItems(selectedCollectionId, searchQuery, 0);
-        if (selectedItem) {
-          selectItem(selectedItem.id);
-        }
+
+      if (!hasParsing && !selectedParsing) {
+        // Reset backoff when nothing is parsing
+        pollBackoffRef.current = 3000;
+        return;
       }
-    }, 3000);
-    return () => clearInterval(interval);
+
+      // Perform the refresh
+      loadItems(selectedCollectionId, searchQuery, 0);
+      if (selectedItem) {
+        selectItem(selectedItem.id);
+      }
+
+      // Exponential backoff capped at 30s
+      pollBackoffRef.current = Math.min(pollBackoffRef.current * 1.5, 30000);
+
+      // Schedule next poll with current backoff
+      pollTimerRef.current = setTimeout(schedulePoll, pollBackoffRef.current);
+    };
+
+    // Start polling if there are parsing items
+    const hasParsing = items.some(
+      (i) => i.chunk_status && (i.chunk_status === 'pending' || i.chunk_status.startsWith('processing:'))
+    );
+    const selectedParsing =
+      selectedItem?.chunk_status &&
+      (selectedItem.chunk_status === 'pending' || selectedItem.chunk_status.startsWith('processing:'));
+
+    if (hasParsing || selectedParsing) {
+      pollTimerRef.current = setTimeout(schedulePoll, pollBackoffRef.current);
+    }
+
+    return () => {
+      if (pollTimerRef.current) {
+        clearTimeout(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+    };
   }, [items, selectedItem, selectedCollectionId, searchQuery, loadItems, selectItem]);
 
   const handleViewTaskDetail = useCallback((task) => {
@@ -235,6 +268,35 @@ const LibraryTab = ({ sendWSMessage }) => {
   const selectedCount = selectedIds.size;
   const selectedItems = items.filter((i) => selectedIds.has(i.id));
 
+  // Run tasks with limited concurrency
+  const runWithConcurrency = useCallback(async (tasks, type, onUpdate) => {
+    const CONCURRENCY = 3;
+    let success = 0;
+    let fail = 0;
+    let done = 0;
+    const results = [];
+
+    const runTask = async (task, idx) => {
+      onUpdate({ type, total: tasks.length, done, current: task.title || `Item ${task.id}`, success, fail });
+      try {
+        await task.fn();
+        success++;
+      } catch (e) {
+        console.error(`Batch ${type} failed for ${task.id}:`, e);
+        fail++;
+      }
+      done++;
+      onUpdate({ type, total: tasks.length, done, current: task.title || `Item ${task.id}`, success, fail });
+    };
+
+    for (let i = 0; i < tasks.length; i += CONCURRENCY) {
+      const batch = tasks.slice(i, i + CONCURRENCY);
+      await Promise.all(batch.map((task, idx) => runTask(task, i + idx)));
+    }
+
+    return { success, fail };
+  }, []);
+
   // ── Batch operations on selected ──
   const handleBatchExtract = async () => {
     if (selectedCount === 0) {
@@ -243,21 +305,8 @@ const LibraryTab = ({ sendWSMessage }) => {
     }
     setBatchExtracting(true);
     setBatchProgress({ type: 'extract', total: selectedCount, done: 0, current: '', success: 0, fail: 0 });
-    let success = 0;
-    let fail = 0;
-    for (let i = 0; i < selectedItems.length; i++) {
-      const item = selectedItems[i];
-      setBatchProgress((prev) => ({ ...prev, done: i, current: item.title || `Item ${item.id}` }));
-      try {
-        await aiExtractAndSave(item.id);
-        success++;
-        setBatchProgress((prev) => ({ ...prev, success }));
-      } catch (e) {
-        console.error(`Batch extract failed for ${item.id}:`, e);
-        fail++;
-        setBatchProgress((prev) => ({ ...prev, fail }));
-      }
-    }
+    const tasks = selectedItems.map((item) => ({ id: item.id, title: item.title, fn: () => aiExtractAndSave(item.id) }));
+    const { success, fail } = await runWithConcurrency(tasks, 'extract', setBatchProgress);
     setBatchExtracting(false);
     setBatchProgress(null);
     setSelectedIds(new Set());
@@ -275,21 +324,8 @@ const LibraryTab = ({ sendWSMessage }) => {
     }
     setBatchNoting(true);
     setBatchProgress({ type: 'note', total: selectedCount, done: 0, current: '', success: 0, fail: 0 });
-    let success = 0;
-    let fail = 0;
-    for (let i = 0; i < selectedItems.length; i++) {
-      const item = selectedItems[i];
-      setBatchProgress((prev) => ({ ...prev, done: i, current: item.title || `Item ${item.id}` }));
-      try {
-        await generateNote(item);
-        success++;
-        setBatchProgress((prev) => ({ ...prev, success }));
-      } catch (e) {
-        console.error(`Batch note failed for ${item.id}:`, e);
-        fail++;
-        setBatchProgress((prev) => ({ ...prev, fail }));
-      }
-    }
+    const tasks = selectedItems.map((item) => ({ id: item.id, title: item.title, fn: () => generateNote(item) }));
+    const { success, fail } = await runWithConcurrency(tasks, 'note', setBatchProgress);
     setBatchNoting(false);
     setBatchProgress(null);
     setSelectedIds(new Set());

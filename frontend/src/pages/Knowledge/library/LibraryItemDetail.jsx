@@ -23,6 +23,7 @@ const LibraryItemDetail = ({ item, onClose, onDelete, onUpdateItem, onRefreshIte
   const renderTaskRef = useRef(null);
   const pdfDocRef = useRef(null);
   const fileInputRef = useRef(null);
+  const pdfLoadAbortRef = useRef(null);
 
   // 用原生 pdf.js 渲染缩略图，替代 react-pdf（避免 blob URL 兼容性问题）
   useEffect(() => {
@@ -92,12 +93,21 @@ const LibraryItemDetail = ({ item, onClose, onDelete, onUpdateItem, onRefreshIte
       return;
     }
 
+    // Cancel any in-flight PDF load from a previous item
+    if (pdfLoadAbortRef.current) {
+      pdfLoadAbortRef.current();
+    }
+
+    let isCancelled = false;
+    pdfLoadAbortRef.current = () => { isCancelled = true; };
+
     const loadPdf = async () => {
       setPdfLoading(true);
       setPdfError(null);
       try {
         const pdfPath = `${item.library_path}/main.pdf`;
         const response = await sendWSMessage('workspace_read', { path: pdfPath }, 30000);
+        if (isCancelled) return;
         if (response?.data?.content) {
           setPdfContent({
             content: response.data.content,
@@ -107,14 +117,19 @@ const LibraryItemDetail = ({ item, onClose, onDelete, onUpdateItem, onRefreshIte
           setPdfError('No PDF content');
         }
       } catch (e) {
-        console.error('Failed to load PDF:', e);
-        setPdfError('Failed to load PDF');
+        if (!isCancelled) {
+          console.error('Failed to load PDF:', e);
+          setPdfError('Failed to load PDF');
+        }
       } finally {
-        setPdfLoading(false);
+        if (!isCancelled) {
+          setPdfLoading(false);
+        }
       }
     };
 
     loadPdf();
+    return () => { isCancelled = true; };
   }, [item?.id, item?.library_path, sendWSMessage]);
   if (!item) {
     return (

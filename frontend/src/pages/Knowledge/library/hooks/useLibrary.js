@@ -60,6 +60,7 @@ const useLibrary = (libraryWS, sendWSMessage) => {
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ total: 0, limit: 50, offset: 0 });
   const loadMoreRef = useRef(false);
+  const searchTimeoutRef = useRef(null);
 
   // ── Load collections tree ──
   const loadCollections = useCallback(async () => {
@@ -137,11 +138,16 @@ const useLibrary = (libraryWS, sendWSMessage) => {
     [loadItems]
   );
 
-  // ── Search ──
+  // ── Search with debounce ──
   const handleSearch = useCallback(
-    async (query) => {
+    (query) => {
       setSearchQuery(query);
-      await loadItems(selectedCollectionId, query, 0);
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      searchTimeoutRef.current = setTimeout(() => {
+        loadItems(selectedCollectionId, query, 0);
+      }, 300);
     },
     [loadItems, selectedCollectionId]
   );

@@ -635,8 +635,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
       <style>{`
         .token-usage-panel {
           height: 100%;
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           flex-direction: column;
           background: var(--surface);
           border: 1px solid var(--board);
@@ -645,8 +644,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .window-header {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           align-items: center;
           gap: var(--s-3);
           padding: var(--s-3) var(--s-4);
@@ -668,8 +666,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           border-radius: var(--r-sm);
           cursor: pointer;
           color: var(--text-2);
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           align-items: center;
           justify-content: center;
         }
@@ -693,8 +690,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .tab-bar {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           gap: var(--s-1);
           padding: var(--s-2) var(--s-4);
           background: var(--surface);
@@ -703,8 +699,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .tab-btn {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           align-items: center;
           gap: var(--s-1);
           padding: var(--s-2) var(--s-3);
@@ -737,8 +732,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .loading-inline {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           align-items: center;
           justify-content: center;
           padding: var(--s-6);
@@ -764,8 +758,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           border: 1px solid var(--border);
           border-radius: var(--r-md);
           padding: var(--s-4);
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           gap: var(--s-3);
         }
 
@@ -781,8 +774,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           width: 48px;
           height: 48px;
           border-radius: 8px;
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
@@ -826,8 +818,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .usage-section h3 {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           align-items: center;
           gap: var(--s-2);
           font-size: 14px;
@@ -837,8 +828,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .section-header {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           align-items: center;
           justify-content: space-between;
           margin-bottom: var(--s-3);
@@ -886,8 +876,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           height: 16px;
           background: var(--surface-3);
           border-radius: var(--r-sm);
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           overflow: hidden;
         }
 
@@ -996,8 +985,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
           border-radius: 8px;
           background: rgba(59, 130, 246, 0.1);
           color: #3b82f6;
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           align-items: center;
           justify-content: center;
           margin: 0 auto var(--s-2);
@@ -1038,8 +1026,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         .type-badge.observation { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
 
         .pct-bar {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           align-items: center;
           gap: 6px;
         }
@@ -1128,8 +1115,7 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
         }
 
         .calendar-legend {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           align-items: center;
           gap: 4px;
           margin-top: var(--s-3);
@@ -1149,63 +1135,53 @@ const TokenUsagePanel = ({ sendWSMessage }) => {
 
         /* Hourly Heatmap */
         .hourly-heatmap {
-          padding: var(--s-2);
-        }
-
-        .hourly-header {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          grid-template-columns: 50px repeat(24, 1fr);
+          gap: 2px;
+          width: 100%;
         }
 
+        .hourly-header,
         .hourly-row {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: contents;
         }
 
         .hourly-cell {
-          width: 36px;
-          height: 28px;
+          aspect-ratio: 1.3;
           border-radius: 3px;
-          margin: 1px;
-          flex-shrink: 0;
+          min-height: 20px;
           cursor: pointer;
           transition: transform 0.1s ease;
         }
 
         .hourly-cell:hover {
-          transform: scale(1.2);
+          transform: scale(1.15);
           z-index: 1;
           box-shadow: 0 0 4px rgba(0,0,0,0.2);
         }
 
         .hourly-cell.corner {
-          width: 48px;
           background: transparent;
         }
 
         .hourly-cell.header {
           font-size: 10px;
           color: var(--text-3);
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           align-items: center;
           justify-content: center;
-          width: 36px;
         }
 
         .hourly-cell.row-label {
-          width: 48px;
           font-size: 11px;
           color: var(--text-2);
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          display: flex;
           align-items: center;
           justify-content: flex-end;
           padding-right: 8px;
           background: transparent;
         }
-      `}</style>
-    </div>
+      `}</style>    </div>
   );
 };
 

@@ -178,6 +178,35 @@ class LibraryEngine:
         except Exception:
             return pdf_path.stem
 
+    def _generate_pdf_thumbnail(self, pdf_path: Path, item_dir: Path) -> str | None:
+        """Generate a thumbnail image (thumbnail.png) from the first page of a PDF.
+
+        Returns the relative path to the thumbnail, or None on failure.
+        """
+        try:
+            import fitz
+
+            doc = fitz.open(str(pdf_path))
+            if len(doc) == 0:
+                doc.close()
+                return None
+
+            page = doc[0]
+            # Render at 200px width for list view display
+            zoom = 200 / page.rect.width
+            mat = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat)
+            thumbnail_path = item_dir / "thumbnail.png"
+            pix.save(str(thumbnail_path))
+            doc.close()
+
+            rel_path = str(thumbnail_path.relative_to(self.workspace_root))
+            logger.info(f"Generated thumbnail for {pdf_path.name}: {rel_path}")
+            return rel_path
+        except Exception:
+            logger.warning(f"Failed to generate thumbnail for {pdf_path}")
+            return None
+
     def _try_parse_arxiv_from_filename(self, filename: str) -> str | None:
         """Extract arXiv ID from filename like '2511.04550v1.pdf' or '_tmp_xxx_2511.04550v1.pdf'."""
         m = re.search(r"(\d{4}\.\d{4,5}(?:v\d+)?)", filename)
@@ -343,6 +372,15 @@ class LibraryEngine:
             )
             self.db.commit()
 
+            # Generate thumbnail from first page
+            thumbnail_path = self._generate_pdf_thumbnail(main_pdf, item_dir)
+            if thumbnail_path:
+                self.db.execute(
+                    "UPDATE library_items SET thumbnail_path = ? WHERE id = ?",
+                    (thumbnail_path, item_id),
+                )
+                self.db.commit()
+
             # Extract chunks (this updates chunk_status internally)
             self.extract_pdf_chunks(item_id)
 
@@ -361,7 +399,7 @@ class LibraryEngine:
         row = self.db.execute(
             """
             SELECT id, citekey, item_type, title, authors_json, year, venue, doi, url, abstract, tags_json,
-                   metadata_json, library_path, pdf_sha256, chunk_status, created_at, updated_at
+                   metadata_json, library_path, pdf_sha256, thumbnail_path, chunk_status, created_at, updated_at
             FROM library_items WHERE id = ?
             """,
             (item_id,),
@@ -417,6 +455,7 @@ class LibraryEngine:
             "metadata": json.loads(row["metadata_json"]) if row["metadata_json"] else {},
             "library_path": row["library_path"],
             "pdf_sha256": row["pdf_sha256"],
+            "thumbnail_path": row["thumbnail_path"],
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
             "attachments": attachments,
@@ -526,7 +565,7 @@ class LibraryEngine:
             rows = self.db.execute(
                 f"""
                 SELECT id, citekey, title, authors_json, year, venue, doi, url, abstract, tags_json,
-                       library_path, pdf_sha256, chunk_status, created_at
+                       library_path, pdf_sha256, thumbnail_path, chunk_status, created_at
                 FROM library_items WHERE id IN ({placeholders}) ORDER BY year DESC NULLS LAST
                 """,
                 item_ids,
@@ -539,7 +578,7 @@ class LibraryEngine:
             rows = self.db.execute(
                 """
                 SELECT i.id, i.citekey, i.title, i.authors_json, i.year, i.venue, i.doi, i.url, i.abstract, i.tags_json,
-                       i.library_path, i.pdf_sha256, i.chunk_status, i.created_at
+                       i.library_path, i.pdf_sha256, i.thumbnail_path, i.chunk_status, i.created_at
                 FROM library_items i
                 JOIN library_collection_items ci ON i.id = ci.item_id
                 WHERE ci.collection_id = ?
@@ -556,7 +595,7 @@ class LibraryEngine:
             rows = self.db.execute(
                 """
                 SELECT id, citekey, title, authors_json, year, venue, doi, url, abstract, tags_json,
-                       library_path, pdf_sha256, chunk_status, created_at
+                       library_path, pdf_sha256, thumbnail_path, chunk_status, created_at
                 FROM library_items
                 ORDER BY year DESC NULLS LAST
                 LIMIT ? OFFSET ?
@@ -581,6 +620,7 @@ class LibraryEngine:
                     "tags": json.loads(row["tags_json"]) if row["tags_json"] else [],
                     "library_path": row["library_path"],
                     "pdf_sha256": row["pdf_sha256"],
+                    "thumbnail_path": row["thumbnail_path"],
                     "chunk_status": row["chunk_status"],
                     "created_at": row["created_at"],
                 }
@@ -810,7 +850,11 @@ JSON output:"""
                 provider_name = provider.name
 
         # Fallback to default provider/model if library extract not configured
-        if (not provider_id or not model_id) and defaults.default_provider_id and defaults.default_model_id:
+        if (
+            (not provider_id or not model_id)
+            and defaults.default_provider_id
+            and defaults.default_model_id
+        ):
             provider = provider_repo.get_provider_by_id(defaults.default_provider_id)
             model = model_repo.get_model_by_id(defaults.default_model_id)
             if provider and model and provider.api_key:

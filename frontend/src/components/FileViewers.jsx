@@ -37,6 +37,7 @@ const ImageViewer = ({ file, content, fileExt }) => {
   const [loading, setLoading] = useState(true);
   const [imageUrl, setImageUrl] = useState(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
       if (!content || content.trim() === '') {
@@ -44,13 +45,11 @@ const ImageViewer = ({ file, content, fileExt }) => {
         setLoading(false);
         return;
       }
-      
+
       let byteArray;
       if (file.encoding === 'hex') {
         const hexString = content.replace(/\s/g, '');
-        // 验证 hex 字符串长度是否为偶数且只包含有效字符
         if (!hexString || hexString.length === 0 || hexString.length % 2 !== 0 || !/^[0-9a-fA-F]+$/.test(hexString)) {
-          console.warn('Invalid hex content for image preview:', { length: hexString?.length });
           setError(true);
           setLoading(false);
           return;
@@ -64,7 +63,6 @@ const ImageViewer = ({ file, content, fileExt }) => {
             byteArray[i] = binaryData.charCodeAt(i);
           }
         } catch (e) {
-          console.warn('Failed to decode base64 image:', e);
           setError(true);
           setLoading(false);
           return;
@@ -89,7 +87,6 @@ const ImageViewer = ({ file, content, fileExt }) => {
         URL.revokeObjectURL(url);
       };
     } catch (err) {
-      console.error('Failed to load image:', err);
       setError(true);
       setLoading(false);
     }
@@ -130,19 +127,11 @@ const ImageViewer = ({ file, content, fileExt }) => {
 };
 
 const XlsxViewer = ({ file, content }) => {
-  const [data, setData] = useState([]);
-  const [columns, setColumns] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
+  const parsed = useMemo(() => {
     try {
-// Removed debug log
-
       let byteArray;
       if (file.encoding === 'hex') {
-        const hexString = (content || '').replace(/\s/g, ''); // 移除空白字符
-// Removed debug log
+        const hexString = (content || '').replace(/\s/g, '');
         const pairs = hexString.match(/.{1,2}/g);
         if (!pairs) throw new Error('Invalid hex content');
         byteArray = new Uint8Array(pairs.map(byte => parseInt(byte, 16)));
@@ -156,56 +145,43 @@ const XlsxViewer = ({ file, content }) => {
         byteArray = new TextEncoder().encode(content);
       }
 
-// Removed debug log
       const workbook = XLSX.read(byteArray, { type: 'array' });
-
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
-
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-      if (jsonData.length > 0) {
-        const headers = jsonData[0];
-        const cols = headers.map((header, index) => ({
-          title: header || `Column ${index + 1}`,
-          dataIndex: `col${index}`,
-          key: `col${index}`,
-          ellipsis: true,
-        }));
-
-        const rows = jsonData.slice(1).map((row, rowIndex) => {
-          const rowData = { key: rowIndex };
-          headers.forEach((_, colIndex) => {
-            rowData[`col${colIndex}`] = row[colIndex] || '';
-          });
-          return rowData;
-        });
-
-        setColumns(cols);
-        setData(rows);
+      if (jsonData.length === 0) {
+        return { columns: [], data: [], error: null };
       }
-      setLoading(false);
+
+      const headers = jsonData[0];
+      const columns = headers.map((header, index) => ({
+        title: header || `Column ${index + 1}`,
+        dataIndex: `col${index}`,
+        key: `col${index}`,
+        ellipsis: true,
+      }));
+
+      const data = jsonData.slice(1).map((row, rowIndex) => {
+        const rowData = { key: rowIndex };
+        headers.forEach((_, colIndex) => {
+          rowData[`col${colIndex}`] = row[colIndex] || '';
+        });
+        return rowData;
+      });
+
+      return { columns, data, error: null };
     } catch (err) {
       console.error('Failed to parse xlsx:', err);
-      setError('Failed to parse Excel file');
-      setLoading(false);
+      return { columns: [], data: [], error: 'Failed to parse Excel file' };
     }
   }, [content, file.encoding]);
 
-  if (loading) {
-    return (
-      <div className="xlsx-preview loading">
-        <RefreshCw size={32} className="spin" />
-        <p>Loading Excel file...</p>
-      </div>
-    );
-  }
-
-  if (error) {
+  if (parsed.error) {
     return (
       <div className="xlsx-preview error">
         <File size={48} />
-        <p>{error}</p>
+        <p>{parsed.error}</p>
         <p style={{ fontSize: '12px', color: '#666' }}>{file.name}</p>
       </div>
     );
@@ -219,8 +195,8 @@ const XlsxViewer = ({ file, content }) => {
       </div>
       <div className="xlsx-content">
         <Table
-          columns={columns}
-          dataSource={data}
+          columns={parsed.columns}
+          dataSource={parsed.data}
           pagination={{ pageSize: 50 }}
           size="small"
           scroll={{ x: 'max-content', y: 'calc(100vh - 300px)' }}
@@ -233,13 +209,47 @@ const XlsxViewer = ({ file, content }) => {
 const PdfViewer = ({ file, content }) => {
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pdfUrl, setPdfUrl] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const pdfContentRef = useRef(null);
   const pageRefs = useRef([]);
   const [pageWidth, setPageWidth] = useState(null);
+
+  const { pdfUrl, error } = useMemo(() => {
+    if (!content) {
+      return { pdfUrl: null, error: null };
+    }
+    try {
+      let byteArray;
+      if (file.encoding === 'hex') {
+        const hexString = content.replace(/\s/g, '');
+        if (!hexString || hexString.length % 2 !== 0) {
+          throw new Error('Invalid hex content');
+        }
+        byteArray = new Uint8Array(hexString.length / 2);
+        for (let i = 0; i < hexString.length; i += 2) {
+          byteArray[i / 2] = parseInt(hexString.substring(i, i + 2), 16);
+        }
+      } else {
+        const binaryData = atob(content);
+        byteArray = new Uint8Array(binaryData.length);
+        for (let i = 0; i < binaryData.length; i++) {
+          byteArray[i] = binaryData.charCodeAt(i);
+        }
+      }
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      return { pdfUrl: url, error: null };
+    } catch (err) {
+      console.error('Failed to load pdf:', err);
+      return { pdfUrl: null, error: 'Failed to load PDF file' };
+    }
+  }, [content, file.encoding]);
+
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    };
+  }, [pdfUrl]);
 
   useLayoutEffect(() => {
     if (!pdfUrl) return;
@@ -265,45 +275,6 @@ const PdfViewer = ({ file, content }) => {
     return () => ro.disconnect();
   }, [pdfUrl]);
 
-  useEffect(() => {
-    try {
-      if (!content) {
-        setLoading(true);
-        return;
-      }
-      let byteArray;
-      if (file.encoding === 'hex') {
-        const hexString = content.replace(/\s/g, '');
-        if (!hexString || hexString.length % 2 !== 0) {
-          throw new Error('Invalid hex content');
-        }
-        byteArray = new Uint8Array(hexString.length / 2);
-        for (let i = 0; i < hexString.length; i += 2) {
-          byteArray[i / 2] = parseInt(hexString.substring(i, i + 2), 16);
-        }
-      } else {
-        const binaryData = atob(content);
-        byteArray = new Uint8Array(binaryData.length);
-        for (let i = 0; i < binaryData.length; i++) {
-          byteArray[i] = binaryData.charCodeAt(i);
-        }
-      }
-      const blob = new Blob([byteArray], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      setPdfUrl(url);
-      setLoading(false);
-      setError(null);
-
-      return () => {
-        URL.revokeObjectURL(url);
-      };
-    } catch (err) {
-      console.error('Failed to load pdf:', err);
-      setError('Failed to load PDF file');
-      setLoading(false);
-    }
-  }, [content, file.encoding]);
-
   const onDocumentLoadSuccess = ({ numPages: total }) => {
     setNumPages(total);
     setPdfLoaded(true);
@@ -311,7 +282,6 @@ const PdfViewer = ({ file, content }) => {
 
   const onDocumentLoadError = (err) => {
     console.error('PDF document load error:', err);
-    setError('Failed to load PDF document');
     setPdfLoaded(false);
   };
 
@@ -352,21 +322,21 @@ const PdfViewer = ({ file, content }) => {
     return () => container.removeEventListener('scroll', handleScroll);
   }, [numPages]);
 
-  if (loading) {
+  if (error) {
     return (
-      <div className="pdf-preview loading">
-        <RefreshCw size={32} className="spin" />
-        <p>Loading PDF file...</p>
+      <div className="pdf-preview error">
+        <File size={48} />
+        <p>{error}</p>
+        <p style={{ fontSize: '12px', color: '#666' }}>{file.name}</p>
       </div>
     );
   }
 
-  if (error || !pdfUrl) {
+  if (!pdfUrl) {
     return (
-      <div className="pdf-preview error">
-        <File size={48} />
-        <p>{error || 'Failed to load PDF'}</p>
-        <p style={{ fontSize: '12px', color: '#666' }}>{file.name}</p>
+      <div className="pdf-preview loading">
+        <RefreshCw size={32} className="spin" />
+        <p>Loading PDF file...</p>
       </div>
     );
   }
@@ -548,6 +518,18 @@ ${MEASURER_SCRIPT}
 </html>`;
   }, [content, baseStyles]);
 
+  const fitIframe = useCallback(() => {
+    const scrollEl = scrollRef.current;
+    const transEl = transformRef.current;
+    if (!scrollEl || !transEl) return;
+    const containerW = scrollEl.clientWidth || 400;
+    const contentW = sizeRef.current.w || containerW;
+    const nextScale = containerW / Math.max(1, contentW);
+    const clampedScale = Math.max(0.2, Math.min(nextScale, 3));
+    setScale(clampedScale);
+    setOffset({ x: 0, y: 0 });
+  }, []);
+
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -564,18 +546,6 @@ ${MEASURER_SCRIPT}
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [srcDoc, fitMode]);
-
-  const fitIframe = useCallback(() => {
-    const scrollEl = scrollRef.current;
-    const transEl = transformRef.current;
-    if (!scrollEl || !transEl) return;
-    const containerW = scrollEl.clientWidth || 400;
-    const contentW = sizeRef.current.w || containerW;
-    const nextScale = containerW / Math.max(1, contentW);
-    const clampedScale = Math.max(0.2, Math.min(nextScale, 3));
-    setScale(clampedScale);
-    setOffset({ x: 0, y: 0 });
-  }, []);
 
   useEffect(() => {
     if (fitMode) {
