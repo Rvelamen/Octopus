@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Routes,
   Route,
@@ -67,7 +67,6 @@ function App() {
   const chat = useChatState();
 
   // ===== 状态 =====
-  const [activeTab, setActiveTab] = useState("chat");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [config, setConfig] = useState({
     providers: {},
@@ -78,16 +77,8 @@ function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
 
-  // 切回 chat tab 时，把 ref 中累积的 streamingContent 同步到 state
-  useEffect(() => {
-    if (activeTab === 'chat') {
-      chat.syncStreamingContent();
-    }
-  }, [activeTab, chat.syncStreamingContent]);
-
-  // 同步 activeTab 与路由
-  useEffect(() => {
-    const path = location.pathname;
+  // activeTab 从路由派生，避免 useEffect 中 setState
+  const activeTab = useMemo(() => {
     const tabMap = {
       '/chat': 'chat',
       '/config': 'config',
@@ -103,8 +94,15 @@ function App() {
       '/knowledge': 'knowledge',
       '/workflows': 'workflows',
     };
-    setActiveTab(tabMap[path] || 'chat');
+    return tabMap[location.pathname] || 'chat';
   }, [location.pathname]);
+
+  // 切回 chat tab 时，把 ref 中累积的 streamingContent 同步到 state
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      chat.syncStreamingContent();
+    }
+  }, [activeTab, chat.syncStreamingContent]);
 
   // ===== 独立窗口检测（hooks 之后）=====
   const hash = window.location.hash;
@@ -218,7 +216,6 @@ function App() {
       // 降级：浏览器环境或无 Electron API 时继续走路由
     }
 
-    setActiveTab(tab);
     const routeMap = {
       chat: '/chat',
       config: '/config',
