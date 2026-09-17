@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Image, FileText, Maximize2, Minimize2, Send, CirclePause, 
   Paperclip, GripVertical
@@ -31,6 +32,7 @@ function ChatInput({
   contextStats,
   slashCommands = [],
 }) {
+  const { t } = useTranslation();
   const [isInputExpanded, setIsInputExpanded] = useState(false);
   const [inputHeight, setInputHeight] = useState(200);
   const textareaRef = useRef(null);
@@ -186,7 +188,7 @@ function ChatInput({
                   setInputHeight(200);
                 }
               }}
-              title={isInputExpanded ? "收起编辑区" : "展开编辑区"}
+              title={isInputExpanded ? t('chat.collapseEditor') : t('chat.expandEditor')}
             >
               {isInputExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
@@ -195,7 +197,7 @@ function ChatInput({
               className="inputbar-tool-btn"
               onClick={() => fileInputRef.current?.click()}
               disabled={isProcessing || isUploading || disabled}
-              title="上传图片"
+              title={t('chat.uploadImage')}
             >
               <Image size={14} />
             </button>
@@ -216,7 +218,7 @@ function ChatInput({
               className="inputbar-tool-btn"
               onClick={() => fileUploadRef.current?.click()}
               disabled={isProcessing || isUploading || disabled}
-              title="上传文件"
+              title={t('chat.uploadFile')}
             >
               <Paperclip size={14} />
             </button>
@@ -237,7 +239,7 @@ function ChatInput({
               className="inputbar-tool-btn"
               onClick={onGenerateImage}
               disabled={isProcessing || isUploading || disabled}
-              title="生成图片"
+              title={t('chat.generateImage')}
             >
               <FileText size={14} />
             </button>
@@ -246,7 +248,7 @@ function ChatInput({
               className="inputbar-tool-btn"
               onClick={onCompress}
               disabled={isProcessing || isUploading || disabled || isCompressing}
-              title={isCompressing ? "压缩中..." : "压缩上下文"}
+              title={isCompressing ? t('chat.compressingShort') : t('chat.compressContext')}
             >
               <Minimize2 size={14} className={isCompressing ? 'spin' : ''} />
             </button>
@@ -271,7 +273,7 @@ function ChatInput({
               <button
                 className="inputbar-send-btn pause"
                 onClick={onStop}
-                title="停止生成"
+                title={t('chat.stop')}
               >
                 <CirclePause size={15} />
               </button>
@@ -280,7 +282,7 @@ function ChatInput({
                 className="inputbar-send-btn"
                 onClick={onSend}
                 disabled={isUploading || disabled || isCompressing || (!inputValue.trim() && pendingImages.length === 0 && pendingFiles.length === 0)}
-                title="发送消息"
+                title={t('chat.send')}
               >
                 <Send size={15} />
               </button>

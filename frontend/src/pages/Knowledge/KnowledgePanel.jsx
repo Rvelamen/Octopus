@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, X, FileText, StickyNote, GitGraph, Bot } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Sparkles, X, FileText, StickyNote, GitGraph, Bot, Plus } from 'lucide-react';
 import { message, Modal } from 'antd';
 import WindowDots from '@components/layout/WindowDots';
 import TaskIndicator from '@components/TaskIndicator';
@@ -15,6 +15,7 @@ import DocumentGridView from './document/DocumentGridView';
 import TaskDetailModal from '@components/TaskIndicator/TaskDetailModal';
 import PreviewDrawer from './components/preview/PreviewDrawer';
 import ImportObsidianModal from './components/import/ImportObsidianModal';
+import KnowledgeActionsModal from './components/actions/KnowledgeActionsModal';
 import CreateVaultModal from './components/vault/CreateVaultModal';
 import LibraryChatDrawer from './library/LibraryChatDrawer';
 import { useNotesChat } from './hooks/useNotesChat';
@@ -35,6 +36,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
   const [treeItems, setTreeItems] = useState({});
   const [expandedPaths, setExpandedPaths] = useState(new Set());
   const [distillDialogVisible, setDistillDialogVisible] = useState(false);
+  const [actionsModalOpen, setActionsModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isNewNoteModalOpen, setIsNewNoteModalOpen] = useState(false);
@@ -73,7 +75,73 @@ export default function KnowledgePanel({ sendWSMessage }) {
   const [currentFile, setCurrentFile] = useState(null);
 
   // ── Notes Chat scope & hook (must be after currentFile/selectedVault declaration) ──
-  const notesChatScope = useCallback(() => {
+  // 用户从 Note Chat 抽屉下拉里手动选中的笔记路径；null = 回退到自动 scope
+  const [noteChatSelection, setNoteChatSelection] = useState(null);
+  // 当前 vault 下的所有 .md 笔记（供下拉选项用）
+  const [noteChatNotes, setNoteChatNotes] = useState([]);
+
+  // 递归拉取当前 vault 下所有 .md 笔记（最多 3 层子目录）
+  const loadNoteChatNotes = useCallback(async (vault) => {
+    const v = vault || 'default';
+    const collect = async (path, depth) => {
+      if (depth > 3) return [];
+      try {
+        const resp = await sendWSMessage('knowledge_list', { path });
+        const items = (resp && resp.data && resp.data.items) || [];
+        const out = [];
+        for (const item of items) {
+          if (item.is_directory) {
+            const sub = await collect(item.path, depth + 1);
+            out.push(...sub);
+          } else if (item.path && item.path.endsWith('.md')) {
+            const title =
+              (item.meta && item.meta.title) ||
+              item.name.replace(/\.md$/, '').replace(/^_tmp_/, '');
+            out.push({ path: item.path, title });
+          }
+        }
+        return out;
+      } catch {
+        return [];
+      }
+    };
+    try {
+      const notes = await collect(`knowledge/notes/${v}`, 0);
+      notes.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      setNoteChatNotes(notes);
+    } catch {}
+  }, [sendWSMessage]);
+
+  // vault 切换时刷新笔记列表
+  useEffect(() => {
+    loadNoteChatNotes(selectedVault);
+  }, [selectedVault, loadNoteChatNotes]);
+
+  // 切 vault 后，如果之前选中的笔记不在新 vault 的列表里，重置为自动 scope
+  useEffect(() => {
+    if (
+      noteChatSelection &&
+      noteChatNotes.length > 0 &&
+      !noteChatNotes.some((n) => n.path === noteChatSelection)
+    ) {
+      setNoteChatSelection(null);
+    }
+  }, [noteChatNotes, noteChatSelection]);
+
+  // 首次打开聊天时，如果当前打开的笔记属于当前 vault，默认聚焦它
+  useEffect(() => {
+    if (!chatOpen) return;
+    if (noteChatSelection !== null) return;
+    if (currentFile && noteChatNotes.some((n) => n.path === currentFile.path)) {
+      setNoteChatSelection(currentFile.path);
+    }
+  }, [chatOpen, currentFile, noteChatNotes, noteChatSelection]);
+
+  // 实际生效的 scope：手动选中的笔记 > 自动 scope（当前打开的笔记 → vault → global）
+  const effectiveChatScope = useMemo(() => {
+    if (noteChatSelection) {
+      return { type: 'file', file_path: noteChatSelection, vault: selectedVault || 'default' };
+    }
     if (currentFile) {
       return { type: 'file', file_path: currentFile.path, vault: selectedVault || 'default' };
     }
@@ -81,7 +149,17 @@ export default function KnowledgePanel({ sendWSMessage }) {
       return { type: 'vault', vault: selectedVault };
     }
     return { type: 'global' };
-  }, [currentFile, selectedVault]);
+  }, [noteChatSelection, currentFile, selectedVault]);
+
+  const effectiveScopeLabel = useMemo(() => {
+    if (noteChatSelection) {
+      const n = noteChatNotes.find((x) => x.path === noteChatSelection);
+      return n ? `Note: ${n.title}` : noteChatSelection.split('/').pop();
+    }
+    if (currentFile) return currentFile.path.split('/').pop() || 'Current file';
+    if (selectedVault) return selectedVault;
+    return 'All notes';
+  }, [noteChatSelection, noteChatNotes, currentFile, selectedVault]);
 
   const {
     sessions: chatSessions,
@@ -97,16 +175,8 @@ export default function KnowledgePanel({ sendWSMessage }) {
     sendMessage: sendWSMessage,
     subscribe,
     unsubscribe,
-    scope: notesChatScope(),
+    scope: effectiveChatScope,
   });
-
-  // Notes Chat scope label
-  const notesChatScopeLabel = useCallback(() => {
-    const scope = notesChatScope();
-    if (scope.type === 'file') return scope.file_path.split('/').pop() || 'Current file';
-    if (scope.type === 'vault') return scope.vault;
-    return 'All notes';
-  }, [notesChatScope]);
 
   // Sidebar 宽度状态
   const [sidebarWidth, setSidebarWidth] = useState(240);
@@ -748,10 +818,23 @@ export default function KnowledgePanel({ sendWSMessage }) {
 
   useEffect(() => {
     const handler = (e) => {
-      const { stage, message: msg } = e.detail;
+      const { stage, message: msg, output_path } = e.detail || {};
       if (stage === 'completed') {
         message.success('Distillation complete!');
         loadDistillTasks();
+        // Refresh the file tree so the newly distilled note becomes visible
+        // without a manual reload (previously only the distill task list refreshed).
+        loadDirectory(rootPath);
+        // Also refresh the vault directory that received the output so the new
+        // note shows up when the user expands the vault folder.
+        const vaultDir =
+          (typeof output_path === 'string' && output_path.split('/').slice(0, 3).join('/')) ||
+          (selectedVault && selectedVault !== 'default'
+            ? `knowledge/notes/${selectedVault}`
+            : 'knowledge/notes/default');
+        if (vaultDir && vaultDir.startsWith('knowledge/notes/')) {
+          loadDirectory(vaultDir);
+        }
       } else if (stage === 'failed') {
         message.error('Distillation failed: ' + msg);
         loadDistillTasks();
@@ -759,7 +842,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
     };
     window.addEventListener('knowledge-distill-progress', handler);
     return () => window.removeEventListener('knowledge-distill-progress', handler);
-  }, [loadDistillTasks]);
+  }, [loadDistillTasks, loadDirectory, rootPath, selectedVault]);
 
   // 监听 knowledge-open-file 事件（用于 wiki-link 跳转、TaskDetail 打开输出文件等）
   useEffect(() => {
@@ -1141,6 +1224,25 @@ export default function KnowledgePanel({ sendWSMessage }) {
           })}
         </div>
         <div style={{ flex: 1 }} />
+        <button
+          onClick={() => setActionsModalOpen(true)}
+          title="知识库操作 / Knowledge Actions"
+          style={{
+            padding: '6px 10px',
+            borderRadius: 4,
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--accent)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-soft)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+        >
+          <Plus size={16} />
+        </button>
         <TaskIndicator
           onViewTaskDetail={handleViewTaskDetail}
           pagination={pagination}
@@ -1212,10 +1314,6 @@ export default function KnowledgePanel({ sendWSMessage }) {
                   isUploading={isUploading}
                   uploadProgress={uploadProgress}
                   onFileSelect={uploadFile}
-                  onNewNoteClick={() => setIsNewNoteModalOpen(true)}
-                  onExport={handleExport}
-                  onImport={handleImport}
-                  onImportObsidian={handleImportObsidian}
                 />
                 {/* Vault selector - shown on Notes tab */}
                 {activeTab === 'notes' && (
@@ -1408,9 +1506,13 @@ export default function KnowledgePanel({ sendWSMessage }) {
                         onSend={sendNotesChat}
                         onNewSession={createChatSession}
                         onDeleteSession={deleteChatSession}
-                        scopeLabel={notesChatScopeLabel()}
+                        scopeLabel={effectiveScopeLabel}
                         width="100%"
                         title="Note Chat"
+                        showNoteSelector
+                        notes={noteChatNotes}
+                        selectedNotePath={noteChatSelection || ''}
+                        onSelectNote={(p) => setNoteChatSelection(p || null)}
                       />
                     </div>
                   </>
@@ -1466,6 +1568,15 @@ export default function KnowledgePanel({ sendWSMessage }) {
           </div>
         )}
       </div>
+
+      <KnowledgeActionsModal
+        open={actionsModalOpen}
+        onClose={() => setActionsModalOpen(false)}
+        onNewNote={() => setIsNewNoteModalOpen(true)}
+        onExport={handleExport}
+        onImport={handleImport}
+        onImportObsidian={handleImportObsidian}
+      />
 
       <NewNoteModal
         visible={isNewNoteModalOpen}

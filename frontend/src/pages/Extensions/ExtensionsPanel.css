@@ -1559,3 +1559,87 @@
   animation: spin 1s linear infinite;
 }
 
+/* ============================================================
+   Local Tool Setup Modal（Chrome 扩展等本地工具的引导安装）
+   ============================================================ */
+.setup-steps {
+  padding-left: 20px;
+  line-height: 1.8;
+  color: var(--text-primary, #e6e6e6);
+  margin: 4px 0 16px;
+}
+.setup-steps li {
+  margin-bottom: 4px;
+}
+.setup-steps code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: var(--mono-font, ui-monospace, "JetBrains Mono", monospace);
+  font-size: 12px;
+}
+.setup-path-row {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 8px;
+}
+.setup-path-input {
+  flex: 1;
+  background: var(--input-bg, rgba(255, 255, 255, 0.04));
+  color: var(--text-primary, #e6e6e6);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-family: var(--mono-font, ui-monospace, "JetBrains Mono", monospace);
+  font-size: 12px;
+  outline: none;
+}
+.setup-path-input:focus {
+  border-color: var(--accent, #B46A57);
+}
+.setup-shortcut {
+  color: var(--text-secondary, #888);
+  font-size: 12px;
+  margin: 8px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.setup-shortcut kbd {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-family: var(--mono-font, ui-monospace, monospace);
+  font-size: 11px;
+}
+.setup-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.setup-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: opacity 0.15s;
+}
+.setup-btn:hover {
+  opacity: 0.85;
+}
+.setup-btn-primary {
+  background: var(--accent, #B46A57);
+  color: #fff;
+}
+.setup-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary, #e6e6e6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+

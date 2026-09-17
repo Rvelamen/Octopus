@@ -87,6 +87,8 @@ coverage/
 # Electron
 electron/dist/
 electron/build/
+dist-electron*/
+dist-electron-*/
 
 # Frontend build
 frontend/dist/

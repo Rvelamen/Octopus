@@ -1,13 +1,18 @@
 """Memory system for persistent agent memory."""
 
 import contextlib
-import fcntl
 import os
 import re
 import tempfile
+import threading
 from pathlib import Path
 
 from backend.utils.helpers import ensure_dir
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 
 ENTRY_DELIMITER = "\n§\n"
 LIMITS = {
@@ -18,6 +23,20 @@ TARGET_NAMES = {
     "memory": "MEMORY (your personal notes)",
     "user": "USER PROFILE (who the user is)",
 }
+_memory_lock = threading.RLock()
+
+
+@contextlib.contextmanager
+def _exclusive_lock(path: Path):
+    """Use a cross-process lock where available and a process lock everywhere else."""
+    with _memory_lock, open(path, "w") as lock_file:
+        if fcntl is not None:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            if fcntl is not None:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 def _scan_memory_content(content: str) -> str | None:
@@ -205,8 +224,7 @@ class MemoryStore:
         path = self._path_for(target)
         lock_path = path.with_suffix(path.suffix + ".lock")
 
-        with open(lock_path, "w") as lock_file:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        with _exclusive_lock(lock_path):
             try:
                 entries = self._read_file(path)
                 self._set_entries(target, entries)
@@ -252,7 +270,7 @@ class MemoryStore:
                     "entry_count": len(new_entries),
                 }
             finally:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+                pass
 
     def replace(self, target: str, old_text: str, new_content: str) -> dict:
         scan = _scan_memory_content(new_content)
@@ -270,8 +288,7 @@ class MemoryStore:
         path = self._path_for(target)
         lock_path = path.with_suffix(path.suffix + ".lock")
 
-        with open(lock_path, "w") as lock_file:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        with _exclusive_lock(lock_path):
             try:
                 entries = self._read_file(path)
                 self._set_entries(target, entries)
@@ -337,14 +354,13 @@ class MemoryStore:
                     "entry_count": len(new_entries),
                 }
             finally:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+                pass
 
     def remove(self, target: str, old_text: str) -> dict:
         path = self._path_for(target)
         lock_path = path.with_suffix(path.suffix + ".lock")
 
-        with open(lock_path, "w") as lock_file:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        with _exclusive_lock(lock_path):
             try:
                 entries = self._read_file(path)
                 self._set_entries(target, entries)
@@ -391,4 +407,4 @@ class MemoryStore:
                     "entry_count": len(new_entries),
                 }
             finally:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+                pass

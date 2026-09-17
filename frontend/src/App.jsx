@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, Suspense, lazy } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Routes,
   Route,
@@ -29,40 +30,39 @@ import MCP from "./pages/MCP";
 import Extensions from "./pages/Extensions";
 import History from "./pages/History";
 import Memory from "./pages/Memory";
-import Workspace from "./pages/Workspace";
 import Cron from "./pages/Cron";
 import Agents from "./pages/Agents";
 import Tokens from "./pages/Tokens";
-import Knowledge from "./pages/Knowledge";
-import { LibraryTab } from "./pages/Knowledge/library";
-import PdfViewerWindow from "./pages/PdfViewerWindow";
-import MarkdownEditorWindow from "./pages/MarkdownEditorWindow";
-import WorkflowWindow from "./pages/WorkflowWindow";
+// 重组件路由懒加载（monaco/mdxeditor/pixi/mermaid/react-pdf 等重库按需加载）
+const Workspace = lazy(() => import("./pages/Workspace"));
+const Knowledge = lazy(() => import("./pages/Knowledge"));
+const LibraryTab = lazy(() =>
+  import("./pages/Knowledge/library").then((m) => ({ default: m.LibraryTab }))
+);
+const PdfViewerWindow = lazy(() => import("./pages/PdfViewerWindow"));
+const MarkdownEditorWindow = lazy(() => import("./pages/MarkdownEditorWindow"));
+const WorkflowWindow = lazy(() => import("./pages/WorkflowWindow"));
 import WorkflowTabTitle from "./workflow/components/WorkflowTabTitle";
 import GlobalLoadingOverlay from "./components/GlobalLoadingOverlay";
 import TTSPlayer from "./components/TTSPlayer";
+import WindowDots from "./components/layout/WindowDots";
 import octopusLogo from "./assets/octopus-logo.png";
 import { useWebSocket } from "./contexts/WebSocketContext";
 import { useChatState } from "./hooks/useChatState";
 
-const APP_TITLE_BY_TAB = {
-  chat: "Chat",
-  config: "System",
-  mcp: "MCP Servers",
-  extensions: "Extensions",
-  cron: "Cron Jobs",
-  agents: "Agents",
-  workspaces: "Workspace",
-  history: "History",
-  memory: "Memory",
-  tokens: "Tokens",
-  workflows: "Workflows",
-  library: "Library",
-  knowledge: "Knowledge",
+// 懒加载路由的 Suspense 兜底
+const RouteFallback = () => {
+  const { t } = useTranslation();
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary, #888)', fontSize: 13 }}>
+      {t('common.loading')}
+    </div>
+  );
 };
 
 function App() {
   // Hooks must be called before any early return
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -115,7 +115,7 @@ function App() {
     hash.startsWith('#pdf-viewer') ||
     hash.startsWith('#/pdf-viewer');
   if (isPdfWindow) {
-    return <PdfViewerWindow />;
+    return <Suspense fallback={<RouteFallback />}><PdfViewerWindow /></Suspense>;
   }
 
   const isMarkdownWindow =
@@ -123,7 +123,7 @@ function App() {
     hash.startsWith('#markdown-editor') ||
     hash.startsWith('#/markdown-editor');
   if (isMarkdownWindow) {
-    return <MarkdownEditorWindow />;
+    return <Suspense fallback={<RouteFallback />}><MarkdownEditorWindow /></Suspense>;
   }
 
   const isWorkflowWindow =
@@ -131,7 +131,7 @@ function App() {
     hash.startsWith('#workflow-window') ||
     hash.startsWith('#/workflow-window');
   if (isWorkflowWindow) {
-    return <WorkflowWindow />;
+    return <Suspense fallback={<RouteFallback />}><WorkflowWindow /></Suspense>;
   }
 
   // ===== 发送消息 =====
@@ -238,7 +238,7 @@ function App() {
     navigate(routeMap[tab] || '/chat');
   };
 
-  const appTitleBarText = APP_TITLE_BY_TAB[activeTab] ?? "OCTOPUS";
+  const appTitleBarText = t(`title.${activeTab}`, { defaultValue: "OCTOPUS" });
 
   // 渲染导航分组
   const renderNavGroup = (groupLabel, items) => {
@@ -301,7 +301,7 @@ function App() {
             type="button"
             className="sidebar-toggle-btn"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            title={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
+            title={sidebarCollapsed ? t('titlebar.expandSidebar') : t('titlebar.collapseSidebar')}
           >
             {sidebarCollapsed ? <PanelRight size={14} /> : <PanelLeftClose size={14} />}
           </button>
@@ -316,20 +316,22 @@ function App() {
             className="restart-btn"
             onClick={handleRestart}
             disabled={isRestarting || connectionStatus !== "connected"}
-            title="重启后端服务"
+            title={t('titlebar.restartBackend')}
             style={{ WebkitAppRegion: 'no-drag' }}
           >
             <RotateCcw size={12} className={isRestarting ? "spinning" : ""} />
-            <span>{isRestarting ? "…" : "RESTART"}</span>
+            <span>{isRestarting ? t('titlebar.restarting') : t('titlebar.restart')}</span>
           </button>
           <div className={`status-indicator ${connectionStatus}`} style={{ WebkitAppRegion: 'no-drag' }}></div>
           <span className={`status-text ${connectionStatus}`} style={{ WebkitAppRegion: 'no-drag' }}>
             {connectionStatus === "connected"
-              ? "ONLINE"
+              ? t('titlebar.online')
               : connectionStatus === "connecting"
-                ? "CONNECTING..."
-                : "OFFLINE"}
+                ? t('titlebar.connecting')
+                : t('titlebar.offline')}
           </span>
+          {/* 全局窗口控制按钮（最小化/最大化/关闭），用户不需要进入 Chat 页就能操作窗口 */}
+          <WindowDots interactive />
         </div>
       </header>
 
@@ -338,28 +340,28 @@ function App() {
         <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
           <div className="sidebar-nav">
             <nav>
-              {renderNavGroup('CORE', [
-                { key: 'chat', icon: Bot, label: 'Chat' },
-                { key: 'workspaces', icon: FolderOpen, label: 'Workspace' },
+              {renderNavGroup(t('nav.group.core'), [
+                { key: 'chat', icon: Bot, label: t('nav.chat') },
+                { key: 'workspaces', icon: FolderOpen, label: t('nav.workspace') },
               ])}
-              {renderNavGroup('KNOWLEDGE', [
-                { key: 'knowledge', icon: BookOpen, label: 'Knowledge' },
-                { key: 'library', icon: Library, label: 'Library' },
+              {renderNavGroup(t('nav.group.knowledge'), [
+                { key: 'knowledge', icon: BookOpen, label: t('nav.knowledge') },
+                { key: 'library', icon: Library, label: t('nav.library') },
               ])}
-              {renderNavGroup('AUTOMATION', [
-                { key: 'agents', icon: Users, label: 'Agents' },
-                { key: 'workflows', icon: GitBranch, label: 'Workflows' },
-                { key: 'cron', icon: Clock, label: 'Cron' },
+              {renderNavGroup(t('nav.group.automation'), [
+                { key: 'agents', icon: Users, label: t('nav.agents') },
+                { key: 'workflows', icon: GitBranch, label: t('nav.workflows') },
+                { key: 'cron', icon: Clock, label: t('nav.cron') },
               ])}
-              {renderNavGroup('INTEGRATIONS', [
-                { key: 'mcp', icon: Server, label: 'MCP' },
-                { key: 'extensions', icon: Package, label: 'Extensions' },
+              {renderNavGroup(t('nav.group.integrations'), [
+                { key: 'mcp', icon: Server, label: t('nav.mcp') },
+                { key: 'extensions', icon: Package, label: t('nav.extensions') },
               ])}
-              {renderNavGroup('SYSTEM', [
-                { key: 'history', icon: HistoryIcon, label: 'History' },
-                { key: 'memory', icon: Brain, label: 'Memory' },
-                { key: 'tokens', icon: Zap, label: 'Tokens' },
-                { key: 'config', icon: Settings, label: 'Config' },
+              {renderNavGroup(t('nav.group.system'), [
+                { key: 'history', icon: HistoryIcon, label: t('nav.history') },
+                { key: 'memory', icon: Brain, label: t('nav.memory') },
+                { key: 'tokens', icon: Zap, label: t('nav.tokens') },
+                { key: 'config', icon: Settings, label: t('nav.config') },
               ])}
             </nav>
             {!sidebarCollapsed && (
@@ -367,7 +369,7 @@ function App() {
                 <span className="footer-version">v1.0.0</span>
                 <span className={`footer-status ${connectionStatus}`}>
                   <span className="footer-status-dot" />
-                  {connectionStatus === 'connected' ? 'ONLINE' : connectionStatus === 'connecting' ? 'CONNECTING...' : 'OFFLINE'}
+                  {connectionStatus === 'connected' ? t('titlebar.online') : connectionStatus === 'connecting' ? t('titlebar.connecting') : t('titlebar.offline')}
                 </span>
               </div>
             )}
@@ -376,6 +378,7 @@ function App() {
 
         <main className="main-content">
           <div className="content-area">
+            <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/chat" element={
                 <Chat
@@ -454,6 +457,7 @@ function App() {
                 />
               } />
             </Routes>
+            </Suspense>
           </div>
         </main>
       </div>

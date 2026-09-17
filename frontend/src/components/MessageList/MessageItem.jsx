@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { FileText, Sparkle, Copy, Check } from 'lucide-react';
 import TTSPlayer from '@components/TTSPlayer/index.jsx';
 import octopusAvatar from '@assets/images/octopus.png';
@@ -194,4 +194,4 @@ function MessageItem({
   );
 }
 
-export default MessageItem;
+export default memo(MessageItem);

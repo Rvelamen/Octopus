@@ -35,7 +35,7 @@ export function useChatState() {
 
   const resetStreamingContent = useCallback(() => {
     if (streamingFlushTimerRef.current) {
-      clearTimeout(streamingFlushTimerRef.current);
+      cancelAnimationFrame(streamingFlushTimerRef.current);
       streamingFlushTimerRef.current = null;
     }
     streamingContentRef.current = "";
@@ -45,10 +45,10 @@ export function useChatState() {
   const appendStreamingContent = useCallback((text) => {
     streamingContentRef.current += text || "";
     if (!streamingFlushTimerRef.current) {
-      streamingFlushTimerRef.current = setTimeout(() => {
+      streamingFlushTimerRef.current = requestAnimationFrame(() => {
         streamingFlushTimerRef.current = null;
         setStreamingContent(streamingContentRef.current);
-      }, 80);
+      });
     }
   }, []);
 
@@ -111,10 +111,26 @@ export function useChatState() {
 
   // WebSocket event handlers
   useEffect(() => {
+    // Claim an instance id from the first agent event we see.
+    // When the user creates a new chat, payload.instance_id is not set, so the
+    // frontend doesn't know which instance the backend picked. Without claiming,
+    // every agent_token / agent_thinking / agent_finish event would mismatch
+    // (eventInstanceId === null === currentChatInstanceIdRef.current) and be
+    // dropped, leaving the user with no incremental streaming at all.
+    const adoptIfPending = (eventInstanceId) => {
+      if (eventInstanceId == null) return null;
+      if (currentChatInstanceIdRef.current == null) {
+        currentChatInstanceIdRef.current = eventInstanceId;
+        setCurrentChatInstanceId(eventInstanceId);
+        return eventInstanceId;
+      }
+      return currentChatInstanceIdRef.current;
+    };
+
     const handleAgentToken = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       if (!isCurrentInstance) return;
       appendStreamingContent(data.content || "");
     };
@@ -122,7 +138,7 @@ export function useChatState() {
     const handleAgentChunk = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       if (!isCurrentInstance) return;
       appendStreamingContent(data.content || "");
     };
@@ -130,7 +146,7 @@ export function useChatState() {
     const handleAgentStart = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       if (!isCurrentInstance) {
         updateToolCallsForInstance(eventInstanceId, () => []);
         updateAssistantContentsForInstance(eventInstanceId, () => ({}));
@@ -146,7 +162,7 @@ export function useChatState() {
     const handleAgentThinking = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       if (!isCurrentInstance) return;
       setIsProcessing(true);
       resetStreamingContent();
@@ -156,7 +172,7 @@ export function useChatState() {
     const handleChatResponse = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       if (!isCurrentInstance) {
         updateToolCallsForInstance(eventInstanceId, () => []);
         updateAssistantContentsForInstance(eventInstanceId, () => ({}));
@@ -172,7 +188,7 @@ export function useChatState() {
     const handleError = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       if (!isCurrentInstance) {
         updateToolCallsForInstance(eventInstanceId, () => []);
         updateAssistantContentsForInstance(eventInstanceId, () => ({}));
@@ -188,7 +204,7 @@ export function useChatState() {
     const handleAgentFinish = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       if (!isCurrentInstance) {
         updateToolCallsForInstance(eventInstanceId, () => []);
         updateAssistantContentsForInstance(eventInstanceId, () => ({}));
@@ -210,7 +226,7 @@ export function useChatState() {
     const handleAgentStopped = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       if (!isCurrentInstance) {
         updateToolCallsForInstance(eventInstanceId, () => []);
         updateAssistantContentsForInstance(eventInstanceId, () => ({}));
@@ -226,9 +242,7 @@ export function useChatState() {
     };
 
     const handleAgentToolCallStart = (data) => {
-      const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
-      if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
 
       const addToolCall = (prev) => [...prev, {
         id: data.tool_call_id || Date.now(),
@@ -263,7 +277,7 @@ export function useChatState() {
     const handleAgentToolCallStreaming = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       const updater = (prev) => prev.map(tc =>
         tc.id === data.tool_call_id
           ? { ...tc, partialArgs: data.partial_args, status: 'streaming' }
@@ -276,7 +290,7 @@ export function useChatState() {
     const handleAgentToolCallInvoking = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       const updater = (prev) => prev.map(tc =>
         tc.id === data.tool_call_id
           ? { ...tc, args: tc.partialArgs || tc.args, status: 'invoking' }
@@ -289,7 +303,7 @@ export function useChatState() {
     const handleAgentToolCallComplete = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       const updater = (prev) => prev.map(tc =>
         tc.id === data.tool_call_id
           ? { ...tc, args: data.args || tc.partialArgs || tc.args, result: data.result, status: 'completed' }
@@ -302,7 +316,7 @@ export function useChatState() {
     const handleAgentToolCallError = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       const updater = (prev) => prev.map(tc =>
         tc.id === data.tool_call_id
           ? { ...tc, args: data.args || tc.partialArgs || tc.args, error: data.error, status: 'error' }
@@ -315,7 +329,7 @@ export function useChatState() {
     const handleAgentToolCall = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       const addToolCall = (prev) => [...prev, {
         id: data.tool_call_id || Date.now(),
         tool: data.tool,
@@ -336,7 +350,7 @@ export function useChatState() {
     const handleAgentToolResult = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       const updater = (prev) => prev.map(tc =>
         tc.id === data.tool_call_id
           ? { ...tc, status: 'completed', result: data.result }
@@ -349,7 +363,7 @@ export function useChatState() {
     const handleSubagentToolCall = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       const parentToolCallId = data.parent_tool_call_id;
 
       const subagentUpdater = (prev) => {
@@ -395,7 +409,7 @@ export function useChatState() {
     const handleSubagentToolResult = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       const parentToolCallId = data.parent_tool_call_id;
 
       const subagentResultUpdater = (prev) => {
@@ -440,7 +454,7 @@ export function useChatState() {
     const handleSubagentToken = (data) => {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       const parentToolCallId = data.parent_tool_call_id;
       const tokenUpdater = (prev) => prev.map((tc) =>
         tc.id === parentToolCallId
@@ -452,13 +466,18 @@ export function useChatState() {
     };
 
     const handleAgentIterationComplete = (data) => {
+      // Adopt the instance even on iteration_complete (the first event the
+      // chat panel may see for a brand-new chat). The event carries the
+      // canonical session_instance_id, which we adopt as the current chat
+      // before triggering the message refresh.
+      adoptIfPending(data?.session_instance_id ?? data?.instance_id);
       const targetId = data?.session_instance_id ?? currentChatInstanceIdRef.current;
       if (targetId) {
         setRefreshInstanceId(targetId);
       }
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null) return;
-      const isCurrentInstance = eventInstanceId === currentChatInstanceIdRef.current;
+      const isCurrentInstance = adoptIfPending(eventInstanceId) === eventInstanceId;
       if (isCurrentInstance && data?.token_usage) {
         setLiveTokenUsage(data.token_usage);
       }

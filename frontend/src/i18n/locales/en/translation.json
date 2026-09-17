@@ -1,0 +1,133 @@
+{
+  "nav": {
+    "group": {
+      "core": "CORE",
+      "knowledge": "KNOWLEDGE",
+      "automation": "AUTOMATION",
+      "integrations": "INTEGRATIONS",
+      "system": "SYSTEM"
+    },
+    "chat": "Chat",
+    "workspace": "Workspace",
+    "knowledge": "Knowledge",
+    "library": "Library",
+    "agents": "Agents",
+    "workflows": "Workflows",
+    "cron": "Cron",
+    "mcp": "MCP",
+    "extensions": "Extensions",
+    "history": "History",
+    "memory": "Memory",
+    "tokens": "Tokens",
+    "config": "Config"
+  },
+  "title": {
+    "chat": "Chat",
+    "config": "System",
+    "mcp": "MCP Servers",
+    "extensions": "Extensions",
+    "cron": "Cron Jobs",
+    "agents": "Agents",
+    "workspaces": "Workspace",
+    "history": "History",
+    "memory": "Memory",
+    "tokens": "Tokens",
+    "workflows": "Workflows",
+    "library": "Library",
+    "knowledge": "Knowledge"
+  },
+  "titlebar": {
+    "restart": "RESTART",
+    "restarting": "…",
+    "online": "ONLINE",
+    "offline": "OFFLINE",
+    "connecting": "CONNECTING...",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "restartBackend": "Restart backend service"
+  },
+  "window": {
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore",
+    "close": "Close"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "chat": {
+    "placeholderActive": "Type a message... (Shift+Enter for newline, / for commands, paste images supported)",
+    "placeholderSelect": "Select a conversation to start chatting...",
+    "emptySelect": "Select a chat or create a new one",
+    "emptyNew": "Start a new conversation...",
+    "emptyNone": "No messages in this chat",
+    "compressing": "Compressing context, please wait...",
+    "compressFailed": "Failed to compress context",
+    "uploadImageFailed": "Image upload failed",
+    "uploadFileFailed": "File upload failed",
+    "generateImageFailed": "Image generation failed",
+    "collapseEditor": "Collapse editor",
+    "expandEditor": "Expand editor",
+    "uploadImage": "Upload image",
+    "uploadFile": "Upload file",
+    "generateImage": "Generate image",
+    "compressingShort": "Compressing...",
+    "compressContext": "Compress context",
+    "stop": "Stop generation",
+    "send": "Send message"
+  },
+  "config": {
+    "title": "SYSTEM CONFIGURATION",
+    "saving": "SAVING...",
+    "tab": {
+      "providers": "PROVIDERS",
+      "agents": "AGENT",
+      "library": "LIBRARY",
+      "channels": "CHANNELS",
+      "multimodal": "MULTIMODAL"
+    },
+    "card": {
+      "interface": "INTERFACE",
+      "agentDefaults": "AGENT DEFAULTS",
+      "librarySettings": "LIBRARY SETTINGS",
+      "channels": "CHANNELS",
+      "tools": "TOOLS"
+    },
+    "uiLanguage": "Interface Language",
+    "field": {
+      "defaultModel": "Default Model",
+      "workspacePath": "Workspace Path",
+      "maxTokens": "Max Tokens",
+      "temperature": "Temperature",
+      "maxIterations": "Max Iterations",
+      "contextCompression": "Context Compression",
+      "compressionTurns": "Compression Turns (Fallback)",
+      "tokenThreshold": "Token Threshold",
+      "enabledTools": "Enabled Tools",
+      "libraryExtractModel": "Library AI Extract Model",
+      "libraryExtractLanguage": "Library AI Extract Language"
+    },
+    "hint": {
+      "noEnabledModels": "No enabled models found. Please enable providers and models in the PROVIDERS tab.",
+      "allDefaultTools": "All default tools (backward compatible)",
+      "noAvailableTools": "No available tools found.",
+      "selectedSuffix": "selected",
+      "libraryExtractModel": "Model used for AI metadata extraction from PDFs in Library. Falls back to Default Model if not set.",
+      "libraryExtractLanguage": "Language for AI-extracted abstract and metadata. Author names are kept in their original form."
+    }
+  },
+  "library": {
+    "distillToKb": "To Knowledge",
+    "distillToKbTitle": "Distill to Knowledge Vault",
+    "selectVault": "Target Vault",
+    "distillToKbHint": "The AI note will be saved into the selected vault and added to your knowledge graph.",
+    "start": "Start Distillation",
+    "distillStarted": "Distillation started. Check distill tasks for progress.",
+    "distillFailed": "Failed to start distillation"
+  }
+}

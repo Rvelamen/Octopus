@@ -4,7 +4,7 @@ import MessageItem from './MessageItem.jsx';
 import IterationFold from './IterationFold.jsx';
 import CompressionSummary from './CompressionSummary.jsx';
 import SubagentSyncFold from './SubagentSyncFold.jsx';
-import octopusAvatar from '@assets/images/octopus.png';
+import StreamingMessageContent from './StreamingMessageContent.jsx';
 import './MessageList.css';
 
 function isToolResultMessage(msg) {
@@ -388,29 +388,10 @@ function MessageList({
       )}
 
       {streamingContent && selectedInstance?.id === currentChatInstanceId && !liveThought && (
-        <div className="message-row message-row-assistant streaming">
-          <div className="message-bubble message-bubble-assistant">
-            <div className="message-bubble-header">
-              <div className="message-bubble-avatar">
-                <img
-                  src={octopusAvatar}
-                  className="avatar-assistant-img"
-                  alt="Octopus"
-                />
-              </div>
-              <div className="message-bubble-meta">
-                <span className="message-bubble-author">Octopus</span>
-                <span className="message-bubble-time streaming-indicator">
-                  <span className="blink">streaming</span>
-                </span>
-              </div>
-            </div>
-            <div className="message-bubble-content">
-              {renderMessageContent(streamingContent)}
-              <span className="cursor-blink">_</span>
-            </div>
-          </div>
-        </div>
+        <StreamingMessageContent
+          content={streamingContent}
+          renderMessageContent={renderMessageContent}
+        />
       )}
     </div>
   );

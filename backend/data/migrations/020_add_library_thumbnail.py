@@ -1,13 +1,17 @@
-"""Add thumbnail_path column to library_items."""
+"""DEPRECATED: library_items lives in workspace .knowledge_index.db, not app.db.
+
+The actual migration adding thumbnail_path lives at
+backend/services/knowledge_migrations.py migration 11 (run via
+run_knowledge_index_migrations). This file is preserved as a no-op so
+yoyo's _yoyo_migration history remains consistent and existing installs
+do not attempt to re-apply.
+"""
 
 from yoyo import step
 
 
 def apply(conn):
-    cursor = conn.execute("PRAGMA table_info(library_items)")
-    columns = [row[1] for row in cursor.fetchall()]
-    if columns and "thumbnail_path" not in columns:
-        conn.execute("ALTER TABLE library_items ADD COLUMN thumbnail_path TEXT")
+    pass
 
 
 def rollback(conn):

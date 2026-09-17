@@ -411,12 +411,13 @@ extraction_prompt: |
                     )
 
                 # 更新索引：Library 笔记走 LibraryNoteEngine，Knowledge 笔记走 KnowledgeGraphEngine
-                output_full_for_index = Path(output_path)
-                if not output_full_for_index.is_absolute():
-                    output_full_for_index = Path(current_workspace) / output_full_for_index
+                # 注意：用 workspace-relative 路径的 parts 来分叉
+                # （之前用绝对路径的 parts，parts[0] 永远是盘符根，
+                # 所以 parts[0]=="knowledge" 永远 False，library 分支永远进不去）。
+                output_full_for_index = Path(current_workspace) / output_path
                 if output_full_for_index.exists():
-                    parts = output_full_for_index.parts
-                    if len(parts) >= 2 and parts[0] == "knowledge" and parts[1] == "library":
+                    rel_parts = Path(output_path).parts
+                    if len(rel_parts) >= 2 and rel_parts[0] == "knowledge" and rel_parts[1] == "library":
                         lib_engine = LibraryNoteEngine(str(current_workspace))
                         lib_engine.update_note(output_path)
                         logger.info(f"Updated library note index for {output_path}")

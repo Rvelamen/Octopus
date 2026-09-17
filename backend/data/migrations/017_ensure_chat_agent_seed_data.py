@@ -7,10 +7,9 @@ from yoyo import step
 
 __depends__ = {"016_add_workflow_design_agent_config"}
 
-steps = [
-    step(
+def apply(conn):
+    conn.execute(
         """
-        -- Ensure library-chat subagent exists
         INSERT OR IGNORE INTO subagents
         (name, description, provider_id, model_id, tools, extensions,
          max_iterations, temperature, system_prompt, enabled, created_at, updated_at, is_builtin)
@@ -28,19 +27,27 @@ steps = [
             datetime('now', 'localtime'),
             datetime('now', 'localtime'),
             1
-        );
-
-        -- Fix pdf-chat tools to use library_* instead of kb_*
+        )
+        """
+    )
+    conn.execute(
+        """
         UPDATE subagents
         SET tools = '["read", "library_search", "library_read_note", "memory_search", "memory_read"]',
             is_builtin = 1
-        WHERE name = 'pdf-chat';
-        """,
+        WHERE name = 'pdf-chat'
         """
-        -- Revert pdf-chat tools (best effort)
+    )
+
+
+def rollback(conn):
+    conn.execute(
+        """
         UPDATE subagents
         SET tools = '["read", "kb_search", "kb_read_note", "memory_search", "memory_read"]'
-        WHERE name = 'pdf-chat';
-        """,
+        WHERE name = 'pdf-chat'
+        """
     )
-]
+
+
+steps = [step(apply, rollback)]

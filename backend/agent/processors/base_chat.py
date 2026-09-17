@@ -6,6 +6,7 @@ NonStreamingMessageProcessor into a single template-method base.
 
 import json
 import time
+import asyncio
 from abc import abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
@@ -147,6 +148,30 @@ class BaseChatProcessor(MessageProcessor):
         """Return a ``final_content`` string to stop the loop, or ``None`` to continue."""
         return None
 
+    async def _emit_llm_error(
+        self,
+        message: str,
+        session_instance_id: int | None,
+        msg: InboundMessage,
+        current_session: str,
+    ) -> None:
+        """Emit an ``error`` event so the frontend stops the streaming spinner and
+        surfaces the failure, instead of hanging forever when the provider stalls
+        or raises before any token is produced.
+        """
+        try:
+            await self.agent_loop._emit(
+                "error",
+                {
+                    "content": message,
+                    "session": current_session,
+                    "session_instance_id": session_instance_id,
+                },
+                channel=msg.channel,
+            )
+        except Exception as emit_err:
+            logger.warning(f"Failed to emit LLM error event: {emit_err}")
+
     async def _post_agent_finish(
         self,
         final_content: str | None,
@@ -216,6 +241,9 @@ class BaseChatProcessor(MessageProcessor):
             )
 
             try:
+                # 注意：这里不包 asyncio.wait_for。
+                # 流式子类（streaming.py）对每个 chunk 做 stall 超时，长生成不会被误杀；
+                # 非流式子类（non_streaming.py）对整次请求做超时。
                 llm_response = await self._call_llm(
                     messages=messages,
                     tools=self.agent_loop.tools.get_definitions(),
@@ -407,12 +435,30 @@ class BaseChatProcessor(MessageProcessor):
                     )
                     break
 
+            except asyncio.TimeoutError:
+                logger.error(
+                    f"[{self.__class__.__name__}] LLM call stalled/timed out "
+                    f"(provider={provider_type}, model={model})"
+                )
+                final_content = (
+                    "⚠️ 模型服务响应超时。\n\n"
+                    "可能是 API key 失效、网络不通或 provider 挂起。\n"
+                    f"请到 Settings → Providers 检查 `{provider_type}` 的配置后重试。"
+                )
+                await self._emit_llm_error(
+                    final_content, session_instance_id, msg, current_session
+                )
+                break
+
             except Exception as e:
                 import traceback
 
                 logger.error(f"[{self.__class__.__name__}] Error in agent loop: {e}")
                 logger.error(traceback.format_exc())
                 final_content = f"Error: {str(e)}"
+                await self._emit_llm_error(
+                    final_content, session_instance_id, msg, current_session
+                )
                 break
 
         # ---- Stop / cancelled handling ----

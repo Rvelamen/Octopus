@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, nativeImage, shell } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
@@ -286,7 +286,7 @@ async function createWindow() {
     
     if (isDev) {
       // 开发模式：加载Vite开发服务器
-      mainWindow.loadURL('http://localhost:3000');
+      mainWindow.loadURL('http://localhost:3007');
     } else {
       // 生产模式：加载打包后的文件
       const indexPath = path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
@@ -407,7 +407,7 @@ ipcMain.handle('open-pdf-window', (event, { path: pdfPath, title, itemId }) => {
   const encodedItemId = encodeURIComponent(itemId || '');
 
   if (isDev) {
-    pdfWindow.loadURL(`http://localhost:3000/pdf-viewer#?path=${encodedPath}&title=${encodedTitle}&itemId=${encodedItemId}`);
+    pdfWindow.loadURL(`http://localhost:3007/pdf-viewer#?path=${encodedPath}&title=${encodedTitle}&itemId=${encodedItemId}`);
   } else {
     const indexPath = path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
     pdfWindow.loadFile(indexPath, {
@@ -453,7 +453,7 @@ ipcMain.handle('open-markdown-window', (event, { path: mdPath, title }) => {
   const encodedTitle = encodeURIComponent(title || 'Markdown');
 
   if (isDev) {
-    markdownWindow.loadURL(`http://localhost:3000/markdown-editor#?path=${encodedPath}&title=${encodedTitle}`);
+    markdownWindow.loadURL(`http://localhost:3007/markdown-editor#?path=${encodedPath}&title=${encodedTitle}`);
   } else {
     const indexPath = path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
     markdownWindow.loadFile(indexPath, {
@@ -502,7 +502,7 @@ ipcMain.handle('open-workflow-window', (event, { workflowId } = {}) => {
   const hashQuery = workflowId ? `?workflowId=${encodeURIComponent(workflowId)}` : '';
 
   if (isDev) {
-    workflowWindow.loadURL(`http://localhost:3000/workflow-window#${hashQuery}`);
+    workflowWindow.loadURL(`http://localhost:3007/workflow-window#${hashQuery}`);
   } else {
     const indexPath = path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
     workflowWindow.loadFile(indexPath, {
@@ -519,6 +519,58 @@ ipcMain.handle('open-workflow-window', (event, { workflowId } = {}) => {
   });
 
   return { success: true };
+});
+
+// ============================================================
+// Local Tools（浏览器扩展等本地工具的"快捷安装"入口）
+// ============================================================
+// 返回前端 Extensions 页 "TOOLS" 分类下展示的本地工具列表。
+// 工具数据写死在 main 进程里；installPath 由 main 解析绝对路径，
+// 前端不需要知道 dev / packaged 路径规则。
+function buildLocalToolsList() {
+  // 开发模式 app.getAppPath() == 项目根；packaged 走 resourcesPath
+  // （packaged 下需在 electron-builder 配置 extraResources 把
+  // chrome-extension/ 打进 resources，否则 installPath 在磁盘上不存在）
+  const baseDir = app.isPackaged ? process.resourcesPath : app.getAppPath();
+  return [
+    {
+      id: 'chrome-clip',
+      type: 'tools',
+      kind: 'browser-extension',
+      name: 'Octopus Clip',
+      author: 'Octopus',
+      version: '1.0.0',
+      description: '一键将网页剪藏到 Octopus 知识库。',
+      tags: ['browser', 'clip', 'chrome'],
+      updated_at: Math.floor(Date.now() / 1000),
+      installPath: path.join(baseDir, 'chrome-extension'),
+      extensionUrl: 'chrome://extensions',
+      browserName: 'Chrome',
+      shortcut: 'Ctrl+Shift+O',
+    },
+  ];
+}
+
+ipcMain.handle('get-local-tools', () => buildLocalToolsList());
+
+// 在文件管理器（Explorer / Finder）中打开目录
+ipcMain.handle('open-folder', (_event, folderPath) => {
+  if (typeof folderPath !== 'string' || !folderPath) {
+    return { success: false, error: 'invalid path' };
+  }
+  // shell.openPath 返回 '' 成功；非空字符串是错误信息
+  return shell.openPath(folderPath).then((errMsg) => ({
+    success: !errMsg,
+    error: errMsg || null,
+  }));
+});
+
+// 用系统默认浏览器打开外部 URL（chrome://extensions 等）
+ipcMain.handle('open-external', (_event, url) => {
+  if (typeof url !== 'string' || !url) {
+    return { success: false, error: 'invalid url' };
+  }
+  return shell.openExternal(url).then(() => ({ success: true }));
 });
 
 // 监听窗口最大化状态变化

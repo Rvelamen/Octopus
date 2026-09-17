@@ -1,10 +1,17 @@
 """Non-streaming message processor for non-desktop channels."""
 
+import asyncio
+import os
+
 from loguru import logger
 
 from backend.core.events.types import InboundMessage
 
 from .base_chat import BaseChatProcessor, LLMResponse, ToolCallInfo
+
+# 非流式整次请求的最大等待时长（秒）。非流式是单发请求/响应，
+# 整段超时是正确语义。可用 OCTOPUS_LLM_TIMEOUT 覆盖。
+LLM_CALL_TIMEOUT = float(os.environ.get("OCTOPUS_LLM_TIMEOUT", "180"))
 
 
 class NonStreamingMessageProcessor(BaseChatProcessor):
@@ -29,12 +36,15 @@ class NonStreamingMessageProcessor(BaseChatProcessor):
         current_session,
     ) -> LLMResponse:
         provider, _, provider_type, _, _ = self.agent_loop._get_current_provider_and_model()
-        response = await provider.chat(
-            messages=messages,
-            tools=tools,
-            model=model,
-            max_tokens=max_tokens,
-            temperature=temperature,
+        response = await asyncio.wait_for(
+            provider.chat(
+                messages=messages,
+                tools=tools,
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            ),
+            timeout=LLM_CALL_TIMEOUT,
         )
         logger.info(f"LLM Response: {response}")
 

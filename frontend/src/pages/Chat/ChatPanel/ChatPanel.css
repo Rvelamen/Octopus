@@ -154,12 +154,31 @@
 .window-dots {
   display: flex;
   gap: 6px;
+  -webkit-app-region: no-drag;
 }
 
 .window-dots .dot {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.window-dots .dot:hover {
+  filter: brightness(1.15);
+  transform: scale(1.1);
+}
+
+.window-dots .dot:active {
+  transform: scale(0.95);
+}
+
+.window-dots .dot:focus-visible {
+  outline: 2px solid var(--accent, #4a9eff);
+  outline-offset: 2px;
 }
 
 .window-dots .dot.red {
@@ -172,6 +191,11 @@
 
 .window-dots .dot.green {
   background: #28c840;
+}
+
+.window-dots .dot.green.is-maximized {
+  background: #28c840;
+  box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, 0.15);
 }
 
 .window-title {

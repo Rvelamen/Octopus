@@ -518,6 +518,14 @@ def _migration_010_add_library_note_schema(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def _migration_011_add_library_thumbnail(conn: sqlite3.Connection) -> None:
+    """Add thumbnail_path column to library_items for PDF cover thumbnails."""
+    cursor = conn.execute("PRAGMA table_info(library_items)")
+    columns = [row[1] for row in cursor.fetchall()]
+    if columns and "thumbnail_path" not in columns:
+        conn.execute("ALTER TABLE library_items ADD COLUMN thumbnail_path TEXT")
+
+
 def run_knowledge_index_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_initial_schema", _migration_001_create_initial_schema)
@@ -532,6 +540,7 @@ def run_knowledge_index_migrations(db_path: Path) -> None:
     )
     runner.register(9, "add_library_chunk_status", _migration_009_add_library_chunk_status)
     runner.register(10, "add_library_note_schema", _migration_010_add_library_note_schema)
+    runner.register(11, "add_library_thumbnail", _migration_011_add_library_thumbnail)
     runner.run()
 
 

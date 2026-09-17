@@ -62,6 +62,10 @@ class AnthropicProvider(RetryableProvider):
         model = model or self.default_model
         logger.info(f"Calling ANTHROPIC API with model: {model}")
         logger.info(f"Tools provided: {len(tools) if tools else 0} tools")
+        if temperature != 0.7:
+            logger.warning(
+                f"[Anthropic] temperature={temperature} ignored; anthropic SDK 1.x no longer supports it"
+            )
         system_message, anthropic_messages = self._adapt_messages(messages)
 
         try:
@@ -73,7 +77,6 @@ class AnthropicProvider(RetryableProvider):
             kwargs = {
                 "model": model,
                 "max_tokens": max_tokens,
-                "temperature": temperature,
                 "system": system_message,
                 "messages": anthropic_messages,
             }
@@ -152,12 +155,15 @@ class AnthropicProvider(RetryableProvider):
     ) -> AsyncGenerator[StreamChunk, None]:
         model = model or self.default_model
         logger.info(f"[Stream] Calling ANTHROPIC API with model: {model}")
+        if temperature != 0.7:
+            logger.warning(
+                f"[Anthropic] temperature={temperature} ignored; anthropic SDK 1.x no longer supports it"
+            )
         system_message, anthropic_messages = self._adapt_messages(messages)
 
         kwargs = {
             "model": model,
             "max_tokens": max_tokens,
-            "temperature": temperature,
             "system": system_message,
             "messages": anthropic_messages,
         }
@@ -258,11 +264,14 @@ class AnthropicProvider(RetryableProvider):
         temperature: float,
     ) -> AsyncGenerator[str, None]:
         """Stream Anthropic completions (legacy string generator)."""
+        if temperature != 0.7:
+            logger.warning(
+                f"[Anthropic] temperature={temperature} ignored; anthropic SDK 1.x no longer supports it"
+            )
         try:
             kwargs = {
                 "model": model,
                 "max_tokens": max_tokens,
-                "temperature": temperature,
                 "system": system_message,
                 "messages": messages,
             }

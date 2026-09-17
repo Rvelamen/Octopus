@@ -108,6 +108,19 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
     fetchGraph(centerPath, 1, selectedTag, selectedVault);
   }, [centerPath, selectedTag, selectedVault]);
 
+  // Refresh graph when a distillation completes so newly distilled notes
+  // appear in the graph without a manual reload / remount.
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail?.stage === 'completed') {
+        fetchGraph(currentCenterRef.current, 1, selectedTag, selectedVault);
+        fetchTags(selectedVault);
+      }
+    };
+    window.addEventListener('knowledge-distill-progress', handler);
+    return () => window.removeEventListener('knowledge-distill-progress', handler);
+  }, [fetchGraph, fetchTags, selectedTag, selectedVault]);
+
   useEffect(() => {
     if (filterTag !== undefined && filterTag !== selectedTag) {
       setSelectedTag(filterTag || null);

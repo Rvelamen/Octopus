@@ -1,8 +1,16 @@
 """Streaming message processor for the desktop channel."""
 
+import asyncio
+import os
+
 from backend.core.events.types import InboundMessage
 
 from .base_chat import BaseChatProcessor, LLMResponse, ToolCallInfo
+
+# 相邻两个 chunk 之间允许的最大间隔（秒）。超过则判定 provider 挂起，
+# 抛 asyncio.TimeoutError，由 base_chat 统一捕获并 emit error 事件。
+# 只限制"停顿"，不限制整条流的总时长 —— 长时间持续生成不会被误杀。
+LLM_CHUNK_STALL_TIMEOUT = float(os.environ.get("OCTOPUS_LLM_CHUNK_STALL_TIMEOUT", "90"))
 
 
 class StreamingMessageProcessor(BaseChatProcessor):
@@ -32,13 +40,32 @@ class StreamingMessageProcessor(BaseChatProcessor):
         tool_calls_buffer: dict[str, dict] = {}
         usage = None
 
-        async for chunk in provider.chat_stream(
+        stream = provider.chat_stream(
             messages=messages,
             tools=tools,
             model=model,
             max_tokens=max_tokens,
             temperature=temperature,
-        ):
+        )
+
+        # 手动迭代 async generator，给"读取下一个 chunk"加 stall 超时。
+        # 一旦某个 chunk 间隔超过 LLM_CHUNK_STALL_TIMEOUT 就抛 TimeoutError，
+        # 而不是让 UI 永远停在 thinking。
+        while True:
+            try:
+                chunk = await asyncio.wait_for(
+                    stream.__anext__(), timeout=LLM_CHUNK_STALL_TIMEOUT
+                )
+            except StopAsyncIteration:
+                break
+            except asyncio.TimeoutError:
+                # 关闭底层 stream，释放连接
+                try:
+                    await stream.aclose()
+                except Exception:
+                    pass
+                raise
+
             if chunk.content:
                 full_content += chunk.content
                 await self.agent_loop._emit(

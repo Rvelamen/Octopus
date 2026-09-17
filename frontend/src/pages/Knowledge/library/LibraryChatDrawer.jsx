@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Bot, X, Plus, Send, Loader2, BookOpen, Copy, Check } from 'lucide-react';
+import { Bot, X, Plus, Send, Loader2, BookOpen, Copy, Check, ChevronDown, FileText, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -21,12 +21,37 @@ const LibraryChatDrawer = ({
   width,
   onResizeStart,
   title = 'Library Chat',
+  showNoteSelector = false,
+  notes = [],
+  selectedNotePath = '',
+  onSelectNote,
 }) => {
   const [input, setInput] = useState('');
   const [showSessions, setShowSessions] = useState(false);
   const [copiedMsgId, setCopiedMsgId] = useState(null);
+  const [isNoteMenuOpen, setIsNoteMenuOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const noteMenuRef = useRef(null);
+
+  // 点外面或 Esc 关闭笔记选择菜单
+  useEffect(() => {
+    if (!isNoteMenuOpen) return;
+    const onDocDown = (e) => {
+      if (noteMenuRef.current && !noteMenuRef.current.contains(e.target)) {
+        setIsNoteMenuOpen(false);
+      }
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setIsNoteMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isNoteMenuOpen]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -85,6 +110,80 @@ const LibraryChatDrawer = ({
           )}
         </div>
         <div className="libchat-header-actions">
+          {showNoteSelector && onSelectNote && (
+            <div className="libchat-note-selector" ref={noteMenuRef}>
+              <button
+                className={`libchat-note-trigger ${isNoteMenuOpen ? 'open' : ''}`}
+                onClick={() => setIsNoteMenuOpen((v) => !v)}
+                title="选择笔记进行专项问答"
+              >
+                <BookOpen size={13} />
+                <span className="libchat-note-trigger-label">
+                  {selectedNotePath
+                    ? (notes.find((x) => x.path === selectedNotePath)?.title ||
+                       selectedNotePath.split('/').pop())
+                    : '默认'}
+                </span>
+                <ChevronDown
+                  size={12}
+                  className={`libchat-note-chevron ${isNoteMenuOpen ? 'open' : ''}`}
+                />
+              </button>
+              {isNoteMenuOpen && (
+                <div className="libchat-note-menu" role="listbox">
+                  <div
+                    className={`libchat-note-option ${!selectedNotePath ? 'selected' : ''}`}
+                    onClick={() => {
+                      onSelectNote('');
+                      setIsNoteMenuOpen(false);
+                    }}
+                    role="option"
+                    aria-selected={!selectedNotePath}
+                  >
+                    <Sparkles size={13} className="libchat-note-option-icon" />
+                    <div className="libchat-note-option-text">
+                      <div className="libchat-note-option-title">默认</div>
+                      <div className="libchat-note-option-sub">跟随当前笔记 / vault</div>
+                    </div>
+                    {!selectedNotePath && (
+                      <Check size={13} className="libchat-note-option-check" />
+                    )}
+                  </div>
+                  {notes.length > 0 && <div className="libchat-note-divider" />}
+                  {notes.length === 0 ? (
+                    <div className="libchat-note-empty">当前 vault 没有笔记</div>
+                  ) : (
+                    notes.map((n) => {
+                      const selected = selectedNotePath === n.path;
+                      return (
+                        <div
+                          key={n.path}
+                          className={`libchat-note-option ${selected ? 'selected' : ''}`}
+                          onClick={() => {
+                            onSelectNote(n.path);
+                            setIsNoteMenuOpen(false);
+                          }}
+                          role="option"
+                          aria-selected={selected}
+                        >
+                          <FileText size={13} className="libchat-note-option-icon" />
+                          <div className="libchat-note-option-text">
+                            <div className="libchat-note-option-title" title={n.title}>
+                              {n.title || n.path.split('/').pop()}
+                            </div>
+                            <div className="libchat-note-option-sub">{n.path}</div>
+                          </div>
+                          {selected && (
+                            <Check size={13} className="libchat-note-option-check" />
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <button
             className="libchat-header-btn"
             onClick={() => onNewSession()}

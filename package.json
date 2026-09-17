@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:electron\"",
     "dev:frontend": "cd frontend && npx vite",
-    "dev:electron": "wait-on http://localhost:3000 && electron .",
+    "dev:electron": "wait-on http://localhost:3007 && electron .",
     "build": "npm run build:frontend && npm run build:electron",
     "build:frontend": "cd frontend && npm run build",
     "build:python": "python build_python.py",

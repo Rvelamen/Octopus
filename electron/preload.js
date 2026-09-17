@@ -42,11 +42,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('window-focus-change', (event, isFocused) => callback(isFocused));
   },
 
-  // 监听窗口最大化状态变化
+  // 监听窗口最大化状态变化。返回一个 unsubscribe 函数，组件可在卸载时调用。
   onWindowMaximizeChange: (callback) => {
-    ipcRenderer.invoke('on-window-maximize-change').then(() => {
-      ipcRenderer.on('window-maximize-change', (event, isMaximized) => callback(isMaximized));
-    });
+    const handler = (_event, isMaximized) => callback(isMaximized);
+    ipcRenderer.on('window-maximize-change', handler);
+    return () => ipcRenderer.removeListener('window-maximize-change', handler);
   },
 
   // 清除所有窗口相关监听器
@@ -67,4 +67,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const payload = typeof params === 'string' ? { workflowId: params } : (params || {});
     return ipcRenderer.invoke('open-workflow-window', payload);
   },
+
+  // ===== Local Tools（Extensions 页 TOOLS 分类用）=====
+  // 获取本地工具清单（Chrome 扩展等），由 main 进程解析绝对路径
+  getLocalTools: () => ipcRenderer.invoke('get-local-tools'),
+
+  // 在系统文件管理器中打开目录（Explorer / Finder）
+  openFolder: (folderPath) => ipcRenderer.invoke('open-folder', folderPath),
+
+  // 用系统默认浏览器打开外部 URL（chrome://extensions 等）
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
 });

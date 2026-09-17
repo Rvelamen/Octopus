@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, FileText, ExternalLink, Calendar, Users, BookOpen, Hash, Sparkles, Link2, Copy, Trash2, Download, Edit2, Upload, FolderOpen, MessageSquare, Loader2, CheckCircle2, XCircle } from 'lucide-react';
-import { Button, Tag, Popconfirm, Spin, message, Input, Modal } from 'antd';
+import { Button, Tag, Popconfirm, Spin, message, Input, Modal, Select } from 'antd';
 import { useDistillTasks } from '@contexts/DistillTaskContext';
 import LibraryAnnotationModal from './LibraryAnnotationModal';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -8,12 +9,19 @@ import * as pdfjsLib from 'pdfjs-dist';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 const LibraryItemDetail = ({ item, onClose, onDelete, onUpdateItem, onRefreshItem, sendWSMessage }) => {
+  const { t } = useTranslation();
   const [pdfContent, setPdfContent] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState(null);
   const [annotations, setAnnotations] = useState([]);
   const [noteFiles, setNoteFiles] = useState([]);
   const [noteGenerating, setNoteGenerating] = useState(false);
+  // 蒸馏到知识库（Knowledge vault）modal 状态
+  const [kbModalOpen, setKbModalOpen] = useState(false);
+  const [kbVaults, setKbVaults] = useState([]);
+  const [kbSelectedVault, setKbSelectedVault] = useState('default');
+  const [kbLoadingVaults, setKbLoadingVaults] = useState(false);
+  const [kbDistilling, setKbDistilling] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
@@ -294,6 +302,104 @@ Please write in English, use academic tone, and include specific details from th
       });
     } else {
       doGenerateNote();
+    }
+  };
+
+  // ===== 蒸馏到知识库（Knowledge vault）=====
+  // 打开 modal 并拉取可选 vault 列表
+  const openKbModal = async () => {
+    setKbModalOpen(true);
+    setKbLoadingVaults(true);
+    try {
+      const resp = await sendWSMessage('knowledge_list_vaults', {});
+      const names = (resp.data?.vaults || [])
+        .map((v) => v?.name)
+        .filter(Boolean);
+      // 确保 default 始终在选项里（知识库默认仓库）
+      const unique = Array.from(new Set(['default', ...names]));
+      setKbVaults(unique);
+      setKbSelectedVault((prev) => (unique.includes(prev) ? prev : unique[0]));
+    } catch (e) {
+      setKbVaults(['default']);
+      setKbSelectedVault('default');
+    } finally {
+      setKbLoadingVaults(false);
+    }
+  };
+
+  // 调用 knowledge_distill，vault 传真实仓库名（不是 'library'），
+  // 后端据此走 knowledge-distiller 并把笔记写进 knowledge/notes/{vault}/
+  const doDistillToKnowledge = async () => {
+    if (!item?.id || !item.library_path) return;
+    const vault = kbSelectedVault || 'default';
+    setKbDistilling(true);
+    try {
+      const sourcePath = `${item.library_path}/main.pdf`;
+      const taskId = `library-to-kb-${item.id}-${Date.now()}`;
+      const prompt = `Please read this academic paper and generate a comprehensive summary note in Markdown format with the following structure:
+
+---
+title: "${item.title || 'Untitled'}"
+authors: [${(item.authors || []).map((a) => `"${a}"`).join(', ')}]
+year: ${item.year || 'N/A'}
+venue: "${item.venue || ''}"
+tags: [${(item.tags || []).map((tg) => `"${tg}"`).join(', ')}]
+---
+
+## Summary
+[A concise 2-3 paragraph summary of the paper's main contributions]
+
+## Key Contributions
+- [List the main contributions]
+
+## Methodology
+[Describe the methods/approaches used]
+
+## Results
+[Summarize the key findings and experimental results]
+
+## Insights & Implications
+[Your analysis of the paper's significance and potential impact]
+
+## Related Work Connections
+[How this work connects to other notes in the knowledge base, use [[wiki-links]] if relevant]
+
+Please write in English, use academic tone, and include specific details from the paper.`;
+
+      // 输出文件名：优先 citekey（Zotero 风格规范引用键），其次真实标题，
+      // 再次回退到 paper-{id}。这样即使 item.title 仍是上传时的临时文件名
+      // （如 `_tmp_xxx_...`），落盘的 .md 文件名也不会带丑陋前缀。
+      const rawTitle = (item.title || '').trim();
+      const looksLikeTemp = /^_tmp[\b_-]|^tmp[\b_-]/i.test(rawTitle);
+      const base =
+        (item.citekey && String(item.citekey).trim()) ||
+        (!looksLikeTemp && rawTitle) ||
+        `paper-${item.id}`;
+      const safe = String(base)
+        .replace(/[^\w一-龥\-]+/g, '_')
+        .slice(0, 60)
+        .replace(/^_+|_+$/g, '') || `paper-${item.id}`;
+      const timestamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+      const fileTargetPath = `knowledge/notes/${vault}/${safe}_${timestamp}.md`;
+
+      addTask({ id: taskId, sourceFile: sourcePath, template: 'custom', prompt });
+
+      await sendWSMessage(
+        'knowledge_distill',
+        {
+          source_path: sourcePath,
+          options: { prompt, template: 'custom', task_id: taskId },
+          target_path: fileTargetPath,
+          vault,
+        },
+        30000
+      );
+      message.success(t('library.distillStarted'));
+      setKbModalOpen(false);
+    } catch (e) {
+      message.error(t('library.distillFailed'));
+    } finally {
+      setKbDistilling(false);
     }
   };
 
@@ -832,6 +938,32 @@ Please write in English, use academic tone, and include specific details from th
           }}
         />
 
+        {/* 蒸馏到知识库 vault 选择 modal */}
+        <Modal
+          open={kbModalOpen}
+          title={t('library.distillToKbTitle')}
+          onCancel={() => setKbModalOpen(false)}
+          onOk={doDistillToKnowledge}
+          okText={t('library.start')}
+          confirmLoading={kbDistilling}
+          destroyOnClose
+          width={440}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 0' }}>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>{t('library.selectVault')}</div>
+            <Select
+              style={{ width: '100%' }}
+              loading={kbLoadingVaults}
+              value={kbSelectedVault}
+              onChange={setKbSelectedVault}
+              options={kbVaults.map((v) => ({ value: v, label: v }))}
+            />
+            <div style={{ fontSize: 12, color: 'var(--text-muted, #888)' }}>
+              {t('library.distillToKbHint')}
+            </div>
+          </div>
+        </Modal>
+
         {/* Linked notes */}
         {item.linked_notes?.length > 0 && (
           <div style={{ marginBottom: 16 }}>
@@ -897,6 +1029,9 @@ Please write in English, use academic tone, and include specific details from th
           </Button>
           <Button size="small" icon={<Sparkles size={14} />} loading={noteGenerating} onClick={handleGenerateNote}>
             AI Note
+          </Button>
+          <Button size="small" icon={<BookOpen size={14} />} onClick={openKbModal}>
+            {t('library.distillToKb')}
           </Button>
           <Button size="small" icon={<Copy size={14} />} onClick={handleCopyCitation}>
             Cite

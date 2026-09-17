@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Brain, Bot, Radio, Plus, Image, Search, Settings, Trash2, Edit, Check, X, ChevronDown, ChevronRight, RefreshCw, QrCode, Clock, CheckCircle, AlertCircle, Volume2, Layers, Save, Send, Mail, Hash, Gamepad2, Bell, BookOpen, MessageSquare, MessageCircle } from 'lucide-react';
 import { InputField, PasswordField, SelectField, SwitchField } from '@components/forms';
 import { ConfigCard, DynamicItemCard, AddItemDialog } from '@components/config';
@@ -17,6 +18,7 @@ const CONFIG_TABS = [
 ];
 
 function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
+  const { t, i18n } = useTranslation();
   const [configTab, setConfigTab] = useState('providers');
   const [addDialog, setAddDialog] = useState({
     isOpen: false,
@@ -345,10 +347,28 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
     }
   };
 
+  // 界面设置（UI 语言切换）—— 即时生效并写入 localStorage，独立于后端保存流程
+  const renderInterfaceSettings = () => {
+    const currentLang = (i18n.resolvedLanguage || i18n.language || 'en').startsWith('zh') ? 'zh' : 'en';
+    return (
+      <ConfigCard title={t('config.card.interface')} icon="[UI]">
+        <SelectField
+          label={t('config.uiLanguage')}
+          value={currentLang}
+          onChange={(v) => i18n.changeLanguage(v)}
+          options={[
+            { value: 'en', label: 'English' },
+            { value: 'zh', label: '中文' },
+          ]}
+        />
+      </ConfigCard>
+    );
+  };
+
   const renderAgentDefaults = () => {
     if (isLoadingAgentDefaults || !agentDefaults) {
       return (
-        <ConfigCard title="AGENT DEFAULTS" icon="[BOT]">
+        <ConfigCard title={t('config.card.agentDefaults')} icon="[BOT]">
           <div className="empty-config">
             <span>Loading...</span>
           </div>
@@ -362,10 +382,10 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
       : '';
 
     return (
-      <ConfigCard title="AGENT DEFAULTS" icon="[BOT]">
+      <ConfigCard title={t('config.card.agentDefaults')} icon="[BOT]">
         {/* Model Selection - Shows all enabled models from all enabled providers */}
         <SelectField
-          label="Default Model"
+          label={t('config.field.defaultModel')}
           value={currentModelValue}
           onChange={handleModelChange}
           options={enabledModels}
@@ -373,19 +393,19 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         />
         {enabledModels.length === 0 && !isLoadingModels && (
           <div className="form-hint" style={{ color: '#ff6b6b', marginTop: '-10px', marginBottom: '10px' }}>
-            No enabled models found. Please enable providers and models in the PROVIDERS tab.
+            {t('config.hint.noEnabledModels')}
           </div>
         )}
 
         <InputField
-          label="Workspace Path"
+          label={t('config.field.workspacePath')}
           value={agentDefaults.workspacePath || ''}
           onChange={(v) => updateAgentDefaultField('workspacePath', v)}
           placeholder="/path/to/workspace"
         />
 
         <InputField
-          label="Max Tokens"
+          label={t('config.field.maxTokens')}
           type="number"
           value={agentDefaults.maxTokens || 8192}
           onChange={(v) => updateAgentDefaultField('maxTokens', parseInt(v) || 8192)}
@@ -393,7 +413,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         />
 
         <InputField
-          label="Temperature"
+          label={t('config.field.temperature')}
           type="number"
           step="0.1"
           min="0"
@@ -404,7 +424,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         />
 
         <InputField
-          label="Max Iterations"
+          label={t('config.field.maxIterations')}
           type="number"
           value={agentDefaults.maxIterations || 20}
           onChange={(v) => updateAgentDefaultField('maxIterations', parseInt(v) || 20)}
@@ -412,7 +432,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         />
 
         <SwitchField
-          label="Context Compression"
+          label={t('config.field.contextCompression')}
           checked={agentDefaults.contextCompressionEnabled || false}
           onChange={(v) => updateAgentDefaultField('contextCompressionEnabled', v)}
         />
@@ -420,14 +440,14 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         {agentDefaults.contextCompressionEnabled && (
           <>
             <InputField
-              label="Compression Turns (Fallback)"
+              label={t('config.field.compressionTurns')}
               type="number"
               value={agentDefaults.contextCompressionTurns || 10}
               onChange={(v) => updateAgentDefaultField('contextCompressionTurns', parseInt(v) || 10)}
               placeholder="10"
             />
             <InputField
-              label="Token Threshold"
+              label={t('config.field.tokenThreshold')}
               type="number"
               value={agentDefaults.contextCompressionTokenThreshold || 8000}
               onChange={(v) => updateAgentDefaultField('contextCompressionTokenThreshold', parseInt(v) || 8000)}
@@ -438,7 +458,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
 
         {/* Tools Selection */}
         <div className="form-group" style={{ marginTop: '10px' }}>
-          <label>Enabled Tools ({(agentDefaults.tools || []).length} selected)</label>
+          <label>{t('config.field.enabledTools')} ({(agentDefaults.tools || []).length} {t('config.hint.selectedSuffix')})</label>
           <div className="dropdown-container dropdown-up">
             <button
               className="dropdown-trigger"
@@ -448,7 +468,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
               <span>
                 {(agentDefaults.tools || []).length > 0
                   ? (agentDefaults.tools || []).slice(0, 3).join(', ') + ((agentDefaults.tools || []).length > 3 ? '...' : '')
-                  : 'All default tools (backward compatible)'}
+                  : t('config.hint.allDefaultTools')}
               </span>
               <ChevronDown size={14} />
             </button>
@@ -469,7 +489,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
           </div>
           {availableTools.length === 0 && !isLoadingAvailableTools && (
             <div className="form-hint" style={{ color: '#ff6b6b', marginTop: '4px' }}>
-              No available tools found.
+              {t('config.hint.noAvailableTools')}
             </div>
           )}
         </div>
@@ -480,7 +500,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
   const renderLibrarySettings = () => {
     if (isLoadingAgentDefaults || !agentDefaults) {
       return (
-        <ConfigCard title="LIBRARY SETTINGS" icon="[LIBR]">
+        <ConfigCard title={t('config.card.librarySettings')} icon="[LIBR]">
           <div className="empty-config">
             <span>Loading...</span>
           </div>
@@ -496,19 +516,19 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
       <ConfigCard title="LIBRARY SETTINGS" icon="[LIBR]">
         {/* Library Extract Model Selection */}
         <SelectField
-          label="Library AI Extract Model"
+          label={t('config.field.libraryExtractModel')}
           value={currentLibExtractValue}
           onChange={handleLibraryExtractModelChange}
           options={enabledModels}
           disabled={isLoadingModels || enabledModels.length === 0}
         />
         <div className="form-hint" style={{ color: 'var(--text-muted)', marginTop: '-10px', marginBottom: '10px', fontSize: '12px' }}>
-          Model used for AI metadata extraction from PDFs in Library. Falls back to Default Model if not set.
+          {t('config.hint.libraryExtractModel')}
         </div>
 
         {/* Library Extract Language Selection */}
         <SelectField
-          label="Library AI Extract Language"
+          label={t('config.field.libraryExtractLanguage')}
           value={agentDefaults.libraryExtractLanguage || 'English'}
           onChange={handleLibraryExtractLanguageChange}
           options={[
@@ -525,7 +545,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
           ]}
         />
         <div className="form-hint" style={{ color: 'var(--text-muted)', marginTop: '-10px', marginBottom: '10px', fontSize: '12px' }}>
-          Language for AI-extracted abstract and metadata. Author names are kept in their original form.
+          {t('config.hint.libraryExtractLanguage')}
         </div>
       </ConfigCard>
     );
@@ -1541,7 +1561,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
   const renderContent = () => {
     switch (configTab) {
       case 'providers': return <ProviderSetting sendWSMessage={sendWSMessage} />;
-      case 'agents': return renderAgentDefaults();
+      case 'agents': return <>{renderInterfaceSettings()}{renderAgentDefaults()}</>;
       case 'library': return renderLibrarySettings();
       case 'channels': return renderChannels();
       case 'multimodal': return <MultimodalPanel sendWSMessage={sendWSMessage} />;
@@ -1553,10 +1573,10 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
     <div className="config-form-container">
       <div className="window-header">
         <WindowDots />
-        <span className="window-title">SYSTEM CONFIGURATION</span>
+        <span className="window-title">{t('config.title')}</span>
         <div className="window-actions">
           <button className="pixel-button small save-btn" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? 'SAVING...' : <Save size={14} />}
+            {isSaving ? t('config.saving') : <Save size={14} />}
           </button>
         </div>
       </div>
@@ -1566,7 +1586,7 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
           {CONFIG_TABS.map((tab) => (
             <button key={tab.key} className={`config-tab ${configTab === tab.key ? 'active' : ''}`} onClick={() => handleTabSwitch(tab.key)}>
               <tab.Icon size={14} />
-              <span className="tab-label">{tab.label}</span>
+              <span className="tab-label">{t(`config.tab.${tab.key}`)}</span>
             </button>
           ))}
         </div>

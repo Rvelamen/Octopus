@@ -1,0 +1,133 @@
+{
+  "nav": {
+    "group": {
+      "core": "核心",
+      "knowledge": "知识库",
+      "automation": "自动化",
+      "integrations": "集成",
+      "system": "系统"
+    },
+    "chat": "对话",
+    "workspace": "工作区",
+    "knowledge": "知识库",
+    "library": "图书馆",
+    "agents": "智能体",
+    "workflows": "工作流",
+    "cron": "定时任务",
+    "mcp": "MCP",
+    "extensions": "扩展",
+    "history": "历史",
+    "memory": "记忆",
+    "tokens": "令牌",
+    "config": "配置"
+  },
+  "title": {
+    "chat": "对话",
+    "config": "系统",
+    "mcp": "MCP 服务",
+    "extensions": "扩展",
+    "cron": "定时任务",
+    "agents": "智能体",
+    "workspaces": "工作区",
+    "history": "历史",
+    "memory": "记忆",
+    "tokens": "令牌",
+    "workflows": "工作流",
+    "library": "图书馆",
+    "knowledge": "知识库"
+  },
+  "titlebar": {
+    "restart": "重启",
+    "restarting": "…",
+    "online": "在线",
+    "offline": "离线",
+    "connecting": "连接中...",
+    "collapseSidebar": "收起侧边栏",
+    "expandSidebar": "展开侧边栏",
+    "restartBackend": "重启后端服务"
+  },
+  "window": {
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "restore": "还原",
+    "close": "关闭"
+  },
+  "common": {
+    "loading": "加载中...",
+    "save": "保存",
+    "saving": "保存中...",
+    "delete": "删除",
+    "cancel": "取消",
+    "confirm": "确定"
+  },
+  "chat": {
+    "placeholderActive": "输入消息... (Shift+Enter 换行，/ 命令，支持粘贴图片)",
+    "placeholderSelect": "选择一个对话开始聊天...",
+    "emptySelect": "选择一个对话，或新建一个对话",
+    "emptyNew": "开始新对话...",
+    "emptyNone": "这个对话还没有消息",
+    "compressing": "正在压缩上下文，请稍候...",
+    "compressFailed": "压缩上下文失败",
+    "uploadImageFailed": "图片上传失败",
+    "uploadFileFailed": "文件上传失败",
+    "generateImageFailed": "图片生成失败",
+    "collapseEditor": "收起编辑区",
+    "expandEditor": "展开编辑区",
+    "uploadImage": "上传图片",
+    "uploadFile": "上传文件",
+    "generateImage": "生成图片",
+    "compressingShort": "压缩中...",
+    "compressContext": "压缩上下文",
+    "stop": "停止生成",
+    "send": "发送消息"
+  },
+  "config": {
+    "title": "系统配置",
+    "saving": "保存中...",
+    "tab": {
+      "providers": "模型服务",
+      "agents": "智能体",
+      "library": "图书馆",
+      "channels": "渠道",
+      "multimodal": "多模态"
+    },
+    "card": {
+      "interface": "界面",
+      "agentDefaults": "智能体默认配置",
+      "librarySettings": "图书馆设置",
+      "channels": "渠道",
+      "tools": "工具"
+    },
+    "uiLanguage": "界面语言",
+    "field": {
+      "defaultModel": "默认模型",
+      "workspacePath": "工作区路径",
+      "maxTokens": "最大 Tokens",
+      "temperature": "温度",
+      "maxIterations": "最大迭代次数",
+      "contextCompression": "上下文压缩",
+      "compressionTurns": "压缩轮数（回退）",
+      "tokenThreshold": "Token 阈值",
+      "enabledTools": "已启用工具",
+      "libraryExtractModel": "图书馆 AI 提取模型",
+      "libraryExtractLanguage": "图书馆 AI 提取语言"
+    },
+    "hint": {
+      "noEnabledModels": "未找到已启用的模型，请先在“模型服务”页启用服务商和模型。",
+      "allDefaultTools": "全部默认工具（向后兼容）",
+      "noAvailableTools": "未找到可用工具。",
+      "selectedSuffix": "已选",
+      "libraryExtractModel": "用于从图书馆中的 PDF 提取 AI 元数据的模型，未设置时回退到默认模型。",
+      "libraryExtractLanguage": "AI 提取摘要与元数据所用的语言，作者姓名保留原文。"
+    }
+  },
+  "library": {
+    "distillToKb": "蒸馏到知识库",
+    "distillToKbTitle": "蒸馏到知识库",
+    "selectVault": "目标仓库",
+    "distillToKbHint": "AI 笔记将保存到所选仓库，并加入你的知识图谱。",
+    "start": "开始蒸馏",
+    "distillStarted": "已开始蒸馏，可在蒸馏任务中查看进度。",
+    "distillFailed": "启动蒸馏失败"
+  }
+}

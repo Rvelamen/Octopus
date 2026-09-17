@@ -86,6 +86,135 @@
   transform: translateY(-1px);
 }
 
+/* ── Note selector dropdown (Note Chat) ── */
+.libchat-note-selector {
+  position: relative;
+  display: inline-flex;
+}
+
+.libchat-note-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border, #e8e8e8);
+  border-radius: 6px;
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #1a1a1a);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.libchat-note-trigger:hover {
+  border-color: var(--accent, #B46A57);
+  background: var(--bg-secondary, #f5f5f5);
+}
+.libchat-note-trigger.open,
+.libchat-note-trigger:focus-visible {
+  border-color: var(--accent, #B46A57);
+}
+
+.libchat-note-trigger-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.libchat-note-chevron {
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+.libchat-note-chevron.open {
+  transform: rotate(180deg);
+}
+
+.libchat-note-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 300px;
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border, #e8e8e8);
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+  z-index: 100;
+  padding: 4px;
+}
+
+.libchat-note-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  user-select: none;
+}
+.libchat-note-option:hover {
+  background: var(--bg-secondary, #f5f5f5);
+}
+.libchat-note-option.selected {
+  background: rgba(180, 106, 87, 0.12);
+  color: var(--accent, #B46A57);
+}
+
+.libchat-note-option-icon {
+  flex-shrink: 0;
+  color: var(--text-secondary, #666);
+}
+.libchat-note-option.selected .libchat-note-option-icon {
+  color: var(--accent, #B46A57);
+}
+
+.libchat-note-option-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.libchat-note-option-title {
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.libchat-note-option-sub {
+  font-size: 11px;
+  color: var(--text-secondary, #888);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.libchat-note-option-check {
+  flex-shrink: 0;
+  color: var(--accent, #B46A57);
+}
+
+.libchat-note-divider {
+  height: 1px;
+  background: var(--border, #e8e8e8);
+  margin: 4px 6px;
+}
+
+.libchat-note-empty {
+  padding: 14px;
+  font-size: 12px;
+  color: var(--text-secondary, #888);
+  text-align: center;
+}
+
 /* ── Session toggle ── */
 .libchat-session-toggle {
   display: flex;

@@ -295,7 +295,7 @@
 /* Streaming Cursor */
 .streaming-indicator .blink,
 .cursor-blink {
-  animation: blink 1s infinite;
+  animation: blink 1s step-end infinite;
   color: var(--accent, #B46A57);
   font-weight: 700;
   margin-left: 2px;
@@ -304,6 +304,20 @@
 @keyframes blink {
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0; }
+}
+
+/* Streaming markdown tail: 未闭合的纯文本段，等宽字体渲染避免 markdown 抖动 */
+.md-tail-pending {
+  font-family: var(--mono-font, ui-monospace, "SF Mono", Menlo, Consolas, monospace);
+  font-size: 0.92em;
+  background: rgba(180, 106, 87, 0.06);
+  border-left: 2px solid var(--accent, #B46A57);
+  padding: 6px 10px;
+  border-radius: 0 4px 4px 0;
+  margin: 4px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-primary, #2d2d2d);
 }
 
 /* ========================================

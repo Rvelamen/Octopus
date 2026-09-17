@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageSquare } from 'lucide-react';
-import WindowDots from '@components/layout/WindowDots';
 import InstanceList from './components/InstanceList/index.jsx';
 import MessageList from '@components/MessageList/index.jsx';
 import ChatInput from './components/ChatInput/index.jsx';
@@ -37,6 +37,7 @@ function ChatPanel({
   onInstanceIdUpdate,
   hasToolCallsInCurrentRun,
 }) {
+  const { t } = useTranslation();
   const [selectedInstance, setSelectedInstance] = useState(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -55,6 +56,8 @@ function ChatPanel({
   const prevIsProcessingRef = useRef(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const hasAutoSelectedRef = useRef(false);
+  const scrollRafRef = useRef(null);
+  const lastScrollHeightRef = useRef(0);
 
   const {
     instances,
@@ -127,9 +130,23 @@ function ChatPanel({
   }, [instances, initialLoading, selectedInstance, isCreatingNew, sendWSMessage, fetchInstanceMessages]);
 
   useEffect(() => {
-    if (messagesEndRef.current && shouldAutoScroll) {
-      messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
-    }
+    if (!shouldAutoScroll || !messagesEndRef.current) return;
+    if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+    scrollRafRef.current = requestAnimationFrame(() => {
+      const el = messagesEndRef.current;
+      if (!el) return;
+      if (el.scrollHeight !== lastScrollHeightRef.current) {
+        lastScrollHeightRef.current = el.scrollHeight;
+        el.scrollTop = el.scrollHeight;
+      }
+      scrollRafRef.current = null;
+    });
+    return () => {
+      if (scrollRafRef.current) {
+        cancelAnimationFrame(scrollRafRef.current);
+        scrollRafRef.current = null;
+      }
+    };
   }, [messages, streamingContent, shouldAutoScroll]);
 
   const fetchInstanceTokenUsage = useCallback(async (instanceId) => {
@@ -314,7 +331,7 @@ function ChatPanel({
       await fetchContextStats(instanceId);
     } catch (err) {
       console.error('Failed to compress context:', err);
-      alert('压缩上下文失败: ' + err.message);
+      alert(t('chat.compressFailed') + ': ' + err.message);
     } finally {
       setIsCompressing(false);
     }
@@ -375,7 +392,7 @@ function ChatPanel({
           uploadedImages.push(uploaded);
         }
       } catch (err) {
-        alert('图片上传失败: ' + err.message);
+        alert(t('chat.uploadImageFailed') + ': ' + err.message);
         setIsUploading(false);
         return;
       }
@@ -391,7 +408,7 @@ function ChatPanel({
           uploadedFiles.push(uploaded);
         }
       } catch (err) {
-        alert('文件上传失败: ' + err.message);
+        alert(t('chat.uploadFileFailed') + ': ' + err.message);
         setIsUploading(false);
         return;
       }
@@ -459,10 +476,10 @@ function ChatPanel({
         };
         setPendingImages(prev => [...prev, generatedImage]);
       } else {
-        alert('图片生成失败: ' + (response.data?.error || 'Unknown error'));
+        alert(t('chat.generateImageFailed') + ': ' + (response.data?.error || 'Unknown error'));
       }
     } catch (err) {
-      alert('图片生成失败: ' + err.message);
+      alert(t('chat.generateImageFailed') + ': ' + err.message);
     } finally {
       setIsGenerating(false);
     }
@@ -491,7 +508,7 @@ function ChatPanel({
 
       <div className="chat-main">
         <div className="window-header">
-          <WindowDots />
+          {/* 窗口控制按钮已在全局 App titlebar 提供，此处不重复渲染 */}
           <span className="window-title">
             {isCreatingNew
               ? 'NEW CONVERSATION'
@@ -504,7 +521,7 @@ function ChatPanel({
         {isCompressing && (
           <div className="compressing-banner">
             <div className="compressing-spinner" />
-            <span>正在压缩上下文，请稍候...</span>
+            <span>{t('chat.compressing')}</span>
           </div>
         )}
 
@@ -516,15 +533,15 @@ function ChatPanel({
           {!selectedInstance && !isCreatingNew ? (
             <div className="empty-state">
               <MessageSquare size={48} className="empty-icon" />
-              <p>Select a chat or create a new one</p>
+              <p>{t('chat.emptySelect')}</p>
             </div>
           ) : messages.length === 0 && !streamingContent ? (
             <div className="empty-state">
               <MessageSquare size={48} className="empty-icon" />
               <p>
                 {isCreatingNew
-                  ? 'Start a new conversation...'
-                  : 'No messages in this chat'}
+                  ? t('chat.emptyNew')
+                  : t('chat.emptyNone')}
               </p>
             </div>
           ) : (
@@ -564,7 +581,7 @@ function ChatPanel({
           onSelectImage={addPendingImage}
           onSelectFile={addPendingFile}
           onGenerateImage={() => setShowGenerateModal(true)}
-          placeholder={isCreatingNew || selectedInstance ? "输入消息... (Shift+Enter 换行，/ 命令，支持粘贴图片)" : "选择一个对话开始聊天..."}
+          placeholder={isCreatingNew || selectedInstance ? t('chat.placeholderActive') : t('chat.placeholderSelect')}
           onCompress={handleCompress}
           isCompressing={isCompressing}
           contextStats={contextStats}

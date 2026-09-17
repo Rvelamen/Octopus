@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Download, User, Package, Filter, ChevronDown, ChevronUp, X, Star, Calendar, Play, Trash2, CheckCircle, Loader2, Tag, Folder, Code, Puzzle, Rocket } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Search, Download, User, Package, Filter, ChevronDown, ChevronUp, X, Star, Calendar, Play, Trash2, CheckCircle, Loader2, Tag, Folder, Code, Puzzle, Rocket, Wrench } from 'lucide-react';
 import { Modal } from 'antd';
 import WindowDots from '@components/layout/WindowDots';
 import Toast from '@components/ui/Toast';
 import './ExtensionsPanel.css';
 import EnvConfigModal from '@components/modals/EnvConfigModal';
+import LocalToolSetupModal from './LocalToolSetupModal';
 
 const API_BASE_URL = 'https://fanquanpintuan.cn/octopus';
 
@@ -12,14 +13,16 @@ const API_BASE_URL = 'https://fanquanpintuan.cn/octopus';
 const TYPE_ICONS = {
   skill: Code,
   plugin: Puzzle,
-  worker: Rocket
+  worker: Rocket,
+  tools: Wrench,
 };
 
 // Extension 类型标签
 const TYPE_LABELS = {
   skill: 'SKILL',
   plugin: 'PLUGIN',
-  worker: 'WORKER'
+  worker: 'WORKER',
+  tools: 'TOOLS',
 };
 
 /**
@@ -36,7 +39,7 @@ const CardWindowDots = () => (
 /**
  * Extension Card Component
  */
-const ExtensionCard = ({ extension, onClick, isSelected, isInstalled, isInstalling, onInstall, onRemove }) => {
+const ExtensionCard = ({ extension, onClick, isSelected, isInstalled, isInstalling, onInstall, onRemove, installLabel = 'Install' }) => {
   // Format date
   const formatDate = (timestamp) => {
     if (!timestamp) return '';
@@ -145,7 +148,7 @@ const ExtensionCard = ({ extension, onClick, isSelected, isInstalled, isInstalli
               ) : (
                 <Download size={14} />
               )}
-              {isInstalling ? 'Installing...' : 'Install'}
+              {isInstalling ? 'Installing...' : installLabel}
             </button>
           )}
         </div>
@@ -157,7 +160,7 @@ const ExtensionCard = ({ extension, onClick, isSelected, isInstalled, isInstalli
 /**
  * Extension Detail Sidebar
  */
-const ExtensionDetailSidebar = ({ extension, onClose, isInstalled, isInstalling, onInstall, onRun, onRemove }) => {
+const ExtensionDetailSidebar = ({ extension, onClose, isInstalled, isInstalling, onInstall, onRun, onRemove, installLabel = 'Install' }) => {
   if (!extension) return null;
 
 // Removed debug log
@@ -240,7 +243,7 @@ const ExtensionDetailSidebar = ({ extension, onClose, isInstalled, isInstalling,
                 ) : (
                   <Download size={14} />
                 )}
-                {isInstalling ? 'Installing...' : 'Install'}
+                {isInstalling ? 'Installing...' : installLabel}
               </button>
             )}
           </div>
@@ -464,6 +467,10 @@ const ExtensionsPanel = ({ sendWSMessage, ws }) => {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, total_pages: 1 });
   const [toasts, setToasts] = useState([]);
+
+  // Local Tools（TOOLS 分类）—— 不走 marketplace，从 Electron IPC 拿
+  const [localTools, setLocalTools] = useState([]);
+  const [setupTool, setSetupTool] = useState(null);
 
   // Environment config modal state
   const [envConfigVisible, setEnvConfigVisible] = useState(false);
@@ -735,6 +742,31 @@ const ExtensionsPanel = ({ sendWSMessage, ws }) => {
     return installingExtensions.has(extension.id);
   }, [installingExtensions]);
 
+  // Fetch local tools (Chrome ext etc.) via Electron IPC. Only used when
+  // selectedType === 'tools'. Returns [] if electronAPI not available
+  // (e.g. running in plain browser dev).
+  const fetchLocalTools = async () => {
+    if (!window.electronAPI?.getLocalTools) {
+      setLocalTools([]);
+      return;
+    }
+    try {
+      const list = await window.electronAPI.getLocalTools();
+      setLocalTools(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error('Failed to fetch local tools:', err);
+      setLocalTools([]);
+    }
+  };
+
+  // Open setup modal for a local tool
+  const openSetupModal = useCallback((tool) => {
+    setSetupTool(tool);
+  }, []);
+  const closeSetupModal = useCallback(() => {
+    setSetupTool(null);
+  }, []);
+
   // Fetch extensions from API
   const fetchExtensions = async () => {
     try {
@@ -803,8 +835,18 @@ const ExtensionsPanel = ({ sendWSMessage, ws }) => {
 
   // Effects
   useEffect(() => {
-    fetchExtensions();
+    if (selectedType === 'tools') {
+      setLoading(true);
+      fetchLocalTools().finally(() => setLoading(false));
+    } else {
+      fetchExtensions();
+    }
   }, [page, sortBy, sortOrder, selectedType]);
+
+  // 切换到 TOOLS 时清掉已选中的 marketplace extension，避免 stale 数据
+  useEffect(() => {
+    if (selectedType === 'tools') setSelectedExtension(null);
+  }, [selectedType]);
 
   useEffect(() => {
     fetchStats();
@@ -813,10 +855,29 @@ const ExtensionsPanel = ({ sendWSMessage, ws }) => {
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchExtensions();
+      if (selectedType !== 'tools') fetchExtensions();
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // TOOLS 分类下走本地列表（支持 name/description/tags 搜索）；
+  // 其他分类继续走 marketplace extensions。
+  const displayList = useMemo(() => {
+    if (selectedType !== 'tools') return extensions;
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return localTools;
+    return localTools.filter((t) =>
+      (t.name || '').toLowerCase().includes(q) ||
+      (t.description || '').toLowerCase().includes(q) ||
+      (t.tags || []).some((tag) => tag.toLowerCase().includes(q))
+    );
+  }, [selectedType, extensions, localTools, searchQuery]);
+
+  // TOOLS 模式下卡片点击不打开详情侧栏（local tool 没有 manifest/repo 等字段）
+  const handleCardClick = useCallback((extension) => {
+    if (selectedType === 'tools') return;
+    fetchExtensionDetail(extension);
+  }, [selectedType]);
 
   return (
     <div className="skills-panel-container">
@@ -850,7 +911,7 @@ const ExtensionsPanel = ({ sendWSMessage, ws }) => {
             />
           </div>
           <TypeFilter
-            types={['skill', 'plugin', 'worker']}
+            types={['skill', 'plugin', 'worker', 'tools']}
             selectedType={selectedType}
             onSelect={setSelectedType}
             onClear={() => setSelectedType('')}
@@ -895,30 +956,34 @@ const ExtensionsPanel = ({ sendWSMessage, ws }) => {
               <span>Error: {error}</span>
               <button className="pixel-button" onClick={fetchExtensions}>Retry</button>
             </div>
-          ) : extensions.length === 0 ? (
+          ) : displayList.length === 0 ? (
             <div className="skills-empty">
               <Package size={48} />
-              <span>No extensions found</span>
+              <span>{selectedType === 'tools' ? '当前环境没有可用本地工具' : 'No extensions found'}</span>
             </div>
           ) : (
             <>
               <div className="skills-grid">
-                {extensions.map(extension => (
-                  <ExtensionCard 
-                    key={extension.id} 
-                    extension={extension} 
-                    onClick={fetchExtensionDetail}
-                    isSelected={selectedExtension?.id === extension.id}
-                    isInstalled={isExtensionInstalled(extension)}
-                    isInstalling={isExtensionInstalling(extension)}
-                    onInstall={installExtension}
-                    onRemove={removeExtension}
-                  />
-                ))}
+                {displayList.map(extension => {
+                  const isTool = selectedType === 'tools';
+                  return (
+                    <ExtensionCard
+                      key={extension.id}
+                      extension={extension}
+                      onClick={isTool ? handleCardClick : fetchExtensionDetail}
+                      isSelected={isTool ? false : selectedExtension?.id === extension.id}
+                      isInstalled={isTool ? false : isExtensionInstalled(extension)}
+                      isInstalling={isTool ? false : isExtensionInstalling(extension)}
+                      onInstall={isTool ? () => openSetupModal(extension) : installExtension}
+                      onRemove={isTool ? () => {} : removeExtension}
+                      installLabel={isTool ? 'Setup' : 'Install'}
+                    />
+                  );
+                })}
               </div>
-              
-              {/* Pagination */}
-              {(pagination.has_prev || pagination.has_next) && (
+
+              {/* Pagination（仅 marketplace 模式显示） */}
+              {selectedType !== 'tools' && (pagination.has_prev || pagination.has_next) && (
                 <div className="skills-pagination">
                   <button
                     className="pixel-button secondary"
@@ -943,10 +1008,10 @@ const ExtensionsPanel = ({ sendWSMessage, ws }) => {
           )}
         </div>
 
-        {/* Extension Detail Sidebar */}
-        {selectedExtension && (
-          <ExtensionDetailSidebar 
-            extension={selectedExtension} 
+        {/* Extension Detail Sidebar（TOOLS 不展示） */}
+        {selectedExtension && selectedType !== 'tools' && (
+          <ExtensionDetailSidebar
+            extension={selectedExtension}
             onClose={() => setSelectedExtension(null)}
             isInstalled={isExtensionInstalled(selectedExtension)}
             isInstalling={isExtensionInstalling(selectedExtension)}
@@ -969,6 +1034,9 @@ const ExtensionsPanel = ({ sendWSMessage, ws }) => {
           setPostInstallConfig(null);
         }}
       />
+
+      {/* Local Tool Setup Modal（Chrome 扩展等本地工具的引导安装） */}
+      <LocalToolSetupModal tool={setupTool} onClose={closeSetupModal} />
     </div>
   );
 };
