@@ -35,26 +35,37 @@ from backend.services.knowledge_task_queue import KnowledgeTaskQueue
 from backend.services.library_note_engine import LibraryNoteEngine
 
 
-def _index_note(path: str, workspace_root: str) -> None:
-    """Route note indexing to the correct engine based on path."""
+def _index_note(engine: KnowledgeGraphEngine, path: str, workspace_root: str) -> None:
+    """Route note indexing to the correct engine based on path.
+
+    Use the shared engine instance so cache invalidation propagates to the
+    graph endpoint's singleton (otherwise the new instance would only mark
+    its own in-memory cache dirty).
+    """
     if not (path.startswith("knowledge/") and path.endswith(".md")):
         return
     parts = Path(path).parts
     if len(parts) >= 2 and parts[0] == "knowledge" and parts[1] == "library":
         LibraryNoteEngine(workspace_root).update_note(path)
     else:
-        KnowledgeGraphEngine(workspace_root).update_note(path)
+        engine.update_note(path)
 
 
-def _remove_note(path: str, workspace_root: str) -> None:
-    """Route note removal to the correct engine based on path."""
+def _remove_note(engine: KnowledgeGraphEngine, path: str, workspace_root: str) -> None:
+    """Route note removal to the correct engine based on path.
+
+    Use the shared engine instance so cache invalidation propagates to the
+    graph endpoint's singleton (otherwise the new instance would only mark
+    its own in-memory cache dirty and the graph would keep showing the
+    deleted node).
+    """
     if not (path.startswith("knowledge/") and path.endswith(".md")):
         return
     parts = Path(path).parts
     if len(parts) >= 2 and parts[0] == "knowledge" and parts[1] == "library":
         LibraryNoteEngine(workspace_root).remove_note(path)
     else:
-        KnowledgeGraphEngine(workspace_root).delete_note(path, delete_file=False)
+        engine.delete_note(path, delete_file=False)
 
 
 class _KnowledgeHandlerMixin:
@@ -224,7 +235,7 @@ class KnowledgeWriteHandler(_KnowledgeHandlerMixin, MessageHandler):
 
             # 关键：如果写入 knowledge 目录的 markdown，立即更新索引
             if path.startswith("knowledge/") and path.endswith(".md"):
-                _index_note(path, str(self.engine.workspace_root))
+                _index_note(self.engine, path, str(self.engine.workspace_root))
 
             await self.send_response(
                 websocket,
@@ -250,7 +261,7 @@ class KnowledgeWriteHandler(_KnowledgeHandlerMixin, MessageHandler):
 
             # 关键：如果写入 knowledge 目录的 markdown，立即更新索引
             if path.startswith("knowledge/") and path.endswith(".md"):
-                _index_note(path, str(self.engine.workspace_root))
+                _index_note(self.engine, path, str(self.engine.workspace_root))
 
             await self.send_response(
                 websocket,
@@ -294,15 +305,15 @@ class KnowledgeDeleteHandler(_KnowledgeHandlerMixin, MessageHandler):
                     # Clean up index entries for all markdown files before removing directory
                     for md_path in full_path.rglob("*.md"):
                         rel_md = str(md_path.relative_to(self.engine.workspace_root))
-                        _remove_note(rel_md, ws_root)
+                        _remove_note(self.engine, rel_md, ws_root)
                     shutil.rmtree(full_path)
                 else:
                     if path.endswith(".md"):
-                        _remove_note(path, ws_root)
+                        _remove_note(self.engine, path, ws_root)
                     full_path.unlink()
             elif path.endswith(".md"):
                 # File already gone but index still exists
-                _remove_note(path, ws_root)
+                _remove_note(self.engine, path, ws_root)
 
             await self.send_response(
                 websocket,
@@ -340,15 +351,15 @@ class KnowledgeDeleteHandler(_KnowledgeHandlerMixin, MessageHandler):
                     # Clean up index entries for all markdown files before removing directory
                     for md_path in full_path.rglob("*.md"):
                         rel_md = str(md_path.relative_to(self.engine.workspace_root))
-                        _remove_note(rel_md, ws_root)
+                        _remove_note(self.engine, rel_md, ws_root)
                     shutil.rmtree(full_path)
                 else:
                     if path.endswith(".md"):
-                        _remove_note(path, ws_root)
+                        _remove_note(self.engine, path, ws_root)
                     full_path.unlink()
             elif path.endswith(".md"):
                 # File already gone but index still exists
-                _remove_note(path, ws_root)
+                _remove_note(self.engine, path, ws_root)
 
             await self.send_response(
                 websocket,
@@ -1327,7 +1338,7 @@ class KnowledgeUpdateReferencesHandler(_KnowledgeHandlerMixin, MessageHandler):
                         rel_path = str(md_file)
 
                     try:
-                        _index_note(rel_path, str(self.engine.workspace_root))
+                        _index_note(self.engine, rel_path, str(self.engine.workspace_root))
                     except Exception as e:
                         logger.warning(
                             f"Failed to re-index note {rel_path} after reference update: {e}"

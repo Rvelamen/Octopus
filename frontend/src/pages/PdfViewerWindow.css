@@ -394,6 +394,29 @@
   text-decoration: underline;
 }
 
+.pdfv-annot-open-chat {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--accent, #4f9eff);
+  background: transparent;
+  border: 1px solid var(--border, #3a3a3a);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pdfv-annot-open-chat:hover:not(:disabled) {
+  background: rgba(79, 158, 255, 0.12);
+}
+
+.pdfv-annot-open-chat:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* Loading */
 .pdfv-loading {
   display: flex;
@@ -714,6 +737,92 @@
 
 .pdfv-chat-messages::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Annotation filter (custom dropdown) */
+.pdfv-chat-annotation-filter {
+  position: relative;
+  padding: 6px 10px;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+}
+
+.pdfv-chat-filter-trigger {
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.pdfv-chat-filter-trigger:hover {
+  background: #2a2a2a;
+}
+
+.pdfv-chat-filter-color-bar {
+  width: 4px;
+  align-self: stretch;
+  min-height: 14px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.pdfv-chat-filter-chevron {
+  color: #888;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.pdfv-chat-filter-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.pdfv-chat-filter-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 10px;
+  right: 10px;
+  z-index: 30;
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 4px 0;
+  max-height: 280px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.pdfv-chat-filter-item {
+  cursor: pointer;
+}
+
+.pdfv-chat-filter-page-badge {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.pdfv-chat-filter-check {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.pdfv-chat-filter-check-placeholder {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.pdfv-chat-filter-empty {
+  padding: 20px 12px;
+  text-align: center;
+  color: #666;
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 /* Session list */

@@ -526,6 +526,104 @@ def _migration_011_add_library_thumbnail(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE library_items ADD COLUMN thumbnail_path TEXT")
 
 
+def _migration_012_annotation_comments_and_client_id(conn: sqlite3.Connection) -> None:
+    """Add library_annotation_comments thread table + library_annotations.client_id column.
+
+    - comments table: replaces single-comment semantics with thread-style multi-message notes.
+    - client_id column: lets front-end keep stable per-session ids across upserts
+      (the previous DELETE+INSERT save flow lost id mappings).
+    - migrates any pre-existing `library_annotations.comment` text into the thread table as
+      the first comment authored by 'You' so existing data is preserved.
+    """
+    # New comments table
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS library_annotation_comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            annotation_id INTEGER NOT NULL,
+            author_name TEXT NOT NULL DEFAULT 'You',
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT (datetime('now','localtime')),
+            FOREIGN KEY (annotation_id) REFERENCES library_annotations(id) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_lib_annot_comments_annot "
+        "ON library_annotation_comments(annotation_id)"
+    )
+
+    # client_id column on library_annotations
+    cursor = conn.execute("PRAGMA table_info(library_annotations)")
+    annot_columns = [row[1] for row in cursor.fetchall()]
+    if annot_columns and "client_id" not in annot_columns:
+        conn.execute("ALTER TABLE library_annotations ADD COLUMN client_id TEXT")
+        # Backfill: any pre-existing rows get a stable legacy id from their rowid
+        conn.execute(
+            "UPDATE library_annotations SET client_id = 'legacy-' || id "
+            "WHERE client_id IS NULL"
+        )
+
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_lib_annot_client_id "
+        "ON library_annotations(client_id) WHERE client_id IS NOT NULL"
+    )
+
+    # Migrate legacy single-comment text into the thread table (one-time, idempotent)
+    # Skip rows whose legacy comment already produced a comment (best-effort dedupe by matching content + annotation_id).
+    conn.execute(
+        """
+        INSERT INTO library_annotation_comments (annotation_id, author_name, content, created_at)
+        SELECT a.id, 'You', a.comment, a.created_at
+        FROM library_annotations a
+        WHERE a.comment IS NOT NULL AND TRIM(a.comment) != ''
+          AND NOT EXISTS (
+              SELECT 1 FROM library_annotation_comments c
+              WHERE c.annotation_id = a.id AND c.content = a.comment
+          )
+        """
+    )
+
+
+def _migration_013_pdf_annotation_chat_tables(conn: sqlite3.Connection) -> None:
+    """Create tables backing the PDF annotation chat feature.
+
+    Mirrors backend/data/migrations/021_add_pdf_annotation_chat_tables.py —
+    added here so the legacy LibraryEngine bootstrap (which only calls
+    run_knowledge_index_migrations) creates them. Safe to re-run.
+    """
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS pdf_annotation_chat_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_id INTEGER,
+            pdf_path TEXT,
+            annotation_id INTEGER NOT NULL,
+            title TEXT NOT NULL DEFAULT 'Annotation Chat',
+            agent_config_id INTEGER,
+            created_at TIMESTAMP DEFAULT (datetime('now','localtime')),
+            updated_at TIMESTAMP DEFAULT (datetime('now','localtime'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_pdf_annot_chat_sessions_annot
+            ON pdf_annotation_chat_sessions(annotation_id);
+        CREATE INDEX IF NOT EXISTS idx_pdf_annot_chat_sessions_item
+            ON pdf_annotation_chat_sessions(item_id);
+
+        CREATE TABLE IF NOT EXISTS pdf_annotation_chat_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL DEFAULT '',
+            page_number INTEGER,
+            selected_text TEXT,
+            metadata TEXT,
+            created_at TIMESTAMP DEFAULT (datetime('now','localtime')),
+            FOREIGN KEY (session_id) REFERENCES pdf_annotation_chat_sessions(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_pdf_annot_chat_msgs_session
+            ON pdf_annotation_chat_messages(session_id);
+    """)
+
+
 def run_knowledge_index_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_initial_schema", _migration_001_create_initial_schema)
@@ -541,6 +639,16 @@ def run_knowledge_index_migrations(db_path: Path) -> None:
     runner.register(9, "add_library_chunk_status", _migration_009_add_library_chunk_status)
     runner.register(10, "add_library_note_schema", _migration_010_add_library_note_schema)
     runner.register(11, "add_library_thumbnail", _migration_011_add_library_thumbnail)
+    runner.register(
+        12,
+        "annotation_comments_and_client_id",
+        _migration_012_annotation_comments_and_client_id,
+    )
+    runner.register(
+        13,
+        "pdf_annotation_chat_tables",
+        _migration_013_pdf_annotation_chat_tables,
+    )
     runner.run()
 
 

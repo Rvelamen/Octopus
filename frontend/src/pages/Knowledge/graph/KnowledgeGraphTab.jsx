@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { message } from 'antd';
-import { Search as SearchIcon, X, ZoomIn, ZoomOut, RotateCcw, Maximize, Minimize, Tag, Settings2, Play, Pause, Filter, FolderOpen } from 'lucide-react';
+import { Search as SearchIcon, X, ZoomIn, ZoomOut, RotateCcw, Maximize, Minimize, Tag, Settings2, Play, Pause, Filter, FolderOpen, Trash2, FileText } from 'lucide-react';
 import PixiGraph from './PixiGraph';
 
 const CLUSTER_COLORS = [
@@ -30,7 +30,7 @@ function getClusterColor(nodeId) {
   return CLUSTER_COLORS[idx];
 }
 
-export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNavigate, filterTag, filterVault, vaults = [] }) {
+export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNavigate, filterTag, filterVault, vaults = [], onDeleteNote }) {
   const [graphData, setGraphData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -45,6 +45,7 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
   const [selectedNode, setSelectedNode] = useState(null);
   const [graphZoom, setGraphZoom] = useState(1);
   const [searchResultIds, setSearchResultIds] = useState(new Set());
+  const [nodeContextMenu, setNodeContextMenu] = useState(null); // { node, x, y } right-click menu
   
   // Physics control state
   const [showPhysicsControls, setShowPhysicsControls] = useState(false);
@@ -119,6 +120,19 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
     };
     window.addEventListener('knowledge-distill-progress', handler);
     return () => window.removeEventListener('knowledge-distill-progress', handler);
+  }, [fetchGraph, fetchTags, selectedTag, selectedVault]);
+
+  // Refresh graph on knowledge mutations (delete / rename / move / create / import)
+  // dispatched from elsewhere in the app — ensures the graph view stays in sync
+  // even if it is mounted alongside the notes view (e.g. multi-window or
+  // component not yet remounted).
+  useEffect(() => {
+    const handler = () => {
+      fetchGraph(currentCenterRef.current, 1, selectedTag, selectedVault);
+      fetchTags(selectedVault);
+    };
+    window.addEventListener('knowledge-graph-changed', handler);
+    return () => window.removeEventListener('knowledge-graph-changed', handler);
   }, [fetchGraph, fetchTags, selectedTag, selectedVault]);
 
   useEffect(() => {
@@ -272,6 +286,63 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
     },
     [onNodeNavigate]
   );
+
+  // 右键节点弹出菜单（Open / Delete）
+  const nodeMenuRef = useRef(null);
+  const handleNodeContextMenu = useCallback((node, e) => {
+    // eslint-disable-next-line no-console
+    console.log('[graph] contextmenu', { node: node?.id, clientX: e?.clientX, clientY: e?.clientY });
+    if (!node) return;
+    const rect = graphContainerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    // 翻转越界：菜单宽 200 / 高 ~96，避免贴边被截
+    const MENU_W = 200;
+    const MENU_H = 96;
+    const rawX = e.clientX - rect.left;
+    const rawY = e.clientY - rect.top;
+    setNodeContextMenu({
+      node,
+      x: Math.min(Math.max(8, rawX), rect.width - MENU_W - 8),
+      y: Math.min(Math.max(8, rawY), rect.height - MENU_H - 8),
+    });
+  }, []);
+
+  // 关闭：点外部 / Esc
+  useEffect(() => {
+    if (!nodeContextMenu) return;
+    const onDown = (ev) => {
+      if (nodeMenuRef.current && !nodeMenuRef.current.contains(ev.target)) {
+        setNodeContextMenu(null);
+      }
+    };
+    const onKey = (ev) => {
+      if (ev.key === 'Escape') setNodeContextMenu(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [nodeContextMenu]);
+
+  const openNodeInNotes = useCallback(() => {
+    if (!nodeContextMenu) return;
+    onNodeNavigate?.(nodeContextMenu.node.id);
+    setNodeContextMenu(null);
+  }, [nodeContextMenu, onNodeNavigate]);
+
+  const deleteNodeFromGraph = useCallback(() => {
+    if (!nodeContextMenu) return;
+    const n = nodeContextMenu.node;
+    setNodeContextMenu(null);
+    if (!onDeleteNote) return;
+    onDeleteNote({
+      path: n.id,
+      name: n.label || n.id.split('/').pop(),
+      is_directory: false,
+    });
+  }, [nodeContextMenu, onDeleteNote]);
 
   const handleNodeHover = useCallback((node) => {
     setHoverNode(node || null);
@@ -503,6 +574,7 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
           searchResultIds={searchResultIds}
           onNodeClick={handleNodeClick}
           onNodeDoubleClick={handleNodeDoubleClick}
+          onNodeContextMenu={handleNodeContextMenu}
           onBackgroundClick={handleBackgroundClick}
           onNodeHover={handleNodeHover}
           onZoom={({ k }) => setGraphZoom(k)}
@@ -512,6 +584,93 @@ export default function KnowledgeGraphTab({ sendWSMessage, centerPath, onNodeNav
           linkStrength={physicsParams.linkStrength}
           linkDistance={physicsParams.linkDistance}
         />
+
+        {/* Right-click node context menu */}
+        {nodeContextMenu && (
+          <div
+            ref={nodeMenuRef}
+            role="menu"
+            style={{
+              position: 'absolute',
+              left: nodeContextMenu.x,
+              top: nodeContextMenu.y,
+              minWidth: 200,
+              background: 'var(--bg-primary, #fff)',
+              border: '1px solid var(--border, rgba(255,255,255,0.12))',
+              borderRadius: 8,
+              boxShadow: '0 10px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.25)',
+              padding: 4,
+              zIndex: 200,
+              animation: 'libchat-fade-in 0.12s ease-out',
+            }}
+          >
+            <div
+              style={{
+                padding: '6px 10px',
+                fontSize: 11,
+                color: 'var(--text-muted, rgba(255,255,255,0.55))',
+                borderBottom: '1px solid var(--border, rgba(255,255,255,0.08))',
+                marginBottom: 4,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              title={nodeContextMenu.node.id}
+            >
+              {nodeContextMenu.node.label || nodeContextMenu.node.id}
+            </div>
+            <button
+              role="menuitem"
+              onClick={openNodeInNotes}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                width: '100%',
+                padding: '7px 10px',
+                border: 'none',
+                background: 'transparent',
+                color: 'var(--text-primary, #e2e8f0)',
+                fontSize: 12,
+                textAlign: 'left',
+                borderRadius: 5,
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-secondary, rgba(255,255,255,0.08))')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            >
+              <FileText size={13} />
+              Open in notes
+            </button>
+            <button
+              role="menuitem"
+              onClick={deleteNodeFromGraph}
+              disabled={!onDeleteNote}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                width: '100%',
+                padding: '7px 10px',
+                border: 'none',
+                background: 'transparent',
+                color: !onDeleteNote ? 'var(--text-muted, rgba(255,255,255,0.35))' : '#fca5a5',
+                fontSize: 12,
+                textAlign: 'left',
+                borderRadius: 5,
+                cursor: !onDeleteNote ? 'not-allowed' : 'pointer',
+                opacity: !onDeleteNote ? 0.6 : 1,
+              }}
+              onMouseEnter={(e) => {
+                if (onDeleteNote) e.currentTarget.style.background = 'rgba(220, 38, 38, 0.15)';
+              }}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            >
+              <Trash2 size={13} />
+              Delete note
+            </button>
+          </div>
+        )}
 
         {/* Floating controls */}
         <div

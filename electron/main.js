@@ -397,6 +397,7 @@ ipcMain.handle('open-pdf-window', (event, { path: pdfPath, title, itemId }) => {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
       webSecurity: false,
+      devTools: true,
     },
     title: title || 'PDF Viewer',
     show: false,
@@ -414,6 +415,17 @@ ipcMain.handle('open-pdf-window', (event, { path: pdfPath, title, itemId }) => {
       hash: `pdf-viewer?path=${encodedPath}&title=${encodedTitle}&itemId=${encodedItemId}`,
     });
   }
+
+  if (isDev) {
+    pdfWindow.webContents.openDevTools({ mode: 'detach' });
+  }
+
+  pdfWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    console.error('[pdf-window] did-fail-load', { code, desc, url });
+  });
+  pdfWindow.webContents.on('console-message', (_e, level, message, line, source) => {
+    console.log('[pdf-window]', { level, message, line, source });
+  });
 
   pdfWindow.once('ready-to-show', () => {
     pdfWindow.show();

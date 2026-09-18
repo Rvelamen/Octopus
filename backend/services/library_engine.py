@@ -1176,17 +1176,22 @@ JSON output:"""
     # ------------------------------------------------------------------
 
     def load_annotations(self, item_id: int) -> list[dict]:
-        """Load all annotations for a library item."""
+        """Load all annotations for a library item, with embedded comments.
+
+        Each returned dict includes `client_id`, `comments` (list, oldest first),
+        and the legacy `comment` field (still present in the table for backwards
+        compatibility but no longer written to by save_annotations).
+        """
         rows = self.db.execute(
             """
-            SELECT id, page, type, color, text, comment, rects, created_at
+            SELECT id, page, type, color, text, comment, rects, client_id, created_at
             FROM library_annotations
             WHERE item_id = ?
             ORDER BY page, created_at
             """,
             (item_id,),
         ).fetchall()
-        annotations = []
+        annotations: list[dict] = []
         for row in rows:
             annot = dict(row)
             if annot.get("rects"):
@@ -1198,24 +1203,73 @@ JSON output:"""
                     annot["rects"] = []
             else:
                 annot["rects"] = []
+            annot["comments"] = []
             annotations.append(annot)
+
+        if not annotations:
+            return annotations
+
+        ids = tuple(a["id"] for a in annotations)
+        placeholder = ",".join("?" * len(ids))
+        comment_rows = self.db.execute(
+            f"""
+            SELECT id, annotation_id, author_name, content, created_at
+            FROM library_annotation_comments
+            WHERE annotation_id IN ({placeholder})
+            ORDER BY created_at, id
+            """,
+            ids,
+        ).fetchall()
+        by_id: dict[int, list[dict]] = {a["id"]: [] for a in annotations}
+        for crow in comment_rows:
+            cd = dict(crow)
+            by_id.setdefault(cd["annotation_id"], []).append(cd)
+        for a in annotations:
+            a["comments"] = by_id.get(a["id"], [])
         return annotations
 
     def save_annotations(self, item_id: int, annotations: list[dict]) -> dict:
-        """Replace all annotations for a library item."""
+        """Persist annotations for an item, keyed by client_id.
+
+        Replaces the previous DELETE+INSERT semantics: rows are upserted by
+        `client_id` (so front-end ids stay stable across saves), and any rows
+        not present in the incoming list are removed. The legacy `comment` field
+        is left untouched here; thread-style notes live in
+        `library_annotation_comments` and are managed via list_comments /
+        add_comment / delete_comment.
+        """
         import json
+        import uuid
         from datetime import datetime
 
-        # Delete existing
-        self.db.execute("DELETE FROM library_annotations WHERE item_id = ?", (item_id,))
-
-        now = datetime.now().isoformat()
+        # Backfill client_id for any incoming annotation missing one.
+        incoming_client_ids: set[str] = set()
+        cleaned: list[dict] = []
         for annot in annotations:
+            cid = annot.get("client_id") or annot.get("id")
+            if not cid:
+                cid = f"client-{uuid.uuid4().hex[:12]}"
+            annot = dict(annot)
+            annot["client_id"] = cid
+            incoming_client_ids.add(cid)
+            cleaned.append(annot)
+
+        # Upsert each annotation by client_id (use INSERT OR REPLACE; legacy rows
+        # may have client_id starting with "legacy-").
+        now = datetime.now().isoformat()
+        for annot in cleaned:
             self.db.execute(
                 """
                 INSERT INTO library_annotations
-                (item_id, page, type, color, text, comment, rects, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (item_id, page, type, color, text, comment, rects, client_id, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(client_id) DO UPDATE SET
+                    page = excluded.page,
+                    type = excluded.type,
+                    color = excluded.color,
+                    text = excluded.text,
+                    rects = excluded.rects,
+                    updated_at = excluded.updated_at
                 """,
                 (
                     item_id,
@@ -1225,12 +1279,129 @@ JSON output:"""
                     annot.get("text", ""),
                     annot.get("comment", ""),
                     json.dumps(annot.get("rects", [])) if annot.get("rects") else None,
-                    annot.get("createdAt") or annot.get("created_at") or now,
+                    annot["client_id"],
+                    annot.get("created_at") or annot.get("createdAt") or now,
                     now,
                 ),
             )
+
+        # Remove rows whose client_id is no longer in the incoming list (but
+        # leave legacy rows whose client_id wasn't supplied in the payload
+        # alone — they may belong to other windows).
+        existing = self.db.execute(
+            "SELECT client_id FROM library_annotations WHERE item_id = ?",
+            (item_id,),
+        ).fetchall()
+        for row in existing:
+            cid = row["client_id"]
+            if cid and cid.startswith("client-"):
+                if cid not in incoming_client_ids:
+                    self.db.execute(
+                        "DELETE FROM library_annotations WHERE client_id = ?",
+                        (cid,),
+                    )
+
         self.db.commit()
-        return {"saved": len(annotations)}
+        return {"saved": len(cleaned)}
+
+    def upsert_annotation(self, item_id: int, annot: dict) -> dict:
+        """Insert or update a single annotation, returning its db id + client_id.
+
+        Useful for live upserts from the front-end (every addHighlight /
+        addUnderline) so the comment / chat tables can FK against a stable db id.
+        """
+        import json
+        import uuid
+        from datetime import datetime
+
+        cid = annot.get("client_id") or annot.get("id")
+        if not cid:
+            cid = f"client-{uuid.uuid4().hex[:12]}"
+
+        now = datetime.now().isoformat()
+        cursor = self.db.execute(
+            """
+            INSERT INTO library_annotations
+                (item_id, page, type, color, text, comment, rects, client_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(client_id) DO UPDATE SET
+                page = excluded.page,
+                type = excluded.type,
+                color = excluded.color,
+                text = excluded.text,
+                rects = excluded.rects,
+                updated_at = excluded.updated_at
+            RETURNING id
+            """,
+            (
+                item_id,
+                annot.get("page", 0),
+                annot.get("type", "highlight"),
+                annot.get("color", "#ffeb3b"),
+                annot.get("text", ""),
+                annot.get("comment", ""),
+                json.dumps(annot.get("rects", [])) if annot.get("rects") else None,
+                cid,
+                annot.get("created_at") or annot.get("createdAt") or now,
+                now,
+            ),
+        )
+        row = cursor.fetchone()
+        db_id = row["id"] if row else None
+        self.db.commit()
+        return {"id": db_id, "client_id": cid}
+
+    def delete_annotation_by_id(self, item_id: int, db_id: int) -> dict:
+        """Delete a single annotation by its db id (comments cascade)."""
+        self.db.execute(
+            "DELETE FROM library_annotations WHERE id = ? AND item_id = ?",
+            (db_id, item_id),
+        )
+        self.db.commit()
+        return {"deleted": db_id}
+
+    # ------------------------------------------------------------------
+    # Annotation comments (thread)
+    # ------------------------------------------------------------------
+
+    def list_comments(self, annotation_id: int) -> list[dict]:
+        rows = self.db.execute(
+            """
+            SELECT id, annotation_id, author_name, content, created_at
+            FROM library_annotation_comments
+            WHERE annotation_id = ?
+            ORDER BY created_at, id
+            """,
+            (annotation_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def add_comment(
+        self, annotation_id: int, author_name: str, content: str
+    ) -> dict:
+        from datetime import datetime
+
+        now = datetime.now().isoformat()
+        cursor = self.db.execute(
+            """
+            INSERT INTO library_annotation_comments
+                (annotation_id, author_name, content, created_at)
+            VALUES (?, ?, ?, ?)
+            RETURNING id, annotation_id, author_name, content, created_at
+            """,
+            (annotation_id, author_name or "You", content, now),
+        )
+        row = cursor.fetchone()
+        self.db.commit()
+        return dict(row) if row else {}
+
+    def delete_comment(self, comment_id: int) -> dict:
+        self.db.execute(
+            "DELETE FROM library_annotation_comments WHERE id = ?",
+            (comment_id,),
+        )
+        self.db.commit()
+        return {"deleted": comment_id}
 
     # ------------------------------------------------------------------
     # Note linking

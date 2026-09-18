@@ -105,6 +105,7 @@ from backend.channels.desktop.handlers.memory import (
 from backend.channels.desktop.handlers.models import GetModelsHandler
 from backend.channels.desktop.handlers.notes_chat import NotesChatHandler
 from backend.channels.desktop.handlers.pdf_chat import PdfChatHandler
+from backend.channels.desktop.handlers.pdf_annotation_chat import PdfAnnotationChatHandler
 
 # Import session handlers
 from backend.channels.desktop.handlers.session import (
@@ -215,6 +216,7 @@ class HandlerRegistry:
         self.handlers: dict[MessageType, MessageHandler] = {
             MessageType.CHAT: ChatHandler(bus, pending_responses),
             MessageType.PDF_CHAT: PdfChatHandler(bus, pending_responses),
+            MessageType.PDF_ANNOTATION_CHAT: PdfAnnotationChatHandler(bus, pending_responses),
             MessageType.LIBRARY_CHAT: LibraryChatHandler(bus, pending_responses),
             MessageType.NOTES_CHAT: NotesChatHandler(bus, pending_responses),
             MessageType.WORKFLOW_DESIGN: WorkflowDesignChatHandler(bus, pending_responses),
@@ -476,6 +478,11 @@ class HandlerRegistry:
                 MessageType.LIBRARY_ADD_ATTACHMENT: library_handler,
                 MessageType.LIBRARY_ANNOTATIONS_LOAD: library_handler,
                 MessageType.LIBRARY_ANNOTATIONS_SAVE: library_handler,
+                MessageType.LIBRARY_ANNOTATION_UPSERT: library_handler,
+                MessageType.LIBRARY_ANNOTATION_DELETE_BY_ID: library_handler,
+                MessageType.LIBRARY_ANNOTATION_COMMENTS_LOAD: library_handler,
+                MessageType.LIBRARY_ANNOTATION_COMMENTS_ADD: library_handler,
+                MessageType.LIBRARY_ANNOTATION_COMMENTS_DELETE: library_handler,
                 MessageType.LIBRARY_LINK_NOTE: library_handler,
                 MessageType.LIBRARY_COLLECTION_LIST: library_handler,
                 MessageType.LIBRARY_COLLECTION_CREATE: library_handler,

@@ -122,7 +122,7 @@ const LibraryItemDetail = ({ item, onClose, onDelete, onUpdateItem, onRefreshIte
             encoding: response.data.encoding || 'hex',
           });
         } else {
-          setPdfError('No PDF content');
+          setPdfError(t('pdfViewer.errorNoContent'));
         }
       } catch (e) {
         if (!isCancelled) {
@@ -664,7 +664,7 @@ Please write in English, use academic tone, and include specific details from th
           ) : pdfError || !pdfContent ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: 'var(--text-muted)', padding: 24 }}>
               <FileText size={40} opacity={0.3} />
-              <span style={{ fontSize: 12 }}>{pdfError || 'No PDF available'}</span>
+              <span style={{ fontSize: 12 }}>{pdfError || t('paper.noPdf')}</span>
             </div>
           ) : (
             <div style={{ maxWidth: '100%', overflow: 'hidden', lineHeight: 0 }}>
@@ -736,14 +736,14 @@ Please write in English, use academic tone, and include specific details from th
 
           {item.citekey && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>CiteKey</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{t('paper.fieldCiteKey')}</span>
               <span style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--text)' }}>{item.citekey}</span>
             </div>
           )}
 
           {item.doi && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>DOI</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{t('paper.fieldDoi')}</span>
               <span
                 style={{ fontSize: 12, color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2 }}
                 onClick={handleOpenDoi}
@@ -755,7 +755,7 @@ Please write in English, use academic tone, and include specific details from th
 
           {item.url && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>URL</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{t('paper.fieldUrl')}</span>
               <span
                 style={{ fontSize: 12, color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                 onClick={handleOpenUrl}
@@ -785,7 +785,7 @@ Please write in English, use academic tone, and include specific details from th
         {/* Collections */}
         {item.collections?.length > 0 && (
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Collections</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>{t('paper.sectionCollections')}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {item.collections.map((c) => (
                 <Tag key={c.id} size="small" color="default" style={{ borderColor: c.color, color: c.color }}>
@@ -799,7 +799,7 @@ Please write in English, use academic tone, and include specific details from th
         {/* Abstract */}
         {item.abstract && (
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>Abstract</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>{t('paper.sectionAbstract')}</div>
             <div style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text)', whiteSpace: 'pre-wrap' }}>
               {item.abstract}
             </div>
@@ -917,23 +917,36 @@ Please write in English, use academic tone, and include specific details from th
           onClick={() => setAnnotationModalOpen(true)}
           style={{ marginBottom: 16 }}
         >
-          Annotations {annotations.length > 0 && `(${annotations.length})`}
+          {annotations.length > 0
+            ? t('paper.btnAnnotationsWithCount', { count: annotations.length })
+            : t('paper.btnAnnotations')}
         </Button>
 
         <LibraryAnnotationModal
           open={annotationModalOpen}
           onClose={() => setAnnotationModalOpen(false)}
           annotations={annotations}
-          onSave={async (updated) => {
-            await sendWSMessage('library_annotations_save', {
-              item_id: item.id,
-              annotations: updated,
-            }, 10000);
-            setAnnotations(updated);
-            window.dispatchEvent(
-              new CustomEvent('library-annotations-updated', {
-                detail: { item_id: item.id },
-              })
+          sendWSMessage={sendWSMessage}
+          itemId={item.id}
+          onCommentAdded={async (annotId, newComment) => {
+            setAnnotations((prev) =>
+              prev.map((a) =>
+                a.id === annotId
+                  ? { ...a, comments: [...(a.comments || []), newComment] }
+                  : a,
+              ),
+            );
+          }}
+          onCommentDeleted={async (annotId, commentId) => {
+            setAnnotations((prev) =>
+              prev.map((a) =>
+                a.id === annotId
+                  ? {
+                      ...a,
+                      comments: (a.comments || []).filter((c) => c.id !== commentId),
+                    }
+                  : a,
+              ),
             );
           }}
         />
@@ -967,7 +980,7 @@ Please write in English, use academic tone, and include specific details from th
         {/* Linked notes */}
         {item.linked_notes?.length > 0 && (
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>Linked Notes</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>{t('paper.sectionLinkedNotes')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {item.linked_notes.map((ln) => (
                 <div
@@ -1025,26 +1038,26 @@ Please write in English, use academic tone, and include specific details from th
               }
             }}
           >
-            Open PDF
+            {t('paper.btnOpenPdf')}
           </Button>
           <Button size="small" icon={<Sparkles size={14} />} loading={noteGenerating} onClick={handleGenerateNote}>
-            AI Note
+            {t('paper.btnAiNote')}
           </Button>
           <Button size="small" icon={<BookOpen size={14} />} onClick={openKbModal}>
             {t('library.distillToKb')}
           </Button>
           <Button size="small" icon={<Copy size={14} />} onClick={handleCopyCitation}>
-            Cite
+            {t('paper.btnCite')}
           </Button>
           <Popconfirm
-            title="Delete this paper?"
+            title={t('paper.deleteTitle')}
             onConfirm={onDelete}
-            okText="Delete"
-            cancelText="Cancel"
+            okText={t('paper.btnDelete')}
+            cancelText={t('paper.btnCancel')}
             okType="danger"
           >
             <Button size="small" danger icon={<Trash2 size={14} />}>
-              Delete
+              {t('paper.btnDelete')}
             </Button>
           </Popconfirm>
         </div>
@@ -1052,7 +1065,7 @@ Please write in English, use academic tone, and include specific details from th
 
       {/* Edit Modal */}
       <Modal
-        title="Edit Paper Metadata"
+        title={t('paper.editTitle')}
         open={isEditing}
         onCancel={cancelEditing}
         footer={(
@@ -1079,45 +1092,45 @@ Please write in English, use academic tone, and include specific details from th
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '8px 0' }}>
           <div>
-            <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Title</label>
-            <Input value={editForm.title} onChange={(e) => updateField('title', e.target.value)} placeholder="Paper title" />
+            <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>{t('paper.fieldTitle')}</label>
+            <Input value={editForm.title} onChange={(e) => updateField('title', e.target.value)} placeholder={t('paper.placeholderTitle')} />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Authors (comma separated)</label>
-            <Input value={editForm.authors} onChange={(e) => updateField('authors', e.target.value)} placeholder="e.g. John Doe, Jane Smith" />
+            <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>{t('paper.fieldAuthors')}</label>
+            <Input value={editForm.authors} onChange={(e) => updateField('authors', e.target.value)} placeholder={t('paper.placeholderAuthors')} />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Year</label>
-              <Input value={editForm.year} onChange={(e) => updateField('year', e.target.value)} placeholder="2024" />
+              <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>{t('paper.fieldYear')}</label>
+              <Input value={editForm.year} onChange={(e) => updateField('year', e.target.value)} placeholder={t('paper.placeholderYear')} />
             </div>
             <div style={{ flex: 2 }}>
-              <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Venue</label>
-              <Input value={editForm.venue} onChange={(e) => updateField('venue', e.target.value)} placeholder="Journal or Conference" />
+              <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>{t('paper.fieldVenue')}</label>
+              <Input value={editForm.venue} onChange={(e) => updateField('venue', e.target.value)} placeholder={t('paper.placeholderVenue')} />
             </div>
           </div>
           <div>
-            <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>DOI</label>
-            <Input value={editForm.doi} onChange={(e) => updateField('doi', e.target.value)} placeholder="10.xxxx/xxxxx" />
+            <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>{t('paper.fieldDoi')}</label>
+            <Input value={editForm.doi} onChange={(e) => updateField('doi', e.target.value)} placeholder={t('paper.placeholderDoi')} />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>URL</label>
-            <Input value={editForm.url} onChange={(e) => updateField('url', e.target.value)} placeholder="https://..." />
+            <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>{t('paper.fieldUrl')}</label>
+            <Input value={editForm.url} onChange={(e) => updateField('url', e.target.value)} placeholder={t('paper.placeholderUrl')} />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>CiteKey</label>
-            <Input value={editForm.citekey} onChange={(e) => updateField('citekey', e.target.value)} placeholder="author2024title" />
+            <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>{t('paper.fieldCiteKey')}</label>
+            <Input value={editForm.citekey} onChange={(e) => updateField('citekey', e.target.value)} placeholder={t('paper.placeholderCiteKey')} />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Tags (comma separated)</label>
-            <Input value={editForm.tags} onChange={(e) => updateField('tags', e.target.value)} placeholder="machine learning, nlp" />
+            <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>{t('paper.fieldTags')}</label>
+            <Input value={editForm.tags} onChange={(e) => updateField('tags', e.target.value)} placeholder={t('paper.placeholderTags')} />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>Abstract</label>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>{t('paper.fieldAbstract')}</label>
             <Input.TextArea
               value={editForm.abstract}
               onChange={(e) => updateField('abstract', e.target.value)}
-              placeholder="Paper abstract..."
+              placeholder={t('paper.placeholderAbstract')}
               rows={5}
             />
           </div>

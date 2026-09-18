@@ -120,11 +120,7 @@ export default function UploadDropzone({
               <span>Drop or click to upload</span>
             )}
           </div>
-        ) : (
-          <div style={{ padding: '14px 12px', borderRadius: 8, fontSize: 12, color: 'var(--text-2)', textAlign: 'center' }}>
-            Select a note to center the graph
-          </div>
-        )}
+        ) : null}
       </div>
     </>
   );

@@ -83,6 +83,11 @@ class MessageType(Enum):
     LIBRARY_ADD_ATTACHMENT = "library_add_attachment"
     LIBRARY_ANNOTATIONS_LOAD = "library_annotations_load"
     LIBRARY_ANNOTATIONS_SAVE = "library_annotations_save"
+    LIBRARY_ANNOTATION_UPSERT = "library_annotation_upsert"
+    LIBRARY_ANNOTATION_DELETE_BY_ID = "library_annotation_delete_by_id"
+    LIBRARY_ANNOTATION_COMMENTS_LOAD = "library_annotation_comments_load"
+    LIBRARY_ANNOTATION_COMMENTS_ADD = "library_annotation_comments_add"
+    LIBRARY_ANNOTATION_COMMENTS_DELETE = "library_annotation_comments_delete"
     LIBRARY_LINK_NOTE = "library_link_note"
     LIBRARY_COLLECTION_LIST = "library_collection_list"
     LIBRARY_COLLECTION_CREATE = "library_collection_create"
@@ -99,6 +104,7 @@ class MessageType(Enum):
 
     # PDF Chat - Client -> Server
     PDF_CHAT = "pdf_chat"  # PDF chat operations
+    PDF_ANNOTATION_CHAT = "pdf_annotation_chat"  # Annotation-bound PDF chat
 
     # Library Chat - Client -> Server
     LIBRARY_CHAT = "library_chat"  # Library chat operations
@@ -315,6 +321,11 @@ class MessageType(Enum):
     LIBRARY_ADD_ATTACHMENT_RESULT = "library_add_attachment_result"
     LIBRARY_ANNOTATIONS_LOAD_RESULT = "library_annotations_load_result"
     LIBRARY_ANNOTATIONS_SAVE_RESULT = "library_annotations_save_result"
+    LIBRARY_ANNOTATION_UPSERT_RESULT = "library_annotation_upsert_result"
+    LIBRARY_ANNOTATION_DELETE_BY_ID_RESULT = "library_annotation_delete_by_id_result"
+    LIBRARY_ANNOTATION_COMMENTS_LOAD_RESULT = "library_annotation_comments_load_result"
+    LIBRARY_ANNOTATION_COMMENTS_ADD_RESULT = "library_annotation_comments_add_result"
+    LIBRARY_ANNOTATION_COMMENTS_DELETE_RESULT = "library_annotation_comments_delete_result"
     LIBRARY_LINK_NOTE_RESULT = "library_link_note_result"
     LIBRARY_COLLECTION_LIST_RESULT = "library_collection_list_result"
     LIBRARY_COLLECTION_CREATE_RESULT = "library_collection_create_result"

@@ -38,6 +38,7 @@ export class PixiGraphRenderer {
     onNodeClick,
     onNodeHover,
     onNodeDoubleClick,
+    onNodeContextMenu,
     onBackgroundClick,
     onZoom,
     onDragEnd,
@@ -46,6 +47,7 @@ export class PixiGraphRenderer {
     this.onNodeClick = onNodeClick || (() => {});
     this.onNodeHover = onNodeHover || (() => {});
     this.onNodeDoubleClick = onNodeDoubleClick || (() => {});
+    this.onNodeContextMenu = onNodeContextMenu || (() => {});
     this.onBackgroundClick = onBackgroundClick || (() => {});
     this.onZoom = onZoom || (() => {});
     this.onDragEnd = onDragEnd || (() => {});
@@ -177,7 +179,7 @@ export class PixiGraphRenderer {
     this._boundOnDblClick = (e) => this._onDblClick(e);
     this._boundOnPointerMove = (e) => this._onPointerMove(e);
     this._boundOnPointerUp = (e) => this._onPointerUp(e);
-    this._boundOnContextMenu = (e) => e.preventDefault();
+    this._boundOnContextMenu = (e) => this._onContextMenu(e);
 
     // Wheel for zoom
     canvas.addEventListener('wheel', this._boundOnWheel, { passive: false });
@@ -190,8 +192,9 @@ export class PixiGraphRenderer {
     window.addEventListener('pointermove', this._boundOnPointerMove);
     window.addEventListener('pointerup', this._boundOnPointerUp);
 
-    // Context menu
-    this.container.addEventListener('contextmenu', this._boundOnContextMenu);
+    // Context menu — fired by browser on right-click anywhere on the canvas.
+    // This is more reliable than checking pointerdown.button across browsers.
+    canvas.addEventListener('contextmenu', this._boundOnContextMenu);
   }
 
   _unbindEvents() {
@@ -243,9 +246,10 @@ export class PixiGraphRenderer {
   _onPointerDown(e) {
     const worldPos = this._getWorldPos(e);
     const hitNode = this._hitTest(worldPos.x, worldPos.y);
+    // eslint-disable-next-line no-console
+    console.log('[pixi] pointerdown', { button: e.button, hasHit: !!hitNode, hitId: hitNode?.id });
 
-    if (hitNode) {
-      this.draggedId = hitNode.id;
+    if (hitNode) {      this.draggedId = hitNode.id;
       this._clickStartPos = { x: e.clientX, y: e.clientY };
       this._clickStartTime = Date.now();
       this._hasDragged = false;
@@ -266,6 +270,19 @@ export class PixiGraphRenderer {
     } else if (e.target === this.app.canvas) {
       this.isPanning = true;
       this.lastPan = { x: e.clientX, y: e.clientY };
+    }
+  }
+
+  _onContextMenu(e) {
+    // Always suppress the browser's default menu on the canvas
+    e.preventDefault();
+    if (!this.onNodeContextMenu) return;
+    const worldPos = this._getWorldPos(e);
+    const hitNode = this._hitTest(worldPos.x, worldPos.y);
+    // eslint-disable-next-line no-console
+    console.log('[pixi] contextmenu', { hasHit: !!hitNode, hitId: hitNode?.id });
+    if (hitNode) {
+      this.onNodeContextMenu(hitNode.data, e);
     }
   }
 

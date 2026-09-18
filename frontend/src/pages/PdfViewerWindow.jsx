@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   RotateCcw,
   X,
@@ -12,11 +13,12 @@ import {
   Sparkles,
   Copy,
   Check,
+  ChevronDown,
   Network,
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { useWebSocket } from '../contexts/WebSocketContext';
-import { usePdfChat } from './Knowledge/library/hooks/usePdfChat';
+import { useAnnotationChat } from './Knowledge/library/hooks/useAnnotationChat';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -45,6 +47,7 @@ const COLORS = [
 
 // Single page with lazy rendering via IntersectionObserver
 const PdfPage = React.memo(({ pdf, pageNumber, scale, annotations, onVisible, onTextSelect }) => {
+  const { t } = useTranslation();
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const textLayerRef = useRef(null);
@@ -162,6 +165,7 @@ const PdfPage = React.memo(({ pdf, pageNumber, scale, annotations, onVisible, on
             {annot.rects && annot.rects.map((rect, idx) => (
               <div
                 key={idx}
+                data-annotation-id={annot.id}
                 className={`pdfv-highlight ${annot.type}`}
                 style={{
                   left: rect.left,
@@ -182,13 +186,14 @@ const PdfPage = React.memo(({ pdf, pageNumber, scale, annotations, onVisible, on
       </div>
 
       {!rendered && viewportSize && (
-        <div className="pdfv-page-overlay">Rendering…</div>
+        <div className="pdfv-page-overlay">{t('pdfViewer.rendering')}</div>
       )}
     </div>
   );
 });
 
 const PdfViewerWindow = () => {
+  const { t } = useTranslation();
   const params = parseHashParams();
   const pdfPath = params.get('path');
   const pdfTitle = params.get('title') || 'PDF Viewer';
@@ -212,7 +217,13 @@ const PdfViewerWindow = () => {
 
   // ── Chat Drawer ──
   const [showChatDrawer, setShowChatDrawer] = useState(false);
+  // null = "All annotations"; a positive int = lock chat drawer to that annotation id
+  const [chatAnnotationFilter, setChatAnnotationFilter] = useState(null);
   const chatInputRef = useRef(null);
+  // Custom dropdown UI state for the annotation filter
+  const [isAnnotationFilterOpen, setIsAnnotationFilterOpen] = useState(false);
+  const annotationFilterTriggerRef = useRef(null);
+  const annotationFilterPanelRef = useRef(null);
 
   // ── Resizable panels ──
   const [chatDrawerWidth, setChatDrawerWidth] = useState(360);
@@ -264,7 +275,14 @@ const PdfViewerWindow = () => {
     createSession: createChatSession,
     deleteSession: deleteChatSession,
     sendChat: sendPdfChat,
-  } = usePdfChat({ sendMessage, subscribe, unsubscribe, itemId, pdfPath });
+  } = useAnnotationChat({
+    sendMessage,
+    subscribe,
+    unsubscribe,
+    itemId,
+    pdfPath,
+    annotationId: chatAnnotationFilter,
+  });
 
   // Collect all referenced passages from chat history for display
   const referencedPassages = React.useMemo(() => {
@@ -288,6 +306,46 @@ const PdfViewerWindow = () => {
   annotationsRef.current = annotations;
   const hasLoadedRef = useRef(false);
 
+  // If the user clicked "Open Chat" while the annotation was still in its
+  // optimistic state (id === client_id), we deferred setting the filter and
+  // creating the session. Once the upsert returns and `annot.id` becomes a
+  // number, this effect finishes the job so the chat drawer is wired up to
+  // the right annotation.
+  useEffect(() => {
+    if (!selectedAnnotationId) return;
+    if (chatAnnotationFilter != null) return;
+    const matched = annotations.find(
+      (a) => String(a.id) === String(selectedAnnotationId),
+    );
+    if (!matched || typeof matched.id !== 'number') return;
+    setChatAnnotationFilter(matched.id);
+    createChatSession('Annotation Chat', { annotation_id: matched.id });
+  }, [annotations, selectedAnnotationId, chatAnnotationFilter, createChatSession]);
+
+  // Close the annotation filter dropdown on outside click / Escape
+  useEffect(() => {
+    if (!isAnnotationFilterOpen) return;
+    const handleMouseDown = (e) => {
+      const trigger = annotationFilterTriggerRef.current;
+      const panel = annotationFilterPanelRef.current;
+      const target = e.target;
+      if (trigger && trigger.contains(target)) return;
+      if (panel && panel.contains(target)) return;
+      setIsAnnotationFilterOpen(false);
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsAnnotationFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isAnnotationFilterOpen]);
+
   // Load saved annotations from SQLite (priority) > localStorage fallback
   useEffect(() => {
     hasLoadedRef.current = false;
@@ -296,7 +354,11 @@ const PdfViewerWindow = () => {
       const key = `pdf-annotations:${pdfPath}/main.pdf`;
       const saved = localStorage.getItem(key);
       if (saved) {
-        try { setAnnotations(JSON.parse(saved)); } catch {}
+        try {
+          const parsed = JSON.parse(saved);
+          setAnnotations(parsed);
+          if (parsed.length > 0) setShowSidebar(true);
+        } catch {}
       }
       hasLoadedRef.current = true;
       return;
@@ -308,6 +370,7 @@ const PdfViewerWindow = () => {
         if (!cancelled) {
           if (response?.data?.annotations) {
             setAnnotations(response.data.annotations);
+            if (response.data.annotations.length > 0) setShowSidebar(true);
           }
           hasLoadedRef.current = true;
         }
@@ -317,7 +380,11 @@ const PdfViewerWindow = () => {
           const key = `pdf-annotations:${pdfPath}/main.pdf`;
           const saved = localStorage.getItem(key);
           if (saved) {
-            try { setAnnotations(JSON.parse(saved)); } catch {}
+            try {
+              const parsed = JSON.parse(saved);
+              setAnnotations(parsed);
+              if (parsed.length > 0) setShowSidebar(true);
+            } catch {}
           }
           hasLoadedRef.current = true;
         }
@@ -363,7 +430,7 @@ const PdfViewerWindow = () => {
   // Load PDF
   useEffect(() => {
     if (!pdfPath) {
-      setError('No PDF path provided');
+      setError(t('pdfViewer.errorNoPath'));
       setLoading(false);
       return;
     }
@@ -374,7 +441,7 @@ const PdfViewerWindow = () => {
       try {
         const pdfFilePath = `${pdfPath}/main.pdf`;
         const response = await sendMessage('workspace_read', { path: pdfFilePath }, 30000);
-        if (!response?.data?.content) throw new Error('No PDF content');
+        if (!response?.data?.content) throw new Error(t('pdfViewer.errorNoContent'));
         let bytes;
         const encoding = response.data.encoding || 'hex';
         if (encoding === 'hex') {
@@ -394,7 +461,7 @@ const PdfViewerWindow = () => {
       } catch (err) {
         if (!cancelled) {
           console.error('Failed to load PDF:', err);
-          setError(err.message || 'Failed to load PDF');
+          setError(err.message || t('pdfViewer.errorLoadFailed'));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -478,52 +545,115 @@ const PdfViewerWindow = () => {
     setShowToolbar(true);
   }, []);
 
-  const addHighlight = useCallback((color) => {
-    if (!selection) return;
-    window.getSelection().removeAllRanges();
-    const annotation = {
-      id: `annot-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      page: selection.page,
-      type: 'highlight',
-      color,
-      text: selection.text,
-      comment: '',
-      rects: selection.rects,
-      spanRange: selection.spanRange,
-      createdAt: Date.now(),
-    };
-    setAnnotations((prev) => [...prev, annotation]);
-    setShowToolbar(false);
-    setSelection(null);
-  }, [selection]);
+  const addHighlight = useCallback(
+    async (color) => {
+      if (!selection) return;
+      window.getSelection().removeAllRanges();
+      const clientId = `client-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const annotation = {
+        id: clientId,
+        client_id: clientId,
+        page: selection.page,
+        type: 'highlight',
+        color,
+        text: selection.text,
+        comment: '',
+        comments: [],
+        rects: selection.rects,
+        spanRange: selection.spanRange,
+        createdAt: Date.now(),
+      };
+      // Optimistic: render immediately with the client_id
+      setAnnotations((prev) => [...prev, annotation]);
+      setShowToolbar(false);
+      setSelection(null);
+      if (!itemId) return;
+      // Persist to DB, swap in real db id when upsert returns
+      try {
+        const resp = await sendMessage(
+          'library_annotation_upsert',
+          { item_id: Number(itemId), annotation },
+          10000,
+        );
+        const dbId = resp?.data?.id;
+        if (dbId != null) {
+          setAnnotations((prev) =>
+            prev.map((a) => (a.client_id === clientId ? { ...a, id: dbId } : a)),
+          );
+        }
+      } catch (e) {
+        console.error('Failed to upsert highlight annotation:', e);
+      }
+    },
+    [selection, itemId, sendMessage],
+  );
 
-  const addUnderline = useCallback((color) => {
-    if (!selection) return;
-    window.getSelection().removeAllRanges();
-    const annotation = {
-      id: `annot-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      page: selection.page,
-      type: 'underline',
-      color,
-      text: selection.text,
-      comment: '',
-      rects: selection.rects,
-      spanRange: selection.spanRange,
-      createdAt: Date.now(),
-    };
-    setAnnotations((prev) => [...prev, annotation]);
-    setShowToolbar(false);
-    setSelection(null);
-  }, [selection]);
+  const addUnderline = useCallback(
+    async (color) => {
+      if (!selection) return;
+      window.getSelection().removeAllRanges();
+      const clientId = `client-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const annotation = {
+        id: clientId,
+        client_id: clientId,
+        page: selection.page,
+        type: 'underline',
+        color,
+        text: selection.text,
+        comment: '',
+        comments: [],
+        rects: selection.rects,
+        spanRange: selection.spanRange,
+        createdAt: Date.now(),
+      };
+      setAnnotations((prev) => [...prev, annotation]);
+      setShowToolbar(false);
+      setSelection(null);
+      if (!itemId) return;
+      try {
+        const resp = await sendMessage(
+          'library_annotation_upsert',
+          { item_id: Number(itemId), annotation },
+          10000,
+        );
+        const dbId = resp?.data?.id;
+        if (dbId != null) {
+          setAnnotations((prev) =>
+            prev.map((a) => (a.client_id === clientId ? { ...a, id: dbId } : a)),
+          );
+        }
+      } catch (e) {
+        console.error('Failed to upsert underline annotation:', e);
+      }
+    },
+    [selection, itemId, sendMessage],
+  );
 
   const updateComment = useCallback((id, comment) => {
     setAnnotations((prev) => prev.map((a) => (String(a.id) === String(id) ? { ...a, comment } : a)));
   }, []);
 
-  const deleteAnnotation = useCallback((id) => {
-    setAnnotations((prev) => prev.filter((a) => String(a.id) !== String(id)));
-    if (String(selectedAnnotationId) === String(id)) setSelectedAnnotationId(null);
-  }, [selectedAnnotationId]);
+  const deleteAnnotation = useCallback(
+    async (id) => {
+      const target = annotations.find((a) => String(a.id) === String(id));
+      setAnnotations((prev) => prev.filter((a) => String(a.id) !== String(id)));
+      if (String(selectedAnnotationId) === String(id)) setSelectedAnnotationId(null);
+      // If the deleted annotation is a real db row, also remove on the server.
+      // Client ids (e.g. "client-..." that haven't been upserted yet) won't be sent.
+      if (target && itemId && typeof target.id === 'number') {
+        try {
+          await sendMessage(
+            'library_annotation_delete_by_id',
+            { item_id: Number(itemId), annotation_id: target.id },
+            10000,
+          );
+        } catch (e) {
+          console.error('Failed to delete annotation server-side:', e);
+        }
+      }
+    },
+    [annotations, selectedAnnotationId, itemId, sendMessage],
+  );
 
   const zoomIn = useCallback(() => setScale((s) => Math.min(s + 0.25, 3)), []);
   const zoomOut = useCallback(() => setScale((s) => Math.max(s - 0.25, 0.5)), []);
@@ -535,6 +665,22 @@ const PdfViewerWindow = () => {
     if (el && contentRef.current) {
       contentRef.current.scrollTo({ top: el.offsetTop - 20, behavior: 'smooth' });
     }
+  }, []);
+
+  const scrollToAnnotation = useCallback((id) => {
+    if (!contentRef.current) return;
+    const rectEls = document.querySelectorAll(`[data-annotation-id="${id}"]`);
+    if (rectEls.length === 0) return;
+    const container = contentRef.current;
+    const containerRect = container.getBoundingClientRect();
+    let bestTop = Infinity;
+    rectEls.forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const top = r.top - containerRect.top + container.scrollTop;
+      if (top < bestTop) bestTop = top;
+    });
+    const target = Math.max(0, bestTop - 80);
+    container.scrollTo({ top: target, behavior: 'smooth' });
   }, []);
 
   const handleKeyDown = useCallback((e) => {
@@ -575,6 +721,28 @@ const PdfViewerWindow = () => {
     setChatSelection(null);
   }, []);
 
+  // Open the chat drawer locked to a single annotation. If the annotation hasn't
+  // been persisted yet (id is still the client-side uuid), just open the drawer;
+  // the chat hook will fall back to creating a session once upsert completes.
+  const handleOpenChatForAnnotation = useCallback(
+    (annot) => {
+      if (!annot) return;
+      // Open the chat drawer immediately so the user sees feedback. We only
+      // set the filter (and pre-create a session) when we have the real db
+      // id — the optimistic `client_id` is a string and is meaningless to the
+      // backend, which expects an integer annotation_id.
+      setShowChatDrawer(true);
+      setSelectedAnnotationId(annot.id ?? annot.client_id);
+      scrollToAnnotation(annot.id ?? annot.client_id);
+      if (typeof annot.id === 'number') {
+        setChatAnnotationFilter(annot.id);
+        // Fire-and-forget; createSession hook will set currentSessionId when done.
+        createChatSession('Annotation Chat', { annotation_id: annot.id });
+      }
+    },
+    [createChatSession, scrollToAnnotation],
+  );
+
   const handleSendChat = useCallback(async (input) => {
     if (!input.trim() || chatLoading) return;
     await sendPdfChat({
@@ -599,7 +767,7 @@ const PdfViewerWindow = () => {
     return (
       <div className="pdfv-loading">
         <div className="pdfv-spinner" />
-        <span>Loading PDF…</span>
+        <span>{t('pdfViewer.loadingPdf')}</span>
       </div>
     );
   }
@@ -625,13 +793,13 @@ const PdfViewerWindow = () => {
         </div>
         <div className="pdfv-toolbar-right">
           <button className="pdfv-btn" onClick={zoomOut} title="Zoom out (-)"><Minus size={14} /></button>
-          <button className="pdfv-btn" onClick={resetZoom} title="Reset zoom"><RotateCcw size={14} /></button>
+          <button className="pdfv-btn" onClick={resetZoom} title={t('pdfViewer.toolbarResetZoom')}><RotateCcw size={14} /></button>
           <span className="pdfv-zoominfo">{Math.round(scale * 100)}%</span>
           <button className="pdfv-btn" onClick={zoomIn} title="Zoom in (+)"><Plus size={14} /></button>
           <button
             className={`pdfv-btn ${showSidebar ? 'pdfv-btn-active' : ''}`}
             onClick={() => setShowSidebar((s) => !s)}
-            title="Annotations"
+            title={t('pdfViewer.toolbarAnnotations')}
             style={{ position: 'relative' }}
           >
             <MessageSquare size={16} />
@@ -642,7 +810,7 @@ const PdfViewerWindow = () => {
           <button
             className={`pdfv-btn ${showChatDrawer ? 'pdfv-btn-active' : ''}`}
             onClick={() => setShowChatDrawer((s) => !s)}
-            title="Chat"
+            title={t('pdfViewer.toolbarChat')}
             style={{ position: 'relative' }}
           >
             <Bot size={16} />
@@ -650,7 +818,7 @@ const PdfViewerWindow = () => {
               <span className="pdfv-badge">{chatSessions.length}</span>
             )}
           </button>
-          <button className="pdfv-btn pdfv-btn-close" onClick={handleClose} title="Close"><X size={16} /></button>
+          <button className="pdfv-btn pdfv-btn-close" onClick={handleClose} title={t('pdfViewer.toolbarClose')}><X size={16} /></button>
         </div>
       </div>
 
@@ -679,12 +847,12 @@ const PdfViewerWindow = () => {
           />
           <div className="pdfv-sidebar" style={{ width: sidebarWidth, minWidth: sidebarWidth }}>
             <div className="pdfv-sidebar-header">
-              <span>Annotations ({annotations.length})</span>
+              <span>{t('pdfViewer.sidebarTitle', { count: annotations.length })}</span>
               <button className="pdfv-btn" onClick={() => setShowSidebar(false)}><X size={14} /></button>
             </div>
             <div className="pdfv-sidebar-content">
               {annotations.length === 0 ? (
-                <div className="pdfv-sidebar-empty">Select text and highlight to add annotations</div>
+                <div className="pdfv-sidebar-empty">{t('pdfViewer.selectTextHint')}</div>
               ) : (
                 annotations.map((annot) => (
                   <div
@@ -692,22 +860,40 @@ const PdfViewerWindow = () => {
                     className={`pdfv-annot-item ${selectedAnnotationId === annot.id ? 'pdfv-annot-item-selected' : ''}`}
                     onClick={() => {
                       setSelectedAnnotationId(annot.id);
-                      scrollToPage(annot.page);
+                      scrollToAnnotation(annot.id);
                     }}
                   >
                     <div className="pdfv-annot-meta">
-                      <span className="pdfv-annot-page">Page {annot.page}</span>
+                      <span className="pdfv-annot-page">{t('pdfViewer.pageLabel', { page: annot.page })}</span>
                       <span className="pdfv-annot-type">{annot.type}</span>
                     </div>
                     <div className="pdfv-annot-text">"{annot.text}"</div>
                     <textarea
                       className="pdfv-annot-comment"
-                      placeholder="Add a comment..."
+                      placeholder={t('pdfViewer.placeholderComment')}
                       value={annot.comment}
                       onChange={(e) => updateComment(annot.id, e.target.value)}
                       onClick={(e) => e.stopPropagation()}
                     />
-                    <button className="pdfv-annot-delete" onClick={() => deleteAnnotation(annot.id)}>Delete</button>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <button
+                        className="pdfv-annot-open-chat"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenChatForAnnotation(annot);
+                        }}
+                        disabled={annot.id == null && !annot.client_id}
+                        title={
+                          annot.id == null && !annot.client_id
+                            ? ''
+                            : t('annotation.openChat')
+                        }
+                      >
+                        <MessageSquare size={11} />
+                        {t('annotation.openChat')}
+                      </button>
+                      <button className="pdfv-annot-delete" onClick={() => deleteAnnotation(annot.id)}>{t('pdfViewer.annotDelete')}</button>
+                    </div>
                   </div>
                 ))
               )}
@@ -727,18 +913,133 @@ const PdfViewerWindow = () => {
             <div className="pdfv-chat-header">
               <span className="pdfv-chat-title">
                 <Bot size={14} style={{ marginRight: 6 }} />
-                Chat
+                {t('pdfViewer.chatHeaderTitle')}
               </span>
               <div style={{ display: 'flex', gap: 4 }}>
                 <button
                   className="pdfv-btn"
                   onClick={() => createChatSession()}
-                  title="New session"
+                  title={t('pdfViewer.toolbarNewSession')}
                 >
                   <Plus size={14} />
                 </button>
                 <button className="pdfv-btn" onClick={closeChatDrawer}><X size={14} /></button>
               </div>
+            </div>
+            {/* Annotation filter dropdown */}
+            <div className="pdfv-chat-annotation-filter">
+              {(() => {
+                const annotList = Array.isArray(annotations) ? annotations : [];
+                const selectedAnnot =
+                  chatAnnotationFilter == null
+                    ? null
+                    : annotList.find((a) => a.id === chatAnnotationFilter) || null;
+                const triggerColor = selectedAnnot?.color || '#4a9eff';
+                const triggerPreview = selectedAnnot
+                  ? (selectedAnnot.text || '').slice(0, 50) +
+                    ((selectedAnnot.text || '').length > 50 ? '…' : '')
+                  : null;
+                const triggerLabel = selectedAnnot
+                  ? t('annotation.chatForAnnotation', { preview: triggerPreview })
+                  : t('annotation.chatAllAnnotations');
+                const isAllSelected = chatAnnotationFilter == null;
+                return (
+                  <>
+                    <button
+                      ref={annotationFilterTriggerRef}
+                      type="button"
+                      className="pdfv-chat-session pdfv-chat-filter-trigger"
+                      onClick={() => setIsAnnotationFilterOpen((v) => !v)}
+                      aria-expanded={isAnnotationFilterOpen}
+                      aria-haspopup="listbox"
+                    >
+                      <span
+                        className="pdfv-chat-filter-color-bar"
+                        style={{ background: triggerColor }}
+                      />
+                      <span className="pdfv-chat-session-title">{triggerLabel}</span>
+                      <ChevronDown
+                        size={12}
+                        className={`pdfv-chat-filter-chevron ${isAnnotationFilterOpen ? 'is-open' : ''}`}
+                      />
+                    </button>
+                    {isAnnotationFilterOpen && (
+                      <div
+                        ref={annotationFilterPanelRef}
+                        className="pdfv-chat-filter-panel"
+                        role="listbox"
+                      >
+                        <div
+                          className={`pdfv-chat-session pdfv-chat-filter-item ${isAllSelected ? 'pdfv-chat-session-active' : ''}`}
+                          role="option"
+                          aria-selected={isAllSelected}
+                          onClick={() => {
+                            setChatAnnotationFilter(null);
+                            setIsAnnotationFilterOpen(false);
+                          }}
+                        >
+                          <span
+                            className="pdfv-chat-filter-color-bar"
+                            style={{ background: '#4a9eff' }}
+                          />
+                          <span className="pdfv-chat-session-title">
+                            {t('annotation.chatAllAnnotations')}
+                          </span>
+                          {isAllSelected ? (
+                            <Check size={12} className="pdfv-chat-filter-check" />
+                          ) : (
+                            <span className="pdfv-chat-filter-check-placeholder" />
+                          )}
+                        </div>
+                        {annotList.filter((a) => typeof a.id === 'number').length === 0 ? (
+                          <div className="pdfv-chat-filter-empty">
+                            {t('annotation.filterEmpty')}
+                          </div>
+                        ) : (
+                          annotList
+                            .filter((a) => typeof a.id === 'number')
+                            .map((a) => {
+                              const isSelected = chatAnnotationFilter === a.id;
+                              const preview =
+                                (a.text || '').slice(0, 50) +
+                                ((a.text || '').length > 50 ? '…' : '');
+                              return (
+                                <div
+                                  key={a.id}
+                                  className={`pdfv-chat-session pdfv-chat-filter-item ${isSelected ? 'pdfv-chat-session-active' : ''}`}
+                                  role="option"
+                                  aria-selected={isSelected}
+                                  onClick={() => {
+                                    setChatAnnotationFilter(a.id);
+                                    setIsAnnotationFilterOpen(false);
+                                  }}
+                                >
+                                  <span
+                                    className="pdfv-chat-filter-color-bar"
+                                    style={{ background: a.color || '#1890ff' }}
+                                  />
+                                  <span className="pdfv-chat-session-title">
+                                    {a.page ? (
+                                      <span className="pdfv-chat-filter-page-badge">
+                                        {`P${a.page}·`}
+                                      </span>
+                                    ) : null}
+                                    {t('annotation.chatForAnnotation', { preview })}
+                                  </span>
+                                  {isSelected ? (
+                                    <Check size={12} className="pdfv-chat-filter-check" />
+                                  ) : (
+                                    <span className="pdfv-chat-filter-check-placeholder" />
+                                  )}
+                                </div>
+                              );
+                            })
+                        )}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             {/* Sessions */}
@@ -766,7 +1067,7 @@ const PdfViewerWindow = () => {
             {chatSelection && (
               <div className="pdfv-chat-context">
                 <div className="pdfv-chat-context-meta">
-                  <span>Page {chatSelection.page}</span>
+                  <span>{t('pdfViewer.chatContextPage', { page: chatSelection.page })}</span>
                   <button onClick={() => setChatSelection(null)}>✕</button>
                 </div>
                 <div className="pdfv-chat-context-text">{chatSelection.text}</div>
@@ -777,13 +1078,13 @@ const PdfViewerWindow = () => {
             {referencedPassages.length > 0 && (
               <details className="pdfv-chat-passages">
                 <summary>
-                  📎 Referenced Passages ({referencedPassages.length})
+                  {t('pdfViewer.chatReferencedTitle', { count: referencedPassages.length })}
                 </summary>
                 <div className="pdfv-chat-passages-list">
                   {referencedPassages.map((p, i) => (
                     <div key={p.messageId} className="pdfv-chat-passage-item">
                       <div className="pdfv-chat-passage-meta">
-                        #{i + 1}{p.page ? ` · Page ${p.page}` : ''}
+                        #{i + 1}{p.page ? t('pdfViewer.chatReferencedPage', { page: p.page }) : ''}
                       </div>
                       <div className="pdfv-chat-passage-text">{p.text}</div>
                     </div>
@@ -796,7 +1097,7 @@ const PdfViewerWindow = () => {
             <div className="pdfv-chat-messages">
               {chatMessages.length === 0 && !chatSelection && !referencedPassages.length && (
                 <div className="pdfv-chat-empty">
-                  Select text in the PDF and click <strong>Chat</strong> to start a conversation.
+                  {t('pdfViewer.selectTextChatHint')}
                 </div>
               )}
               {chatMessages.map((msg) => (
@@ -806,18 +1107,18 @@ const PdfViewerWindow = () => {
                       <div className="pdfv-chat-tool-header">
                         <span className="pdfv-chat-tool-name">🔧 {msg.metadata?.tool || 'tool'}</span>
                         <span className={`pdfv-chat-tool-status pdfv-chat-tool-status-${msg.metadata?.status || 'done'}`}>
-                          {msg.metadata?.status === 'running' ? 'Running...' : 'Done'}
+                          {msg.metadata?.status === 'running' ? t('pdfViewer.chatRunning') : t('pdfViewer.chatDone')}
                         </span>
                       </div>
                       {msg.metadata?.args && (
                         <details className="pdfv-chat-tool-details">
-                          <summary>Arguments</summary>
+                          <summary>{t('pdfViewer.chatToolArguments')}</summary>
                           <pre className="pdfv-chat-tool-code">{JSON.stringify(msg.metadata.args, null, 2)}</pre>
                         </details>
                       )}
                       {(msg.metadata?.result || msg.content) && (
                         <details className="pdfv-chat-tool-details">
-                          <summary>Result</summary>
+                          <summary>{t('pdfViewer.chatToolResult')}</summary>
                           <pre className="pdfv-chat-tool-code">{typeof (msg.metadata?.result || msg.content) === 'string' ? (msg.metadata?.result || msg.content) : JSON.stringify(msg.metadata?.result || msg.content, null, 2)}</pre>
                         </details>
                       )}
@@ -830,7 +1131,7 @@ const PdfViewerWindow = () => {
                       <div className="pdfv-chat-msg-content">
                         {msg.role === 'user' && msg.selected_text && (
                           <div className="pdfv-chat-msg-quote">
-                            <div className="pdfv-chat-msg-quote-meta">Page {msg.page_number}</div>
+                            <div className="pdfv-chat-msg-quote-meta">{t('pdfViewer.chatContextPage', { page: msg.page_number })}</div>
                             <blockquote>{msg.selected_text}</blockquote>
                           </div>
                         )}
@@ -870,12 +1171,12 @@ const PdfViewerWindow = () => {
                                   {copiedMsgId === msg.id ? (
                                     <>
                                       <Check size={12} />
-                                      <span>已复制</span>
+                                      <span>{t('pdfViewer.chatCopied')}</span>
                                     </>
                                   ) : (
                                     <>
                                       <Copy size={12} />
-                                      <span>复制</span>
+                                      <span>{t('pdfViewer.chatCopy')}</span>
                                     </>
                                   )}
                                 </button>
@@ -940,43 +1241,43 @@ const PdfViewerWindow = () => {
               <div className="pdfv-quick-actions">
                 <button
                   className="pdfv-quick-action-btn"
-                  onClick={() => handleSendChat('请总结这篇论文的核心内容、主要贡献和关键发现')}
+                  onClick={() => handleSendChat(t('pdfViewer.chatPromptSummary'))}
                   disabled={chatLoading}
                 >
                   <Sparkles size={12} />
-                  生成总结
+                  {t('pdfViewer.chatSummaryBtn')}
                 </button>
                 <button
                   className="pdfv-quick-action-btn"
-                  onClick={() => handleSendChat('请基于这篇论文的结构，生成一个思维导图。要求使用 Mermaid 的 mindmap 语法，输出在 ```mermaid 代码块中。包含研究背景、核心方法、实验设计、主要结论、未来工作等关键节点。')}
+                  onClick={() => handleSendChat(t('pdfViewer.chatPromptMindmap'))}
                   disabled={chatLoading}
                 >
                   <Bot size={12} />
-                  生成脑图
+                  {t('pdfViewer.chatMindmapBtn')}
                 </button>
                 <button
                   className="pdfv-quick-action-btn"
-                  onClick={() => handleSendChat('请基于这篇论文的结构，生成一个**树状思维导图**。请用 **Markdown 大纲** 格式输出（用 `#` 表示层级，一级一个标题，二级一个子标题，三级一个叶子），并将完整大纲放在 ```mindmap 代码块中。要点：1) 自上而下、层级分明；2) 包含研究背景、核心方法、实验设计、主要结论、未来工作等关键节点；3) 每个标题用 4–12 个中文字概括。')}
+                  onClick={() => handleSendChat(t('pdfViewer.chatPromptTreeMindmap'))}
                   disabled={chatLoading}
                 >
                   <Network size={12} />
-                  树状脑图
+                  {t('pdfViewer.chatTreeMindmapBtn')}
                 </button>
                 <button
                   className="pdfv-quick-action-btn"
-                  onClick={() => handleSendChat('请分析这篇论文使用的研究方法、实验设计和评估指标')}
+                  onClick={() => handleSendChat(t('pdfViewer.chatPromptMethod'))}
                   disabled={chatLoading}
                 >
                   <MessageSquare size={12} />
-                  研究方法
+                  {t('pdfViewer.chatMethodBtn')}
                 </button>
                 <button
                   className="pdfv-quick-action-btn"
-                  onClick={() => handleSendChat('请提取并解释这篇论文中的 5–10 个关键术语和核心概念')}
+                  onClick={() => handleSendChat(t('pdfViewer.chatPromptTerms'))}
                   disabled={chatLoading}
                 >
                   <Underline size={12} />
-                  关键概念
+                  {t('pdfViewer.chatTermsBtn')}
                 </button>
               </div>
             )}
@@ -986,7 +1287,7 @@ const PdfViewerWindow = () => {
               <textarea
                 ref={chatInputRef}
                 className="pdfv-chat-input"
-                placeholder={chatSelection ? 'Ask about the selection...' : 'Ask a question...'}
+                placeholder={chatSelection ? t('pdfViewer.chatPlaceholderSelection') : t('pdfViewer.chatPlaceholderGeneral')}
                 rows={2}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -1037,10 +1338,10 @@ const PdfViewerWindow = () => {
           ))}
         </div>
         <div className="pdfv-toolbar-divider" />
-        <button className="pdfv-toolbar-action" onClick={() => addUnderline(COLORS[2].value)} title="Underline">
+        <button className="pdfv-toolbar-action" onClick={() => addUnderline(COLORS[2].value)} title={t('pdfViewer.toolbarUnderline')}>
           <Underline size={14} />
         </button>
-        <button className="pdfv-toolbar-action" onClick={openChatWithSelection} title="Chat about selection">
+        <button className="pdfv-toolbar-action" onClick={openChatWithSelection} title={t('pdfViewer.toolbarChatSelection')}>
           <MessageSquare size={14} />
         </button>
       </div>

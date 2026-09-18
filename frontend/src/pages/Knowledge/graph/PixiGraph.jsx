@@ -24,6 +24,7 @@ const PixiGraph = forwardRef(({
   onNodeClick,
   onNodeHover,
   onNodeDoubleClick,
+  onNodeContextMenu,
   onBackgroundClick,
   onZoom,
   active = true,
@@ -40,8 +41,8 @@ const PixiGraph = forwardRef(({
   const hasReceivedWorkerDataRef = useRef(false);
 
   // Keep callbacks fresh without re-creating the renderer
-  const callbacksRef = useRef({ onNodeClick, onNodeHover, onNodeDoubleClick, onBackgroundClick, onZoom, graphData });
-  callbacksRef.current = { onNodeClick, onNodeHover, onNodeDoubleClick, onBackgroundClick, onZoom, graphData };
+  const callbacksRef = useRef({ onNodeClick, onNodeHover, onNodeDoubleClick, onNodeContextMenu, onBackgroundClick, onZoom, graphData });
+  callbacksRef.current = { onNodeClick, onNodeHover, onNodeDoubleClick, onNodeContextMenu, onBackgroundClick, onZoom, graphData };
 
   // Simulation tick handler - receives data from Worker
   const handleTick = useCallback(({ buffer, idMapping, version }) => {
@@ -158,6 +159,13 @@ const PixiGraph = forwardRef(({
       onNodeDoubleClick: (node, e) => {
         const cb = callbacksRef.current.onNodeDoubleClick;
         if (cb) cb(node, e);
+      },
+      onNodeContextMenu: (node, e) => {
+        const cb = callbacksRef.current.onNodeContextMenu;
+        if (cb) {
+          const original = callbacksRef.current.graphData?.nodes?.find((n) => n.id === node.id);
+          cb(original || node, e);
+        }
       },
       onBackgroundClick: (e) => {
         const cb = callbacksRef.current.onBackgroundClick;
