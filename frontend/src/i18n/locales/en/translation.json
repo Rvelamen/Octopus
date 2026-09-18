@@ -215,6 +215,11 @@
     "chatEmpty": "Select an annotation and click Open Chat to start",
     "filterEmpty": "No annotations yet — highlight text in the PDF to create one.",
     "deleteComment": "Delete comment",
-    "authorYou": "You"
+    "authorYou": "You",
+    "noComments": "No comments yet",
+    "addComment": "Add comment",
+    "confirmComment": "Confirm",
+    "cancelComment": "Cancel",
+    "commentPendingSync": "Saving to server... please wait"
   }
 }

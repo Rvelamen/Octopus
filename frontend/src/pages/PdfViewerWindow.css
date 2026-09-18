@@ -417,6 +417,176 @@
   cursor: not-allowed;
 }
 
+/* ── Annotation comments thread ── */
+
+.pdfv-annot-comments {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pdfv-annot-comments-empty {
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+  padding: 4px 0;
+}
+
+.pdfv-annot-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pdfv-annot-comment-card {
+  position: relative;
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  padding: 5px 8px 6px 8px;
+}
+
+.pdfv-annot-comment-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.pdfv-annot-comment-author {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #4a9eff;
+}
+
+.pdfv-annot-comment-time {
+  font-size: 9.5px;
+  color: #777;
+}
+
+.pdfv-annot-comment-body {
+  font-size: 12px;
+  color: #e0e0e0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.pdfv-annot-comment-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: transparent;
+  border: none;
+  color: #777;
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+
+.pdfv-annot-comment-delete:hover:not(:disabled) {
+  opacity: 1;
+  color: #ff6b6b;
+}
+
+.pdfv-annot-comment-delete:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.pdfv-annot-comments-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  font-size: 11px;
+  color: #4a9eff;
+  background: transparent;
+  border: 1px dashed #3a3a3a;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 3px 8px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.pdfv-annot-comments-add:hover:not(:disabled) {
+  background: rgba(74, 158, 255, 0.1);
+  border-color: #4a9eff;
+  border-style: solid;
+}
+
+.pdfv-annot-comments-add:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pdfv-annot-comments-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pdfv-annot-comments-input {
+  width: 100%;
+  min-height: 48px;
+  background: #1e1e1e;
+  border: 1px solid #4a9eff;
+  border-radius: 4px;
+  padding: 6px 8px;
+  color: #e0e0e0;
+  font-size: 12px;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.pdfv-annot-comments-actions {
+  display: flex;
+  gap: 5px;
+  justify-content: flex-end;
+}
+
+.pdfv-annot-comments-cancel,
+.pdfv-annot-comments-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 3px 8px;
+  border: 1px solid #3a3a3a;
+  background: transparent;
+  color: #ccc;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.pdfv-annot-comments-cancel:hover:not(:disabled) {
+  background: rgba(255, 107, 107, 0.12);
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.pdfv-annot-comments-confirm {
+  background: #4a9eff;
+  border-color: #4a9eff;
+  color: #fff;
+}
+
+.pdfv-annot-comments-confirm:hover:not(:disabled) {
+  background: #5fb0ff;
+  border-color: #5fb0ff;
+}
+
+.pdfv-annot-comments-cancel:disabled,
+.pdfv-annot-comments-confirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* Loading */
 .pdfv-loading {
   display: flex;

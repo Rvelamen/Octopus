@@ -38,10 +38,17 @@ _MAX_ANNOTATION_CONTEXT_CHARS = 2000
 class PdfAnnotationChatAgent:
     """PDF chat agent whose context is bound to one library annotation."""
 
-    def __init__(self, workspace: Path, db: Database | None = None):
+    def __init__(self, workspace: Path, db: Database | Path | str | None = None):
         self.workspace = workspace
-        self.db = db or Database()
-        self.chat_service = PdfAnnotationChatService(self.db)
+        # Accept a Database (legacy / app.db) or a path to the workspace
+        # knowledge index db — the latter is the only way to read
+        # `library_annotations` since LibraryEngine writes to its own sqlite.
+        # We forward whatever was passed to the chat service so both share
+        # the same backing store.
+        self.chat_service = PdfAnnotationChatService(db)
+        # For AgentConfigService / SubAgentLoader we still want the app.db
+        # wrapper (those tables live in app.db, not the knowledge index).
+        self.db = db if isinstance(db, Database) else Database()
         self._config_service = AgentConfigService(self.db)
         self._skills = SkillsLoader(workspace)
         self._agent_loader = SubAgentLoader(workspace, self.db)
@@ -118,21 +125,22 @@ class PdfAnnotationChatAgent:
         been deleted in the meantime.
         """
         try:
-            row = self.db.execute(
-                "SELECT id, page, type, color, text FROM library_annotations WHERE id = ?",
-                (annotation_id,),
-            ).fetchone()
-            if not row:
-                return None
-            comment_rows = self.db.execute(
-                """
-                SELECT author_name, content, created_at
-                FROM library_annotation_comments
-                WHERE annotation_id = ?
-                ORDER BY created_at, id
-                """,
-                (annotation_id,),
-            ).fetchall()
+            with self.chat_service._get_connection() as conn:
+                row = conn.execute(
+                    "SELECT id, page, type, color, text FROM library_annotations WHERE id = ?",
+                    (annotation_id,),
+                ).fetchone()
+                if not row:
+                    return None
+                comment_rows = conn.execute(
+                    """
+                    SELECT author_name, content, created_at
+                    FROM library_annotation_comments
+                    WHERE annotation_id = ?
+                    ORDER BY created_at, id
+                    """,
+                    (annotation_id,),
+                ).fetchall()
             return {
                 "page": row["page"],
                 "text": row["text"] or "",

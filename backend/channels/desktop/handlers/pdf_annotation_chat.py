@@ -1,6 +1,7 @@
 """WebSocket message handlers for Desktop channel — PDF Annotation Chat handler."""
 
 import asyncio
+from pathlib import Path
 
 from fastapi import WebSocket
 from loguru import logger
@@ -26,8 +27,20 @@ class PdfAnnotationChatHandler(MessageHandler):
         self.pending_responses = pending_responses
         workspace = get_workspace_path()
         db = Database()
-        self.chat_service = PdfAnnotationChatService(db)
-        self.chat_agent = PdfAnnotationChatAgent(workspace, db)
+
+        # Share the workspace knowledge index db with LibraryEngine so the
+        # `library_annotations` and `pdf_annotation_chat_*` tables live in the
+        # same sqlite file (FK to library_annotations.id resolves correctly).
+        knowledge_index_db = Path(workspace) / "knowledge" / ".knowledge_index.db"
+        if knowledge_index_db.exists():
+            self.chat_service = PdfAnnotationChatService(knowledge_index_db)
+            self.chat_agent = PdfAnnotationChatAgent(workspace, knowledge_index_db)
+        else:
+            # Fallback to app.db so the service still works in tests / setups
+            # that haven't initialised a workspace yet.
+            self.chat_service = PdfAnnotationChatService(db)
+            self.chat_agent = PdfAnnotationChatAgent(workspace, db)
+        self._workspace_db = knowledge_index_db
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         action = message.data.get("action", "")

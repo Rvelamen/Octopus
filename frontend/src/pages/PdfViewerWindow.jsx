@@ -192,6 +192,179 @@ const PdfPage = React.memo(({ pdf, pageNumber, scale, annotations, onVisible, on
   );
 });
 
+/**
+ * AnnotationComments — thread-style comment UI for a single annotation.
+ *
+ * Replaces the legacy single `<textarea value={annot.comment}>` field. Shows
+ * existing comments as cards; composing is opt-in via a ➕ button (a deliberate
+ * shift from the modal's persistent textarea so the sidebar stays compact).
+ *
+ * Optimistic annotations (no db id yet) cannot post comments because the
+ * `library_annotation_comments_*` RPC requires an integer annotation_id.
+ * In that state the ➕ button is disabled with an explanatory tooltip.
+ *
+ * Stateless w.r.t. parent state — receives `onAddComment` / `onDeleteComment`
+ * callbacks so the parent keeps its single source of truth.
+ */
+const AnnotationComments = ({ annot, onAddComment, onDeleteComment }) => {
+  const { t } = useTranslation();
+  const comments = Array.isArray(annot.comments) ? annot.comments : [];
+  const hasDbId = typeof annot.id === 'number';
+  const annotKey = String(annot.id ?? annot.client_id ?? '');
+
+  const [draft, setDraft] = useState('');
+  const [composing, setComposing] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const formatTime = (ts) => {
+    if (!ts) return '';
+    const d = new Date(ts);
+    return isNaN(d.getTime()) ? '' : d.toLocaleString();
+  };
+
+  const openCompose = () => {
+    setDraft('');
+    setComposing(true);
+  };
+
+  const cancelCompose = () => {
+    setDraft('');
+    setComposing(false);
+  };
+
+  const submitComment = async () => {
+    const content = draft.trim();
+    if (!content || busy || !hasDbId) return;
+    setBusy(true);
+    try {
+      const newComment = await onAddComment(annot.id, content);
+      if (newComment) {
+        setDraft('');
+        setComposing(false);
+      }
+    } catch (e) {
+      console.error('Failed to post comment:', e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDelete = async (commentId) => {
+    if (busy || !hasDbId) return;
+    setBusy(true);
+    try {
+      await onDeleteComment(annot.id, commentId);
+    } catch (e) {
+      console.error('Failed to delete comment:', e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="pdfv-annot-comments" data-annot-key={annotKey}>
+      {comments.length === 0 && !composing && (
+        <div className="pdfv-annot-comments-empty">
+          {t('annotation.noComments')}
+        </div>
+      )}
+
+      {comments.length > 0 && (
+        <div className="pdfv-annot-comments-list">
+          {comments.map((c) => (
+            <div key={c.id} className="pdfv-annot-comment-card">
+              <div className="pdfv-annot-comment-card-head">
+                <span className="pdfv-annot-comment-author">
+                  {c.author_name || t('annotation.authorYou')}
+                </span>
+                {c.created_at && (
+                  <span className="pdfv-annot-comment-time">
+                    {formatTime(c.created_at)}
+                  </span>
+                )}
+              </div>
+              <div className="pdfv-annot-comment-body">{c.content}</div>
+              <button
+                className="pdfv-annot-comment-delete"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(c.id);
+                }}
+                disabled={busy}
+                title={t('annotation.deleteComment')}
+              >
+                <Trash2 size={11} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {composing ? (
+        <div className="pdfv-annot-comments-composer">
+          <textarea
+            className="pdfv-annot-comments-input"
+            placeholder={t('annotation.addCommentPlaceholder')}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                submitComment();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelCompose();
+              }
+            }}
+            autoFocus
+            rows={2}
+          />
+          <div className="pdfv-annot-comments-actions">
+            <button
+              className="pdfv-annot-comments-cancel"
+              onClick={(e) => {
+                e.stopPropagation();
+                cancelCompose();
+              }}
+              disabled={busy}
+              title={t('annotation.cancelComment')}
+            >
+              <X size={12} />
+              {t('annotation.cancelComment')}
+            </button>
+            <button
+              className="pdfv-annot-comments-confirm"
+              onClick={(e) => {
+                e.stopPropagation();
+                submitComment();
+              }}
+              disabled={busy || !draft.trim()}
+              title={t('annotation.confirmComment')}
+            >
+              <Check size={12} />
+              {t('annotation.confirmComment')}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          className="pdfv-annot-comments-add"
+          onClick={(e) => {
+            e.stopPropagation();
+            openCompose();
+          }}
+          disabled={!hasDbId}
+          title={hasDbId ? t('annotation.addCommentPlaceholder') : t('annotation.commentPendingSync')}
+        >
+          <Plus size={12} />
+          {t('annotation.addComment')}
+        </button>
+      )}
+    </div>
+  );
+};
+
 const PdfViewerWindow = () => {
   const { t } = useTranslation();
   const params = parseHashParams();
@@ -629,9 +802,62 @@ const PdfViewerWindow = () => {
     [selection, itemId, sendMessage],
   );
 
-  const updateComment = useCallback((id, comment) => {
-    setAnnotations((prev) => prev.map((a) => (String(a.id) === String(id) ? { ...a, comment } : a)));
-  }, []);
+  // Append a comment to an existing annotation. Returns the new comment row
+  // (so the caller can detect success without separate flag plumbing).
+  const addAnnotationComment = useCallback(
+    async (annotationId, content) => {
+      if (!annotationId || !content?.trim()) return null;
+      try {
+        const resp = await sendMessage(
+          'library_annotation_comments_add',
+          { annotation_id: annotationId, content: content.trim() },
+          10000,
+        );
+        const newComment = resp?.data?.comment;
+        if (newComment) {
+          setAnnotations((prev) =>
+            prev.map((a) =>
+              String(a.id) === String(annotationId)
+                ? { ...a, comments: [...(a.comments || []), newComment] }
+                : a,
+            ),
+          );
+        }
+        return newComment || null;
+      } catch (e) {
+        console.error('Failed to add annotation comment:', e);
+        throw e;
+      }
+    },
+    [sendMessage],
+  );
+
+  const deleteAnnotationComment = useCallback(
+    async (annotationId, commentId) => {
+      if (!commentId) return;
+      try {
+        await sendMessage(
+          'library_annotation_comments_delete',
+          { comment_id: commentId },
+          10000,
+        );
+        setAnnotations((prev) =>
+          prev.map((a) =>
+            String(a.id) === String(annotationId)
+              ? {
+                  ...a,
+                  comments: (a.comments || []).filter((c) => c.id !== commentId),
+                }
+              : a,
+          ),
+        );
+      } catch (e) {
+        console.error('Failed to delete annotation comment:', e);
+        throw e;
+      }
+    },
+    [sendMessage],
+  );
 
   const deleteAnnotation = useCallback(
     async (id) => {
@@ -868,13 +1094,15 @@ const PdfViewerWindow = () => {
                       <span className="pdfv-annot-type">{annot.type}</span>
                     </div>
                     <div className="pdfv-annot-text">"{annot.text}"</div>
-                    <textarea
-                      className="pdfv-annot-comment"
-                      placeholder={t('pdfViewer.placeholderComment')}
-                      value={annot.comment}
-                      onChange={(e) => updateComment(annot.id, e.target.value)}
-                      onClick={(e) => e.stopPropagation()}
+
+                    {/* Annotation comments (thread). Replaces the legacy single
+                        `comment` field — see library_annotation_comments table. */}
+                    <AnnotationComments
+                      annot={annot}
+                      onAddComment={addAnnotationComment}
+                      onDeleteComment={deleteAnnotationComment}
                     />
+
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       <button
                         className="pdfv-annot-open-chat"

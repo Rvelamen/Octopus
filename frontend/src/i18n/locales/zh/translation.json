@@ -215,6 +215,11 @@
     "chatEmpty": "选中批注后点 Open Chat 开始对话",
     "filterEmpty": "暂无批注，先在 PDF 里选中文字添加吧",
     "deleteComment": "删除留言",
-    "authorYou": "你"
+    "authorYou": "你",
+    "noComments": "暂无留言",
+    "addComment": "添加留言",
+    "confirmComment": "确定",
+    "cancelComment": "取消",
+    "commentPendingSync": "正在同步到服务器，请稍候"
   }
 }

@@ -8,6 +8,7 @@ import contextlib
 import json
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from backend.data.database import Database
@@ -40,20 +41,94 @@ class PdfAnnotationChatMessage:
 
 
 class PdfAnnotationChatService:
-    """Service for annotation-bound PDF chat sessions and messages."""
+    """Service for annotation-bound PDF chat sessions and messages.
 
-    def __init__(self, db: Database | None = None):
-        self.db = db or Database()
+    NOTE: Chat tables live in the SAME SQLite file as `library_annotations`
+    (the workspace-scoped `.knowledge_index.db`), so the chat session's
+    FOREIGN KEY to `library_annotations.id` resolves correctly. The handler
+    passes the `LibraryEngine`'s db_path so we share its connection pool.
+    """
+
+    def __init__(self, db: Database | Path | str | None = None):
+        # Three acceptable inputs:
+        #   - Database instance (legacy / app.db) — kept for unit tests
+        #   - Path / str to a sqlite file — we open our own connection here
+        #     so the FK to library_annotations resolves.
+        if isinstance(db, Database):
+            self.db = db
+            self._owns_connection = False
+        else:
+            self.db_path = Path(db) if db is not None else Path(
+                Path.home() / ".octopus" / "app.db"
+            )
+            import sqlite3 as _sqlite3
+            self._local_conn = _sqlite3.connect(
+                str(self.db_path), check_same_thread=False
+            )
+            self._local_conn.row_factory = _sqlite3.Row
+            self._local_conn.execute("PRAGMA foreign_keys = ON")
+            self._local_conn.execute("PRAGMA journal_mode = WAL")
+            self._owns_connection = True
         self._ensure_schema()
 
-    def _ensure_schema(self) -> None:
-        """Idempotently create the chat tables and indexes.
+    def _get_connection(self):
+        """Return a sqlite3 connection (either our own or the wrapper's).
 
-        This service is wired up directly by the WebSocket handler without
-        going through LibraryEngine's bootstrap (which calls the legacy
-        migration runner). To stay self-contained, we run the same DDL here.
+        Used as `with self._get_conn() as conn: ...`. When we own the
+        connection we still commit on success / rollback on error, mirroring
+        the Database wrapper's behavior.
         """
-        with self.db._get_connection() as conn:
+        import contextlib
+        if self._owns_connection:
+            @contextlib.contextmanager
+            def _ctx():
+                try:
+                    yield self._local_conn
+                    self._local_conn.commit()
+                except Exception:
+                    self._local_conn.rollback()
+                    raise
+            return _ctx()
+        return self.db._get_connection()
+
+    def _ensure_schema(self) -> None:
+        """Idempotently create the chat tables and indexes on the shared db."""
+        conn = self._local_conn if self._owns_connection else None
+        if conn is not None:
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS pdf_annotation_chat_sessions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    item_id INTEGER,
+                    pdf_path TEXT,
+                    annotation_id INTEGER NOT NULL,
+                    title TEXT NOT NULL DEFAULT 'Annotation Chat',
+                    agent_config_id INTEGER,
+                    created_at TIMESTAMP DEFAULT (datetime('now','localtime')),
+                    updated_at TIMESTAMP DEFAULT (datetime('now','localtime'))
+                );
+                CREATE INDEX IF NOT EXISTS idx_pdf_annot_chat_sessions_annot
+                    ON pdf_annotation_chat_sessions(annotation_id);
+                CREATE INDEX IF NOT EXISTS idx_pdf_annot_chat_sessions_item
+                    ON pdf_annotation_chat_sessions(item_id);
+
+                CREATE TABLE IF NOT EXISTS pdf_annotation_chat_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id INTEGER NOT NULL,
+                    role TEXT NOT NULL,
+                    content TEXT NOT NULL DEFAULT '',
+                    page_number INTEGER,
+                    selected_text TEXT,
+                    metadata TEXT,
+                    created_at TIMESTAMP DEFAULT (datetime('now','localtime')),
+                    FOREIGN KEY (session_id) REFERENCES pdf_annotation_chat_sessions(id) ON DELETE CASCADE
+                );
+                CREATE INDEX IF NOT EXISTS idx_pdf_annot_chat_msgs_session
+                    ON pdf_annotation_chat_messages(session_id);
+            """)
+            conn.commit()
+            return
+
+        with self._get_connection() as conn:
             conn.executescript("""
                 CREATE TABLE IF NOT EXISTS pdf_annotation_chat_sessions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -93,7 +168,7 @@ class PdfAnnotationChatService:
         item_id: int | None = None,
         pdf_path: str | None = None,
     ) -> list[PdfAnnotationChatSession]:
-        with self.db._get_connection() as conn:
+        with self._get_connection() as conn:
             clauses: list[str] = []
             params: list[Any] = []
             if annotation_id is not None:
@@ -114,7 +189,7 @@ class PdfAnnotationChatService:
             return [self._row_to_session(row) for row in rows]
 
     def get_session(self, session_id: int) -> PdfAnnotationChatSession | None:
-        with self.db._get_connection() as conn:
+        with self._get_connection() as conn:
             row = conn.execute(
                 "SELECT * FROM pdf_annotation_chat_sessions WHERE id = ?",
                 (session_id,),
@@ -131,7 +206,7 @@ class PdfAnnotationChatService:
     ) -> PdfAnnotationChatSession:
         if annotation_id is None:
             raise ValueError("annotation_id is required for annotation chat sessions")
-        with self.db._get_connection() as conn:
+        with self._get_connection() as conn:
             cursor = conn.execute(
                 """
                 INSERT INTO pdf_annotation_chat_sessions
@@ -150,7 +225,7 @@ class PdfAnnotationChatService:
             return self._row_to_session(row)
 
     def update_session_title(self, session_id: int, title: str) -> None:
-        with self.db._get_connection() as conn:
+        with self._get_connection() as conn:
             conn.execute(
                 "UPDATE pdf_annotation_chat_sessions SET title = ?, "
                 "updated_at = datetime('now', 'localtime') WHERE id = ?",
@@ -158,7 +233,7 @@ class PdfAnnotationChatService:
             )
 
     def touch_session(self, session_id: int) -> None:
-        with self.db._get_connection() as conn:
+        with self._get_connection() as conn:
             conn.execute(
                 "UPDATE pdf_annotation_chat_sessions "
                 "SET updated_at = datetime('now', 'localtime') WHERE id = ?",
@@ -166,7 +241,7 @@ class PdfAnnotationChatService:
             )
 
     def delete_session(self, session_id: int) -> None:
-        with self.db._get_connection() as conn:
+        with self._get_connection() as conn:
             conn.execute(
                 "DELETE FROM pdf_annotation_chat_sessions WHERE id = ?", (session_id,)
             )
@@ -174,7 +249,7 @@ class PdfAnnotationChatService:
     # ── Messages ──
 
     def list_messages(self, session_id: int) -> list[PdfAnnotationChatMessage]:
-        with self.db._get_connection() as conn:
+        with self._get_connection() as conn:
             rows = conn.execute(
                 "SELECT * FROM pdf_annotation_chat_messages WHERE session_id = ? "
                 "ORDER BY created_at ASC, id ASC",
@@ -193,7 +268,7 @@ class PdfAnnotationChatService:
         tool_calls: list[dict[str, Any]] | None = None,
         tool_call_id: str | None = None,
     ) -> PdfAnnotationChatMessage:
-        with self.db._get_connection() as conn:
+        with self._get_connection() as conn:
             cursor = conn.execute(
                 """
                 INSERT INTO pdf_annotation_chat_messages
@@ -220,7 +295,7 @@ class PdfAnnotationChatService:
             return self._row_to_message(row)
 
     def delete_message(self, message_id: int) -> None:
-        with self.db._get_connection() as conn:
+        with self._get_connection() as conn:
             conn.execute(
                 "DELETE FROM pdf_annotation_chat_messages WHERE id = ?", (message_id,)
             )
