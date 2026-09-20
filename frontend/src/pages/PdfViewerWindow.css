@@ -496,6 +496,17 @@
   opacity: 0.3;
 }
 
+.pdfv-annot-comment-card-pending {
+  opacity: 0.65;
+}
+
+.pdfv-annot-comment-pending {
+  margin-left: auto;
+  font-size: 9.5px;
+  font-style: italic;
+  color: #888;
+}
+
 .pdfv-annot-comments-add {
   display: inline-flex;
   align-items: center;
@@ -1200,6 +1211,40 @@
 
 .pdfv-chat-msg-copy-btn:active {
   transform: scale(0.96);
+}
+
+/* "Add to annotation" button — sits to the LEFT of the copy button in the
+   same actions row. Shares base shape with the copy button; gets a slight
+   tint so users can distinguish the two at a glance. */
+.pdfv-chat-msg-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  margin-right: 6px;
+  border-radius: 6px;
+  border: 1px solid #3a4a5a;
+  background: #1f2a36;
+  color: #9bb7d8;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.pdfv-chat-msg-add-btn:hover:not(:disabled) {
+  background: #2a3a4c;
+  color: #cfe0f5;
+  border-color: #5a7a9a;
+}
+
+.pdfv-chat-msg-add-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.pdfv-chat-msg-add-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* ── User message quote (selected text) ── */

@@ -192,6 +192,9 @@
     "chatDone": "完成",
     "chatCopy": "复制",
     "chatCopied": "已复制",
+    "chatAddToAnnotation": "添加到批注",
+    "chatAddedToAnnotation": "已加入批注",
+    "chatAddToAnnotationNoTarget": "请先在侧栏选中批注后再试",
     "chatPlaceholderSelection": "对选区提问...",
     "chatPlaceholderGeneral": "提问...",
     "chatPromptSummary": "请总结这篇论文的核心内容、主要贡献和关键发现。",
@@ -220,6 +223,8 @@
     "addComment": "添加留言",
     "confirmComment": "确定",
     "cancelComment": "取消",
-    "commentPendingSync": "正在同步到服务器，请稍候"
+    "commentPendingSync": "正在同步到服务器，请稍候",
+    "commentSyncing": "同步中…",
+    "commentSyncFailed": "同步失败"
   }
 }

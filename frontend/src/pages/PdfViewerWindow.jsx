@@ -15,10 +15,11 @@ import {
   Check,
   ChevronDown,
   Network,
+  StickyNote,
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { useWebSocket } from '../contexts/WebSocketContext';
-import { useAnnotationChat } from './Knowledge/library/hooks/useAnnotationChat';
+import { usePdfChat } from './Knowledge/library/hooks/usePdfChat';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -234,10 +235,10 @@ const AnnotationComments = ({ annot, onAddComment, onDeleteComment }) => {
 
   const submitComment = async () => {
     const content = draft.trim();
-    if (!content || busy || !hasDbId) return;
+    if (!content || busy) return;
     setBusy(true);
     try {
-      const newComment = await onAddComment(annot.id, content);
+      const newComment = await onAddComment(annotKey, content);
       if (newComment) {
         setDraft('');
         setComposing(false);
@@ -249,11 +250,11 @@ const AnnotationComments = ({ annot, onAddComment, onDeleteComment }) => {
     }
   };
 
-  const handleDelete = async (commentId) => {
-    if (busy || !hasDbId) return;
+  const handleDelete = async (commentId, isPending) => {
+    if (busy) return;
     setBusy(true);
     try {
-      await onDeleteComment(annot.id, commentId);
+      await onDeleteComment(annotKey, commentId, isPending);
     } catch (e) {
       console.error('Failed to delete comment:', e);
     } finally {
@@ -271,32 +272,45 @@ const AnnotationComments = ({ annot, onAddComment, onDeleteComment }) => {
 
       {comments.length > 0 && (
         <div className="pdfv-annot-comments-list">
-          {comments.map((c) => (
-            <div key={c.id} className="pdfv-annot-comment-card">
-              <div className="pdfv-annot-comment-card-head">
-                <span className="pdfv-annot-comment-author">
-                  {c.author_name || t('annotation.authorYou')}
-                </span>
-                {c.created_at && (
-                  <span className="pdfv-annot-comment-time">
-                    {formatTime(c.created_at)}
-                  </span>
-                )}
-              </div>
-              <div className="pdfv-annot-comment-body">{c.content}</div>
-              <button
-                className="pdfv-annot-comment-delete"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(c.id);
-                }}
-                disabled={busy}
-                title={t('annotation.deleteComment')}
+          {comments.map((c) => {
+            const isPending = !!c._pending;
+            return (
+              <div
+                key={c.id ?? c._localId}
+                className={`pdfv-annot-comment-card${isPending ? ' pdfv-annot-comment-card-pending' : ''}`}
               >
-                <Trash2 size={11} />
-              </button>
-            </div>
-          ))}
+                <div className="pdfv-annot-comment-card-head">
+                  <span className="pdfv-annot-comment-author">
+                    {c.author_name || t('annotation.authorYou')}
+                  </span>
+                  {c.created_at && (
+                    <span className="pdfv-annot-comment-time">
+                      {formatTime(c.created_at)}
+                    </span>
+                  )}
+                  {isPending && (
+                    <span className="pdfv-annot-comment-pending">
+                      {c._pending === 'failed'
+                        ? t('annotation.commentSyncFailed')
+                        : t('annotation.commentSyncing')}
+                    </span>
+                  )}
+                </div>
+                <div className="pdfv-annot-comment-body">{c.content}</div>
+                <button
+                  className="pdfv-annot-comment-delete"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(c.id ?? c._localId, isPending);
+                  }}
+                  disabled={busy}
+                  title={t('annotation.deleteComment')}
+                >
+                  <Trash2 size={11} />
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -354,8 +368,11 @@ const AnnotationComments = ({ annot, onAddComment, onDeleteComment }) => {
             e.stopPropagation();
             openCompose();
           }}
-          disabled={!hasDbId}
-          title={hasDbId ? t('annotation.addCommentPlaceholder') : t('annotation.commentPendingSync')}
+          title={
+            hasDbId
+              ? t('annotation.addCommentPlaceholder')
+              : t('annotation.commentPendingSync')
+          }
         >
           <Plus size={12} />
           {t('annotation.addComment')}
@@ -397,6 +414,296 @@ const PdfViewerWindow = () => {
   const [isAnnotationFilterOpen, setIsAnnotationFilterOpen] = useState(false);
   const annotationFilterTriggerRef = useRef(null);
   const annotationFilterPanelRef = useRef(null);
+
+  // Pending comments queued against an optimistic annotation. Maps
+  // client_id (string) → [{ localId, content }]. Flushed to the backend
+  // once library_annotation_upsert returns with the real numeric id.
+  // Persisted to localStorage so a window-close mid-flush doesn't lose the
+  // comment — see persistPendingComments / replayPendingComments below.
+  const pendingCommentsByClientIdRef = useRef(new Map());
+  const pendingCommentsStorageKey = itemId ? `pdf-pending-comments:${itemId}` : null;
+
+  // Annotation ↔ chat session binding. Each annotation should reuse the same
+  // chat session across reopens ("对此批注对话" should not keep creating new
+  // threads). `pdf_chat_sessions` doesn't carry an annotation_id column, so
+  // we maintain this binding client-side, persisted to localStorage keyed by
+  // pdfPath so re-opening the same PDF restores the same mapping.
+  // Value: { sessionId: number, updatedAt: number } — updatedAt lets us age
+  // out bindings to deleted sessions.
+  const annotationSessionMapRef = useRef(new Map());
+  const annotationSessionMapStorageKey = pdfPath
+    ? `pdf-chat-session-map:${pdfPath}`
+    : null;
+
+  const persistPendingComments = useCallback(() => {
+    if (!pendingCommentsStorageKey) return;
+    const map = {};
+    for (const [cid, queue] of pendingCommentsByClientIdRef.current.entries()) {
+      if (queue.length > 0) map[cid] = queue;
+    }
+    if (Object.keys(map).length === 0) {
+      localStorage.removeItem(pendingCommentsStorageKey);
+    } else {
+      try {
+        localStorage.setItem(pendingCommentsStorageKey, JSON.stringify(map));
+      } catch (e) {
+        console.warn('Failed to persist pending comments:', e);
+      }
+    }
+  }, [pendingCommentsStorageKey]);
+
+  // Post queued optimistic comments to the backend now that the parent annotation
+  // has a real numeric id. Each pending comment is swapped in-place (matched by
+  // `_localId`) so the UI doesn't reorder the thread. On failure we mark the
+  // comment `_pending: 'failed'` and keep it in the queue (persisted) so the
+  // user can retry.
+  const flushPendingComments = useCallback(
+    async (clientId, dbId) => {
+      const queue = pendingCommentsByClientIdRef.current.get(clientId);
+      if (!queue || queue.length === 0) return;
+
+      const failedEntries = [];
+      for (const entry of queue) {
+        const { localId, content } = entry;
+        try {
+          const resp = await sendMessage(
+            'library_annotation_comments_add',
+            { annotation_id: dbId, content },
+            10000,
+          );
+          const real = resp?.data?.comment;
+          if (!real) {
+            failedEntries.push(entry);
+            continue;
+          }
+          setAnnotations((prev) =>
+            prev.map((a) =>
+              a.id === dbId
+                ? {
+                    ...a,
+                    comments: (a.comments || []).map((c) =>
+                      c._localId === localId
+                        ? { ...real, _localId: undefined, _pending: undefined, _clientId: undefined }
+                        : c,
+                    ),
+                  }
+                : a,
+            ),
+          );
+        } catch (e) {
+          console.error('Failed to flush pending comment:', e);
+          // Mark as failed so the UI can react if desired.
+          setAnnotations((prev) =>
+            prev.map((a) =>
+              a.id === dbId
+                ? {
+                    ...a,
+                    comments: (a.comments || []).map((c) =>
+                      c._localId === localId ? { ...c, _pending: 'failed' } : c,
+                    ),
+                  }
+                : a,
+            ),
+          );
+          failedEntries.push(entry);
+        }
+      }
+
+      // Persist the post-flush queue (drop successful entries, keep failures
+      // so they can be retried on next open / upsert).
+      if (failedEntries.length > 0) {
+        pendingCommentsByClientIdRef.current.set(clientId, failedEntries);
+        persistPendingComments();
+      } else {
+        pendingCommentsByClientIdRef.current.delete(clientId);
+        persistPendingComments();
+      }
+    },
+    [sendMessage, persistPendingComments],
+  );
+
+  const clearPendingCommentsFor = useCallback(
+    (clientId) => {
+      pendingCommentsByClientIdRef.current.delete(clientId);
+      persistPendingComments();
+    },
+    [persistPendingComments],
+  );
+
+  // ── Annotation ↔ chat session binding helpers ──
+  // Loaded eagerly on mount from localStorage so the first "对此批注对话"
+  // click after reopening the PDF still finds the same session.
+  useEffect(() => {
+    if (!annotationSessionMapStorageKey) return;
+    try {
+      const raw = localStorage.getItem(annotationSessionMapStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        annotationSessionMapRef.current = new Map(
+          Object.entries(parsed).map(([aid, val]) => [
+            aid,
+            { sessionId: val.sessionId, updatedAt: val.updatedAt ?? 0 },
+          ]),
+        );
+      }
+    } catch {}
+  }, [annotationSessionMapStorageKey]);
+
+  const persistAnnotationSessionMap = useCallback(() => {
+    if (!annotationSessionMapStorageKey) return;
+    const obj = {};
+    for (const [aid, val] of annotationSessionMapRef.current.entries()) {
+      obj[aid] = val;
+    }
+    try {
+      localStorage.setItem(
+        annotationSessionMapStorageKey,
+        JSON.stringify(obj),
+      );
+    } catch {}
+  }, [annotationSessionMapStorageKey]);
+
+  const bindAnnotationToSession = useCallback(
+    (annotationId, sessionId) => {
+      if (annotationId == null || sessionId == null) return;
+      annotationSessionMapRef.current.set(String(annotationId), {
+        sessionId,
+        updatedAt: Date.now(),
+      });
+      persistAnnotationSessionMap();
+    },
+    [persistAnnotationSessionMap],
+  );
+
+  const unbindAnnotationSession = useCallback(
+    (annotationId) => {
+      if (annotationId == null) return;
+      annotationSessionMapRef.current.delete(String(annotationId));
+      persistAnnotationSessionMap();
+    },
+    [persistAnnotationSessionMap],
+  );
+
+  // Resolve a usable session id for an annotation id. Returns the cached one
+  // if it still exists in `chatSessions`; otherwise returns null (caller
+  // should create a new session and bind it).
+  const resolveSessionForAnnotation = useCallback(
+    (annotationId, currentSessions) => {
+      if (annotationId == null) return null;
+      const entry = annotationSessionMapRef.current.get(String(annotationId));
+      if (!entry) return null;
+      const sessionStillExists = currentSessions.some(
+        (s) => s.id === entry.sessionId,
+      );
+      if (!sessionStillExists) {
+        // The bound session was deleted on the server — drop the stale
+        // binding so the next click creates a fresh one.
+        annotationSessionMapRef.current.delete(String(annotationId));
+        persistAnnotationSessionMap();
+        return null;
+      }
+      return entry.sessionId;
+    },
+    [persistAnnotationSessionMap],
+  );
+
+  // Replay any pending comments persisted from a previous session — happens
+  // when the user closed the PDF window mid-flush (before the optimistic
+  // annotation had a real db id, or before the comments_add RPC returned).
+  //
+  // For each {clientId -> [{localId, content}]} entry:
+  //   1. Try to find the annotation by client_id in the loaded set.
+  //   2. If found and now persisted (numeric id): add optimistic comments back
+  //      to the UI thread, re-queue them in the ref. Caller is responsible
+  //      for invoking flushPendingComments(clientId, dbId) afterwards to
+  //      actually post them to the backend.
+  //   3. If not yet persisted (annotation itself was lost): just drop the
+  //      queue — there's nowhere to attach it.
+  //   4. Dedup against already-synced comments by content + timestamp proximity
+  //      so we don't re-post if the server actually persisted it on the prior
+  //      flush attempt (e.g. RPC ack was lost mid-flight).
+  //
+  // Returns the list of (clientId, dbId) pairs whose queues still need to be
+  // flushed — caller must invoke flushPendingComments for each.
+  const replayPendingComments = useCallback(() => {
+    if (!pendingCommentsStorageKey) return [];
+    const raw = localStorage.getItem(pendingCommentsStorageKey);
+    if (!raw) return [];
+    let map;
+    try {
+      map = JSON.parse(raw);
+    } catch {
+      localStorage.removeItem(pendingCommentsStorageKey);
+      return [];
+    }
+    if (!map || typeof map !== 'object') return [];
+    const current = annotationsRef.current;
+    const toFlush = [];
+    for (const [clientId, queue] of Object.entries(map)) {
+      if (!Array.isArray(queue) || queue.length === 0) continue;
+      const annot = current.find((a) => a.client_id === clientId);
+      // Annotation lost — drop the queue.
+      if (!annot) continue;
+
+      // Existing comments on this annotation (post-load from DB).
+      const existing = Array.isArray(annot.comments) ? annot.comments : [];
+
+      if (typeof annot.id === 'number') {
+        // Dedup: skip entries that already match a real comment by content +
+        // timestamp proximity (within 60s — covers cases where the flush ack
+        // was lost but the comment did reach the server).
+        const freshEntries = queue.filter((entry) => {
+          return !existing.some(
+            (c) =>
+              c.content === entry.content &&
+              c.created_at &&
+              Math.abs(
+                (c.created_at > 1e12 ? c.created_at : c.created_at * 1000) -
+                  (entry.createdAt ?? 0),
+              ) < 60000,
+          );
+        });
+        if (freshEntries.length === 0) continue;
+
+        // Re-add optimistic cards to the UI thread and re-queue.
+        setAnnotations((prev) =>
+          prev.map((a) =>
+            a.client_id === clientId
+              ? {
+                  ...a,
+                  comments: [
+                    ...(a.comments || []),
+                    ...freshEntries.map((entry) => ({
+                      _localId: entry.localId,
+                      _pending: true,
+                      _clientId: clientId,
+                      content: entry.content,
+                      author_name: t('annotation.authorYou'),
+                      created_at: entry.createdAt ?? Date.now(),
+                    })),
+                  ],
+                }
+              : a,
+          ),
+        );
+        const refQueue =
+          pendingCommentsByClientIdRef.current.get(clientId) || [];
+        for (const entry of freshEntries) refQueue.push(entry);
+        pendingCommentsByClientIdRef.current.set(clientId, refQueue);
+        toFlush.push([clientId, annot.id]);
+        // Note: flushPendingComments will persist its own post-state.
+      } else {
+        // Annotation still optimistic (somehow — shouldn't happen after load,
+        // but safe to handle). Keep the queue intact for the upsert handler.
+        const refQueue =
+          pendingCommentsByClientIdRef.current.get(clientId) || [];
+        for (const entry of queue) refQueue.push(entry);
+        pendingCommentsByClientIdRef.current.set(clientId, refQueue);
+      }
+    }
+    return toFlush;
+  }, [pendingCommentsStorageKey, t]);
 
   // ── Resizable panels ──
   const [chatDrawerWidth, setChatDrawerWidth] = useState(360);
@@ -448,13 +755,12 @@ const PdfViewerWindow = () => {
     createSession: createChatSession,
     deleteSession: deleteChatSession,
     sendChat: sendPdfChat,
-  } = useAnnotationChat({
+  } = usePdfChat({
     sendMessage,
     subscribe,
     unsubscribe,
     itemId,
     pdfPath,
-    annotationId: chatAnnotationFilter,
   });
 
   // Collect all referenced passages from chat history for display
@@ -483,7 +789,8 @@ const PdfViewerWindow = () => {
   // optimistic state (id === client_id), we deferred setting the filter and
   // creating the session. Once the upsert returns and `annot.id` becomes a
   // number, this effect finishes the job so the chat drawer is wired up to
-  // the right annotation.
+  // the right annotation — and reuses the same chat session if we've already
+  // opened one for this annotation.
   useEffect(() => {
     if (!selectedAnnotationId) return;
     if (chatAnnotationFilter != null) return;
@@ -492,8 +799,25 @@ const PdfViewerWindow = () => {
     );
     if (!matched || typeof matched.id !== 'number') return;
     setChatAnnotationFilter(matched.id);
-    createChatSession('Annotation Chat', { annotation_id: matched.id });
-  }, [annotations, selectedAnnotationId, chatAnnotationFilter, createChatSession]);
+    const existingId = resolveSessionForAnnotation(matched.id, chatSessions);
+    if (existingId != null) {
+      setChatSessionId(existingId);
+    } else {
+      createChatSession('Annotation Chat').then((session) => {
+        if (session?.id != null) {
+          bindAnnotationToSession(matched.id, session.id);
+        }
+      });
+    }
+  }, [
+    annotations,
+    selectedAnnotationId,
+    chatAnnotationFilter,
+    createChatSession,
+    resolveSessionForAnnotation,
+    bindAnnotationToSession,
+    chatSessions,
+  ]);
 
   // Close the annotation filter dropdown on outside click / Escape
   useEffect(() => {
@@ -534,6 +858,11 @@ const PdfViewerWindow = () => {
         } catch {}
       }
       hasLoadedRef.current = true;
+      // No itemId → no server-side annotations to replay against; clear stale
+      // pending comments (no parent to attach them to).
+      try {
+        localStorage.removeItem('pdf-pending-comments:');
+      } catch {}
       return;
     }
     let cancelled = false;
@@ -546,6 +875,14 @@ const PdfViewerWindow = () => {
             if (response.data.annotations.length > 0) setShowSidebar(true);
           }
           hasLoadedRef.current = true;
+          // Replay any pending comments left over from a previous session
+          // (window was closed mid-flush) — see persistPendingComments above.
+          // Returns the list of (clientId, dbId) pairs whose queues were
+          // re-populated and need to be flushed to the backend.
+          const toFlush = replayPendingComments();
+          for (const [clientId, dbId] of toFlush) {
+            flushPendingComments(clientId, dbId);
+          }
         }
       } catch (e) {
         // Fallback to localStorage on error
@@ -560,12 +897,16 @@ const PdfViewerWindow = () => {
             } catch {}
           }
           hasLoadedRef.current = true;
+          const toFlush = replayPendingComments();
+          for (const [clientId, dbId] of toFlush) {
+            flushPendingComments(clientId, dbId);
+          }
         }
       }
     };
     loadAnnotations();
     return () => { cancelled = true; };
-  }, [itemId, pdfPath, sendMessage]);
+  }, [itemId, pdfPath, sendMessage, replayPendingComments, flushPendingComments]);
 
   // Save annotations to SQLite (and localStorage as local cache)
   useEffect(() => {
@@ -753,12 +1094,18 @@ const PdfViewerWindow = () => {
           setAnnotations((prev) =>
             prev.map((a) => (a.client_id === clientId ? { ...a, id: dbId } : a)),
           );
+          // If the chat filter was set optimistically to this annotation's
+          // client_id, swap to the real numeric id so the backend hook
+          // receives an integer.
+          setChatAnnotationFilter((prev) => (prev === clientId ? dbId : prev));
+          // Flush any comments queued against this optimistic annotation.
+          flushPendingComments(clientId, dbId);
         }
       } catch (e) {
         console.error('Failed to upsert highlight annotation:', e);
       }
     },
-    [selection, itemId, sendMessage],
+    [selection, itemId, sendMessage, flushPendingComments],
   );
 
   const addUnderline = useCallback(
@@ -794,30 +1141,75 @@ const PdfViewerWindow = () => {
           setAnnotations((prev) =>
             prev.map((a) => (a.client_id === clientId ? { ...a, id: dbId } : a)),
           );
+          // If the chat filter was set optimistically to this annotation's
+          // client_id, swap to the real numeric id so the backend hook
+          // receives an integer.
+          setChatAnnotationFilter((prev) => (prev === clientId ? dbId : prev));
+          // Flush any comments queued against this optimistic annotation.
+          flushPendingComments(clientId, dbId);
         }
       } catch (e) {
         console.error('Failed to upsert underline annotation:', e);
       }
     },
-    [selection, itemId, sendMessage],
+    [selection, itemId, sendMessage, flushPendingComments],
   );
 
-  // Append a comment to an existing annotation. Returns the new comment row
-  // (so the caller can detect success without separate flag plumbing).
+  // Append a comment to an existing annotation. `annotationKey` may be either
+  // the numeric id (stringified) or the optimistic client_id. When the
+  // annotation is still optimistic (no numeric id yet), the comment is queued
+  // locally and flushed to the backend once library_annotation_upsert
+  // returns — see flushPendingComments above.
   const addAnnotationComment = useCallback(
-    async (annotationId, content) => {
-      if (!annotationId || !content?.trim()) return null;
+    async (annotationKey, content) => {
+      if (!annotationKey || !content?.trim()) return null;
+      const contentTrim = content.trim();
+
+      // Locate the annotation by either id or client_id.
+      const target = annotationsRef.current.find(
+        (a) => String(a.id) === annotationKey || a.client_id === annotationKey,
+      );
+      if (!target) return null;
+      const hasDbId = typeof target.id === 'number';
+
+      // Optimistic path: queue locally, the upsert success handler will flush.
+      if (!hasDbId) {
+        const localId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const optimistic = {
+          _localId: localId,
+          _pending: true,
+          _clientId: target.client_id,
+          content: contentTrim,
+          author_name: t('annotation.authorYou'),
+          created_at: Date.now(),
+        };
+        setAnnotations((prev) =>
+          prev.map((a) =>
+            a.client_id === target.client_id
+              ? { ...a, comments: [...(a.comments || []), optimistic] }
+              : a,
+          ),
+        );
+        const queue = pendingCommentsByClientIdRef.current.get(target.client_id) || [];
+        queue.push({ localId, content: contentTrim });
+        pendingCommentsByClientIdRef.current.set(target.client_id, queue);
+        // Persist so a window-close mid-flush doesn't drop the comment.
+        persistPendingComments();
+        return optimistic;
+      }
+
+      // Persisted path: call the RPC directly.
       try {
         const resp = await sendMessage(
           'library_annotation_comments_add',
-          { annotation_id: annotationId, content: content.trim() },
+          { annotation_id: target.id, content: contentTrim },
           10000,
         );
         const newComment = resp?.data?.comment;
         if (newComment) {
           setAnnotations((prev) =>
             prev.map((a) =>
-              String(a.id) === String(annotationId)
+              a.id === target.id
                 ? { ...a, comments: [...(a.comments || []), newComment] }
                 : a,
             ),
@@ -829,12 +1221,43 @@ const PdfViewerWindow = () => {
         throw e;
       }
     },
-    [sendMessage],
+    [sendMessage, t, persistPendingComments],
   );
 
   const deleteAnnotationComment = useCallback(
-    async (annotationId, commentId) => {
+    async (annotationKey, commentId, isPending) => {
       if (!commentId) return;
+
+      // Pending comment: never reached the backend, just drop it locally.
+      if (isPending) {
+        const target = annotationsRef.current.find(
+          (a) => String(a.id) === annotationKey || a.client_id === annotationKey,
+        );
+        if (!target) return;
+        const clientId = target.client_id;
+        // Remove from the flush queue so it won't fire later.
+        const queue = pendingCommentsByClientIdRef.current.get(clientId);
+        if (queue) {
+          pendingCommentsByClientIdRef.current.set(
+            clientId,
+            queue.filter((q) => q.localId !== commentId),
+          );
+          persistPendingComments();
+        }
+        setAnnotations((prev) =>
+          prev.map((a) =>
+            a.client_id === clientId
+              ? {
+                  ...a,
+                  comments: (a.comments || []).filter((c) => c._localId !== commentId),
+                }
+              : a,
+          ),
+        );
+        return;
+      }
+
+      // Persisted comment: delete on backend, then drop from local state.
       try {
         await sendMessage(
           'library_annotation_comments_delete',
@@ -843,7 +1266,7 @@ const PdfViewerWindow = () => {
         );
         setAnnotations((prev) =>
           prev.map((a) =>
-            String(a.id) === String(annotationId)
+            String(a.id) === String(annotationKey)
               ? {
                   ...a,
                   comments: (a.comments || []).filter((c) => c.id !== commentId),
@@ -856,7 +1279,7 @@ const PdfViewerWindow = () => {
         throw e;
       }
     },
-    [sendMessage],
+    [sendMessage, persistPendingComments],
   );
 
   const deleteAnnotation = useCallback(
@@ -950,23 +1373,56 @@ const PdfViewerWindow = () => {
   // Open the chat drawer locked to a single annotation. If the annotation hasn't
   // been persisted yet (id is still the client-side uuid), just open the drawer;
   // the chat hook will fall back to creating a session once upsert completes.
+  // Also seeds `chatSelection` with the annotation's text/page so the Context
+  // block shows the full annotation text and the chat agent receives it as
+  // `selected_text` / `page_number` (see usePdfChat.sendChat).
+  //
+  // Session reuse: each annotation is permanently bound to ONE chat session
+  // (`annotationSessionMapRef`). Reopening the same annotation's chat always
+  // reuses that session — no duplicate threads.
   const handleOpenChatForAnnotation = useCallback(
     (annot) => {
       if (!annot) return;
-      // Open the chat drawer immediately so the user sees feedback. We only
-      // set the filter (and pre-create a session) when we have the real db
-      // id — the optimistic `client_id` is a string and is meaningless to the
-      // backend, which expects an integer annotation_id.
+      // Open the chat drawer immediately so the user sees feedback.
       setShowChatDrawer(true);
       setSelectedAnnotationId(annot.id ?? annot.client_id);
       scrollToAnnotation(annot.id ?? annot.client_id);
+      // Seed the context block with the annotation's own text. Only do this
+      // when the annotation actually has text — for empty "note"-style rows
+      // we leave chatSelection null so the user isn't shown an empty quote.
+      if (annot.text) {
+        setChatSelection({ text: annot.text, page: annot.page });
+      }
+      // Lock the dropdown to this annotation. We accept both numeric ids and
+      // the optimistic client_id string — the dropdown lookup matches by either,
+      // and the upsert success handlers remap client_id → numeric id so the
+      // backend hook receives a real integer.
+      setChatAnnotationFilter(annot.id ?? annot.client_id ?? null);
       if (typeof annot.id === 'number') {
-        setChatAnnotationFilter(annot.id);
-        // Fire-and-forget; createSession hook will set currentSessionId when done.
-        createChatSession('Annotation Chat', { annotation_id: annot.id });
+        // Try to reuse an existing session bound to this annotation. The
+        // session id is the numeric one we got back from createSession().
+        const existingId = resolveSessionForAnnotation(annot.id, chatSessions);
+        if (existingId != null) {
+          setChatSessionId(existingId);
+        } else {
+          // No binding (or stale binding for a deleted session) — create a
+          // fresh one and remember it. createChatSession returns the new
+          // session; we bind it via a microtask so setChatSessionId lands.
+          createChatSession('Annotation Chat').then((session) => {
+            if (session?.id != null) {
+              bindAnnotationToSession(annot.id, session.id);
+            }
+          });
+        }
       }
     },
-    [createChatSession, scrollToAnnotation],
+    [
+      createChatSession,
+      scrollToAnnotation,
+      resolveSessionForAnnotation,
+      bindAnnotationToSession,
+      chatSessions,
+    ],
   );
 
   const handleSendChat = useCallback(async (input) => {
@@ -988,6 +1444,61 @@ const PdfViewerWindow = () => {
       console.error('Failed to copy:', err);
     }
   };
+
+  // Insert an assistant chat reply into the comment thread of the annotation
+  // currently locked in the chat drawer's filter dropdown. If no annotation is
+  // selected (`chatAnnotationFilter` is null or points at an optimistic row
+  // without a db id yet), we surface a brief inline toast and do nothing.
+  //
+  // We piggy-back on `addAnnotationComment`, which already handles the
+  // optimistic-annotation queue + flush-after-upsert dance, so this works
+  // uniformly whether the parent annotation is already persisted or still
+  // waiting on its upsert.
+  const [addedToAnnotationMsgId, setAddedToAnnotationMsgId] = useState(null);
+  const [addToAnnotationErrorMsgId, setAddToAnnotationErrorMsgId] = useState(null);
+  const handleAddToAnnotation = useCallback(
+    async (msg) => {
+      const filter = chatAnnotationFilter;
+      if (filter == null) {
+        setAddToAnnotationErrorMsgId(msg.id);
+        setTimeout(
+          () => setAddToAnnotationErrorMsgId((cur) => (cur === msg.id ? null : cur)),
+          2200,
+        );
+        return;
+      }
+      // Resolve the actual annotation row + require a db id (the comments
+      // RPC requires an integer annotation_id).
+      const target = annotationsRef.current.find(
+        (a) =>
+          String(a.id) === String(filter) || a.client_id === filter,
+      );
+      if (!target || typeof target.id !== 'number') {
+        setAddToAnnotationErrorMsgId(msg.id);
+        setTimeout(
+          () => setAddToAnnotationErrorMsgId((cur) => (cur === msg.id ? null : cur)),
+          2200,
+        );
+        return;
+      }
+      try {
+        await addAnnotationComment(String(target.id), msg.content || '');
+        setAddedToAnnotationMsgId(msg.id);
+        setTimeout(
+          () => setAddedToAnnotationMsgId((cur) => (cur === msg.id ? null : cur)),
+          2000,
+        );
+      } catch (e) {
+        console.error('Failed to add chat reply to annotation comment:', e);
+        setAddToAnnotationErrorMsgId(msg.id);
+        setTimeout(
+          () => setAddToAnnotationErrorMsgId((cur) => (cur === msg.id ? null : cur)),
+          2200,
+        );
+      }
+    },
+    [chatAnnotationFilter, addAnnotationComment],
+  );
 
   if (loading) {
     return (
@@ -1158,10 +1669,17 @@ const PdfViewerWindow = () => {
             <div className="pdfv-chat-annotation-filter">
               {(() => {
                 const annotList = Array.isArray(annotations) ? annotations : [];
+                // chatAnnotationFilter may be a numeric id or a client_id string
+                // (set optimistically by handleOpenChatForAnnotation before the
+                // annotation is persisted). Match either form.
                 const selectedAnnot =
                   chatAnnotationFilter == null
                     ? null
-                    : annotList.find((a) => a.id === chatAnnotationFilter) || null;
+                    : annotList.find(
+                        (a) =>
+                          String(a.id) === String(chatAnnotationFilter) ||
+                          a.client_id === chatAnnotationFilter,
+                      ) || null;
                 const triggerColor = selectedAnnot?.color || '#4a9eff';
                 const triggerPreview = selectedAnnot
                   ? (selectedAnnot.text || '').slice(0, 50) +
@@ -1240,6 +1758,24 @@ const PdfViewerWindow = () => {
                                   onClick={() => {
                                     setChatAnnotationFilter(a.id);
                                     setIsAnnotationFilterOpen(false);
+                                    // Reuse the session bound to this
+                                    // annotation. If we've never opened chat
+                                    // for it, create one and bind it.
+                                    const existingId = resolveSessionForAnnotation(
+                                      a.id,
+                                      chatSessions,
+                                    );
+                                    if (existingId != null) {
+                                      setChatSessionId(existingId);
+                                    } else {
+                                      createChatSession('Annotation Chat').then(
+                                        (session) => {
+                                          if (session?.id != null) {
+                                            bindAnnotationToSession(a.id, session.id);
+                                          }
+                                        },
+                                      );
+                                    }
                                   }}
                                 >
                                   <span
@@ -1390,6 +1926,34 @@ const PdfViewerWindow = () => {
                             </ReactMarkdown>
                             {msg.content?.trim() && (
                               <div className="pdfv-chat-msg-actions">
+                                <button
+                                  type="button"
+                                  className="pdfv-chat-msg-add-btn"
+                                  onClick={() => handleAddToAnnotation(msg)}
+                                  title={
+                                    chatAnnotationFilter == null
+                                      ? t('pdfViewer.chatAddToAnnotationNoTarget')
+                                      : t('pdfViewer.chatAddToAnnotation')
+                                  }
+                                  disabled={chatAnnotationFilter == null}
+                                >
+                                  {addedToAnnotationMsgId === msg.id ? (
+                                    <>
+                                      <Check size={12} />
+                                      <span>{t('pdfViewer.chatAddedToAnnotation')}</span>
+                                    </>
+                                  ) : addToAnnotationErrorMsgId === msg.id ? (
+                                    <>
+                                      <X size={12} />
+                                      <span>{t('pdfViewer.chatAddToAnnotationNoTarget')}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <StickyNote size={12} />
+                                      <span>{t('pdfViewer.chatAddToAnnotation')}</span>
+                                    </>
+                                  )}
+                                </button>
                                 <button
                                   type="button"
                                   className="pdfv-chat-msg-copy-btn"

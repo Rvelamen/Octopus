@@ -1263,7 +1263,7 @@ JSON output:"""
                 INSERT INTO library_annotations
                     (item_id, page, type, color, text, comment, rects, client_id, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(client_id) DO UPDATE SET
+                ON CONFLICT(client_id) WHERE client_id IS NOT NULL DO UPDATE SET
                     page = excluded.page,
                     type = excluded.type,
                     color = excluded.color,
@@ -1324,7 +1324,7 @@ JSON output:"""
             INSERT INTO library_annotations
                 (item_id, page, type, color, text, comment, rects, client_id, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(client_id) DO UPDATE SET
+            ON CONFLICT(client_id) WHERE client_id IS NOT NULL DO UPDATE SET
                 page = excluded.page,
                 type = excluded.type,
                 color = excluded.color,

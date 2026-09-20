@@ -192,6 +192,9 @@
     "chatDone": "Done",
     "chatCopy": "Copy",
     "chatCopied": "Copied",
+    "chatAddToAnnotation": "Add to annotation",
+    "chatAddedToAnnotation": "Added to annotation",
+    "chatAddToAnnotationNoTarget": "Select an annotation in the sidebar first",
     "chatPlaceholderSelection": "Ask about the selection...",
     "chatPlaceholderGeneral": "Ask a question...",
     "chatPromptSummary": "Please summarize the paper's core content, main contributions, and key findings.",
@@ -220,6 +223,8 @@
     "addComment": "Add comment",
     "confirmComment": "Confirm",
     "cancelComment": "Cancel",
-    "commentPendingSync": "Saving to server... please wait"
+    "commentPendingSync": "Saving to server... please wait",
+    "commentSyncing": "Syncing…",
+    "commentSyncFailed": "Sync failed"
   }
 }
