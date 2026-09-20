@@ -1,5 +1,6 @@
 """Context compression for managing conversation history length."""
 
+import asyncio
 import json
 from collections.abc import Callable
 from pathlib import Path
@@ -542,16 +543,23 @@ Please generate a complete structured summary that integrates both the previous 
             self.sessions.db.mark_messages_compressed(instance_id, message_ids)
 
         # 触发 observation 提取（通过独立的 ObservationManager）
+        # Fire-and-forget：压缩摘要本身已经阻塞过了，抽取是 best-effort。
         if instance_id and self.observation_manager:
             try:
-                saved_count = await self.observation_manager.extract_from_messages(
-                    session_instance_id=instance_id,
-                    messages=to_compress,
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop is not None:
+                loop.create_task(
+                    self.observation_manager.extract_from_messages(
+                        session_instance_id=instance_id,
+                        messages=to_compress,
+                    )
                 )
-                if saved_count:
-                    compression_logger.info(f"Extracted and saved {saved_count} observations")
-            except Exception as e:
-                compression_logger.warning(f"Observation extraction after compression failed: {e}")
+            else:
+                compression_logger.warning(
+                    "No running event loop; skipping async observation extraction"
+                )
 
         # 重建消息列表：系统消息 + 保留的尾部消息
         system_messages = [m for m in session.messages if m.get("role") == "system"]

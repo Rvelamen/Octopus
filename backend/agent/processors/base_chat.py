@@ -554,12 +554,25 @@ class BaseChatProcessor(MessageProcessor):
             session, prompt_tokens=last_prompt_tokens, model_context_window=model_context_window
         )
 
+        # Fire-and-forget memory extraction so it doesn't add latency to the
+        # user-perceived reply time. Errors are logged inside sync_turn; we
+        # deliberately do not await this.
         if self.agent_loop.memory_manager:
-            await self.agent_loop.memory_manager.sync_turn(
-                user_msg=msg.content,
-                assistant_msg=final_content or "",
-                session_instance_id=session_instance_id,
-            )
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop is not None:
+                loop.create_task(
+                    self.agent_loop.memory_manager.sync_turn(
+                        user_msg=msg.content,
+                        assistant_msg=final_content or "",
+                        session_instance_id=session_instance_id,
+                    )
+                )
+            else:
+                # No running loop (shouldn't happen in normal flow) — skip rather than block.
+                logger.warning("No running event loop; skipping async memory sync_turn")
 
         # ---- Persist elapsed_ms ----
         if session_instance_id and final_content is not None:
