@@ -316,8 +316,8 @@ class SessionGetMessagesHandler(MessageHandler):
                 return
 
             compressed = repo.get_compressed_context(instance_id)
-            messages = repo.get_uncompressed_messages(instance_id, limit=limit, offset=offset)
-            total = repo.get_message_count_by_compression(instance_id, is_compressed=False)
+            messages = repo.get_messages(instance_id, limit=limit, offset=offset)
+            total = repo.get_message_count(instance_id)
             compressed_total = repo.get_message_count_by_compression(
                 instance_id, is_compressed=True
             )
@@ -352,6 +352,7 @@ class SessionGetMessagesHandler(MessageHandler):
                         "content": msg.content,
                         "timestamp": msg.timestamp.isoformat(),
                         "metadata": msg.metadata,
+                        "is_compressed": msg.is_compressed,
                     }
                     for msg in messages
                 ]
@@ -397,8 +398,8 @@ class SessionGetMessagesHandler(MessageHandler):
                 return
 
             compressed = repo.get_compressed_context(instance_id)
-            messages = repo.get_uncompressed_messages(instance_id, limit=limit, offset=offset)
-            total = repo.get_message_count_by_compression(instance_id, is_compressed=False)
+            messages = repo.get_messages(instance_id, limit=limit, offset=offset)
+            total = repo.get_message_count(instance_id)
             compressed_total = repo.get_message_count_by_compression(
                 instance_id, is_compressed=True
             )
@@ -433,6 +434,7 @@ class SessionGetMessagesHandler(MessageHandler):
                         "content": msg.content,
                         "timestamp": msg.timestamp.isoformat(),
                         "metadata": msg.metadata,
+                        "is_compressed": msg.is_compressed,
                     }
                     for msg in messages
                 ]
@@ -1042,7 +1044,9 @@ class SessionGetContextStatsHandler(MessageHandler):
                         "current_tokens": current_tokens,
                         "max_tokens": max_tokens,
                         "percentage": (
-                            round((current_tokens / max_tokens) * 100, 1) if max_tokens > 0 else 0
+                            min(100, max(0, round((current_tokens / max_tokens) * 100, 1)))
+                            if max_tokens > 0
+                            else 0
                         ),
                         "compressed_count": (
                             compressed_info.get("compressed_count", 0) if compressed_info else 0

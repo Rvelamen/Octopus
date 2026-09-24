@@ -51,6 +51,7 @@ class MessageRecord:
     content: str
     timestamp: datetime
     metadata: dict[str, Any]
+    is_compressed: bool = False
 
 
 class SessionRepository:
@@ -641,4 +642,5 @@ class SessionRepository:
             content=row["content"],
             timestamp=datetime.fromisoformat(row["timestamp"]),
             metadata=json.loads(row["metadata"]),
+            is_compressed=bool(row["is_compressed"]),
         )

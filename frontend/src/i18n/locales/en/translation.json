@@ -79,7 +79,14 @@
     "compressingShort": "Compressing...",
     "compressContext": "Compress context",
     "stop": "Stop generation",
-    "send": "Send message"
+    "send": "Send message",
+    "compressed": {
+      "label": "{{count}} compressed messages",
+      "expand": "Show original",
+      "collapse": "Hide",
+      "compressedAt": "Compressed at {{time}}",
+      "range": "{{firstTime}} — {{lastTime}}"
+    }
   },
   "config": {
     "title": "SYSTEM CONFIGURATION",

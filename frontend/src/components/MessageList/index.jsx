@@ -5,6 +5,7 @@ import IterationFold from './IterationFold.jsx';
 import CompressionSummary from './CompressionSummary.jsx';
 import SubagentSyncFold from './SubagentSyncFold.jsx';
 import StreamingMessageContent from './StreamingMessageContent.jsx';
+import CompressedMessagesFold from './CompressedMessagesFold.jsx';
 import './MessageList.css';
 
 function isToolResultMessage(msg) {
@@ -57,6 +58,8 @@ function buildDisplayList(messages) {
   let lastAssistantUsage = null;
   let lastElapsedMs = null;
   let pendingThoughtStoppedByUser = false;
+  let pendingCompressed = [];
+  let compressedKeySeed = 0;
 
   const flushThought = (usage = lastAssistantUsage, elapsed = lastElapsedMs) => {
     if (pendingSegments.length === 0) return;
@@ -75,11 +78,33 @@ function buildDisplayList(messages) {
     pendingThoughtStoppedByUser = false;
   };
 
+  const flushCompressed = () => {
+    if (pendingCompressed.length === 0) return;
+    compressedKeySeed += 1;
+    const first = pendingCompressed[0];
+    const last = pendingCompressed[pendingCompressed.length - 1];
+    const compressedAt =
+      last.metadata?.compression_at ||
+      last.metadata?.compression_info?.compressed_at ||
+      last.timestamp;
+    out.push({
+      type: 'compressed_fold',
+      key: `compressed-${compressedKeySeed}`,
+      messages: pendingCompressed,
+      count: pendingCompressed.length,
+      compressedAt,
+      firstRole: first.role,
+      firstTimestamp: first.timestamp,
+    });
+    pendingCompressed = [];
+  };
+
   for (let i = 0; i < messages.length; i += 1) {
     const msg = messages[i];
 
     if (msg.metadata?.is_summary || msg.metadata?.message_type === 'context_summary') {
       flushThought();
+      flushCompressed();
       out.push({
         type: 'compression_summary',
         message: msg,
@@ -96,6 +121,7 @@ function buildDisplayList(messages) {
           // subagent 的 token 不累计到主 agent 的 message usage 中，
           // 因为 subagent 的 iterations 不会出现在主上下文中
           flushThought();
+          flushCompressed();
           out.push({
             type: 'subagent_sync',
             message: msg,
@@ -106,6 +132,13 @@ function buildDisplayList(messages) {
       } catch (e) {
         // 不是 JSON，按普通 tool result 处理
       }
+    }
+
+    // 累积已压缩但非 summary / subagent 的消息 → 显示为 compressed_fold
+    if (msg.is_compressed === true) {
+      flushThought();
+      pendingCompressed.push(msg);
+      continue;
     }
 
     if (isToolResultMessage(msg)) {
@@ -149,6 +182,7 @@ function buildDisplayList(messages) {
       // This is a final assistant message without tool calls
       // It should be displayed as a normal message, but we can include usage
       flushThought();
+      flushCompressed();
       out.push({
         type: 'normal',
         message: msg,
@@ -159,6 +193,7 @@ function buildDisplayList(messages) {
     }
 
     flushThought();
+    flushCompressed();
 
     out.push({
       type: 'normal',
@@ -168,6 +203,7 @@ function buildDisplayList(messages) {
   }
 
   flushThought();
+  flushCompressed();
   return out;
 }
 
@@ -343,6 +379,19 @@ function MessageList({
             <SubagentSyncFold
               key={item.message.id || idx}
               result={item.result}
+            />
+          );
+        }
+
+        if (item.type === 'compressed_fold') {
+          return (
+            <CompressedMessagesFold
+              key={item.key}
+              count={item.count}
+              compressedAt={item.compressedAt}
+              messages={item.messages}
+              formatTime={formatTime}
+              renderMessageContent={renderMessageContent}
             />
           );
         }

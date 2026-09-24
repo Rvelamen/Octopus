@@ -79,7 +79,14 @@
     "compressingShort": "压缩中...",
     "compressContext": "压缩上下文",
     "stop": "停止生成",
-    "send": "发送消息"
+    "send": "发送消息",
+    "compressed": {
+      "label": "已压缩 {{count}} 条消息",
+      "expand": "展开查看",
+      "collapse": "收起",
+      "compressedAt": "压缩于 {{time}}",
+      "range": "{{firstTime}} — {{lastTime}}"
+    }
   },
   "config": {
     "title": "系统配置",
