@@ -1482,10 +1482,19 @@ const PdfViewerWindow = () => {
   const openChatWithSelection = useCallback(() => {
     if (!selection?.text) return;
     setChatSelection({ text: selection.text, page: selection.page });
+    // Clear any annotation filter so the new chat isn't locked to a stale
+    // annotation context — this click is about the live text selection.
+    setChatAnnotationFilter(null);
+    // Always spin up a brand-new session for a text-selection chat. Selection
+    // chats are ephemeral (no binding map like annotations) and the user
+    // expects "click chat on selection → fresh thread", mirroring the
+    // "click chat on annotation → Annotation Chat" flow in
+    // handleOpenChatForAnnotation below.
+    createChatSession('Selection Chat');
     setShowChatDrawer(true);
     setShowToolbar(false);
     window.getSelection().removeAllRanges();
-  }, [selection]);
+  }, [selection, createChatSession]);
 
   const closeChatDrawer = useCallback(() => {
     setShowChatDrawer(false);
