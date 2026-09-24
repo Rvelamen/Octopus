@@ -513,6 +513,12 @@ const PdfViewerWindow = () => {
   const annotationFilterTriggerRef = useRef(null);
   const annotationFilterPanelRef = useRef(null);
 
+  // Reading-position resume: read on mount, debounce-write on currentPage change.
+  // `positionRestoredRef` guards the save effect so the initial setCurrentPage(1)
+  // during PDF load doesn't clobber a previously-saved page.
+  const positionRestoredRef = useRef(false);
+  const savePositionTimerRef = useRef(null);
+
   // Pending comments queued against an optimistic annotation. Maps
   // client_id (string) → [{ localId, content }]. Flushed to the backend
   // once library_annotation_upsert returns with the real numeric id.
@@ -1081,7 +1087,43 @@ const PdfViewerWindow = () => {
         if (cancelled) return;
         setPdf(pdfDocument);
         setNumPages(pdfDocument.numPages);
-        setCurrentPage(1);
+        // Reset the resume guard — a new PDF (or reload after re-mount) gets
+        // a fresh restore cycle. We clear it BEFORE reading localStorage so
+        // the save effect can't fire on the intermediate setCurrentPage(1)
+        // and overwrite the persisted value with a stale "1".
+        positionRestoredRef.current = false;
+        // Reading-position resume: pull the last page the user was on for
+        // this PDF from localStorage. Clamp against the new numPages so a
+        // shortened PDF doesn't try to scroll past the end.
+        const positionKey = pdfPath ? `pdf-position:${pdfPath}/main.pdf` : null;
+        let savedPage = 1;
+        if (positionKey) {
+          try {
+            const raw = localStorage.getItem(positionKey);
+            if (raw) {
+              const n = parseInt(raw, 10);
+              if (Number.isFinite(n) && n >= 1 && n <= pdfDocument.numPages) savedPage = n;
+            }
+          } catch { /* localStorage may throw in private mode */ }
+        }
+        setCurrentPage(savedPage);
+        positionRestoredRef.current = true;
+        // Wait for the Page containers to mount and the layout to settle.
+        // We retry across animation frames because pageRefs and viewportSize
+        // (which determines each page's rendered height) settle over more
+        // than one frame — pdf.getPage() in PdfPage is async, so a freshly
+        // mounted page container may still be at its default 600×800 size.
+        let frames = 0;
+        const tryScroll = () => {
+          if (cancelled) return;
+          const el = document.querySelector(`[data-page-number="${savedPage}"]`);
+          if (!el || !contentRef.current) {
+            if (frames++ < 10) requestAnimationFrame(tryScroll);
+            return;
+          }
+          contentRef.current.scrollTo({ top: el.offsetTop - 20, behavior: 'auto' });
+        };
+        requestAnimationFrame(tryScroll);
         // Best-effort: fetch the PDF's outline (bookmarks). Some PDFs have none;
         // resolveOutline returns [] in that case, which the sidebar renders as
         // an empty-state hint. Failures are swallowed so a malformed outline
@@ -1106,6 +1148,44 @@ const PdfViewerWindow = () => {
     loadPdf();
     return () => { cancelled = true; };
   }, [pdfPath, sendMessage]);
+
+  // Persist reading position (debounced 500ms). Skips until positionRestoredRef
+  // is set so the brief setCurrentPage(1) at load time can't clobber a real
+  // saved value. Key mirrors the annotations convention (`pdf-*` prefix,
+  // scoped by pdfPath).
+  useEffect(() => {
+    if (!positionRestoredRef.current) return;
+    if (!pdfPath || !currentPage) return;
+    const key = `pdf-position:${pdfPath}/main.pdf`;
+    if (savePositionTimerRef.current) clearTimeout(savePositionTimerRef.current);
+    savePositionTimerRef.current = setTimeout(() => {
+      try { localStorage.setItem(key, String(currentPage)); }
+      catch { /* localStorage may throw in private mode */ }
+    }, 500);
+    return () => {
+      if (savePositionTimerRef.current) clearTimeout(savePositionTimerRef.current);
+    };
+  }, [currentPage, pdfPath]);
+
+  // Flush any pending save immediately when the window is being closed, so a
+  // scroll-to-close sequence within the 500ms debounce window still persists.
+  useEffect(() => {
+    const flush = () => {
+      if (savePositionTimerRef.current) {
+        clearTimeout(savePositionTimerRef.current);
+        savePositionTimerRef.current = null;
+        if (pdfPath && currentPage && positionRestoredRef.current) {
+          try { localStorage.setItem(`pdf-position:${pdfPath}/main.pdf`, String(currentPage)); } catch {}
+        }
+      }
+    };
+    window.addEventListener('beforeunload', flush);
+    window.addEventListener('pagehide', flush);
+    return () => {
+      window.removeEventListener('beforeunload', flush);
+      window.removeEventListener('pagehide', flush);
+    };
+  }, [pdfPath, currentPage]);
 
   // Track which page is currently most visible
   const onPageVisible = useCallback((pageNum) => {

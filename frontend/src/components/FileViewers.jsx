@@ -294,6 +294,18 @@ const PdfViewer = ({ file, content }) => {
   const pageRefs = useRef([]);
   const [pageWidth, setPageWidth] = useState(null);
 
+  // Reading-position resume: read on load, debounce-write on currentPage change.
+  // `positionRestoredRef` guards the save effect so the brief setCurrentPage(1)
+  // during PDF load doesn't clobber a previously-saved page.
+  const positionRestoredRef = useRef(false);
+  const savePositionTimerRef = useRef(null);
+  // Stable storage key derived once per file (workspace/PreviewDrawer supply
+  // file.path; pptx→pdf inherits from the caller; KnowledgeBinaryPreview has
+  // no path and falls through to a skip below).
+  const positionKey = file?.path || file?.name
+      ? `pdf-position:${file.path || file.name}`
+      : null;
+
   useLayoutEffect(() => {
     if (!pdfUrl) return;
     const el = pdfContentRef.current;
@@ -348,6 +360,10 @@ const PdfViewer = ({ file, content }) => {
       setLoading(false);
       setError(null);
       setToc(null); // reset stale outline when switching to a different file
+      // Reset resume guard so a new file (or re-mount) goes through the
+      // restore cycle again. Cleared here so the intermediate setCurrentPage(1)
+      // during page-mount can't overwrite a real saved value.
+      positionRestoredRef.current = false;
 
       return () => {
         URL.revokeObjectURL(url);
@@ -363,6 +379,34 @@ const PdfViewer = ({ file, content }) => {
   const onDocumentLoadSuccess = async ({ pdf: pdfDoc, numPages: total }) => {
     setNumPages(total);
     setPdfLoaded(true);
+    // Reading-position resume: pull the last page the user was on for
+    // this PDF from localStorage. Clamp against the new numPages so a
+    // shortened PDF doesn't try to scroll past the end.
+    let savedPage = 1;
+    if (positionKey) {
+      try {
+        const raw = localStorage.getItem(positionKey);
+        if (raw) {
+          const n = parseInt(raw, 10);
+          if (Number.isFinite(n) && n >= 1 && n <= total) savedPage = n;
+        }
+      } catch { /* localStorage may throw in private mode */ }
+    }
+    setCurrentPage(savedPage);
+    positionRestoredRef.current = true;
+    // react-pdf renders pages asynchronously after this callback returns, and
+    // pageRefs.current[N] is populated by the ref callback. Retry across a
+    // few frames so we wait for the page DOM to be ready.
+    let frames = 0;
+    const tryScroll = () => {
+      const pageEl = pageRefs.current[savedPage - 1];
+      if (!pageEl || !pdfContentRef.current) {
+        if (frames++ < 10) requestAnimationFrame(tryScroll);
+        return;
+      }
+      pageEl.scrollIntoView({ behavior: 'auto', block: 'start' });
+    };
+    requestAnimationFrame(tryScroll);
     // Best-effort outline fetch. PDFs without bookmarks resolve to `[]`,
     // which we just don't render. Failures are swallowed so a bad outline
     // never blocks page rendering.
@@ -387,6 +431,30 @@ const PdfViewer = ({ file, content }) => {
       pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, []);
+
+  // Persist reading position (debounced 500ms). Skips until positionRestoredRef
+  // is set so the initial setCurrentPage(1) can't clobber a real saved value.
+  // Skips entirely when there's no stable file identifier.
+  useEffect(() => {
+    if (!positionRestoredRef.current) return;
+    if (!positionKey || !currentPage) return;
+    if (savePositionTimerRef.current) clearTimeout(savePositionTimerRef.current);
+    savePositionTimerRef.current = setTimeout(() => {
+      try { localStorage.setItem(positionKey, String(currentPage)); }
+      catch { /* localStorage may throw in private mode */ }
+    }, 500);
+    return () => {
+      // Flush synchronously on unmount so a rapid file-switch within the
+      // debounce window doesn't lose the user's latest page.
+      if (savePositionTimerRef.current) {
+        clearTimeout(savePositionTimerRef.current);
+        savePositionTimerRef.current = null;
+        if (positionKey && currentPage && positionRestoredRef.current) {
+          try { localStorage.setItem(positionKey, String(currentPage)); } catch {}
+        }
+      }
+    };
+  }, [currentPage, positionKey]);
 
   useEffect(() => {
     const container = pdfContentRef.current;
