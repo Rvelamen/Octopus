@@ -14,8 +14,10 @@ import {
   Copy,
   Check,
   ChevronDown,
+  ChevronRight,
   Network,
   StickyNote,
+  BookOpen,
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { useWebSocket } from '../contexts/WebSocketContext';
@@ -45,6 +47,97 @@ const COLORS = [
   { name: 'Pink', value: '#e91e63' },
   { name: 'Orange', value: '#ff9800' },
 ];
+
+// Resolve a PDF outline (bookmark tree) into a plain array of { title, pageNumber, items }.
+// `pdf.getOutline()` may return either string-named destinations or arrays of refs;
+// we always normalise via `pdf.getDestination(dest)` and `pdf.getPageIndex(ref)`,
+// which gives a 0-based page index that we bump to 1-based for display/jump.
+async function resolveOutlineDest(pdf, dest) {
+  try {
+    if (!dest) return null;
+    const d = typeof dest === 'string' ? await pdf.getDestination(dest) : dest;
+    if (!d || !d[0]) return null;
+    const idx = await pdf.getPageIndex(d[0]);
+    return idx + 1; // 1-based
+  } catch {
+    return null;
+  }
+}
+
+async function resolveOutline(pdf, items) {
+  if (!items || items.length === 0) return [];
+  return Promise.all(
+    items.map(async (it) => ({
+      title: it.title || '(untitled)',
+      pageNumber: await resolveOutlineDest(pdf, it.dest),
+      items: await resolveOutline(pdf, it.items || []),
+    })),
+  );
+}
+
+// Recursive TOC tree for the right-hand sidebar.
+function TocTree({ items, depth = 0, currentPage, onJump }) {
+  const [expanded, setExpanded] = useState(() => new Set());
+  const { t } = useTranslation();
+  if (!items || items.length === 0) {
+    return <div className="pdfv-sidebar-empty">{t('pdfViewer.tocEmpty')}</div>;
+  }
+  const toggle = (key) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+  return (
+    <>
+      {items.map((it, i) => {
+        const key = `${depth}-${i}`;
+        const hasChildren = it.items && it.items.length > 0;
+        const isOpen = expanded.has(key);
+        const isActive = currentPage === it.pageNumber;
+        return (
+          <div key={key} className="pdfv-toc-node">
+            <div
+              className={`pdfv-toc-item ${isActive ? 'pdfv-toc-item-active' : ''}`}
+              style={{ paddingLeft: 12 + depth * 14 }}
+              onClick={() => {
+                if (hasChildren) toggle(key);
+                if (it.pageNumber) onJump(it.pageNumber);
+              }}
+              title={it.title}
+            >
+              {hasChildren ? (
+                <span
+                  className="pdfv-toc-chevron"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggle(key);
+                  }}
+                >
+                  {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                </span>
+              ) : (
+                <span className="pdfv-toc-bullet" />
+              )}
+              <span className="pdfv-toc-title">{it.title}</span>
+              {it.pageNumber && <span className="pdfv-toc-page">{it.pageNumber}</span>}
+            </div>
+            {hasChildren && isOpen && (
+              <TocTree
+                items={it.items}
+                depth={depth + 1}
+                currentPage={currentPage}
+                onJump={onJump}
+              />
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
 
 // Single page with lazy rendering via IntersectionObserver
 const PdfPage = React.memo(({ pdf, pageNumber, scale, annotations, onVisible, onTextSelect }) => {
@@ -401,6 +494,11 @@ const PdfViewerWindow = () => {
   const [annotations, setAnnotations] = useState([]);
   const [selectedAnnotationId, setSelectedAnnotationId] = useState(null);
   const [showSidebar, setShowSidebar] = useState(false);
+  // Outline (TOC) panel on the LEFT side — independent of the right-side
+  // annotations sidebar so the user can keep both open simultaneously.
+  const [showOutline, setShowOutline] = useState(true);
+  // Outline fetched from pdf.getOutline(); null while loading / unavailable.
+  const [outline, setOutline] = useState(null);
   const [selection, setSelection] = useState(null);
   const [showToolbar, setShowToolbar] = useState(false);
   const [toolbarPos, setToolbarPos] = useState({ x: 0, y: 0 });
@@ -708,26 +806,39 @@ const PdfViewerWindow = () => {
   // ── Resizable panels ──
   const [chatDrawerWidth, setChatDrawerWidth] = useState(360);
   const [sidebarWidth, setSidebarWidth] = useState(300);
+  // Outline panel sits on the LEFT — when the user drags its right edge to
+  // resize, the cursor moves right-to-left, so the delta sign matches the
+  // sidebar (startX - e.clientX = positive when shrinking the panel).
+  const [outlineWidth, setOutlineWidth] = useState(260);
   const resizeStateRef = useRef(null);
 
   const startResize = useCallback((e, panel) => {
     e.preventDefault();
+    const startWidth =
+      panel === 'chat' ? chatDrawerWidth
+      : panel === 'outline' ? outlineWidth
+      : sidebarWidth;
     resizeStateRef.current = {
       panel,
       startX: e.clientX,
-      startWidth: panel === 'chat' ? chatDrawerWidth : sidebarWidth,
+      startWidth,
     };
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
-  }, [chatDrawerWidth, sidebarWidth]);
+  }, [chatDrawerWidth, sidebarWidth, outlineWidth]);
 
   useEffect(() => {
     const handleMove = (e) => {
       const state = resizeStateRef.current;
       if (!state) return;
-      const delta = state.startX - e.clientX;
+      // For 'outline' (left panel) dragging right grows the panel, so the
+      // delta sign flips vs. the right-side panels.
+      const sign = state.panel === 'outline' ? -1 : 1;
+      const delta = sign * (state.startX - e.clientX);
       if (state.panel === 'chat') {
         setChatDrawerWidth(Math.max(280, Math.min(600, state.startWidth + delta)));
+      } else if (state.panel === 'outline') {
+        setOutlineWidth(Math.max(180, Math.min(500, state.startWidth + delta)));
       } else {
         setSidebarWidth(Math.max(200, Math.min(500, state.startWidth + delta)));
       }
@@ -967,10 +1078,21 @@ const PdfViewerWindow = () => {
           for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
         }
         const pdfDocument = await pdfjsLib.getDocument({ data: bytes }).promise;
-        if (!cancelled) {
-          setPdf(pdfDocument);
-          setNumPages(pdfDocument.numPages);
-          setCurrentPage(1);
+        if (cancelled) return;
+        setPdf(pdfDocument);
+        setNumPages(pdfDocument.numPages);
+        setCurrentPage(1);
+        // Best-effort: fetch the PDF's outline (bookmarks). Some PDFs have none;
+        // resolveOutline returns [] in that case, which the sidebar renders as
+        // an empty-state hint. Failures are swallowed so a malformed outline
+        // never blocks page rendering.
+        setOutline(null);
+        try {
+          const raw = await pdfDocument.getOutline();
+          if (!cancelled) setOutline(await resolveOutline(pdfDocument, raw));
+        } catch (e) {
+          console.warn('Failed to read PDF outline:', e);
+          if (!cancelled) setOutline([]);
         }
       } catch (err) {
         if (!cancelled) {
@@ -1534,6 +1656,14 @@ const PdfViewerWindow = () => {
           <span className="pdfv-zoominfo">{Math.round(scale * 100)}%</span>
           <button className="pdfv-btn" onClick={zoomIn} title="Zoom in (+)"><Plus size={14} /></button>
           <button
+            className={`pdfv-btn ${showOutline ? 'pdfv-btn-active' : ''}`}
+            onClick={() => setShowOutline((s) => !s)}
+            title={t('pdfViewer.toolbarToc')}
+            style={{ position: 'relative' }}
+          >
+            <BookOpen size={16} />
+          </button>
+          <button
             className={`pdfv-btn ${showSidebar ? 'pdfv-btn-active' : ''}`}
             onClick={() => setShowSidebar((s) => !s)}
             title={t('pdfViewer.toolbarAnnotations')}
@@ -1561,6 +1691,33 @@ const PdfViewerWindow = () => {
 
       {/* Main */}
       <div className="pdfv-main">
+        {/* TOC panel — sits on the LEFT, independent of the right-side
+            annotations sidebar. Default open because chapter navigation is
+            the most common reason to open a PDF reader. */}
+        {showOutline && (
+          <>
+            <div className="pdfv-toc-panel" style={{ width: outlineWidth, minWidth: outlineWidth }}>
+              <div className="pdfv-toc-panel-header">
+                <span>
+                  <BookOpen size={13} style={{ marginRight: 6, verticalAlign: -1 }} />
+                  {t('pdfViewer.tocTab')}
+                </span>
+                <button className="pdfv-btn" onClick={() => setShowOutline(false)}><X size={14} /></button>
+              </div>
+              <div className="pdfv-toc-panel-content">
+                <TocTree
+                  items={outline || []}
+                  currentPage={currentPage}
+                  onJump={scrollToPage}
+                />
+              </div>
+            </div>
+            <div
+              className="pdfv-resizer pdfv-resizer-right"
+              onMouseDown={(e) => startResize(e, 'outline')}
+            />
+          </>
+        )}
         <div className="pdfv-content" ref={contentRef}>
           {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => (
             <PdfPage
