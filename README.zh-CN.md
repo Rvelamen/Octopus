@@ -321,7 +321,7 @@ emoji: "🔍"
 
 ### MCP 协议支持
 
-- 连接任意 MCP 服务器（stdio / HTTP SSE）
+- 连接任意 MCP 服务器（stdio / HTTP SSE / **Streamable HTTP** / WebSocket）
 - 自动发现工具，无需手动配置
 - 可视化权限管理，按工具启用/禁用
 - 实时连接状态监控
@@ -705,7 +705,9 @@ Octopus 完整支持 **Model Context Protocol (MCP)**：
 ### 支持的传输协议
 
 - **stdio**：本地进程通信
-- **HTTP SSE**：基于 HTTP 的 Server-Sent Events
+- **HTTP SSE**：基于 HTTP 的 Server-Sent Events（旧版）
+- **Streamable HTTP**：MCP 2025-03-26 规范 — POST 返回 `application/json` 或 `text/event-stream`，可选 GET 通知流，`Mcp-Session-Id` 生命周期。新远程服务器推荐使用。
+- **WebSocket**：全双工传输
 
 ***
 

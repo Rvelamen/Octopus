@@ -2,6 +2,13 @@ import { Server, Plus, RefreshCw, Eye, Search, Pencil } from 'lucide-react';
 import { ConfigCard, DynamicItemCard } from '@components/config';
 import { InputField } from '@components/forms';
 
+const PROTOCOL_LABELS = {
+  stdio: 'STDIO',
+  sse: 'SSE',
+  streamable_http: 'STREAMABLE HTTP',
+  websocket: 'WEBSOCKET',
+};
+
 export default function MCPServerList({
   servers,
   discoveringServer,
@@ -46,7 +53,7 @@ export default function MCPServerList({
                   <span className={`server-status-badge ${server.connected ? 'connected' : 'disconnected'}`}>
                     {server.connected ? 'CONNECTED' : 'DISCONNECTED'}
                   </span>
-                  <span className="server-protocol-badge">{server.protocol?.toUpperCase() || 'STDIO'}</span>
+                  <span className="server-protocol-badge">{PROTOCOL_LABELS[server.protocol] || (server.protocol?.toUpperCase() ?? 'STDIO')}</span>
                 </div>
                 {server.protocol === 'stdio' || !server.protocol ? (
                   <>

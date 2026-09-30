@@ -31,7 +31,7 @@ class MCPServerConfig(BaseModel):
 
     name: str
     url: str
-    protocol: Literal["stdio", "sse", "websocket"] = "stdio"
+    protocol: Literal["stdio", "sse", "websocket", "streamable_http"] = "stdio"
     enabled: bool = True
     auto_connect: bool = True
     reconnect_interval: int = 5

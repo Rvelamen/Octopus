@@ -321,7 +321,7 @@ Drop it into `workspace/extensions/my-skill/SKILL.md` and restart to activate.
 
 ### MCP Protocol Support
 
-- Connect to any MCP server (stdio / HTTP SSE)
+- Connect to any MCP server (stdio / HTTP SSE / **Streamable HTTP** / WebSocket)
 - Auto-discover tools, no manual configuration needed
 - Visual permission management with enable/disable per tool
 - Real-time connection status monitoring
@@ -705,7 +705,9 @@ Octopus fully supports **Model Context Protocol (MCP)**:
 ### Supported Transports
 
 - **stdio**: Local process communication
-- **HTTP SSE**: Server-Sent Events over HTTP
+- **HTTP SSE**: Server-Sent Events over HTTP (legacy)
+- **Streamable HTTP**: MCP 2025-03-26 spec — POST returns `application/json` or `text/event-stream`, optional GET notification stream, `Mcp-Session-Id` lifecycle. Recommended for new remote servers.
+- **WebSocket**: Full-duplex transport
 
 ***
 

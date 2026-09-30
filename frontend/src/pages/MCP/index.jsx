@@ -37,9 +37,13 @@ function MCPPanel({ sendWSMessage }) {
   // New server form state (标准 MCP 格式)
   const [newServer, setNewServer] = useState({
     name: '',
+    protocol: 'stdio',
     command: '',
     args: '',
-    env: ''
+    env: '',
+    url: '',
+    authToken: '',
+    headers: ''
   });
 
   // JSON input state
@@ -173,9 +177,13 @@ const MCP_TABS = [
     setEditingServerName(null);
     setNewServer({
       name: '',
+      protocol: 'stdio',
       command: '',
       args: '',
-      env: ''
+      env: '',
+      url: '',
+      authToken: '',
+      headers: ''
     });
     // 使用标准 MCP mcpServers 格式
     setJsonInput(JSON.stringify({
@@ -196,9 +204,13 @@ const MCP_TABS = [
     setEditingServerName(server.name);
     setNewServer({
       name: server.name,
+      protocol: server.protocol || 'stdio',
       command: server.command || '',
       args: server.args ? server.args.join(' ') : '',
-      env: server.env ? JSON.stringify(server.env, null, 2) : ''
+      env: server.env ? JSON.stringify(server.env, null, 2) : '',
+      url: server.url || '',
+      authToken: server.authToken || '',
+      headers: server.headers ? JSON.stringify(server.headers, null, 2) : ''
     });
     setJsonInput(JSON.stringify({
       [server.name]: {
@@ -236,6 +248,21 @@ const MCP_TABS = [
         }
       });
       return env;
+    }
+  };
+
+  // 解析 headers 字符串为对象
+  const parseHeaders = (headersStr) => {
+    if (!headersStr || !headersStr.trim()) return {};
+    try {
+      return JSON.parse(headersStr);
+    } catch {
+      const headers = {};
+      headersStr.split(/\n|;/).forEach(line => {
+        const match = line.match(/^([^:]+):\s*(.*)$/);
+        if (match) headers[match[1].trim()] = match[2].trim();
+      });
+      return headers;
     }
   };
 
@@ -286,17 +313,35 @@ const MCP_TABS = [
         return;
       }
     } else {
-      if (!newServer.name.trim() || !newServer.command.trim()) {
-        setError('Server name and command are required');
+      if (!newServer.name.trim()) {
+        setError('Server name is required');
         return;
       }
-      serverData = {
-        name: newServer.name,
-        protocol: 'stdio',
-        command: newServer.command,
-        args: parseArgs(newServer.args),
-        env: parseEnv(newServer.env)
+      const formProtocol = newServer.protocol || 'stdio';
+      const formData = {
+        name: newServer.name.trim(),
+        protocol: formProtocol,
       };
+      if (formProtocol === 'stdio') {
+        if (!newServer.command.trim()) {
+          setError('Command is required for stdio servers');
+          return;
+        }
+        formData.command = newServer.command.trim();
+        formData.args = parseArgs(newServer.args);
+        const env = parseEnv(newServer.env);
+        if (Object.keys(env).length > 0) formData.env = env;
+      } else {
+        if (!newServer.url.trim()) {
+          setError('URL is required for non-stdio servers');
+          return;
+        }
+        formData.url = newServer.url.trim();
+        if (newServer.authToken.trim()) formData.authToken = newServer.authToken.trim();
+        const headers = parseHeaders(newServer.headers);
+        if (Object.keys(headers).length > 0) formData.headers = headers;
+      }
+      serverData = formData;
     }
 
     if (!serverData.name || !serverData.name.trim()) {
@@ -304,26 +349,12 @@ const MCP_TABS = [
       return;
     }
 
-    // 检测服务器类型并验证必需字段
-    const serverType = detectServerType(serverData);
-    if (serverType === 'stdio') {
-      if (!serverData.command || !serverData.command.trim()) {
-        setError('Command is required for stdio servers');
-        return;
-      }
-      // 设置默认协议
-      if (!serverData.protocol) {
-        serverData.protocol = 'stdio';
-      }
-    } else if (serverType === 'http') {
-      if (!serverData.url || !serverData.url.trim()) {
-        setError('URL is required for HTTP/SSE/WebSocket servers');
-        return;
-      }
-      // 设置默认协议为 sse（如果没有指定）
-      if (!serverData.protocol) {
-        serverData.protocol = 'sse';
-      }
+    // Fallback default for JSON mode (no explicit protocol + URL-only):
+    // prefer streamable_http (modern spec), still works with legacy SSE servers.
+    if (!serverData.protocol && serverData.url) {
+      serverData.protocol = 'streamable_http';
+    } else if (!serverData.protocol) {
+      serverData.protocol = 'stdio';
     }
 
     // 显示 loading 状态
