@@ -269,9 +269,25 @@ const MCP_TABS = [
   // 检测服务器类型
   const detectServerType = (serverData) => {
     if (serverData.url && !serverData.command) {
-      return 'http';
+      // Modern default per MCP 2025-03-26 spec; also works with legacy SSE servers.
+      return 'streamable_http';
     }
     return 'stdio';
+  };
+
+  // Normalize protocol value: accept standard MCP 2025-03-26 "streamable-http"
+  // (with dash) and legacy "sse"/"http" aliases, mapping them to the project's
+  // internal canonical form ("streamable_http").
+  const normalizeProtocol = (raw) => {
+    if (!raw) return null;
+    const v = String(raw).trim().toLowerCase();
+    if (v === 'streamable-http' || v === 'streamablehttp' || v === 'http' || v === 'streamable_http') {
+      return 'streamable_http';
+    }
+    if (v === 'sse' || v === 'server-sent-events') return 'sse';
+    if (v === 'ws' || v === 'websocket') return 'websocket';
+    if (v === 'stdio') return 'stdio';
+    return v;
   };
 
   // 添加/编辑服务器
@@ -301,7 +317,8 @@ const MCP_TABS = [
         
         serverData = {
           name: serverName,
-          protocol: serverConfig.protocol || detectServerType(serverConfig),
+          // Accept both "protocol" (project's internal name) and "type" (MCP 2025-03-26 standard).
+          protocol: normalizeProtocol(serverConfig.protocol || serverConfig.type) || detectServerType(serverConfig),
           command: serverConfig.command,
           args: serverConfig.args,
           env: serverConfig.env,

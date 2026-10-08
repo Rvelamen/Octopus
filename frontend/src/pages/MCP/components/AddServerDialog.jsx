@@ -118,7 +118,7 @@ export default function AddServerDialog({
                   className="pixel-input form-input json-textarea"
                   rows={16}
                   spellCheck={false}
-                  placeholder={`{\n  "mcpServers": {\n    "amap-maps": {\n      "protocol": "streamable_http",\n      "url": "https://mcp.amap.com/mcp?key=YOUR_KEY"\n    },\n    "stdio-server": {\n      "command": "npx",\n      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path"]\n    },\n    "remote-sse": {\n      "protocol": "sse",\n      "url": "https://example.com/sse",\n      "headers": { "Authorization": "Bearer ..." }\n    }\n  }\n}`}
+                  placeholder={`{\n  "mcpServers": {\n    "amap-maps": {\n      "type": "streamable-http",\n      "url": "https://mcp.amap.com/mcp?key=YOUR_KEY"\n    },\n    "stdio-server": {\n      "command": "npx",\n      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path"]\n    },\n    "remote-sse": {\n      "type": "sse",\n      "url": "https://example.com/sse",\n      "headers": { "Authorization": "Bearer ..." }\n    }\n  }\n}\n(同时支持 protocol / type 字段;streamable-http 会被自动归一化)`}
                 />
               </div>
             </div>
