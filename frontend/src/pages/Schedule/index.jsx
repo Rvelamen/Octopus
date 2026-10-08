@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import WindowDots from '@components/layout/WindowDots';
+import Toast from '@components/ui/Toast';
 import './SchedulePanel.css';
 
 const COLOR_SWATCHES = [
@@ -582,6 +583,16 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
   const [selected, setSelected] = useState(null);
   const [createAt, setCreateAt] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(true);
+  const [toasts, setToasts] = useState([]);
+
+  const addToast = useCallback((message, type = 'info', duration = 3000) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+  }, []);
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   // Stable instance_id for the chat drawer so all messages in this Schedule
   // session accumulate into a single persistent conversation on the backend
@@ -613,33 +624,56 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
     }
   }
 
-  const [range] = useMemo(() => visibleRange(view, cursor), [view, cursor]);
+  const range = useMemo(() => visibleRange(view, cursor), [view, cursor]);
 
-  const fetchEvents = useCallback(async () => {
-    if (!sendWSMessage) return;
+  // Fetch events for the currently visible window. Returns the count loaded so
+  // callers (refresh button, save handler, broadcast subscriber) can show a
+  // user-facing toast on success/failure.
+  const fetchEvents = useCallback(async ({ silent = false } = {}) => {
+    if (!sendWSMessage) return { ok: false, count: 0 };
     setLoading(true);
     try {
-      const resp = await sendWSMessage('schedule_list_events', {
-        start_at_ms: range[0].valueOf(),
-        end_at_ms: range[1].valueOf(),
-      }, 8000);
-      if (resp?.data?.events) {
-        setEvents(resp.data.events);
-      } else {
-        setEvents([]);
+      const [start, end] = range;
+      const resp = await sendWSMessage(
+        'schedule_list_events',
+        { start_at_ms: start.valueOf(), end_at_ms: end.valueOf() },
+        8000
+      );
+      const list = resp?.data?.events || [];
+      setEvents(list);
+      if (!silent) {
+        addToast(
+          t('schedule.toast.refreshed', {
+            count: list.length,
+            defaultValue: `Loaded ${list.length} event(s)`,
+          }),
+          'success'
+        );
       }
+      return { ok: true, count: list.length };
     } catch (e) {
       console.error('Failed to fetch schedule events:', e);
+      addToast(
+        t('schedule.toast.refreshFailed', {
+          error: e.message || e,
+          defaultValue: `Refresh failed: ${e.message || e}`,
+        }),
+        'error'
+      );
+      return { ok: false, count: 0 };
     } finally {
       setLoading(false);
     }
-  }, [sendWSMessage, range]);
+  }, [sendWSMessage, range, addToast, t]);
 
   useEffect(() => {
-    fetchEvents();
+    // Initial load is silent — only user-initiated refreshes and CRUD show toasts.
+    fetchEvents({ silent: true });
   }, [fetchEvents]);
 
-  // Live refresh on any schedule mutation broadcast
+  // Live refresh on any schedule mutation broadcast — silent (no toast) since
+  // the user didn't initiate it explicitly. The local modal save/delete and the
+  // manual refresh button still surface their own toasts.
   useEffect(() => {
     if (!subscribe) return;
     const types = [
@@ -648,9 +682,15 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
       'schedule_event_deleted',
       'schedule_events_changed',
     ];
-    const unsubs = types.map((tp) => subscribe(tp, () => fetchEvents()));
+    const unsubs = types.map((tp) => subscribe(tp, () => fetchEvents({ silent: true })));
     return () => unsubs.forEach((u) => u && u());
   }, [subscribe, fetchEvents]);
+
+  // Manual refresh handler — always shows a toast (success or failure) so the
+  // user gets explicit feedback.
+  const handleManualRefresh = useCallback(async () => {
+    await fetchEvents({ silent: false });
+  }, [fetchEvents]);
 
   const handleSave = useCallback(
     async (data) => {
@@ -660,18 +700,26 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
             event_id: selected.id,
             ...data,
           });
+          addToast(t('schedule.toast.updated', { defaultValue: 'Event updated' }), 'success');
         } else {
           await sendWSMessage('schedule_create_event', data);
+          addToast(t('schedule.toast.created', { defaultValue: 'Event created' }), 'success');
         }
         setSelected(null);
         setCreateAt(null);
-        fetchEvents();
+        fetchEvents({ silent: true });
       } catch (e) {
         console.error('Save event failed:', e);
-        alert(t('schedule.drawer.saveFailed', { error: e.message || e }));
+        addToast(
+          t('schedule.toast.saveFailed', {
+            error: e.message || e,
+            defaultValue: `Save failed: ${e.message || e}`,
+          }),
+          'error'
+        );
       }
     },
-    [selected, sendWSMessage, fetchEvents, t]
+    [selected, sendWSMessage, fetchEvents, addToast, t]
   );
 
   const handleDelete = useCallback(
@@ -679,13 +727,21 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
       if (!confirm(t('schedule.modal.deleteConfirm'))) return;
       try {
         await sendWSMessage('schedule_delete_event', { event_id: eventId });
+        addToast(t('schedule.toast.deleted', { defaultValue: 'Event deleted' }), 'success');
         setSelected(null);
-        fetchEvents();
+        fetchEvents({ silent: true });
       } catch (e) {
         console.error('Delete failed:', e);
+        addToast(
+          t('schedule.toast.deleteFailed', {
+            error: e.message || e,
+            defaultValue: `Delete failed: ${e.message || e}`,
+          }),
+          'error'
+        );
       }
     },
-    [sendWSMessage, fetchEvents, t]
+    [sendWSMessage, fetchEvents, addToast, t]
   );
 
   const onCreateAt = (d) => {
@@ -700,6 +756,18 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
 
   return (
     <div className="schedule-panel-container">
+      {/* Toast notifications (refresh success/failure, save/delete feedback) */}
+      <div className="toast-container">
+        {toasts.map((toast) => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            duration={toast.duration}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
+      </div>
       <div className="schedule-main">
         <div className="schedule-toolbar">
           <div className="toolbar-left">
@@ -747,7 +815,7 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
             </button>
             <button
               className={`nav-btn${loading ? ' refreshing' : ''}`}
-              onClick={() => fetchEvents()}
+              onClick={handleManualRefresh}
               disabled={loading}
               title={t('schedule.refresh', { defaultValue: 'Refresh' })}
             >

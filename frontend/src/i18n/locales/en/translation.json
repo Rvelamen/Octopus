@@ -246,6 +246,15 @@
     "newEvent": "+ Event",
     "refresh": "Refresh",
     "loading": "Loading events...",
+    "toast": {
+      "refreshed": "Loaded {{count}} event(s)",
+      "refreshFailed": "Refresh failed: {{error}}",
+      "created": "Event created",
+      "updated": "Event updated",
+      "deleted": "Event deleted",
+      "saveFailed": "Save failed: {{error}}",
+      "deleteFailed": "Delete failed: {{error}}"
+    },
     "showChat": "Show chat",
     "hideChat": "Hide chat",
     "viewDay": "Day",

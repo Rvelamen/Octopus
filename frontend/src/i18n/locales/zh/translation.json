@@ -246,6 +246,15 @@
     "newEvent": "+ 新建日程",
     "refresh": "刷新",
     "loading": "加载日程中...",
+    "toast": {
+      "refreshed": "已加载 {{count}} 条日程",
+      "refreshFailed": "刷新失败:{{error}}",
+      "created": "已创建日程",
+      "updated": "已更新日程",
+      "deleted": "已删除日程",
+      "saveFailed": "保存失败:{{error}}",
+      "deleteFailed": "删除失败:{{error}}"
+    },
     "showChat": "展开聊天",
     "hideChat": "收起聊天",
     "viewDay": "日",
