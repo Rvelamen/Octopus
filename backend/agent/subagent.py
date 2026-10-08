@@ -1106,7 +1106,11 @@ When you have completed the task, provide a clear summary of your findings or ac
                     )
 
                     normalized = _normalize_usage(
-                        response.usage, messages, response.content or "", model
+                        response.usage,
+                        messages,
+                        response.content or "",
+                        model,
+                        response.tool_calls,
                     )
                     last_prompt_tokens = normalized["prompt_tokens"]
                     self._record_token_usage(

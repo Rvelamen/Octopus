@@ -198,7 +198,10 @@ class OpenAIProvider(RetryableProvider):
                 from backend.agent.shared import _estimate_token_usage
 
                 final_usage = _estimate_token_usage(
-                    adapted_messages or messages, accumulated_content, model
+                    adapted_messages or messages,
+                    accumulated_content,
+                    model,
+                    tool_calls,
                 )
                 logger.warning(
                     f"[OpenAI] API did not return valid streaming usage; estimated: {final_usage}"
@@ -302,7 +305,10 @@ class OpenAIProvider(RetryableProvider):
             from backend.agent.shared import _estimate_token_usage
 
             usage = _estimate_token_usage(
-                adapted_messages or [], message.content or "", self.default_model
+                adapted_messages or [],
+                message.content or "",
+                self.default_model,
+                tool_calls if tool_calls else None,
             )
             logger.warning(
                 f"[OpenAI] Non-streaming response missing valid usage; estimated: {usage}"

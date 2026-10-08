@@ -257,7 +257,11 @@ class BaseChatProcessor(MessageProcessor):
 
                 if llm_response.usage:
                     normalized = _normalize_usage(
-                        llm_response.usage, messages, llm_response.content or "", model
+                        llm_response.usage,
+                        messages,
+                        llm_response.content or "",
+                        model,
+                        llm_response.tool_calls,
                     )
                     last_prompt_tokens = normalized["prompt_tokens"] + normalized["cached_tokens"]
                     total_prompt_tokens += normalized["prompt_tokens"] + normalized["cached_tokens"]
