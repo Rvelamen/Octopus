@@ -19,6 +19,10 @@ class ChatRequest(BaseRequest):
     images: list[dict[str, Any]] = []
     files: list[dict[str, Any]] = []
     instance_id: int | None = None
+    # Optional: when set, the request is routed to a subagent with this role
+    # instead of going through the main agent loop. Used by the schedule
+    # side-drawer to talk to the schedule-assistant subagent.
+    subagent_name: str | None = None
 
 
 # ============================================================================
@@ -370,6 +374,45 @@ class CronToggleJobRequest(BaseRequest):
 
 class CronRunJobRequest(BaseRequest):
     job_id: str = ""
+
+
+# ============================================================================
+# Schedule (Calendar)
+# ============================================================================
+class ScheduleListEventsRequest(BaseRequest):
+    start_at_ms: int = 0
+    end_at_ms: int = 0
+
+
+class ScheduleCreateEventRequest(BaseRequest):
+    title: str = ""
+    start_at_ms: int = 0
+    end_at_ms: int = 0
+    all_day: bool = False
+    location: str = ""
+    description: str = ""
+    color: str = "#4F8EF7"
+
+
+class ScheduleUpdateEventRequest(BaseRequest):
+    event_id: int = 0
+    title: str | None = None
+    start_at_ms: int | None = None
+    end_at_ms: int | None = None
+    all_day: bool | None = None
+    location: str | None = None
+    description: str | None = None
+    color: str | None = None
+
+
+class ScheduleDeleteEventRequest(BaseRequest):
+    event_id: int = 0
+
+
+class ScheduleSearchEventsRequest(BaseRequest):
+    query: str = ""
+    start_at_ms: int | None = None
+    end_at_ms: int | None = None
 
 
 # ============================================================================
@@ -862,6 +905,11 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.CRON_DELETE_JOB: CronDeleteJobRequest,
     MessageType.CRON_TOGGLE_JOB: CronToggleJobRequest,
     MessageType.CRON_RUN_JOB: CronRunJobRequest,
+    MessageType.SCHEDULE_LIST_EVENTS: ScheduleListEventsRequest,
+    MessageType.SCHEDULE_CREATE_EVENT: ScheduleCreateEventRequest,
+    MessageType.SCHEDULE_UPDATE_EVENT: ScheduleUpdateEventRequest,
+    MessageType.SCHEDULE_DELETE_EVENT: ScheduleDeleteEventRequest,
+    MessageType.SCHEDULE_SEARCH_EVENTS: ScheduleSearchEventsRequest,
     MessageType.AGENT_GET_LIST: AgentGetListRequest,
     MessageType.AGENT_GET_SOUL: AgentGetSoulRequest,
     MessageType.AGENT_SAVE_SOUL: AgentSaveSoulRequest,

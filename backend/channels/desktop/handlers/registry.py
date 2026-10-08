@@ -27,6 +27,7 @@ from backend.channels.desktop.handlers.chat import ChatHandler
 from backend.channels.desktop.handlers.config import (
     GetConfigHandler,
     PingHandler,
+    RestartServiceHandler,
     SaveConfigHandler,
     StopAgentsHandler,
 )
@@ -106,6 +107,15 @@ from backend.channels.desktop.handlers.models import GetModelsHandler
 from backend.channels.desktop.handlers.notes_chat import NotesChatHandler
 from backend.channels.desktop.handlers.pdf_chat import PdfChatHandler
 from backend.channels.desktop.handlers.pdf_annotation_chat import PdfAnnotationChatHandler
+
+# Import schedule handlers
+from backend.channels.desktop.handlers.schedule import (
+    ScheduleCreateEventHandler,
+    ScheduleDeleteEventHandler,
+    ScheduleListEventsHandler,
+    ScheduleSearchEventsHandler,
+    ScheduleUpdateEventHandler,
+)
 
 # Import session handlers
 from backend.channels.desktop.handlers.session import (
@@ -197,6 +207,7 @@ class HandlerRegistry:
         pending_responses: dict[str, asyncio.Queue],
         mcp_manager: MCPManager | None = None,
         cron_service=None,
+        schedule_service=None,
         db=None,
         agent_loop=None,
         subagent_manager=None,
@@ -205,6 +216,7 @@ class HandlerRegistry:
 
         self.mcp_manager = mcp_manager
         self.cron_service = cron_service
+        self.schedule_service = schedule_service
         self.db = db or Database()
         self.agent_loop = agent_loop
         self.subagent_manager = subagent_manager
@@ -214,7 +226,7 @@ class HandlerRegistry:
         self.settings_handler_db = self.db
 
         self.handlers: dict[MessageType, MessageHandler] = {
-            MessageType.CHAT: ChatHandler(bus, pending_responses),
+            MessageType.CHAT: ChatHandler(bus, pending_responses, subagent_manager=subagent_manager),
             MessageType.PDF_CHAT: PdfChatHandler(bus, pending_responses),
             MessageType.PDF_ANNOTATION_CHAT: PdfAnnotationChatHandler(bus, pending_responses),
             MessageType.LIBRARY_CHAT: LibraryChatHandler(bus, pending_responses),
@@ -226,6 +238,7 @@ class HandlerRegistry:
             MessageType.GET_MODELS: GetModelsHandler(bus, self.db),
             MessageType.GET_SLASH_COMMANDS: GetSlashCommandsHandler(bus),
             MessageType.STOP_AGENTS: StopAgentsHandler(bus, agent_loop, subagent_manager),
+            MessageType.RESTART_SERVICE: RestartServiceHandler(bus),
         }
 
         # Register Provider/Model/Settings handlers (always available)
@@ -354,6 +367,17 @@ class HandlerRegistry:
                 MessageType.CRON_DELETE_JOB: CronDeleteJobHandler(bus, cron_service),
                 MessageType.CRON_TOGGLE_JOB: CronToggleJobHandler(bus, cron_service),
                 MessageType.CRON_RUN_JOB: CronRunJobHandler(bus, cron_service),
+            }
+        )
+
+        # Register Schedule (Calendar) Event handlers
+        self.handlers.update(
+            {
+                MessageType.SCHEDULE_LIST_EVENTS: ScheduleListEventsHandler(bus, schedule_service),
+                MessageType.SCHEDULE_CREATE_EVENT: ScheduleCreateEventHandler(bus, schedule_service),
+                MessageType.SCHEDULE_UPDATE_EVENT: ScheduleUpdateEventHandler(bus, schedule_service),
+                MessageType.SCHEDULE_DELETE_EVENT: ScheduleDeleteEventHandler(bus, schedule_service),
+                MessageType.SCHEDULE_SEARCH_EVENTS: ScheduleSearchEventsHandler(bus, schedule_service),
             }
         )
 

@@ -11,6 +11,7 @@ from backend.data.schema import (
     notes_chat,
     observation,
     provider,
+    schedule,
     session,
     subagent,
     task,
@@ -36,4 +37,5 @@ __all__ = [
     "db",
     "library_chat",
     "notes_chat",
+    "schedule",
 ]

@@ -42,6 +42,7 @@ from backend.tools.library_knowledge import (
 from backend.tools.memory import MemoryReadTool, MemorySearchTool, MemoryTimelineTool
 from backend.tools.message import MessageTool
 from backend.tools.registry import ToolRegistry
+from backend.tools.schedule import CreateEventTool, ListEventsTool, SearchEventsTool
 from backend.tools.shell import ExecTool
 from backend.tools.spawn import SpawnTool
 from backend.tools.web_fetch import WebFetchTool
@@ -57,6 +58,7 @@ class AgentContainer:
     max_iterations: int = 20
     exec_config: ExecToolConfig | None = None
     cron_service: Any | None = None
+    schedule_service: Any | None = None
     db: Database | None = None
     subagent_manager: SubagentManager | None = None
     mcp_bridge: Any | None = None
@@ -99,6 +101,7 @@ class AgentContainer:
                 bus=self.bus,
                 exec_config=self.exec_config,
                 aggregator=self.aggregator,
+                schedule_service=self.schedule_service,
             )
 
         self.extension_loader = ExtensionLoader(workspace=self.workspace)
@@ -241,6 +244,12 @@ class AgentContainer:
             self.tools.register(ImageGenerateTool())
         if should_register("cron"):
             self.tools.register(CronTool(cron_service=self.cron_service))
+        if should_register("create_event"):
+            self.tools.register(CreateEventTool(schedule_service=self.schedule_service))
+        if should_register("list_events"):
+            self.tools.register(ListEventsTool(schedule_service=self.schedule_service))
+        if should_register("search_events"):
+            self.tools.register(SearchEventsTool(schedule_service=self.schedule_service))
         if should_register("action"):
             self.tools.register(ActionTool())
         if should_register("memory_search"):

@@ -35,6 +35,7 @@ from backend.tools.memory import MemoryReadTool, MemorySearchTool, MemoryTimelin
 from backend.tools.memory_write import MemoryWriteTool
 from backend.tools.message import MessageTool
 from backend.tools.registry import ToolRegistry
+from backend.tools.schedule import CreateEventTool, ListEventsTool, SearchEventsTool
 from backend.tools.shell import ExecTool
 
 
@@ -56,10 +57,12 @@ class SubagentManager:
         bus: MessageBus,
         exec_config: "ExecToolConfig | None" = None,
         aggregator: SubagentAggregator | None = None,
+        schedule_service: Any | None = None,
     ):
         self.workspace = workspace
         self.bus = bus
         self.exec_config = exec_config or ExecToolConfig()
+        self.schedule_service = schedule_service
         self._running_tasks: dict[str, asyncio.Task[None]] = {}
         self._stop_flags: dict[str, bool] = {}
         # Track which instance each subagent belongs to: { task_id: session_instance_id }
@@ -80,6 +83,16 @@ class SubagentManager:
         self._task_contexts: dict[str, dict] = (
             {}
         )  # task_id -> {channel, chat_id, session_instance_id}
+
+        # Session continuity: persist the message history of a (subagent_name, instance_id)
+        # pair so subsequent chats in the same session can resume from where the previous
+        # one left off. The chat drawer in the Schedule page uses a stable instance_id
+        # so all of its messages accumulate into one logical conversation.
+        # Key: (agent_role, instance_id) -> list of OpenAI-format messages
+        self._session_history: dict[tuple[str, int], list[dict[str, Any]]] = {}
+        # Per-session lock so two concurrent spawns for the same session don't race
+        # on the history dict.
+        self._session_locks: dict[tuple[str, int], asyncio.Lock] = {}
 
         if self._aggregator:
             self._aggregator.set_bus(bus)
@@ -271,6 +284,11 @@ class SubagentManager:
             "memory_timeline": MemoryTimelineTool,
         }
 
+        if self.schedule_service is not None:
+            tool_mapping["create_event"] = lambda: CreateEventTool(self.schedule_service)
+            tool_mapping["list_events"] = lambda: ListEventsTool(self.schedule_service)
+            tool_mapping["search_events"] = lambda: SearchEventsTool(self.schedule_service)
+
         # Register requested tools
         has_browser = False
         for tool_name in config.tools:
@@ -435,6 +453,7 @@ When you have completed the task, provide a clear summary of your findings or ac
         group_id: str | None = None,
         session_instance_id: int | None = None,
         parent_tool_call_id: str | None = None,
+        _resume_history: list[dict[str, Any]] | None = None,
     ) -> str:
         """
         Spawn a subagent to execute a task in the background.
@@ -494,7 +513,7 @@ When you have completed the task, provide a clear summary of your findings or ac
         bg_future = loop.run_in_executor(
             None,
             lambda: asyncio.run(
-                self._run_subagent(task_id, task, display_label, origin, agent_config, group_id)
+                self._run_subagent(task_id, task, display_label, origin, agent_config, group_id, seed_messages=_resume_history)
             ),
         )
         bg_task = asyncio.ensure_future(bg_future)
@@ -511,6 +530,80 @@ When you have completed the task, provide a clear summary of your findings or ac
         group_info = f" [group:{group_id}]" if group_id else ""
         logger.info(f"[Subagent:{task_id}] Spawned{role_info}{group_info}: {display_label}")
         return f"[Async] Subagent [{display_label}]{role_info}{group_info} started (id: {task_id}). This is a long-running task - do NOT wait or sleep for it. You may continue with other parallelizable tasks. I'll initiate a new conversation when it completes."
+
+    async def spawn_or_resume(
+        self,
+        task: str,
+        label: str | None = None,
+        origin_channel: str = "cli",
+        origin_chat_id: str = "direct",
+        agent_role: str | None = None,
+        session_instance_id: int | None = None,
+        parent_tool_call_id: str | None = None,
+    ) -> str:
+        """
+        Spawn a subagent that resumes a logical session if one exists.
+
+        Unlike `spawn`, this method persists the message history keyed by
+        `(agent_role, session_instance_id)`. Subsequent calls with the same
+        key seed the new subagent with the previous run's full message list
+        (minus the system prompt, which is rebuilt each time), so the LLM
+        has the entire conversation context.
+
+        The Schedule page's chat drawer uses this with a stable instance_id
+        so all of its messages accumulate into one persistent conversation
+        rather than spawning a fresh subagent every time.
+        """
+        if not agent_role or session_instance_id is None:
+            # Without both keys we can't dedupe — fall back to a normal spawn.
+            return await self.spawn(
+                task=task,
+                label=label,
+                origin_channel=origin_channel,
+                origin_chat_id=origin_chat_id,
+                agent_role=agent_role,
+                session_instance_id=session_instance_id,
+                parent_tool_call_id=parent_tool_call_id,
+            )
+
+        session_key = (agent_role, session_instance_id)
+
+        # Per-session lock so concurrent calls for the same session don't
+        # both read empty history and both spawn fresh. The lock is
+        # short-lived — only around the snapshot/persist of history.
+        lock = self._session_locks.setdefault(session_key, asyncio.Lock())
+        async with lock:
+            prior_history = list(self._session_history.get(session_key, []))
+
+        return await self.spawn(
+            task=task,
+            label=label,
+            origin_channel=origin_channel,
+            origin_chat_id=origin_chat_id,
+            agent_role=agent_role,
+            session_instance_id=session_instance_id,
+            parent_tool_call_id=parent_tool_call_id,
+            _resume_history=prior_history,
+        )
+
+    async def _save_session_history(
+        self,
+        agent_role: str,
+        session_instance_id: int,
+        messages: list[dict[str, Any]],
+    ) -> None:
+        """Persist the final message list for a session."""
+        session_key = (agent_role, session_instance_id)
+        lock = self._session_locks.setdefault(session_key, asyncio.Lock())
+        async with lock:
+            # Drop the synthetic system prompt that `_run_subagent` injects;
+            # the next run rebuilds it from the agent config.
+            persisted = [m for m in messages if m.get("role") != "system"]
+            self._session_history[session_key] = persisted
+            logger.info(
+                f"[Session:{agent_role}#{session_instance_id}] "
+                f"Saved {len(persisted)} messages to history"
+            )
 
     async def spawn_sync_task(
         self,
@@ -947,6 +1040,7 @@ When you have completed the task, provide a clear summary of your findings or ac
         origin: dict[str, str],
         agent_config: SubAgentConfig | None,
         group_id: str | None = None,
+        seed_messages: list[dict[str, Any]] | None = None,
     ) -> None:
         """Execute the subagent task and announce the result."""
         role_name = agent_config.name if agent_config else "default"
@@ -980,11 +1074,18 @@ When you have completed the task, provide a clear summary of your findings or ac
             )
             logger.info(f"[Subagent:{task_id}] Tools: {list(tools._tools.keys())}")
 
-            # Build messages
+            # Build messages. When resuming a session, seed with the prior
+            # message history (system prompt will be re-injected at the head).
+            resume_seed = list(seed_messages) if seed_messages else []
             messages: list[dict[str, Any]] = [
                 {"role": "system", "content": system_prompt},
+                *resume_seed,
                 {"role": "user", "content": task},
             ]
+            if resume_seed:
+                logger.info(
+                    f"[Subagent:{task_id}] Resuming session with {len(resume_seed)} prior messages"
+                )
 
             # Run agent loop
             iteration = 0
@@ -1247,6 +1348,21 @@ When you have completed the task, provide a clear summary of your findings or ac
                 )
 
             logger.info(f"[Subagent:{task_id}] Task completed successfully")
+
+            # Persist the final message list for session continuity so the next
+            # call with the same (agent_role, session_instance_id) can resume.
+            if agent_config and session_instance_id is not None:
+                try:
+                    await self._save_session_history(
+                        agent_role=agent_config.name,
+                        session_instance_id=session_instance_id,
+                        messages=messages,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"[Subagent:{task_id}] Failed to persist session history: {e}"
+                    )
+
             await self._announce_result(task_id, label, task, final_result, origin, "ok", group_id)
 
         except Exception as e:

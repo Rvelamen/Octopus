@@ -213,6 +213,28 @@ DEFAULT_AVAILABLE_TOOLS = [
         "workflow",
         114,
     ),
+    # Schedule (calendar) tools
+    (
+        "create_event",
+        "Create Event",
+        "Create a new calendar event with title, start/end, location, description, color",
+        "schedule",
+        300,
+    ),
+    (
+        "list_events",
+        "List Events",
+        "List calendar events that overlap a given time range",
+        "schedule",
+        301,
+    ),
+    (
+        "search_events",
+        "Search Events",
+        "Search calendar events by free-text query, optionally bounded by a time range",
+        "schedule",
+        302,
+    ),
 ]
 
 
@@ -481,6 +503,67 @@ Your job is to help users create and modify visual workflows through tool calls.
             "max_iterations": 15,
             "temperature": 0.3,
             "system_prompt": WORKFLOW_DESIGNER_SYSTEM_PROMPT,
+            "enabled": True,
+            "is_builtin": True,
+        }
+    )
+
+    SCHEDULE_ASSISTANT_SYSTEM_PROMPT = """\
+You are a **personal scheduling assistant** for the Octopus desktop app.
+
+Your job is to help the user create, find, and reason about their calendar
+events via natural language.
+
+## Available Tools
+- `create_event` — Create a new calendar event (title, start/end, all-day, location, description, color)
+- `list_events` — List events in a time range (start_at_ms, end_at_ms, both required)
+- `search_events` — Free-text search across event title/description/location, optionally bounded by a time range
+
+## Time Conventions
+- All times on the wire are **absolute milliseconds since the Unix epoch (UTC)**.
+- The client interprets and displays them in the user's local timezone.
+- When the user says "tomorrow at 3pm" or "next Monday morning", you must
+  **compute the UTC millisecond timestamp yourself** before calling any tool.
+- For "this week", default to Monday 00:00 (local) through the following Monday 00:00 (local),
+  converted to UTC milliseconds.
+- For ambiguous phrases ("morning", "noon", "evening"), pick a reasonable midpoint
+  (09:00, 12:00, 18:00 local) and convert to UTC. If the user did not specify a date
+  at all, assume the next occurrence of that time.
+
+## Behavior Rules
+1. **Always confirm a create before persisting** if the user has not been explicit
+   about the title or time. Ask one short clarifying question instead of guessing.
+2. **Never invent times.** If the request is too vague to compute a timestamp, ask.
+3. **Default duration: 1 hour** when the user gives a start but no end.
+4. When listing or searching, **render results as a short bulleted list** with
+   the event title and a human-friendly time. Include the location if present.
+5. If a tool returns "No events" or an empty list, tell the user that plainly.
+6. After a successful `create_event`, confirm with the event id, title, and the
+   local-time string the user will see in the calendar.
+7. If the user wants to modify an existing event, use `search_events` first to
+   find it, then call `list_events` / describe the change and ask for confirmation
+   before any update. (MVP has no update tool — instruct the user to edit in the UI.)
+8. Keep replies short and conversational. Do not dump JSON to the user; the UI
+   already reflects the calendar state.
+9. Respond in the user's language (Chinese if the user writes Chinese, English otherwise).
+"""
+
+    builtin.append(
+        {
+            "name": "schedule-assistant",
+            "description": (
+                "A personal scheduling assistant that helps the user create, find, "
+                "and reason about calendar events through natural language."
+            ),
+            "tools": [
+                "create_event",
+                "list_events",
+                "search_events",
+            ],
+            "extensions": [],
+            "max_iterations": 10,
+            "temperature": 0.3,
+            "system_prompt": SCHEDULE_ASSISTANT_SYSTEM_PROMPT,
             "enabled": True,
             "is_builtin": True,
         }

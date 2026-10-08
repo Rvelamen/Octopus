@@ -17,11 +17,16 @@ class ChatHandler(MessageHandler):
     """Handle chat messages from clients."""
 
     def __init__(
-        self, bus: MessageBus, pending_responses: dict[str, asyncio.Queue], image_service=None
+        self,
+        bus: MessageBus,
+        pending_responses: dict[str, asyncio.Queue],
+        image_service=None,
+        subagent_manager=None,
     ):
         super().__init__(bus)
         self.pending_responses = pending_responses
         self.image_service = image_service
+        self.subagent_manager = subagent_manager
 
     @staticmethod
     def _rewrite_skill_content(content: str) -> str:
@@ -55,6 +60,65 @@ class ChatHandler(MessageHandler):
 
         return content
 
+    async def _maybe_spawn_subagent(
+        self,
+        websocket: WebSocket,
+        request_id: str,
+        content: str,
+        subagent_name: str,
+        instance_id: int | None,
+    ) -> bool:
+        """If a subagent_name is provided, route directly to a SubagentManager.
+
+        Returns True when the message was handled via subagent (caller should stop),
+        False when the caller should continue the normal chat flow.
+        """
+        if not subagent_name or self.subagent_manager is None:
+            return False
+
+        try:
+            # Use spawn_or_resume when the client supplied both a subagent_name
+            # and an instance_id. This keeps a single persistent conversation
+            # per (subagent_name, instance_id) instead of spawning a fresh
+            # subagent for every message. Without an instance_id we fall back
+            # to the original spawn behavior.
+            if instance_id is not None:
+                task_id = await self.subagent_manager.spawn_or_resume(
+                    task=content,
+                    label=f"Subagent: {subagent_name}",
+                    origin_channel="desktop",
+                    origin_chat_id="desktop_session",
+                    agent_role=subagent_name,
+                    session_instance_id=instance_id,
+                )
+            else:
+                task_id = await self.subagent_manager.spawn(
+                    task=content,
+                    label=f"Subagent: {subagent_name}",
+                    origin_channel="desktop",
+                    origin_chat_id="desktop_session",
+                    agent_role=subagent_name,
+                    session_instance_id=instance_id,
+                )
+            logger.info(
+                f"Subagent '{subagent_name}' spawned for request_id={request_id} (task_id={task_id})"
+            )
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.ACK,
+                    request_id=request_id,
+                    data={"status": "received", "subagent": subagent_name, "task_id": task_id},
+                ),
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Failed to spawn subagent '{subagent_name}': {e}")
+            await self._send_error(
+                websocket, request_id, f"Failed to spawn subagent: {e}"
+            )
+            return True
+
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Process a chat message and forward to agent."""
         content = message.data.get("content", "")
@@ -63,8 +127,14 @@ class ChatHandler(MessageHandler):
         files = message.data.get("files", [])
 
         instance_id = message.data.get("instance_id")
+        subagent_name = message.data.get("subagent_name")
 
         request_id = message.request_id or str(uuid.uuid4())
+
+        if await self._maybe_spawn_subagent(
+            websocket, request_id, content, subagent_name, instance_id
+        ):
+            return
 
         response_queue = asyncio.Queue()
         self.pending_responses[request_id] = response_queue
@@ -130,8 +200,14 @@ class ChatHandler(MessageHandler):
         files = validated.files
 
         instance_id = validated.instance_id
+        subagent_name = validated.subagent_name
 
         request_id = message.request_id or str(uuid.uuid4())
+
+        if await self._maybe_spawn_subagent(
+            websocket, request_id, content, subagent_name, instance_id
+        ):
+            return
 
         response_queue = asyncio.Queue()
         self.pending_responses[request_id] = response_queue

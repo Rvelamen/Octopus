@@ -14,6 +14,7 @@
     "agents": "智能体",
     "workflows": "工作流",
     "cron": "定时任务",
+    "schedule": "日程",
     "mcp": "MCP",
     "extensions": "扩展",
     "history": "历史",
@@ -34,7 +35,8 @@
     "tokens": "令牌",
     "workflows": "工作流",
     "library": "图书馆",
-    "knowledge": "知识库"
+    "knowledge": "知识库",
+    "schedule": "日程"
   },
   "titlebar": {
     "restart": "重启",
@@ -236,5 +238,58 @@
     "commentPendingSync": "正在同步到服务器，请稍候",
     "commentSyncing": "同步中…",
     "commentSyncFailed": "同步失败"
+  },
+  "schedule": {
+    "today": "今天",
+    "previous": "上一个",
+    "next": "下一个",
+    "newEvent": "+ 新建日程",
+    "refresh": "刷新",
+    "loading": "加载日程中...",
+    "showChat": "展开聊天",
+    "hideChat": "收起聊天",
+    "viewDay": "日",
+    "viewWeek": "周",
+    "viewMonth": "月",
+    "more": "还有 {{count}} 个",
+    "weekday": {
+      "sun": "日",
+      "mon": "一",
+      "tue": "二",
+      "wed": "三",
+      "thu": "四",
+      "fri": "五",
+      "sat": "六"
+    },
+    "drawer": {
+      "title": "日程助手",
+      "subtitle": "用自然语言创建日程",
+      "placeholder": "告诉助手你要做什么...（Enter 发送，Shift+Enter 换行）",
+      "empty": "向助手描述日程或询问你的安排。",
+      "emptyHint": "试试：\"周六晚上 7 点订晚餐\"，或 \"这周有什么安排？\"",
+      "send": "发送",
+      "doneHint": "已完成。请在日历中查看更新。",
+      "sendFailed": "发送失败：{{error}}",
+      "saveFailed": "保存失败：{{error}}"
+    },
+    "modal": {
+      "new": "新建日程",
+      "edit": "编辑日程",
+      "title": "标题",
+      "titlePlaceholder": "日程内容",
+      "allDay": "全天",
+      "start": "开始",
+      "end": "结束",
+      "location": "地点",
+      "locationPlaceholder": "可选",
+      "description": "备注",
+      "descriptionPlaceholder": "可选备注",
+      "color": "颜色",
+      "save": "保存",
+      "create": "创建",
+      "cancel": "取消",
+      "delete": "删除",
+      "deleteConfirm": "确定删除这个日程？"
+    }
   }
 }

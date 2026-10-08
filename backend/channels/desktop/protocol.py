@@ -184,6 +184,13 @@ class MessageType(Enum):
     CRON_TOGGLE_JOB = "cron_toggle_job"  # Enable/disable a cron job
     CRON_RUN_JOB = "cron_run_job"  # Run a cron job manually
 
+    # Schedule (Calendar) - Client -> Server
+    SCHEDULE_LIST_EVENTS = "schedule_list_events"  # List events in a time range
+    SCHEDULE_CREATE_EVENT = "schedule_create_event"  # Create a new event
+    SCHEDULE_UPDATE_EVENT = "schedule_update_event"  # Update an existing event
+    SCHEDULE_DELETE_EVENT = "schedule_delete_event"  # Delete an event
+    SCHEDULE_SEARCH_EVENTS = "schedule_search_events"  # Free-text search events
+
     # Agent - Client -> Server
     AGENT_GET_LIST = "agent_get_list"  # Get all agents
     AGENT_GET_SOUL = "agent_get_soul"  # Get agent SOUL.md content
@@ -366,6 +373,12 @@ class MessageType(Enum):
     CRON_JOB_DELETED = "cron_job_deleted"  # Job deleted confirmation
     CRON_JOB_TOGGLED = "cron_job_toggled"  # Job toggled confirmation
     CRON_JOB_RUN = "cron_job_run"  # Job run confirmation
+
+    # Schedule (Calendar) - Server -> Client
+    SCHEDULE_EVENTS = "schedule_events"  # List of events
+    SCHEDULE_EVENT_CREATED = "schedule_event_created"  # Event created confirmation
+    SCHEDULE_EVENT_UPDATED = "schedule_event_updated"  # Event updated confirmation
+    SCHEDULE_EVENT_DELETED = "schedule_event_deleted"  # Event deleted confirmation
 
     # Agent - Server -> Client
     AGENT_LIST = "agent_list"  # List of agents
@@ -657,6 +670,11 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.CRON_DELETE_JOB,
     MessageType.CRON_TOGGLE_JOB,
     MessageType.CRON_RUN_JOB,
+    MessageType.SCHEDULE_LIST_EVENTS,
+    MessageType.SCHEDULE_CREATE_EVENT,
+    MessageType.SCHEDULE_UPDATE_EVENT,
+    MessageType.SCHEDULE_DELETE_EVENT,
+    MessageType.SCHEDULE_SEARCH_EVENTS,
     MessageType.AGENT_GET_LIST,
     MessageType.AGENT_GET_SOUL,
     MessageType.AGENT_SAVE_SOUL,
@@ -808,6 +826,10 @@ SERVER_MESSAGE_TYPES = {
     MessageType.CRON_JOB_DELETED,
     MessageType.CRON_JOB_TOGGLED,
     MessageType.CRON_JOB_RUN,
+    MessageType.SCHEDULE_EVENTS,
+    MessageType.SCHEDULE_EVENT_CREATED,
+    MessageType.SCHEDULE_EVENT_UPDATED,
+    MessageType.SCHEDULE_EVENT_DELETED,
     MessageType.AGENT_LIST,
     MessageType.AGENT_SOUL,
     MessageType.AGENT_SAVED,

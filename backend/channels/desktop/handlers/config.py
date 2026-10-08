@@ -1,5 +1,8 @@
 """WebSocket message handlers for configuration management."""
 
+import asyncio
+import os
+
 from fastapi import WebSocket
 from loguru import logger
 
@@ -8,6 +11,7 @@ from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.channels.desktop.schemas import (
     GetConfigRequest,
     PingRequest,
+    RestartServiceRequest,
     SaveConfigRequest,
     StopAgentsRequest,
 )
@@ -219,3 +223,52 @@ class StopAgentsHandler(MessageHandler):
                 },
             ),
         )
+
+
+class RestartServiceHandler(MessageHandler):
+    """Handle backend service restart requests.
+
+    Acknowledges the request, broadcasts a SERVICE_RESTARTING notice to all
+    connected clients, then schedules a process exit. The Electron host (or
+    a process supervisor) is expected to respawn the Python service.
+
+    Note: this does NOT reload code in the currently running process. It is a
+    graceful shutdown signal. Use it after installing plugins or changing
+    provider configuration that requires a fresh process.
+    """
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        await self._restart(websocket, message.request_id)
+
+    async def handle_validated(
+        self,
+        websocket: WebSocket,
+        message: WSMessage,
+        validated: RestartServiceRequest,
+    ) -> None:
+        await self._restart(websocket, message.request_id)
+
+    async def _restart(self, websocket: WebSocket, request_id: str | None) -> None:
+        try:
+            # Acknowledge to the caller first so the UI gets a response
+            # before the WebSocket is torn down.
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.ACK,
+                    request_id=request_id,
+                    data={"status": "restarting"},
+                ),
+            )
+            logger.info("RestartServiceHandler: scheduling process exit in 1s")
+        except Exception as e:
+            logger.error(f"Failed to acknowledge restart: {e}")
+        finally:
+            # Give the response a moment to flush, then exit cleanly. The
+            # Electron host is responsible for respawning the Python service
+            # when it sees exit code 99.
+            async def _exit_later():
+                await asyncio.sleep(1.0)
+                os._exit(99)
+
+            asyncio.create_task(_exit_later())

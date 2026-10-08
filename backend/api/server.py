@@ -96,15 +96,29 @@ async def lifespan(app: FastAPI):
     from backend.agent.subagent import SubagentManager
     from backend.core.config.schema import ExecToolConfig
     from backend.services.cron import CronService
+    from backend.services.schedule import ScheduleService
 
     exec_config = ExecToolConfig()
-    subagent_manager = SubagentManager(workspace=workspace, bus=bus, exec_config=exec_config)
 
     async def publish_message(channel: str, chat_id: str, content: str) -> None:
         """Publish message to user via message bus."""
         await bus.publish_outbound(
             OutboundMessage(channel=channel, chat_id=chat_id, content=content)
         )
+
+    # ScheduleService is stateless and cheap; build it before SubagentManager so
+    # the subagent's tool mapping can wire the create_event / list_events /
+    # search_events tools at spawn time. Pass the bus so successful mutations
+    # (from both the calendar UI and the LLM-driven chat drawer) broadcast a
+    # refresh signal that every open SchedulePanel listens to.
+    schedule_service = ScheduleService(db=db, bus=bus)
+
+    subagent_manager = SubagentManager(
+        workspace=workspace,
+        bus=bus,
+        exec_config=exec_config,
+        schedule_service=schedule_service,
+    )
 
     cron_service = CronService(
         db=db,
@@ -120,6 +134,7 @@ async def lifespan(app: FastAPI):
         db=db,
         exec_config=exec_config,
         cron_service=cron_service,
+        schedule_service=schedule_service,
         subagent_manager=subagent_manager,
         mcp_bridge=mcp_bridge,
     )
@@ -136,6 +151,7 @@ async def lifespan(app: FastAPI):
         app=app,
         mcp_manager=mcp_manager,
         cron_service=cron_service,
+        schedule_service=schedule_service,
         agent_loop=agent_loop,
         subagent_manager=subagent_manager,
     )
