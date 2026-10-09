@@ -467,6 +467,7 @@ When you have completed the task, provide a clear summary of your findings or ac
         group_id: str | None = None,
         session_instance_id: int | None = None,
         parent_tool_call_id: str | None = None,
+        skip_announce: bool = False,
         _resume_history: list[dict[str, Any]] | None = None,
     ) -> str:
         """
@@ -483,6 +484,11 @@ When you have completed the task, provide a clear summary of your findings or ac
                      aggregated with other subagents in the same group.
             session_instance_id: Session instance ID for precise routing.
             parent_tool_call_id: Parent tool call ID (injected by AgentLoop) for event routing.
+            skip_announce: When True, do not publish the result back to the main chat as a
+                system message. Used when the originating panel is already streaming the
+                subagent response via subagent_token events (e.g. the Schedule drawer), so
+                the redundant "Summarize this naturally…" prompt would otherwise surface in
+                the main chat as a self-Q&A bubble.
 
         Returns:
             Status message indicating the subagent was started.
@@ -505,6 +511,7 @@ When you have completed the task, provide a clear summary of your findings or ac
             "channel": origin_channel,
             "chat_id": origin_chat_id,
             "session_instance_id": session_instance_id,
+            "skip_announce": skip_announce,
         }
 
         # Register with aggregator if group_id provided
@@ -554,6 +561,7 @@ When you have completed the task, provide a clear summary of your findings or ac
         agent_role: str | None = None,
         session_instance_id: int | None = None,
         parent_tool_call_id: str | None = None,
+        skip_announce: bool = False,
     ) -> str:
         """
         Spawn a subagent that resumes a logical session if one exists.
@@ -578,6 +586,7 @@ When you have completed the task, provide a clear summary of your findings or ac
                 agent_role=agent_role,
                 session_instance_id=session_instance_id,
                 parent_tool_call_id=parent_tool_call_id,
+                skip_announce=skip_announce,
             )
 
         session_key = (agent_role, session_instance_id)
@@ -597,6 +606,7 @@ When you have completed the task, provide a clear summary of your findings or ac
             agent_role=agent_role,
             session_instance_id=session_instance_id,
             parent_tool_call_id=parent_tool_call_id,
+            skip_announce=skip_announce,
             _resume_history=prior_history,
         )
 
@@ -1440,7 +1450,16 @@ When you have completed the task, provide a clear summary of your findings or ac
                 return
             # If not grouped (shouldn't happen), fall through to individual announcement
 
-        # Individual announcement (no aggregation or not part of a group)
+        # Individual announcement (no aggregation or not part of a group).
+        # Skip the publish back to main chat when the originating panel already
+        # streams the subagent response itself (subagent_token events), otherwise
+        # we'd see a redundant "Summarize this naturally…" bubble in the main chat.
+        if origin.get("skip_announce"):
+            logger.info(
+                f"[Subagent:{task_id}] Skipping main-chat announce (skip_announce=True)"
+            )
+            return
+
         announce_content = f"""[Subagent '{label}' {status_text}]
 
 Task: {task}

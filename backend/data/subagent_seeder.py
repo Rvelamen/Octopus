@@ -649,6 +649,32 @@ should follow up without asking which event again.
     for spec in builtin:
         existing = subagent_repo.get_subagent_by_name(spec["name"])
         if existing:
+            # Built-in subagents are seeded from code, so their `tools` list
+            # and `system_prompt` are the source of truth. When the spec
+            # changes (e.g. new tools like cancel_event/delete_event were
+            # added) we need to push the new config into the DB so the
+            # running LLM agent sees them. Without this, the LLM hallucinates
+            # "I have no such tool" even though the code path exists.
+            desired_tools = spec.get("tools") or []
+            desired_prompt = spec.get("system_prompt", "")
+            current_tools = existing.tools or []
+            current_prompt = existing.system_prompt or ""
+            if set(current_tools) != set(desired_tools) or current_prompt != desired_prompt:
+                try:
+                    updated = subagent_repo.update_subagent(
+                        existing.id,
+                        tools=desired_tools,
+                        system_prompt=desired_prompt,
+                    )
+                    if updated:
+                        logger.info(
+                            f"Refreshed built-in subagent '{spec['name']}' "
+                            f"(tools: {len(current_tools)} → {len(desired_tools)})"
+                        )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to refresh subagent '{spec['name']}': {e}"
+                    )
             logger.debug(f"Subagent '{spec['name']}' already exists, skipping")
             continue
 

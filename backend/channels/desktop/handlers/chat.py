@@ -82,6 +82,12 @@ class ChatHandler(MessageHandler):
             # per (subagent_name, instance_id) instead of spawning a fresh
             # subagent for every message. Without an instance_id we fall back
             # to the original spawn behavior.
+            #
+            # skip_announce=True: the originating panel (e.g. the Schedule
+            # drawer) is already streaming the LLM response via subagent_token
+            # events. The default _announce_result would push a synthesized
+            # "Summarize this naturally…" system message back to the main chat
+            # (same chat_id) and surface there as a self-Q&A bubble.
             if instance_id is not None:
                 task_id = await self.subagent_manager.spawn_or_resume(
                     task=content,
@@ -90,6 +96,7 @@ class ChatHandler(MessageHandler):
                     origin_chat_id="desktop_session",
                     agent_role=subagent_name,
                     session_instance_id=instance_id,
+                    skip_announce=True,
                 )
             else:
                 task_id = await self.subagent_manager.spawn(
@@ -99,6 +106,7 @@ class ChatHandler(MessageHandler):
                     origin_chat_id="desktop_session",
                     agent_role=subagent_name,
                     session_instance_id=instance_id,
+                    skip_announce=True,
                 )
             logger.info(
                 f"Subagent '{subagent_name}' spawned for request_id={request_id} (task_id={task_id})"
