@@ -173,6 +173,93 @@
   color: var(--error);
 }
 
+/* Archive button (active mode): hover-revealed, sits left of the delete btn */
+.archive-instance-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.instance-row:hover .archive-instance-btn {
+  opacity: 1;
+}
+
+.archive-instance-btn:hover {
+  background: rgba(255, 165, 0, 0.12);
+  color: var(--accent, #d97706);
+}
+
+/* Restore button (archived mode): always visible, primary action */
+.restore-instance-btn {
+  background: var(--primary);
+  color: var(--bg-primary);
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  opacity: 1;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.restore-instance-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* Archived card visual: dimmed but still readable */
+.instance-row.archived {
+  opacity: 0.65;
+}
+
+.instance-row.archived:hover {
+  opacity: 0.9;
+}
+
+/* Archived section header — collapsible, full-width row */
+.archived-section-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  margin: 8px 0 4px 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.archived-section-header:hover {
+  border-color: var(--primary);
+}
+
+.archived-section-header .archived-chevron {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.archived-section-header .archived-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.archived-section-header .archived-section-count {
+  font-size: 10px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
 .loading-state {
   display: flex;
   flex-direction: column;

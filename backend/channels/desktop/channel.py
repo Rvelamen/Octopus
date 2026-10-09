@@ -220,6 +220,8 @@ class DesktopChannel(BaseChannel):
             "subagent_tool_result": MessageType.SUBAGENT_TOOL_RESULT,
             # Knowledge distill events
             "knowledge_distill_progress": MessageType.KNOWLEDGE_DISTILL_PROGRESS,
+            # Chat instance lifecycle events (archive / unarchive / delete / set-active)
+            "chat_instance_changed": MessageType.CHAT_INSTANCE_CHANGED,
         }
 
         msg_type = event_type_map.get(event.event_type)

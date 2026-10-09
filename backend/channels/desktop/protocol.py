@@ -49,6 +49,8 @@ class MessageType(Enum):
     SESSION_CREATE = "session_create"  # Create a new session with instance
     SESSION_SET_ACTIVE = "session_set_active"  # Set an instance as active
     SESSION_GET_INSTANCES = "session_get_instances"  # Get instances list with pagination
+    SESSION_ARCHIVE_INSTANCE = "session_archive_instance"  # Archive a session instance
+    SESSION_UNARCHIVE_INSTANCE = "session_unarchive_instance"  # Restore an archived instance
     SESSION_COMPRESS_CONTEXT = "session_compress_context"  # Compress context for an instance
     SESSION_GET_CONTEXT_STATS = (
         "session_get_context_stats"  # Get context usage stats for an instance
@@ -293,11 +295,14 @@ class MessageType(Enum):
     SESSION_DETAIL = "session_detail"  # Session detail with instances
     SESSION_MESSAGES = "session_messages"  # Messages for an instance
     SESSION_INSTANCE_DELETED = "session_instance_deleted"  # Instance deleted confirmation
+    SESSION_INSTANCE_ARCHIVED = "session_instance_archived"  # Instance archived confirmation
+    SESSION_INSTANCE_UNARCHIVED = "session_instance_unarchived"  # Instance unarchived confirmation
     SESSION_CREATED = "session_created"  # Session created confirmation
     SESSION_ACTIVE_SET = "session_active_set"  # Active instance set confirmation
     SESSION_INSTANCES = "session_instances"  # Instances list with pagination
     SESSION_CONTEXT_COMPRESSED = "session_context_compressed"  # Context compressed confirmation
     SESSION_CONTEXT_STATS = "session_context_stats"  # Context usage stats response
+    CHAT_INSTANCE_CHANGED = "chat_instance_changed"  # Cross-window broadcast: archived/unarchived/deleted/active_set
 
     # Knowledge Base - Server -> Client
     KNOWLEDGE_LIST_RESULT = "knowledge_list_result"  # Knowledge directory listing result
@@ -627,6 +632,8 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.SESSION_CREATE,
     MessageType.SESSION_SET_ACTIVE,
     MessageType.SESSION_GET_INSTANCES,
+    MessageType.SESSION_ARCHIVE_INSTANCE,
+    MessageType.SESSION_UNARCHIVE_INSTANCE,
     MessageType.SESSION_COMPRESS_CONTEXT,
     MessageType.SESSION_GET_CONTEXT_STATS,
     MessageType.KNOWLEDGE_LIST,
@@ -826,11 +833,14 @@ SERVER_MESSAGE_TYPES = {
     MessageType.SESSION_DETAIL,
     MessageType.SESSION_MESSAGES,
     MessageType.SESSION_INSTANCE_DELETED,
+    MessageType.SESSION_INSTANCE_ARCHIVED,
+    MessageType.SESSION_INSTANCE_UNARCHIVED,
     MessageType.SESSION_CREATED,
     MessageType.SESSION_ACTIVE_SET,
     MessageType.SESSION_INSTANCES,
     MessageType.SESSION_CONTEXT_COMPRESSED,
     MessageType.SESSION_CONTEXT_STATS,
+    MessageType.CHAT_INSTANCE_CHANGED,
     MessageType.WORKSPACE_LIST_RESULT,
     MessageType.WORKSPACE_READ_RESULT,
     MessageType.WORKSPACE_WRITE_RESULT,

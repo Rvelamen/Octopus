@@ -391,6 +391,7 @@ function App() {
               <Route path="/chat" element={
                 <Chat
                   sendWSMessage={sendMessage}
+                  subscribe={subscribe}
                   connectionStatus={connectionStatus}
                   onSendMessage={handleSendMessage}
                   onStopGeneration={handleStopGeneration}
@@ -447,6 +448,7 @@ function App() {
               <Route path="/" element={
                 <Chat
                   sendWSMessage={sendMessage}
+                  subscribe={subscribe}
                   connectionStatus={connectionStatus}
                   onSendMessage={handleSendMessage}
                   onStopGeneration={handleStopGeneration}

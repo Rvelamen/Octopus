@@ -35,6 +35,7 @@ class SessionInstance:
     updated_at: datetime
     tts_enabled: bool = False
     tts_config: dict[str, Any] = None
+    archived_at: datetime | None = None
 
     def __post_init__(self):
         if self.tts_config is None:
@@ -178,15 +179,31 @@ class SessionRepository:
 
             return self._row_to_instance(row) if row else None
 
-    def list_instances(self, session_id: int) -> list[SessionInstance]:
-        """List all instances for a session."""
+    def list_instances(
+        self, session_id: int, *, include_archived: bool = False
+    ) -> list[SessionInstance]:
+        """List instances for a session.
+
+        By default archived instances are filtered out (the common path —
+        the Chat sidebar's active list). Pass ``include_archived=True``
+        to get every instance, which is what the archived-section list
+        uses.
+        """
         with self.db._get_connection() as conn:
-            rows = conn.execute(
-                """SELECT * FROM session_instances
-                   WHERE session_id = ?
-                   ORDER BY created_at DESC""",
-                (session_id,),
-            ).fetchall()
+            if include_archived:
+                rows = conn.execute(
+                    """SELECT * FROM session_instances
+                       WHERE session_id = ?
+                       ORDER BY created_at DESC""",
+                    (session_id,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """SELECT * FROM session_instances
+                       WHERE session_id = ? AND archived_at IS NULL
+                       ORDER BY created_at DESC""",
+                    (session_id,),
+                ).fetchall()
 
             return [self._row_to_instance(row) for row in rows]
 
@@ -222,20 +239,106 @@ class SessionRepository:
         return self.create_instance(session_id, instance_name, is_active=True)
 
     def set_active_instance(self, session_id: int, instance_id: int) -> bool:
-        """Set an instance as active (deactivate all other instances globally)."""
+        """Set an instance as active (deactivate all other instances globally).
+
+        Refuses to activate an archived instance — the WHERE clause filters
+        on ``archived_at IS NULL`` so the rowcount comes back 0 and the
+        caller sees ``False``. Caller should unarchive first.
+        """
         with self.db._get_connection() as conn:
             # Deactivate ALL instances globally
             conn.execute("""UPDATE session_instances
                    SET is_active = 0, updated_at = (datetime('now', 'localtime'))""")
 
-            # Activate the specified instance
+            # Activate the specified instance — but only if it's not archived.
             cursor = conn.execute(
                 """UPDATE session_instances
                    SET is_active = 1, updated_at = (datetime('now', 'localtime'))
-                   WHERE id = ? AND session_id = ?""",
+                   WHERE id = ? AND session_id = ? AND archived_at IS NULL""",
                 (instance_id, session_id),
             )
 
+            return cursor.rowcount > 0
+
+    def archive_instance(self, instance_id: int) -> tuple[bool, int | None]:
+        """Mark an instance as archived.
+
+        Stamps ``archived_at`` and clears ``is_active`` on the same row in a
+        single transaction. If the row was the globally-active instance
+        (``is_active = 1``), the next-newest non-archived instance for the
+        same session is auto-activated in the same transaction so the UI
+        never sees an active pointer on an archived row.
+
+        Returns ``(success, replacement_active_id)``. ``replacement_active_id``
+        is None when the archived row was not active, or when no other
+        non-archived instance exists to take over.
+
+        In-flight agent streams for the archived row are NOT cancelled —
+        they finish into the now-archived row. This is by design: the user
+        didn't ask for hard-stop, and the row is still readable.
+        """
+        with self.db._get_connection() as conn:
+            row = conn.execute(
+                """SELECT id, session_id, is_active
+                   FROM session_instances WHERE id = ?""",
+                (instance_id,),
+            ).fetchone()
+
+            if not row:
+                return (False, None)
+
+            was_active = bool(row["is_active"])
+            session_id = row["session_id"]
+
+            # Stamp archived_at and clear is_active on the target row.
+            conn.execute(
+                """UPDATE session_instances
+                   SET archived_at = datetime('now', 'localtime'),
+                       is_active = 0,
+                       updated_at = datetime('now', 'localtime')
+                   WHERE id = ?""",
+                (instance_id,),
+            )
+
+            replacement_id: int | None = None
+            if was_active:
+                # Auto-pick: next-newest non-archived instance for the same session.
+                pick = conn.execute(
+                    """SELECT id FROM session_instances
+                       WHERE session_id = ? AND archived_at IS NULL
+                         AND id != ?
+                       ORDER BY created_at DESC LIMIT 1""",
+                    (session_id, instance_id),
+                ).fetchone()
+                if pick:
+                    replacement_id = pick["id"]
+                    conn.execute(
+                        """UPDATE session_instances
+                           SET is_active = 0,
+                               updated_at = datetime('now', 'localtime')"""
+                    )
+                    conn.execute(
+                        """UPDATE session_instances
+                           SET is_active = 1,
+                               updated_at = datetime('now', 'localtime')
+                           WHERE id = ? AND archived_at IS NULL""",
+                        (replacement_id,),
+                    )
+
+            return (True, replacement_id)
+
+    def unarchive_instance(self, instance_id: int) -> bool:
+        """Clear ``archived_at`` on an instance. Does NOT touch ``is_active`` —
+        a restored card stays inactive until the user clicks it.
+        """
+        with self.db._get_connection() as conn:
+            cursor = conn.execute(
+                """UPDATE session_instances
+                   SET archived_at = NULL,
+                       updated_at = datetime('now', 'localtime')
+                   WHERE id = ?""",
+                (instance_id,),
+            )
             return cursor.rowcount > 0
 
     def delete_instance(self, instance_id: int) -> bool:
@@ -631,6 +734,7 @@ class SessionRepository:
             updated_at=datetime.fromisoformat(row["updated_at"]),
             tts_enabled=bool(row["tts_enabled"]) if "tts_enabled" in row else False,
             tts_config=tts_config,
+            archived_at=datetime.fromisoformat(row["archived_at"]) if "archived_at" in row and row["archived_at"] else None,
         )
 
     def _row_to_message(self, row) -> MessageRecord:

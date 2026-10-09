@@ -29,6 +29,7 @@ def create_tables(conn: sqlite3.Connection) -> None:
             compressed_at TIMESTAMP,
             tts_enabled BOOLEAN DEFAULT 0,
             tts_config TEXT DEFAULT '{}',
+            archived_at TIMESTAMP,
             created_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
             updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
             FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE

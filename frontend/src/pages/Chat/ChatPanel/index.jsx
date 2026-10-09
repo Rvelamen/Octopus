@@ -18,6 +18,7 @@ import '../../../components/ui/ImageModal.css';
 
 function ChatPanel({
   sendWSMessage,
+  subscribe,
   connectionStatus,
   onSendMessage,
   onStopGeneration,
@@ -67,9 +68,43 @@ function ChatPanel({
     instancesHasMore,
     isLoadingMore,
     fetchInstances,
+    fetchArchivedInstances,
     loadMoreInstances,
-    deleteInstance
-  } = useInstances(sendWSMessage, connectionStatus);
+    deleteInstance,
+    archivedInstances,
+    archivedExpanded,
+    setArchivedExpanded,
+    archiveInstance,
+    unarchiveInstance,
+  } = useInstances(sendWSMessage, connectionStatus, {
+    subscribe,
+    onInstanceDeleted: (deletedId) => {
+      if (selectedInstance?.id === deletedId) {
+        setSelectedInstance(null);
+        clearMessages();
+      }
+    },
+    onActiveChanged: (newId) => {
+      // Auto-pick: the user archived the currently-selected card; the
+      // server switched the global active pointer to `newId`. Re-select
+      // the new card locally so the right pane updates.
+      const replacement = instances.find(i => i.id === newId)
+        || archivedInstances.find(i => i.id === newId);
+      if (replacement) {
+        setSelectedInstance({ ...replacement, is_active: true });
+        fetchInstanceMessages(replacement.id);
+        fetchInstanceTokenUsage(replacement.id);
+      } else {
+        // Replacement not in our local lists yet; clear the selection
+        // and re-fetch so the right pane doesn't keep showing the
+        // archived (now-gone) chat.
+        setSelectedInstance(null);
+        clearMessages();
+        fetchInstances();
+        fetchArchivedInstances?.();
+      }
+    },
+  });
 
   const {
     messages,
@@ -309,6 +344,26 @@ function ChatPanel({
     }
   };
 
+  const handleArchive = async (instance) => {
+    if (!instance) return;
+    const wasSelected = selectedInstance?.id === instance.id;
+    const success = await archiveInstance(instance, t);
+    if (success && wasSelected) {
+      // The hook will receive the auto-pick event via chat_instance_changed
+      // and call onActiveChanged to re-select the replacement. We don't
+      // touch selectedInstance here — the bus does it.
+    }
+  };
+
+  const handleUnarchive = async (instance) => {
+    if (!instance) return;
+    await unarchiveInstance(instance, t);
+  };
+
+  const handleToggleArchivedSection = () => {
+    setArchivedExpanded(prev => !prev);
+  };
+
   const fetchContextStats = useCallback(async (instanceId) => {
     if (!sendWSMessage || !instanceId) return;
     try {
@@ -490,6 +545,7 @@ function ChatPanel({
   return (
     <div className="chat-layout">
       <InstanceList
+        t={t}
         instances={instances}
         selectedInstance={selectedInstance}
         loading={loading}
@@ -500,10 +556,15 @@ function ChatPanel({
         sendWSMessage={sendWSMessage}
         onSelect={handleSelectInstance}
         onDelete={handleDeleteInstance}
+        onArchive={handleArchive}
+        onUnarchive={handleUnarchive}
         onCreateNew={handleCreateNewChat}
         onRefresh={() => fetchInstances(true, false)}
         isCreatingNew={isCreatingNew}
         onScrollEnd={loadMoreInstances}
+        archivedInstances={archivedInstances}
+        archivedExpanded={archivedExpanded}
+        onToggleArchivedSection={handleToggleArchivedSection}
       />
 
       <div className="chat-main">

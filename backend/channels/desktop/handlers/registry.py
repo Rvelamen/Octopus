@@ -127,6 +127,7 @@ from backend.channels.desktop.handlers.schedule import (
 # Import session handlers
 from backend.channels.desktop.handlers.session import (
     SessionCompressContextHandler,
+    SessionArchiveInstanceHandler,
     SessionCreateHandler,
     SessionDeleteInstanceHandler,
     SessionGetChannelSessionsHandler,
@@ -136,6 +137,7 @@ from backend.channels.desktop.handlers.session import (
     SessionGetMessagesHandler,
     SessionGetSessionDetailHandler,
     SessionSetActiveHandler,
+    SessionUnarchiveInstanceHandler,
 )
 
 # Import slash commands handler
@@ -332,6 +334,8 @@ class HandlerRegistry:
                 MessageType.SESSION_CREATE: SessionCreateHandler(bus, self.agent_loop),
                 MessageType.SESSION_SET_ACTIVE: SessionSetActiveHandler(bus, self.agent_loop),
                 MessageType.SESSION_GET_INSTANCES: SessionGetInstancesHandler(bus),
+                MessageType.SESSION_ARCHIVE_INSTANCE: SessionArchiveInstanceHandler(bus),
+                MessageType.SESSION_UNARCHIVE_INSTANCE: SessionUnarchiveInstanceHandler(bus),
                 MessageType.SESSION_COMPRESS_CONTEXT: SessionCompressContextHandler(
                     bus, self.agent_loop
                 ),

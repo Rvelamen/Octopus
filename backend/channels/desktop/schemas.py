@@ -166,6 +166,26 @@ class SessionDeleteInstanceRequest(BaseRequest):
     instance_id: int | None = None
 
 
+class SessionArchiveInstanceRequest(BaseRequest):
+    """Archive a session instance. Stamps ``archived_at`` and clears
+    ``is_active`` on the target row in a single transaction; if the row
+    was globally active, auto-picks the next-newest non-archived instance
+    to take over. If any active stream is in flight for this instance,
+    it is allowed to finish into the now-archived row (not hard-stopped).
+    """
+
+    instance_id: int
+
+
+class SessionUnarchiveInstanceRequest(BaseRequest):
+    """Restore an archived session instance. Clears ``archived_at`` but
+    does not change ``is_active`` — the user has to click the card to
+    open it.
+    """
+
+    instance_id: int
+
+
 class SessionCreateRequest(BaseRequest):
     channel: str = ""
     chat_id: str = ""
@@ -178,9 +198,13 @@ class SessionSetActiveRequest(BaseRequest):
 
 
 class SessionGetInstancesRequest(BaseRequest):
-    session_key: str = ""
+    channel: str = "desktop"
     limit: int = 50
     offset: int = 0
+    archived_only: bool = False
+    """When True, return only archived instances (most-recently-archived
+    first). When False (default), return only the active list
+    (``archived_at IS NULL``)."""
 
 
 class SessionCompressContextRequest(BaseRequest):
@@ -441,6 +465,30 @@ class ScheduleBatchRestoreEventsRequest(BaseRequest):
 
 class ScheduleHardDeleteEventRequest(BaseRequest):
     event_id: int = 0
+
+
+# ============================================================================
+# Chat instance lifecycle (server-emitted cross-window broadcasts)
+# ============================================================================
+class ChatInstanceChangedEvent(BaseRequest):
+    """Broadcast to all connected clients when a chat instance's lifecycle
+    state changes. ``action`` is one of:
+
+    - ``"archived"`` — instance moved to the archived section
+    - ``"unarchived"`` — instance restored to the active list
+    - ``"deleted"`` — instance hard-deleted (was previously only
+      single-client via ``session_instance_deleted``; now also broadcast
+      so every open window removes the row)
+    - ``"active_set"`` — the global active pointer moved; receivers
+      should re-select this instance in their UI
+    """
+
+    action: str
+    instance_id: int
+    channel: str = "desktop"
+    # Only present for ``active_set``: the instance that took over when the
+    # previously-active one was archived.
+    replacement_active_id: int | None = None
 
 
 # ============================================================================
@@ -898,6 +946,8 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.SESSION_CREATE: SessionCreateRequest,
     MessageType.SESSION_SET_ACTIVE: SessionSetActiveRequest,
     MessageType.SESSION_GET_INSTANCES: SessionGetInstancesRequest,
+    MessageType.SESSION_ARCHIVE_INSTANCE: SessionArchiveInstanceRequest,
+    MessageType.SESSION_UNARCHIVE_INSTANCE: SessionUnarchiveInstanceRequest,
     MessageType.SESSION_COMPRESS_CONTEXT: SessionCompressContextRequest,
     MessageType.SESSION_GET_CONTEXT_STATS: SessionGetContextStatsRequest,
     MessageType.KNOWLEDGE_LIST: KnowledgeListRequest,
