@@ -192,6 +192,41 @@ class ScheduleService:
             logger.info(f"Schedule: deleted event {event_id}")
         return deleted
 
+    # ---- cancellation -----------------------------------------------------
+
+    def cancel_event(self, event_id: int) -> ScheduleEvent | None:
+        """Mark an event as cancelled (idempotent). Cancellation is reversible
+        via :meth:`uncancel_event` and is distinct from hard delete.
+        """
+        existing = self.get_event(event_id)
+        if existing is None:
+            return None
+        if existing.cancelled:
+            # Already cancelled — return as-is, no DB write, no broadcast.
+            return existing
+        self._execute_write(
+            "UPDATE schedule_events SET cancelled = 1, "
+            "updated_at = datetime('now','localtime') WHERE id = ?",
+            (event_id,),
+        )
+        logger.info(f"Schedule: cancelled event {event_id}")
+        return self.get_event(event_id)
+
+    def uncancel_event(self, event_id: int) -> ScheduleEvent | None:
+        """Restore a previously cancelled event (idempotent)."""
+        existing = self.get_event(event_id)
+        if existing is None:
+            return None
+        if not existing.cancelled:
+            return existing
+        self._execute_write(
+            "UPDATE schedule_events SET cancelled = 0, "
+            "updated_at = datetime('now','localtime') WHERE id = ?",
+            (event_id,),
+        )
+        logger.info(f"Schedule: restored event {event_id}")
+        return self.get_event(event_id)
+
     # ---- search -----------------------------------------------------------
 
     def search_events(

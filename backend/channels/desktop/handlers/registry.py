@@ -110,10 +110,13 @@ from backend.channels.desktop.handlers.pdf_annotation_chat import PdfAnnotationC
 
 # Import schedule handlers
 from backend.channels.desktop.handlers.schedule import (
+    ScheduleCancelEventHandler,
     ScheduleCreateEventHandler,
     ScheduleDeleteEventHandler,
+    ScheduleGetEventHandler,
     ScheduleListEventsHandler,
     ScheduleSearchEventsHandler,
+    ScheduleUncancelEventHandler,
     ScheduleUpdateEventHandler,
 )
 
@@ -378,6 +381,9 @@ class HandlerRegistry:
                 MessageType.SCHEDULE_UPDATE_EVENT: ScheduleUpdateEventHandler(bus, schedule_service),
                 MessageType.SCHEDULE_DELETE_EVENT: ScheduleDeleteEventHandler(bus, schedule_service),
                 MessageType.SCHEDULE_SEARCH_EVENTS: ScheduleSearchEventsHandler(bus, schedule_service),
+                MessageType.SCHEDULE_GET_EVENT: ScheduleGetEventHandler(bus, schedule_service),
+                MessageType.SCHEDULE_CANCEL_EVENT: ScheduleCancelEventHandler(bus, schedule_service),
+                MessageType.SCHEDULE_UNCANCEL_EVENT: ScheduleUncancelEventHandler(bus, schedule_service),
             }
         )
 

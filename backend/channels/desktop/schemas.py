@@ -415,6 +415,18 @@ class ScheduleSearchEventsRequest(BaseRequest):
     end_at_ms: int | None = None
 
 
+class ScheduleGetEventRequest(BaseRequest):
+    event_id: int = 0
+
+
+class ScheduleCancelEventRequest(BaseRequest):
+    event_id: int = 0
+
+
+class ScheduleUncancelEventRequest(BaseRequest):
+    event_id: int = 0
+
+
 # ============================================================================
 # Agent
 # ============================================================================
@@ -910,6 +922,9 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.SCHEDULE_UPDATE_EVENT: ScheduleUpdateEventRequest,
     MessageType.SCHEDULE_DELETE_EVENT: ScheduleDeleteEventRequest,
     MessageType.SCHEDULE_SEARCH_EVENTS: ScheduleSearchEventsRequest,
+    MessageType.SCHEDULE_GET_EVENT: ScheduleGetEventRequest,
+    MessageType.SCHEDULE_CANCEL_EVENT: ScheduleCancelEventRequest,
+    MessageType.SCHEDULE_UNCANCEL_EVENT: ScheduleUncancelEventRequest,
     MessageType.AGENT_GET_LIST: AgentGetListRequest,
     MessageType.AGENT_GET_SOUL: AgentGetSoulRequest,
     MessageType.AGENT_SAVE_SOUL: AgentSaveSoulRequest,

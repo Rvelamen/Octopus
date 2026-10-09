@@ -253,7 +253,11 @@
       "updated": "Event updated",
       "deleted": "Event deleted",
       "saveFailed": "Save failed: {{error}}",
-      "deleteFailed": "Delete failed: {{error}}"
+      "deleteFailed": "Delete failed: {{error}}",
+      "cancelled": "Event marked as cancelled",
+      "uncancelled": "Event restored",
+      "cancelledFailed": "Cancel failed: {{error}}",
+      "uncancelFailed": "Restore failed: {{error}}"
     },
     "showChat": "Show chat",
     "hideChat": "Hide chat",
@@ -298,7 +302,12 @@
       "create": "Create",
       "cancel": "Cancel",
       "delete": "Delete",
-      "deleteConfirm": "Delete this event?"
+      "deleteConfirm": "Permanently delete this event? This cannot be undone.",
+      "cancelled": "Cancelled",
+      "uncancel": "Restore",
+      "cancelSchedule": "Cancel schedule",
+      "cancelledHint": "This event is marked as cancelled. You can restore it or delete it permanently.",
+      "deleteTitle": "Permanently delete — this cannot be undone"
     }
   }
 }

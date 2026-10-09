@@ -42,7 +42,16 @@ from backend.tools.library_knowledge import (
 from backend.tools.memory import MemoryReadTool, MemorySearchTool, MemoryTimelineTool
 from backend.tools.message import MessageTool
 from backend.tools.registry import ToolRegistry
-from backend.tools.schedule import CreateEventTool, ListEventsTool, SearchEventsTool
+from backend.tools.schedule import (
+    CancelEventTool,
+    CreateEventTool,
+    DeleteEventTool,
+    GetCurrentTimeTool,
+    GetEventTool,
+    ListEventsTool,
+    SearchEventsTool,
+    UpdateEventTool,
+)
 from backend.tools.shell import ExecTool
 from backend.tools.spawn import SpawnTool
 from backend.tools.web_fetch import WebFetchTool
@@ -250,6 +259,16 @@ class AgentContainer:
             self.tools.register(ListEventsTool(schedule_service=self.schedule_service))
         if should_register("search_events"):
             self.tools.register(SearchEventsTool(schedule_service=self.schedule_service))
+        if should_register("get_event"):
+            self.tools.register(GetEventTool(schedule_service=self.schedule_service))
+        if should_register("get_current_time"):
+            self.tools.register(GetCurrentTimeTool(schedule_service=self.schedule_service))
+        if should_register("update_event"):
+            self.tools.register(UpdateEventTool(schedule_service=self.schedule_service))
+        if should_register("cancel_event"):
+            self.tools.register(CancelEventTool(schedule_service=self.schedule_service))
+        if should_register("delete_event"):
+            self.tools.register(DeleteEventTool(schedule_service=self.schedule_service))
         if should_register("action"):
             self.tools.register(ActionTool())
         if should_register("memory_search"):

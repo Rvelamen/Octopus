@@ -15,6 +15,7 @@ def create_tables(conn: sqlite3.Connection) -> None:
             start_at_ms INTEGER NOT NULL,
             end_at_ms   INTEGER NOT NULL,
             all_day INTEGER NOT NULL DEFAULT 0,
+            cancelled INTEGER NOT NULL DEFAULT 0,
             created_at TIMESTAMP DEFAULT (datetime('now', 'localtime')),
             updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
         )

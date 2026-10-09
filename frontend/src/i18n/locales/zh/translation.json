@@ -253,7 +253,11 @@
       "updated": "已更新日程",
       "deleted": "已删除日程",
       "saveFailed": "保存失败:{{error}}",
-      "deleteFailed": "删除失败:{{error}}"
+      "deleteFailed": "删除失败:{{error}}",
+      "cancelled": "已标记为取消",
+      "uncancelled": "已恢复日程",
+      "cancelledFailed": "标记取消失败:{{error}}",
+      "uncancelFailed": "恢复失败:{{error}}"
     },
     "showChat": "展开聊天",
     "hideChat": "收起聊天",
@@ -298,7 +302,13 @@
       "create": "创建",
       "cancel": "取消",
       "delete": "删除",
-      "deleteConfirm": "确定删除这个日程？"
+      "deleteConfirm": "确定删除这个日程？",
+      "cancelled": "已取消",
+      "uncancel": "恢复",
+      "cancelSchedule": "取消日程",
+      "cancelledHint": "此日程已标记为取消，可恢复或彻底删除。",
+      "deleteTitle": "永久删除，此操作不可恢复",
+      "deleteConfirm": "确定要永久删除这个日程？此操作不可恢复。"
     }
   }
 }

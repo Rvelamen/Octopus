@@ -9,6 +9,8 @@ import {
   MessageSquare,
   Send,
   RefreshCw,
+  RotateCcw,
+  Ban,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import WindowDots from '@components/layout/WindowDots';
@@ -80,7 +82,7 @@ function formatDate(d) {
 
 // ---------- Month View ----------
 
-function MonthView({ cursor, events, onSelectEvent, onCreateAt }) {
+function MonthView({ cursor, events, onSelectEvent, onCreateAt, onShowMore }) {
   const { t } = useTranslation();
   const start = startOfMonth(cursor);
   const end = endOfMonth(cursor);
@@ -108,7 +110,7 @@ function MonthView({ cursor, events, onSelectEvent, onCreateAt }) {
             (e) => e.start_at_ms < dayEnd && e.end_at_ms > dayStart
           )
           .sort((a, b) => a.start_at_ms - b.start_at_ms);
-        const visible = dayEvents.slice(0, 3);
+        const visible = dayEvents.slice(0, 4);
         const more = dayEvents.length - visible.length;
 
         return (
@@ -117,6 +119,7 @@ function MonthView({ cursor, events, onSelectEvent, onCreateAt }) {
             className={`month-cell${isOutside ? ' outside-month' : ''}${isToday ? ' is-today' : ''}`}
             onClick={(e) => {
               if (e.target.classList.contains('month-event')) return;
+              if (e.target.closest('.month-more')) return;
               onCreateAt(day);
             }}
           >
@@ -130,7 +133,7 @@ function MonthView({ cursor, events, onSelectEvent, onCreateAt }) {
               {visible.map((ev) => (
                 <div
                   key={ev.id}
-                  className={`month-event${ev.all_day ? ' all-day' : ''}`}
+                  className={`month-event${ev.all_day ? ' all-day' : ''}${ev.cancelled ? ' cancelled' : ''}`}
                   style={{ borderLeftColor: ev.color }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -142,6 +145,11 @@ function MonthView({ cursor, events, onSelectEvent, onCreateAt }) {
                     style={{ background: ev.color }}
                   />
                   <span>{ev.all_day ? '' : formatTime(ev.start_at_ms) + ' '}{ev.title}</span>
+                  {ev.cancelled && (
+                    <span className="month-event-cancelled-tag">
+                      {t('schedule.modal.cancelled', { defaultValue: '已取消' })}
+                    </span>
+                  )}
                 </div>
               ))}
               {more > 0 && (
@@ -149,7 +157,7 @@ function MonthView({ cursor, events, onSelectEvent, onCreateAt }) {
                   className="month-more"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onCreateAt(day, dayEvents);
+                    onShowMore(day, dayEvents, e.currentTarget);
                   }}
                 >
                   {t('schedule.more', { count: more })}
@@ -159,6 +167,115 @@ function MonthView({ cursor, events, onSelectEvent, onCreateAt }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ---------- Day Events Popover ----------
+
+function DayEventsPopover({ day, events, anchor, onSelectEvent, onCreateAt, onClose }) {
+  const { t } = useTranslation();
+  const popoverRef = useRef(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  // Position the popover near the anchor cell, clamped to the viewport so it
+  // never overflows off-screen even when the cell is near an edge.
+  useEffect(() => {
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const popW = 280;
+    const popH = 320;
+    const margin = 8;
+    let top = rect.bottom + margin;
+    let left = rect.left;
+    if (left + popW > window.innerWidth - margin) {
+      left = Math.max(margin, window.innerWidth - popW - margin);
+    }
+    if (top + popH > window.innerHeight - margin) {
+      // Flip above the anchor when there isn't room below.
+      top = Math.max(margin, rect.top - popH - margin);
+    }
+    setPos({ top, left });
+  }, [anchor]);
+
+  // Click outside / Escape closes the popover
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target) && !anchor?.contains(e.target)) {
+        onClose();
+      }
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [anchor, onClose]);
+
+  if (!day || !events) return null;
+
+  return (
+    <div
+      ref={popoverRef}
+      className="day-events-popover pixel-border"
+      style={{ top: `${pos.top}px`, left: `${pos.left}px` }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="day-events-popover-header">
+        <span className="day-events-popover-title">
+          {day.format('YYYY-MM-DD dddd')}
+        </span>
+        <button className="dialog-close" onClick={onClose} title={t('common.cancel', { defaultValue: 'Close' })}>
+          <X size={14} />
+        </button>
+      </div>
+      <div className="day-events-popover-list">
+        {events.map((ev) => (
+          <div
+            key={ev.id}
+            className={`day-events-popover-item${ev.cancelled ? ' cancelled' : ''}`}
+            style={{ borderLeftColor: ev.color }}
+            onClick={() => {
+              onSelectEvent(ev);
+              onClose();
+            }}
+          >
+            <div className="day-events-popover-item-time">
+              {ev.all_day ? t('schedule.modal.allDay', { defaultValue: 'All day' }) : `${formatTime(ev.start_at_ms)} – ${formatTime(ev.end_at_ms)}`}
+            </div>
+            <div className="day-events-popover-item-title">
+              <span
+                className="month-event-color-dot"
+                style={{ background: ev.color }}
+              />
+              {ev.title}
+              {ev.cancelled && (
+                <span className="month-event-cancelled-tag">
+                  {t('schedule.modal.cancelled', { defaultValue: '已取消' })}
+                </span>
+              )}
+            </div>
+            {ev.location && (
+              <div className="day-events-popover-item-location">{ev.location}</div>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="day-events-popover-footer">
+        <button
+          className="pixel-button"
+          onClick={() => {
+            onCreateAt(day);
+            onClose();
+          }}
+        >
+          <Plus size={12} /> {t('schedule.modal.new')}
+        </button>
+      </div>
     </div>
   );
 }
@@ -219,7 +336,7 @@ function WeekView({ cursor, events, onSelectEvent, onCreateAt }) {
                 return (
                   <div
                     key={ev.id}
-                    className="timegrid-event"
+                    className={`timegrid-event${ev.cancelled ? ' cancelled' : ''}`}
                     style={{
                       top: `${top}px`,
                       height: `${height}px`,
@@ -289,7 +406,7 @@ function DayView({ cursor, events, onSelectEvent, onCreateAt }) {
             return (
               <div
                 key={ev.id}
-                className="timegrid-event"
+                className={`timegrid-event${ev.cancelled ? ' cancelled' : ''}`}
                 style={{
                   top: `${top}px`,
                   height: `${height}px`,
@@ -312,9 +429,10 @@ function DayView({ cursor, events, onSelectEvent, onCreateAt }) {
 
 // ---------- Event Modal ----------
 
-function EventModal({ event, defaultStart, onSave, onDelete, onClose }) {
+function EventModal({ event, defaultStart, onSave, onDelete, onCancelEvent, onUncancelEvent, onClose }) {
   const { t } = useTranslation();
   const isEdit = !!event;
+  const isCancelled = isEdit && event.cancelled;
   const [form, setForm] = useState(() => {
     if (event) {
       return {
@@ -357,14 +475,28 @@ function EventModal({ event, defaultStart, onSave, onDelete, onClose }) {
 
   return (
     <div className="event-modal-overlay" onClick={onClose}>
-      <div className="event-modal pixel-border" onClick={(e) => e.stopPropagation()}>
+      <div className={`event-modal pixel-border${isCancelled ? ' is-cancelled' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <WindowDots />
-          <span className="modal-title">{isEdit ? t('schedule.modal.edit') : t('schedule.modal.new')}</span>
+          <span className="modal-title">
+            {isCancelled && (
+              <span className="modal-cancelled-badge">
+                {t('schedule.modal.cancelled', { defaultValue: '已取消' })}
+              </span>
+            )}
+            {isEdit ? t('schedule.modal.edit') : t('schedule.modal.new')}
+          </span>
           <button className="dialog-close" onClick={onClose}>
             <X size={16} />
           </button>
         </div>
+        {isCancelled && (
+          <div className="modal-cancelled-banner">
+            {t('schedule.modal.cancelledHint', {
+              defaultValue: '此日程已标记为取消，可恢复或彻底删除',
+            })}
+          </div>
+        )}
         <div className="modal-body">
           <div className="form-group">
             <label>{t('schedule.modal.title')}</label>
@@ -372,9 +504,10 @@ function EventModal({ event, defaultStart, onSave, onDelete, onClose }) {
               type="text"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="pixel-input"
+              className="pixel-input modal-input-title"
               placeholder={t('schedule.modal.titlePlaceholder')}
               autoFocus
+              disabled={isCancelled}
             />
           </div>
           <div className="form-group">
@@ -383,6 +516,7 @@ function EventModal({ event, defaultStart, onSave, onDelete, onClose }) {
                 type="checkbox"
                 checked={form.all_day}
                 onChange={(e) => setForm({ ...form, all_day: e.target.checked })}
+                disabled={isCancelled}
               />{' '}
               {t('schedule.modal.allDay')}
             </label>
@@ -394,6 +528,7 @@ function EventModal({ event, defaultStart, onSave, onDelete, onClose }) {
               className="pixel-input"
               value={form.start.format('YYYY-MM-DDTHH:mm')}
               onChange={(e) => setForm({ ...form, start: dayjs(e.target.value) })}
+              disabled={isCancelled}
             />
           </div>
           <div className="form-group">
@@ -403,6 +538,7 @@ function EventModal({ event, defaultStart, onSave, onDelete, onClose }) {
               className="pixel-input"
               value={form.end.format('YYYY-MM-DDTHH:mm')}
               onChange={(e) => setForm({ ...form, end: dayjs(e.target.value) })}
+              disabled={isCancelled}
             />
           </div>
           <div className="form-group">
@@ -413,6 +549,7 @@ function EventModal({ event, defaultStart, onSave, onDelete, onClose }) {
               onChange={(e) => setForm({ ...form, location: e.target.value })}
               className="pixel-input"
               placeholder={t('schedule.modal.locationPlaceholder')}
+              disabled={isCancelled}
             />
           </div>
           <div className="form-group">
@@ -423,6 +560,7 @@ function EventModal({ event, defaultStart, onSave, onDelete, onClose }) {
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={3}
               placeholder={t('schedule.modal.descriptionPlaceholder')}
+              disabled={isCancelled}
             />
           </div>
           <div className="form-group">
@@ -440,25 +578,41 @@ function EventModal({ event, defaultStart, onSave, onDelete, onClose }) {
           </div>
         </div>
         <div className="modal-footer">
-          <div>
-            {isEdit && (
-              <button className="pixel-button danger" onClick={() => onDelete(event.id)}>
-                <Trash2 size={14} /> {t('schedule.modal.delete')}
-              </button>
-            )}
-          </div>
-          <div className="right">
-            <button className="pixel-button secondary" onClick={onClose}>
-              {t('schedule.modal.cancel')}
-            </button>
+          {isEdit && isCancelled && (
             <button
-              className="pixel-button"
-              onClick={handleSave}
-              disabled={!form.title.trim()}
+              className="pixel-button secondary"
+              onClick={() => onUncancelEvent(event.id)}
             >
-              {isEdit ? t('schedule.modal.save') : t('schedule.modal.create')}
+              <RotateCcw size={14} /> {t('schedule.modal.uncancel', { defaultValue: '恢复' })}
             </button>
-          </div>
+          )}
+          {isEdit && !isCancelled && (
+            <button
+              className="pixel-button secondary"
+              onClick={() => onCancelEvent(event.id)}
+            >
+              <Ban size={14} /> {t('schedule.modal.cancelSchedule', { defaultValue: '取消日程' })}
+            </button>
+          )}
+          {isEdit && (
+            <button
+              className="pixel-button danger modal-delete-btn"
+              onClick={() => onDelete(event.id)}
+              title={t('schedule.modal.deleteTitle', { defaultValue: '永久删除，此操作不可恢复' })}
+            >
+              <Trash2 size={14} /> {t('schedule.modal.delete')}
+            </button>
+          )}
+          <button
+            className="pixel-button primary"
+            onClick={handleSave}
+            disabled={!form.title.trim() || isCancelled}
+          >
+            {isEdit ? t('schedule.modal.save') : t('schedule.modal.create')}
+          </button>
+          <button className="pixel-button ghost" onClick={onClose}>
+            {t('schedule.modal.cancel')}
+          </button>
         </div>
       </div>
     </div>
@@ -467,26 +621,195 @@ function EventModal({ event, defaultStart, onSave, onDelete, onClose }) {
 
 // ---------- Chat Drawer ----------
 
-function ChatDrawer({ sendWSMessage, subscribe, instanceId }) {
+function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
   const { t } = useTranslation();
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => loadChatMessages(instanceId));
   const [input, setInput] = useState('');
   const [pending, setPending] = useState(false);
   const endRef = useRef(null);
   const inputRef = useRef(null);
+  // Id of the assistant message currently being streamed into. We mutate that
+  // message's text in place as `subagent_token` events arrive, then "finalize"
+  // it after a quiet period (no tokens for ~1.5s) so the rest of the message
+  // list is stable.
+  const streamingIdRef = useRef(null);
+  // Timer to detect end of stream — cleared/reset on every new token.
+  const streamDoneTimerRef = useRef(null);
+  // Set of assistant message ids already persisted to localStorage this turn.
+  // We only mark the message "complete" (remove streaming flag) once.
+
+  const storageKey = `octopus.schedule.chat.${instanceId}`;
+
+  // Persist messages to localStorage so they survive page navigation, reloads,
+  // and toggling the drawer. Silently no-ops if storage is unavailable.
+  useEffect(() => {
+    try {
+      window.localStorage?.setItem(storageKey, JSON.stringify(messages));
+    } catch (_) {
+      // best-effort persistence
+    }
+  }, [messages, storageKey]);
 
   useEffect(() => {
-    if (endRef.current) {
+    if (open && endRef.current) {
       endRef.current.scrollTop = endRef.current.scrollHeight;
     }
-  }, [messages, pending]);
+  }, [messages, pending, open]);
+
+  // Subscribe to subagent streaming events when the drawer is alive. Filter by
+  // session_instance_id so we only react to our own schedule-assistant session
+  // (other panels may also be running subagents concurrently).
+  useEffect(() => {
+    if (!subscribe || !instanceId) return undefined;
+
+    const finalizeStream = () => {
+      streamingIdRef.current = null;
+      streamDoneTimerRef.current = null;
+      setPending(false);
+    };
+
+    const scheduleFinalize = () => {
+      if (streamDoneTimerRef.current) clearTimeout(streamDoneTimerRef.current);
+      streamDoneTimerRef.current = setTimeout(finalizeStream, 1500);
+    };
+
+    const handleSubagentToken = (data) => {
+      const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
+      if (eventInstanceId == null || Number(eventInstanceId) !== Number(instanceId)) return;
+      const content = data?.content || '';
+      if (!content) return;
+
+      setMessages((prev) => {
+        // If we have an in-flight streaming message, append to it.
+        const streamingId = streamingIdRef.current;
+        if (streamingId != null) {
+          return prev.map((m) =>
+            m.id === streamingId ? { ...m, text: m.text + content } : m
+          );
+        }
+        // Otherwise create a new assistant message and start streaming into it.
+        const newMsg = {
+          id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          role: 'assistant',
+          text: content,
+          time: Date.now(),
+          streaming: true,
+        };
+        streamingIdRef.current = newMsg.id;
+        return [...prev, newMsg];
+      });
+      scheduleFinalize();
+    };
+
+    const handleSubagentToolCall = (data) => {
+      const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
+      if (eventInstanceId == null || Number(eventInstanceId) !== Number(instanceId)) return;
+
+      // Flush any in-flight assistant text into its own finalized bubble
+      // before showing the tool call, so the conversation reads top-to-bottom.
+      if (streamingIdRef.current != null && streamDoneTimerRef.current) {
+        clearTimeout(streamDoneTimerRef.current);
+        finalizeStream();
+      }
+
+      const args = data?.arguments || data?.args;
+      const argStr = args
+        ? typeof args === 'string'
+          ? args
+          : JSON.stringify(args, null, 2)
+        : '';
+      const truncated = argStr.length > 240 ? `${argStr.slice(0, 240)}…` : argStr;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `t-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          role: 'tool',
+          text: `⚙ ${data?.tool || data?.name || 'tool'}${
+            truncated ? `\n${truncated}` : ''
+          }`,
+          time: Date.now(),
+        },
+      ]);
+    };
+
+    const handleSubagentToolResult = (data) => {
+      const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
+      if (eventInstanceId == null || Number(eventInstanceId) !== Number(instanceId)) return;
+
+      // Mark the most recent streaming assistant message as finalized (no
+      // streaming flag) once a tool result lands — the LLM has moved on.
+      if (streamingIdRef.current != null) {
+        const finishedId = streamingIdRef.current;
+        setMessages((prev) =>
+          prev.map((m) => (m.id === finishedId ? { ...m, streaming: false } : m))
+        );
+        streamingIdRef.current = null;
+        if (streamDoneTimerRef.current) clearTimeout(streamDoneTimerRef.current);
+        streamDoneTimerRef.current = null;
+      }
+
+      const result = data?.result || '';
+      const isError = !!data?.error;
+      const truncated =
+        result.length > 280 ? `${result.slice(0, 280)}…` : result;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `tr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          role: isError ? 'tool' : 'tool',
+          text: isError ? `✗ ${truncated}` : `✓ ${truncated}`,
+          time: Date.now(),
+        },
+      ]);
+      // Keep `pending` true — agent will continue to emit more tokens.
+    };
+
+    const handleError = (data) => {
+      const reqId = data?.request_id;
+      if (reqId == null) {
+        // Generic error — surface it as an assistant message.
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            role: 'assistant',
+            text: t('schedule.drawer.sendFailed', {
+              error: data?.error || 'unknown error',
+            }),
+            time: Date.now(),
+          },
+        ]);
+        if (streamDoneTimerRef.current) clearTimeout(streamDoneTimerRef.current);
+        finalizeStream();
+      }
+    };
+
+    const unsubs = [];
+    if (subscribe) {
+      unsubs.push(subscribe('subagent_token', handleSubagentToken));
+      unsubs.push(subscribe('subagent_tool_call', handleSubagentToolCall));
+      unsubs.push(subscribe('subagent_tool_result', handleSubagentToolResult));
+      unsubs.push(subscribe('error', handleError));
+    }
+
+    return () => {
+      if (streamDoneTimerRef.current) clearTimeout(streamDoneTimerRef.current);
+      unsubs.forEach((u) => u && u());
+    };
+  }, [subscribe, instanceId, t]);
 
   const send = useCallback(async () => {
     const text = input.trim();
     if (!text || pending) return;
     setInput('');
     const now = Date.now();
-    setMessages((m) => [...m, { role: 'user', text, time: now }]);
+    const userMsg = {
+      id: `u-${now}-${Math.random().toString(36).slice(2, 8)}`,
+      role: 'user',
+      text,
+      time: now,
+    };
+    setMessages((m) => [...m, userMsg]);
     setPending(true);
     try {
       await sendWSMessage(
@@ -494,29 +817,28 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId }) {
         { content: text, subagent_name: 'schedule-assistant', instance_id: instanceId },
         5000
       );
+      // Note: sendWSMessage returns when the server ACKs the request. The
+      // actual assistant reply comes asynchronously via the subagent_token
+      // subscription wired above. We do NOT auto-finalize here — the stream
+      // debounce in the subscription effect will flip `pending=false`.
     } catch (e) {
       setMessages((m) => [
         ...m,
         {
+          id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           role: 'assistant',
           text: t('schedule.drawer.sendFailed', { error: e.message || e }),
           time: Date.now(),
         },
       ]);
       setPending(false);
-      return;
     }
-    setTimeout(() => {
-      setPending(false);
-      setMessages((m) => [
-        ...m,
-        { role: 'assistant', text: t('schedule.drawer.doneHint'), time: Date.now() },
-      ]);
-    }, 3000);
   }, [input, pending, sendWSMessage, t, instanceId]);
 
+  const hasMessages = messages.length > 0;
+
   return (
-    <div className="chat-drawer">
+    <div className={`chat-drawer${open ? '' : ' collapsed'}`}>
       <div className="chat-drawer-header">
         <div className="chat-drawer-title">
           <MessageSquare size={13} />
@@ -525,7 +847,7 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId }) {
         <div className="chat-drawer-subtitle">{t('schedule.drawer.subtitle')}</div>
       </div>
       <div className="chat-drawer-messages" ref={endRef}>
-        {messages.length === 0 && !pending && (
+        {!hasMessages && !pending && (
           <div className="chat-drawer-empty">
             <MessageSquare size={28} />
             <div>{t('schedule.drawer.empty')}</div>
@@ -534,8 +856,11 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId }) {
             </div>
           </div>
         )}
-        {messages.map((m, i) => (
-          <div key={i} className={`chat-drawer-message ${m.role}`}>
+        {messages.map((m) => (
+          <div
+            key={m.id}
+            className={`chat-drawer-message ${m.role}${m.streaming ? ' streaming' : ''}`}
+          >
             <div className="chat-drawer-message-text">{m.text}</div>
             {m.time && (
               <span className="chat-drawer-message-time">
@@ -544,7 +869,7 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId }) {
             )}
           </div>
         ))}
-        {pending && (
+        {pending && !streamingIdRef.current && (
           <div className="chat-drawer-typing">
             <span /><span /><span />
           </div>
@@ -562,14 +887,35 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId }) {
             }
           }}
           placeholder={t('schedule.drawer.placeholder')}
-          rows={1}
+          rows={3}
         />
         <button onClick={send} disabled={!input.trim() || pending} title={t('schedule.drawer.send')}>
-          <Send size={14} />
+          <Send size={16} />
         </button>
       </div>
     </div>
   );
+}
+
+function loadChatMessages(instanceId) {
+  if (!instanceId) return [];
+  try {
+    const raw = window.localStorage?.getItem(`octopus.schedule.chat.${instanceId}`);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    // Migrate older entries (which lacked the per-message `id`) so React's
+    // keyed list reconciliation stays stable across reloads.
+    return parsed.map((m, i) => ({
+      id: m.id || `migrated-${i}-${Math.random().toString(36).slice(2, 8)}`,
+      role: m.role,
+      text: m.text || '',
+      time: m.time || 0,
+      streaming: false,
+    }));
+  } catch (_) {
+    return [];
+  }
 }
 
 // ---------- Main Panel ----------
@@ -584,6 +930,7 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
   const [createAt, setCreateAt] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [toasts, setToasts] = useState([]);
+  const [morePopover, setMorePopover] = useState(null);
 
   const addToast = useCallback((message, type = 'info', duration = 3000) => {
     const id = Date.now() + Math.random();
@@ -744,6 +1091,54 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
     [sendWSMessage, fetchEvents, addToast, t]
   );
 
+  const handleCancelEvent = useCallback(
+    async (eventId) => {
+      try {
+        await sendWSMessage('schedule_cancel_event', { event_id: eventId });
+        addToast(
+          t('schedule.toast.cancelled', { defaultValue: 'Event marked as cancelled' }),
+          'success'
+        );
+        setSelected(null);
+        fetchEvents({ silent: true });
+      } catch (e) {
+        console.error('Cancel event failed:', e);
+        addToast(
+          t('schedule.toast.cancelledFailed', {
+            error: e.message || e,
+            defaultValue: `Cancel failed: ${e.message || e}`,
+          }),
+          'error'
+        );
+      }
+    },
+    [sendWSMessage, fetchEvents, addToast, t]
+  );
+
+  const handleUncancelEvent = useCallback(
+    async (eventId) => {
+      try {
+        await sendWSMessage('schedule_uncancel_event', { event_id: eventId });
+        addToast(
+          t('schedule.toast.uncancelled', { defaultValue: 'Event restored' }),
+          'success'
+        );
+        setSelected(null);
+        fetchEvents({ silent: true });
+      } catch (e) {
+        console.error('Restore event failed:', e);
+        addToast(
+          t('schedule.toast.uncancelFailed', {
+            error: e.message || e,
+            defaultValue: `Restore failed: ${e.message || e}`,
+          }),
+          'error'
+        );
+      }
+    },
+    [sendWSMessage, fetchEvents, addToast, t]
+  );
+
   const onCreateAt = (d) => {
     setSelected(null);
     setCreateAt(d);
@@ -753,6 +1148,14 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
     setCreateAt(null);
     setSelected(ev);
   };
+
+  const handleShowMore = useCallback((day, dayEvents, anchor) => {
+    setMorePopover({ day, events: dayEvents, anchor });
+  }, []);
+
+  const closeMorePopover = useCallback(() => {
+    setMorePopover(null);
+  }, []);
 
   return (
     <div className="schedule-panel-container">
@@ -842,6 +1245,7 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
               events={events}
               onSelectEvent={onSelectEvent}
               onCreateAt={onCreateAt}
+              onShowMore={handleShowMore}
             />
           ) : view === 'week' ? (
             <WeekView
@@ -861,11 +1265,21 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
         </div>
       </div>
 
-      {drawerOpen && (
-        <ChatDrawer
-          sendWSMessage={sendWSMessage}
-          subscribe={subscribe}
-          instanceId={chatInstanceIdRef.current}
+      <ChatDrawer
+        sendWSMessage={sendWSMessage}
+        subscribe={subscribe}
+        instanceId={chatInstanceIdRef.current}
+        open={drawerOpen}
+      />
+
+      {morePopover && (
+        <DayEventsPopover
+          day={morePopover.day}
+          events={morePopover.events}
+          anchor={morePopover.anchor}
+          onSelectEvent={onSelectEvent}
+          onCreateAt={onCreateAt}
+          onClose={closeMorePopover}
         />
       )}
 
@@ -875,6 +1289,8 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
           defaultStart={createAt}
           onSave={handleSave}
           onDelete={handleDelete}
+          onCancelEvent={handleCancelEvent}
+          onUncancelEvent={handleUncancelEvent}
           onClose={() => {
             setSelected(null);
             setCreateAt(null);

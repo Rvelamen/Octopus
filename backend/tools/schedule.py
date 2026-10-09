@@ -1,13 +1,28 @@
 """Schedule (日程) tools - LLM-callable tools for calendar events.
 
-Three focused tools that mirror the ScheduleService CRUD surface and are
-designed to be the only interface the schedule-assistant subagent needs.
+Eight focused tools that mirror the ScheduleService CRUD surface and are
+designed to be the only interface the schedule-assistant subagent needs:
+
+  - create_event    — create a new event
+  - list_events     — list events in a time range
+  - search_events   — free-text search
+  - get_event       — fetch a single event by id
+  - get_current_time — time oracle (saves the LLM the local-tz math)
+  - update_event    — partial update of an existing event
+  - cancel_event    — mark an event as cancelled (reversible)
+  - delete_event    — permanently delete an event (IRREVERSIBLE — must confirm
+                      with the user before invoking)
+
+For destructive operations the subagent is instructed to confirm with the
+user first (see ``SCHEDULE_ASSISTANT_SYSTEM_PROMPT``); the tool itself
+does not enforce confirmation so the prompt is the single source of truth.
 """
 
 from __future__ import annotations
 
 import json
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
 from typing import Any
 
 from loguru import logger
@@ -253,3 +268,321 @@ def _ms_to_iso(ms: int) -> str:
         return datetime.fromtimestamp(int(ms) / 1000).strftime("%Y-%m-%d %H:%M")
     except Exception:
         return str(ms)
+
+
+# ---------- New tools (cancel / update / time / get) ----------
+
+
+def _local_now() -> datetime:
+    """Return the current local datetime, defensively.
+
+    On Windows ``datetime.now()`` already returns local time but its tzinfo
+    is None. ``astimezone()`` materialises the platform's local tz so we can
+    read .strftime() cleanly and extract a tz name when available.
+    """
+    return datetime.now().astimezone()
+
+
+def _tz_name() -> str:
+    """Best-effort local timezone name; fall back to a short offset string."""
+    try:
+        return time.tzname[0] or "local"
+    except Exception:
+        return "local"
+
+
+class GetCurrentTimeTool(Tool):
+    """Return the current local date/time plus common range boundaries in ms.
+
+    The assistant should call this whenever the user references a relative
+    time ("tomorrow", "next Friday", "this morning") so the resulting
+    ``start_at_ms`` / ``end_at_ms`` is correct for the user's local
+    timezone — the wire format is always UTC ms.
+    """
+
+    def __init__(self, schedule_service: ScheduleService):
+        self._service = schedule_service
+
+    @property
+    def name(self) -> str:
+        return "get_current_time"
+
+    @property
+    def description(self) -> str:
+        return (
+            "Return the current local date/time plus a few common range "
+            "boundaries (today, this week) in absolute UTC milliseconds. "
+            "ALWAYS call this before create_event / update_event / list_events "
+            "when the user's request references relative time (明天, 下周三, "
+            "this Friday morning). The wire format is always UTC ms."
+        )
+
+    @property
+    def parameters(self) -> dict[str, Any]:
+        return {"type": "object", "properties": {}, "required": []}
+
+    async def execute(self, **_: Any) -> str:
+        now_local = _local_now()
+        # Midnight today (local) and tomorrow midnight.
+        today_start = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = today_start + timedelta(days=1)
+        # Week start: Monday 00:00 local (matches the visibleRange helper
+        # in the front-end; cron UI uses Monday-first weeks too).
+        week_start = today_start - timedelta(days=now_local.weekday())
+        week_end = week_start + timedelta(days=7)
+        payload = {
+            "now_ms": int(time.time() * 1000),
+            "local_datetime": now_local.strftime("%Y-%m-%d %H:%M:%S"),
+            "local_date": now_local.strftime("%Y-%m-%d"),
+            "local_weekday": now_local.strftime("%A"),
+            "timezone": _tz_name(),
+            "day_start_ms": int(today_start.timestamp() * 1000),
+            "day_end_ms": int(tomorrow_start.timestamp() * 1000),
+            "week_start_ms": int(week_start.timestamp() * 1000),
+            "week_end_ms": int(week_end.timestamp() * 1000),
+        }
+        pretty = (
+            f"Now: {payload['local_date']} {payload['local_weekday']} "
+            f"{now_local.strftime('%H:%M:%S')} ({payload['timezone']})\n"
+            f"day_start_ms:    {payload['day_start_ms']}\n"
+            f"day_end_ms:      {payload['day_end_ms']}\n"
+            f"week_start_ms:   {payload['week_start_ms']}\n"
+            f"week_end_ms:     {payload['week_end_ms']}"
+        )
+        return pretty + "\n\nJSON: " + json.dumps(payload, ensure_ascii=False)
+
+
+class GetEventTool(Tool):
+    """Fetch a single event by id."""
+
+    def __init__(self, schedule_service: ScheduleService):
+        self._service = schedule_service
+
+    @property
+    def name(self) -> str:
+        return "get_event"
+
+    @property
+    def description(self) -> str:
+        return (
+            "Fetch a single calendar event by id. Use this when the user "
+            "references an event by id (e.g. '#3') or when you need to "
+            "confirm the current state of an event before updating it."
+        )
+
+    @property
+    def parameters(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "event_id": {
+                    "type": "integer",
+                    "description": "The id of the event to fetch.",
+                }
+            },
+            "required": ["event_id"],
+        }
+
+    async def execute(self, event_id: int, **_: Any) -> str:
+        ev = self._service.get_event(int(event_id))
+        if ev is None:
+            return f"Event #{event_id} not found."
+        payload = ev.to_dict()
+        payload["start_iso"] = _ms_to_iso(ev.start_at_ms)
+        payload["end_iso"] = _ms_to_iso(ev.end_at_ms)
+        return (
+            f"Event #{ev.id} '{ev.title}' "
+            f"from {payload['start_iso']} to {payload['end_iso']}"
+            f"{' [CANCELLED]' if ev.cancelled else ''}\n"
+            f"JSON: {json.dumps(payload, ensure_ascii=False)}"
+        )
+
+
+class UpdateEventTool(Tool):
+    """Partial update of an existing calendar event."""
+
+    def __init__(self, schedule_service: ScheduleService):
+        self._service = schedule_service
+
+    @property
+    def name(self) -> str:
+        return "update_event"
+
+    @property
+    def description(self) -> str:
+        return (
+            "Partially update an existing calendar event. Only the fields "
+            "you supply are changed. Times are absolute milliseconds since "
+            "the Unix epoch (UTC). Use get_event first to confirm the id "
+            "and current state before changing it."
+        )
+
+    @property
+    def parameters(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "event_id": {
+                    "type": "integer",
+                    "description": "The id of the event to update.",
+                },
+                "title": {"type": "string", "minLength": 1},
+                "start_at_ms": {"type": "integer"},
+                "end_at_ms": {"type": "integer"},
+                "all_day": {"type": "boolean"},
+                "location": {"type": "string"},
+                "description": {"type": "string"},
+                "color": {
+                    "type": "string",
+                    "description": "Hex color, e.g. '#4F8EF7'.",
+                },
+            },
+            "required": ["event_id"],
+        }
+
+    async def execute(
+        self,
+        event_id: int,
+        title: str | None = None,
+        start_at_ms: int | None = None,
+        end_at_ms: int | None = None,
+        all_day: bool | None = None,
+        location: str | None = None,
+        description: str | None = None,
+        color: str | None = None,
+        **_: Any,
+    ) -> str:
+        try:
+            ev = self._service.update_event(
+                event_id=int(event_id),
+                title=title,
+                start_at_ms=start_at_ms,
+                end_at_ms=end_at_ms,
+                all_day=all_day,
+                location=location,
+                description=description,
+                color=color,
+            )
+            if ev is None:
+                return f"Error: event #{event_id} not found"
+            # Broadcast so any open calendar client refetches in real time.
+            await self._service.publish_change("updated", ev.id)
+            payload = ev.to_dict()
+            payload["start_iso"] = _ms_to_iso(ev.start_at_ms)
+            payload["end_iso"] = _ms_to_iso(ev.end_at_ms)
+            return (
+                f"Updated event #{ev.id} '{ev.title}' "
+                f"now {payload['start_iso']} → {payload['end_iso']}.\n"
+                f"JSON: {json.dumps(payload, ensure_ascii=False)}"
+            )
+        except ValueError as e:
+            return f"Error: {e}"
+        except Exception as e:  # pragma: no cover
+            logger.exception("update_event failed")
+            return f"Error updating event: {e}"
+
+
+class CancelEventTool(Tool):
+    """Mark an event as cancelled (reversible, distinct from delete)."""
+
+    def __init__(self, schedule_service: ScheduleService):
+        self._service = schedule_service
+
+    @property
+    def name(self) -> str:
+        return "cancel_event"
+
+    @property
+    def description(self) -> str:
+        return (
+            "Mark a calendar event as CANCELLED. This is reversible — the "
+            "user can restore the event from the calendar modal. Prefer "
+            "this over deletion for 'cancel / 不去了 / 改天再说' requests. "
+            "Idempotent: calling it on an already-cancelled event is a no-op."
+        )
+
+    @property
+    def parameters(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "event_id": {
+                    "type": "integer",
+                    "description": "The id of the event to cancel.",
+                }
+            },
+            "required": ["event_id"],
+        }
+
+    async def execute(self, event_id: int, **_: Any) -> str:
+        try:
+            ev = self._service.cancel_event(int(event_id))
+            if ev is None:
+                return f"Error: event #{event_id} not found"
+            await self._service.publish_change("updated", ev.id)
+            return (
+                f"Cancelled event #{ev.id} '{ev.title}'. "
+                f"The user can restore it from the calendar."
+            )
+        except Exception as e:  # pragma: no cover
+            logger.exception("cancel_event failed")
+            return f"Error cancelling event: {e}"
+
+
+class DeleteEventTool(Tool):
+    """Permanently delete a calendar event (IRREVERSIBLE).
+
+    The subagent is required by its system prompt to confirm with the user
+    before calling this — the LLM should display the event's title and time
+    in the confirmation prompt so the user knows exactly which event is on
+    the chopping block. The tool itself does not enforce that gate so the
+    prompt remains the single source of truth.
+    """
+
+    def __init__(self, schedule_service: ScheduleService):
+        self._service = schedule_service
+
+    @property
+    def name(self) -> str:
+        return "delete_event"
+
+    @property
+    def description(self) -> str:
+        return (
+            "PERMANENTLY delete a calendar event. This is IRREVERSIBLE — "
+            "prefer cancel_event unless the user explicitly asks to delete "
+            "('删掉 / 删了 / 彻底删除 / remove it forever / 不用了别留了'). "
+            "The system prompt requires you to confirm with the user first."
+        )
+
+    @property
+    def parameters(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "event_id": {
+                    "type": "integer",
+                    "description": "The id of the event to permanently delete.",
+                }
+            },
+            "required": ["event_id"],
+        }
+
+    async def execute(self, event_id: int, **_: Any) -> str:
+        try:
+            # Look up the event first so the response can echo the title.
+            # If it doesn't exist, surface that to the LLM instead of
+            # silently returning False.
+            ev = self._service.get_event(int(event_id))
+            if ev is None:
+                return f"Error: event #{event_id} not found"
+            title = ev.title
+            deleted = self._service.delete_event(int(event_id))
+            if not deleted:
+                return f"Error: event #{event_id} not found"
+            # Broadcast so any open calendar client refetches in real time.
+            await self._service.publish_change("deleted", int(event_id))
+            return f"Deleted event #{event_id} '{title}'."
+        except Exception as e:  # pragma: no cover
+            logger.exception("delete_event failed")
+            return f"Error deleting event: {e}"

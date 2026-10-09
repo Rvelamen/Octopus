@@ -190,6 +190,9 @@ class MessageType(Enum):
     SCHEDULE_UPDATE_EVENT = "schedule_update_event"  # Update an existing event
     SCHEDULE_DELETE_EVENT = "schedule_delete_event"  # Delete an event
     SCHEDULE_SEARCH_EVENTS = "schedule_search_events"  # Free-text search events
+    SCHEDULE_GET_EVENT = "schedule_get_event"  # Fetch a single event by id
+    SCHEDULE_CANCEL_EVENT = "schedule_cancel_event"  # Mark an event as cancelled (reversible)
+    SCHEDULE_UNCANCEL_EVENT = "schedule_uncancel_event"  # Restore a cancelled event
 
     # Agent - Client -> Server
     AGENT_GET_LIST = "agent_get_list"  # Get all agents
@@ -379,6 +382,7 @@ class MessageType(Enum):
     SCHEDULE_EVENT_CREATED = "schedule_event_created"  # Event created confirmation
     SCHEDULE_EVENT_UPDATED = "schedule_event_updated"  # Event updated confirmation
     SCHEDULE_EVENT_DELETED = "schedule_event_deleted"  # Event deleted confirmation
+    SCHEDULE_EVENT = "schedule_event"  # Single event (get / cancel / uncancel)
 
     # Agent - Server -> Client
     AGENT_LIST = "agent_list"  # List of agents
@@ -675,6 +679,9 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.SCHEDULE_UPDATE_EVENT,
     MessageType.SCHEDULE_DELETE_EVENT,
     MessageType.SCHEDULE_SEARCH_EVENTS,
+    MessageType.SCHEDULE_GET_EVENT,
+    MessageType.SCHEDULE_CANCEL_EVENT,
+    MessageType.SCHEDULE_UNCANCEL_EVENT,
     MessageType.AGENT_GET_LIST,
     MessageType.AGENT_GET_SOUL,
     MessageType.AGENT_SAVE_SOUL,
@@ -830,6 +837,7 @@ SERVER_MESSAGE_TYPES = {
     MessageType.SCHEDULE_EVENT_CREATED,
     MessageType.SCHEDULE_EVENT_UPDATED,
     MessageType.SCHEDULE_EVENT_DELETED,
+    MessageType.SCHEDULE_EVENT,
     MessageType.AGENT_LIST,
     MessageType.AGENT_SOUL,
     MessageType.AGENT_SAVED,

@@ -35,7 +35,16 @@ from backend.tools.memory import MemoryReadTool, MemorySearchTool, MemoryTimelin
 from backend.tools.memory_write import MemoryWriteTool
 from backend.tools.message import MessageTool
 from backend.tools.registry import ToolRegistry
-from backend.tools.schedule import CreateEventTool, ListEventsTool, SearchEventsTool
+from backend.tools.schedule import (
+    CancelEventTool,
+    CreateEventTool,
+    DeleteEventTool,
+    GetCurrentTimeTool,
+    GetEventTool,
+    ListEventsTool,
+    SearchEventsTool,
+    UpdateEventTool,
+)
 from backend.tools.shell import ExecTool
 
 
@@ -285,9 +294,14 @@ class SubagentManager:
         }
 
         if self.schedule_service is not None:
+            tool_mapping["get_current_time"] = lambda: GetCurrentTimeTool(self.schedule_service)
             tool_mapping["create_event"] = lambda: CreateEventTool(self.schedule_service)
             tool_mapping["list_events"] = lambda: ListEventsTool(self.schedule_service)
             tool_mapping["search_events"] = lambda: SearchEventsTool(self.schedule_service)
+            tool_mapping["get_event"] = lambda: GetEventTool(self.schedule_service)
+            tool_mapping["update_event"] = lambda: UpdateEventTool(self.schedule_service)
+            tool_mapping["cancel_event"] = lambda: CancelEventTool(self.schedule_service)
+            tool_mapping["delete_event"] = lambda: DeleteEventTool(self.schedule_service)
 
         # Register requested tools
         has_browser = False
@@ -1184,6 +1198,19 @@ When you have completed the task, provide a clear summary of your findings or ac
                     ):
                         if chunk.content:
                             full_content += chunk.content
+                            # Stream each text chunk to the chat drawer so the
+                            # user sees the LLM's actual reply (not just the
+                            # tool calls). Mirrors the sync path's behaviour.
+                            await self._emit(
+                                "subagent_token",
+                                {
+                                    "content": chunk.content,
+                                    "iteration": iteration,
+                                    "session_instance_id": session_instance_id,
+                                    "subagent_id": task_id,
+                                },
+                                task_id,
+                            )
                         # DeepSeek reasoning content
                         if chunk.reasoning_content:
                             accumulated_reasoning += chunk.reasoning_content
@@ -1191,6 +1218,25 @@ When you have completed the task, provide a clear summary of your findings or ac
                             for tc in chunk.tool_calls:
                                 if tc.id not in tool_calls_buffer:
                                     tool_calls_buffer[tc.id] = tc
+                                    # Emit tool_call as soon as the chunk
+                                    # arrives — the post-loop emission below
+                                    # used to handle this, but it raced with
+                                    # the streaming text and made the chat
+                                    # look "incomplete". Now the streaming
+                                    # emit is the single source of truth.
+                                    await self._emit(
+                                        "subagent_tool_call",
+                                        {
+                                            "tool": tc.name,
+                                            "args": tc.arguments,
+                                            "content": full_content if full_content else None,
+                                            "iteration": iteration,
+                                            "tool_call_id": tc.id,
+                                            "session_instance_id": session_instance_id,
+                                            "subagent_id": task_id,
+                                        },
+                                        task_id,
+                                    )
                                 else:
                                     tool_calls_buffer[tc.id].arguments.update(tc.arguments)
                         if chunk.is_final and chunk.usage:
@@ -1258,20 +1304,6 @@ When you have completed the task, provide a clear summary of your findings or ac
                         logger.info(f"[Subagent:{task_id}] Tool args: {args_str[:500]}")
 
                         try:
-                            await self._emit(
-                                "subagent_tool_call",
-                                {
-                                    "tool": tool_call.name,
-                                    "args": tool_call.arguments,
-                                    "content": response.content if response.content else None,
-                                    "iteration": iteration,
-                                    "tool_call_id": tool_call.id,
-                                    "session_instance_id": session_instance_id,
-                                    "subagent_id": task_id,
-                                },
-                                task_id,
-                            )
-
                             result = await tools.execute(tool_call.name, tool_call.arguments)
                             logger.info(
                                 f"[Subagent:{task_id}] Tool result: {result[:200] if result else 'None'}..."

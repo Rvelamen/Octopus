@@ -16,6 +16,7 @@ class ScheduleEvent:
     start_at_ms: int = 0
     end_at_ms: int = 0
     all_day: bool = False
+    cancelled: bool = False
     created_at_ms: int = 0
     updated_at_ms: int = 0
 
@@ -29,6 +30,7 @@ class ScheduleEvent:
             "start_at_ms": self.start_at_ms,
             "end_at_ms": self.end_at_ms,
             "all_day": bool(self.all_day),
+            "cancelled": bool(self.cancelled),
             "created_at_ms": self.created_at_ms,
             "updated_at_ms": self.updated_at_ms,
         }
@@ -46,6 +48,7 @@ class ScheduleEvent:
             start_at_ms=d["start_at_ms"],
             end_at_ms=d["end_at_ms"],
             all_day=bool(d.get("all_day", 0)),
+            cancelled=bool(d.get("cancelled", 0)),
             created_at_ms=_parse_iso_ms(d.get("created_at")),
             updated_at_ms=_parse_iso_ms(d.get("updated_at")),
         )
