@@ -1177,11 +1177,15 @@ function RecycleBinModal({
   onHardDeleteSelected,
 }) {
   const { t } = useTranslation();
-  if (!open) return null;
 
   // Bucket events by deletion day so the user gets a clear "what did I delete
   // when" structure. We key by the local-day string of `deleted_at_ms` and
   // sort each bucket by deletion time (newest first).
+  // NOTE: this hook MUST run before the early return below — React's Rules
+  // of Hooks require every render to call hooks in the same order. Calling
+  // useMemo conditionally (after `if (!open) return null`) crashes the
+  // renderer with "Rendered fewer hooks than expected", which is exactly
+  // what was happening when the modal opened.
   const groups = useMemo(() => {
     const map = new Map();
     const todayStart = dayjs().startOf('day');
@@ -1200,6 +1204,8 @@ function RecycleBinModal({
       }));
     return { groups: sorted, todayStart };
   }, [events]);
+
+  if (!open) return null;
 
   const allSelected =
     events.length > 0 && selected.size === events.length;
@@ -2006,7 +2012,7 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
               ))}
             </div>
             <button
-              className="pixel-button new-event-btn"
+              className="new-event-btn"
               onClick={() => onCreateAt(dayjs().minute(0).second(0).add(1, 'hour'))}
               title={t('schedule.newEvent')}
               aria-label={t('schedule.newEvent')}
@@ -2014,7 +2020,7 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
               <Plus size={14} />
             </button>
             <button
-              className="pixel-button trash-btn"
+              className="trash-btn"
               onClick={openRecycleBin}
               title={t('schedule.recycleBin.open')}
               aria-label={t('schedule.recycleBin.open')}

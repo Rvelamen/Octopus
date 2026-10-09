@@ -114,13 +114,15 @@
   color: var(--accent);
 }
 
-/* Toolbar primary "new event" (+) and "refresh" (↻) icon buttons. Both
-   are 28x28 squares matching the nav-btn footprint, but the new-event
-   button uses the accent fill (so it stands out as the primary action)
-   while the refresh button uses the neutral surface (white-ish) — it's
-   a frequent but secondary action. */
+/* Toolbar action icon buttons. All four share the same 28x28 footprint and
+   1px border — and now the same accent fill, so the row reads as one
+   uniform toolbar rather than "one primary + three ghost buttons". The
+   badge on the trash button still gives it identity. Hover lifts them
+   slightly with a stronger shadow. */
 .schedule-toolbar .new-event-btn,
-.schedule-toolbar .refresh-btn {
+.schedule-toolbar .trash-btn,
+.schedule-toolbar .refresh-btn,
+.schedule-toolbar .nav-btn {
   width: 28px;
   height: 28px;
   padding: 0;
@@ -131,44 +133,52 @@
   border-radius: var(--r-sm);
   cursor: pointer;
   transition: all 0.2s;
-}
-
-.schedule-toolbar .new-event-btn {
   background: var(--accent);
   border: 1px solid var(--accent);
   color: var(--text-invert);
 }
-.schedule-toolbar .new-event-btn:hover:not(:disabled) {
+
+.schedule-toolbar .new-event-btn:hover:not(:disabled),
+.schedule-toolbar .trash-btn:hover:not(:disabled),
+.schedule-toolbar .refresh-btn:hover:not(:disabled),
+.schedule-toolbar .nav-btn:hover:not(:disabled) {
   background: var(--accent-2, var(--accent));
   border-color: var(--accent-2, var(--accent));
   opacity: 0.92;
   transform: translateY(-1px);
   box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 40%, transparent);
 }
-.schedule-toolbar .new-event-btn:active:not(:disabled) {
+
+.schedule-toolbar .new-event-btn:active:not(:disabled),
+.schedule-toolbar .trash-btn:active:not(:disabled),
+.schedule-toolbar .refresh-btn:active:not(:disabled),
+.schedule-toolbar .nav-btn:active:not(:disabled) {
   transform: translateY(0);
 }
-.schedule-toolbar .new-event-btn:disabled {
+.schedule-toolbar .new-event-btn:disabled,
+.schedule-toolbar .trash-btn:disabled,
+.schedule-toolbar .refresh-btn:disabled,
+.schedule-toolbar .nav-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.schedule-toolbar .refresh-btn {
-  background: var(--surface-1);
-  border: 1px solid var(--board);
-  color: var(--text-2);
+/* Chat nav-btn is the only one of the four that has an on/off state. Now
+   that the default fill is the same accent as the others, the active state
+   needs a different signal — an inset white halo reads as "pressed in"
+   without breaking the row's uniform accent fill. */
+.schedule-toolbar .nav-btn.active {
+  background: var(--accent-2, var(--accent));
+  border-color: var(--accent-2, var(--accent));
+  box-shadow: inset 0 0 0 1px var(--text-invert);
 }
-.schedule-toolbar .refresh-btn:hover:not(:disabled) {
-  background: var(--surface-2);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.schedule-toolbar .refresh-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-.schedule-toolbar .refresh-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+
+/* Tight 4px gap between every toolbar-right button so the 4 action buttons
+   (new-event, trash, refresh, chat) sit on a single uniform rhythm. The
+   4px is just enough to read as "separate buttons" without leaving big
+   empty gaps between adjacent squares. */
+.schedule-toolbar .toolbar-right {
+  gap: 4px;
 }
 
 .schedule-toolbar .view-switcher {
@@ -1424,16 +1434,16 @@
 .recycle-bin-overlay {
   position: fixed;
   inset: 0;
-  /* Popup-style backdrop: a very light scrim instead of the heavy fullscreen
-     dim. The user should still feel that the rest of the page is visible
-     behind, and the panel itself reads as a floating popup rather than a
-     forced modal. */
-  background: rgba(0, 0, 0, 0.08);
+  /* Popup-style scrim: light enough to feel like a floating popup rather
+     than a forced fullscreen dialog, but dark enough that the user can
+     clearly see the modal panel has appeared (a near-transparent scrim on
+     a light theme looks like a blank page). */
+  background: rgba(0, 0, 0, 0.28);
   z-index: 1000;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding: 80px 24px 24px;
+  padding: 24px;
   animation: recycle-bin-fade-in 0.14s ease-out;
 }
 
