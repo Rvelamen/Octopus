@@ -10,8 +10,9 @@ designed to be the only interface the schedule-assistant subagent needs:
   - get_current_time — time oracle (saves the LLM the local-tz math)
   - update_event    — partial update of an existing event
   - cancel_event    — mark an event as cancelled (reversible)
-  - delete_event    — permanently delete an event (IRREVERSIBLE — must confirm
-                      with the user before invoking)
+  - delete_event    — move an event to the recycle bin (recoverable for 30
+                      days; the bin is reachable from the schedule UI and
+                      via the LLM via list_deleted_events / restore_event)
 
 For destructive operations the subagent is instructed to confirm with the
 user first (see ``SCHEDULE_ASSISTANT_SYSTEM_PROMPT``); the tool itself
@@ -530,13 +531,13 @@ class CancelEventTool(Tool):
 
 
 class DeleteEventTool(Tool):
-    """Permanently delete a calendar event (IRREVERSIBLE).
+    """Move a calendar event to the recycle bin (recoverable for 30 days).
 
     The subagent is required by its system prompt to confirm with the user
-    before calling this — the LLM should display the event's title and time
-    in the confirmation prompt so the user knows exactly which event is on
-    the chopping block. The tool itself does not enforce that gate so the
-    prompt remains the single source of truth.
+    before calling this. The event is *soft-deleted* (stamped with
+    ``deleted_at``) rather than removed from the database, so the user can
+    recover it from the calendar's recycle bin within 30 days. After that
+    window the row is permanently purged by the service's retention job.
     """
 
     def __init__(self, schedule_service: ScheduleService):
@@ -549,10 +550,11 @@ class DeleteEventTool(Tool):
     @property
     def description(self) -> str:
         return (
-            "PERMANENTLY delete a calendar event. This is IRREVERSIBLE — "
-            "prefer cancel_event unless the user explicitly asks to delete "
-            "('删掉 / 删了 / 彻底删除 / remove it forever / 不用了别留了'). "
-            "The system prompt requires you to confirm with the user first."
+            "Move a calendar event to the RECYCLE BIN. This is RECOVERABLE for "
+            "30 days (the user can restore it from the bin in the schedule UI). "
+            "Prefer cancel_event for 'cancel / 不去了' requests; use this for "
+            "'删掉 / delete' requests. The system prompt requires you to confirm "
+            "with the user first."
         )
 
     @property
@@ -562,7 +564,7 @@ class DeleteEventTool(Tool):
             "properties": {
                 "event_id": {
                     "type": "integer",
-                    "description": "The id of the event to permanently delete.",
+                    "description": "The id of the event to move to the recycle bin.",
                 }
             },
             "required": ["event_id"],
@@ -570,19 +572,20 @@ class DeleteEventTool(Tool):
 
     async def execute(self, event_id: int, **_: Any) -> str:
         try:
-            # Look up the event first so the response can echo the title.
-            # If it doesn't exist, surface that to the LLM instead of
-            # silently returning False.
             ev = self._service.get_event(int(event_id))
             if ev is None:
                 return f"Error: event #{event_id} not found"
             title = ev.title
-            deleted = self._service.delete_event(int(event_id))
-            if not deleted:
-                return f"Error: event #{event_id} not found"
+            moved = self._service.soft_delete_event(int(event_id))
+            if not moved:
+                # Already in the bin or vanished — surface the current state.
+                return f"Event #{event_id} is already in the recycle bin."
             # Broadcast so any open calendar client refetches in real time.
             await self._service.publish_change("deleted", int(event_id))
-            return f"Deleted event #{event_id} '{title}'."
+            return (
+                f"Moved event #{event_id} '{title}' to the recycle bin. "
+                f"It can be restored within 30 days."
+            )
         except Exception as e:  # pragma: no cover
             logger.exception("delete_event failed")
             return f"Error deleting event: {e}"

@@ -114,6 +114,63 @@
   color: var(--accent);
 }
 
+/* Toolbar primary "new event" (+) and "refresh" (↻) icon buttons. Both
+   are 28x28 squares matching the nav-btn footprint, but the new-event
+   button uses the accent fill (so it stands out as the primary action)
+   while the refresh button uses the neutral surface (white-ish) — it's
+   a frequent but secondary action. */
+.schedule-toolbar .new-event-btn,
+.schedule-toolbar .refresh-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  gap: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.schedule-toolbar .new-event-btn {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: var(--text-invert);
+}
+.schedule-toolbar .new-event-btn:hover:not(:disabled) {
+  background: var(--accent-2, var(--accent));
+  border-color: var(--accent-2, var(--accent));
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.schedule-toolbar .new-event-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.schedule-toolbar .new-event-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.schedule-toolbar .refresh-btn {
+  background: var(--surface-1);
+  border: 1px solid var(--board);
+  color: var(--text-2);
+}
+.schedule-toolbar .refresh-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.schedule-toolbar .refresh-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.schedule-toolbar .refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .schedule-toolbar .view-switcher {
   display: inline-flex;
   background: var(--surface-2);
@@ -1334,4 +1391,435 @@
   min-height: 22px;
   padding: 2px 8px;
   font-size: 12px;
+}
+
+/* =====================================================================
+   Recycle Bin (回收站)
+   - Toolbar trash button with optional count badge
+   - Day-grouped modal with multi-select + per-row actions
+   ===================================================================== */
+
+.trash-btn {
+  position: relative;
+}
+
+.trash-btn-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--accent, #c44);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 0 0 2px var(--surface-1, #1a1a1a);
+}
+
+.recycle-bin-overlay {
+  position: fixed;
+  inset: 0;
+  /* Popup-style backdrop: a very light scrim instead of the heavy fullscreen
+     dim. The user should still feel that the rest of the page is visible
+     behind, and the panel itself reads as a floating popup rather than a
+     forced modal. */
+  background: rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 80px 24px 24px;
+  animation: recycle-bin-fade-in 0.14s ease-out;
+}
+
+@keyframes recycle-bin-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.recycle-bin-modal {
+  width: min(720px, 100%);
+  max-height: min(80vh, 720px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-1, #1a1a1a);
+  border: 1px solid var(--board, #333);
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  color: var(--text-1, #eee);
+}
+
+.recycle-bin-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--board, #333);
+  background: var(--surface-2, #222);
+}
+
+.recycle-bin-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.recycle-bin-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-1, #eee);
+}
+
+.recycle-bin-subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-2, #bbb);
+}
+
+.recycle-bin-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-3, #888);
+  font-style: italic;
+}
+
+.recycle-bin-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.recycle-bin-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--board, #333);
+  background: var(--surface-1, #1a1a1a);
+  color: var(--text-2, #bbb);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.recycle-bin-icon-btn:hover {
+  background: var(--surface-2, #222);
+  color: var(--text-1, #eee);
+  border-color: var(--text-3, #888);
+}
+
+.recycle-bin-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.recycle-bin-spin {
+  animation: recycle-bin-spin 0.9s linear infinite;
+}
+
+@keyframes recycle-bin-spin {
+  to { transform: rotate(360deg); }
+}
+
+.recycle-bin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--board, #333);
+  background: var(--surface-1, #1a1a1a);
+  font-size: 12px;
+}
+
+.recycle-bin-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: var(--text-2, #bbb);
+  user-select: none;
+}
+
+.recycle-bin-select-all input {
+  cursor: pointer;
+}
+
+.recycle-bin-select-all input:disabled {
+  cursor: not-allowed;
+}
+
+.recycle-bin-selected-count {
+  color: var(--text-3, #888);
+  font-size: 11px;
+}
+
+.recycle-bin-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 8px 12px 16px;
+  background: var(--surface-1, #1a1a1a);
+}
+
+.recycle-bin-state {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--text-3, #888);
+  font-size: 12px;
+}
+
+.recycle-bin-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-3, #888);
+}
+
+.recycle-bin-empty p {
+  margin: 0;
+}
+
+.recycle-bin-day-group {
+  margin-top: 12px;
+}
+
+.recycle-bin-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3, #888);
+  border-bottom: 1px dashed var(--board, #333);
+  position: sticky;
+  top: 0;
+  background: var(--surface-1, #1a1a1a);
+  z-index: 1;
+}
+
+.recycle-bin-day-count {
+  background: var(--surface-2, #222);
+  color: var(--text-2, #bbb);
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 10px;
+}
+
+.recycle-bin-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recycle-bin-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--board, #333);
+  border-radius: 6px;
+  background: var(--surface-2, #222);
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.recycle-bin-item:hover {
+  background: var(--surface-3, #2a2a2a);
+}
+
+.recycle-bin-item.is-selected {
+  border-color: var(--accent, #4a8);
+  background: rgba(68, 170, 136, 0.08);
+}
+
+.recycle-bin-item.is-expired {
+  opacity: 0.6;
+}
+
+.recycle-bin-item-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recycle-bin-item-check input {
+  cursor: pointer;
+}
+
+.recycle-bin-item-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recycle-bin-item-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-1, #eee);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recycle-bin-item-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-3, #888);
+  flex-wrap: wrap;
+}
+
+.recycle-bin-item-time {
+  font-family: var(--font-mono, monospace);
+}
+
+.recycle-bin-item-location::before {
+  content: '· ';
+}
+
+.recycle-bin-item-remaining {
+  font-size: 11px;
+  color: var(--text-2, #bbb);
+  white-space: nowrap;
+  font-family: var(--font-mono, monospace);
+  padding: 2px 6px;
+  background: var(--surface-1, #1a1a1a);
+  border: 1px solid var(--board, #333);
+  border-radius: 4px;
+}
+
+.recycle-bin-item-remaining.is-expired {
+  color: #c44;
+  border-color: #c44;
+}
+
+.recycle-bin-item-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.recycle-bin-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--board, #333);
+  background: var(--surface-1, #1a1a1a);
+  color: var(--text-2, #bbb);
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  font-family: var(--font-mono, monospace);
+}
+
+.recycle-bin-action:hover {
+  background: var(--surface-2, #222);
+  color: var(--text-1, #eee);
+}
+
+.recycle-bin-action.restore:hover {
+  border-color: var(--accent, #4a8);
+  color: var(--accent, #4a8);
+}
+
+.recycle-bin-action.delete:hover {
+  border-color: #c44;
+  color: #c44;
+}
+
+.recycle-bin-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.recycle-bin-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--board, #333);
+  background: var(--surface-2, #222);
+}
+
+.recycle-bin-footer-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recycle-bin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--board, #333);
+  background: var(--surface-1, #1a1a1a);
+  color: var(--text-1, #eee);
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: var(--font-mono, monospace);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.recycle-bin-btn:hover:not(:disabled) {
+  background: var(--surface-2, #222);
+  border-color: var(--text-3, #888);
+}
+
+.recycle-bin-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.recycle-bin-btn.primary {
+  border-color: var(--accent, #4a8);
+  color: var(--accent, #4a8);
+}
+
+.recycle-bin-btn.primary:hover:not(:disabled) {
+  background: rgba(68, 170, 136, 0.12);
+  color: var(--accent, #4a8);
+  border-color: var(--accent, #4a8);
+}
+
+.recycle-bin-btn.danger {
+  border-color: #c44;
+  color: #c44;
+}
+
+.recycle-bin-btn.danger:hover:not(:disabled) {
+  background: rgba(204, 68, 68, 0.12);
+  color: #c44;
+  border-color: #c44;
+}
+
+.recycle-bin-btn.secondary {
+  background: transparent;
 }

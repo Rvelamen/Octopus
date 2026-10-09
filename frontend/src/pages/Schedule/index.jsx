@@ -13,6 +13,8 @@ import {
   Ban,
 } from 'lucide-react';
 import dayjs from 'dayjs';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import WindowDots from '@components/layout/WindowDots';
 import Toast from '@components/ui/Toast';
 import './SchedulePanel.css';
@@ -753,7 +755,8 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
     // Hard safety net: if the stream stalls for too long (e.g. WS drop mid-
     // response, or the LLM loop ended without a final token), finalize so
     // the drawer doesn't sit on a blinking cursor. The normal finalize
-    // path is the 1.5s debounce below; this is the "give up" timer.
+    // path is the 1.5s debounce below; this is the "give up" timer that
+    // also clears the streaming ref so a future turn starts fresh.
     let stuckTimer = null;
     const armStuckTimer = () => {
       if (stuckTimer) clearTimeout(stuckTimer);
@@ -762,21 +765,24 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
           // eslint-disable-next-line no-console
           console.warn('[schedule-drawer] stream stuck > 30s, finalizing');
         }
+        streamingIdRef.current = null;
         finalizeStream();
       }, 30000);
     };
 
     const finalizeStream = () => {
-      // Clear the streaming flag on the in-flight message *before* nulling the
-      // ref, otherwise the blinking cursor stays attached to already-finalized
-      // assistant content.
+      // Mark the in-flight message as finalized (drop the cursor, re-enable
+      // the send button) but DO NOT null the ref. The ref represents the
+      // current assistant message of the current turn — nulling it between
+      // slow tokens or across tool boundaries was creating one bubble per
+      // chunk. The ref is now reset at the next send() call (turn boundary)
+      // or by the 30s hard stuck timer below.
       const finishedId = streamingIdRef.current;
       if (finishedId != null) {
         setMessages((prev) =>
           prev.map((m) => (m.id === finishedId ? { ...m, streaming: false } : m))
         );
       }
-      streamingIdRef.current = null;
       streamDoneTimerRef.current = null;
       if (stuckTimer) {
         clearTimeout(stuckTimer);
@@ -798,11 +804,14 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
       if (!content) return;
 
       setMessages((prev) => {
-        // If we have an in-flight streaming message, append to it.
+        // If we have an in-flight streaming message, append to it. Re-mark
+        // it streaming so the blinking cursor reappears for the new chunk.
         const streamingId = streamingIdRef.current;
         if (streamingId != null) {
           return prev.map((m) =>
-            m.id === streamingId ? { ...m, text: m.text + content } : m
+            m.id === streamingId
+              ? { ...m, text: m.text + content, streaming: true }
+              : m
           );
         }
         // Otherwise create a new assistant message and start streaming into it.
@@ -823,11 +832,21 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
       const eventInstanceId = data?.session_instance_id ?? data?.instance_id;
       if (eventInstanceId == null || Number(eventInstanceId) !== Number(instanceId)) return;
 
-      // Flush any in-flight assistant text into its own finalized bubble
-      // before showing the tool call, so the conversation reads top-to-bottom.
-      if (streamingIdRef.current != null && streamDoneTimerRef.current) {
-        clearTimeout(streamDoneTimerRef.current);
-        finalizeStream();
+      // Pause the in-flight assistant text mid-turn (drop the cursor while
+      // tools execute) but DO NOT null the ref — the LLM's post-tool reply
+      // should continue into the same message, not open a new one. Clear
+      // the quiet timer so a slow LLM doesn't accidentally finalize-and-
+      // null the ref between tool call and post-tool tokens.
+      if (streamingIdRef.current != null) {
+        const finishedId = streamingIdRef.current;
+        setMessages((prev) =>
+          prev.map((m) => (m.id === finishedId ? { ...m, streaming: false } : m))
+        );
+        if (streamDoneTimerRef.current) {
+          clearTimeout(streamDoneTimerRef.current);
+          streamDoneTimerRef.current = null;
+        }
+        setPending(false);
       }
 
       const args = data?.arguments || data?.args;
@@ -855,15 +874,15 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
       if (eventInstanceId == null || Number(eventInstanceId) !== Number(instanceId)) return;
 
       // Mark the most recent streaming assistant message as finalized (no
-      // streaming flag) once a tool result lands — the LLM has moved on.
+      // streaming flag) once a tool result lands — the LLM has moved on to
+      // either more tool calls or the final reply. Keep the ref set so any
+      // subsequent subagent_token appends to the same message rather than
+      // opening a new bubble per chunk.
       if (streamingIdRef.current != null) {
         const finishedId = streamingIdRef.current;
         setMessages((prev) =>
           prev.map((m) => (m.id === finishedId ? { ...m, streaming: false } : m))
         );
-        streamingIdRef.current = null;
-        if (streamDoneTimerRef.current) clearTimeout(streamDoneTimerRef.current);
-        streamDoneTimerRef.current = null;
       }
 
       const result = data?.result || '';
@@ -920,6 +939,14 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
     const text = input.trim();
     if (!text || pending) return;
     setInput('');
+    // Turn boundary: any in-flight stream from the previous turn is done.
+    // The next subagent_token should open a new assistant message instead of
+    // appending to a stale one.
+    streamingIdRef.current = null;
+    if (streamDoneTimerRef.current) {
+      clearTimeout(streamDoneTimerRef.current);
+      streamDoneTimerRef.current = null;
+    }
     const now = Date.now();
     const userMsg = {
       id: `u-${now}-${Math.random().toString(36).slice(2, 8)}`,
@@ -1055,7 +1082,24 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
                 m.streaming ? ' streaming' : ''
               }`}
             >
-              <div className="chat-drawer-message-text">{m.text}</div>
+              <div className="chat-drawer-message-text">
+                {m.role === 'assistant' ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      // Open links in a new tab so the user doesn't lose
+                      // chat context when they click one.
+                      a: ({ node, ...props }) => (
+                        <a {...props} target="_blank" rel="noopener noreferrer" />
+                      ),
+                    }}
+                  >
+                    {m.text || ''}
+                  </ReactMarkdown>
+                ) : (
+                  m.text
+                )}
+              </div>
               {m.time && (
                 <span className="chat-drawer-message-time">
                   {dayjs(m.time).format('HH:mm')}
@@ -1113,6 +1157,308 @@ function loadChatMessages(instanceId) {
   }
 }
 
+// 30-day retention matches the server's RECYCLE_BIN_RETENTION_MS constant.
+const RECYCLE_BIN_RETENTION_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function RecycleBinModal({
+  open,
+  events,
+  loading,
+  selected,
+  onToggleOne,
+  onSelectAll,
+  onClearSelection,
+  onClose,
+  onRefresh,
+  onRestoreOne,
+  onRestoreSelected,
+  onHardDeleteOne,
+  onHardDeleteSelected,
+}) {
+  const { t } = useTranslation();
+  if (!open) return null;
+
+  // Bucket events by deletion day so the user gets a clear "what did I delete
+  // when" structure. We key by the local-day string of `deleted_at_ms` and
+  // sort each bucket by deletion time (newest first).
+  const groups = useMemo(() => {
+    const map = new Map();
+    const todayStart = dayjs().startOf('day');
+    for (const ev of events) {
+      const ts = ev.deleted_at_ms || ev.deleted_at || 0;
+      const dayKey = dayjs(ts).format('YYYY-MM-DD');
+      if (!map.has(dayKey)) map.set(dayKey, []);
+      map.get(dayKey).push({ ...ev, _sortTs: ts });
+    }
+    // Sort groups newest first; within each group, newest deletion first.
+    const sorted = Array.from(map.entries())
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .map(([key, items]) => ({
+        key,
+        items: items.sort((a, b) => b._sortTs - a._sortTs),
+      }));
+    return { groups: sorted, todayStart };
+  }, [events]);
+
+  const allSelected =
+    events.length > 0 && selected.size === events.length;
+
+  return (
+    <div className="recycle-bin-overlay" role="dialog" aria-modal="true">
+      <div className="recycle-bin-modal">
+        <header className="recycle-bin-header">
+          <div className="recycle-bin-title-block">
+            <h2 className="recycle-bin-title">
+              <Trash2 size={18} />
+              {t('schedule.recycleBin.title')}
+            </h2>
+            <p className="recycle-bin-subtitle">
+              {t('schedule.recycleBin.subtitle')}
+            </p>
+            <p className="recycle-bin-hint">
+              {t('schedule.recycleBin.autoPurge')}
+            </p>
+          </div>
+          <div className="recycle-bin-header-actions">
+            <button
+              type="button"
+              className="recycle-bin-icon-btn"
+              onClick={onRefresh}
+              disabled={loading}
+              title={t('schedule.recycleBin.refresh', {
+                defaultValue: 'Refresh',
+              })}
+              aria-label={t('schedule.recycleBin.refresh', {
+                defaultValue: 'Refresh',
+              })}
+            >
+              <RefreshCw
+                size={16}
+                className={loading ? 'recycle-bin-spin' : ''}
+              />
+            </button>
+            <button
+              type="button"
+              className="recycle-bin-icon-btn"
+              onClick={onClose}
+              title={t('schedule.recycleBin.close', {
+                defaultValue: 'Close',
+              })}
+              aria-label={t('schedule.recycleBin.close', {
+                defaultValue: 'Close',
+              })}
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </header>
+
+        <div className="recycle-bin-toolbar">
+          <label className="recycle-bin-select-all">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={(e) =>
+                e.target.checked ? onSelectAll() : onClearSelection()
+              }
+              disabled={events.length === 0}
+            />
+            <span>
+              {allSelected
+                ? t('schedule.recycleBin.clearSelection')
+                : t('schedule.recycleBin.selectAll')}
+            </span>
+          </label>
+          <span className="recycle-bin-selected-count">
+            {t('schedule.recycleBin.selectedCount', { count: selected.size })}
+          </span>
+        </div>
+
+        <div className="recycle-bin-body">
+          {loading && events.length === 0 ? (
+            <div className="recycle-bin-state">
+              {t('schedule.recycleBin.loading')}
+            </div>
+          ) : events.length === 0 ? (
+            <div className="recycle-bin-state recycle-bin-empty">
+              <Trash2 size={32} />
+              <p>{t('schedule.recycleBin.empty')}</p>
+            </div>
+          ) : (
+            groups.groups.map((group) => {
+              const dayLabel = formatBinDayLabel(group.key, groups.todayStart, t);
+              return (
+                <section
+                  className="recycle-bin-day-group"
+                  key={group.key}
+                >
+                  <h3 className="recycle-bin-day-header">
+                    <span className="recycle-bin-day-label">{dayLabel}</span>
+                    <span className="recycle-bin-day-count">
+                      {group.items.length}
+                    </span>
+                  </h3>
+                  <ul className="recycle-bin-list">
+                    {group.items.map((ev) => {
+                      const ts = ev.deleted_at_ms || ev.deleted_at || 0;
+                      const remaining = computeDaysRemaining(ts);
+                      const expired = remaining <= 0;
+                      const isSelected = selected.has(ev.id);
+                      return (
+                        <li
+                          key={ev.id}
+                          className={
+                            'recycle-bin-item' +
+                            (isSelected ? ' is-selected' : '') +
+                            (expired ? ' is-expired' : '')
+                          }
+                        >
+                          <label className="recycle-bin-item-check">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => onToggleOne(ev.id)}
+                            />
+                          </label>
+                          <div className="recycle-bin-item-body">
+                            <div
+                              className="recycle-bin-item-title"
+                              title={ev.title}
+                            >
+                              {ev.title}
+                            </div>
+                            <div className="recycle-bin-item-meta">
+                              <span className="recycle-bin-item-time">
+                                {formatTimeRange(ev)}
+                              </span>
+                              {ev.location ? (
+                                <span className="recycle-bin-item-location">
+                                  {ev.location}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                          <div
+                            className={
+                              'recycle-bin-item-remaining' +
+                              (expired ? ' is-expired' : '')
+                            }
+                            title={dayjs(ts).format('YYYY-MM-DD HH:mm')}
+                          >
+                            {expired
+                              ? t('schedule.recycleBin.expired')
+                              : t('schedule.recycleBin.daysRemaining', {
+                                  count: remaining,
+                                })}
+                          </div>
+                          <div className="recycle-bin-item-actions">
+                            <button
+                              type="button"
+                              className="recycle-bin-action restore"
+                              onClick={() => onRestoreOne(ev)}
+                              disabled={expired}
+                              title={t('schedule.recycleBin.restoreOne')}
+                            >
+                              <RotateCcw size={14} />
+                              <span>
+                                {t('schedule.recycleBin.restoreOne')}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              className="recycle-bin-action delete"
+                              onClick={() => onHardDeleteOne(ev)}
+                              title={t('schedule.recycleBin.deleteOne')}
+                            >
+                              <Trash2 size={14} />
+                              <span>
+                                {t('schedule.recycleBin.deleteOne')}
+                              </span>
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              );
+            })
+          )}
+        </div>
+
+        <footer className="recycle-bin-footer">
+          <button
+            type="button"
+            className="recycle-bin-btn secondary"
+            onClick={onClose}
+          >
+            {t('schedule.recycleBin.close', { defaultValue: 'Close' })}
+          </button>
+          <div className="recycle-bin-footer-actions">
+            <button
+              type="button"
+              className="recycle-bin-btn danger"
+              disabled={selected.size === 0}
+              onClick={onHardDeleteSelected}
+            >
+              <Trash2 size={14} />
+              {t('schedule.recycleBin.deleteForeverSelected')}
+            </button>
+            <button
+              type="button"
+              className="recycle-bin-btn primary"
+              disabled={selected.size === 0}
+              onClick={onRestoreSelected}
+            >
+              <RotateCcw size={14} />
+              {t('schedule.recycleBin.restoreSelected')}
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+function formatTimeRange(ev) {
+  const start = ev.start_at_ms || ev.start_at;
+  const end = ev.end_at_ms || ev.end_at;
+  if (!start) return '';
+  const s = dayjs(start);
+  const e = end ? dayjs(end) : null;
+  if (!e) return s.format('MM-DD HH:mm');
+  // Same day → "MM-DD HH:mm–HH:mm"; spans midnight → both full stamps.
+  if (s.isSame(e, 'day')) {
+    return `${s.format('MM-DD HH:mm')} – ${e.format('HH:mm')}`;
+  }
+  return `${s.format('MM-DD HH:mm')} – ${e.format('MM-DD HH:mm')}`;
+}
+
+function computeDaysRemaining(deletedTs) {
+  if (!deletedTs) return 0;
+  const deleted = dayjs(deletedTs);
+  const expiry = deleted.add(RECYCLE_BIN_RETENTION_DAYS, 'day');
+  const today = dayjs().startOf('day');
+  const diffDays = expiry.startOf('day').diff(today, 'day');
+  return Math.max(0, diffDays);
+}
+
+function formatBinDayLabel(key, todayStart, t) {
+  const day = dayjs(key);
+  const todayKey = todayStart.format('YYYY-MM-DD');
+  const yesterdayKey = todayStart
+    .subtract(1, 'day')
+    .format('YYYY-MM-DD');
+  if (key === todayKey) return t('schedule.recycleBin.today');
+  if (key === yesterdayKey) return t('schedule.recycleBin.yesterday');
+  const diff = todayStart.startOf('day').diff(day.startOf('day'), 'day');
+  if (diff > 0 && diff <= 7) {
+    return t('schedule.recycleBin.daysAgo', { count: diff });
+  }
+  return day.format('YYYY-MM-DD (ddd)');
+}
+
 // ---------- Main Panel ----------
 
 const SchedulePanel = ({ sendWSMessage, subscribe }) => {
@@ -1126,6 +1472,13 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [toasts, setToasts] = useState([]);
   const [morePopover, setMorePopover] = useState(null);
+  // Recycle bin state — separate from the live event list so the bin modal
+  // can show soft-deleted rows without polluting the main calendar view.
+  const [binOpen, setBinOpen] = useState(false);
+  const [binEvents, setBinEvents] = useState([]);
+  const [binLoading, setBinLoading] = useState(false);
+  const [binSelected, setBinSelected] = useState(() => new Set());
+  const [binCount, setBinCount] = useState(0);
 
   const addToast = useCallback((message, type = 'info', duration = 3000) => {
     const id = Date.now() + Math.random();
@@ -1334,6 +1687,253 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
     [sendWSMessage, fetchEvents, addToast, t]
   );
 
+  // ---------- Recycle bin handlers ----------
+  // Count-only fetch used to drive the trash-button badge. Cheap because the
+  // server returns the full bin list and we just read .length — but we still
+  // keep the result around so opening the modal is instant.
+  const refreshBin = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!sendWSMessage) return { ok: false, count: 0 };
+      setBinLoading(true);
+      try {
+        const resp = await sendWSMessage(
+          'schedule_list_recycle_bin',
+          {},
+          8000
+        );
+        const list = resp?.data?.events || [];
+        setBinEvents(list);
+        setBinCount(list.length);
+        // Drop any selected ids that no longer exist (e.g. they got restored
+        // from another tab while the modal was open).
+        setBinSelected((prev) => {
+          if (prev.size === 0) return prev;
+          const live = new Set(list.map((e) => e.id));
+          const next = new Set();
+          for (const id of prev) if (live.has(id)) next.add(id);
+          return next;
+        });
+        if (!silent) {
+          addToast(
+            t('schedule.toast.refreshed', {
+              count: list.length,
+              defaultValue: `Loaded ${list.length} item(s)`,
+            }),
+            'success'
+          );
+        }
+        return { ok: true, count: list.length };
+      } catch (e) {
+        console.error('Failed to fetch recycle bin:', e);
+        if (!silent) {
+          addToast(
+            t('schedule.recycleBin.loadFailed', { error: e.message || e }),
+            'error'
+          );
+        }
+        return { ok: false, count: 0 };
+      } finally {
+        setBinLoading(false);
+      }
+    },
+    [sendWSMessage, addToast, t]
+  );
+
+  // Lightweight background poll for the badge — runs on mount + every 60s so
+  // the trash-count stays fresh even when the modal hasn't been opened. Skips
+  // when the WS isn't ready.
+  useEffect(() => {
+    if (!sendWSMessage) return undefined;
+    refreshBin({ silent: true });
+    const id = window.setInterval(() => refreshBin({ silent: true }), 60000);
+    return () => window.clearInterval(id);
+  }, [sendWSMessage, refreshBin]);
+
+  // Also refresh the badge when the WS broadcasts a schedule change so a
+  // delete from another tab surfaces immediately.
+  useEffect(() => {
+    if (!subscribe) return undefined;
+    const types = [
+      'schedule_event_deleted',
+      'schedule_event_restored',
+      'schedule_events_restored',
+      'schedule_events_changed',
+    ];
+    const unsubs = types.map((tp) => subscribe(tp, () => refreshBin({ silent: true })));
+    return () => unsubs.forEach((u) => u && u());
+  }, [subscribe, refreshBin]);
+
+  const openRecycleBin = useCallback(() => {
+    setBinOpen(true);
+    setBinSelected(new Set());
+    refreshBin({ silent: true });
+  }, [refreshBin]);
+
+  const closeRecycleBin = useCallback(() => {
+    setBinOpen(false);
+  }, []);
+
+  const toggleBinSelected = useCallback((id) => {
+    setBinSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const selectAllBin = useCallback(() => {
+    setBinSelected(new Set(binEvents.map((e) => e.id)));
+  }, [binEvents]);
+
+  const clearBinSelection = useCallback(() => {
+    setBinSelected(new Set());
+  }, []);
+
+  const handleRestoreOne = useCallback(
+    async (ev) => {
+      if (
+        !window.confirm(
+          t('schedule.recycleBin.confirmRestore', { title: ev.title })
+        )
+      )
+        return;
+      try {
+        await sendWSMessage('schedule_restore_event', { event_id: ev.id });
+        addToast(
+          t('schedule.recycleBin.restored', { title: ev.title }),
+          'success'
+        );
+        // Drop the restored row from the local bin list and remove it from
+        // any current multi-select; refresh the badge.
+        setBinEvents((prev) => prev.filter((e) => e.id !== ev.id));
+        setBinSelected((prev) => {
+          if (!prev.has(ev.id)) return prev;
+          const next = new Set(prev);
+          next.delete(ev.id);
+          return next;
+        });
+        setBinCount((c) => Math.max(0, c - 1));
+        // Refresh the live calendar (the event is now active again).
+        fetchEvents({ silent: true });
+      } catch (e) {
+        console.error('Restore event failed:', e);
+        addToast(
+          t('schedule.recycleBin.restoreFailed', { error: e.message || e }),
+          'error'
+        );
+      }
+    },
+    [sendWSMessage, addToast, t, fetchEvents]
+  );
+
+  const handleRestoreSelected = useCallback(async () => {
+    const ids = Array.from(binSelected);
+    if (ids.length === 0) {
+      addToast(t('schedule.recycleBin.noItemsSelected'), 'info');
+      return;
+    }
+    if (
+      !window.confirm(
+        t('schedule.recycleBin.confirmBatchRestore', { count: ids.length })
+      )
+    )
+      return;
+    try {
+      const resp = await sendWSMessage('schedule_batch_restore_events', {
+        event_ids: ids,
+      });
+      const restoredCount = resp?.data?.restored_count ?? ids.length;
+      addToast(
+        t('schedule.recycleBin.restoredCount', { count: restoredCount }),
+        'success'
+      );
+      setBinSelected(new Set());
+      refreshBin({ silent: true });
+      fetchEvents({ silent: true });
+    } catch (e) {
+      console.error('Batch restore failed:', e);
+      addToast(
+        t('schedule.recycleBin.batchRestoreFailed', { error: e.message || e }),
+        'error'
+      );
+    }
+  }, [binSelected, sendWSMessage, addToast, t, refreshBin, fetchEvents]);
+
+  const handleHardDeleteOne = useCallback(
+    async (ev) => {
+      if (
+        !window.confirm(
+          t('schedule.recycleBin.confirmDeleteOne', { title: ev.title })
+        )
+      )
+        return;
+      try {
+        await sendWSMessage('schedule_hard_delete_event', { event_id: ev.id });
+        addToast(t('schedule.recycleBin.deletedForever'), 'success');
+        setBinEvents((prev) => prev.filter((e) => e.id !== ev.id));
+        setBinSelected((prev) => {
+          if (!prev.has(ev.id)) return prev;
+          const next = new Set(prev);
+          next.delete(ev.id);
+          return next;
+        });
+        setBinCount((c) => Math.max(0, c - 1));
+      } catch (e) {
+        console.error('Hard delete failed:', e);
+        addToast(
+          t('schedule.recycleBin.hardDeleteFailed', { error: e.message || e }),
+          'error'
+        );
+      }
+    },
+    [sendWSMessage, addToast, t]
+  );
+
+  const handleHardDeleteSelected = useCallback(async () => {
+    const ids = Array.from(binSelected);
+    if (ids.length === 0) {
+      addToast(t('schedule.recycleBin.noItemsSelected'), 'info');
+      return;
+    }
+    if (
+      !window.confirm(
+        t('schedule.recycleBin.confirmDeleteSelected', { count: ids.length })
+      )
+    )
+      return;
+    // Issue one hard-delete per id. The server treats each as a hard remove;
+    // we just call them in parallel for speed and update the local state in
+    // one pass at the end.
+    const settled = await Promise.allSettled(
+      ids.map((id) =>
+        sendWSMessage('schedule_hard_delete_event', { event_id: id })
+      )
+    );
+    const okIds = ids.filter(
+      (_, i) => settled[i].status === 'fulfilled'
+    );
+    const failCount = settled.length - okIds.length;
+    setBinEvents((prev) => prev.filter((e) => !okIds.includes(e.id)));
+    setBinCount((c) => Math.max(0, c - okIds.length));
+    setBinSelected(new Set());
+    if (okIds.length > 0) {
+      addToast(
+        t('schedule.recycleBin.deletedForever') +
+          (failCount > 0 ? ` (${failCount} failed)` : ''),
+        failCount > 0 ? 'info' : 'success'
+      );
+    }
+    if (failCount > 0) {
+      addToast(
+        t('schedule.recycleBin.hardDeleteFailed', {
+          error: `${failCount} item(s) failed`,
+        }),
+        'error'
+      );
+    }
+  }, [binSelected, sendWSMessage, addToast, t]);
+
   const onCreateAt = (d) => {
     setSelected(null);
     setCreateAt(d);
@@ -1406,16 +2006,28 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
               ))}
             </div>
             <button
-              className="pixel-button"
+              className="pixel-button new-event-btn"
               onClick={() => onCreateAt(dayjs().minute(0).second(0).add(1, 'hour'))}
+              title={t('schedule.newEvent')}
+              aria-label={t('schedule.newEvent')}
             >
-              <Plus size={14} /> {t('schedule.newEvent')}
+              <Plus size={14} />
             </button>
             <button
-              className={`nav-btn${loading ? ' refreshing' : ''}`}
+              className="pixel-button trash-btn"
+              onClick={openRecycleBin}
+              title={t('schedule.recycleBin.open')}
+              aria-label={t('schedule.recycleBin.open')}
+            >
+              <Trash2 size={14} />
+              {binCount > 0 && <span className="trash-btn-badge">{binCount}</span>}
+            </button>
+            <button
+              className={`refresh-btn${loading ? ' refreshing' : ''}`}
               onClick={handleManualRefresh}
               disabled={loading}
               title={t('schedule.refresh', { defaultValue: 'Refresh' })}
+              aria-label={t('schedule.refresh', { defaultValue: 'Refresh' })}
             >
               <RefreshCw size={14} className={loading ? 'spin' : ''} />
             </button>
@@ -1492,6 +2104,22 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
           }}
         />
       )}
+
+      <RecycleBinModal
+        open={binOpen}
+        events={binEvents}
+        loading={binLoading}
+        selected={binSelected}
+        onToggleOne={toggleBinSelected}
+        onSelectAll={selectAllBin}
+        onClearSelection={clearBinSelection}
+        onClose={closeRecycleBin}
+        onRefresh={() => refreshBin()}
+        onRestoreOne={handleRestoreOne}
+        onRestoreSelected={handleRestoreSelected}
+        onHardDeleteOne={handleHardDeleteOne}
+        onHardDeleteSelected={handleHardDeleteSelected}
+      />
     </div>
   );
 };

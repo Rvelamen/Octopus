@@ -8,7 +8,7 @@ from typing import Any
 from loguru import logger
 
 from backend.core.events.types import AgentEvent
-from backend.services.schedule.types import ScheduleEvent
+from backend.services.schedule.types import ScheduleEvent, _parse_iso_ms
 
 
 def _now_ms() -> int:
@@ -85,16 +85,24 @@ class ScheduleService:
     # ---- CRUD -------------------------------------------------------------
 
     def list_events(self, start_ms: int, end_ms: int) -> list[ScheduleEvent]:
-        """Return events that overlap with ``[start_ms, end_ms)``."""
+        """Return events that overlap with ``[start_ms, end_ms)``.
+
+        Soft-deleted events (in the recycle bin) are excluded — they live in
+        a separate view accessible via :meth:`list_deleted_events`.
+        """
         rows = self._execute(
             "SELECT * FROM schedule_events "
             "WHERE start_at_ms < ? AND end_at_ms > ? "
+            "AND deleted_at IS NULL "
             "ORDER BY start_at_ms ASC, id ASC",
             (end_ms, start_ms),
         )
         return [ScheduleEvent.from_row(r) for r in rows]
 
     def get_event(self, event_id: int) -> ScheduleEvent | None:
+        """Fetch a single event. Soft-deleted events are returned as-is so
+        callers (e.g. the recycle bin) can read them; pass ``include_deleted=False``
+        to get the active-only semantics used by the live calendar."""
         row = self._execute_one(
             "SELECT * FROM schedule_events WHERE id = ?", (event_id,)
         )
@@ -148,7 +156,9 @@ class ScheduleService:
         color: str | None = None,
     ) -> ScheduleEvent | None:
         existing = self.get_event(event_id)
-        if existing is None:
+        if existing is None or existing.deleted_at_ms:
+            # Refuse to update a row that's in the recycle bin — restoring it
+            # first is the only path that should mutate it.
             return None
 
         new_title = title.strip() if title is not None else existing.title
@@ -185,12 +195,124 @@ class ScheduleService:
         return self.get_event(event_id)
 
     def delete_event(self, event_id: int) -> bool:
+        """Hard-delete an event from the database.
+
+        Use :meth:`soft_delete_event` for the user-facing "delete" button —
+        this method is now only used by the recycle bin when the user
+        explicitly empties a bin entry, and by the 30-day purge job.
+        """
         with self._db._get_connection() as conn:
             cur = conn.execute("DELETE FROM schedule_events WHERE id = ?", (event_id,))
             deleted = cur.rowcount > 0
         if deleted:
-            logger.info(f"Schedule: deleted event {event_id}")
+            logger.info(f"Schedule: hard-deleted event {event_id}")
         return deleted
+
+    # ---- recycle bin ------------------------------------------------------
+
+    # 30-day retention: any soft-deleted event older than this is purged on
+    # next access (and on service startup). Tuned for the use case "I deleted
+    # it yesterday by mistake, I want it back"; 30 days is plenty without
+    # letting the bin grow unbounded.
+    RECYCLE_BIN_RETENTION_MS = 30 * 24 * 60 * 60 * 1000
+
+    def soft_delete_event(self, event_id: int) -> bool:
+        """Move an event to the recycle bin (idempotent).
+
+        Returns True when a row was newly stamped, False when the event was
+        already in the bin (no-op). Returns False when the event doesn't
+        exist at all.
+        """
+        existing = self.get_event(event_id)
+        if existing is None:
+            return False
+        if existing.deleted_at_ms:
+            # Already in the bin — keep the original timestamp so the 30-day
+            # countdown keeps ticking from the first delete.
+            return False
+        self._execute_write(
+            "UPDATE schedule_events SET deleted_at = datetime('now','localtime'), "
+            "updated_at = datetime('now','localtime') WHERE id = ? AND deleted_at IS NULL",
+            (event_id,),
+        )
+        logger.info(f"Schedule: soft-deleted event {event_id} (moved to recycle bin)")
+        return True
+
+    def restore_event(self, event_id: int) -> ScheduleEvent | None:
+        """Restore a single event from the recycle bin.
+
+        Returns the restored event, or None if the id doesn't exist or wasn't
+        in the bin.
+        """
+        existing = self.get_event(event_id)
+        if existing is None:
+            return None
+        if not existing.deleted_at_ms:
+            # Already active — return as-is, no DB write.
+            return existing
+        self._execute_write(
+            "UPDATE schedule_events SET deleted_at = NULL, "
+            "updated_at = datetime('now','localtime') WHERE id = ?",
+            (event_id,),
+        )
+        logger.info(f"Schedule: restored event {event_id} from recycle bin")
+        return self.get_event(event_id)
+
+    def restore_events(self, event_ids: list[int]) -> list[ScheduleEvent]:
+        """Restore multiple events in one go. Unknown / non-deleted ids are
+        silently skipped — useful for batch restore from the recycle bin
+        where the user may have just emptied some rows.
+        """
+        restored: list[ScheduleEvent] = []
+        for eid in event_ids:
+            ev = self.restore_event(int(eid))
+            if ev is not None and not ev.deleted_at_ms:
+                restored.append(ev)
+        return restored
+
+    def list_deleted_events(self) -> list[ScheduleEvent]:
+        """Return all soft-deleted events that are still within the 30-day
+        retention window, ordered most-recently-deleted first. Expired rows
+        are purged as a side effect so the caller never sees them.
+        """
+        # Best-effort purge first; if the WHERE filter is wrong (e.g. clock
+        # skew on the host) the next call will retry.
+        self.purge_old_deleted()
+        rows = self._execute(
+            "SELECT * FROM schedule_events "
+            "WHERE deleted_at IS NOT NULL "
+            "ORDER BY deleted_at DESC, id ASC"
+        )
+        return [ScheduleEvent.from_row(r) for r in rows]
+
+    def purge_old_deleted(self) -> int:
+        """Hard-delete any bin entries older than ``RECYCLE_BIN_RETENTION_MS``.
+
+        Returns the number of rows removed. Safe to call repeatedly.
+        """
+        rows = self._execute(
+            "SELECT id, deleted_at FROM schedule_events "
+            "WHERE deleted_at IS NOT NULL"
+        )
+        cutoff_ms = _now_ms() - self.RECYCLE_BIN_RETENTION_MS
+        expired_ids: list[int] = []
+        for r in rows:
+            d = dict(r)
+            ts = _parse_iso_ms(d.get("deleted_at"))
+            if ts and ts < cutoff_ms:
+                expired_ids.append(int(d["id"]))
+        if not expired_ids:
+            return 0
+        placeholders = ",".join("?" * len(expired_ids))
+        with self._db._get_connection() as conn:
+            cur = conn.execute(
+                f"DELETE FROM schedule_events WHERE id IN ({placeholders})",
+                tuple(expired_ids),
+            )
+            purged = cur.rowcount
+        if purged:
+            logger.info(f"Schedule: purged {purged} recycle-bin row(s) past retention")
+        return purged
 
     # ---- cancellation -----------------------------------------------------
 
@@ -236,13 +358,17 @@ class ScheduleService:
         end_ms: int | None = None,
         limit: int = 50,
     ) -> list[ScheduleEvent]:
-        """LIKE-search across title/description/location, optionally bound by range."""
+        """LIKE-search across title/description/location, optionally bound by range.
+
+        Soft-deleted events are excluded — they're reachable via the recycle bin.
+        """
         if not query or not query.strip():
             return []
         like = f"%{query.strip()}%"
         sql = (
             "SELECT * FROM schedule_events "
             "WHERE (title LIKE ? OR description LIKE ? OR location LIKE ?) "
+            "AND deleted_at IS NULL "
         )
         params: list[Any] = [like, like, like]
         if start_ms is not None and end_ms is not None:

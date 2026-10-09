@@ -6,11 +6,15 @@ from loguru import logger
 from backend.channels.desktop.handlers.base import MessageHandler
 from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.channels.desktop.schemas import (
+    ScheduleBatchRestoreEventsRequest,
     ScheduleCancelEventRequest,
     ScheduleCreateEventRequest,
     ScheduleDeleteEventRequest,
     ScheduleGetEventRequest,
+    ScheduleHardDeleteEventRequest,
     ScheduleListEventsRequest,
+    ScheduleListRecycleBinRequest,
+    ScheduleRestoreEventRequest,
     ScheduleSearchEventsRequest,
     ScheduleUncancelEventRequest,
     ScheduleUpdateEventRequest,
@@ -29,6 +33,10 @@ def _event_to_dict(ev) -> dict:
         d["end_iso"] = datetime.fromtimestamp(ev.end_at_ms / 1000).strftime(
             "%Y-%m-%d %H:%M"
         )
+        if ev.deleted_at_ms:
+            d["deleted_at_iso"] = datetime.fromtimestamp(
+                ev.deleted_at_ms / 1000
+            ).strftime("%Y-%m-%d %H:%M")
     except Exception:
         pass
     return d
@@ -59,33 +67,6 @@ class _ScheduleHandlerBase(MessageHandler):
 
 class ScheduleListEventsHandler(_ScheduleHandlerBase):
     """Handle schedule_list_events requests."""
-
-    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        try:
-            if not self._require_service():
-                await self._send_error(
-                    websocket, message.request_id, "Schedule service not available"
-                )
-                return
-            start_at_ms = int(message.data.get("start_at_ms", 0))
-            end_at_ms = int(message.data.get("end_at_ms", 0))
-            if end_at_ms <= start_at_ms:
-                await self._send_error(
-                    websocket, message.request_id, "end_at_ms must be > start_at_ms"
-                )
-                return
-            events = self.schedule_service.list_events(start_at_ms, end_at_ms)
-            await self.send_response(
-                websocket,
-                WSMessage(
-                    type=MessageType.SCHEDULE_EVENTS,
-                    request_id=message.request_id,
-                    data={"events": [_event_to_dict(e) for e in events]},
-                ),
-            )
-        except Exception as e:
-            logger.error(f"Failed to list schedule events: {e}")
-            await self._send_error(websocket, message.request_id, str(e))
 
     async def handle_validated(
         self,
@@ -303,7 +284,8 @@ class ScheduleDeleteEventHandler(_ScheduleHandlerBase):
                     websocket, message.request_id, "event_id is required"
                 )
                 return
-            ok = self.schedule_service.delete_event(event_id)
+            # Soft delete — the event lands in the recycle bin for 30 days.
+            ok = self.schedule_service.soft_delete_event(event_id)
             if ok:
                 await self.schedule_service.publish_change("deleted", event_id)
             await self.send_response(
@@ -335,7 +317,11 @@ class ScheduleDeleteEventHandler(_ScheduleHandlerBase):
                     websocket, message.request_id, "event_id is required"
                 )
                 return
-            ok = self.schedule_service.delete_event(validated.event_id)
+            # Delete is now soft by default — the event moves to the recycle
+            # bin and can be restored within 30 days. The recycle-bin UI and
+            # the schedule_hard_delete_event handler are the only paths to a
+            # permanent delete.
+            ok = self.schedule_service.soft_delete_event(validated.event_id)
             if ok:
                 await self.schedule_service.publish_change("deleted", validated.event_id)
             await self.send_response(
@@ -633,4 +619,256 @@ class ScheduleUncancelEventHandler(_ScheduleHandlerBase):
             )
         except Exception as e:
             logger.error(f"Failed to restore schedule event: {e}")
+            await self._send_error(websocket, message.request_id, str(e))
+
+
+class ScheduleListRecycleBinHandler(_ScheduleHandlerBase):
+    """Handle schedule_list_recycle_bin — return all soft-deleted events
+    still within the 30-day retention window, ordered most-recently-deleted
+    first. Expired rows are purged as a side effect so the list is always
+    consistent with the on-disk state."""
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        try:
+            if not self._require_service():
+                await self._send_error(
+                    websocket, message.request_id, "Schedule service not available"
+                )
+                return
+            events = self.schedule_service.list_deleted_events()
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SCHEDULE_RECYCLE_BIN,
+                    request_id=message.request_id,
+                    data={"events": [_event_to_dict(e) for e in events]},
+                ),
+            )
+        except Exception as e:
+            logger.error(f"Failed to list recycle bin: {e}")
+            await self._send_error(websocket, message.request_id, str(e))
+
+    async def handle_validated(
+        self,
+        websocket: WebSocket,
+        message: WSMessage,
+        validated: ScheduleListRecycleBinRequest,
+    ) -> None:
+        await self.handle(websocket, message)
+
+
+class ScheduleRestoreEventHandler(_ScheduleHandlerBase):
+    """Handle schedule_restore_event — pull a single event out of the bin."""
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        try:
+            if not self._require_service():
+                await self._send_error(
+                    websocket, message.request_id, "Schedule service not available"
+                )
+                return
+            event_id = int(message.data.get("event_id", 0))
+            if not event_id:
+                await self._send_error(
+                    websocket, message.request_id, "event_id is required"
+                )
+                return
+            ev = self.schedule_service.restore_event(event_id)
+            if ev is None or ev.deleted_at_ms:
+                await self._send_error(
+                    websocket,
+                    message.request_id,
+                    f"Event {event_id} is not in the recycle bin",
+                )
+                return
+            await self.schedule_service.publish_change("restored", ev.id)
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SCHEDULE_EVENT_RESTORED,
+                    request_id=message.request_id,
+                    data={"success": True, "event": _event_to_dict(ev)},
+                ),
+            )
+        except Exception as e:
+            logger.error(f"Failed to restore schedule event: {e}")
+            await self._send_error(websocket, message.request_id, str(e))
+
+    async def handle_validated(
+        self,
+        websocket: WebSocket,
+        message: WSMessage,
+        validated: ScheduleRestoreEventRequest,
+    ) -> None:
+        try:
+            if not self._require_service():
+                await self._send_error(
+                    websocket, message.request_id, "Schedule service not available"
+                )
+                return
+            if not validated.event_id:
+                await self._send_error(
+                    websocket, message.request_id, "event_id is required"
+                )
+                return
+            ev = self.schedule_service.restore_event(validated.event_id)
+            if ev is None or ev.deleted_at_ms:
+                await self._send_error(
+                    websocket,
+                    message.request_id,
+                    f"Event {validated.event_id} is not in the recycle bin",
+                )
+                return
+            await self.schedule_service.publish_change("restored", ev.id)
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SCHEDULE_EVENT_RESTORED,
+                    request_id=message.request_id,
+                    data={"success": True, "event": _event_to_dict(ev)},
+                ),
+            )
+        except Exception as e:
+            logger.error(f"Failed to restore schedule event: {e}")
+            await self._send_error(websocket, message.request_id, str(e))
+
+
+class ScheduleBatchRestoreEventsHandler(_ScheduleHandlerBase):
+    """Handle schedule_batch_restore_events — restore many in one call."""
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        try:
+            if not self._require_service():
+                await self._send_error(
+                    websocket, message.request_id, "Schedule service not available"
+                )
+                return
+            raw_ids = message.data.get("event_ids", [])
+            if not isinstance(raw_ids, list) or not raw_ids:
+                await self._send_error(
+                    websocket, message.request_id, "event_ids must be a non-empty list"
+                )
+                return
+            ids = [int(x) for x in raw_ids]
+            restored = self.schedule_service.restore_events(ids)
+            for ev in restored:
+                await self.schedule_service.publish_change("restored", ev.id)
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SCHEDULE_EVENTS_RESTORED,
+                    request_id=message.request_id,
+                    data={
+                        "success": True,
+                        "restored_count": len(restored),
+                        "events": [_event_to_dict(e) for e in restored],
+                    },
+                ),
+            )
+        except Exception as e:
+            logger.error(f"Failed to batch restore schedule events: {e}")
+            await self._send_error(websocket, message.request_id, str(e))
+
+    async def handle_validated(
+        self,
+        websocket: WebSocket,
+        message: WSMessage,
+        validated: ScheduleBatchRestoreEventsRequest,
+    ) -> None:
+        try:
+            if not self._require_service():
+                await self._send_error(
+                    websocket, message.request_id, "Schedule service not available"
+                )
+                return
+            if not validated.event_ids:
+                await self._send_error(
+                    websocket, message.request_id, "event_ids must be a non-empty list"
+                )
+                return
+            restored = self.schedule_service.restore_events(
+                [int(i) for i in validated.event_ids]
+            )
+            for ev in restored:
+                await self.schedule_service.publish_change("restored", ev.id)
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SCHEDULE_EVENTS_RESTORED,
+                    request_id=message.request_id,
+                    data={
+                        "success": True,
+                        "restored_count": len(restored),
+                        "events": [_event_to_dict(e) for e in restored],
+                    },
+                ),
+            )
+        except Exception as e:
+            logger.error(f"Failed to batch restore schedule events: {e}")
+            await self._send_error(websocket, message.request_id, str(e))
+
+
+class ScheduleHardDeleteEventHandler(_ScheduleHandlerBase):
+    """Handle schedule_hard_delete_event — permanently remove a row, only
+    reachable from the recycle-bin UI when the user explicitly empties a
+    bin entry. Publishes a "deleted" change so any open calendar refetches."""
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        try:
+            if not self._require_service():
+                await self._send_error(
+                    websocket, message.request_id, "Schedule service not available"
+                )
+                return
+            event_id = int(message.data.get("event_id", 0))
+            if not event_id:
+                await self._send_error(
+                    websocket, message.request_id, "event_id is required"
+                )
+                return
+            ok = self.schedule_service.delete_event(event_id)
+            if ok:
+                await self.schedule_service.publish_change("deleted", event_id)
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SCHEDULE_EVENT_DELETED,
+                    request_id=message.request_id,
+                    data={"success": ok, "event_id": event_id, "hard": True},
+                ),
+            )
+        except Exception as e:
+            logger.error(f"Failed to hard-delete schedule event: {e}")
+            await self._send_error(websocket, message.request_id, str(e))
+
+    async def handle_validated(
+        self,
+        websocket: WebSocket,
+        message: WSMessage,
+        validated: ScheduleHardDeleteEventRequest,
+    ) -> None:
+        try:
+            if not self._require_service():
+                await self._send_error(
+                    websocket, message.request_id, "Schedule service not available"
+                )
+                return
+            if not validated.event_id:
+                await self._send_error(
+                    websocket, message.request_id, "event_id is required"
+                )
+                return
+            ok = self.schedule_service.delete_event(validated.event_id)
+            if ok:
+                await self.schedule_service.publish_change("deleted", validated.event_id)
+            await self.send_response(
+                websocket,
+                WSMessage(
+                    type=MessageType.SCHEDULE_EVENT_DELETED,
+                    request_id=message.request_id,
+                    data={"success": ok, "event_id": validated.event_id, "hard": True},
+                ),
+            )
+        except Exception as e:
+            logger.error(f"Failed to hard-delete schedule event: {e}")
             await self._send_error(websocket, message.request_id, str(e))

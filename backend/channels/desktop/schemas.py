@@ -427,6 +427,22 @@ class ScheduleUncancelEventRequest(BaseRequest):
     event_id: int = 0
 
 
+class ScheduleListRecycleBinRequest(BaseRequest):
+    pass
+
+
+class ScheduleRestoreEventRequest(BaseRequest):
+    event_id: int = 0
+
+
+class ScheduleBatchRestoreEventsRequest(BaseRequest):
+    event_ids: list[int] = []
+
+
+class ScheduleHardDeleteEventRequest(BaseRequest):
+    event_id: int = 0
+
+
 # ============================================================================
 # Agent
 # ============================================================================
@@ -925,6 +941,10 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.SCHEDULE_GET_EVENT: ScheduleGetEventRequest,
     MessageType.SCHEDULE_CANCEL_EVENT: ScheduleCancelEventRequest,
     MessageType.SCHEDULE_UNCANCEL_EVENT: ScheduleUncancelEventRequest,
+    MessageType.SCHEDULE_LIST_RECYCLE_BIN: ScheduleListRecycleBinRequest,
+    MessageType.SCHEDULE_RESTORE_EVENT: ScheduleRestoreEventRequest,
+    MessageType.SCHEDULE_BATCH_RESTORE_EVENTS: ScheduleBatchRestoreEventsRequest,
+    MessageType.SCHEDULE_HARD_DELETE_EVENT: ScheduleHardDeleteEventRequest,
     MessageType.AGENT_GET_LIST: AgentGetListRequest,
     MessageType.AGENT_GET_SOUL: AgentGetSoulRequest,
     MessageType.AGENT_SAVE_SOUL: AgentSaveSoulRequest,

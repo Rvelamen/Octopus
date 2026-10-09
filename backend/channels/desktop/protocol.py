@@ -193,6 +193,10 @@ class MessageType(Enum):
     SCHEDULE_GET_EVENT = "schedule_get_event"  # Fetch a single event by id
     SCHEDULE_CANCEL_EVENT = "schedule_cancel_event"  # Mark an event as cancelled (reversible)
     SCHEDULE_UNCANCEL_EVENT = "schedule_uncancel_event"  # Restore a cancelled event
+    SCHEDULE_LIST_RECYCLE_BIN = "schedule_list_recycle_bin"  # List soft-deleted events
+    SCHEDULE_RESTORE_EVENT = "schedule_restore_event"  # Restore a soft-deleted event
+    SCHEDULE_BATCH_RESTORE_EVENTS = "schedule_batch_restore_events"  # Restore multiple at once
+    SCHEDULE_HARD_DELETE_EVENT = "schedule_hard_delete_event"  # Permanently delete from bin
 
     # Agent - Client -> Server
     AGENT_GET_LIST = "agent_get_list"  # Get all agents
@@ -383,6 +387,9 @@ class MessageType(Enum):
     SCHEDULE_EVENT_UPDATED = "schedule_event_updated"  # Event updated confirmation
     SCHEDULE_EVENT_DELETED = "schedule_event_deleted"  # Event deleted confirmation
     SCHEDULE_EVENT = "schedule_event"  # Single event (get / cancel / uncancel)
+    SCHEDULE_RECYCLE_BIN = "schedule_recycle_bin"  # Soft-deleted events
+    SCHEDULE_EVENT_RESTORED = "schedule_event_restored"  # Restored from bin
+    SCHEDULE_EVENTS_RESTORED = "schedule_events_restored"  # Batch restore result
 
     # Agent - Server -> Client
     AGENT_LIST = "agent_list"  # List of agents
@@ -682,6 +689,10 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.SCHEDULE_GET_EVENT,
     MessageType.SCHEDULE_CANCEL_EVENT,
     MessageType.SCHEDULE_UNCANCEL_EVENT,
+    MessageType.SCHEDULE_LIST_RECYCLE_BIN,
+    MessageType.SCHEDULE_RESTORE_EVENT,
+    MessageType.SCHEDULE_BATCH_RESTORE_EVENTS,
+    MessageType.SCHEDULE_HARD_DELETE_EVENT,
     MessageType.AGENT_GET_LIST,
     MessageType.AGENT_GET_SOUL,
     MessageType.AGENT_SAVE_SOUL,
@@ -838,6 +849,9 @@ SERVER_MESSAGE_TYPES = {
     MessageType.SCHEDULE_EVENT_UPDATED,
     MessageType.SCHEDULE_EVENT_DELETED,
     MessageType.SCHEDULE_EVENT,
+    MessageType.SCHEDULE_RECYCLE_BIN,
+    MessageType.SCHEDULE_EVENT_RESTORED,
+    MessageType.SCHEDULE_EVENTS_RESTORED,
     MessageType.AGENT_LIST,
     MessageType.AGENT_SOUL,
     MessageType.AGENT_SAVED,
