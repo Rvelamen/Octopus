@@ -662,15 +662,36 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
   useEffect(() => {
     if (!subscribe || !instanceId) return undefined;
 
+    // Hard safety net: if the stream stalls for too long (e.g. WS drop mid-
+    // response, or the LLM loop ended without a final token), finalize so
+    // the drawer doesn't sit on a blinking cursor. The normal finalize
+    // path is the 1.5s debounce below; this is the "give up" timer.
+    let stuckTimer = null;
+    const armStuckTimer = () => {
+      if (stuckTimer) clearTimeout(stuckTimer);
+      stuckTimer = setTimeout(() => {
+        if (streamingIdRef.current != null) {
+          // eslint-disable-next-line no-console
+          console.warn('[schedule-drawer] stream stuck > 30s, finalizing');
+        }
+        finalizeStream();
+      }, 30000);
+    };
+
     const finalizeStream = () => {
       streamingIdRef.current = null;
       streamDoneTimerRef.current = null;
+      if (stuckTimer) {
+        clearTimeout(stuckTimer);
+        stuckTimer = null;
+      }
       setPending(false);
     };
 
     const scheduleFinalize = () => {
       if (streamDoneTimerRef.current) clearTimeout(streamDoneTimerRef.current);
       streamDoneTimerRef.current = setTimeout(finalizeStream, 1500);
+      armStuckTimer();
     };
 
     const handleSubagentToken = (data) => {
