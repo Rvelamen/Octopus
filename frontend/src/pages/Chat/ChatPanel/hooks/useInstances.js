@@ -11,6 +11,12 @@ export function useInstances(sendWSMessage, connectionStatus, options = {}) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState(null);
   const [instancesPage, setInstancesPage] = useState(0);
+  // Page state must NOT live in a useCallback dep: changing it would
+  // change fetchInstances identity, which re-fires the mount effect,
+  // which calls fetchInstances(false, true) again, which re-sets the
+  // page — a render loop where the user sees "Loading chats..."
+  // flicker forever. Mirror the page in a ref for read access.
+  const instancesPageRef = useRef(0);
   const [instancesHasMore, setInstancesHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
@@ -32,6 +38,7 @@ export function useInstances(sendWSMessage, connectionStatus, options = {}) {
 
     if (isInitialLoad) {
       setInitialLoading(true);
+      instancesPageRef.current = 0;
       setInstancesPage(0);
       setInstancesHasMore(true);
     } else if (!append) {
@@ -42,7 +49,7 @@ export function useInstances(sendWSMessage, connectionStatus, options = {}) {
 
     if (showError) setError(null);
     try {
-      const offset = append ? (instancesPage * PAGE_SIZE) : 0;
+      const offset = append ? (instancesPageRef.current * PAGE_SIZE) : 0;
       const response = await sendWSMessage('session_get_instances', {
         channel: 'desktop',
         limit: PAGE_SIZE,
@@ -59,7 +66,9 @@ export function useInstances(sendWSMessage, connectionStatus, options = {}) {
       }
 
       setInstancesHasMore(hasMore);
-      setInstancesPage(append ? instancesPage + 1 : 1);
+      const nextPage = append ? instancesPageRef.current + 1 : 1;
+      instancesPageRef.current = nextPage;
+      setInstancesPage(nextPage);
     } catch (err) {
       console.error('Failed to fetch instances:', err);
       if (showError) {
@@ -74,7 +83,7 @@ export function useInstances(sendWSMessage, connectionStatus, options = {}) {
         setIsLoadingMore(false);
       }
     }
-  }, [sendWSMessage, instancesPage]);
+  }, [sendWSMessage]);
 
   const fetchArchivedInstances = useCallback(async (showError = true) => {
     if (!sendWSMessage) return;
@@ -264,33 +273,15 @@ export function useInstances(sendWSMessage, connectionStatus, options = {}) {
     };
   }, []);
 
-  // Only fetch when WebSocket is actually connected
+  // Only fetch when WebSocket is actually connected. Fire both the active
+  // list and the archived list in parallel — they're independent and the
+  // archived list defaults to collapsed so loading it is cheap.
   useEffect(() => {
     if (sendWSMessage && connectionStatus === 'connected' && isComponentMounted.current) {
       fetchInstances(false, true);
       fetchArchivedInstances(false);
     }
   }, [sendWSMessage, connectionStatus, fetchInstances, fetchArchivedInstances]);
-
-  // Retry if still empty after connected and loaded
-  useEffect(() => {
-    if (instances.length === 0 && !initialLoading && !error && sendWSMessage && connectionStatus === 'connected') {
-      const retryTimer = setInterval(() => {
-        if (isComponentMounted.current) {
-          fetchInstances(false, true);
-        }
-      }, 2000);
-
-      const stopTimer = setTimeout(() => {
-        clearInterval(retryTimer);
-      }, 10000);
-
-      return () => {
-        clearInterval(retryTimer);
-        clearTimeout(stopTimer);
-      };
-    }
-  }, [instances.length, initialLoading, error, sendWSMessage, connectionStatus, fetchInstances]);
 
   return {
     instances,
