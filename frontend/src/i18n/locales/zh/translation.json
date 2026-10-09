@@ -283,7 +283,13 @@
       "send": "发送",
       "doneHint": "已完成。请在日历中查看更新。",
       "sendFailed": "发送失败：{{error}}",
-      "saveFailed": "保存失败：{{error}}"
+      "saveFailed": "保存失败：{{error}}",
+      "toolCalls": "调用了 {{count}} 个工具",
+      "toolStatusOk": "成功",
+      "toolStatusError": "失败",
+      "toolStatusPending": "进行中",
+      "showDetails": "展开详情",
+      "hideDetails": "收起详情"
     },
     "modal": {
       "new": "新建日程",

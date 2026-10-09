@@ -640,6 +640,80 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
 
   const storageKey = `octopus.schedule.chat.${instanceId}`;
 
+  // Group consecutive tool-role messages into a single collapsible block so
+  // the user sees a compact "调用了 N 个工具" summary instead of a wall of
+  // args/result bubbles for every tool invocation.
+  const groupedMessages = useMemo(() => {
+    const out = [];
+    let i = 0;
+    while (i < messages.length) {
+      const m = messages[i];
+      if (m.role !== 'tool') {
+        out.push(m);
+        i += 1;
+        continue;
+      }
+      const toolMsgs = [];
+      while (i < messages.length && messages[i].role === 'tool') {
+        toolMsgs.push(messages[i]);
+        i += 1;
+      }
+      // Pair up each call ("⚙ name\nargs") with the following result ("✓ …" / "✗ …").
+      const calls = [];
+      for (let j = 0; j < toolMsgs.length; j += 1) {
+        const tm = toolMsgs[j];
+        const text = tm.text || '';
+        if (text.startsWith('⚙ ')) {
+          const firstLineEnd = text.indexOf('\n');
+          const head = firstLineEnd === -1 ? text : text.slice(0, firstLineEnd);
+          const args = firstLineEnd === -1 ? '' : text.slice(firstLineEnd + 1);
+          const name = head.replace(/^⚙\s+/, '').trim() || 'tool';
+          const next = toolMsgs[j + 1];
+          let status = 'pending';
+          let result = '';
+          if (next && (next.text || '').startsWith('✓ ')) {
+            status = 'ok';
+            result = next.text.slice(2);
+            j += 1;
+          } else if (next && (next.text || '').startsWith('✗ ')) {
+            status = 'error';
+            result = next.text.slice(2);
+            j += 1;
+          }
+          calls.push({ id: tm.id, name, args, status, result, time: tm.time });
+        } else if (text.startsWith('✓ ') || text.startsWith('✗ ')) {
+          // Stray result without a matching call — surface as its own line.
+          calls.push({
+            id: tm.id,
+            name: '?',
+            args: '',
+            status: text.startsWith('✓ ') ? 'ok' : 'error',
+            result: text.slice(2),
+            time: tm.time,
+          });
+        }
+      }
+      out.push({
+        type: 'tool-group',
+        id: `tg-${toolMsgs[0].id}`,
+        calls,
+        time: toolMsgs[0].time,
+      });
+    }
+    return out;
+  }, [messages]);
+
+  // Track which tool groups the user has expanded. Default to all collapsed.
+  const [expandedToolGroups, setExpandedToolGroups] = useState(() => new Set());
+  const toggleToolGroup = useCallback((id) => {
+    setExpandedToolGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
   // Persist messages to localStorage so they survive page navigation, reloads,
   // and toggling the drawer. Silently no-ops if storage is unavailable.
   useEffect(() => {
@@ -655,6 +729,20 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
       endRef.current.scrollTop = endRef.current.scrollHeight;
     }
   }, [messages, pending, open]);
+
+  // Defense in depth: if no message is currently being streamed into but a
+  // message still has the `streaming` flag set, clear it. This catches any
+  // race where the streaming ref was reset before finalizeStream ran (e.g.
+  // a tool result landed, then a synthesized-fallback token created a new
+  // streaming message that never got finalized because no further tokens
+  // arrived). The early `prev`-identity return keeps this loop-stable.
+  useEffect(() => {
+    if (streamingIdRef.current != null) return;
+    setMessages((prev) => {
+      if (!prev.some((m) => m.streaming)) return prev;
+      return prev.map((m) => (m.streaming ? { ...m, streaming: false } : m));
+    });
+  }, [messages]);
 
   // Subscribe to subagent streaming events when the drawer is alive. Filter by
   // session_instance_id so we only react to our own schedule-assistant session
@@ -679,6 +767,15 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
     };
 
     const finalizeStream = () => {
+      // Clear the streaming flag on the in-flight message *before* nulling the
+      // ref, otherwise the blinking cursor stays attached to already-finalized
+      // assistant content.
+      const finishedId = streamingIdRef.current;
+      if (finishedId != null) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === finishedId ? { ...m, streaming: false } : m))
+        );
+      }
       streamingIdRef.current = null;
       streamDoneTimerRef.current = null;
       if (stuckTimer) {
@@ -877,19 +974,96 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
             </div>
           </div>
         )}
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`chat-drawer-message ${m.role}${m.streaming ? ' streaming' : ''}`}
-          >
-            <div className="chat-drawer-message-text">{m.text}</div>
-            {m.time && (
-              <span className="chat-drawer-message-time">
-                {dayjs(m.time).format('HH:mm')}
-              </span>
-            )}
-          </div>
-        ))}
+        {groupedMessages.map((m) => {
+          if (m.type === 'tool-group') {
+            const isExpanded = expandedToolGroups.has(m.id);
+            const errorCount = m.calls.filter((c) => c.status === 'error').length;
+            const okCount = m.calls.filter((c) => c.status === 'ok').length;
+            const summaryText = t('schedule.drawer.toolCalls', {
+              count: m.calls.length,
+            });
+            return (
+              <div
+                key={m.id}
+                className={`chat-drawer-message tool-group${
+                  isExpanded ? ' expanded' : ''
+                }`}
+              >
+                <button
+                  type="button"
+                  className="chat-drawer-tool-toggle"
+                  onClick={() => toggleToolGroup(m.id)}
+                  aria-expanded={isExpanded}
+                >
+                  <span className="chat-drawer-tool-chevron" aria-hidden="true">
+                    {isExpanded ? '▾' : '▸'}
+                  </span>
+                  <span className="chat-drawer-tool-summary">{summaryText}</span>
+                  {errorCount > 0 && (
+                    <span className="chat-drawer-tool-badge error">
+                      ✗ {errorCount}
+                    </span>
+                  )}
+                  {errorCount === 0 && okCount > 0 && (
+                    <span className="chat-drawer-tool-badge ok">✓</span>
+                  )}
+                  <span className="chat-drawer-tool-toggle-label">
+                    {isExpanded
+                      ? t('schedule.drawer.hideDetails')
+                      : t('schedule.drawer.showDetails')}
+                  </span>
+                </button>
+                {isExpanded && (
+                  <div className="chat-drawer-tool-details">
+                    {m.calls.map((c) => (
+                      <div
+                        key={c.id}
+                        className={`chat-drawer-tool-item ${c.status}`}
+                      >
+                        <div className="chat-drawer-tool-item-head">
+                          <span className="chat-drawer-tool-name">{c.name}</span>
+                          <span className={`chat-drawer-tool-status ${c.status}`}>
+                            {c.status === 'ok'
+                              ? t('schedule.drawer.toolStatusOk')
+                              : c.status === 'error'
+                                ? t('schedule.drawer.toolStatusError')
+                                : t('schedule.drawer.toolStatusPending')}
+                          </span>
+                        </div>
+                        {c.args && (
+                          <pre className="chat-drawer-tool-args">{c.args}</pre>
+                        )}
+                        {c.result && (
+                          <pre className="chat-drawer-tool-result">{c.result}</pre>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {m.time && (
+                  <span className="chat-drawer-message-time">
+                    {dayjs(m.time).format('HH:mm')}
+                  </span>
+                )}
+              </div>
+            );
+          }
+          return (
+            <div
+              key={m.id}
+              className={`chat-drawer-message ${m.role}${
+                m.streaming ? ' streaming' : ''
+              }`}
+            >
+              <div className="chat-drawer-message-text">{m.text}</div>
+              {m.time && (
+                <span className="chat-drawer-message-time">
+                  {dayjs(m.time).format('HH:mm')}
+                </span>
+              )}
+            </div>
+          );
+        })}
         {pending && !streamingIdRef.current && (
           <div className="chat-drawer-typing">
             <span /><span /><span />
@@ -908,7 +1082,7 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
             }
           }}
           placeholder={t('schedule.drawer.placeholder')}
-          rows={3}
+          rows={1}
         />
         <button onClick={send} disabled={!input.trim() || pending} title={t('schedule.drawer.send')}>
           <Send size={16} />

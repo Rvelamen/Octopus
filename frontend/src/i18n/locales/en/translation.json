@@ -283,7 +283,13 @@
       "send": "Send",
       "doneHint": "Done. Check the calendar for updates.",
       "sendFailed": "Failed to send: {{error}}",
-      "saveFailed": "Save failed: {{error}}"
+      "saveFailed": "Save failed: {{error}}",
+      "toolCalls": "Called {{count}} tools",
+      "toolStatusOk": "OK",
+      "toolStatusError": "Failed",
+      "toolStatusPending": "Running",
+      "showDetails": "Show details",
+      "hideDetails": "Hide details"
     },
     "modal": {
       "new": "NEW_EVENT",

@@ -139,6 +139,12 @@ class ChatHandler(MessageHandler):
 
         request_id = message.request_id or str(uuid.uuid4())
 
+        logger.info(
+            f"[chat.handle] received type={message.type} "
+            f"subagent={subagent_name!r} instance_id={instance_id} "
+            f"content_preview={content[:60]!r}"
+        )
+
         if await self._maybe_spawn_subagent(
             websocket, request_id, content, subagent_name, instance_id
         ):
