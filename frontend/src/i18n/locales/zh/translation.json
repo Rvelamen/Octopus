@@ -299,7 +299,9 @@
       "toolStatusError": "失败",
       "toolStatusPending": "进行中",
       "showDetails": "展开详情",
-      "hideDetails": "收起详情"
+      "hideDetails": "收起详情",
+      "clear": "清除聊天记录",
+      "clearConfirm": "确认清空此对话中的所有消息？"
     },
     "recycleBin": {
       "open": "回收站",

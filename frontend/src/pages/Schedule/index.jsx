@@ -982,12 +982,45 @@ function ChatDrawer({ sendWSMessage, subscribe, instanceId, open }) {
 
   const hasMessages = messages.length > 0;
 
+  const handleClear = useCallback(() => {
+    if (!hasMessages) return;
+    const ok = window.confirm(t('schedule.drawer.clearConfirm'));
+    if (!ok) return;
+    // Cancel any in-flight stream so a mid-flight token doesn't sneak back
+    // into the freshly-emptied drawer.
+    streamingIdRef.current = null;
+    if (streamDoneTimerRef.current) {
+      clearTimeout(streamDoneTimerRef.current);
+      streamDoneTimerRef.current = null;
+    }
+    setPending(false);
+    setMessages([]);
+    try {
+      window.localStorage?.removeItem(storageKey);
+    } catch (_) {
+      // best-effort
+    }
+  }, [hasMessages, t, storageKey]);
+
   return (
     <div className={`chat-drawer${open ? '' : ' collapsed'}`}>
       <div className="chat-drawer-header">
-        <div className="chat-drawer-title">
-          <MessageSquare size={13} />
-          {t('schedule.drawer.title')}
+        <div className="chat-drawer-title-row">
+          <div className="chat-drawer-title">
+            <MessageSquare size={13} />
+            {t('schedule.drawer.title')}
+          </div>
+          {hasMessages && (
+            <button
+              type="button"
+              className="chat-drawer-clear-btn"
+              onClick={handleClear}
+              title={t('schedule.drawer.clear')}
+              aria-label={t('schedule.drawer.clear')}
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
         </div>
         <div className="chat-drawer-subtitle">{t('schedule.drawer.subtitle')}</div>
       </div>

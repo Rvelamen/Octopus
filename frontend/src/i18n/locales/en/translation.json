@@ -299,7 +299,9 @@
       "toolStatusError": "Failed",
       "toolStatusPending": "Running",
       "showDetails": "Show details",
-      "hideDetails": "Hide details"
+      "hideDetails": "Hide details",
+      "clear": "Clear chat history",
+      "clearConfirm": "Clear all messages in this chat?"
     },
     "recycleBin": {
       "open": "Recycle Bin",

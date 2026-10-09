@@ -618,6 +618,13 @@
   border-bottom: 1px solid var(--board);
 }
 
+.chat-drawer-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+
 .chat-drawer-title {
   font-size: 12px;
   font-weight: 600;
@@ -630,6 +637,27 @@
 
 .chat-drawer-title svg {
   color: var(--accent);
+}
+
+.chat-drawer-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.chat-drawer-clear-btn:hover {
+  color: var(--error);
+  background: var(--surface-1, transparent);
+  border-color: var(--board);
 }
 
 .chat-drawer-subtitle {
