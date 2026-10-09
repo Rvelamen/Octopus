@@ -395,6 +395,24 @@ class SubagentManager:
 
         return "\n\n".join(parts) if parts else ""
 
+    @staticmethod
+    def _extract_last_tool_summary(messages: list[dict[str, Any]]) -> str:
+        """Pull a short human-readable summary of the most recent tool result.
+
+        Used to fabricate a fallback reply when the LLM ends a turn with an
+        empty `content` after a tool call (some models do this — the
+        schedule-assistant's DeepSeek provider in particular). Returns an
+        empty string if there is no tool result to summarise.
+        """
+        for msg in reversed(messages):
+            if msg.get("role") == "tool":
+                content = msg.get("content", "")
+                if isinstance(content, str) and content.strip():
+                    # Cap the summary so the fallback isn't enormous.
+                    return content[:600] + ("..." if len(content) > 600 else "")
+                return ""
+        return ""
+
     def _build_subagent_prompt(self, config: SubAgentConfig, task: str) -> str:
         """Build system prompt for a configured subagent."""
         # Build skills summary for configured extensions (skills)
@@ -998,6 +1016,23 @@ When you have completed the task, provide a clear summary of your findings or ac
                             f"[Subagent:sync:{task_id}] on_iteration callback failed: {e}"
                         )
 
+            # Same fallback as the async path: if the LLM ended a tool-call
+            # turn with empty content, synthesise a clarification reply.
+            if not final_result or not final_result.strip():
+                last_tool_result = self._extract_last_tool_summary(messages)
+                if last_tool_result:
+                    final_result = (
+                        "我已经完成了工具调用，但没能自动生成回复。"
+                        f"最近一次工具调用的结果是：\n\n{last_tool_result}\n\n"
+                        "请告诉我下一步该怎么做，或者你想让我针对哪个事件继续？"
+                    )
+                    logger.warning(
+                        f"[Subagent:sync:{task_id}] LLM produced empty final result; "
+                        f"synthesized fallback from last tool result"
+                    )
+                else:
+                    final_result = "我没有足够的上下文继续，请补充说明你想做什么。"
+
             if final_result is None:
                 final_result = "Task completed but no final response was generated."
 
@@ -1382,6 +1417,43 @@ When you have completed the task, provide a clear summary of your findings or ac
                         f"[Subagent:{task_id}] No tool calls, final result: {final_result[:100] if final_result else 'None'}..."
                     )
                     break
+
+            # Some LLMs (DeepSeek, etc.) finish a tool-call turn with an empty
+            # content block — they "forget" to emit a final assistant message.
+            # That leaves the drawer stuck on the last tool result with no
+            # follow-up. Synthesize a friendly clarification prompt from the
+            # most recent tool result so the user always gets a reply.
+            if not final_result or not final_result.strip():
+                last_tool_result = self._extract_last_tool_summary(messages)
+                if last_tool_result:
+                    final_result = (
+                        "我已经完成了工具调用，但没能自动生成回复。"
+                        f"最近一次工具调用的结果是：\n\n{last_tool_result}\n\n"
+                        "请告诉我下一步该怎么做，或者你想让我针对哪个事件继续？"
+                    )
+                else:
+                    final_result = "我没有足够的上下文继续，请补充说明你想做什么。"
+
+                logger.warning(
+                    f"[Subagent:{task_id}] LLM produced empty final result; "
+                    f"synthesized fallback from last tool result"
+                )
+                # Stream the synthesized fallback so live panels (e.g. the
+                # Schedule drawer's subagent_token subscription) actually
+                # see it — otherwise only the (now-skipped) main-chat
+                # announce path would carry the message.
+                if session_instance_id is not None:
+                    await self._emit(
+                        "subagent_token",
+                        {
+                            "content": final_result,
+                            "iteration": iteration,
+                            "session_instance_id": session_instance_id,
+                            "subagent_id": task_id,
+                            "synthesized_fallback": True,
+                        },
+                        task_id,
+                    )
 
             if final_result is None:
                 final_result = "Task completed but no final response was generated."
