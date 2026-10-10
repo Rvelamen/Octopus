@@ -35,6 +35,16 @@ from backend.tools.memory import MemoryReadTool, MemorySearchTool, MemoryTimelin
 from backend.tools.memory_write import MemoryWriteTool
 from backend.tools.message import MessageTool
 from backend.tools.registry import ToolRegistry
+from backend.tools.schedule import (
+    CancelEventTool,
+    CreateEventTool,
+    DeleteEventTool,
+    GetCurrentTimeTool,
+    GetEventTool,
+    ListEventsTool,
+    SearchEventsTool,
+    UpdateEventTool,
+)
 from backend.tools.shell import ExecTool
 
 
@@ -56,10 +66,12 @@ class SubagentManager:
         bus: MessageBus,
         exec_config: "ExecToolConfig | None" = None,
         aggregator: SubagentAggregator | None = None,
+        schedule_service: Any | None = None,
     ):
         self.workspace = workspace
         self.bus = bus
         self.exec_config = exec_config or ExecToolConfig()
+        self.schedule_service = schedule_service
         self._running_tasks: dict[str, asyncio.Task[None]] = {}
         self._stop_flags: dict[str, bool] = {}
         # Track which instance each subagent belongs to: { task_id: session_instance_id }
@@ -80,6 +92,16 @@ class SubagentManager:
         self._task_contexts: dict[str, dict] = (
             {}
         )  # task_id -> {channel, chat_id, session_instance_id}
+
+        # Session continuity: persist the message history of a (subagent_name, instance_id)
+        # pair so subsequent chats in the same session can resume from where the previous
+        # one left off. The chat drawer in the Schedule page uses a stable instance_id
+        # so all of its messages accumulate into one logical conversation.
+        # Key: (agent_role, instance_id) -> list of OpenAI-format messages
+        self._session_history: dict[tuple[str, int], list[dict[str, Any]]] = {}
+        # Per-session lock so two concurrent spawns for the same session don't race
+        # on the history dict.
+        self._session_locks: dict[tuple[str, int], asyncio.Lock] = {}
 
         if self._aggregator:
             self._aggregator.set_bus(bus)
@@ -271,6 +293,16 @@ class SubagentManager:
             "memory_timeline": MemoryTimelineTool,
         }
 
+        if self.schedule_service is not None:
+            tool_mapping["get_current_time"] = lambda: GetCurrentTimeTool(self.schedule_service)
+            tool_mapping["create_event"] = lambda: CreateEventTool(self.schedule_service)
+            tool_mapping["list_events"] = lambda: ListEventsTool(self.schedule_service)
+            tool_mapping["search_events"] = lambda: SearchEventsTool(self.schedule_service)
+            tool_mapping["get_event"] = lambda: GetEventTool(self.schedule_service)
+            tool_mapping["update_event"] = lambda: UpdateEventTool(self.schedule_service)
+            tool_mapping["cancel_event"] = lambda: CancelEventTool(self.schedule_service)
+            tool_mapping["delete_event"] = lambda: DeleteEventTool(self.schedule_service)
+
         # Register requested tools
         has_browser = False
         for tool_name in config.tools:
@@ -363,6 +395,24 @@ class SubagentManager:
 
         return "\n\n".join(parts) if parts else ""
 
+    @staticmethod
+    def _extract_last_tool_summary(messages: list[dict[str, Any]]) -> str:
+        """Pull a short human-readable summary of the most recent tool result.
+
+        Used to fabricate a fallback reply when the LLM ends a turn with an
+        empty `content` after a tool call (some models do this — the
+        schedule-assistant's DeepSeek provider in particular). Returns an
+        empty string if there is no tool result to summarise.
+        """
+        for msg in reversed(messages):
+            if msg.get("role") == "tool":
+                content = msg.get("content", "")
+                if isinstance(content, str) and content.strip():
+                    # Cap the summary so the fallback isn't enormous.
+                    return content[:600] + ("..." if len(content) > 600 else "")
+                return ""
+        return ""
+
     def _build_subagent_prompt(self, config: SubAgentConfig, task: str) -> str:
         """Build system prompt for a configured subagent."""
         # Build skills summary for configured extensions (skills)
@@ -435,6 +485,8 @@ When you have completed the task, provide a clear summary of your findings or ac
         group_id: str | None = None,
         session_instance_id: int | None = None,
         parent_tool_call_id: str | None = None,
+        skip_announce: bool = False,
+        _resume_history: list[dict[str, Any]] | None = None,
     ) -> str:
         """
         Spawn a subagent to execute a task in the background.
@@ -450,6 +502,11 @@ When you have completed the task, provide a clear summary of your findings or ac
                      aggregated with other subagents in the same group.
             session_instance_id: Session instance ID for precise routing.
             parent_tool_call_id: Parent tool call ID (injected by AgentLoop) for event routing.
+            skip_announce: When True, do not publish the result back to the main chat as a
+                system message. Used when the originating panel is already streaming the
+                subagent response via subagent_token events (e.g. the Schedule drawer), so
+                the redundant "Summarize this naturally…" prompt would otherwise surface in
+                the main chat as a self-Q&A bubble.
 
         Returns:
             Status message indicating the subagent was started.
@@ -472,6 +529,7 @@ When you have completed the task, provide a clear summary of your findings or ac
             "channel": origin_channel,
             "chat_id": origin_chat_id,
             "session_instance_id": session_instance_id,
+            "skip_announce": skip_announce,
         }
 
         # Register with aggregator if group_id provided
@@ -494,7 +552,7 @@ When you have completed the task, provide a clear summary of your findings or ac
         bg_future = loop.run_in_executor(
             None,
             lambda: asyncio.run(
-                self._run_subagent(task_id, task, display_label, origin, agent_config, group_id)
+                self._run_subagent(task_id, task, display_label, origin, agent_config, group_id, seed_messages=_resume_history)
             ),
         )
         bg_task = asyncio.ensure_future(bg_future)
@@ -511,6 +569,83 @@ When you have completed the task, provide a clear summary of your findings or ac
         group_info = f" [group:{group_id}]" if group_id else ""
         logger.info(f"[Subagent:{task_id}] Spawned{role_info}{group_info}: {display_label}")
         return f"[Async] Subagent [{display_label}]{role_info}{group_info} started (id: {task_id}). This is a long-running task - do NOT wait or sleep for it. You may continue with other parallelizable tasks. I'll initiate a new conversation when it completes."
+
+    async def spawn_or_resume(
+        self,
+        task: str,
+        label: str | None = None,
+        origin_channel: str = "cli",
+        origin_chat_id: str = "direct",
+        agent_role: str | None = None,
+        session_instance_id: int | None = None,
+        parent_tool_call_id: str | None = None,
+        skip_announce: bool = False,
+    ) -> str:
+        """
+        Spawn a subagent that resumes a logical session if one exists.
+
+        Unlike `spawn`, this method persists the message history keyed by
+        `(agent_role, session_instance_id)`. Subsequent calls with the same
+        key seed the new subagent with the previous run's full message list
+        (minus the system prompt, which is rebuilt each time), so the LLM
+        has the entire conversation context.
+
+        The Schedule page's chat drawer uses this with a stable instance_id
+        so all of its messages accumulate into one persistent conversation
+        rather than spawning a fresh subagent every time.
+        """
+        if not agent_role or session_instance_id is None:
+            # Without both keys we can't dedupe — fall back to a normal spawn.
+            return await self.spawn(
+                task=task,
+                label=label,
+                origin_channel=origin_channel,
+                origin_chat_id=origin_chat_id,
+                agent_role=agent_role,
+                session_instance_id=session_instance_id,
+                parent_tool_call_id=parent_tool_call_id,
+                skip_announce=skip_announce,
+            )
+
+        session_key = (agent_role, session_instance_id)
+
+        # Per-session lock so concurrent calls for the same session don't
+        # both read empty history and both spawn fresh. The lock is
+        # short-lived — only around the snapshot/persist of history.
+        lock = self._session_locks.setdefault(session_key, asyncio.Lock())
+        async with lock:
+            prior_history = list(self._session_history.get(session_key, []))
+
+        return await self.spawn(
+            task=task,
+            label=label,
+            origin_channel=origin_channel,
+            origin_chat_id=origin_chat_id,
+            agent_role=agent_role,
+            session_instance_id=session_instance_id,
+            parent_tool_call_id=parent_tool_call_id,
+            skip_announce=skip_announce,
+            _resume_history=prior_history,
+        )
+
+    async def _save_session_history(
+        self,
+        agent_role: str,
+        session_instance_id: int,
+        messages: list[dict[str, Any]],
+    ) -> None:
+        """Persist the final message list for a session."""
+        session_key = (agent_role, session_instance_id)
+        lock = self._session_locks.setdefault(session_key, asyncio.Lock())
+        async with lock:
+            # Drop the synthetic system prompt that `_run_subagent` injects;
+            # the next run rebuilds it from the agent config.
+            persisted = [m for m in messages if m.get("role") != "system"]
+            self._session_history[session_key] = persisted
+            logger.info(
+                f"[Session:{agent_role}#{session_instance_id}] "
+                f"Saved {len(persisted)} messages to history"
+            )
 
     async def spawn_sync_task(
         self,
@@ -881,6 +1016,23 @@ When you have completed the task, provide a clear summary of your findings or ac
                             f"[Subagent:sync:{task_id}] on_iteration callback failed: {e}"
                         )
 
+            # Same fallback as the async path: if the LLM ended a tool-call
+            # turn with empty content, synthesise a clarification reply.
+            if not final_result or not final_result.strip():
+                last_tool_result = self._extract_last_tool_summary(messages)
+                if last_tool_result:
+                    final_result = (
+                        "我已经完成了工具调用，但没能自动生成回复。"
+                        f"最近一次工具调用的结果是：\n\n{last_tool_result}\n\n"
+                        "请告诉我下一步该怎么做，或者你想让我针对哪个事件继续？"
+                    )
+                    logger.warning(
+                        f"[Subagent:sync:{task_id}] LLM produced empty final result; "
+                        f"synthesized fallback from last tool result"
+                    )
+                else:
+                    final_result = "我没有足够的上下文继续，请补充说明你想做什么。"
+
             if final_result is None:
                 final_result = "Task completed but no final response was generated."
 
@@ -947,6 +1099,7 @@ When you have completed the task, provide a clear summary of your findings or ac
         origin: dict[str, str],
         agent_config: SubAgentConfig | None,
         group_id: str | None = None,
+        seed_messages: list[dict[str, Any]] | None = None,
     ) -> None:
         """Execute the subagent task and announce the result."""
         role_name = agent_config.name if agent_config else "default"
@@ -980,11 +1133,18 @@ When you have completed the task, provide a clear summary of your findings or ac
             )
             logger.info(f"[Subagent:{task_id}] Tools: {list(tools._tools.keys())}")
 
-            # Build messages
+            # Build messages. When resuming a session, seed with the prior
+            # message history (system prompt will be re-injected at the head).
+            resume_seed = list(seed_messages) if seed_messages else []
             messages: list[dict[str, Any]] = [
                 {"role": "system", "content": system_prompt},
+                *resume_seed,
                 {"role": "user", "content": task},
             ]
+            if resume_seed:
+                logger.info(
+                    f"[Subagent:{task_id}] Resuming session with {len(resume_seed)} prior messages"
+                )
 
             # Run agent loop
             iteration = 0
@@ -1083,6 +1243,19 @@ When you have completed the task, provide a clear summary of your findings or ac
                     ):
                         if chunk.content:
                             full_content += chunk.content
+                            # Stream each text chunk to the chat drawer so the
+                            # user sees the LLM's actual reply (not just the
+                            # tool calls). Mirrors the sync path's behaviour.
+                            await self._emit(
+                                "subagent_token",
+                                {
+                                    "content": chunk.content,
+                                    "iteration": iteration,
+                                    "session_instance_id": session_instance_id,
+                                    "subagent_id": task_id,
+                                },
+                                task_id,
+                            )
                         # DeepSeek reasoning content
                         if chunk.reasoning_content:
                             accumulated_reasoning += chunk.reasoning_content
@@ -1090,6 +1263,25 @@ When you have completed the task, provide a clear summary of your findings or ac
                             for tc in chunk.tool_calls:
                                 if tc.id not in tool_calls_buffer:
                                     tool_calls_buffer[tc.id] = tc
+                                    # Emit tool_call as soon as the chunk
+                                    # arrives — the post-loop emission below
+                                    # used to handle this, but it raced with
+                                    # the streaming text and made the chat
+                                    # look "incomplete". Now the streaming
+                                    # emit is the single source of truth.
+                                    await self._emit(
+                                        "subagent_tool_call",
+                                        {
+                                            "tool": tc.name,
+                                            "args": tc.arguments,
+                                            "content": full_content if full_content else None,
+                                            "iteration": iteration,
+                                            "tool_call_id": tc.id,
+                                            "session_instance_id": session_instance_id,
+                                            "subagent_id": task_id,
+                                        },
+                                        task_id,
+                                    )
                                 else:
                                     tool_calls_buffer[tc.id].arguments.update(tc.arguments)
                         if chunk.is_final and chunk.usage:
@@ -1106,7 +1298,11 @@ When you have completed the task, provide a clear summary of your findings or ac
                     )
 
                     normalized = _normalize_usage(
-                        response.usage, messages, response.content or "", model
+                        response.usage,
+                        messages,
+                        response.content or "",
+                        model,
+                        response.tool_calls,
                     )
                     last_prompt_tokens = normalized["prompt_tokens"]
                     self._record_token_usage(
@@ -1153,20 +1349,6 @@ When you have completed the task, provide a clear summary of your findings or ac
                         logger.info(f"[Subagent:{task_id}] Tool args: {args_str[:500]}")
 
                         try:
-                            await self._emit(
-                                "subagent_tool_call",
-                                {
-                                    "tool": tool_call.name,
-                                    "args": tool_call.arguments,
-                                    "content": response.content if response.content else None,
-                                    "iteration": iteration,
-                                    "tool_call_id": tool_call.id,
-                                    "session_instance_id": session_instance_id,
-                                    "subagent_id": task_id,
-                                },
-                                task_id,
-                            )
-
                             result = await tools.execute(tool_call.name, tool_call.arguments)
                             logger.info(
                                 f"[Subagent:{task_id}] Tool result: {result[:200] if result else 'None'}..."
@@ -1236,6 +1418,43 @@ When you have completed the task, provide a clear summary of your findings or ac
                     )
                     break
 
+            # Some LLMs (DeepSeek, etc.) finish a tool-call turn with an empty
+            # content block — they "forget" to emit a final assistant message.
+            # That leaves the drawer stuck on the last tool result with no
+            # follow-up. Synthesize a friendly clarification prompt from the
+            # most recent tool result so the user always gets a reply.
+            if not final_result or not final_result.strip():
+                last_tool_result = self._extract_last_tool_summary(messages)
+                if last_tool_result:
+                    final_result = (
+                        "我已经完成了工具调用，但没能自动生成回复。"
+                        f"最近一次工具调用的结果是：\n\n{last_tool_result}\n\n"
+                        "请告诉我下一步该怎么做，或者你想让我针对哪个事件继续？"
+                    )
+                else:
+                    final_result = "我没有足够的上下文继续，请补充说明你想做什么。"
+
+                logger.warning(
+                    f"[Subagent:{task_id}] LLM produced empty final result; "
+                    f"synthesized fallback from last tool result"
+                )
+                # Stream the synthesized fallback so live panels (e.g. the
+                # Schedule drawer's subagent_token subscription) actually
+                # see it — otherwise only the (now-skipped) main-chat
+                # announce path would carry the message.
+                if session_instance_id is not None:
+                    await self._emit(
+                        "subagent_token",
+                        {
+                            "content": final_result,
+                            "iteration": iteration,
+                            "session_instance_id": session_instance_id,
+                            "subagent_id": task_id,
+                            "synthesized_fallback": True,
+                        },
+                        task_id,
+                    )
+
             if final_result is None:
                 final_result = "Task completed but no final response was generated."
                 logger.warning(
@@ -1243,6 +1462,21 @@ When you have completed the task, provide a clear summary of your findings or ac
                 )
 
             logger.info(f"[Subagent:{task_id}] Task completed successfully")
+
+            # Persist the final message list for session continuity so the next
+            # call with the same (agent_role, session_instance_id) can resume.
+            if agent_config and session_instance_id is not None:
+                try:
+                    await self._save_session_history(
+                        agent_role=agent_config.name,
+                        session_instance_id=session_instance_id,
+                        messages=messages,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"[Subagent:{task_id}] Failed to persist session history: {e}"
+                    )
+
             await self._announce_result(task_id, label, task, final_result, origin, "ok", group_id)
 
         except Exception as e:
@@ -1288,7 +1522,16 @@ When you have completed the task, provide a clear summary of your findings or ac
                 return
             # If not grouped (shouldn't happen), fall through to individual announcement
 
-        # Individual announcement (no aggregation or not part of a group)
+        # Individual announcement (no aggregation or not part of a group).
+        # Skip the publish back to main chat when the originating panel already
+        # streams the subagent response itself (subagent_token events), otherwise
+        # we'd see a redundant "Summarize this naturally…" bubble in the main chat.
+        if origin.get("skip_announce"):
+            logger.info(
+                f"[Subagent:{task_id}] Skipping main-chat announce (skip_announce=True)"
+            )
+            return
+
         announce_content = f"""[Subagent '{label}' {status_text}]
 
 Task: {task}

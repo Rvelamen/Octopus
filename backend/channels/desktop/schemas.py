@@ -19,6 +19,10 @@ class ChatRequest(BaseRequest):
     images: list[dict[str, Any]] = []
     files: list[dict[str, Any]] = []
     instance_id: int | None = None
+    # Optional: when set, the request is routed to a subagent with this role
+    # instead of going through the main agent loop. Used by the schedule
+    # side-drawer to talk to the schedule-assistant subagent.
+    subagent_name: str | None = None
 
 
 # ============================================================================
@@ -162,6 +166,26 @@ class SessionDeleteInstanceRequest(BaseRequest):
     instance_id: int | None = None
 
 
+class SessionArchiveInstanceRequest(BaseRequest):
+    """Archive a session instance. Stamps ``archived_at`` and clears
+    ``is_active`` on the target row in a single transaction; if the row
+    was globally active, auto-picks the next-newest non-archived instance
+    to take over. If any active stream is in flight for this instance,
+    it is allowed to finish into the now-archived row (not hard-stopped).
+    """
+
+    instance_id: int
+
+
+class SessionUnarchiveInstanceRequest(BaseRequest):
+    """Restore an archived session instance. Clears ``archived_at`` but
+    does not change ``is_active`` — the user has to click the card to
+    open it.
+    """
+
+    instance_id: int
+
+
 class SessionCreateRequest(BaseRequest):
     channel: str = ""
     chat_id: str = ""
@@ -174,9 +198,13 @@ class SessionSetActiveRequest(BaseRequest):
 
 
 class SessionGetInstancesRequest(BaseRequest):
-    session_key: str = ""
+    channel: str = "desktop"
     limit: int = 50
     offset: int = 0
+    archived_only: bool = False
+    """When True, return only archived instances (most-recently-archived
+    first). When False (default), return only the active list
+    (``archived_at IS NULL``)."""
 
 
 class SessionCompressContextRequest(BaseRequest):
@@ -370,6 +398,97 @@ class CronToggleJobRequest(BaseRequest):
 
 class CronRunJobRequest(BaseRequest):
     job_id: str = ""
+
+
+# ============================================================================
+# Schedule (Calendar)
+# ============================================================================
+class ScheduleListEventsRequest(BaseRequest):
+    start_at_ms: int = 0
+    end_at_ms: int = 0
+
+
+class ScheduleCreateEventRequest(BaseRequest):
+    title: str = ""
+    start_at_ms: int = 0
+    end_at_ms: int = 0
+    all_day: bool = False
+    location: str = ""
+    description: str = ""
+    color: str = "#4F8EF7"
+
+
+class ScheduleUpdateEventRequest(BaseRequest):
+    event_id: int = 0
+    title: str | None = None
+    start_at_ms: int | None = None
+    end_at_ms: int | None = None
+    all_day: bool | None = None
+    location: str | None = None
+    description: str | None = None
+    color: str | None = None
+
+
+class ScheduleDeleteEventRequest(BaseRequest):
+    event_id: int = 0
+
+
+class ScheduleSearchEventsRequest(BaseRequest):
+    query: str = ""
+    start_at_ms: int | None = None
+    end_at_ms: int | None = None
+
+
+class ScheduleGetEventRequest(BaseRequest):
+    event_id: int = 0
+
+
+class ScheduleCancelEventRequest(BaseRequest):
+    event_id: int = 0
+
+
+class ScheduleUncancelEventRequest(BaseRequest):
+    event_id: int = 0
+
+
+class ScheduleListRecycleBinRequest(BaseRequest):
+    pass
+
+
+class ScheduleRestoreEventRequest(BaseRequest):
+    event_id: int = 0
+
+
+class ScheduleBatchRestoreEventsRequest(BaseRequest):
+    event_ids: list[int] = []
+
+
+class ScheduleHardDeleteEventRequest(BaseRequest):
+    event_id: int = 0
+
+
+# ============================================================================
+# Chat instance lifecycle (server-emitted cross-window broadcasts)
+# ============================================================================
+class ChatInstanceChangedEvent(BaseRequest):
+    """Broadcast to all connected clients when a chat instance's lifecycle
+    state changes. ``action`` is one of:
+
+    - ``"archived"`` — instance moved to the archived section
+    - ``"unarchived"`` — instance restored to the active list
+    - ``"deleted"`` — instance hard-deleted (was previously only
+      single-client via ``session_instance_deleted``; now also broadcast
+      so every open window removes the row)
+    - ``"active_set"`` — the global active pointer moved; receivers
+      should re-select this instance in their UI
+    """
+
+    action: str
+    instance_id: int
+    channel: str = "desktop"
+    # Only present for ``active_set``: the instance that took over when the
+    # previously-active one was archived.
+    replacement_active_id: int | None = None
 
 
 # ============================================================================
@@ -827,6 +946,8 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.SESSION_CREATE: SessionCreateRequest,
     MessageType.SESSION_SET_ACTIVE: SessionSetActiveRequest,
     MessageType.SESSION_GET_INSTANCES: SessionGetInstancesRequest,
+    MessageType.SESSION_ARCHIVE_INSTANCE: SessionArchiveInstanceRequest,
+    MessageType.SESSION_UNARCHIVE_INSTANCE: SessionUnarchiveInstanceRequest,
     MessageType.SESSION_COMPRESS_CONTEXT: SessionCompressContextRequest,
     MessageType.SESSION_GET_CONTEXT_STATS: SessionGetContextStatsRequest,
     MessageType.KNOWLEDGE_LIST: KnowledgeListRequest,
@@ -862,6 +983,18 @@ MESSAGE_TYPE_TO_SCHEMA: dict[MessageType | str, type[BaseRequest]] = {
     MessageType.CRON_DELETE_JOB: CronDeleteJobRequest,
     MessageType.CRON_TOGGLE_JOB: CronToggleJobRequest,
     MessageType.CRON_RUN_JOB: CronRunJobRequest,
+    MessageType.SCHEDULE_LIST_EVENTS: ScheduleListEventsRequest,
+    MessageType.SCHEDULE_CREATE_EVENT: ScheduleCreateEventRequest,
+    MessageType.SCHEDULE_UPDATE_EVENT: ScheduleUpdateEventRequest,
+    MessageType.SCHEDULE_DELETE_EVENT: ScheduleDeleteEventRequest,
+    MessageType.SCHEDULE_SEARCH_EVENTS: ScheduleSearchEventsRequest,
+    MessageType.SCHEDULE_GET_EVENT: ScheduleGetEventRequest,
+    MessageType.SCHEDULE_CANCEL_EVENT: ScheduleCancelEventRequest,
+    MessageType.SCHEDULE_UNCANCEL_EVENT: ScheduleUncancelEventRequest,
+    MessageType.SCHEDULE_LIST_RECYCLE_BIN: ScheduleListRecycleBinRequest,
+    MessageType.SCHEDULE_RESTORE_EVENT: ScheduleRestoreEventRequest,
+    MessageType.SCHEDULE_BATCH_RESTORE_EVENTS: ScheduleBatchRestoreEventsRequest,
+    MessageType.SCHEDULE_HARD_DELETE_EVENT: ScheduleHardDeleteEventRequest,
     MessageType.AGENT_GET_LIST: AgentGetListRequest,
     MessageType.AGENT_GET_SOUL: AgentGetSoulRequest,
     MessageType.AGENT_SAVE_SOUL: AgentSaveSoulRequest,

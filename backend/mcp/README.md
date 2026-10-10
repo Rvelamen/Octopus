@@ -107,7 +107,7 @@ config.get_tool("my-tool")
 - Full lifecycle management (connect, maintain, disconnect)
 - Auto-reconnection with exponential backoff
 - Heartbeat monitoring
-- Multiple protocol support (stdio, SSE, WebSocket)
+- Multiple protocol support (stdio, SSE, WebSocket, **streamable HTTP** per MCP 2025-03-26)
 - Connection pooling
 
 ```python
@@ -310,6 +310,12 @@ Frontend management interface (WebSocket + REST).
       "url": "wss://example.com/mcp",
       "protocol": "websocket",
       "authToken": "your-token",
+      "enabled": true
+    },
+    "amap-maps": {
+      "name": "amap-maps",
+      "url": "https://mcp.amap.com/mcp?key=YOUR_KEY",
+      "protocol": "streamable_http",
       "enabled": true
     }
   },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
-import { File, Image, RefreshCw, Download } from 'lucide-react';
+import { File, Image, RefreshCw, Download, ChevronDown, ChevronRight } from 'lucide-react';
 import { Table } from 'antd';
 import * as XLSX from 'xlsx';
 import * as mammoth from 'mammoth';
@@ -10,6 +10,81 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 
 // 设置 pdf.js worker - 使用 jsdelivr CDN
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+// Resolve a single outline entry's destination into a 1-based page number.
+// `dest` may be a named-destination string OR an array of refs; we normalise
+// through `pdf.getDestination(dest)` and then `pdf.getPageIndex(ref)`.
+async function resolveOutlineDest(pdf, dest) {
+  try {
+    if (!dest) return null;
+    const d = typeof dest === 'string' ? await pdf.getDestination(dest) : dest;
+    if (!d || !d[0]) return null;
+    const idx = await pdf.getPageIndex(d[0]);
+    return idx + 1;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveOutline(pdf, items) {
+  if (!items || items.length === 0) return [];
+  return Promise.all(
+    items.map(async (it) => ({
+      title: it.title || '(untitled)',
+      pageNumber: await resolveOutlineDest(pdf, it.dest),
+      items: await resolveOutline(pdf, it.items || []),
+    })),
+  );
+}
+
+// Recursive TOC entry: indent by depth, chevron expands children, click jumps.
+function TocEntry({ item, depth, currentPage, onJump }) {
+  const [open, setOpen] = useState(false);
+  const hasChildren = item.items && item.items.length > 0;
+  const isActive = currentPage === item.pageNumber;
+  return (
+    <div className={`pdf-toc-entry-wrap`}>
+      <div
+        className={`pdf-toc-entry ${isActive ? 'pdf-toc-entry-active' : ''}`}
+        style={{ paddingLeft: 8 + depth * 12 }}
+        onClick={() => {
+          if (item.pageNumber) onJump(item.pageNumber);
+          else if (hasChildren) setOpen((o) => !o);
+        }}
+        title={item.title}
+      >
+        {hasChildren ? (
+          <span
+            className="pdf-toc-chevron"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen((o) => !o);
+            }}
+          >
+            {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+          </span>
+        ) : (
+          <span className="pdf-toc-bullet" />
+        )}
+        <span className="pdf-toc-title">{item.title}</span>
+        {item.pageNumber && <span className="pdf-toc-page">{item.pageNumber}</span>}
+      </div>
+      {hasChildren && open && (
+        <div className="pdf-toc-children">
+          {item.items.map((child, i) => (
+            <TocEntry
+              key={`${depth}-${i}`}
+              item={child}
+              depth={depth + 1}
+              currentPage={currentPage}
+              onJump={onJump}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const formatSize = (bytes) => {
   if (bytes === null || bytes === undefined) return '-';
@@ -213,9 +288,23 @@ const PdfViewer = ({ file, content }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pdfLoaded, setPdfLoaded] = useState(false);
+  // `null` = outline not yet fetched (or no outline); `[]` = explicitly empty.
+  const [toc, setToc] = useState(null);
   const pdfContentRef = useRef(null);
   const pageRefs = useRef([]);
   const [pageWidth, setPageWidth] = useState(null);
+
+  // Reading-position resume: read on load, debounce-write on currentPage change.
+  // `positionRestoredRef` guards the save effect so the brief setCurrentPage(1)
+  // during PDF load doesn't clobber a previously-saved page.
+  const positionRestoredRef = useRef(false);
+  const savePositionTimerRef = useRef(null);
+  // Stable storage key derived once per file (workspace/PreviewDrawer supply
+  // file.path; pptx→pdf inherits from the caller; KnowledgeBinaryPreview has
+  // no path and falls through to a skip below).
+  const positionKey = file?.path || file?.name
+      ? `pdf-position:${file.path || file.name}`
+      : null;
 
   useLayoutEffect(() => {
     if (!pdfUrl) return;
@@ -270,6 +359,11 @@ const PdfViewer = ({ file, content }) => {
       setPdfUrl(url);
       setLoading(false);
       setError(null);
+      setToc(null); // reset stale outline when switching to a different file
+      // Reset resume guard so a new file (or re-mount) goes through the
+      // restore cycle again. Cleared here so the intermediate setCurrentPage(1)
+      // during page-mount can't overwrite a real saved value.
+      positionRestoredRef.current = false;
 
       return () => {
         URL.revokeObjectURL(url);
@@ -282,9 +376,47 @@ const PdfViewer = ({ file, content }) => {
   }, [content, file.encoding]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const onDocumentLoadSuccess = ({ numPages: total }) => {
+  const onDocumentLoadSuccess = async ({ pdf: pdfDoc, numPages: total }) => {
     setNumPages(total);
     setPdfLoaded(true);
+    // Reading-position resume: pull the last page the user was on for
+    // this PDF from localStorage. Clamp against the new numPages so a
+    // shortened PDF doesn't try to scroll past the end.
+    let savedPage = 1;
+    if (positionKey) {
+      try {
+        const raw = localStorage.getItem(positionKey);
+        if (raw) {
+          const n = parseInt(raw, 10);
+          if (Number.isFinite(n) && n >= 1 && n <= total) savedPage = n;
+        }
+      } catch { /* localStorage may throw in private mode */ }
+    }
+    setCurrentPage(savedPage);
+    positionRestoredRef.current = true;
+    // react-pdf renders pages asynchronously after this callback returns, and
+    // pageRefs.current[N] is populated by the ref callback. Retry across a
+    // few frames so we wait for the page DOM to be ready.
+    let frames = 0;
+    const tryScroll = () => {
+      const pageEl = pageRefs.current[savedPage - 1];
+      if (!pageEl || !pdfContentRef.current) {
+        if (frames++ < 10) requestAnimationFrame(tryScroll);
+        return;
+      }
+      pageEl.scrollIntoView({ behavior: 'auto', block: 'start' });
+    };
+    requestAnimationFrame(tryScroll);
+    // Best-effort outline fetch. PDFs without bookmarks resolve to `[]`,
+    // which we just don't render. Failures are swallowed so a bad outline
+    // never blocks page rendering.
+    try {
+      const raw = await pdfDoc.getOutline();
+      setToc(await resolveOutline(pdfDoc, raw));
+    } catch (e) {
+      console.warn('Failed to read PDF outline:', e);
+      setToc([]);
+    }
   };
 
   const onDocumentLoadError = (err) => {
@@ -299,6 +431,30 @@ const PdfViewer = ({ file, content }) => {
       pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, []);
+
+  // Persist reading position (debounced 500ms). Skips until positionRestoredRef
+  // is set so the initial setCurrentPage(1) can't clobber a real saved value.
+  // Skips entirely when there's no stable file identifier.
+  useEffect(() => {
+    if (!positionRestoredRef.current) return;
+    if (!positionKey || !currentPage) return;
+    if (savePositionTimerRef.current) clearTimeout(savePositionTimerRef.current);
+    savePositionTimerRef.current = setTimeout(() => {
+      try { localStorage.setItem(positionKey, String(currentPage)); }
+      catch { /* localStorage may throw in private mode */ }
+    }, 500);
+    return () => {
+      // Flush synchronously on unmount so a rapid file-switch within the
+      // debounce window doesn't lose the user's latest page.
+      if (savePositionTimerRef.current) {
+        clearTimeout(savePositionTimerRef.current);
+        savePositionTimerRef.current = null;
+        if (positionKey && currentPage && positionRestoredRef.current) {
+          try { localStorage.setItem(positionKey, String(currentPage)); } catch {}
+        }
+      }
+    };
+  }, [currentPage, positionKey]);
 
   useEffect(() => {
     const container = pdfContentRef.current;
@@ -355,6 +511,25 @@ const PdfViewer = ({ file, content }) => {
         <div className="pdf-sidebar-header">
           <span className="pdf-sidebar-title">Pages ({numPages || 0})</span>
         </div>
+        {/* Outline (TOC) — only shown if the PDF actually has bookmarks.
+            Rendered above the page thumbnails so chapter navigation is one
+            click away regardless of how long the PDF is. */}
+        {toc && toc.length > 0 && (
+          <div className="pdf-toc-section">
+            <div className="pdf-toc-section-header">Outline</div>
+            <div className="pdf-toc-list">
+              {toc.map((item, i) => (
+                <TocEntry
+                  key={i}
+                  item={item}
+                  depth={0}
+                  currentPage={currentPage}
+                  onJump={scrollToPage}
+                />
+              ))}
+            </div>
+          </div>
+        )}
         <div className="pdf-thumbnails-scroll">
           {numPages && pdfUrl && pdfLoaded ? (
             <Document file={pdfUrl} loading={null} error={null}>

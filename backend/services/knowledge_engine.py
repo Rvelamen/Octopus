@@ -705,6 +705,7 @@ class KnowledgeGraphEngine:
         If exclude_vault is given, exclude nodes in that vault.
         """
         if self._cache_dirty or self._cache is None:
+            logger.info(f"[get_graph] id={id(self)} cache dirty, rebuilding from DB")
             self._rebuild_cache()
 
         cache = self._cache
@@ -986,7 +987,8 @@ class KnowledgeGraphEngine:
             if full_path.exists():
                 full_path.unlink()
 
-        self.db.execute("DELETE FROM knowledge_nodes WHERE path = ?", (relative_path,))
+        cur = self.db.execute("DELETE FROM knowledge_nodes WHERE path = ?", (relative_path,))
         self.db.commit()
+        logger.info(f"[delete_note] id={id(self)} removed {cur.rowcount} row for {relative_path}")
         self._invalidate_cache()
         logger.debug(f"Deleted note: {relative_path}")

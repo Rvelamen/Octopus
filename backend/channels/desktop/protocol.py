@@ -49,6 +49,8 @@ class MessageType(Enum):
     SESSION_CREATE = "session_create"  # Create a new session with instance
     SESSION_SET_ACTIVE = "session_set_active"  # Set an instance as active
     SESSION_GET_INSTANCES = "session_get_instances"  # Get instances list with pagination
+    SESSION_ARCHIVE_INSTANCE = "session_archive_instance"  # Archive a session instance
+    SESSION_UNARCHIVE_INSTANCE = "session_unarchive_instance"  # Restore an archived instance
     SESSION_COMPRESS_CONTEXT = "session_compress_context"  # Compress context for an instance
     SESSION_GET_CONTEXT_STATS = (
         "session_get_context_stats"  # Get context usage stats for an instance
@@ -83,6 +85,11 @@ class MessageType(Enum):
     LIBRARY_ADD_ATTACHMENT = "library_add_attachment"
     LIBRARY_ANNOTATIONS_LOAD = "library_annotations_load"
     LIBRARY_ANNOTATIONS_SAVE = "library_annotations_save"
+    LIBRARY_ANNOTATION_UPSERT = "library_annotation_upsert"
+    LIBRARY_ANNOTATION_DELETE_BY_ID = "library_annotation_delete_by_id"
+    LIBRARY_ANNOTATION_COMMENTS_LOAD = "library_annotation_comments_load"
+    LIBRARY_ANNOTATION_COMMENTS_ADD = "library_annotation_comments_add"
+    LIBRARY_ANNOTATION_COMMENTS_DELETE = "library_annotation_comments_delete"
     LIBRARY_LINK_NOTE = "library_link_note"
     LIBRARY_COLLECTION_LIST = "library_collection_list"
     LIBRARY_COLLECTION_CREATE = "library_collection_create"
@@ -99,6 +106,7 @@ class MessageType(Enum):
 
     # PDF Chat - Client -> Server
     PDF_CHAT = "pdf_chat"  # PDF chat operations
+    PDF_ANNOTATION_CHAT = "pdf_annotation_chat"  # Annotation-bound PDF chat
 
     # Library Chat - Client -> Server
     LIBRARY_CHAT = "library_chat"  # Library chat operations
@@ -177,6 +185,20 @@ class MessageType(Enum):
     CRON_DELETE_JOB = "cron_delete_job"  # Delete a cron job
     CRON_TOGGLE_JOB = "cron_toggle_job"  # Enable/disable a cron job
     CRON_RUN_JOB = "cron_run_job"  # Run a cron job manually
+
+    # Schedule (Calendar) - Client -> Server
+    SCHEDULE_LIST_EVENTS = "schedule_list_events"  # List events in a time range
+    SCHEDULE_CREATE_EVENT = "schedule_create_event"  # Create a new event
+    SCHEDULE_UPDATE_EVENT = "schedule_update_event"  # Update an existing event
+    SCHEDULE_DELETE_EVENT = "schedule_delete_event"  # Delete an event
+    SCHEDULE_SEARCH_EVENTS = "schedule_search_events"  # Free-text search events
+    SCHEDULE_GET_EVENT = "schedule_get_event"  # Fetch a single event by id
+    SCHEDULE_CANCEL_EVENT = "schedule_cancel_event"  # Mark an event as cancelled (reversible)
+    SCHEDULE_UNCANCEL_EVENT = "schedule_uncancel_event"  # Restore a cancelled event
+    SCHEDULE_LIST_RECYCLE_BIN = "schedule_list_recycle_bin"  # List soft-deleted events
+    SCHEDULE_RESTORE_EVENT = "schedule_restore_event"  # Restore a soft-deleted event
+    SCHEDULE_BATCH_RESTORE_EVENTS = "schedule_batch_restore_events"  # Restore multiple at once
+    SCHEDULE_HARD_DELETE_EVENT = "schedule_hard_delete_event"  # Permanently delete from bin
 
     # Agent - Client -> Server
     AGENT_GET_LIST = "agent_get_list"  # Get all agents
@@ -273,11 +295,14 @@ class MessageType(Enum):
     SESSION_DETAIL = "session_detail"  # Session detail with instances
     SESSION_MESSAGES = "session_messages"  # Messages for an instance
     SESSION_INSTANCE_DELETED = "session_instance_deleted"  # Instance deleted confirmation
+    SESSION_INSTANCE_ARCHIVED = "session_instance_archived"  # Instance archived confirmation
+    SESSION_INSTANCE_UNARCHIVED = "session_instance_unarchived"  # Instance unarchived confirmation
     SESSION_CREATED = "session_created"  # Session created confirmation
     SESSION_ACTIVE_SET = "session_active_set"  # Active instance set confirmation
     SESSION_INSTANCES = "session_instances"  # Instances list with pagination
     SESSION_CONTEXT_COMPRESSED = "session_context_compressed"  # Context compressed confirmation
     SESSION_CONTEXT_STATS = "session_context_stats"  # Context usage stats response
+    CHAT_INSTANCE_CHANGED = "chat_instance_changed"  # Cross-window broadcast: archived/unarchived/deleted/active_set
 
     # Knowledge Base - Server -> Client
     KNOWLEDGE_LIST_RESULT = "knowledge_list_result"  # Knowledge directory listing result
@@ -315,6 +340,11 @@ class MessageType(Enum):
     LIBRARY_ADD_ATTACHMENT_RESULT = "library_add_attachment_result"
     LIBRARY_ANNOTATIONS_LOAD_RESULT = "library_annotations_load_result"
     LIBRARY_ANNOTATIONS_SAVE_RESULT = "library_annotations_save_result"
+    LIBRARY_ANNOTATION_UPSERT_RESULT = "library_annotation_upsert_result"
+    LIBRARY_ANNOTATION_DELETE_BY_ID_RESULT = "library_annotation_delete_by_id_result"
+    LIBRARY_ANNOTATION_COMMENTS_LOAD_RESULT = "library_annotation_comments_load_result"
+    LIBRARY_ANNOTATION_COMMENTS_ADD_RESULT = "library_annotation_comments_add_result"
+    LIBRARY_ANNOTATION_COMMENTS_DELETE_RESULT = "library_annotation_comments_delete_result"
     LIBRARY_LINK_NOTE_RESULT = "library_link_note_result"
     LIBRARY_COLLECTION_LIST_RESULT = "library_collection_list_result"
     LIBRARY_COLLECTION_CREATE_RESULT = "library_collection_create_result"
@@ -355,6 +385,16 @@ class MessageType(Enum):
     CRON_JOB_DELETED = "cron_job_deleted"  # Job deleted confirmation
     CRON_JOB_TOGGLED = "cron_job_toggled"  # Job toggled confirmation
     CRON_JOB_RUN = "cron_job_run"  # Job run confirmation
+
+    # Schedule (Calendar) - Server -> Client
+    SCHEDULE_EVENTS = "schedule_events"  # List of events
+    SCHEDULE_EVENT_CREATED = "schedule_event_created"  # Event created confirmation
+    SCHEDULE_EVENT_UPDATED = "schedule_event_updated"  # Event updated confirmation
+    SCHEDULE_EVENT_DELETED = "schedule_event_deleted"  # Event deleted confirmation
+    SCHEDULE_EVENT = "schedule_event"  # Single event (get / cancel / uncancel)
+    SCHEDULE_RECYCLE_BIN = "schedule_recycle_bin"  # Soft-deleted events
+    SCHEDULE_EVENT_RESTORED = "schedule_event_restored"  # Restored from bin
+    SCHEDULE_EVENTS_RESTORED = "schedule_events_restored"  # Batch restore result
 
     # Agent - Server -> Client
     AGENT_LIST = "agent_list"  # List of agents
@@ -592,6 +632,8 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.SESSION_CREATE,
     MessageType.SESSION_SET_ACTIVE,
     MessageType.SESSION_GET_INSTANCES,
+    MessageType.SESSION_ARCHIVE_INSTANCE,
+    MessageType.SESSION_UNARCHIVE_INSTANCE,
     MessageType.SESSION_COMPRESS_CONTEXT,
     MessageType.SESSION_GET_CONTEXT_STATS,
     MessageType.KNOWLEDGE_LIST,
@@ -646,6 +688,18 @@ CLIENT_MESSAGE_TYPES = {
     MessageType.CRON_DELETE_JOB,
     MessageType.CRON_TOGGLE_JOB,
     MessageType.CRON_RUN_JOB,
+    MessageType.SCHEDULE_LIST_EVENTS,
+    MessageType.SCHEDULE_CREATE_EVENT,
+    MessageType.SCHEDULE_UPDATE_EVENT,
+    MessageType.SCHEDULE_DELETE_EVENT,
+    MessageType.SCHEDULE_SEARCH_EVENTS,
+    MessageType.SCHEDULE_GET_EVENT,
+    MessageType.SCHEDULE_CANCEL_EVENT,
+    MessageType.SCHEDULE_UNCANCEL_EVENT,
+    MessageType.SCHEDULE_LIST_RECYCLE_BIN,
+    MessageType.SCHEDULE_RESTORE_EVENT,
+    MessageType.SCHEDULE_BATCH_RESTORE_EVENTS,
+    MessageType.SCHEDULE_HARD_DELETE_EVENT,
     MessageType.AGENT_GET_LIST,
     MessageType.AGENT_GET_SOUL,
     MessageType.AGENT_SAVE_SOUL,
@@ -779,11 +833,14 @@ SERVER_MESSAGE_TYPES = {
     MessageType.SESSION_DETAIL,
     MessageType.SESSION_MESSAGES,
     MessageType.SESSION_INSTANCE_DELETED,
+    MessageType.SESSION_INSTANCE_ARCHIVED,
+    MessageType.SESSION_INSTANCE_UNARCHIVED,
     MessageType.SESSION_CREATED,
     MessageType.SESSION_ACTIVE_SET,
     MessageType.SESSION_INSTANCES,
     MessageType.SESSION_CONTEXT_COMPRESSED,
     MessageType.SESSION_CONTEXT_STATS,
+    MessageType.CHAT_INSTANCE_CHANGED,
     MessageType.WORKSPACE_LIST_RESULT,
     MessageType.WORKSPACE_READ_RESULT,
     MessageType.WORKSPACE_WRITE_RESULT,
@@ -797,6 +854,14 @@ SERVER_MESSAGE_TYPES = {
     MessageType.CRON_JOB_DELETED,
     MessageType.CRON_JOB_TOGGLED,
     MessageType.CRON_JOB_RUN,
+    MessageType.SCHEDULE_EVENTS,
+    MessageType.SCHEDULE_EVENT_CREATED,
+    MessageType.SCHEDULE_EVENT_UPDATED,
+    MessageType.SCHEDULE_EVENT_DELETED,
+    MessageType.SCHEDULE_EVENT,
+    MessageType.SCHEDULE_RECYCLE_BIN,
+    MessageType.SCHEDULE_EVENT_RESTORED,
+    MessageType.SCHEDULE_EVENTS_RESTORED,
     MessageType.AGENT_LIST,
     MessageType.AGENT_SOUL,
     MessageType.AGENT_SAVED,

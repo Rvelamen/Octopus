@@ -31,6 +31,11 @@ class LibraryHandler(MessageHandler):
             MessageType.LIBRARY_ADD_ATTACHMENT: self._handle_add_attachment,
             MessageType.LIBRARY_ANNOTATIONS_LOAD: self._handle_annotations_load,
             MessageType.LIBRARY_ANNOTATIONS_SAVE: self._handle_annotations_save,
+            MessageType.LIBRARY_ANNOTATION_UPSERT: self._handle_annotation_upsert,
+            MessageType.LIBRARY_ANNOTATION_DELETE_BY_ID: self._handle_annotation_delete_by_id,
+            MessageType.LIBRARY_ANNOTATION_COMMENTS_LOAD: self._handle_annotation_comments_load,
+            MessageType.LIBRARY_ANNOTATION_COMMENTS_ADD: self._handle_annotation_comments_add,
+            MessageType.LIBRARY_ANNOTATION_COMMENTS_DELETE: self._handle_annotation_comments_delete,
             MessageType.LIBRARY_LINK_NOTE: self._handle_link_note,
             MessageType.LIBRARY_COLLECTION_LIST: self._handle_collection_list,
             MessageType.LIBRARY_COLLECTION_CREATE: self._handle_collection_create,
@@ -261,6 +266,141 @@ class LibraryHandler(MessageHandler):
             logger.error(f"Failed to save annotations: {e}")
             await self._send_error(
                 websocket, message.request_id, f"Failed to save annotations: {e}"
+            )
+
+    async def _handle_annotation_upsert(
+        self, websocket: WebSocket, message: WSMessage
+    ) -> None:
+        item_id = message.data.get("item_id")
+        annotation = message.data.get("annotation")
+        if not item_id or not annotation:
+            await self._send_error(
+                websocket,
+                message.request_id,
+                "item_id and annotation are required",
+            )
+            return
+        try:
+            result = self.engine.upsert_annotation(item_id, annotation)
+            await self._send_success(
+                websocket,
+                message,
+                MessageType.LIBRARY_ANNOTATION_UPSERT_RESULT,
+                {
+                    "item_id": item_id,
+                    "id": result["id"],
+                    "client_id": result["client_id"],
+                },
+            )
+        except Exception as e:
+            logger.error(f"Failed to upsert annotation: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to upsert annotation: {e}"
+            )
+
+    async def _handle_annotation_delete_by_id(
+        self, websocket: WebSocket, message: WSMessage
+    ) -> None:
+        item_id = message.data.get("item_id")
+        annotation_id = message.data.get("annotation_id")
+        if not item_id or not annotation_id:
+            await self._send_error(
+                websocket,
+                message.request_id,
+                "item_id and annotation_id are required",
+            )
+            return
+        try:
+            result = self.engine.delete_annotation_by_id(item_id, int(annotation_id))
+            await self._send_success(
+                websocket,
+                message,
+                MessageType.LIBRARY_ANNOTATION_DELETE_BY_ID_RESULT,
+                {"item_id": item_id, **result},
+            )
+        except Exception as e:
+            logger.error(f"Failed to delete annotation: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to delete annotation: {e}"
+            )
+
+    async def _handle_annotation_comments_load(
+        self, websocket: WebSocket, message: WSMessage
+    ) -> None:
+        annotation_id = message.data.get("annotation_id")
+        if not annotation_id:
+            await self._send_error(
+                websocket, message.request_id, "annotation_id is required"
+            )
+            return
+        try:
+            comments = self.engine.list_comments(int(annotation_id))
+            await self._send_success(
+                websocket,
+                message,
+                MessageType.LIBRARY_ANNOTATION_COMMENTS_LOAD_RESULT,
+                {"annotation_id": int(annotation_id), "comments": comments},
+            )
+        except Exception as e:
+            logger.error(f"Failed to load annotation comments: {e}")
+            await self._send_error(
+                websocket,
+                message.request_id,
+                f"Failed to load annotation comments: {e}",
+            )
+
+    async def _handle_annotation_comments_add(
+        self, websocket: WebSocket, message: WSMessage
+    ) -> None:
+        annotation_id = message.data.get("annotation_id")
+        content = message.data.get("content", "").strip()
+        author_name = message.data.get("author_name") or "You"
+        if not annotation_id or not content:
+            await self._send_error(
+                websocket,
+                message.request_id,
+                "annotation_id and non-empty content are required",
+            )
+            return
+        try:
+            comment = self.engine.add_comment(int(annotation_id), author_name, content)
+            await self._send_success(
+                websocket,
+                message,
+                MessageType.LIBRARY_ANNOTATION_COMMENTS_ADD_RESULT,
+                {"annotation_id": int(annotation_id), "comment": comment},
+            )
+        except Exception as e:
+            logger.error(f"Failed to add annotation comment: {e}")
+            await self._send_error(
+                websocket,
+                message.request_id,
+                f"Failed to add annotation comment: {e}",
+            )
+
+    async def _handle_annotation_comments_delete(
+        self, websocket: WebSocket, message: WSMessage
+    ) -> None:
+        comment_id = message.data.get("comment_id")
+        if not comment_id:
+            await self._send_error(
+                websocket, message.request_id, "comment_id is required"
+            )
+            return
+        try:
+            result = self.engine.delete_comment(int(comment_id))
+            await self._send_success(
+                websocket,
+                message,
+                MessageType.LIBRARY_ANNOTATION_COMMENTS_DELETE_RESULT,
+                result,
+            )
+        except Exception as e:
+            logger.error(f"Failed to delete annotation comment: {e}")
+            await self._send_error(
+                websocket,
+                message.request_id,
+                f"Failed to delete annotation comment: {e}",
             )
 
     async def _handle_link_note(self, websocket: WebSocket, message: WSMessage) -> None:

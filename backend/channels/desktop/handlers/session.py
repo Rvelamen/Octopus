@@ -8,6 +8,7 @@ from backend.agent.config_service import AgentConfigService
 from backend.channels.desktop.handlers.base import MessageHandler
 from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.channels.desktop.schemas import (
+    SessionArchiveInstanceRequest,
     SessionCreateRequest,
     SessionDeleteInstanceRequest,
     SessionGetChannelSessionsRequest,
@@ -16,7 +17,9 @@ from backend.channels.desktop.schemas import (
     SessionGetMessagesRequest,
     SessionGetSessionDetailRequest,
     SessionSetActiveRequest,
+    SessionUnarchiveInstanceRequest,
 )
+from backend.core.events.types import AgentEvent
 from backend.data import Database, SessionManager, SessionRepository
 from backend.utils.helpers import get_workspace_path
 
@@ -316,8 +319,8 @@ class SessionGetMessagesHandler(MessageHandler):
                 return
 
             compressed = repo.get_compressed_context(instance_id)
-            messages = repo.get_uncompressed_messages(instance_id, limit=limit, offset=offset)
-            total = repo.get_message_count_by_compression(instance_id, is_compressed=False)
+            messages = repo.get_messages(instance_id, limit=limit, offset=offset)
+            total = repo.get_message_count(instance_id)
             compressed_total = repo.get_message_count_by_compression(
                 instance_id, is_compressed=True
             )
@@ -352,6 +355,7 @@ class SessionGetMessagesHandler(MessageHandler):
                         "content": msg.content,
                         "timestamp": msg.timestamp.isoformat(),
                         "metadata": msg.metadata,
+                        "is_compressed": msg.is_compressed,
                     }
                     for msg in messages
                 ]
@@ -397,8 +401,8 @@ class SessionGetMessagesHandler(MessageHandler):
                 return
 
             compressed = repo.get_compressed_context(instance_id)
-            messages = repo.get_uncompressed_messages(instance_id, limit=limit, offset=offset)
-            total = repo.get_message_count_by_compression(instance_id, is_compressed=False)
+            messages = repo.get_messages(instance_id, limit=limit, offset=offset)
+            total = repo.get_message_count(instance_id)
             compressed_total = repo.get_message_count_by_compression(
                 instance_id, is_compressed=True
             )
@@ -433,6 +437,7 @@ class SessionGetMessagesHandler(MessageHandler):
                         "content": msg.content,
                         "timestamp": msg.timestamp.isoformat(),
                         "metadata": msg.metadata,
+                        "is_compressed": msg.is_compressed,
                     }
                     for msg in messages
                 ]
@@ -487,6 +492,20 @@ class SessionDeleteInstanceHandler(MessageHandler):
             # Delete the instance (cascade will delete messages)
             success = repo.delete_instance(instance_id)
 
+            if success and self.bus is not None:
+                # Cross-window broadcast so all open windows remove the row
+                await self.bus.publish_event(
+                    AgentEvent(
+                        event_type="chat_instance_changed",
+                        channel="desktop",
+                        data={
+                            "action": "deleted",
+                            "instance_id": instance_id,
+                            "channel": "desktop",
+                        },
+                    )
+                )
+
             await self.send_response(
                 websocket,
                 WSMessage(
@@ -526,6 +545,20 @@ class SessionDeleteInstanceHandler(MessageHandler):
 
             # Delete the instance (cascade will delete messages)
             success = repo.delete_instance(instance_id)
+
+            if success and self.bus is not None:
+                # Cross-window broadcast so all open windows remove the row
+                await self.bus.publish_event(
+                    AgentEvent(
+                        event_type="chat_instance_changed",
+                        channel="desktop",
+                        data={
+                            "action": "deleted",
+                            "instance_id": instance_id,
+                            "channel": "desktop",
+                        },
+                    )
+                )
 
             await self.send_response(
                 websocket,
@@ -713,6 +746,21 @@ class SessionSetActiveHandler(MessageHandler):
                 # Get updated instance
                 instance = repo.get_instance_by_id(instance_id)
 
+                if self.bus is not None:
+                    # Cross-window broadcast so every open window re-selects
+                    # this instance in its UI.
+                    await self.bus.publish_event(
+                        AgentEvent(
+                            event_type="chat_instance_changed",
+                            channel="desktop",
+                            data={
+                                "action": "active_set",
+                                "instance_id": instance_id,
+                                "channel": "desktop",
+                            },
+                        )
+                    )
+
             await self.send_response(
                 websocket,
                 WSMessage(
@@ -759,6 +807,21 @@ class SessionSetActiveHandler(MessageHandler):
                 # Get updated instance
                 instance = repo.get_instance_by_id(instance_id)
 
+                if self.bus is not None:
+                    # Cross-window broadcast so every open window re-selects
+                    # this instance in its UI.
+                    await self.bus.publish_event(
+                        AgentEvent(
+                            event_type="chat_instance_changed",
+                            channel="desktop",
+                            data={
+                                "action": "active_set",
+                                "instance_id": instance_id,
+                                "channel": "desktop",
+                            },
+                        )
+                    )
+
             await self.send_response(
                 websocket,
                 WSMessage(
@@ -794,23 +857,33 @@ class SessionGetInstancesHandler(MessageHandler):
             channel = message.data.get("channel", "desktop")
             limit = message.data.get("limit", 20)
             offset = message.data.get("offset", 0)
+            archived_only = bool(message.data.get("archived_only", False))
 
             db = Database()
 
+            where_extra = (
+                "AND si.archived_at IS NOT NULL" if archived_only
+                else "AND si.archived_at IS NULL"
+            )
+            order_by = (
+                "si.archived_at DESC" if archived_only
+                else "si.created_at DESC"
+            )
+
             total_rows = db.execute(
-                """SELECT COUNT(*) as count FROM session_instances si
+                f"""SELECT COUNT(*) as count FROM session_instances si
                    JOIN sessions s ON si.session_id = s.id
-                   WHERE s.channel = ?""",
+                   WHERE s.channel = ? {where_extra}""",
                 (channel,),
             )
             total = total_rows[0]["count"] if total_rows else 0
 
             rows = db.execute(
-                """SELECT si.*, s.session_key, s.chat_id
+                f"""SELECT si.*, s.session_key, s.chat_id
                    FROM session_instances si
                    JOIN sessions s ON si.session_id = s.id
-                   WHERE s.channel = ?
-                   ORDER BY si.created_at DESC
+                   WHERE s.channel = ? {where_extra}
+                   ORDER BY {order_by}
                    LIMIT ? OFFSET ?""",
                 (channel, limit, offset),
             )
@@ -823,6 +896,7 @@ class SessionGetInstancesHandler(MessageHandler):
                     "is_active": bool(row["is_active"]),
                     "created_at": row["created_at"],
                     "updated_at": row["updated_at"],
+                    "archived_at": row["archived_at"],
                     "session_key": row["session_key"],
                     "chat_id": row["chat_id"],
                 }
@@ -854,26 +928,36 @@ class SessionGetInstancesHandler(MessageHandler):
     ) -> None:
         """Return instances list with pagination support."""
         try:
-            channel = validated.session_key or "desktop"
+            channel = validated.channel or "desktop"
             limit = validated.limit
             offset = validated.offset
+            archived_only = validated.archived_only
 
             db = Database()
 
+            where_extra = (
+                "AND si.archived_at IS NOT NULL" if archived_only
+                else "AND si.archived_at IS NULL"
+            )
+            order_by = (
+                "si.archived_at DESC" if archived_only
+                else "si.created_at DESC"
+            )
+
             total_rows = db.execute(
-                """SELECT COUNT(*) as count FROM session_instances si
+                f"""SELECT COUNT(*) as count FROM session_instances si
                    JOIN sessions s ON si.session_id = s.id
-                   WHERE s.channel = ?""",
+                   WHERE s.channel = ? {where_extra}""",
                 (channel,),
             )
             total = total_rows[0]["count"] if total_rows else 0
 
             rows = db.execute(
-                """SELECT si.*, s.session_key, s.chat_id
+                f"""SELECT si.*, s.session_key, s.chat_id
                    FROM session_instances si
                    JOIN sessions s ON si.session_id = s.id
-                   WHERE s.channel = ?
-                   ORDER BY si.created_at DESC
+                   WHERE s.channel = ? {where_extra}
+                   ORDER BY {order_by}
                    LIMIT ? OFFSET ?""",
                 (channel, limit, offset),
             )
@@ -886,6 +970,7 @@ class SessionGetInstancesHandler(MessageHandler):
                     "is_active": bool(row["is_active"]),
                     "created_at": row["created_at"],
                     "updated_at": row["updated_at"],
+                    "archived_at": row["archived_at"],
                     "session_key": row["session_key"],
                     "chat_id": row["chat_id"],
                 }
@@ -1042,7 +1127,9 @@ class SessionGetContextStatsHandler(MessageHandler):
                         "current_tokens": current_tokens,
                         "max_tokens": max_tokens,
                         "percentage": (
-                            round((current_tokens / max_tokens) * 100, 1) if max_tokens > 0 else 0
+                            min(100, max(0, round((current_tokens / max_tokens) * 100, 1)))
+                            if max_tokens > 0
+                            else 0
                         ),
                         "compressed_count": (
                             compressed_info.get("compressed_count", 0) if compressed_info else 0
@@ -1055,6 +1142,172 @@ class SessionGetContextStatsHandler(MessageHandler):
             await self._send_error(
                 websocket, message.request_id, f"Failed to get context stats: {e}"
             )
+
+    async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
+
+
+class SessionArchiveInstanceHandler(MessageHandler):
+    """Archive a chat instance. Stamps ``archived_at``, clears ``is_active``,
+    and (if the archived row was the globally-active one) auto-picks the
+    next-newest non-archived instance to take over. All of this happens in
+    a single DB transaction; we then publish ``chat_instance_changed`` on
+    the bus so every open window reconciles. If the archived instance had
+    an in-flight stream, it is allowed to finish into the now-archived
+    row (not hard-stopped) — see the plan.
+    """
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Archive the instance specified in message.data."""
+        try:
+            instance_id = message.data.get("instance_id")
+
+            if not instance_id:
+                await self._send_error(websocket, message.request_id, "Instance ID is required")
+                return
+
+            await self._archive(websocket, message.request_id, int(instance_id))
+        except Exception as e:
+            logger.error(f"Failed to archive instance: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to archive instance: {e}")
+
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: SessionArchiveInstanceRequest
+    ) -> None:
+        """Archive the validated instance."""
+        try:
+            await self._archive(websocket, message.request_id, validated.instance_id)
+        except Exception as e:
+            logger.error(f"Failed to archive instance: {e}")
+            await self._send_error(websocket, message.request_id, f"Failed to archive instance: {e}")
+
+    async def _archive(self, websocket: WebSocket, request_id: str | None, instance_id: int) -> None:
+        db = Database()
+        repo = SessionRepository(db)
+
+        ok, replacement_id = repo.archive_instance(instance_id)
+        if not ok:
+            await self._send_error(websocket, request_id, "Session instance not found")
+            return
+
+        if self.bus is not None:
+            # The "archived" event — every window removes the card from the
+            # active list and (if it was selected) re-selects the replacement
+            # from the follow-up "active_set" event below.
+            await self.bus.publish_event(
+                AgentEvent(
+                    event_type="chat_instance_changed",
+                    channel="desktop",
+                    data={
+                        "action": "archived",
+                        "instance_id": instance_id,
+                        "channel": "desktop",
+                    },
+                )
+            )
+
+            if replacement_id is not None:
+                await self.bus.publish_event(
+                    AgentEvent(
+                        event_type="chat_instance_changed",
+                        channel="desktop",
+                        data={
+                            "action": "active_set",
+                            "instance_id": replacement_id,
+                            "channel": "desktop",
+                            "replacement_active_id": replacement_id,
+                        },
+                    )
+                )
+
+        await self.send_response(
+            websocket,
+            WSMessage(
+                type=MessageType.SESSION_INSTANCE_ARCHIVED,
+                request_id=request_id,
+                data={
+                    "success": True,
+                    "instance_id": instance_id,
+                    "replacement_active_id": replacement_id,
+                },
+            ),
+        )
+
+    async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
+        await self.send_response(
+            websocket,
+            WSMessage(type=MessageType.ERROR, request_id=request_id, data={"error": error}),
+        )
+
+
+class SessionUnarchiveInstanceHandler(MessageHandler):
+    """Restore an archived chat instance. Clears ``archived_at`` but does
+    NOT change ``is_active`` — the user has to click the card to open it.
+    Publishes ``chat_instance_changed`` so every open window moves the row
+    from the archived section back to the active list.
+    """
+
+    async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        """Restore the instance specified in message.data."""
+        try:
+            instance_id = message.data.get("instance_id")
+
+            if not instance_id:
+                await self._send_error(websocket, message.request_id, "Instance ID is required")
+                return
+
+            await self._unarchive(websocket, message.request_id, int(instance_id))
+        except Exception as e:
+            logger.error(f"Failed to unarchive instance: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to unarchive instance: {e}"
+            )
+
+    async def handle_validated(
+        self, websocket: WebSocket, message: WSMessage, validated: SessionUnarchiveInstanceRequest
+    ) -> None:
+        """Restore the validated instance."""
+        try:
+            await self._unarchive(websocket, message.request_id, validated.instance_id)
+        except Exception as e:
+            logger.error(f"Failed to unarchive instance: {e}")
+            await self._send_error(
+                websocket, message.request_id, f"Failed to unarchive instance: {e}"
+            )
+
+    async def _unarchive(self, websocket: WebSocket, request_id: str | None, instance_id: int) -> None:
+        db = Database()
+        repo = SessionRepository(db)
+
+        ok = repo.unarchive_instance(instance_id)
+        if not ok:
+            await self._send_error(websocket, request_id, "Session instance not found")
+            return
+
+        if self.bus is not None:
+            await self.bus.publish_event(
+                AgentEvent(
+                    event_type="chat_instance_changed",
+                    channel="desktop",
+                    data={
+                        "action": "unarchived",
+                        "instance_id": instance_id,
+                        "channel": "desktop",
+                    },
+                )
+            )
+
+        await self.send_response(
+            websocket,
+            WSMessage(
+                type=MessageType.SESSION_INSTANCE_UNARCHIVED,
+                request_id=request_id,
+                data={"success": True, "instance_id": instance_id},
+            ),
+        )
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:
         await self.send_response(

@@ -23,6 +23,7 @@ import {
   Library,
   Brain,
   GitBranch,
+  CalendarDays,
 } from "lucide-react";
 import Chat from "./pages/Chat/ChatPanel";
 import Config from "./pages/Config";
@@ -31,6 +32,7 @@ import Extensions from "./pages/Extensions";
 import History from "./pages/History";
 import Memory from "./pages/Memory";
 import Cron from "./pages/Cron";
+import Schedule from "./pages/Schedule";
 import Agents from "./pages/Agents";
 import Tokens from "./pages/Tokens";
 // 重组件路由懒加载（monaco/mdxeditor/pixi/mermaid/react-pdf 等重库按需加载）
@@ -66,7 +68,7 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { sendMessage, connectionStatus, showLoadingOverlay, ws } = useWebSocket();
+  const { sendMessage, subscribe, connectionStatus, showLoadingOverlay, ws } = useWebSocket();
   const chat = useChatState();
 
   // ===== 状态 =====
@@ -96,6 +98,7 @@ function App() {
       '/tokens': 'tokens',
       '/knowledge': 'knowledge',
       '/workflows': 'workflows',
+      '/schedule': 'schedule',
     };
     return tabMap[location.pathname] || 'chat';
   }, [location.pathname]);
@@ -194,18 +197,21 @@ function App() {
 
   // ===== 重启后端服务 =====
   const handleRestart = async () => {
-    if (!confirm("确定要重启后端服务吗？\n\n注意：\n- 插件安装后需要重启才能生效\n- Provider配置更新后建议重启")) {
+    if (!confirm("确定要重启后端服务吗？\n\n注意：\n- 插件安装后需要重启才能生效\n- Provider配置更新后建议重启\n- 重启期间连接会短暂断开，自动重连")) {
       return;
     }
     setIsRestarting(true);
     try {
       await sendMessage("restart_service", {}, 5000);
+      // 服务会主动退出，由 Electron 重新拉起；这里只显示提示
       alert("重启指令已发送，服务正在重启...");
     } catch (err) {
       console.error("Failed to restart service:", err);
-      alert("重启请求失败: " + err.message);
+      // 即使收到 "Unknown message type" 也提示用户去手动重启
+      alert("重启请求失败: " + err.message + "\n\n请手动重启应用。");
     } finally {
-      setIsRestarting(false);
+      // 不立即复位 isRestarting，让用户在重新连接后看到 spinner
+      setTimeout(() => setIsRestarting(false), 5000);
     }
   };
 
@@ -234,6 +240,7 @@ function App() {
       tokens: '/tokens',
       knowledge: '/knowledge',
       workflows: '/workflows',
+      schedule: '/schedule',
     };
     navigate(routeMap[tab] || '/chat');
   };
@@ -352,6 +359,7 @@ function App() {
                 { key: 'agents', icon: Users, label: t('nav.agents') },
                 { key: 'workflows', icon: GitBranch, label: t('nav.workflows') },
                 { key: 'cron', icon: Clock, label: t('nav.cron') },
+                { key: 'schedule', icon: CalendarDays, label: t('nav.schedule') },
               ])}
               {renderNavGroup(t('nav.group.integrations'), [
                 { key: 'mcp', icon: Server, label: t('nav.mcp') },
@@ -383,6 +391,7 @@ function App() {
               <Route path="/chat" element={
                 <Chat
                   sendWSMessage={sendMessage}
+                  subscribe={subscribe}
                   connectionStatus={connectionStatus}
                   onSendMessage={handleSendMessage}
                   onStopGeneration={handleStopGeneration}
@@ -426,6 +435,9 @@ function App() {
                 <Memory sendWSMessage={sendMessage} />
               } />
               <Route path="/cron" element={<Cron sendWSMessage={sendMessage} />} />
+              <Route path="/schedule" element={
+                <Schedule sendWSMessage={sendMessage} subscribe={subscribe} />
+              } />
               <Route path="/agents" element={<Agents sendWSMessage={sendMessage} />} />
               <Route path="/tokens" element={<Tokens sendWSMessage={sendMessage} />} />
               <Route path="/knowledge" element={<Knowledge sendWSMessage={sendMessage} />} />
@@ -436,6 +448,7 @@ function App() {
               <Route path="/" element={
                 <Chat
                   sendWSMessage={sendMessage}
+                  subscribe={subscribe}
                   connectionStatus={connectionStatus}
                   onSendMessage={handleSendMessage}
                   onStopGeneration={handleStopGeneration}

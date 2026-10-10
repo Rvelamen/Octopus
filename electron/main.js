@@ -160,22 +160,46 @@ async function startPythonService() {
       
       log.info('Spawning Python process:', pythonExecutable, spawnArgs);
       pythonProcess = spawn(pythonExecutable, spawnArgs, spawnOptions);
-      
+
+      // 标记本次启动是否已经成功过（用于区分初次启动失败 vs 重启退出）
+      let started = false;
+
+      pythonProcess.on('exit', (code, signal) => {
+        log.info(`Python process exited with code=${code} signal=${signal}`);
+        pythonProcess = null;
+
+        // Code 99 = 主动重启（由后端 RestartServiceHandler 触发）
+        if (code === 99) {
+          log.info('Python requested restart — respawning in 1.5s');
+          setTimeout(() => {
+            startPythonService().catch((err) => {
+              log.error('Failed to respawn Python after restart request:', err);
+            });
+          }, 1500);
+          return;
+        }
+
+        if (!started && code !== 0 && code !== null) {
+          reject(new Error(`Python process exited with code ${code}. stderr: ${stderr}`));
+        }
+      });
+
       let stdout = '';
       let stderr = '';
-      
+
       pythonProcess.stdout.on('data', (data) => {
         stdout += data.toString();
         log.info('[Python stdout]:', data.toString());
-        
+
         // 检查服务是否启动成功
-        if (data.toString().includes('Uvicorn running') || 
+        if (data.toString().includes('Uvicorn running') ||
             data.toString().includes('Application startup complete')) {
           log.info('Python service started successfully');
+          started = true;
           resolve(pythonPort);
         }
       });
-      
+
       pythonProcess.stderr.on('data', (data) => {
         stderr += data.toString();
         log.error('[Python stderr]:', data.toString());
@@ -185,18 +209,12 @@ async function startPythonService() {
         log.error('Failed to start Python process:', error);
         reject(error);
       });
-      
-      pythonProcess.on('exit', (code) => {
-        log.info(`Python process exited with code ${code}`);
-        if (code !== 0 && code !== null) {
-          reject(new Error(`Python process exited with code ${code}. stderr: ${stderr}`));
-        }
-      });
-      
+
       // 超时处理
       setTimeout(() => {
         if (pythonProcess && !pythonProcess.killed) {
           log.info('Python service startup timeout check - assuming started');
+          started = true;
           resolve(pythonPort);
         }
       }, 10000);
@@ -397,6 +415,7 @@ ipcMain.handle('open-pdf-window', (event, { path: pdfPath, title, itemId }) => {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
       webSecurity: false,
+      devTools: true,
     },
     title: title || 'PDF Viewer',
     show: false,
@@ -414,6 +433,17 @@ ipcMain.handle('open-pdf-window', (event, { path: pdfPath, title, itemId }) => {
       hash: `pdf-viewer?path=${encodedPath}&title=${encodedTitle}&itemId=${encodedItemId}`,
     });
   }
+
+  if (isDev) {
+    pdfWindow.webContents.openDevTools({ mode: 'detach' });
+  }
+
+  pdfWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    console.error('[pdf-window] did-fail-load', { code, desc, url });
+  });
+  pdfWindow.webContents.on('console-message', (_e, level, message, line, source) => {
+    console.log('[pdf-window]', { level, message, line, source });
+  });
 
   pdfWindow.once('ready-to-show', () => {
     pdfWindow.show();

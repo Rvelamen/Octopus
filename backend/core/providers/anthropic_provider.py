@@ -125,7 +125,9 @@ class AnthropicProvider(RetryableProvider):
                 if not has_real_usage:
                     from backend.agent.shared import _estimate_token_usage
 
-                    usage = _estimate_token_usage(anthropic_messages, content or "", model)
+                    usage = _estimate_token_usage(
+                        anthropic_messages, content or "", model, tool_calls
+                    )
                     logger.warning(
                         f"[Anthropic] Non-streaming response missing valid usage; estimated: {usage}"
                     )
@@ -239,7 +241,9 @@ class AnthropicProvider(RetryableProvider):
             if not has_real_usage:
                 from backend.agent.shared import _estimate_token_usage
 
-                final_usage = _estimate_token_usage(anthropic_messages, accumulated_content, model)
+                final_usage = _estimate_token_usage(
+                    anthropic_messages, accumulated_content, model, tool_calls
+                )
                 logger.warning(
                     f"[Anthropic] API did not return valid streaming usage; estimated: {final_usage}"
                 )

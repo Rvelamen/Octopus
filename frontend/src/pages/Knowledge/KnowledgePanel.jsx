@@ -11,6 +11,7 @@ import SimpleFileTree from './components/file-tree/SimpleFileTree';
 import SimpleEditor from './components/editor/SimpleEditor';
 import UploadDropzone from './components/upload/UploadDropzone';
 import NewNoteModal from './note/NewNoteModal';
+import ConfirmDeleteNoteModal from './note/ConfirmDeleteNoteModal';
 import DocumentGridView from './document/DocumentGridView';
 import TaskDetailModal from '@components/TaskIndicator/TaskDetailModal';
 import PreviewDrawer from './components/preview/PreviewDrawer';
@@ -52,6 +53,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
   const [importObsidianModalVisible, setImportObsidianModalVisible] = useState(false);
   const [importingFile, setImportingFile] = useState(null); // { file, vault } to import
   const [createVaultModalVisible, setCreateVaultModalVisible] = useState(false);
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState(null); // 待确认删除的 note/folder item
 
   const [batchDistillPaths, setBatchDistillPaths] = useState([]);
 
@@ -592,27 +594,59 @@ export default function KnowledgePanel({ sendWSMessage }) {
     [loadDirectory, sendWSMessage, currentFile]
   );
 
-  // 删除
-  const handleDelete = useCallback(
+  // 删除：先弹出确认框，确认后再真正执行
+  const handleDelete = useCallback((item) => {
+    setDeleteConfirmItem(item);
+  }, []);
+
+  const confirmDelete = useCallback(
     async (item) => {
-      const confirmed = window.confirm(`Delete "${item.name}"? This cannot be undone.`);
-      if (!confirmed) return;
       try {
         await sendWSMessage('knowledge_delete', { path: item.path });
         message.success(`Deleted: ${item.name}`);
 
-        // 关闭已打开的文件
+        // 关闭已打开的文件（含被删文件夹里的文件）
         if (currentFile?.path === item.path) {
+          setCurrentFile(null);
+        } else if (
+          item.is_directory &&
+          currentFile?.path?.startsWith(item.path + '/')
+        ) {
           setCurrentFile(null);
         }
 
         const dir = item.path.substring(0, item.path.lastIndexOf('/'));
-        await loadDirectory(dir);
+        const root = rootPath;
+
+        // 并发刷新父目录 + 根目录，避免任何层级缓存导致的列表残留
+        const refreshTargets = new Set([dir, root].filter(Boolean));
+        await Promise.all([...refreshTargets].map((p) => loadDirectory(p)));
+
+        // 如果是文件夹，清理 expandedPaths 里该目录及所有后代，避免脏展开
+        if (item.is_directory) {
+          setExpandedPaths((prev) => {
+            const next = new Set(prev);
+            for (const p of prev) {
+              if (p === item.path || p.startsWith(item.path + '/')) {
+                next.delete(p);
+              }
+            }
+            return next;
+          });
+        }
+
+        setDeleteConfirmItem(null); // 成功，关闭弹窗
+
+        // 广播 knowledge 变更，让其他可能已挂载的视图（图谱、聊天侧栏等）主动刷新
+        window.dispatchEvent(new CustomEvent('knowledge-graph-changed', {
+          detail: { type: 'deleted', path: item.path, is_directory: !!item.is_directory },
+        }));
       } catch (err) {
         message.error('Failed to delete: ' + (err.message || String(err)));
+        throw err; // 让 modal 重置按钮 loading 状态
       }
     },
-    [sendWSMessage, loadDirectory, currentFile]
+    [sendWSMessage, loadDirectory, currentFile, rootPath]
   );
 
   const updateReferences = useCallback(
@@ -1289,6 +1323,7 @@ export default function KnowledgePanel({ sendWSMessage }) {
               filterTag={graphTagFilter}
               filterVault={selectedVault}
               vaults={vaults}
+              onDeleteNote={handleDelete}
               onNodeNavigate={(path) => {
                 handleOpenFile({ path, name: path.split('/').pop(), is_directory: false });
               }}
@@ -1636,6 +1671,13 @@ export default function KnowledgePanel({ sendWSMessage }) {
         visible={createVaultModalVisible}
         onCancel={() => setCreateVaultModalVisible(false)}
         onConfirm={handleCreateVault}
+      />
+
+      <ConfirmDeleteNoteModal
+        item={deleteConfirmItem}
+        open={!!deleteConfirmItem}
+        onClose={() => setDeleteConfirmItem(null)}
+        onConfirm={confirmDelete}
       />
     </div>
   );

@@ -36,6 +36,7 @@ class SessionInstance:
     updated_at: datetime
     tts_enabled: bool = False
     tts_config: dict[str, Any] = None
+    archived_at: datetime | None = None
 
     def __post_init__(self):
         if self.tts_config is None:
@@ -155,6 +156,14 @@ class SessionDatabase:
                         "ALTER TABLE session_instances ADD COLUMN tts_config TEXT DEFAULT '{}'"
                     )
                     logger.info("Migration: Added tts_config column to session_instances table")
+
+                if "archived_at" not in instance_columns:
+                    conn.execute(
+                        "ALTER TABLE session_instances ADD COLUMN archived_at TIMESTAMP"
+                    )
+                    logger.info(
+                        "Migration: Added archived_at column to session_instances table"
+                    )
 
             # logger.info("Database initialized successfully")
 
@@ -568,6 +577,7 @@ class SessionDatabase:
             updated_at=datetime.fromisoformat(row["updated_at"]),
             tts_enabled=bool(row["tts_enabled"]) if "tts_enabled" in row else False,
             tts_config=tts_config,
+            archived_at=datetime.fromisoformat(row["archived_at"]) if "archived_at" in row and row["archived_at"] else None,
         )
 
     def _row_to_message(self, row: sqlite3.Row) -> MessageRecord:

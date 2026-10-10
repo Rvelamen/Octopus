@@ -56,8 +56,9 @@ const TokenUsage = memo(({ tokenUsage }) => {
 
   const rawPromptTokens = tokenUsage.prompt_tokens ?? 0;
   const completionTokens = tokenUsage.completion_tokens ?? 0;
-  const cachedTokens = tokenUsage.cached_tokens ?? 0;
-  const totalTokens = rawPromptTokens + completionTokens + cachedTokens;
+  // NOTE: prompt_tokens already includes cached_tokens (cumulative), so do
+  // NOT add cached_tokens again here — that was double-counting.
+  const totalTokens = rawPromptTokens + completionTokens;
 
   if (totalTokens <= 0) return null;
 

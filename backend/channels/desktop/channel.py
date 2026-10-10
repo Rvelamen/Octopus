@@ -34,6 +34,7 @@ class DesktopChannel(BaseChannel):
         app: FastAPI,
         mcp_manager: MCPManager | None = None,
         cron_service=None,
+        schedule_service=None,
         agent_loop=None,
         subagent_manager=None,
     ):
@@ -43,6 +44,7 @@ class DesktopChannel(BaseChannel):
         self.pending_responses: dict[str, asyncio.Queue] = {}
         self.mcp_manager = mcp_manager
         self.cron_service = cron_service
+        self.schedule_service = schedule_service
         self.agent_loop = agent_loop
         self.subagent_manager = subagent_manager
         self.handler_registry = HandlerRegistry(
@@ -50,6 +52,7 @@ class DesktopChannel(BaseChannel):
             self.pending_responses,
             mcp_manager,
             cron_service,
+            schedule_service,
             agent_loop=agent_loop,
             subagent_manager=subagent_manager,
         )
@@ -217,6 +220,8 @@ class DesktopChannel(BaseChannel):
             "subagent_tool_result": MessageType.SUBAGENT_TOOL_RESULT,
             # Knowledge distill events
             "knowledge_distill_progress": MessageType.KNOWLEDGE_DISTILL_PROGRESS,
+            # Chat instance lifecycle events (archive / unarchive / delete / set-active)
+            "chat_instance_changed": MessageType.CHAT_INSTANCE_CHANGED,
         }
 
         msg_type = event_type_map.get(event.event_type)

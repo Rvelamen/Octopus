@@ -988,7 +988,7 @@ class MCPAddServerHandler(MessageHandler):
                         websocket, message.request_id, f"URL required for {protocol} servers"
                     )
                     return
-                if protocol not in ("sse", "websocket"):
+                if protocol not in ("sse", "websocket", "streamable_http"):
                     await self._send_error(
                         websocket, message.request_id, f"Unsupported protocol: {protocol}"
                     )
@@ -1126,7 +1126,7 @@ class MCPAddServerHandler(MessageHandler):
                         websocket, message.request_id, f"URL required for {protocol} servers"
                     )
                     return
-                if protocol not in ("sse", "websocket"):
+                if protocol not in ("sse", "websocket", "streamable_http"):
                     await self._send_error(
                         websocket, message.request_id, f"Unsupported protocol: {protocol}"
                     )

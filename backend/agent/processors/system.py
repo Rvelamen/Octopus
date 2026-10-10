@@ -115,7 +115,9 @@ class SystemMessageProcessor(MessageProcessor):
             )
 
             # Record token usage
-            normalized = _normalize_usage(response.usage, messages, response.content or "", model)
+            normalized = _normalize_usage(
+                response.usage, messages, response.content or "", model, response.tool_calls
+            )
             self.agent_loop._record_token_usage(
                 session_instance_id=session_instance_id,
                 provider_name=provider_type,

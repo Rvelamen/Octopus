@@ -259,11 +259,11 @@ function ChatInput({
               className="inputbar-context-badge"
               title={
                 contextStats
-                  ? `context: ${contextStats.percentage}% (${(contextStats.current_tokens / 1000).toFixed(1)}k / ${(contextStats.max_tokens / 1000).toFixed(1)}k)`
+                  ? `context: ${Math.min(100, contextStats.percentage).toFixed(1)}% (${(contextStats.current_tokens / 1000).toFixed(1)}k / ${(contextStats.max_tokens / 1000).toFixed(1)}k)`
                   : 'context: loading...'
               }
             >
-              Context: {contextStats ? `${contextStats.percentage}%` : '--%'}
+              Context: {contextStats ? `${Math.min(100, contextStats.percentage).toFixed(1)}%` : '--%'}
             </span>
             {inputValue.length > 0 && (
               <span className="inputbar-char-count">{inputValue.length}</span>

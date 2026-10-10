@@ -27,6 +27,7 @@ from backend.channels.desktop.handlers.chat import ChatHandler
 from backend.channels.desktop.handlers.config import (
     GetConfigHandler,
     PingHandler,
+    RestartServiceHandler,
     SaveConfigHandler,
     StopAgentsHandler,
 )
@@ -105,10 +106,28 @@ from backend.channels.desktop.handlers.memory import (
 from backend.channels.desktop.handlers.models import GetModelsHandler
 from backend.channels.desktop.handlers.notes_chat import NotesChatHandler
 from backend.channels.desktop.handlers.pdf_chat import PdfChatHandler
+from backend.channels.desktop.handlers.pdf_annotation_chat import PdfAnnotationChatHandler
+
+# Import schedule handlers
+from backend.channels.desktop.handlers.schedule import (
+    ScheduleBatchRestoreEventsHandler,
+    ScheduleCancelEventHandler,
+    ScheduleCreateEventHandler,
+    ScheduleDeleteEventHandler,
+    ScheduleGetEventHandler,
+    ScheduleHardDeleteEventHandler,
+    ScheduleListEventsHandler,
+    ScheduleListRecycleBinHandler,
+    ScheduleRestoreEventHandler,
+    ScheduleSearchEventsHandler,
+    ScheduleUncancelEventHandler,
+    ScheduleUpdateEventHandler,
+)
 
 # Import session handlers
 from backend.channels.desktop.handlers.session import (
     SessionCompressContextHandler,
+    SessionArchiveInstanceHandler,
     SessionCreateHandler,
     SessionDeleteInstanceHandler,
     SessionGetChannelSessionsHandler,
@@ -118,6 +137,7 @@ from backend.channels.desktop.handlers.session import (
     SessionGetMessagesHandler,
     SessionGetSessionDetailHandler,
     SessionSetActiveHandler,
+    SessionUnarchiveInstanceHandler,
 )
 
 # Import slash commands handler
@@ -196,6 +216,7 @@ class HandlerRegistry:
         pending_responses: dict[str, asyncio.Queue],
         mcp_manager: MCPManager | None = None,
         cron_service=None,
+        schedule_service=None,
         db=None,
         agent_loop=None,
         subagent_manager=None,
@@ -204,6 +225,7 @@ class HandlerRegistry:
 
         self.mcp_manager = mcp_manager
         self.cron_service = cron_service
+        self.schedule_service = schedule_service
         self.db = db or Database()
         self.agent_loop = agent_loop
         self.subagent_manager = subagent_manager
@@ -213,8 +235,9 @@ class HandlerRegistry:
         self.settings_handler_db = self.db
 
         self.handlers: dict[MessageType, MessageHandler] = {
-            MessageType.CHAT: ChatHandler(bus, pending_responses),
+            MessageType.CHAT: ChatHandler(bus, pending_responses, subagent_manager=subagent_manager),
             MessageType.PDF_CHAT: PdfChatHandler(bus, pending_responses),
+            MessageType.PDF_ANNOTATION_CHAT: PdfAnnotationChatHandler(bus, pending_responses),
             MessageType.LIBRARY_CHAT: LibraryChatHandler(bus, pending_responses),
             MessageType.NOTES_CHAT: NotesChatHandler(bus, pending_responses),
             MessageType.WORKFLOW_DESIGN: WorkflowDesignChatHandler(bus, pending_responses),
@@ -224,6 +247,7 @@ class HandlerRegistry:
             MessageType.GET_MODELS: GetModelsHandler(bus, self.db),
             MessageType.GET_SLASH_COMMANDS: GetSlashCommandsHandler(bus),
             MessageType.STOP_AGENTS: StopAgentsHandler(bus, agent_loop, subagent_manager),
+            MessageType.RESTART_SERVICE: RestartServiceHandler(bus),
         }
 
         # Register Provider/Model/Settings handlers (always available)
@@ -310,6 +334,8 @@ class HandlerRegistry:
                 MessageType.SESSION_CREATE: SessionCreateHandler(bus, self.agent_loop),
                 MessageType.SESSION_SET_ACTIVE: SessionSetActiveHandler(bus, self.agent_loop),
                 MessageType.SESSION_GET_INSTANCES: SessionGetInstancesHandler(bus),
+                MessageType.SESSION_ARCHIVE_INSTANCE: SessionArchiveInstanceHandler(bus),
+                MessageType.SESSION_UNARCHIVE_INSTANCE: SessionUnarchiveInstanceHandler(bus),
                 MessageType.SESSION_COMPRESS_CONTEXT: SessionCompressContextHandler(
                     bus, self.agent_loop
                 ),
@@ -352,6 +378,24 @@ class HandlerRegistry:
                 MessageType.CRON_DELETE_JOB: CronDeleteJobHandler(bus, cron_service),
                 MessageType.CRON_TOGGLE_JOB: CronToggleJobHandler(bus, cron_service),
                 MessageType.CRON_RUN_JOB: CronRunJobHandler(bus, cron_service),
+            }
+        )
+
+        # Register Schedule (Calendar) Event handlers
+        self.handlers.update(
+            {
+                MessageType.SCHEDULE_LIST_EVENTS: ScheduleListEventsHandler(bus, schedule_service),
+                MessageType.SCHEDULE_CREATE_EVENT: ScheduleCreateEventHandler(bus, schedule_service),
+                MessageType.SCHEDULE_UPDATE_EVENT: ScheduleUpdateEventHandler(bus, schedule_service),
+                MessageType.SCHEDULE_DELETE_EVENT: ScheduleDeleteEventHandler(bus, schedule_service),
+                MessageType.SCHEDULE_SEARCH_EVENTS: ScheduleSearchEventsHandler(bus, schedule_service),
+                MessageType.SCHEDULE_GET_EVENT: ScheduleGetEventHandler(bus, schedule_service),
+                MessageType.SCHEDULE_CANCEL_EVENT: ScheduleCancelEventHandler(bus, schedule_service),
+                MessageType.SCHEDULE_UNCANCEL_EVENT: ScheduleUncancelEventHandler(bus, schedule_service),
+                MessageType.SCHEDULE_LIST_RECYCLE_BIN: ScheduleListRecycleBinHandler(bus, schedule_service),
+                MessageType.SCHEDULE_RESTORE_EVENT: ScheduleRestoreEventHandler(bus, schedule_service),
+                MessageType.SCHEDULE_BATCH_RESTORE_EVENTS: ScheduleBatchRestoreEventsHandler(bus, schedule_service),
+                MessageType.SCHEDULE_HARD_DELETE_EVENT: ScheduleHardDeleteEventHandler(bus, schedule_service),
             }
         )
 
@@ -476,6 +520,11 @@ class HandlerRegistry:
                 MessageType.LIBRARY_ADD_ATTACHMENT: library_handler,
                 MessageType.LIBRARY_ANNOTATIONS_LOAD: library_handler,
                 MessageType.LIBRARY_ANNOTATIONS_SAVE: library_handler,
+                MessageType.LIBRARY_ANNOTATION_UPSERT: library_handler,
+                MessageType.LIBRARY_ANNOTATION_DELETE_BY_ID: library_handler,
+                MessageType.LIBRARY_ANNOTATION_COMMENTS_LOAD: library_handler,
+                MessageType.LIBRARY_ANNOTATION_COMMENTS_ADD: library_handler,
+                MessageType.LIBRARY_ANNOTATION_COMMENTS_DELETE: library_handler,
                 MessageType.LIBRARY_LINK_NOTE: library_handler,
                 MessageType.LIBRARY_COLLECTION_LIST: library_handler,
                 MessageType.LIBRARY_COLLECTION_CREATE: library_handler,

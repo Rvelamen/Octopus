@@ -23,6 +23,7 @@ from backend.data.schema import (
     observation,
     pdf_chat,
     provider,
+    schedule,
     session,
     subagent,
     task,
@@ -164,6 +165,7 @@ class Database:
             workflow_design_chat.create_tables(conn)
             library_chat.create_tables(conn)
             notes_chat.create_tables(conn)
+            schedule.create_tables(conn)
 
             # Create indexes
             apscheduler.create_indexes(conn)
@@ -183,6 +185,7 @@ class Database:
             workflow_design_chat.create_indexes(conn)
             library_chat.create_indexes(conn)
             notes_chat.create_indexes(conn)
+            schedule.create_indexes(conn)
 
             # Seed default data
             provider.seed_data(conn)

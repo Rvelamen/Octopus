@@ -1,10 +1,11 @@
 import React, { useRef } from 'react';
-import { RefreshCw, Plus } from 'lucide-react';
+import { RefreshCw, Plus, ChevronDown, ChevronRight } from 'lucide-react';
 import WindowDots from '@components/layout/WindowDots';
 import InstanceItem from './InstanceItem.jsx';
 import './InstanceList.css';
 
 function InstanceList({
+  t,
   instances,
   selectedInstance,
   loading,
@@ -18,8 +19,16 @@ function InstanceList({
   onCreateNew,
   onRefresh,
   isCreatingNew,
-  onScrollEnd
+  onScrollEnd,
+  archivedInstances = [],
+  archivedExpanded = false,
+  onToggleArchivedSection,
+  onArchive,
+  onUnarchive,
 }) {
+  // i18n helper: fall back to the key so hardcoded English doesn't
+  // disappear in dev when the translation file is briefly stale.
+  const tr = (key, fallback) => (typeof t === 'function' ? t(key) : fallback) || fallback;
   const instanceListRef = useRef(null);
 
   const handleScroll = (e) => {
@@ -30,6 +39,8 @@ function InstanceList({
       }
     }
   };
+
+  const archivedCount = archivedInstances.length;
 
   return (
     <div className="chat-sidebar">
@@ -56,8 +67,8 @@ function InstanceList({
         </button>
       </div>
 
-      <div 
-        className="chat-instance-list" 
+      <div
+        className="chat-instance-list"
         ref={instanceListRef}
         onScroll={handleScroll}
       >
@@ -87,11 +98,48 @@ function InstanceList({
           <InstanceItem
             key={instance.id}
             instance={instance}
+            t={t}
             isSelected={selectedInstance?.id === instance.id}
             onSelect={onSelect}
             onDelete={onDelete}
+            onArchive={onArchive}
+            mode="active"
           />
         ))}
+
+        <div
+          className="archived-section-header"
+          onClick={onToggleArchivedSection}
+          role="button"
+          tabIndex={0}
+        >
+          {archivedExpanded
+            ? <ChevronDown size={11} className="archived-chevron" />
+            : <ChevronRight size={11} className="archived-chevron" />}
+          <span className="archived-section-title">
+            {tr('chat.archivedSection', 'Archived')}
+          </span>
+          <span className="archived-section-count">({archivedCount})</span>
+        </div>
+
+        {archivedExpanded && archivedInstances.map((instance) => (
+          <InstanceItem
+            key={instance.id}
+            instance={instance}
+            t={t}
+            isSelected={selectedInstance?.id === instance.id}
+            onSelect={onSelect}
+            onDelete={onDelete}
+            onUnarchive={onUnarchive}
+            mode="archived"
+          />
+        ))}
+
+        {archivedExpanded && archivedInstances.length === 0 && (
+          <div className="empty-state-small" style={{ fontSize: '11px' }}>
+            {tr('chat.noArchivedChats', 'No archived chats')}
+          </div>
+        )}
 
         {isLoadingMore && (
           <div className="loading-more">

@@ -1,0 +1,1863 @@
+/* ========== Schedule Panel Styles ========== */
+
+.schedule-panel-container {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* Toolbar */
+.schedule-toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--s-2) var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--board);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  border-bottom: 1px solid var(--board);
+  gap: var(--s-2);
+  z-index: 5;
+}
+
+.schedule-toolbar .toolbar-left,
+.schedule-toolbar .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.schedule-toolbar .toolbar-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+.schedule-toolbar .event-count {
+  font-size: 11px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+.schedule-toolbar .nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--surface-2);
+  border: 1px solid var(--board);
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.schedule-toolbar .nav-btn:hover {
+  background: var(--surface-3);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.schedule-toolbar .nav-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-invert);
+}
+
+.schedule-toolbar .nav-btn.active:hover {
+  background: var(--accent);
+  color: var(--text-invert);
+  opacity: 0.9;
+}
+
+.schedule-toolbar .nav-btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.schedule-toolbar .nav-btn .spin {
+  animation: schedule-icon-spin 0.9s linear infinite;
+}
+
+@keyframes schedule-icon-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.schedule-toolbar .today-btn {
+  padding: 0 var(--s-3);
+  height: 28px;
+  background: var(--surface-2);
+  border: 1px solid var(--board);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.schedule-toolbar .today-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Toolbar action icon buttons. All four share the same 28x28 footprint and
+   1px border — and now the same accent fill, so the row reads as one
+   uniform toolbar rather than "one primary + three ghost buttons". The
+   badge on the trash button still gives it identity. Hover lifts them
+   slightly with a stronger shadow. */
+.schedule-toolbar .new-event-btn,
+.schedule-toolbar .trash-btn,
+.schedule-toolbar .refresh-btn,
+.schedule-toolbar .nav-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  gap: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: var(--text-invert);
+}
+
+.schedule-toolbar .new-event-btn:hover:not(:disabled),
+.schedule-toolbar .trash-btn:hover:not(:disabled),
+.schedule-toolbar .refresh-btn:hover:not(:disabled),
+.schedule-toolbar .nav-btn:hover:not(:disabled) {
+  background: var(--accent-2, var(--accent));
+  border-color: var(--accent-2, var(--accent));
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.schedule-toolbar .new-event-btn:active:not(:disabled),
+.schedule-toolbar .trash-btn:active:not(:disabled),
+.schedule-toolbar .refresh-btn:active:not(:disabled),
+.schedule-toolbar .nav-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.schedule-toolbar .new-event-btn:disabled,
+.schedule-toolbar .trash-btn:disabled,
+.schedule-toolbar .refresh-btn:disabled,
+.schedule-toolbar .nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Chat nav-btn is the only one of the four that has an on/off state. Now
+   that the default fill is the same accent as the others, the active state
+   needs a different signal — an inset white halo reads as "pressed in"
+   without breaking the row's uniform accent fill. */
+.schedule-toolbar .nav-btn.active {
+  background: var(--accent-2, var(--accent));
+  border-color: var(--accent-2, var(--accent));
+  box-shadow: inset 0 0 0 1px var(--text-invert);
+}
+
+/* Tight 4px gap between every toolbar-right button so the 4 action buttons
+   (new-event, trash, refresh, chat) sit on a single uniform rhythm. The
+   4px is just enough to read as "separate buttons" without leaving big
+   empty gaps between adjacent squares. */
+.schedule-toolbar .toolbar-right {
+  gap: 4px;
+}
+
+.schedule-toolbar .view-switcher {
+  display: inline-flex;
+  background: var(--surface-2);
+  border: 1px solid var(--board);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.schedule-toolbar .view-switcher button {
+  padding: 0 var(--s-3);
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  border-right: 1px solid var(--board);
+  transition: all 0.2s;
+}
+
+.schedule-toolbar .view-switcher button:last-child {
+  border-right: none;
+}
+
+.schedule-toolbar .view-switcher button.active {
+  background: var(--accent);
+  color: var(--text-invert);
+}
+
+/* Calendar area */
+.schedule-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  padding-top: 52px;
+}
+
+.schedule-content {
+  flex: 1;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--board);
+  border-top: none;
+  border-radius: 0 0 0 var(--r-lg);
+}
+
+/* Month View */
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: minmax(130px, 1fr);
+  gap: 1px;
+  background: var(--board);
+  height: 100%;
+}
+
+.month-weekday-header {
+  background: var(--surface-2);
+  padding: var(--s-2) var(--s-3);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-align: center;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.month-cell {
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.month-cell:hover {
+  background: var(--surface-2);
+}
+
+.month-cell.outside-month {
+  background: var(--surface-2);
+  color: var(--text-3);
+}
+
+.month-cell.is-today .month-day-num {
+  background: var(--accent);
+  color: var(--text-invert);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.month-day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--s-1) var(--s-2);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  gap: var(--s-1);
+}
+
+.month-day-month {
+  font-size: 11px;
+  font-weight: 700;
+  color: #F39C12;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.month-day-num {
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.month-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 var(--s-1) var(--s-1);
+  overflow: hidden;
+}
+
+.month-event {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  font-size: 11px;
+  color: var(--text);
+  background: var(--surface-2);
+  border-left: 3px solid var(--accent);
+  border-radius: 2px;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: all 0.15s;
+}
+
+.month-event:hover {
+  background: var(--surface-3);
+}
+
+.month-event.all-day {
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.month-event-color-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.month-more {
+  font-size: 10px;
+  color: var(--text-3);
+  padding: 0 var(--s-2);
+  font-family: var(--font-mono);
+  cursor: pointer;
+}
+
+.month-more:hover {
+  color: var(--accent);
+}
+
+/* Day Events Popover — opened from "还有 N 个" overflow indicator */
+.day-events-popover {
+  position: fixed;
+  width: 280px;
+  max-height: 360px;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.day-events-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s-2) var(--s-3);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--board);
+  flex-shrink: 0;
+}
+
+.day-events-popover-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.day-events-popover-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--s-2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* Custom scrollbar so it visually matches the rest of the app */
+  scrollbar-width: thin;
+  scrollbar-color: var(--board) transparent;
+}
+
+.day-events-popover-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.day-events-popover-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.day-events-popover-list::-webkit-scrollbar-thumb {
+  background: var(--board);
+  border-radius: 4px;
+}
+
+.day-events-popover-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}
+
+.day-events-popover-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s-2);
+  background: var(--surface-2);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.day-events-popover-item:hover {
+  background: var(--surface-3);
+}
+
+.day-events-popover-item-time {
+  font-size: 10px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+.day-events-popover-item-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.day-events-popover-item-location {
+  font-size: 11px;
+  color: var(--text-2);
+  font-style: italic;
+}
+
+.day-events-popover-footer {
+  padding: var(--s-2) var(--s-3);
+  border-top: 1px solid var(--board);
+  background: var(--surface-2);
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.day-events-popover-footer .pixel-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 var(--s-2);
+  height: 26px;
+  font-size: 11px;
+}
+
+/* Week / Day View */
+.weekday-headers {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--board);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.weekday-headers.day-view {
+  grid-template-columns: 60px 1fr;
+}
+
+.weekday-header-cell {
+  padding: var(--s-2);
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-right: 1px solid var(--board);
+}
+
+.weekday-header-cell.is-today {
+  color: var(--accent);
+}
+
+.timegrid {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  position: relative;
+}
+
+.timegrid.day-view {
+  grid-template-columns: 60px 1fr;
+}
+
+.timegrid-hour-label {
+  font-size: 10px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  padding: 2px 6px 0 0;
+  text-align: right;
+  border-right: 1px solid var(--board);
+  height: 60px;
+  border-bottom: 1px solid var(--board);
+  box-sizing: border-box;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+}
+
+.timegrid-col {
+  border-right: 1px solid var(--board);
+  position: relative;
+  min-height: calc(60px * 18); /* 6:00 - 24:00 = 18 hours */
+}
+
+.timegrid-cell {
+  height: 60px;
+  border-bottom: 1px solid var(--board);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.timegrid-cell:hover {
+  background: var(--surface-2);
+}
+
+.timegrid-event {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  background: var(--surface-2);
+  border-left: 3px solid var(--accent);
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-size: 11px;
+  color: var(--text);
+  cursor: pointer;
+  overflow: hidden;
+  z-index: 1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.timegrid-event:hover {
+  background: var(--surface-3);
+}
+
+.timegrid-event-title {
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.timegrid-event-time {
+  font-size: 10px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+/* Chat Drawer */
+.chat-drawer {
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--board);
+  border-top: none;
+  border-right: none;
+  border-radius: 0 0 var(--r-lg) 0;
+  overflow: hidden;
+  transition: width 0.2s;
+}
+
+.chat-drawer.collapsed {
+  width: 0;
+  border: none;
+  padding: 0;
+}
+
+.chat-drawer-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s-3) var(--s-4) var(--s-2);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--board);
+}
+
+.chat-drawer-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+
+.chat-drawer-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.chat-drawer-title svg {
+  color: var(--accent);
+}
+
+.chat-drawer-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.chat-drawer-clear-btn:hover {
+  color: var(--error);
+  background: var(--surface-1, transparent);
+  border-color: var(--board);
+}
+
+.chat-drawer-subtitle {
+  font-size: 11px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+.chat-drawer-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--board) transparent;
+}
+.chat-drawer-messages::-webkit-scrollbar {
+  width: 5px;
+}
+.chat-drawer-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-drawer-messages::-webkit-scrollbar-thumb {
+  background: var(--board);
+  border-radius: 3px;
+}
+.chat-drawer-messages::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}
+
+.chat-drawer-empty {
+  text-align: center;
+  color: var(--text-3);
+  font-size: 12px;
+  padding: var(--s-6) var(--s-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  line-height: 1.5;
+}
+
+.chat-drawer-empty svg {
+  color: var(--text-3);
+  opacity: 0.5;
+}
+
+.chat-drawer-empty-hint {
+  color: var(--text-2);
+  font-style: italic;
+}
+
+.chat-drawer-message {
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+  white-space: pre-wrap;
+  max-width: 90%;
+  position: relative;
+}
+
+.chat-drawer-message-text {
+  /* The text wrapper — keeps spacing clean when the timestamp is also present */
+}
+
+.chat-drawer-message.user {
+  background: var(--accent);
+  color: var(--text-invert);
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-drawer-message.assistant {
+  background: var(--surface-2);
+  color: var(--text);
+  align-self: flex-start;
+  border: 1px solid var(--board);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-drawer-message.tool {
+  background: var(--surface-2);
+  border-left: 3px solid var(--success);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  align-self: stretch;
+  max-width: 100%;
+}
+
+.chat-drawer-message.tool.error {
+  border-left-color: var(--danger);
+}
+
+/* Collapsed tool-call group: shows a compact summary ("调用了 N 个工具")
+   instead of one bubble per call/result. Click to expand. */
+.chat-drawer-message.tool-group {
+  background: var(--surface-2);
+  border-left: 3px solid var(--text-3);
+  color: var(--text-2);
+  font-size: 12px;
+  align-self: stretch;
+  max-width: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+.chat-drawer-message.tool-group.expanded {
+  border-left-color: var(--success);
+}
+
+.chat-drawer-tool-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.chat-drawer-tool-toggle:hover {
+  background: var(--surface-3, rgba(255, 255, 255, 0.04));
+}
+.chat-drawer-tool-toggle:focus-visible {
+  outline: 1px solid var(--accent, #4a9eff);
+  outline-offset: -1px;
+}
+
+.chat-drawer-tool-chevron {
+  display: inline-block;
+  width: 10px;
+  font-size: 10px;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.chat-drawer-tool-summary {
+  flex: 1;
+  font-family: var(--font-mono);
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chat-drawer-tool-badge {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.chat-drawer-tool-badge.ok {
+  color: var(--success);
+  background: rgba(46, 160, 67, 0.12);
+}
+.chat-drawer-tool-badge.error {
+  color: var(--danger);
+  background: rgba(248, 81, 73, 0.12);
+}
+.chat-drawer-tool-toggle-label {
+  font-size: 10px;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.chat-drawer-tool-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 10px 8px 22px;
+  border-top: 1px solid var(--surface-3, rgba(255, 255, 255, 0.06));
+}
+.chat-drawer-tool-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-family: var(--font-mono);
+}
+.chat-drawer-tool-item-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chat-drawer-tool-name {
+  color: var(--text-1);
+  font-weight: 600;
+}
+.chat-drawer-tool-status {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  margin-left: auto;
+}
+.chat-drawer-tool-status.ok {
+  color: var(--success);
+  background: rgba(46, 160, 67, 0.12);
+}
+.chat-drawer-tool-status.error {
+  color: var(--danger);
+  background: rgba(248, 81, 73, 0.12);
+}
+.chat-drawer-tool-status.pending {
+  color: var(--text-3);
+  background: rgba(255, 255, 255, 0.06);
+}
+.chat-drawer-tool-args,
+.chat-drawer-tool-result {
+  margin: 0;
+  padding: 4px 6px;
+  background: var(--surface-1);
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-2);
+  max-height: 160px;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--board) transparent;
+}
+.chat-drawer-tool-args::-webkit-scrollbar,
+.chat-drawer-tool-result::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.chat-drawer-tool-args::-webkit-scrollbar-thumb,
+.chat-drawer-tool-result::-webkit-scrollbar-thumb {
+  background: var(--board);
+  border-radius: 2px;
+}
+.chat-drawer-tool-result {
+  border-left: 2px solid var(--text-3);
+}
+.chat-drawer-tool-item.error .chat-drawer-tool-result {
+  border-left-color: var(--danger);
+}
+
+.chat-drawer-message.streaming .chat-drawer-message-text::after {
+  content: '▍';
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--text-2);
+  animation: schedule-stream-blink 0.9s steps(2) infinite;
+}
+
+@keyframes schedule-stream-blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+.chat-drawer-message-time {
+  display: block;
+  font-size: 10px;
+  color: var(--text-3);
+  margin-top: 4px;
+  font-family: var(--font-mono);
+}
+
+.chat-drawer-message.user .chat-drawer-message-time {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.chat-drawer-typing {
+  display: inline-flex;
+  gap: 4px;
+  padding: var(--s-3) var(--s-3);
+  align-self: flex-start;
+  background: var(--surface-2);
+  border: 1px solid var(--board);
+  border-radius: var(--r-md);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-drawer-typing span {
+  width: 6px;
+  height: 6px;
+  background: var(--text-3);
+  border-radius: 50%;
+  animation: typing-bounce 1.2s infinite;
+}
+
+.chat-drawer-typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.chat-drawer-typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.chat-drawer-input {
+  display: flex;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border-top: 1px solid var(--board);
+  background: var(--surface-2);
+  align-items: stretch;
+}
+
+.chat-drawer-input textarea {
+  flex: 1;
+  resize: none;
+  min-height: 36px;
+  max-height: 120px;
+  background: var(--surface);
+  border: 1px solid var(--board);
+  border-radius: var(--r-md);
+  padding: 6px var(--s-3);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  line-height: 1.4;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.chat-drawer-input textarea:focus {
+  border-color: var(--accent);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.04),
+    0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.chat-drawer-input textarea::placeholder {
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.chat-drawer-input button {
+  flex-shrink: 0;
+  width: 32px;
+  height: auto;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--r-md);
+  color: var(--text-invert);
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+.chat-drawer-input button:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.chat-drawer-input button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.chat-drawer-input button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Event Modal (overlay) */
+.event-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.event-modal {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  width: 90%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--board);
+}
+
+.event-modal .modal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--board);
+}
+
+.event-modal .modal-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  line-height: 1.2;
+}
+
+.event-modal .dialog-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-3);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.event-modal .dialog-close:hover {
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--board);
+}
+
+.event-modal .dialog-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.event-modal .modal-body {
+  padding: var(--s-3) var(--s-4);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.event-modal .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.event-modal .form-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.event-modal .form-row > .form-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.event-modal .form-row-sep {
+  font-size: 12px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  padding-top: 18px;
+  flex-shrink: 0;
+}
+
+.event-modal .form-group > label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.event-modal .form-group > label:has(input[type="checkbox"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.event-modal .form-group > label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.event-modal .pixel-input,
+.event-modal .pixel-textarea {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--board);
+  border-radius: var(--r-sm);
+  padding: 4px 8px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  min-height: 26px;
+}
+
+.event-modal .pixel-input:focus,
+.event-modal .pixel-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.event-modal .pixel-textarea {
+  resize: vertical;
+  min-height: 48px;
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+
+.event-modal .modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: var(--s-2) var(--s-4);
+  background: var(--surface-2);
+  border-top: 1px solid var(--board);
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.event-modal .modal-footer-left,
+.event-modal .modal-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  flex-wrap: wrap;
+}
+
+/* ----- Pixel button (in the modal context) -----------------------------
+   The base .pixel-button class lives globally; here we just give the
+   schedule modal a tighter, keyboard-friendly look. */
+.event-modal .pixel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 64px;
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--board);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.event-modal .pixel-button:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--accent);
+  color: var(--text);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.event-modal .pixel-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.event-modal .pixel-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.event-modal .pixel-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.event-modal .pixel-button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-invert);
+}
+
+.event-modal .pixel-button.primary:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-invert);
+  filter: brightness(1.08);
+}
+
+.event-modal .pixel-button.secondary {
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.event-modal .pixel-button.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-2);
+}
+
+.event-modal .pixel-button.ghost:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--board);
+  color: var(--text);
+}
+
+.event-modal .pixel-button.danger {
+  background: var(--surface);
+  color: var(--danger, #e74c3c);
+  border-color: color-mix(in srgb, var(--danger, #e74c3c) 35%, var(--board));
+}
+
+.event-modal .pixel-button.danger:hover:not(:disabled) {
+  background: var(--danger, #e74c3c);
+  border-color: var(--danger, #e74c3c);
+  color: #fff;
+}
+
+.event-modal .color-swatches {
+  display: flex;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  padding: 4px 0;
+}
+
+.event-modal .color-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--board);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+  padding: 0;
+}
+
+.event-modal .color-swatch:hover {
+  transform: scale(1.12);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+.event-modal .color-swatch.selected {
+  border-color: var(--text);
+  transform: scale(1.12);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
+}
+
+.event-modal .color-swatch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Cancelled events -----------------------------------------
+   Distinguish inactive events (cancelled via the modal or chat) from
+   active ones. We keep the chip visible so the user still remembers
+   what was scheduled, but dim it and strike through the title.
+   ----------------------------------------------------------------------*/
+
+.month-event.cancelled,
+.timegrid-event.cancelled,
+.day-events-popover-item.cancelled {
+  opacity: 0.45;
+}
+
+.month-event.cancelled span,
+.timegrid-event.cancelled .timegrid-event-title,
+.timegrid-event.cancelled .timegrid-event-time,
+.day-events-popover-item.cancelled .day-events-popover-item-title,
+.day-events-popover-item.cancelled .day-events-popover-item-time,
+.day-events-popover-item.cancelled .day-events-popover-item-location {
+  text-decoration: line-through;
+  color: var(--text-3);
+}
+
+.month-event-cancelled-tag {
+  margin-left: var(--s-1);
+  padding: 0 4px;
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--text-3);
+  background: var(--surface-2);
+  border: 1px solid var(--board);
+  border-radius: 2px;
+  vertical-align: middle;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.event-modal.is-cancelled {
+  border-color: var(--text-3);
+}
+
+.event-modal .modal-cancelled-badge {
+  display: inline-block;
+  margin-right: var(--s-2);
+  padding: 1px 6px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--surface);
+  background: var(--text-3);
+  border-radius: 2px;
+  vertical-align: middle;
+  letter-spacing: 0.5px;
+}
+
+.event-modal .modal-cancelled-banner {
+  padding: var(--s-2) var(--s-4);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--board);
+  font-size: 12px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+.event-modal .pixel-input:disabled,
+.event-modal .pixel-textarea:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Delete button — visually emphasise "permanent, not undoable" so users
+   don't confuse it with the reversible cancel button next to it. */
+.modal-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.event-modal .modal-input-title {
+  min-height: 22px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+/* =====================================================================
+   Recycle Bin (回收站)
+   - Toolbar trash button with optional count badge
+   - Day-grouped modal with multi-select + per-row actions
+   ===================================================================== */
+
+.trash-btn {
+  position: relative;
+}
+
+.trash-btn-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--accent, #c44);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 0 0 2px var(--surface-1, #1a1a1a);
+}
+
+.recycle-bin-overlay {
+  position: fixed;
+  inset: 0;
+  /* Popup-style scrim: light enough to feel like a floating popup rather
+     than a forced fullscreen dialog, but dark enough that the user can
+     clearly see the modal panel has appeared (a near-transparent scrim on
+     a light theme looks like a blank page). */
+  background: rgba(0, 0, 0, 0.28);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: recycle-bin-fade-in 0.14s ease-out;
+}
+
+@keyframes recycle-bin-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.recycle-bin-modal {
+  width: min(720px, 100%);
+  max-height: min(80vh, 720px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-1, #1a1a1a);
+  border: 1px solid var(--board, #333);
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  color: var(--text-1, #eee);
+}
+
+.recycle-bin-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--board, #333);
+  background: var(--surface-2, #222);
+}
+
+.recycle-bin-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.recycle-bin-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-1, #eee);
+}
+
+.recycle-bin-subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-2, #bbb);
+}
+
+.recycle-bin-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-3, #888);
+  font-style: italic;
+}
+
+.recycle-bin-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.recycle-bin-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--board, #333);
+  background: var(--surface-1, #1a1a1a);
+  color: var(--text-2, #bbb);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.recycle-bin-icon-btn:hover {
+  background: var(--surface-2, #222);
+  color: var(--text-1, #eee);
+  border-color: var(--text-3, #888);
+}
+
+.recycle-bin-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.recycle-bin-spin {
+  animation: recycle-bin-spin 0.9s linear infinite;
+}
+
+@keyframes recycle-bin-spin {
+  to { transform: rotate(360deg); }
+}
+
+.recycle-bin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--board, #333);
+  background: var(--surface-1, #1a1a1a);
+  font-size: 12px;
+}
+
+.recycle-bin-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: var(--text-2, #bbb);
+  user-select: none;
+}
+
+.recycle-bin-select-all input {
+  cursor: pointer;
+}
+
+.recycle-bin-select-all input:disabled {
+  cursor: not-allowed;
+}
+
+.recycle-bin-selected-count {
+  color: var(--text-3, #888);
+  font-size: 11px;
+}
+
+.recycle-bin-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 8px 12px 16px;
+  background: var(--surface-1, #1a1a1a);
+}
+
+.recycle-bin-state {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--text-3, #888);
+  font-size: 12px;
+}
+
+.recycle-bin-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-3, #888);
+}
+
+.recycle-bin-empty p {
+  margin: 0;
+}
+
+.recycle-bin-day-group {
+  margin-top: 12px;
+}
+
+.recycle-bin-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3, #888);
+  border-bottom: 1px dashed var(--board, #333);
+  position: sticky;
+  top: 0;
+  background: var(--surface-1, #1a1a1a);
+  z-index: 1;
+}
+
+.recycle-bin-day-count {
+  background: var(--surface-2, #222);
+  color: var(--text-2, #bbb);
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 10px;
+}
+
+.recycle-bin-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recycle-bin-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--board, #333);
+  border-radius: 6px;
+  background: var(--surface-2, #222);
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.recycle-bin-item:hover {
+  background: var(--surface-3, #2a2a2a);
+}
+
+.recycle-bin-item.is-selected {
+  border-color: var(--accent, #4a8);
+  background: rgba(68, 170, 136, 0.08);
+}
+
+.recycle-bin-item.is-expired {
+  opacity: 0.6;
+}
+
+.recycle-bin-item-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recycle-bin-item-check input {
+  cursor: pointer;
+}
+
+.recycle-bin-item-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recycle-bin-item-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-1, #eee);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recycle-bin-item-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-3, #888);
+  flex-wrap: wrap;
+}
+
+.recycle-bin-item-time {
+  font-family: var(--font-mono, monospace);
+}
+
+.recycle-bin-item-location::before {
+  content: '· ';
+}
+
+.recycle-bin-item-remaining {
+  font-size: 11px;
+  color: var(--text-2, #bbb);
+  white-space: nowrap;
+  font-family: var(--font-mono, monospace);
+  padding: 2px 6px;
+  background: var(--surface-1, #1a1a1a);
+  border: 1px solid var(--board, #333);
+  border-radius: 4px;
+}
+
+.recycle-bin-item-remaining.is-expired {
+  color: #c44;
+  border-color: #c44;
+}
+
+.recycle-bin-item-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.recycle-bin-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--board, #333);
+  background: var(--surface-1, #1a1a1a);
+  color: var(--text-2, #bbb);
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  font-family: var(--font-mono, monospace);
+}
+
+.recycle-bin-action:hover {
+  background: var(--surface-2, #222);
+  color: var(--text-1, #eee);
+}
+
+.recycle-bin-action.restore:hover {
+  border-color: var(--accent, #4a8);
+  color: var(--accent, #4a8);
+}
+
+.recycle-bin-action.delete:hover {
+  border-color: #c44;
+  color: #c44;
+}
+
+.recycle-bin-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.recycle-bin-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--board, #333);
+  background: var(--surface-2, #222);
+}
+
+.recycle-bin-footer-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recycle-bin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--board, #333);
+  background: var(--surface-1, #1a1a1a);
+  color: var(--text-1, #eee);
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: var(--font-mono, monospace);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.recycle-bin-btn:hover:not(:disabled) {
+  background: var(--surface-2, #222);
+  border-color: var(--text-3, #888);
+}
+
+.recycle-bin-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.recycle-bin-btn.primary {
+  border-color: var(--accent, #4a8);
+  color: var(--accent, #4a8);
+}
+
+.recycle-bin-btn.primary:hover:not(:disabled) {
+  background: rgba(68, 170, 136, 0.12);
+  color: var(--accent, #4a8);
+  border-color: var(--accent, #4a8);
+}
+
+.recycle-bin-btn.danger {
+  border-color: #c44;
+  color: #c44;
+}
+
+.recycle-bin-btn.danger:hover:not(:disabled) {
+  background: rgba(204, 68, 68, 0.12);
+  color: #c44;
+  border-color: #c44;
+}
+
+.recycle-bin-btn.secondary {
+  background: transparent;
+}

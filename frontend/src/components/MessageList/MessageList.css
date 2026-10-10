@@ -1498,6 +1498,124 @@
 }
 
 /* ========================================
+   COMPRESSED MESSAGES FOLD
+   - 折叠展示已被压缩的历史消息，仅展示用，不参与 LLM 上下文
+   ======================================== */
+
+.compressed-fold-wrapper {
+  margin: 8px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.compressed-fold-card {
+  background: #fff;
+  border: 1px dashed rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  max-width: 70%;
+  width: 100%;
+  font-size: 12px;
+  color: #6c757d;
+  transition: background 0.15s ease;
+  overflow: hidden;
+}
+
+.compressed-fold-card:hover {
+  background: #fafbfc;
+}
+
+.compressed-fold-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.compressed-fold-icon {
+  color: var(--accent, #B46A57);
+  flex-shrink: 0;
+}
+
+.compressed-fold-label {
+  flex: 1;
+  font-weight: 500;
+}
+
+.compressed-fold-time {
+  font-size: 10px;
+  color: #868e96;
+}
+
+.compressed-fold-chevron {
+  transition: transform 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  color: #868e96;
+}
+
+.compressed-fold-chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.compressed-fold-body {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 8px 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.compressed-fold-empty {
+  font-size: 11px;
+  color: #868e96;
+  text-align: center;
+  padding: 4px 0;
+}
+
+.compressed-fold-message {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  opacity: 0.78;
+}
+
+.compressed-fold-message:last-child {
+  border-bottom: none;
+}
+
+.compressed-fold-message-meta {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 10px;
+  color: #868e96;
+  margin-bottom: 4px;
+}
+
+.compressed-fold-message-role {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.compressed-fold-message-time {
+  font-size: 10px;
+  color: #adb5bd;
+}
+
+.compressed-fold-message-content {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #495057;
+}
+
+/* ========================================
    MARKDOWN CONTENT STYLES
    ======================================== */
 

@@ -96,6 +96,13 @@ class MCPConnection:
         self._pending_requests: dict[str, asyncio.Future] = {}
         self._closed = False
 
+        # Streamable HTTP state (MCP 2025-03-26 spec)
+        self._streamable_client: httpx.AsyncClient | None = None
+        self._streamable_session_id: str | None = None
+        self._streamable_get_task: asyncio.Task | None = None
+        # Last HTTP response from POST (used by _send_initialize to read Mcp-Session-Id header)
+        self._streamable_last_response: httpx.Response | None = None
+
     @property
     def name(self) -> str:
         """Get connection name."""
@@ -144,6 +151,8 @@ class MCPConnection:
                     success = await self._connect_sse()
                 elif self.config.protocol == "websocket":
                     success = await self._connect_websocket()
+                elif self.config.protocol == "streamable_http":
+                    success = await self._connect_streamable_http()
                 else:
                     raise ValueError(f"Unsupported protocol: {self.config.protocol}")
 
@@ -284,6 +293,70 @@ class MCPConnection:
             logger.error(f"WebSocket connection error: {e}")
             return False
 
+    async def _connect_streamable_http(self) -> bool:
+        """Connect using Streamable HTTP transport (MCP 2025-03-26 spec).
+
+        Establishes a long-lived httpx.AsyncClient and optionally opens a
+        GET stream for server-pushed notifications. The actual handshake
+        happens on the first POST (initialize).
+        """
+        try:
+            headers = self.config.headers.copy()
+            if self.config.auth_token:
+                headers["Authorization"] = f"Bearer {self.config.auth_token}"
+
+            self._streamable_client = httpx.AsyncClient(
+                headers=headers,
+                timeout=httpx.Timeout(timeout=self.config.connection_timeout, connect=10.0),
+                follow_redirects=True,
+            )
+
+            # Best-effort probe: try to open a notification stream.
+            # 200 = server supports GET stream → start background reader.
+            # 405 / 4xx (not 401/403) = server doesn't support it → skip.
+            # 401/403 = auth issue, log but don't fail connect; initialize may resolve it.
+            try:
+                probe = await asyncio.wait_for(
+                    self._streamable_client.send(
+                        self._streamable_client.build_request(
+                            "GET",
+                            self.config.url,
+                            headers={"Accept": "text/event-stream"},
+                        )
+                    ),
+                    timeout=5.0,
+                )
+                if probe.status_code == 200:
+                    # Drain the response in a background task; do NOT close it here.
+                    self._streamable_get_task = asyncio.create_task(
+                        self._read_streamable_http(probe)
+                    )
+                else:
+                    await probe.aclose()
+                    if probe.status_code in (401, 403):
+                        logger.warning(
+                            f"Streamable HTTP GET probe returned {probe.status_code} "
+                            f"for {self.name}; proceeding without notification stream"
+                        )
+                    else:
+                        logger.debug(
+                            f"Streamable HTTP GET probe returned {probe.status_code} "
+                            f"for {self.name}; notification stream disabled"
+                        )
+            except asyncio.TimeoutError:
+                logger.debug(f"GET probe timed out for {self.name}; continuing without stream")
+            except Exception as e:
+                logger.debug(f"GET probe failed for {self.name}: {e}; continuing without stream")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Streamable HTTP connection error: {e}")
+            if self._streamable_client and not self._streamable_client.is_closed:
+                await self._streamable_client.aclose()
+            self._streamable_client = None
+            return False
+
     async def _send_initialize(self) -> None:
         """Send MCP protocol initialization request."""
         try:
@@ -298,6 +371,15 @@ class MCPConnection:
             )
             if response and "result" in response:
                 logger.info(f"MCP server '{self.name}' initialized successfully")
+
+                # Streamable HTTP: capture Mcp-Session-Id from last response headers
+                if self.config.protocol == "streamable_http" and self._streamable_last_response is not None:
+                    sid = self._streamable_last_response.headers.get("Mcp-Session-Id")
+                    if sid:
+                        self._streamable_session_id = sid
+                        logger.info(
+                            f"Streamable HTTP session established for '{self.name}': {sid}"
+                        )
             else:
                 logger.warning(f"MCP initialize response unexpected: {response}")
         except Exception as e:
@@ -368,6 +450,72 @@ class MCPConnection:
             logger.error(f"WebSocket read error: {e}")
         finally:
             await self._handle_disconnect()
+
+    async def _read_streamable_http(self, response: httpx.Response) -> None:
+        """Read server-pushed notifications from a long-lived GET stream.
+
+        `response` is an already-open httpx.Response obtained via
+        `_streamable_client.send(...)`. We iterate SSE lines and route
+        each JSON-RPC message via `_handle_message`.
+
+        NOTE: The GET notification stream is *independent* of the POST
+        request/response channel. When this stream ends (server closes it,
+        or the server never supported it), the main connection stays
+        usable — we just close the response and exit. We do NOT call
+        `_handle_disconnect` because doing so would tear down the whole
+        httpx client used for subsequent POSTs.
+        """
+        try:
+            async for line in response.aiter_lines():
+                line = line.strip()
+                if line.startswith("data: "):
+                    data_str = line[6:]
+                    try:
+                        data = json.loads(data_str)
+                        await self._handle_message(data)
+                    except json.JSONDecodeError:
+                        logger.warning(
+                            f"Invalid JSON from streamable HTTP GET: {data_str[:100]}"
+                        )
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.debug(f"Streamable HTTP GET stream ended: {e}")
+        finally:
+            try:
+                await response.aclose()
+            except Exception:
+                pass
+
+    async def _read_sse_response_stream(self, response: httpx.Response) -> None:
+        """Read an SSE stream that arrived as the response to a POST.
+
+        Each `data: ` line is a JSON-RPC message. Responses are routed via
+        `_handle_message` which matches `id` to pending futures; notifications
+        fire the `_on_message` callback. This task is scoped to a single
+        POST response — it does NOT manage connection lifecycle.
+        """
+        try:
+            async for line in response.aiter_lines():
+                line = line.strip()
+                if line.startswith("data: "):
+                    data_str = line[6:]
+                    try:
+                        data = json.loads(data_str)
+                        await self._handle_message(data)
+                    except json.JSONDecodeError:
+                        logger.warning(
+                            f"Invalid JSON from streamable HTTP SSE response: {data_str[:100]}"
+                        )
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.debug(f"Streamable HTTP SSE response ended: {e}")
+        finally:
+            try:
+                await response.aclose()
+            except Exception:
+                pass
 
     async def _handle_message(self, data: dict) -> None:
         """Handle incoming message."""
@@ -510,6 +658,68 @@ class MCPConnection:
             elif self.config.protocol == "websocket":
                 await self._transport.send(message)
 
+            elif self.config.protocol == "streamable_http":
+                if not self._streamable_client or self._streamable_client.is_closed:
+                    logger.error(f"Streamable HTTP client not open: {self.name}")
+                    self.stats.failed_requests += 1
+                    return False
+
+                post_headers = {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/event-stream",
+                }
+                if self._streamable_session_id:
+                    post_headers["Mcp-Session-Id"] = self._streamable_session_id
+
+                try:
+                    response = await self._streamable_client.post(
+                        self.config.url,
+                        content=message,
+                        headers=post_headers,
+                    )
+                except Exception as e:
+                    logger.error(f"Streamable HTTP POST error for {self.name}: {e}")
+                    self.stats.failed_requests += 1
+                    return False
+
+                # Stash response so _send_initialize can read Mcp-Session-Id header
+                self._streamable_last_response = response
+
+                if response.status_code < 200 or response.status_code >= 300:
+                    logger.error(
+                        f"Streamable HTTP POST failed: {response.status_code} "
+                        f"for {self.name}"
+                    )
+                    self.stats.failed_requests += 1
+                    return False
+
+                content_type = response.headers.get("content-type", "").lower()
+
+                if "application/json" in content_type:
+                    try:
+                        result = response.json()
+                    except Exception as e:
+                        logger.error(
+                            f"Streamable HTTP invalid JSON response for {self.name}: {e}"
+                        )
+                        self.stats.failed_requests += 1
+                        return False
+                    # Route to pending future if this was a request
+                    if data.get("id") and isinstance(result, dict):
+                        await self._handle_message(result)
+                    return True
+
+                if "text/event-stream" in content_type:
+                    # Response will arrive asynchronously over SSE; spawn reader
+                    asyncio.create_task(self._read_sse_response_stream(response))
+                    return True
+
+                logger.warning(
+                    f"Streamable HTTP unexpected content-type '{content_type}' "
+                    f"for {self.name}"
+                )
+                return False
+
             self.stats.total_requests += 1
             return True
 
@@ -586,6 +796,41 @@ class MCPConnection:
 
             elif self.config.protocol == "websocket" and self._transport:
                 await self._transport.close()
+
+            elif self.config.protocol == "streamable_http":
+                # Cancel GET notification stream reader
+                if self._streamable_get_task and not self._streamable_get_task.done():
+                    self._streamable_get_task.cancel()
+                    try:
+                        await self._streamable_get_task
+                    except (asyncio.CancelledError, Exception):
+                        pass
+                self._streamable_get_task = None
+
+                # Best-effort session termination
+                if (
+                    self._streamable_client
+                    and not self._streamable_client.is_closed
+                    and self._streamable_session_id
+                ):
+                    try:
+                        await asyncio.wait_for(
+                            self._streamable_client.request(
+                                "DELETE",
+                                self.config.url,
+                                headers={"Mcp-Session-Id": self._streamable_session_id},
+                            ),
+                            timeout=2.0,
+                        )
+                    except Exception:
+                        pass
+
+                if self._streamable_client and not self._streamable_client.is_closed:
+                    await self._streamable_client.aclose()
+
+                self._streamable_client = None
+                self._streamable_session_id = None
+                self._streamable_last_response = None
 
         except Exception as e:
             logger.warning(f"Cleanup error for {self.name}: {e}")
