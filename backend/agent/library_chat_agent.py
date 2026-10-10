@@ -133,6 +133,7 @@ class LibraryChatAgent:
         user_content: str,
         scope: dict[str, Any] | None = None,
         on_token: Callable[[str], Any] | None = None,
+        on_reasoning: Callable[[str], Any] | None = None,
         on_tool_start: Callable[[dict], Any] | None = None,
         on_tool_result: Callable[[dict], Any] | None = None,
     ) -> str:
@@ -200,6 +201,9 @@ class LibraryChatAgent:
 
                     if chunk.reasoning_content:
                         accumulated_reasoning += chunk.reasoning_content
+                        if on_reasoning:
+                            with contextlib.suppress(Exception):
+                                on_reasoning(chunk.reasoning_content)
 
                     if chunk.tool_calls:
                         for tc in chunk.tool_calls:

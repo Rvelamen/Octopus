@@ -15,6 +15,8 @@ export function useChat({
   const [loading, setLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const streamingRef = useRef('');
+  const thinkingRef = useRef('');
+  const thinkingMessageIdRef = useRef(null);
   const isExpectingResponseRef = useRef(false);
   const pendingToolsRef = useRef(new Map());
   const scopeRef = useRef(scope);
@@ -83,6 +85,35 @@ export function useChat({
       if (data.session_id !== currentSessionId) return;
 
       const status = data?.status;
+      // 思考(token from DeepSeek-R1 style "reasoning_content") — 单独一个消息,
+      // 下一个非 thinking 事件(正文 / tool / 完成)就会把它"关掉",后续 reasoning
+      // 再来时会新建一条消息,这样多轮 thinking 不会堆在一起。
+      if (status === 'thinking' && data.content) {
+        thinkingRef.current += data.content;
+        const activeId = thinkingMessageIdRef.current;
+        if (activeId) {
+          setMessages((prev) => prev.map((m) =>
+            m.id === activeId ? { ...m, content: thinkingRef.current } : m,
+          ));
+        } else {
+          const id = `think-${Date.now()}`;
+          thinkingMessageIdRef.current = id;
+          setMessages((prev) => [...prev, {
+            id,
+            session_id: data.session_id || currentSessionId,
+            role: 'thinking',
+            content: thinkingRef.current,
+            created_at: new Date().toISOString(),
+          }]);
+        }
+        return;
+      }
+      // 进入任何非 thinking 事件:把当前的 thinking 消息固化,后续 reasoning 会另开一条
+      if (thinkingMessageIdRef.current) {
+        thinkingMessageIdRef.current = null;
+        thinkingRef.current = '';
+      }
+
       if (status === 'streaming' && data.content) {
         streamingRef.current += data.content;
         setStreamingContent(streamingRef.current);
@@ -226,6 +257,8 @@ export function useChat({
     setLoading(true);
     streamingRef.current = '';
     setStreamingContent('');
+    thinkingRef.current = '';
+    thinkingMessageIdRef.current = null;
     isExpectingResponseRef.current = true;
     pendingToolsRef.current.clear();
 

@@ -211,6 +211,20 @@ class LibraryChatHandler(MessageHandler):
                 )
             )
 
+        def on_reasoning(reasoning: str):
+            # DeepSeek-R1 风格模型的「内心独白」——单独走 thinking 通道,
+            # 让前端可以把它和正文区分渲染,而不是混在普通回复里。
+            asyncio.create_task(
+                self.send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.CHAT_RESPONSE,
+                        request_id=request_id,
+                        data={"status": "thinking", "content": reasoning, "session_id": session_id},
+                    ),
+                )
+            )
+
         def on_tool_start(data: dict):
             asyncio.create_task(
                 self.send_response(
@@ -241,6 +255,7 @@ class LibraryChatHandler(MessageHandler):
                 user_content=user_content,
                 scope=scope,
                 on_token=on_token,
+                on_reasoning=on_reasoning,
                 on_tool_start=on_tool_start,
                 on_tool_result=on_tool_result,
             )

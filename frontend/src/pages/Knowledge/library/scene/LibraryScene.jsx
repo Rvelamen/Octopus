@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Bot, Check, ChevronLeft, Flower2, LayoutGrid, Loader2, MapPin, Minus, Move, Plus, Save, Search, Send, Settings2, Sparkles, Sprout, X } from 'lucide-react';
+import { BookOpen, Bot, Check, ChevronLeft, Flower2, Hammer, LayoutGrid, Loader2, MapPin, Minus, Move, Plus, Save, Search, Send, Settings2, Sparkles, Sprout, X } from 'lucide-react';
 import { Checkbox, Input, Modal, Pagination, message } from 'antd';
 import LibrarySceneCanvas from './LibrarySceneCanvas';
 import useLibraryScene from './useLibraryScene';
@@ -400,7 +400,31 @@ export default function LibraryScene({ collections, libraryWS, sendWSMessage, on
             <p className="library-scene-thinker-label"><Sparkles size={14} />与思考者对话</p>
             <ul className="library-scene-thinker-messages">
               {(thinkerChat.messages || []).map((messageItem, index) => {
-                const isAssistant = messageItem.role !== 'user';
+                const role = messageItem.role || 'assistant';
+                if (role === 'tool') {
+                  const meta = messageItem.metadata || {};
+                  const isDone = meta.status === 'done';
+                  return (
+                    <li key={index} className="library-scene-thinker-tool">
+                      <span className={`library-scene-thinker-tool-icon ${isDone ? 'is-done' : 'is-running'}`}>
+                        {isDone ? <Check size={12} /> : <Loader2 className="library-scene-spin" size={12} />}
+                      </span>
+                      <span className="library-scene-thinker-tool-body">
+                        <strong><Hammer size={11} />{meta.tool || 'tool'}</strong>
+                        {meta.result && <small>{String(meta.result).slice(0, 160)}{String(meta.result).length > 160 ? '…' : ''}</small>}
+                      </span>
+                    </li>
+                  );
+                }
+                if (role === 'thinking') {
+                  return (
+                    <li key={index} className="library-scene-thinker-thinking">
+                      <span className="library-scene-thinker-thinking-label"><Sparkles size={11} />思考中</span>
+                      <span className="library-scene-thinker-thinking-body">{messageItem.content}</span>
+                    </li>
+                  );
+                }
+                const isAssistant = role !== 'user';
                 const bookIds = isAssistant ? extractBookIds(messageItem.content) : [];
                 return (
                   <li key={index} className={`library-scene-thinker-message ${isAssistant ? 'is-assistant' : 'is-user'}`}>
