@@ -39,6 +39,7 @@ class MigrationRunner:
         """Ensure migration tracking table exists and run pending migrations."""
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         with sqlite3.connect(str(self.db_path), check_same_thread=False) as conn:
+            conn.execute("PRAGMA foreign_keys=ON")
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS _schema_migrations (
                     id INTEGER PRIMARY KEY,
@@ -624,6 +625,12 @@ def _migration_013_pdf_annotation_chat_tables(conn: sqlite3.Connection) -> None:
     """)
 
 
+def _migration_014_book_sources(conn: sqlite3.Connection) -> None:
+    from backend.services.book_world.storage import apply_source_schema
+
+    apply_source_schema(conn)
+
+
 def run_knowledge_index_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_initial_schema", _migration_001_create_initial_schema)
@@ -649,6 +656,7 @@ def run_knowledge_index_migrations(db_path: Path) -> None:
         "pdf_annotation_chat_tables",
         _migration_013_pdf_annotation_chat_tables,
     )
+    runner.register(14, "book_narrative_sources", _migration_014_book_sources)
     runner.run()
 
 

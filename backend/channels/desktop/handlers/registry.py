@@ -19,6 +19,7 @@ from backend.channels.desktop.handlers.agent import (
     AgentSaveSystemFileHandler,
 )
 from backend.channels.desktop.handlers.base import MessageHandler
+from backend.channels.desktop.handlers.book_world import BookWorldHandler
 
 # Import chat handlers
 from backend.channels.desktop.handlers.chat import ChatHandler
@@ -509,6 +510,7 @@ class HandlerRegistry:
         from backend.channels.desktop.handlers.library import LibraryHandler
 
         library_handler = LibraryHandler(bus)
+        self.handlers[MessageType.BOOK_WORLD] = BookWorldHandler(bus)
         self.handlers.update(
             {
                 MessageType.LIBRARY_LIST: library_handler,

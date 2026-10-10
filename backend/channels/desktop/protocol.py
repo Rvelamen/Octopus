@@ -103,6 +103,9 @@ class MessageType(Enum):
     LIBRARY_SEARCH_CHUNKS = "library_search_chunks"
     LIBRARY_AI_EXTRACT_META = "library_ai_extract_meta"
     LIBRARY_GRAPH = "library_graph"
+    BOOK_WORLD = "book_world"
+    BOOK_WORLD_RESULT = "book_world_result"
+    BOOK_WORLD_EVENT = "book_world_event"
 
     # PDF Chat - Client -> Server
     PDF_CHAT = "pdf_chat"  # PDF chat operations
@@ -600,6 +603,7 @@ class WSMessage(BaseModel):
 
 # Message type validation
 CLIENT_MESSAGE_TYPES = {
+    MessageType.BOOK_WORLD,
     MessageType.CHAT,
     MessageType.GET_CONFIG,
     MessageType.SAVE_CONFIG,
@@ -969,6 +973,8 @@ SERVER_MESSAGE_TYPES = {
     MessageType.LIBRARY_SEARCH_CHUNKS_RESULT,
     MessageType.LIBRARY_AI_EXTRACT_META_RESULT,
     MessageType.LIBRARY_GRAPH_RESULT,
+    MessageType.BOOK_WORLD_RESULT,
+    MessageType.BOOK_WORLD_EVENT,
     MessageType.FILE_PREVIEW_PDF_RESULT,
     MessageType.MEMORY_LIST_RESULT,
     MessageType.MEMORY_SEARCH_RESULT,

@@ -150,6 +150,8 @@ tests/
 !/tests/
 /tests/*
 !/tests/test_book_room_timeout_settings.py
+!/tests/test_book_source.py
+!/tests/test_book_world_handler.py
 .agents/skills/ai-elements/SKILL.md
 .agents/skills/ai-elements/references/agent.md
 .agents/skills/ai-elements/references/artifact.md

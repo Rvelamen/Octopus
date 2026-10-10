@@ -4,6 +4,7 @@ import { X, FileText, ExternalLink, Calendar, Users, BookOpen, Hash, Sparkles, L
 import { Button, Tag, Popconfirm, Spin, message, Input, Modal, Select } from 'antd';
 import { useDistillTasks } from '@contexts/DistillTaskContext';
 import LibraryAnnotationModal from './LibraryAnnotationModal';
+import NarrativeSourcePanel from './NarrativeSourcePanel';
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -797,6 +798,7 @@ Please write in English, use academic tone, and include specific details from th
         )}
 
         {/* Abstract */}
+        <NarrativeSourcePanel key={`${item.id}:${item.library_path}`} item={item} sendWSMessage={sendWSMessage} />
         {item.abstract && (
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>{t('paper.sectionAbstract')}</div>

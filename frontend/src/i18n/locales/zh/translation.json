@@ -1,4 +1,21 @@
 {
+  "bookWorld": {
+    "sourceTitle": "书籍人物 · 全文来源",
+    "sourceHint": "保留全书对白与尾部，为人物 Agent 准备可追溯的原著依据。",
+    "prepare": "准备全文",
+    "preparing": "正在解析全文，请稍候…",
+    "waitAttachment": "请等待 PDF 附件处理完成。",
+    "ready": "全文已就绪",
+    "needs_ocr": "需要 OCR",
+    "coverage": "已检查 {{pages}} / {{total}} 页 · {{segments}} 个片段",
+    "ocrHint": "存在无法提取文字的页面，完成 OCR 前不能构建人物。",
+    "emptyPages": "空文本页：{{pages}}。请核对是否为正常空白页。",
+    "browse": "浏览全文片段",
+    "locatePage": "定位第 {{page}} 页",
+    "more": "继续加载片段",
+    "original": "原著位置",
+    "openPdf": "打开原始版本 · 第 {{page}} 页"
+  },
   "nav": {
     "group": {
       "core": "核心",

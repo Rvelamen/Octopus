@@ -508,6 +508,8 @@ class LibraryEngine:
 
     def delete_item(self, item_id: int) -> bool:
         """Delete item, its directory, and related knowledge graph nodes."""
+        from backend.services.book_world.storage import disable_item_sources
+
         # Get library_path before deleting the DB record
         row = self.db.execute(
             "SELECT library_path FROM library_items WHERE id = ?", (item_id,)
@@ -515,6 +517,10 @@ class LibraryEngine:
         library_path = row["library_path"] if row else None
 
         item_dir = self._item_dir(item_id)
+        if item_dir and not item_dir.resolve().is_relative_to(self.library_dir.resolve()):
+            raise ValueError("Library item directory is outside the workspace library")
+        with self.db:
+            disable_item_sources(self.db, item_id)
         if item_dir and item_dir.exists():
             import shutil
 

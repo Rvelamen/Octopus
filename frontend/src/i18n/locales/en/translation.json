@@ -1,4 +1,21 @@
 {
+  "bookWorld": {
+    "sourceTitle": "Book characters · Full source",
+    "sourceHint": "Keep all dialogue and the book's ending as traceable character evidence.",
+    "prepare": "Prepare source",
+    "preparing": "Parsing the full book…",
+    "waitAttachment": "Wait for the PDF attachment to finish processing.",
+    "ready": "Source ready",
+    "needs_ocr": "OCR required",
+    "coverage": "Checked {{pages}} / {{total}} pages · {{segments}} segments",
+    "ocrHint": "Some pages have no extractable text. Complete OCR before building characters.",
+    "emptyPages": "Pages without text: {{pages}}. Check whether these are intentional blank pages.",
+    "browse": "Browse source segments",
+    "locatePage": "Locate page {{page}}",
+    "more": "Load more segments",
+    "original": "Original location",
+    "openPdf": "Open original version · Page {{page}}"
+  },
   "nav": {
     "group": {
       "core": "CORE",
