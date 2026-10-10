@@ -42,20 +42,29 @@ class LibraryRenderer {
     this.activeId = null;
     this.hovered = null;
     this.engine = new Engine(canvas, true, {
-      stencil: true,
+      stencil: false, // 不需要模板缓冲:省一笔固定开销
       antialias: true,
       powerPreference: 'high-performance',
       adaptToDeviceRatio: true,
     });
-    // 提高渲染分辨率上限(原 dpr/1.5 太糊):至少原生,高分屏可上 1.25x
-    this.engine.setHardwareScalingLevel(Math.max(0.8, 1 / Math.min(window.devicePixelRatio || 1, 2)));
+    // 渲染分辨率:高分屏封顶 1.5x(原本 2x 等于 4 倍像素,4K 屏幕 GPU 直接爆),
+    // 普通屏 1.0x 即可。tradeoff 文字/书脊稍糊,但拖动流畅度提升明显。
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    this.engine.setHardwareScalingLevel(1 / dpr);
     this.scene = new Scene(this.engine);
     this.scene.clearColor = Color4.FromHexString('#e7efdfFF');
-    this.scene.constantlyUpdateMeshUnderPointer = true;
-    // 开启色调映射 + 轻量对比,让画面更通透
-    this.scene.imageProcessingConfiguration.toneMappingEnabled = true;
+    this.scene.autoClear = true;
+    this.scene.autoClearDepthAndStencil = true;
+    // 不开 constantlyUpdateMeshUnderPointer:它会每帧做一次 raycast,几何多时是性能大头。
+    // Babylon 在 pointerdown/move/up 时会主动做 pick,够用。
+    this.scene.constantlyUpdateMeshUnderPointer = false;
+    this.scene.skipPointerMovePicking = true; // 普通移动不 pick,只响应带 hit 的对象
+    this.scene.blockMaterialDirtyMechanism = true; // 材质参数不再每帧重算
+    // 色调映射本身是一遍 post-processing pass,关掉换更便宜的固定颜色叠加;
+    // 视觉差异极小,但每帧省下 fragment shader 一遍。
+    this.scene.imageProcessingConfiguration.toneMappingEnabled = false;
     this.scene.imageProcessingConfiguration.exposure = 1.0;
-    this.scene.imageProcessingConfiguration.contrast = 1.06;
+    this.scene.imageProcessingConfiguration.contrast = 1.0;
     this.camera = new ArcRotateCamera('library-camera', -Math.PI / 2 - 0.25, 0.9, 22, new Vector3(0, 0.8, 0), this.scene);
     this.camera.minZ = 0.1;
     this.camera.maxZ = 180;
@@ -63,52 +72,144 @@ class LibraryRenderer {
     this.camera.upperRadiusLimit = 60;
     this.camera.lowerBetaLimit = 0.15;
     this.camera.upperBetaLimit = Math.PI / 2 - 0.05;
-    this.camera.wheelPrecision = 8;
     this.camera.angularSensibilityX = 800;
     this.camera.angularSensibilityY = 800;
-    this.camera.panningSensibility = 0; // 禁用平移,只用旋转+缩放
     this.camera.inertia = 0.7;
-    // 重新挂回指针(拖动旋转) + 滚轮(缩放) — 默认 clear() 把它们清掉了
+    // 默认「拖动 = 旋转」;用户可以切到 panMode,变成「拖动 = 平移」
+    // (适配用户说的"鼠标拖拽页面滚动,这样可以看任意地方的物体")
+    this.panMode = false;
+    // 重新挂回指针(拖动旋转 / 平移) + 滚轮(缩放) — 默认 clear() 把它们清掉了
     this.camera.inputs.clear();
-    this.camera.inputs.add(new ArcRotateCameraPointersInput());
-    this.camera.inputs.add(new ArcRotateCameraMouseWheelInput());
+    // ArcRotateCameraPointersInput 默认 button=2(右键)=pan,button=0/1(左/中)=rotate
+    this.pointersInput = new ArcRotateCameraPointersInput();
+    this.wheelInput = new ArcRotateCameraMouseWheelInput();
+    this.camera.inputs.add(this.pointersInput);
+    this.camera.inputs.add(this.wheelInput);
+    // 关键:Babylon 的滚轮/平移灵敏度是「输入」自己的字段,不是 camera 上的 —
+    // 之前写在 camera.wheelPrecision / camera.panningSensibility 实际上被 input 默认值覆盖了。
+    // 这里直接改 input,让平移和滚轮都按新值生效。
+    this.wheelInput.wheelPrecision = 4; // 数字越小越灵敏(默认 3)
+    this.pointersInput.panningSensibility = 600; // 数字越小越灵敏(默认 1000)
+    // inputs.clear() 会从 canvas 上摘掉旧 input;新加的 input 默认不会自动 attach,
+    // 必须再调一次 attachControl,让新 input 重新绑到 canvas 事件上 ——
+    // 否则滚轮和拖动事件根本不会到达相机,这就是之前"什么都不响应"的根因。
+    this.camera.attachControl(this.canvas, true);
+    // 屏蔽浏览器/Electron 的右键菜单,让右拖平移能正常触发
+    this._suppressContextMenu = (event) => event.preventDefault();
+    this.canvas.addEventListener('contextmenu', this._suppressContextMenu);
     this.scene.activeCamera = this.camera;
     new HemisphericLight('soft-daylight', new Vector3(0, 1, 0), this.scene).intensity = 0.75;
     const sun = new DirectionalLight('afternoon-sun', new Vector3(-0.5, -1, 0.4), this.scene);
     sun.position = new Vector3(8, 16, -10);
     sun.intensity = 0.4;
     sun.diffuse = Color3.FromHexString('#fff0d5');
-    this.shadows = new ShadowGenerator(1024, sun);
-    this.shadows.useBlurExponentialShadowMap = true;
-    this.shadows.blurKernel = 20;
-    this.shadows.darkness = 0.65;
+    this.shadows = new ShadowGenerator(512, sun);
+    this.shadows.useBlurExponentialShadowMap = false; // 模糊 ESM 较贵,改用普通 ESM 已经够柔和
+    this.shadows.usePoissonSampling = true; // PCF 软阴影,比 blur ESM 便宜
+    this.shadows.darkness = 0.55;
     this.environment = [];
     this.overview = { target: new Vector3(0, 0.8, 0), radius: 22, alpha: -Math.PI / 2 - 0.25, beta: 0.9 };
-    this.destination = { ...this.overview };
+    this.destination = { ...this.overview, target: this.overview.target.clone() };
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.userInteracting = false;
     this.scene.onPointerObservable.add((info) => this.onPointer(info));
+    this._lerpEps = 0.0005; // 视为"已到达 destination"的阈值
     this.renderFrame = () => {
-      const easing = this.reducedMotion ? 1 : 1 - Math.exp(-this.engine.getDeltaTime() / 130);
-      // 用户正在拖动/缩放时,不要用 lerp 把视角拉回 destination
+      const dt = this.engine.getDeltaTime();
+      // 自适应 easing:长时间空闲后让补间更利落,避免长尾的"慢拖"
+      const easing = this.reducedMotion ? 1 : 1 - Math.exp(-dt / 110);
+      // 头几帧强制 render(setAreas 之后):保证新场景先被画出来,再进入跳帧模式
+      if (this._framesToForce > 0) this._framesToForce -= 1;
+      let atRest = !this.userInteracting && this._framesToForce === 0 && !this.hovered;
       if (!this.userInteracting) {
-        this.camera.target = Vector3.Lerp(this.camera.target, this.destination.target, easing);
-        for (const property of ['radius', 'alpha', 'beta']) {
-          this.camera[property] += (this.destination[property] - this.camera[property]) * easing;
-        }
+        // 关键优化:不再用 Vector3.Lerp —— 它每帧都 new 一个 Vector3,
+        // 60fps 下来每秒 60 个临时对象,GC 抖动会直接表现为拖动卡顿。
+        // 改成直接改 x/y/z,零分配。
+        const cur = this.camera.target;
+        const dst = this.destination.target;
+        const dx = (dst.x - cur.x) * easing;
+        const dy = (dst.y - cur.y) * easing;
+        const dz = (dst.z - cur.z) * easing;
+        cur.x += dx; cur.y += dy; cur.z += dz;
+        if (Math.abs(dx) > this._lerpEps || Math.abs(dy) > this._lerpEps || Math.abs(dz) > this._lerpEps) atRest = false;
+        const dr = (this.destination.radius - this.camera.radius) * easing;
+        const da = (this.destination.alpha - this.camera.alpha) * easing;
+        const db = (this.destination.beta - this.camera.beta) * easing;
+        this.camera.radius += dr;
+        this.camera.alpha += da;
+        this.camera.beta += db;
+        if (Math.abs(dr) > this._lerpEps || Math.abs(da) > this._lerpEps || Math.abs(db) > this._lerpEps) atRest = false;
+      } else {
+        atRest = false;
       }
-      if (this.hovered) this.hovered.position.z += (-0.14 - this.hovered.position.z) * easing;
-      this.scene.render();
+      if (this.hovered) {
+        // 悬停书本的「浮起」动画,只改一个 z 字段,无分配
+        this.hovered.position.z += (-0.14 - this.hovered.position.z) * easing;
+        atRest = false;
+      }
+      // 真正「静止」时跳过场景渲染 —— 静态画面反复重画对 CPU/GPU 都是浪费。
+      if (!atRest) this.scene.render();
     };
     this.engine.runRenderLoop(this.renderFrame);
     // 跟踪用户是否正在与相机交互
+    let wheelTimeout = null;
     const markInteract = () => { this.userInteracting = true; };
-    const releaseInteract = () => { this.userInteracting = false; };
+    // 释放时:把当前 camera 的所有角度都同步到 destination —— 不然下一帧的 lerp
+    // 会把用户滚轮/旋转后到达的新位置拉回旧目标,出现「缩放完又弹回去」的卡顿感。
+    const releaseInteract = () => {
+      this.userInteracting = false;
+      this.destination.target.copyFrom(this.camera.target);
+      this.destination.radius = this.camera.radius;
+      this.destination.alpha = this.camera.alpha;
+      this.destination.beta = this.camera.beta;
+    };
+    // Shift 修饰键:按住 Shift 时,左键由「旋转」切到「平移」(更符合"鼠标拖拽页面滚动"的直觉)
+    const onKeyDown = (event) => {
+      if (event.key === 'Shift' && !event.repeat) {
+        // 左键→平移(panningMouseButton=0),旋转灵敏度设为 0 即停转
+        this.pointersInput.panningMouseButton = 0;
+        this.camera.angularSensibilityX = 0;
+        this.camera.angularSensibilityY = 0;
+      }
+    };
+    const onKeyUp = (event) => {
+      if (event.key === 'Shift') {
+        // 恢复:右键→平移(默认 button=2),左键→旋转
+        this.pointersInput.panningMouseButton = 2;
+        this.camera.angularSensibilityX = 800;
+        this.camera.angularSensibilityY = 800;
+      }
+    };
+    // 滚轮节流:每次滚轮都标记「正在交互」并把 release 计时器推后 220ms,
+    // 真正改变 radius 的是 Babylon 自带的 wheel input(它独立监听 canvas.wheel);
+    // 我们只是需要确保:用户一直滚的时候 lerp 不会「抢」用户的位置。
+    const onWheel = () => {
+      markInteract();
+      if (wheelTimeout) clearTimeout(wheelTimeout);
+      wheelTimeout = setTimeout(() => { releaseInteract(); wheelTimeout = null; }, 220);
+    };
     this.canvas.addEventListener('pointerdown', markInteract);
     this.canvas.addEventListener('pointerup', releaseInteract);
+    this.canvas.addEventListener('pointercancel', releaseInteract);
     this.canvas.addEventListener('pointerleave', releaseInteract);
-    this.canvas.addEventListener('wheel', () => { markInteract(); setTimeout(releaseInteract, 180); }, { passive: true });
-    this.resizeObserver = new ResizeObserver(() => this.engine.resize());
+    this.canvas.addEventListener('wheel', onWheel, { passive: true });
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    this._teardownCameraListeners = () => {
+      this.canvas.removeEventListener('pointerdown', markInteract);
+      this.canvas.removeEventListener('pointerup', releaseInteract);
+      this.canvas.removeEventListener('pointercancel', releaseInteract);
+      this.canvas.removeEventListener('pointerleave', releaseInteract);
+      this.canvas.removeEventListener('wheel', onWheel);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      if (wheelTimeout) { clearTimeout(wheelTimeout); wheelTimeout = null; }
+    };
+    this.resizeObserver = new ResizeObserver(() => {
+      this.engine.resize();
+      // resize 后画布尺寸变了,旧 framebuffer 不对 —— 强制画两帧再回跳帧模式
+      this._framesToForce = 2;
+    });
     this.resizeObserver.observe(canvas);
     this.visibilityHandler = () => this.setRunning(document.visibilityState === 'visible');
     document.addEventListener('visibilitychange', this.visibilityHandler);
@@ -506,6 +607,32 @@ class LibraryRenderer {
     for (const area of areas) this.addArea(area, booksByArea[area.id] || []);
     this.setEditing(this.editing);
     this.focus(this.activeId);
+    // ── 关键:把"永远不动"的网格冻结,省下每帧的世界矩阵重算 + 材质 uniform 上传 ──
+    //  this.environment 里装的就是这类:墙、地板、踢脚、画框、桌、椅、灯、盆栽 ——
+    //  它们的 parent=null 且永远不会改 transform。region-N 也在 parent=null,但它是
+    //  可拖动的书架容器,绝对不能冻结,所以我们只冻结 environment 列表里的网格。
+    //  thinker 同样 parent=null 且不动(可点击但不会跑),一起冻结。
+    for (const mesh of this.environment) {
+      if (!mesh.isDisposed()) {
+        mesh.freezeWorldMatrix();
+        // 不进 frustum culling 投票:环境都是不可见大块,关掉它省一轮 BVH 遍历
+        mesh.alwaysSelectAsActiveMesh = true;
+      }
+    }
+    if (this.thinker && !this.thinker.root.isDisposed()) {
+      // thinker 是一组父子链,逐个冻结:它们都相对 root 静止
+      for (const part of this.thinker.parts) {
+        if (!part.isDisposed()) {
+          part.freezeWorldMatrix();
+          part.alwaysSelectAsActiveMesh = true;
+        }
+      }
+    }
+    // 材质冻结:StandardMaterial 不会改 diffuseColor / specularColor,每帧上传 uniform
+    // 就是浪费;freeze() 告诉 Babylon 跳过这个 mesh 的绑定阶段
+    for (const material of this.materials.values()) material.freeze();
+    // 头几帧强制 render,把新场景画出来再进入"静止可跳帧"模式
+    this._framesToForce = 3;
   }
 
   addArea(area, books) {
@@ -707,6 +834,21 @@ class LibraryRenderer {
     this.destination = { ...this.destination, radius: Math.max(4.5, Math.min(90, this.destination.radius * (direction > 0 ? 0.85 : 1.18))) };
   }
 
+  // 用户从 UI 切到「平移模式」时调用:左键由「旋转」换成「平移」,
+  // 再按一次切回「左键旋转、右键平移」的标准 3D 操作。
+  setPanMode(enabled) {
+    this.panMode = Boolean(enabled);
+    if (this.panMode) {
+      this.pointersInput.panningMouseButton = 0; // 左键 = 平移
+      this.camera.angularSensibilityX = 0;       // 旋转灵敏度 0 = 停转
+      this.camera.angularSensibilityY = 0;
+    } else {
+      this.pointersInput.panningMouseButton = 2; // 恢复:右键 = 平移
+      this.camera.angularSensibilityX = 800;
+      this.camera.angularSensibilityY = 800;
+    }
+  }
+
   clearHover() {
     if (this.hovered && !this.hovered.isDisposed()) this.hovered.position.z = 0;
     this.hovered = null;
@@ -757,6 +899,8 @@ class LibraryRenderer {
   }
 
   dispose() {
+    this._teardownCameraListeners?.();
+    if (this._suppressContextMenu) this.canvas.removeEventListener('contextmenu', this._suppressContextMenu);
     document.removeEventListener('visibilitychange', this.visibilityHandler);
     this.resizeObserver.disconnect();
     this.intersectionObserver.disconnect();
@@ -766,7 +910,7 @@ class LibraryRenderer {
   }
 }
 
-const LibrarySceneCanvas = forwardRef(function LibrarySceneCanvas({ areas, booksByArea, activeId, editing, onOpen, onRead, onMove, onHover, onThinker, onError }, ref) {
+const LibrarySceneCanvas = forwardRef(function LibrarySceneCanvas({ areas, booksByArea, activeId, editing, panMode, onOpen, onRead, onMove, onHover, onThinker, onError }, ref) {
   const canvasRef = useRef(null);
   const rendererRef = useRef(null);
   const callbacksRef = useRef({ onOpen, onRead, onMove, onHover, onThinker });
@@ -774,6 +918,7 @@ const LibrarySceneCanvas = forwardRef(function LibrarySceneCanvas({ areas, books
   useImperativeHandle(ref, () => ({
     zoom: (direction) => rendererRef.current?.zoom(direction),
     reset: () => rendererRef.current?.focus(null),
+    setPanMode: (enabled) => rendererRef.current?.setPanMode(enabled),
   }), []);
 
   useEffect(() => {
@@ -793,6 +938,7 @@ const LibrarySceneCanvas = forwardRef(function LibrarySceneCanvas({ areas, books
   useEffect(() => { rendererRef.current?.setAreas(areas, booksByArea); }, [areas, booksByArea]);
   useEffect(() => { rendererRef.current?.setEditing(editing); }, [editing]);
   useEffect(() => { rendererRef.current?.focus(activeId); }, [activeId]);
+  useEffect(() => { rendererRef.current?.setPanMode(panMode); }, [panMode]);
 
   return <canvas ref={canvasRef} className="library-scene-canvas" aria-label="三维图书馆；也可使用区域按钮和书架列表操作" />;
 });

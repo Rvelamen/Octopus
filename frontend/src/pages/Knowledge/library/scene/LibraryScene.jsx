@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Bot, Check, ChevronLeft, Flower2, Hammer, LayoutGrid, Loader2, MapPin, Minus, Move, Plus, Save, Search, Send, Settings2, Sparkles, Sprout, X } from 'lucide-react';
+import { BookOpen, Bot, Check, ChevronLeft, Flower2, Hammer, Hand, LayoutGrid, Loader2, MapPin, Minus, Move, Plus, RotateCw, Save, Search, Send, Settings2, Sparkles, Sprout, X } from 'lucide-react';
 import { Checkbox, Input, Modal, Pagination, message } from 'antd';
 import LibrarySceneCanvas from './LibrarySceneCanvas';
 import useLibraryScene from './useLibraryScene';
@@ -210,6 +210,8 @@ export default function LibraryScene({ collections, libraryWS, sendWSMessage, on
   const rendererRef = useRef(null);
   const stageRef = useRef(null);
   const [editing, setEditing] = useState(false);
+  // 镜头操作模式:false = 拖动旋转(默认);true = 拖动平移
+  const [panMode, setPanMode] = useState(false);
   const [hover, setHover] = useState(null);
   const [sceneError, setSceneError] = useState('');
   const [regionEditor, setRegionEditor] = useState(null);
@@ -349,17 +351,25 @@ export default function LibraryScene({ collections, libraryWS, sendWSMessage, on
       {state.dirty && <div className="library-scene-save-bar"><span>区域位置已调整，保存后下次进入会保留布置。</span><button type="button" className="library-scene-button" onClick={saveLayout} disabled={state.saving || !!state.layoutError}>{state.saving ? <Loader2 className="library-scene-spin" size={14} /> : <Save size={14} />}保存布置</button></div>}
       <div className="library-scene-body">
         <div className="library-scene-stage" ref={stageRef}>
-          {!sceneError && <LibrarySceneCanvas ref={rendererRef} areas={state.areas} booksByArea={booksByArea} activeId={state.activeArea?.id ?? null}
+          {!sceneError && <LibrarySceneCanvas ref={rendererRef} areas={state.areas} booksByArea={booksByArea} activeId={state.activeArea?.id ?? null} panMode={panMode}
             editing={editing} onOpen={openArea} onRead={readBook} onMove={state.updatePosition} onHover={onHover} onThinker={openThinker} onError={showSceneError} />}
           {sceneError && <div className="library-scene-empty library-scene-render-error" role="alert"><Flower2 size={32} /><strong>三维场景暂时无法显示</strong><span>{sceneError}</span><p>仍可使用下方区域按钮挑选书籍。</p></div>}
           <div className="library-scene-camera-controls" aria-label="镜头控制">
             <button type="button" aria-label="返回图书馆全景" title="返回全景" onClick={() => { closeArea(); rendererRef.current?.reset(); }}><LayoutGrid size={17} /></button>
+            <button type="button" className={panMode ? 'is-active' : ''} aria-pressed={panMode} aria-label="切换为拖动平移模式" title={panMode ? '当前:拖动 = 平移(再点切换回旋转)' : '当前:拖动 = 旋转(点击切换为平移)'} onClick={() => setPanMode((value) => !value)}>
+              {panMode ? <Hand size={17} /> : <RotateCw size={17} />}
+            </button>
             <button type="button" aria-label="拉近镜头" title="拉近镜头" onClick={() => rendererRef.current?.zoom(1)}><Plus size={17} /></button>
             <button type="button" aria-label="拉远镜头" title="拉远镜头" onClick={() => rendererRef.current?.zoom(-1)}><Minus size={17} /></button>
           </div>
           {editing && <div className="library-scene-edit-hint"><Move size={16} />拖动地毯或书架来调整区域位置<button type="button" onClick={state.resetLayout}>自动排列</button></div>}
           {hover && !editing && hover.type === 'thinker' && <div className="library-scene-hover library-scene-hover-thinker" style={{ left: hover.x, top: Math.max(12, hover.y - 70) }}><span className="library-scene-hover-icon"><Bot size={18} /></span><span>向思考者提问</span><small>点击打开对话，快速找书</small></div>}
           {hover && !editing && hover.book && <div className="library-scene-hover" style={{ left: hover.x, top: Math.max(12, hover.y - 84) }}><BookCover book={hover.book} /><span>{hover.book.title}</span><small>{state.activeArea ? '点击阅读' : '点击展开书架'}</small></div>}
+          <div className="library-scene-camera-hint" aria-label="视角操作提示">
+            <span><kbd>左键拖动</kbd> {panMode ? '平移' : '旋转'}</span>
+            {!panMode && <span><kbd>右键拖动</kbd> 平移</span>}
+            <span><kbd>滚轮</kbd> 缩放</span>
+          </div>
           <div className="library-scene-area-nav"><p><Sprout size={15} />{editing ? '布置属于你的阅读角落' : '点击一块地毯，看看书架上的故事'}</p><div>
             {state.areas.map((area) => <button type="button" key={area.id} className={state.activeArea?.id === area.id ? 'is-active' : ''} style={{ '--area-color': area.color }} onClick={() => openArea(area.id)}><span />{area.name}<small>{area.count || 0}</small></button>)}
             {!state.areas.length && <button type="button" onClick={() => setRegionEditor({ name: '', color: AREA_COLORS[0] })}><Plus size={15} />创建第一个区域</button>}
