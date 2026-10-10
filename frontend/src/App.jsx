@@ -21,6 +21,7 @@ import {
   PanelRight,
   BookOpen,
   Library,
+  Sprout,
   Brain,
   GitBranch,
   CalendarDays,
@@ -41,6 +42,9 @@ const Knowledge = lazy(() => import("./pages/Knowledge"));
 const LibraryTab = lazy(() =>
   import("./pages/Knowledge/library").then((m) => ({ default: m.LibraryTab }))
 );
+const LibrarySceneView = lazy(() =>
+  import("./pages/Knowledge/library").then((m) => ({ default: m.LibrarySceneView }))
+);
 const PdfViewerWindow = lazy(() => import("./pages/PdfViewerWindow"));
 const MarkdownEditorWindow = lazy(() => import("./pages/MarkdownEditorWindow"));
 const WorkflowWindow = lazy(() => import("./pages/WorkflowWindow"));
@@ -48,6 +52,7 @@ import WorkflowTabTitle from "./workflow/components/WorkflowTabTitle";
 import GlobalLoadingOverlay from "./components/GlobalLoadingOverlay";
 import TTSPlayer from "./components/TTSPlayer";
 import WindowDots from "./components/layout/WindowDots";
+import ErrorBoundary from "./components/layout/ErrorBoundary";
 import octopusLogo from "./assets/octopus-logo.png";
 import { useWebSocket } from "./contexts/WebSocketContext";
 import { useChatState } from "./hooks/useChatState";
@@ -93,6 +98,7 @@ function App() {
       '/agents': 'agents',
       '/workspaces': 'workspaces',
       '/library': 'library',
+      '/library-scene': 'library-scene',
       '/history': 'history',
       '/memory': 'memory',
       '/tokens': 'tokens',
@@ -235,6 +241,7 @@ function App() {
       agents: '/agents',
       workspaces: '/workspaces',
       library: '/library',
+      'library-scene': '/library-scene',
       history: '/history',
       memory: '/memory',
       tokens: '/tokens',
@@ -250,10 +257,10 @@ function App() {
   // 渲染导航分组
   const renderNavGroup = (groupLabel, items) => {
     if (sidebarCollapsed) {
-      return items.map(({ key, icon: Icon, label }) => (
+      return items.map(({ key, icon: Icon, label, muted }) => (
         <button
           key={key}
-          className={`nav-item ${activeTab === key ? "active" : ""}`}
+          className={`nav-item ${activeTab === key ? "active" : ""} ${muted ? "muted" : ""}`}
           onClick={() => handleNavClick(key)}
           title={label}
         >
@@ -264,10 +271,10 @@ function App() {
     return (
       <div className="nav-group" key={groupLabel}>
         <div className="nav-group-label">{groupLabel}</div>
-        {items.map(({ key, icon: Icon, label }) => (
+        {items.map(({ key, icon: Icon, label, muted }) => (
           <button
             key={key}
-            className={`nav-item ${activeTab === key ? "active" : ""}`}
+            className={`nav-item ${activeTab === key ? "active" : ""} ${muted ? "muted" : ""}`}
             onClick={() => handleNavClick(key)}
           >
             <Icon size={16} />
@@ -354,6 +361,7 @@ function App() {
               {renderNavGroup(t('nav.group.knowledge'), [
                 { key: 'knowledge', icon: BookOpen, label: t('nav.knowledge') },
                 { key: 'library', icon: Library, label: t('nav.library') },
+                { key: 'library-scene', icon: Sprout, label: t('nav.libraryScene'), muted: true },
               ])}
               {renderNavGroup(t('nav.group.automation'), [
                 { key: 'agents', icon: Users, label: t('nav.agents') },
@@ -386,6 +394,10 @@ function App() {
 
         <main className="main-content">
           <div className="content-area">
+            <ErrorBoundary
+              title="页面加载失败"
+              message="这个页面遇到了意外错误。你可以重试，或刷新整个窗口。"
+            >
             <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/chat" element={
@@ -442,6 +454,7 @@ function App() {
               <Route path="/tokens" element={<Tokens sendWSMessage={sendMessage} />} />
               <Route path="/knowledge" element={<Knowledge sendWSMessage={sendMessage} />} />
               <Route path="/library" element={<LibraryTab sendWSMessage={sendMessage} />} />
+              <Route path="/library-scene" element={<LibrarySceneView sendWSMessage={sendMessage} />} />
               <Route path="/workflows" element={<WorkflowWindow />} />
               <Route path="/pdf-viewer" element={<PdfViewerWindow />} />
               <Route path="/markdown-editor" element={<MarkdownEditorWindow />} />
@@ -471,6 +484,7 @@ function App() {
               } />
             </Routes>
             </Suspense>
+            </ErrorBoundary>
           </div>
         </main>
       </div>

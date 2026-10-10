@@ -39,6 +39,9 @@ export default defineConfig({
             return 'vendor-mdxeditor';
           }
           // 图形/可视化库
+          if (id.includes('@babylonjs')) {
+            return 'vendor-babylon';
+          }
           if (/(pixi|@pixi|markmap|mermaid|react-pdf|pdfjs-dist|xlsx)/.test(id)) {
             return 'vendor-viz';
           }

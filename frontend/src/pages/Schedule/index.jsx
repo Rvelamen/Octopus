@@ -149,7 +149,7 @@ function MonthView({ cursor, events, onSelectEvent, onCreateAt, onShowMore }) {
                   <span>{ev.all_day ? '' : formatTime(ev.start_at_ms) + ' '}{ev.title}</span>
                   {ev.cancelled && (
                     <span className="month-event-cancelled-tag">
-                      {t('schedule.modal.cancelled', { defaultValue: '已取消' })}
+                      {t('schedule.modal.cancelled')}
                     </span>
                   )}
                 </div>
@@ -231,7 +231,7 @@ function DayEventsPopover({ day, events, anchor, onSelectEvent, onCreateAt, onCl
         <span className="day-events-popover-title">
           {day.format('YYYY-MM-DD dddd')}
         </span>
-        <button className="dialog-close" onClick={onClose} title={t('common.cancel', { defaultValue: 'Close' })}>
+        <button className="dialog-close" onClick={onClose} title={t('window.close')}>
           <X size={14} />
         </button>
       </div>
@@ -247,7 +247,7 @@ function DayEventsPopover({ day, events, anchor, onSelectEvent, onCreateAt, onCl
             }}
           >
             <div className="day-events-popover-item-time">
-              {ev.all_day ? t('schedule.modal.allDay', { defaultValue: 'All day' }) : `${formatTime(ev.start_at_ms)} – ${formatTime(ev.end_at_ms)}`}
+              {ev.all_day ? t('schedule.modal.allDay') : `${formatTime(ev.start_at_ms)} – ${formatTime(ev.end_at_ms)}`}
             </div>
             <div className="day-events-popover-item-title">
               <span
@@ -257,7 +257,7 @@ function DayEventsPopover({ day, events, anchor, onSelectEvent, onCreateAt, onCl
               {ev.title}
               {ev.cancelled && (
                 <span className="month-event-cancelled-tag">
-                  {t('schedule.modal.cancelled', { defaultValue: '已取消' })}
+                  {t('schedule.modal.cancelled')}
                 </span>
               )}
             </div>
@@ -483,7 +483,7 @@ function EventModal({ event, defaultStart, onSave, onDelete, onCancelEvent, onUn
           <span className="modal-title">
             {isCancelled && (
               <span className="modal-cancelled-badge">
-                {t('schedule.modal.cancelled', { defaultValue: '已取消' })}
+                {t('schedule.modal.cancelled')}
               </span>
             )}
             {isEdit ? t('schedule.modal.edit') : t('schedule.modal.new')}
@@ -494,9 +494,7 @@ function EventModal({ event, defaultStart, onSave, onDelete, onCancelEvent, onUn
         </div>
         {isCancelled && (
           <div className="modal-cancelled-banner">
-            {t('schedule.modal.cancelledHint', {
-              defaultValue: '此日程已标记为取消，可恢复或彻底删除',
-            })}
+            {t('schedule.modal.cancelledHint')}
           </div>
         )}
         <div className="modal-body">
@@ -585,7 +583,7 @@ function EventModal({ event, defaultStart, onSave, onDelete, onCancelEvent, onUn
               className="pixel-button secondary"
               onClick={() => onUncancelEvent(event.id)}
             >
-              <RotateCcw size={14} /> {t('schedule.modal.uncancel', { defaultValue: '恢复' })}
+              <RotateCcw size={14} /> {t('schedule.modal.uncancel')}
             </button>
           )}
           {isEdit && !isCancelled && (
@@ -593,14 +591,14 @@ function EventModal({ event, defaultStart, onSave, onDelete, onCancelEvent, onUn
               className="pixel-button secondary"
               onClick={() => onCancelEvent(event.id)}
             >
-              <Ban size={14} /> {t('schedule.modal.cancelSchedule', { defaultValue: '取消日程' })}
+              <Ban size={14} /> {t('schedule.modal.cancelSchedule')}
             </button>
           )}
           {isEdit && (
             <button
               className="pixel-button danger modal-delete-btn"
               onClick={() => onDelete(event.id)}
-              title={t('schedule.modal.deleteTitle', { defaultValue: '永久删除，此操作不可恢复' })}
+              title={t('schedule.modal.deleteTitle')}
             >
               <Trash2 size={14} /> {t('schedule.modal.delete')}
             </button>
@@ -1265,12 +1263,8 @@ function RecycleBinModal({
               className="recycle-bin-icon-btn"
               onClick={onRefresh}
               disabled={loading}
-              title={t('schedule.recycleBin.refresh', {
-                defaultValue: 'Refresh',
-              })}
-              aria-label={t('schedule.recycleBin.refresh', {
-                defaultValue: 'Refresh',
-              })}
+              title={t('schedule.recycleBin.refresh')}
+              aria-label={t('schedule.recycleBin.refresh')}
             >
               <RefreshCw
                 size={16}
@@ -1281,12 +1275,8 @@ function RecycleBinModal({
               type="button"
               className="recycle-bin-icon-btn"
               onClick={onClose}
-              title={t('schedule.recycleBin.close', {
-                defaultValue: 'Close',
-              })}
-              aria-label={t('schedule.recycleBin.close', {
-                defaultValue: 'Close',
-              })}
+              title={t('schedule.recycleBin.close')}
+              aria-label={t('schedule.recycleBin.close')}
             >
               <X size={16} />
             </button>
@@ -1432,7 +1422,7 @@ function RecycleBinModal({
             className="recycle-bin-btn secondary"
             onClick={onClose}
           >
-            {t('schedule.recycleBin.close', { defaultValue: 'Close' })}
+            {t('schedule.recycleBin.close')}
           </button>
           <div className="recycle-bin-footer-actions">
             <button
@@ -1579,7 +1569,6 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
         addToast(
           t('schedule.toast.refreshed', {
             count: list.length,
-            defaultValue: `Loaded ${list.length} event(s)`,
           }),
           'success'
         );
@@ -1590,7 +1579,6 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
       addToast(
         t('schedule.toast.refreshFailed', {
           error: e.message || e,
-          defaultValue: `Refresh failed: ${e.message || e}`,
         }),
         'error'
       );
@@ -1634,10 +1622,10 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
             event_id: selected.id,
             ...data,
           });
-          addToast(t('schedule.toast.updated', { defaultValue: 'Event updated' }), 'success');
+          addToast(t('schedule.toast.updated'), 'success');
         } else {
           await sendWSMessage('schedule_create_event', data);
-          addToast(t('schedule.toast.created', { defaultValue: 'Event created' }), 'success');
+          addToast(t('schedule.toast.created'), 'success');
         }
         setSelected(null);
         setCreateAt(null);
@@ -1647,7 +1635,6 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
         addToast(
           t('schedule.toast.saveFailed', {
             error: e.message || e,
-            defaultValue: `Save failed: ${e.message || e}`,
           }),
           'error'
         );
@@ -1661,7 +1648,7 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
       if (!confirm(t('schedule.modal.deleteConfirm'))) return;
       try {
         await sendWSMessage('schedule_delete_event', { event_id: eventId });
-        addToast(t('schedule.toast.deleted', { defaultValue: 'Event deleted' }), 'success');
+        addToast(t('schedule.toast.deleted'), 'success');
         setSelected(null);
         fetchEvents({ silent: true });
       } catch (e) {
@@ -1669,7 +1656,6 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
         addToast(
           t('schedule.toast.deleteFailed', {
             error: e.message || e,
-            defaultValue: `Delete failed: ${e.message || e}`,
           }),
           'error'
         );
@@ -1683,7 +1669,7 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
       try {
         await sendWSMessage('schedule_cancel_event', { event_id: eventId });
         addToast(
-          t('schedule.toast.cancelled', { defaultValue: 'Event marked as cancelled' }),
+          t('schedule.toast.cancelled'),
           'success'
         );
         setSelected(null);
@@ -1693,7 +1679,6 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
         addToast(
           t('schedule.toast.cancelledFailed', {
             error: e.message || e,
-            defaultValue: `Cancel failed: ${e.message || e}`,
           }),
           'error'
         );
@@ -1707,7 +1692,7 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
       try {
         await sendWSMessage('schedule_uncancel_event', { event_id: eventId });
         addToast(
-          t('schedule.toast.uncancelled', { defaultValue: 'Event restored' }),
+          t('schedule.toast.uncancelled'),
           'success'
         );
         setSelected(null);
@@ -1717,7 +1702,6 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
         addToast(
           t('schedule.toast.uncancelFailed', {
             error: e.message || e,
-            defaultValue: `Restore failed: ${e.message || e}`,
           }),
           'error'
         );
@@ -1756,7 +1740,6 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
           addToast(
             t('schedule.toast.refreshed', {
               count: list.length,
-              defaultValue: `Loaded ${list.length} item(s)`,
             }),
             'success'
           );
@@ -2009,7 +1992,7 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
         <div className="schedule-toolbar">
           <div className="toolbar-left">
             <WindowDots />
-            <span className="toolbar-title">{t('title.schedule', { defaultValue: 'SCHEDULE' })}</span>
+            <span className="toolbar-title">{t('title.schedule')}</span>
             <span className="event-count">({events.length})</span>
           </div>
           <div className="toolbar-right">
@@ -2065,8 +2048,8 @@ const SchedulePanel = ({ sendWSMessage, subscribe }) => {
               className={`refresh-btn${loading ? ' refreshing' : ''}`}
               onClick={handleManualRefresh}
               disabled={loading}
-              title={t('schedule.refresh', { defaultValue: 'Refresh' })}
-              aria-label={t('schedule.refresh', { defaultValue: 'Refresh' })}
+              title={t('schedule.refresh')}
+              aria-label={t('schedule.refresh')}
             >
               <RefreshCw size={14} className={loading ? 'spin' : ''} />
             </button>

@@ -84,6 +84,21 @@ class LibraryChatHandler(MessageHandler):
         scope_type = message.data.get("scope_type", "collection")
         scope_value = message.data.get("scope_value", "")
         agent_config_id = message.data.get("agent_config_id")
+        # Allow the client to pass the built-in agent by name (e.g. "library-thinker")
+        # so the frontend doesn't have to do a separate subagent lookup round-trip.
+        agent_config_name = message.data.get("agent_config_name")
+        if agent_config_id is None and agent_config_name:
+            try:
+                from backend.data.subagent_store import SubagentRepository
+
+                record = SubagentRepository(self.db).get_subagent_by_name(agent_config_name)
+                if record is not None:
+                    agent_config_id = record.id
+            except Exception as e:
+                logger.warning(
+                    f"[LibraryChatHandler] Failed to resolve agent_config_name="
+                    f"{agent_config_name!r}: {e}"
+                )
         session = self.chat_service.create_session(
             scope_type=scope_type,
             scope_value=str(scope_value),

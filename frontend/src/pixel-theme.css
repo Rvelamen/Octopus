@@ -454,6 +454,23 @@ hr {
   font-weight: 500;
 }
 
+/* Muted nav entry — visual hint of a related/secondary view (e.g. 林间图书馆 → 图书馆) */
+.nav-item.muted {
+  font-size: 14px;
+  color: var(--text-3);
+  padding: 7px 16px;
+}
+
+.nav-item.muted:hover {
+  color: var(--text);
+  background: rgba(180, 106, 87, 0.05);
+}
+
+.nav-item.muted.active {
+  color: var(--accent);
+  font-weight: 500;
+}
+
 /* Sidebar Footer */
 .sidebar-footer {
   margin-top: auto;

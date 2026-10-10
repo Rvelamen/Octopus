@@ -10,6 +10,7 @@
     "start": "concurrently \"npm run dev\" \"npm run electron\""
   },
   "dependencies": {
+    "@babylonjs/core": "9.30.0",
     "@mdxeditor/editor": "^4.0.1",
     "@monaco-editor/react": "^4.7.0",
     "@xyflow/react": "^12.10.2",

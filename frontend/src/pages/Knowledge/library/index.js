@@ -1,4 +1,5 @@
 export { default as LibraryTab } from './LibraryTab';
+export { default as LibrarySceneView } from './LibrarySceneView';
 export { default as LibraryImportModal } from './LibraryImportModal';
 export { default as LibraryCollectionModal } from './LibraryCollectionModal';
 export { default as useLibrary } from './hooks/useLibrary';

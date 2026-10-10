@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Clock, Play, Pause, Trash2, RefreshCw, Plus, X, Check, AlertCircle, Calendar } from 'lucide-react';
 import WindowDots from '@components/layout/WindowDots';
 import Toast from '@components/ui/Toast';
@@ -8,6 +9,7 @@ import './CronPanel.css';
  * CronPanel Component - 定时任务管理面板
  */
 const CronPanel = ({ sendWSMessage }) => {
+  const { t } = useTranslation();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -48,11 +50,11 @@ const CronPanel = ({ sendWSMessage }) => {
       }
     } catch (err) {
       console.error('Failed to fetch cron jobs:', err);
-      addToast('Failed to fetch cron jobs', 'error');
+      addToast(t('cron.fetchFailed'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [sendWSMessage, addToast]);
+  }, [sendWSMessage, addToast, t]);
 
   // Load jobs on mount
   useEffect(() => {
@@ -63,10 +65,10 @@ const CronPanel = ({ sendWSMessage }) => {
   const toggleJob = async (jobId, enabled) => {
     try {
       await sendWSMessage('cron_toggle_job', { job_id: jobId, enabled });
-      addToast(`Job ${enabled ? 'enabled' : 'disabled'}`, 'success');
+      addToast(enabled ? t('cron.jobEnabled') : t('cron.jobDisabled'), 'success');
       fetchJobs();
     } catch (err) {
-      addToast(`Failed to ${enabled ? 'enable' : 'disable'} job`, 'error');
+      addToast(enabled ? t('cron.enableFailed') : t('cron.disableFailed'), 'error');
     }
   };
 
@@ -74,9 +76,9 @@ const CronPanel = ({ sendWSMessage }) => {
   const runJob = async (jobId) => {
     try {
       await sendWSMessage('cron_run_job', { job_id: jobId });
-      addToast('Job executed', 'success');
+      addToast(t('cron.jobExecuted'), 'success');
     } catch (err) {
-      addToast('Failed to run job', 'error');
+      addToast(t('cron.runFailed'), 'error');
     }
   };
 
@@ -84,10 +86,10 @@ const CronPanel = ({ sendWSMessage }) => {
   const deleteJob = async (jobId) => {
     try {
       await sendWSMessage('cron_delete_job', { job_id: jobId });
-      addToast('Job deleted', 'success');
+      addToast(t('cron.jobDeleted'), 'success');
       fetchJobs();
     } catch (err) {
-      addToast('Failed to delete job', 'error');
+      addToast(t('cron.deleteFailed'), 'error');
     }
   };
 
@@ -113,7 +115,7 @@ const CronPanel = ({ sendWSMessage }) => {
         to: formData.to || undefined
       });
 
-      addToast('Job added successfully', 'success');
+      addToast(t('cron.jobAdded'), 'success');
       setShowAddDialog(false);
       setFormData({
         name: '',
@@ -128,7 +130,7 @@ const CronPanel = ({ sendWSMessage }) => {
       });
       fetchJobs();
     } catch (err) {
-      addToast('Failed to add job', 'error');
+      addToast(t('cron.addFailed'), 'error');
     }
   };
 
@@ -136,29 +138,29 @@ const CronPanel = ({ sendWSMessage }) => {
   const formatSchedule = (job) => {
     const s = job.schedule;
     if (s.kind === 'cron') {
-      return `Cron: ${s.expr}`;
+      return t('cron.scheduleCron', { expr: s.expr });
     } else if (s.kind === 'every') {
       const ms = s.every_ms;
-      if (ms < 60000) return `Every ${ms / 1000}s`;
-      if (ms < 3600000) return `Every ${ms / 60000}m`;
-      return `Every ${ms / 3600000}h`;
+      if (ms < 60000) return t('cron.scheduleEverySeconds', { value: ms / 1000 });
+      if (ms < 3600000) return t('cron.scheduleEveryMinutes', { value: ms / 60000 });
+      return t('cron.scheduleEveryHours', { value: ms / 3600000 });
     } else if (s.kind === 'at') {
-      return `At: ${new Date(s.at_ms).toLocaleString()}`;
+      return t('cron.scheduleAt', { time: new Date(s.at_ms).toLocaleString() });
     }
-    return 'Unknown';
+    return t('cron.scheduleUnknown');
   };
 
   // Format next run time
   const formatNextRun = (ms) => {
-    if (!ms) return 'Never';
+    if (!ms) return t('cron.never');
     const date = new Date(ms);
     const now = new Date();
     const diff = date - now;
-    
-    if (diff < 0) return 'Overdue';
-    if (diff < 60000) return 'In < 1 min';
-    if (diff < 3600000) return `In ${Math.floor(diff / 60000)}m`;
-    if (diff < 86400000) return `In ${Math.floor(diff / 3600000)}h`;
+
+    if (diff < 0) return t('cron.overdue');
+    if (diff < 60000) return t('cron.inLessThanMinute');
+    if (diff < 3600000) return t('cron.inMinutes', { count: Math.floor(diff / 60000) });
+    if (diff < 86400000) return t('cron.inHours', { count: Math.floor(diff / 3600000) });
     return date.toLocaleDateString();
   };
 
@@ -181,17 +183,17 @@ const CronPanel = ({ sendWSMessage }) => {
       <div className="cron-toolbar">
         <div className="toolbar-left">
           <WindowDots />
-          <span className="toolbar-title">CRON_JOBS</span>
+          <span className="toolbar-title">{t('title.cron')}</span>
           <span className="job-count">({jobs.length})</span>
         </div>
         <div className="toolbar-right">
           <button className="pixel-button secondary" onClick={fetchJobs}>
             <RefreshCw size={14} />
-            Refresh
+            {t('cron.refresh')}
           </button>
           <button className="pixel-button" onClick={() => setShowAddDialog(true)}>
             <Plus size={14} />
-            Add Job
+            {t('cron.addJob')}
           </button>
         </div>
       </div>
@@ -201,14 +203,14 @@ const CronPanel = ({ sendWSMessage }) => {
         {loading ? (
           <div className="cron-loading">
             <div className="loading-spinner"></div>
-            <span>Loading jobs...</span>
+            <span>{t('cron.loading')}</span>
           </div>
         ) : jobs.length === 0 ? (
           <div className="cron-empty">
             <Clock size={48} />
-            <span>No scheduled jobs</span>
+            <span>{t('cron.empty')}</span>
             <button className="pixel-button" onClick={() => setShowAddDialog(true)}>
-              Create your first job
+              {t('cron.createFirst')}
             </button>
           </div>
         ) : (
@@ -221,24 +223,24 @@ const CronPanel = ({ sendWSMessage }) => {
                     <span className="job-name">{job.name}</span>
                   </div>
                   <div className="job-actions">
-                    <button 
+                    <button
                       className="job-action-btn"
                       onClick={() => toggleJob(job.id, !job.enabled)}
-                      title={job.enabled ? 'Disable' : 'Enable'}
+                      title={job.enabled ? t('cron.disable') : t('cron.enable')}
                     >
                       {job.enabled ? <Pause size={14} /> : <Play size={14} />}
                     </button>
-                    <button 
+                    <button
                       className="job-action-btn"
                       onClick={() => runJob(job.id)}
-                      title="Run now"
+                      title={t('cron.runNow')}
                     >
                       <Play size={14} />
                     </button>
-                    <button 
+                    <button
                       className="job-action-btn danger"
                       onClick={() => deleteJob(job.id)}
-                      title="Delete"
+                      title={t('cron.delete')}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -251,15 +253,15 @@ const CronPanel = ({ sendWSMessage }) => {
                   </div>
                   <div className="job-next-run">
                     <Clock size={14} />
-                    <span>Next: {formatNextRun(job.next_run_at_ms)}</span>
+                    <span>{t('cron.nextRun', { value: formatNextRun(job.next_run_at_ms) })}</span>
                   </div>
                   <div className="job-message">
-                    <span className="message-label">Message:</span>
+                    <span className="message-label">{t('cron.message')}:</span>
                     <span className="message-content">{job.payload?.message || '-'}</span>
                   </div>
                   {job.payload?.deliver && (
                     <div className="job-delivery">
-                      <span className="delivery-label">Deliver to:</span>
+                      <span className="delivery-label">{t('cron.deliverTo')}</span>
                       <span className="delivery-content">{job.payload.channel} / {job.payload.to}</span>
                     </div>
                   )}
@@ -276,44 +278,44 @@ const CronPanel = ({ sendWSMessage }) => {
           <div className="cron-dialog pixel-border">
             <div className="dialog-header">
               <WindowDots />
-              <span className="window-title">ADD_CRON_JOB</span>
+              <span className="window-title">{t('cron.dialogTitle')}</span>
               <button className="dialog-close" onClick={() => setShowAddDialog(false)}>
                 <X size={16} />
               </button>
             </div>
             <div className="dialog-body">
               <div className="form-group">
-                <label>Job Name</label>
+                <label>{t('cron.jobName')}</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Daily Report"
+                  placeholder={t('cron.jobNamePlaceholder')}
                   className="pixel-input"
                 />
               </div>
 
               <div className="form-group">
-                <label>Schedule Type</label>
+                <label>{t('cron.scheduleType')}</label>
                 <div className="schedule-type-selector">
                   <button
                     className={`type-btn ${formData.scheduleType === 'cron' ? 'active' : ''}`}
                     onClick={() => setFormData({ ...formData, scheduleType: 'cron' })}
                   >
-                    Cron Expression
+                    {t('cron.cronExpression')}
                   </button>
                   <button
                     className={`type-btn ${formData.scheduleType === 'every' ? 'active' : ''}`}
                     onClick={() => setFormData({ ...formData, scheduleType: 'every' })}
                   >
-                    Interval
+                    {t('cron.interval')}
                   </button>
                 </div>
               </div>
 
               {formData.scheduleType === 'cron' ? (
                 <div className="form-group">
-                  <label>Cron Expression</label>
+                  <label>{t('cron.cronExpression')}</label>
                   <input
                     type="text"
                     value={formData.cronExpr}
@@ -321,11 +323,11 @@ const CronPanel = ({ sendWSMessage }) => {
                     placeholder="0 9 * * *"
                     className="pixel-input"
                   />
-                  <span className="form-hint">Format: min hour day month weekday</span>
+                  <span className="form-hint">{t('cron.cronFormatHint')}</span>
                 </div>
               ) : (
                 <div className="form-group">
-                  <label>Interval</label>
+                  <label>{t('cron.interval')}</label>
                   <div className="interval-inputs">
                     <input
                       type="number"
@@ -339,20 +341,20 @@ const CronPanel = ({ sendWSMessage }) => {
                       onChange={(e) => setFormData({ ...formData, intervalUnit: e.target.value })}
                       className="pixel-select"
                     >
-                      <option value="seconds">Seconds</option>
-                      <option value="minutes">Minutes</option>
-                      <option value="hours">Hours</option>
+                      <option value="seconds">{t('cron.seconds')}</option>
+                      <option value="minutes">{t('cron.minutes')}</option>
+                      <option value="hours">{t('cron.hours')}</option>
                     </select>
                   </div>
                 </div>
               )}
 
               <div className="form-group">
-                <label>Message</label>
+                <label>{t('cron.message')}</label>
                 <textarea
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  placeholder="Task description for the agent..."
+                  placeholder={t('cron.messagePlaceholder')}
                   className="pixel-textarea"
                   rows="3"
                 />
@@ -365,29 +367,29 @@ const CronPanel = ({ sendWSMessage }) => {
                     checked={formData.deliver}
                     onChange={(e) => setFormData({ ...formData, deliver: e.target.checked })}
                   />
-                  Deliver response to channel
+                  {t('cron.deliverResponse')}
                 </label>
               </div>
 
               {formData.deliver && (
                 <>
                   <div className="form-group">
-                    <label>Channel</label>
+                    <label>{t('cron.channel')}</label>
                     <input
                       type="text"
                       value={formData.channel}
                       onChange={(e) => setFormData({ ...formData, channel: e.target.value })}
-                      placeholder="e.g., feishu"
+                      placeholder={t('cron.channelPlaceholder')}
                       className="pixel-input"
                     />
                   </div>
                   <div className="form-group">
-                    <label>To (Chat ID)</label>
+                    <label>{t('cron.toChatId')}</label>
                     <input
                       type="text"
                       value={formData.to}
                       onChange={(e) => setFormData({ ...formData, to: e.target.value })}
-                      placeholder="e.g., user open_id"
+                      placeholder={t('cron.toPlaceholder')}
                       className="pixel-input"
                     />
                   </div>
@@ -396,11 +398,11 @@ const CronPanel = ({ sendWSMessage }) => {
             </div>
             <div className="dialog-footer">
               <button className="pixel-button secondary" onClick={() => setShowAddDialog(false)}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button className="pixel-button" onClick={addJob} disabled={!formData.name || !formData.message}>
                 <Check size={14} />
-                Add Job
+                {t('cron.addJob')}
               </button>
             </div>
           </div>

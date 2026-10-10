@@ -386,14 +386,14 @@ const LibraryTab = ({ sendWSMessage }) => {
 
         <div style={{ flex: 1 }} />
 
-        <Input
+        {!showGraph && <Input
           prefix={<Search size={14} style={{ color: 'var(--text-muted)' }} />}
           placeholder="Search papers..."
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
           style={{ width: 240 }}
           size="small"
-        />
+        />}
 
         {!showGraph && (
           <Segmented
@@ -403,6 +403,7 @@ const LibraryTab = ({ sendWSMessage }) => {
             options={viewOptions.map((o) => ({
               value: o.value,
               icon: o.icon,
+              label: o.label,
             }))}
           />
         )}

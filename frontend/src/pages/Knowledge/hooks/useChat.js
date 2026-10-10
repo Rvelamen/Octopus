@@ -167,15 +167,18 @@ export function useChat({
     return () => unsub();
   }, [subscribe, currentSessionId, wsAction]);
 
-  const createSession = useCallback(async (title = 'New Chat') => {
+  const createSession = useCallback(async (title = 'New Chat', options = {}) => {
     try {
       const { scope_type, scope_value } = serializeScopeRef.current(scopeRef.current);
-      const resp = await sendMessage(wsAction, {
+      const payload = {
         action: 'create_session',
         title,
         scope_type,
         scope_value,
-      }, 10000);
+      };
+      if (options.agentConfigId != null) payload.agent_config_id = options.agentConfigId;
+      if (options.agentConfigName) payload.agent_config_name = options.agentConfigName;
+      const resp = await sendMessage(wsAction, payload, 10000);
       const session = resp?.data?.session;
       if (session) {
         setSessions((prev) => [session, ...prev]);
