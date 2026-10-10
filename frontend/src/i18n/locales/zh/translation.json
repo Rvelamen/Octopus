@@ -117,6 +117,7 @@
       "interface": "界面",
       "agentDefaults": "智能体默认配置",
       "librarySettings": "图书馆设置",
+      "bookRoomTiming": "人物聊天室时间上限",
       "channels": "渠道",
       "tools": "工具"
     },
@@ -132,7 +133,9 @@
       "tokenThreshold": "Token 阈值",
       "enabledTools": "已启用工具",
       "libraryExtractModel": "图书馆 AI 提取模型",
-      "libraryExtractLanguage": "图书馆 AI 提取语言"
+      "libraryExtractLanguage": "图书馆 AI 提取语言",
+      "bookRoomRoundTimeoutSeconds": "普通轮次时间上限（秒）",
+      "bookRoomAllRoundTimeoutSeconds": "全体提问时间上限（秒）"
     },
     "hint": {
       "noEnabledModels": "未找到已启用的模型，请先在“模型服务”页启用服务商和模型。",
@@ -140,7 +143,10 @@
       "noAvailableTools": "未找到可用工具。",
       "selectedSuffix": "已选",
       "libraryExtractModel": "用于从图书馆中的 PDF 提取 AI 元数据的模型，未设置时回退到默认模型。",
-      "libraryExtractLanguage": "AI 提取摘要与元数据所用的语言，作者姓名保留原文。"
+      "libraryExtractLanguage": "AI 提取摘要与元数据所用的语言，作者姓名保留原文。",
+      "bookRoomTiming": "填写正整数秒，普通轮次默认 60 秒，全体提问默认 300 秒。修改用于新轮次或手动继续，正在执行的时间窗口保持原值。",
+      "bookRoomTimeoutInvalid": "时间上限必须是 1 至 2147483647 的整数秒，请检查普通轮次和全体提问设置。",
+      "bookRoomTimingReset": "恢复时间默认值（保存后生效）"
     }
   },
   "library": {

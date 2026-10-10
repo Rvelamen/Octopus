@@ -2,7 +2,10 @@
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic_core import PydanticCustomError
+
+from backend.core.book_room_settings import TimeoutSeconds
 
 
 class BaseRequest(BaseModel):
@@ -728,6 +731,12 @@ class AgentDefaultsUpdateRequest(BaseRequest):
     library_extract_provider_id: int | None = Field(default=None, alias="libraryExtractProviderId")
     library_extract_model_id: int | None = Field(default=None, alias="libraryExtractModelId")
     library_extract_language: str | None = Field(default=None, alias="libraryExtractLanguage")
+    book_room_round_timeout_seconds: TimeoutSeconds | None = Field(
+        default=None, alias="bookRoomRoundTimeoutSeconds"
+    )
+    book_room_all_round_timeout_seconds: TimeoutSeconds | None = Field(
+        default=None, alias="bookRoomAllRoundTimeoutSeconds"
+    )
     workspace_path: str | None = Field(default=None, alias="workspacePath")
     max_tokens: int | None = Field(default=None, alias="maxTokens")
     temperature: float | None = None
@@ -743,6 +752,16 @@ class AgentDefaultsUpdateRequest(BaseRequest):
     llm_retry_base_delay: float | None = Field(default=None, alias="llmRetryBaseDelay")
     llm_retry_max_delay: float | None = Field(default=None, alias="llmRetryMaxDelay")
     tools: list[str] | None = None
+
+    @field_validator("book_room_round_timeout_seconds", "book_room_all_round_timeout_seconds")
+    @classmethod
+    def supplied_timeout_must_not_be_null(cls, value: int | None) -> int:
+        """Absent fields preserve preferences; explicitly supplied null is invalid."""
+        if value is None:
+            raise PydanticCustomError(
+                "timeout_seconds_null", "Timeout must be a positive integer number of seconds"
+            )
+        return value
 
 
 class GetEnabledModelsRequest(BaseRequest):

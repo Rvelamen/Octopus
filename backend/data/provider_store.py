@@ -7,6 +7,7 @@ from typing import Any
 
 from loguru import logger
 
+from backend.core.book_room_settings import BookRoomTimeoutSettings
 from backend.data.database import Database
 from backend.utils.encryption import decrypt_value, encrypt_value
 
@@ -587,6 +588,8 @@ class AgentDefaultsRecord:
     config_json: dict[str, Any]
     created_at: datetime
     updated_at: datetime
+    book_room_round_timeout_seconds: int = 60
+    book_room_all_round_timeout_seconds: int = 300
 
 
 class AgentDefaultsRepository:
@@ -639,8 +642,20 @@ class AgentDefaultsRepository:
         context_compression_token_threshold: int | None = None,
         tools: list[str] | None = None,
         config_json: dict[str, Any] | None = None,
+        book_room_round_timeout_seconds: int | None = None,
+        book_room_all_round_timeout_seconds: int | None = None,
     ) -> bool:
         """Update agent defaults."""
+        timeout_changes = {
+            key: value
+            for key, value in (
+                ("book_room_round_timeout_seconds", book_room_round_timeout_seconds),
+                ("book_room_all_round_timeout_seconds", book_room_all_round_timeout_seconds),
+            )
+            if value is not None
+        }
+        if timeout_changes:
+            BookRoomTimeoutSettings(**timeout_changes)
         updates = []
         params = []
 
@@ -659,6 +674,9 @@ class AgentDefaultsRepository:
         if library_extract_language is not None:
             updates.append("library_extract_language = ?")
             params.append(library_extract_language)
+        for key, value in timeout_changes.items():
+            updates.append(f"{key} = ?")
+            params.append(value)
         if workspace_path is not None:
             updates.append("workspace_path = ?")
             params.append(workspace_path)
@@ -737,6 +755,8 @@ class AgentDefaultsRepository:
             library_extract_provider_id=row["library_extract_provider_id"],
             library_extract_model_id=row["library_extract_model_id"],
             library_extract_language=row["library_extract_language"] or "English",
+            book_room_round_timeout_seconds=row["book_room_round_timeout_seconds"],
+            book_room_all_round_timeout_seconds=row["book_room_all_round_timeout_seconds"],
             workspace_path=row["workspace_path"] or "",
             max_tokens=row["max_tokens"] or 8192,
             temperature=row["temperature"] or 0.7,

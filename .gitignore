@@ -147,6 +147,9 @@ docs/
 .qwen/
 scripts/
 tests/
+!/tests/
+/tests/*
+!/tests/test_book_room_timeout_settings.py
 .agents/skills/ai-elements/SKILL.md
 .agents/skills/ai-elements/references/agent.md
 .agents/skills/ai-elements/references/artifact.md

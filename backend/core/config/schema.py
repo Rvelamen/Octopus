@@ -3,6 +3,11 @@
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
+from backend.core.book_room_settings import (
+    DEFAULT_BOOK_ROOM_ALL_TIMEOUT_SECONDS,
+    DEFAULT_BOOK_ROOM_TIMEOUT_SECONDS,
+    TimeoutSeconds,
+)
 from backend.mcp.config import MCPConfig
 
 
@@ -151,6 +156,12 @@ class AgentDefaults(BaseModel):
     max_tokens: int = 8192
     temperature: float = 0.7
     max_iterations: int = Field(default=20, alias="maxIterations")
+    book_room_round_timeout_seconds: TimeoutSeconds = Field(
+        default=DEFAULT_BOOK_ROOM_TIMEOUT_SECONDS, alias="bookRoomRoundTimeoutSeconds"
+    )
+    book_room_all_round_timeout_seconds: TimeoutSeconds = Field(
+        default=DEFAULT_BOOK_ROOM_ALL_TIMEOUT_SECONDS, alias="bookRoomAllRoundTimeoutSeconds"
+    )
     context_compression_enabled: bool = Field(default=False, alias="contextCompressionEnabled")
     context_compression_turns: int = Field(default=10, alias="contextCompressionTurns")
     context_compression_token_threshold: int = Field(

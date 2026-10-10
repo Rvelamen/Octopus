@@ -184,6 +184,16 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
 
   const handleSave = async () => {
     try {
+      if (agentDefaults) {
+        const timeouts = [
+          agentDefaults.bookRoomRoundTimeoutSeconds ?? 60,
+          agentDefaults.bookRoomAllRoundTimeoutSeconds ?? 300,
+        ];
+        if (timeouts.some(value => !Number.isInteger(Number(value)) || Number(value) < 1 || Number(value) > 2147483647)) {
+          alert(t('config.hint.bookRoomTimeoutInvalid'));
+          return;
+        }
+      }
       // Save config file (for backward compatibility)
       await onSave(config);
 
@@ -195,6 +205,8 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
           libraryExtractProviderId: agentDefaults.libraryExtractProviderId,
           libraryExtractModelId: agentDefaults.libraryExtractModelId,
           libraryExtractLanguage: agentDefaults.libraryExtractLanguage,
+          bookRoomRoundTimeoutSeconds: Number(agentDefaults.bookRoomRoundTimeoutSeconds ?? 60),
+          bookRoomAllRoundTimeoutSeconds: Number(agentDefaults.bookRoomAllRoundTimeoutSeconds ?? 300),
           workspacePath: agentDefaults.workspacePath,
           maxTokens: agentDefaults.maxTokens,
           temperature: agentDefaults.temperature,
@@ -547,6 +559,31 @@ function ConfigPanel({ config, setConfig, onSave, isSaving, sendWSMessage }) {
         <div className="form-hint" style={{ color: 'var(--text-muted)', marginTop: '-10px', marginBottom: '10px', fontSize: '12px' }}>
           {t('config.hint.libraryExtractLanguage')}
         </div>
+        <div className="form-section-title">{t('config.card.bookRoomTiming')}</div>
+        <InputField
+          label={t('config.field.bookRoomRoundTimeoutSeconds')}
+          type="number"
+          value={agentDefaults.bookRoomRoundTimeoutSeconds ?? 60}
+          onChange={(value) => updateAgentDefaultField('bookRoomRoundTimeoutSeconds', value)}
+        />
+        <InputField
+          label={t('config.field.bookRoomAllRoundTimeoutSeconds')}
+          type="number"
+          value={agentDefaults.bookRoomAllRoundTimeoutSeconds ?? 300}
+          onChange={(value) => updateAgentDefaultField('bookRoomAllRoundTimeoutSeconds', value)}
+        />
+        <div className="form-hint">{t('config.hint.bookRoomTiming')}</div>
+        <button
+          type="button"
+          className="pixel-btn"
+          onClick={() => setAgentDefaults(prev => prev ? {
+            ...prev,
+            bookRoomRoundTimeoutSeconds: 60,
+            bookRoomAllRoundTimeoutSeconds: 300,
+          } : null)}
+        >
+          {t('config.hint.bookRoomTimingReset')}
+        </button>
       </ConfigCard>
     );
   };

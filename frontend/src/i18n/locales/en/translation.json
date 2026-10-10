@@ -116,6 +116,7 @@
       "interface": "INTERFACE",
       "agentDefaults": "AGENT DEFAULTS",
       "librarySettings": "LIBRARY SETTINGS",
+      "bookRoomTiming": "BOOK CHARACTER ROOM TIME LIMITS",
       "channels": "CHANNELS",
       "tools": "TOOLS"
     },
@@ -131,7 +132,9 @@
       "tokenThreshold": "Token Threshold",
       "enabledTools": "Enabled Tools",
       "libraryExtractModel": "Library AI Extract Model",
-      "libraryExtractLanguage": "Library AI Extract Language"
+      "libraryExtractLanguage": "Library AI Extract Language",
+      "bookRoomRoundTimeoutSeconds": "Normal round time limit (seconds)",
+      "bookRoomAllRoundTimeoutSeconds": "All-participant round time limit (seconds)"
     },
     "hint": {
       "noEnabledModels": "No enabled models found. Please enable providers and models in the PROVIDERS tab.",
@@ -139,7 +142,10 @@
       "noAvailableTools": "No available tools found.",
       "selectedSuffix": "selected",
       "libraryExtractModel": "Model used for AI metadata extraction from PDFs in Library. Falls back to Default Model if not set.",
-      "libraryExtractLanguage": "Language for AI-extracted abstract and metadata. Author names are kept in their original form."
+      "libraryExtractLanguage": "Language for AI-extracted abstract and metadata. Author names are kept in their original form.",
+      "bookRoomTiming": "Enter positive integer seconds. Defaults: 60 for normal rounds and 300 for all-participant rounds. Changes apply to a new round or explicit continuation; a running window keeps its original limit.",
+      "bookRoomTimeoutInvalid": "Time limits must be whole seconds from 1 to 2147483647. Check both round settings.",
+      "bookRoomTimingReset": "Restore timeout defaults (save to apply)"
     }
   },
   "library": {

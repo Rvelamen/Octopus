@@ -12,6 +12,10 @@ def create_tables(conn: sqlite3.Connection) -> None:
             library_extract_provider_id INTEGER,
             library_extract_model_id INTEGER,
             library_extract_language TEXT DEFAULT 'English',
+            book_room_round_timeout_seconds INTEGER NOT NULL DEFAULT 60
+                CHECK (typeof(book_room_round_timeout_seconds) = 'integer' AND book_room_round_timeout_seconds > 0),
+            book_room_all_round_timeout_seconds INTEGER NOT NULL DEFAULT 300
+                CHECK (typeof(book_room_all_round_timeout_seconds) = 'integer' AND book_room_all_round_timeout_seconds > 0),
             workspace_path TEXT DEFAULT '',
             max_tokens INTEGER DEFAULT 8192,
             temperature REAL DEFAULT 0.7,
@@ -30,6 +34,21 @@ def create_tables(conn: sqlite3.Connection) -> None:
             FOREIGN KEY (default_model_id) REFERENCES models(id) ON DELETE SET NULL
         )
     """)
+    ensure_book_room_timeout_columns(conn)
+
+
+def ensure_book_room_timeout_columns(conn: sqlite3.Connection) -> None:
+    """Upgrade older defaults tables even when optional yoyo is unavailable."""
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(agent_defaults)")}
+    for column, default in (
+        ("book_room_round_timeout_seconds", 60),
+        ("book_room_all_round_timeout_seconds", 300),
+    ):
+        if columns and column not in columns:
+            conn.execute(
+                f"ALTER TABLE agent_defaults ADD COLUMN {column} INTEGER NOT NULL "
+                f"DEFAULT {default} CHECK (typeof({column}) = 'integer' AND {column} > 0)"
+            )
 
 
 def create_indexes(conn: sqlite3.Connection) -> None:
