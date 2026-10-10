@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Bot, Check, ChevronLeft, Flower2, LayoutGrid, Loader2, Minus, Move, Plus, Save, Search, Send, Settings2, Sparkles, Sprout, X } from 'lucide-react';
+import { BookOpen, Bot, Check, ChevronLeft, Flower2, LayoutGrid, Loader2, MapPin, Minus, Move, Plus, Save, Search, Send, Settings2, Sparkles, Sprout, X } from 'lucide-react';
 import { Checkbox, Input, Modal, Pagination, message } from 'antd';
 import LibrarySceneCanvas from './LibrarySceneCanvas';
 import useLibraryScene from './useLibraryScene';
@@ -7,6 +7,114 @@ import { useWebSocket } from '../../../../contexts/WebSocketContext';
 import { useLibraryChat } from '../hooks/useLibraryChat';
 import { AREA_COLORS, SHELF_PAGE_SIZE } from './librarySceneState.mjs';
 import './LibraryScene.css';
+
+// Match `[book-123]` markers that the library-thinker emits when citing a book.
+const BOOK_REF_PATTERN = /\[book-(\d+)\]/g;
+
+function extractBookIds(content) {
+  if (!content) return [];
+  const ids = new Set();
+  for (const match of content.matchAll(BOOK_REF_PATTERN)) {
+    const id = Number(match[1]);
+    if (Number.isFinite(id)) ids.add(id);
+  }
+  return Array.from(ids);
+}
+
+// Split a message body into text + inline book-ref pills so the marker
+// itself disappears from the prose and is replaced by a tappable chip.
+function renderTextWithBookRefs(content) {
+  if (!content) return null;
+  const parts = [];
+  let lastIndex = 0;
+  let key = 0;
+  for (const match of content.matchAll(BOOK_REF_PATTERN)) {
+    const start = match.index ?? 0;
+    if (start > lastIndex) parts.push(content.slice(lastIndex, start));
+    parts.push(
+      <span key={`ref-${key++}`} className="library-scene-thinker-ref">
+        <BookOpen size={11} />book-{match[1]}
+      </span>,
+    );
+    lastIndex = start + match[0].length;
+  }
+  if (lastIndex < content.length) parts.push(content.slice(lastIndex));
+  return parts;
+}
+
+function ThinkerBookRefs({ ids, libraryWS, onJump }) {
+  const [items, setItems] = useState({});
+  const [failed, setFailed] = useState(() => new Set());
+
+  useEffect(() => {
+    if (!ids.length) return undefined;
+    let cancelled = false;
+    const missing = ids.filter((id) => !(id in items) && !failed.has(id));
+    if (!missing.length) return undefined;
+    Promise.all(
+      missing.map(async (id) => {
+        try {
+          const response = await libraryWS.getItem(id);
+          return [id, response?.data?.item || null];
+        } catch {
+          return [id, null];
+        }
+      }),
+    ).then((entries) => {
+      if (cancelled) return;
+      setItems((prev) => {
+        const next = { ...prev };
+        const nextFailed = new Set(failed);
+        for (const [id, item] of entries) {
+          if (item) next[id] = item;
+          else nextFailed.add(id);
+        }
+        if (nextFailed.size !== failed.size || [...nextFailed].some((id) => !failed.has(id))) {
+          setFailed(nextFailed);
+        }
+        return next;
+      });
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ids.join(',')]);
+
+  const cards = ids.map((id) => items[id]).filter(Boolean);
+  if (!cards.length) return null;
+
+  return (
+    <ul className="library-scene-thinker-refs" aria-label="相关书籍">
+      {cards.map((book) => {
+        const canJump = Boolean(book.collection_id);
+        return (
+          <li key={book.id}>
+            <button
+              type="button"
+              className="library-scene-thinker-ref-card"
+              disabled={!canJump}
+              onClick={() => canJump && onJump(book)}
+              title={canJump ? '跳到这本书所在的书架' : '这本书尚未分配到书架'}
+            >
+              <span
+                className="library-scene-thinker-ref-card-cover"
+                style={{ background: AREA_COLORS[(book.id || 0) % AREA_COLORS.length] }}
+              >
+                <BookOpen size={16} />
+              </span>
+              <span className="library-scene-thinker-ref-card-text">
+                <strong>{book.title || '未命名书籍'}</strong>
+                <small>{book.authors?.join('、') || '作者未知'}</small>
+              </span>
+              <span className="library-scene-thinker-ref-card-go" aria-hidden>
+                <MapPin size={13} />
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 function BookCover({ book }) {
   const [failed, setFailed] = useState(false);
@@ -153,6 +261,19 @@ export default function LibraryScene({ collections, libraryWS, sendWSMessage, on
     }
     closeThinker();
   }, [state.areas, openArea]);
+  // 思考者在回复中引用 [book-NNN] 时,点击卡片跳到该书所在的书架。
+  // 同时清掉搜索框与搜索结果,并展开对应的区域面板(不收起思考者侧栏,
+  // 这样读者可以继续追问,或者直接点开书读)。
+  const jumpToBookFromThinker = useCallback((book) => {
+    const areaId = book.collection_id ?? book.collectionId;
+    if (!areaId || !state.areas.some((area) => area.id === areaId)) {
+      message.info('这本书还未上架,可以先去图书馆导入或在场景里放置。');
+      return;
+    }
+    openArea(areaId);
+    setQuickResults([]);
+    setQuickQuery('');
+  }, [openArea, state.areas]);
   const submitThinkerChat = useCallback((event) => {
     event?.preventDefault?.();
     const text = thinkerInput.trim();
@@ -278,7 +399,18 @@ export default function LibraryScene({ collections, libraryWS, sendWSMessage, on
           <div className="library-scene-thinker-chat" aria-busy={thinkerChat.loading}>
             <p className="library-scene-thinker-label"><Sparkles size={14} />与思考者对话</p>
             <ul className="library-scene-thinker-messages">
-              {(thinkerChat.messages || []).map((messageItem, index) => <li key={index} className={`library-scene-thinker-message ${messageItem.role === 'user' ? 'is-user' : 'is-assistant'}`}><span>{messageItem.content}</span></li>)}
+              {(thinkerChat.messages || []).map((messageItem, index) => {
+                const isAssistant = messageItem.role !== 'user';
+                const bookIds = isAssistant ? extractBookIds(messageItem.content) : [];
+                return (
+                  <li key={index} className={`library-scene-thinker-message ${isAssistant ? 'is-assistant' : 'is-user'}`}>
+                    <span>{isAssistant ? renderTextWithBookRefs(messageItem.content) : messageItem.content}</span>
+                    {isAssistant && bookIds.length > 0 && (
+                      <ThinkerBookRefs ids={bookIds} libraryWS={libraryWS} onJump={jumpToBookFromThinker} />
+                    )}
+                  </li>
+                );
+              })}
               {thinkerChat.loading && <li className="library-scene-thinker-message is-assistant is-pending"><span><Loader2 className="library-scene-spin" size={14} /> 思考中…</span></li>}
               {!(thinkerChat.messages || []).length && !thinkerChat.loading && <li className="library-scene-thinker-empty">试着问：「想读一些关于城市的随笔，有推荐吗？」</li>}
             </ul>
