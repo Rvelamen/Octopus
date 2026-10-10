@@ -481,6 +481,7 @@ const PdfViewerWindow = () => {
   const pdfPath = params.get('path');
   const pdfTitle = params.get('title') || 'PDF Viewer';
   const itemId = params.get('itemId');
+  const requestedPage = Number(params.get('page'));
 
   const { sendMessage, subscribe, unsubscribe } = useWebSocket();
 
@@ -1106,6 +1107,9 @@ const PdfViewerWindow = () => {
             }
           } catch { /* localStorage may throw in private mode */ }
         }
+        if (Number.isInteger(requestedPage) && requestedPage >= 1 && requestedPage <= pdfDocument.numPages) {
+          savedPage = requestedPage;
+        }
         setCurrentPage(savedPage);
         positionRestoredRef.current = true;
         // Wait for the Page containers to mount and the layout to settle.
@@ -1147,7 +1151,7 @@ const PdfViewerWindow = () => {
     };
     loadPdf();
     return () => { cancelled = true; };
-  }, [pdfPath, sendMessage]);
+  }, [pdfPath, requestedPage, sendMessage]);
 
   // Persist reading position (debounced 500ms). Skips until positionRestoredRef
   // is set so the brief setCurrentPage(1) at load time can't clobber a real

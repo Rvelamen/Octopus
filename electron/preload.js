@@ -56,7 +56,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // 打开 PDF 阅读器窗口
-  openPdfWindow: (path, title, itemId) => ipcRenderer.invoke('open-pdf-window', { path, title, itemId }),
+  openPdfWindow: (path, title, itemId, options = {}) => ipcRenderer.invoke('open-pdf-window', { path, title, itemId, page: options.page }),
 
   // 打开 Markdown 编辑器窗口
   openMarkdownWindow: (path, title) => ipcRenderer.invoke('open-markdown-window', { path, title }),

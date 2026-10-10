@@ -398,8 +398,23 @@ ipcMain.handle('window-is-maximized', (event) => {
 });
 
 // 打开 PDF 阅读器窗口
-ipcMain.handle('open-pdf-window', (event, { path: pdfPath, title, itemId }) => {
+ipcMain.handle('open-pdf-window', (event, { path: pdfPath, title, itemId, page }) => {
+  const encodedPath = encodeURIComponent(pdfPath || '');
+  const encodedTitle = encodeURIComponent(title || 'PDF');
+  const encodedItemId = encodeURIComponent(itemId || '');
+  const initialPage = Number.isInteger(page) && page > 0 ? page : '';
+  const loadPdf = (target) => {
+    const hash = `pdf-viewer?path=${encodedPath}&title=${encodedTitle}&itemId=${encodedItemId}&page=${initialPage}`;
+    if (isDev) {
+      target.loadURL(`http://localhost:3007/pdf-viewer?document=${encodedPath}&page=${initialPage}#?path=${encodedPath}&title=${encodedTitle}&itemId=${encodedItemId}&page=${initialPage}`);
+    } else {
+      target.loadFile(path.join(__dirname, '..', 'frontend', 'dist', 'index.html'), {
+        query: { document: pdfPath || '', page: String(initialPage) }, hash,
+      });
+    }
+  };
   if (pdfWindow && !pdfWindow.isDestroyed()) {
+    loadPdf(pdfWindow);
     pdfWindow.focus();
     return { success: true };
   }
@@ -421,18 +436,7 @@ ipcMain.handle('open-pdf-window', (event, { path: pdfPath, title, itemId }) => {
     show: false,
   });
 
-  const encodedPath = encodeURIComponent(pdfPath || '');
-  const encodedTitle = encodeURIComponent(title || 'PDF');
-  const encodedItemId = encodeURIComponent(itemId || '');
-
-  if (isDev) {
-    pdfWindow.loadURL(`http://localhost:3007/pdf-viewer#?path=${encodedPath}&title=${encodedTitle}&itemId=${encodedItemId}`);
-  } else {
-    const indexPath = path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
-    pdfWindow.loadFile(indexPath, {
-      hash: `pdf-viewer?path=${encodedPath}&title=${encodedTitle}&itemId=${encodedItemId}`,
-    });
-  }
+  loadPdf(pdfWindow);
 
   if (isDev) {
     pdfWindow.webContents.openDevTools({ mode: 'detach' });
