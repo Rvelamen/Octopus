@@ -2,7 +2,6 @@
   "date": "2026-10-12",
   "scope": "Bounded real-model integration smoke test; excerpt only, not full-book/persona evaluation",
   "source": "https://github.com/tennessine/corpus",
-  "sample_codepoints": 1000,
   "model": "k3",
   "provider_id": 2,
   "result": {
@@ -57,5 +56,8 @@
       "name": "顺风耳",
       "agent_status": "candidate"
     }
-  ]
+  ],
+  "excerpt_codepoints_before_save": 1000,
+  "stored_source_codepoints": 1020,
+  "stored_source_sha256": "c723212e0b0d4044892e3eb9c34ceab2ef0d429955fa89d0f8abf39e75184f18"
 }

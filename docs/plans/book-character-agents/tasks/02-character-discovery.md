@@ -43,7 +43,7 @@
 
 17 项 T02 行为回归覆盖并发复用、同单元身份复用、歧义、伪造/重复引文、取消立即重试、删除迟到结果、持久恢复、模型缺失、适配参数和迁移备份。Mypy/Ruff、完整项目测试和前端构建结果见[验证记录](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-discovery-validation.md)。
 
-两本完整语料的 3311 / 2665 片段均通过确定性工作器遍历；替身不提取人物，不能据此声称全书人物质量已通过。真实 k3 在 1000 码点《西游记》样本上提取四个个体候选和两个待复核群体，浏览器可定位。T03 的原著断言、获知路径与人格基线尚未实现；本阶段没有可聊天 Agent。
+两本完整语料的 3311 / 2665 片段均通过确定性工作器遍历；替身不提取人物，不能据此声称全书人物质量已通过。真实 k3 在《西游记》原著摘录上提取四个个体候选和两个待复核群体，浏览器可定位。T03 的原著断言、获知路径与人格基线尚未实现；本阶段没有可聊天 Agent。
 
 设计约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，代码接入点和执行顺序见[实施计划](F:/god/project/Octopus/docs/plans/book-character-agents/implementation-plan.md)。
 

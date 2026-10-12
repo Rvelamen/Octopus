@@ -10,7 +10,7 @@
 
 实际模型联调遇到输出截断、非原文人名、码点算错和两个个体合并问题。当前按对应 Kimi Anthropic 端点把配置显示名 `K3` 规范成官方 API ID `k3`，只对人物提取请求设置 low 思考档位，写入构建指纹；其他聊天请求默认参数不变。[Kimi 模型 ID 与思考档位说明](https://www.kimi.com/code/docs/kimi-code/models.html)。偏移算错时只接受同段内唯一逐字引文重新定位，保留方法；不会用模糊或语义匹配替代引用校验。
 
-最终真实 k3 样本覆盖 1000 码点、11 个片段，提取石猴、玉帝、千里眼、顺风耳四个个体候选，以及仙卿、众猴两个待复核群体。记录见[模型联调](F:/god/project/Octopus/docs/plans/book-character-agents/validation/real-model-discovery-probe.json)。这是接口联调，不是全书人物召回、知情或人格评测。
+最终真实 k3 样本来自 1000 码点原著摘录；验收脚本在 Windows 保存时转换换行，实际来源快照为 1020 码点、11 个片段，快照 SHA-256 已另行记录。提取石猴、玉帝、千里眼、顺风耳四个个体候选，以及仙卿、众猴两个待复核群体。记录见[模型联调](F:/god/project/Octopus/docs/plans/book-character-agents/validation/real-model-discovery-probe.json)。这是接口联调，不是全书人物召回、知情或人格评测。
 
 完整《西游记》《红楼梦》分别遍历 3311 / 2665 片段及 322 / 275 检查点，末段传入且无重复。该替身只返回覆盖分组、不返回人物或知识；仅证明编排覆盖，见[完整语料遍历](F:/god/project/Octopus/docs/plans/book-character-agents/validation/discovery-corpus-coverage.json)。最初较大样本失败记录保留于[初始联调](F:/god/project/Octopus/docs/plans/book-character-agents/validation/discovery-probe-initial.json)。原始正文和临时脚本未提交。
 
