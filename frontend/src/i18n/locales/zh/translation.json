@@ -23,8 +23,8 @@
     "more": "继续加载片段",
     "original": "原著位置",
     "openPdf": "打开原始版本 · 第 {{page}} 页",
-    "characterTitle": "人物候选",
-    "candidateHint": "按全书发现人物，保留身份与称呼歧义。候选不具备原著知识，暂不能聊天。构建会调用已配置的图书馆提取模型。",
+    "characterTitle": "人物候选与档案",
+    "candidateHint": "人物发现完成后，可构建有原著依据的档案。证据不足保留未知，群体或身份歧义待复核。人物聊天在后续阶段开放。",
     "discover": "构建人物候选",
     "cancelBuild": "取消构建",
     "retryBuild": "重试 / 继续构建",
@@ -41,11 +41,15 @@
       "running": "人物发现中",
       "failed": "构建失败",
       "cancelled": "已取消",
-      "blocked_config": "需要配置提取模型"
+      "blocked_config": "需要配置提取模型",
+      "published": "原著档案已发布",
+      "partial_published": "部分发布"
     },
     "characterStatus": {
       "candidate": "候选，暂不能聊天",
-      "needs_review": "身份待复核"
+      "needs_review": "身份待复核",
+      "ready": "档案已就绪",
+      "sparse": "依据稀疏，缺项未知"
     },
     "presence": {
       "active": "行动 / 发言",
@@ -53,7 +57,48 @@
       "referenced": "仅被提及",
       "uncertain": "在场情况不明"
     },
-    "resumeBuild": "恢复任务"
+    "resumeBuild": "恢复任务",
+    "buildPersona": "构建原著档案",
+    "personaTitle": "原著档案",
+    "viewPersona": "查看档案",
+    "closeArchive": "关闭",
+    "personaExtracting": "正在提取原著断言并校验人物获知路径",
+    "readerArchiveHint": "这是读者档案：原文可含旁白或其他人物秘密。人物 Agent 只接收自己获准的内容。",
+    "baselineTitle": "原著当前基线",
+    "baselineUnknown": "暂无可确定的当前基线；缺少依据的动机、价值、观念保持未知。",
+    "claimsTitle": "经历、信念与人设依据",
+    "noClaims": "暂未提取到断言",
+    "beliefTruth": "信念与事实：{{truth}}",
+    "correctedBelief": "原著明确修正了此前的信念或设定",
+    "accessAllowed": "获知路径已通过",
+    "accessDenied": "不作为人物可知内容",
+    "publicationCoverage": "已发布 {{published}} 人 · 待复核 {{unresolved}} 人 · 失败单元 {{failed}} · 不确定基线 {{conflicts}}",
+    "claimKind": {
+      "fact": "世界事实",
+      "episode": "亲历",
+      "belief": "信念",
+      "trait": "观念 / 特征",
+      "relation": "关系",
+      "emotion": "情绪模式",
+      "style": "表达样本"
+    },
+    "supportState": {
+      "accepted": "原著支持",
+      "rejected": "未通过支持校验",
+      "pending": "待校验"
+    },
+    "truthState": {
+      "true": "为真",
+      "false": "为假",
+      "disputed": "有争议",
+      "unknown": "未知"
+    },
+    "accessRoute": {
+      "firsthand": "亲历 / 本人心理",
+      "observed": "实际观察",
+      "told": "被告知",
+      "common": "共同背景"
+    }
   },
   "nav": {
     "group": {

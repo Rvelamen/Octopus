@@ -631,15 +631,26 @@ def _migration_014_book_sources(conn: sqlite3.Connection) -> None:
     apply_source_schema(conn)
 
 
-def _migration_015_book_discovery(conn: sqlite3.Connection) -> None:
+def _backup_book_migration(conn: sqlite3.Connection, suffix: str) -> None:
     database_file = conn.execute("PRAGMA database_list").fetchone()[2]
     if database_file:
-        backup = Path(database_file).with_name(Path(database_file).name + ".pre-discovery-v15.bak")
+        backup = Path(database_file).with_name(Path(database_file).name + suffix)
         if not backup.exists():
             with sqlite3.connect(str(backup)) as target:
                 conn.backup(target)
+
+
+def _migration_015_book_discovery(conn: sqlite3.Connection) -> None:
+    _backup_book_migration(conn, ".pre-discovery-v15.bak")
     conn.executescript(
         (Path(__file__).parent / "book_world" / "discovery_schema.sql").read_text(encoding="utf-8")
+    )
+
+
+def _migration_016_book_persona(conn: sqlite3.Connection) -> None:
+    _backup_book_migration(conn, ".pre-persona-v16.bak")
+    conn.executescript(
+        (Path(__file__).parent / "book_world" / "persona_schema.sql").read_text(encoding="utf-8")
     )
 
 
@@ -670,6 +681,7 @@ def run_knowledge_index_migrations(db_path: Path) -> None:
     )
     runner.register(14, "book_narrative_sources", _migration_014_book_sources)
     runner.register(15, "book_character_discovery", _migration_015_book_discovery)
+    runner.register(16, "book_character_persona", _migration_016_book_persona)
     runner.run()
 
 

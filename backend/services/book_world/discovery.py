@@ -162,23 +162,35 @@ class BookDiscoveryService:
                     return {"status": "not_built"}
                 build_id = row["id"]
             row = self._build(db, item_id, build_id)
+            progress_stage = (
+                "evidence"
+                if row["stage"] in ("persona_extract", "persona_published")
+                else "discovery"
+            )
             steps = db.execute(
-                "SELECT status,COUNT(*) AS n FROM book_build_steps WHERE build_id=? GROUP BY status",
-                (build_id,),
+                "SELECT status,COUNT(*) AS n FROM book_build_steps WHERE build_id=? AND stage=? GROUP BY status",
+                (build_id, progress_stage),
             ).fetchall()
             counts = {step["status"]: step["n"] for step in steps}
             processed = db.execute(
                 "SELECT COUNT(DISTINCT segment_id) FROM book_scene_segments WHERE build_id=?",
                 (build_id,),
             ).fetchone()[0]
+            if progress_stage == "evidence":
+                processed = len({segment for step in db.execute("SELECT result_json FROM book_build_steps WHERE build_id=? AND stage='evidence' AND status='validated'", (build_id,)) for segment in json.loads(step["result_json"]).get("segment_ids", [])})
             total = db.execute(
                 "SELECT COUNT(*) FROM book_segments WHERE book_id=? AND source_version_id=?",
                 (row["book_id"], row["source_version_id"]),
             ).fetchone()[0]
+            report = db.execute(
+                "SELECT result_json FROM book_build_steps WHERE build_id=? AND stage='publication' AND unit_key='summary'",
+                (build_id,),
+            ).fetchone()
             return {
                 "build_id": row["id"],
                 "book_id": row["book_id"],
                 "source_version_id": row["source_version_id"],
+                "parent_build_id": row["parent_build_id"],
                 "status": row["status"],
                 "stage": row["stage"],
                 "total_units": sum(counts.values()),
@@ -188,10 +200,11 @@ class BookDiscoveryService:
                 "total_segments": total,
                 "error_code": row["error_code"],
                 "error_detail": row["error_detail"],
-                "can_resume": row["stage"] == "character_discovery"
+                "can_resume": row["stage"] in ("character_discovery", "persona_extract")
                 and row["status"] in ("queued", "running")
                 and (not row["lease_owner"] or row["lease_expires_at"] <= _now()),
                 "config": json.loads(row["config_snapshot_json"]),
+                "publication_report": json.loads(report["result_json"]) if report else None,
             }
 
     def list_characters(

@@ -15,6 +15,7 @@ from backend.services.book_world import BookSourceService, BookWorldError
 from backend.services.book_world.contracts import BookWorldRequest
 from backend.services.book_world.discovery import BookDiscoveryService, DiscoveryConfig
 from backend.services.book_world.discovery_provider import DiscoveryModel, resolve_discovery_model
+from backend.services.book_world.persona import BookPersonaService, PersonaConfig
 from backend.services.book_world.storage import workspace_identity
 from backend.utils.helpers import get_workspace_path
 
@@ -34,7 +35,9 @@ class BookWorldHandler(MessageHandler):
                 await task
 
     @classmethod
-    def _schedule(cls, root: Path, build_id: str, model: DiscoveryModel) -> None:
+    def _schedule(
+        cls, root: Path, build_id: str, model: DiscoveryModel, phase: str = "discovery"
+    ) -> None:
         key = (workspace_identity(root), build_id)
         task = cls._build_tasks.get(key)
         if task is not None and not task.done():
@@ -45,8 +48,14 @@ class BookWorldHandler(MessageHandler):
                 slots_key = (asyncio.get_running_loop(), workspace_identity(root))
                 slots = cls._worker_slots.setdefault(slots_key, asyncio.Semaphore(1))
                 async with slots:
-                    service = await asyncio.to_thread(BookDiscoveryService, root)
-                    await service.run(build_id, model.provider, model.config)
+                    if phase == "persona":
+                        service = await asyncio.to_thread(BookPersonaService, root)
+                        await service.run(
+                            build_id, model.provider, PersonaConfig.from_model(model.config)
+                        )
+                    else:
+                        discovery = await asyncio.to_thread(BookDiscoveryService, root)
+                        await discovery.run(build_id, model.provider, model.config)
             except Exception:
                 logger.error("Book discovery worker failed before completion")
             finally:
@@ -56,6 +65,12 @@ class BookWorldHandler(MessageHandler):
 
     async def _discovery(self, root: Path, request: BookWorldRequest) -> dict[str, Any]:
         service = await asyncio.to_thread(BookDiscoveryService, root)
+        if request.action in ("start_persona", "get_character"):
+            return await self._persona(root, request)
+        if request.action in ("cancel_build", "retry_build", "resume_build"):
+            current = await asyncio.to_thread(service.get_build, request.item_id, request.build_id)
+            if current["stage"] in ("persona_extract", "persona_published"):
+                return await self._persona(root, request)
         model = None
         if request.action == "start_discovery":
             assert request.source_version_id is not None
@@ -117,6 +132,57 @@ class BookWorldHandler(MessageHandler):
             and result.get("status") in ("queued", "running")
         ):
             self._schedule(root, result["build_id"], model)
+        return {
+            "action": request.action,
+            "workspace_id": workspace_identity(root),
+            "item_id": request.item_id,
+            **result,
+        }
+
+    async def _persona(self, root: Path, request: BookWorldRequest) -> dict[str, Any]:
+        service = await asyncio.to_thread(BookPersonaService, root)
+        assert request.build_id is not None
+        model = None
+        if request.action == "get_character":
+            assert request.character_id is not None
+            result = await asyncio.to_thread(
+                service.get_character, request.item_id, request.build_id, request.character_id
+            )
+        elif request.action == "cancel_build":
+            result = await asyncio.to_thread(
+                service.control, request.item_id, request.build_id, "cancel"
+            )
+            await self._stop_worker(root, request.build_id)
+        else:
+            model = await asyncio.to_thread(resolve_discovery_model)
+            config = PersonaConfig.from_model(model.config)
+            if request.action == "start_persona":
+                result = await asyncio.to_thread(
+                    service.request_build, request.item_id, request.build_id, config
+                )
+            else:
+                current = await asyncio.to_thread(
+                    service.discovery.get_build, request.item_id, request.build_id
+                )
+                if current["config"] != config.model_dump():
+                    raise BookWorldError(
+                        "config_changed", "Resume requires original persona model configuration"
+                    )
+                if request.action == "retry_build":
+                    result = await asyncio.to_thread(
+                        service.control, request.item_id, request.build_id, "retry"
+                    )
+                elif request.action == "resume_build" and current["can_resume"]:
+                    result = current
+                else:
+                    raise BookWorldError("invalid_build_state", "Persona build cannot be resumed")
+                await self._stop_worker(root, request.build_id)
+        if (
+            model
+            and result.get("stage") == "persona_extract"
+            and result.get("status") in ("queued", "running")
+        ):
+            self._schedule(root, result["build_id"], model, phase="persona")
         return {
             "action": request.action,
             "workspace_id": workspace_identity(root),
@@ -187,6 +253,8 @@ class BookWorldHandler(MessageHandler):
                 "cancel_build",
                 "retry_build",
                 "resume_build",
+                "start_persona",
+                "get_character",
             ):
                 result = await self._discovery(root, request)
             else:

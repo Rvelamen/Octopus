@@ -1,0 +1,148 @@
+{
+  "date": "2026-10-12",
+  "scope": "T03 bounded excerpt integration only, not full-book persona/knowledge quality",
+  "source_sample_sha256": "c723212e0b0d4044892e3eb9c34ceab2ef0d429955fa89d0f8abf39e75184f18",
+  "parent_build": "e6849fdb-7258-423d-bc1f-068b63b18467",
+  "model": "k3",
+  "result": {
+    "build_id": "85b07c37-99fd-4eed-a54c-bfec3531f49f",
+    "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+    "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+    "parent_build_id": "e6849fdb-7258-423d-bc1f-068b63b18467",
+    "status": "partial_published",
+    "stage": "persona_published",
+    "total_units": 2,
+    "completed_units": 2,
+    "failed_units": 0,
+    "processed_segments": 11,
+    "total_segments": 11,
+    "error_code": "partial_build",
+    "error_detail": "Some identities, evidence units or baseline slots remain unresolved",
+    "can_resume": false,
+    "config": {
+      "call_timeout_seconds": 180,
+      "max_tokens": 4096,
+      "model": "k3",
+      "policy_version": "canonical-persona-v3",
+      "prompt_version": "persona-extract-v3",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "persona-review-v3",
+      "unit_char_limit": 4000,
+      "unit_segment_limit": 12
+    },
+    "publication_report": {
+      "baseline_conflicts": 1,
+      "failed_units": [],
+      "published_characters": 4,
+      "rejected_claims": 1,
+      "unresolved_characters": 2
+    }
+  },
+  "profiles": [
+    {
+      "name": "仙卿",
+      "status": "needs_review",
+      "claims": 0,
+      "baseline": {},
+      "logical_agent_created": false
+    },
+    {
+      "name": "众猴",
+      "status": "needs_review",
+      "claims": 0,
+      "baseline": {},
+      "logical_agent_created": false
+    },
+    {
+      "name": "千里眼",
+      "status": "sparse",
+      "claims": 1,
+      "baseline": {
+        "trait:远望之能": {
+          "claim_id": "e572d4b5-7cfa-44bb-8587-eacf93d8a142",
+          "proposition": "千里眼奉旨开南天门观看，能看清下界远处之事。",
+          "kind": "trait",
+          "evidence": [
+            {
+              "evidence_id": "a22b70af-a002-46e1-bb0d-f3289bc0945c",
+              "approved_excerpt": ""
+            },
+            {
+              "evidence_id": "b27ca98c-92b9-46a5-9174-58b033036a67",
+              "approved_excerpt": ""
+            }
+          ]
+        }
+      },
+      "logical_agent_created": true
+    },
+    {
+      "name": "玉皇大天尊玄穹高上帝",
+      "status": "sparse",
+      "claims": 1,
+      "baseline": {
+        "belief:石猴来历": {
+          "claim_id": "6c832e51-d582-4398-bd23-e46bddec53e4",
+          "proposition": "玉帝认为下方石猴是天地精华所生，不足为异。",
+          "kind": "belief",
+          "evidence": [
+            {
+              "evidence_id": "93e47b3c-6e0b-48a9-b7c3-bbeecc21fa52",
+              "approved_excerpt": "下方之物乃天地精华所生不足为异"
+            }
+          ]
+        }
+      },
+      "logical_agent_created": true
+    },
+    {
+      "name": "石猴",
+      "status": "ready",
+      "claims": 7,
+      "baseline": {
+        "trait:胆识": {
+          "claim_id": "abcc4ecf-6854-45dc-9a84-8bca53c41172",
+          "proposition": "石猴胆大好为，众猴连呼三声无人敢应时，他主动跳出应声愿独入瀑布泉中探源。",
+          "kind": "trait",
+          "evidence": [
+            {
+              "evidence_id": "508782c4-00a8-4813-8e26-6463716360a6",
+              "approved_excerpt": ""
+            },
+            {
+              "evidence_id": "185f608d-f574-4a88-add5-98c67b71b362",
+              "approved_excerpt": ""
+            }
+          ]
+        }
+      },
+      "logical_agent_created": true
+    },
+    {
+      "name": "顺风耳",
+      "status": "sparse",
+      "claims": 1,
+      "baseline": {
+        "trait:远听之能": {
+          "claim_id": "aa5d63b2-359b-47fe-af22-74bc173a0e46",
+          "proposition": "顺风耳奉旨开南天门观听，能听清下界远处之声。",
+          "kind": "trait",
+          "evidence": [
+            {
+              "evidence_id": "838a4930-cb20-4e5e-b326-818f56910737",
+              "approved_excerpt": ""
+            },
+            {
+              "evidence_id": "9946e471-7418-426e-9fb5-768d110029e6",
+              "approved_excerpt": ""
+            }
+          ]
+        }
+      },
+      "logical_agent_created": true
+    }
+  ],
+  "calls": 6
+}

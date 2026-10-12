@@ -123,7 +123,11 @@ expect("cross-build-access", lambda: insert("book_claim_access", **scope(), char
 expect("non-owner-belief", lambda: insert("book_claim_access", **scope(), character_id="y",
        claim_id="belief", route="common"), "non_owner_personal_claim")
 expect("ungranted-baseline", lambda: insert("book_character_baselines", **scope(),
-       character_id="y", slot_key="bad", claim_id="f1"), "FOREIGN KEY")
+       character_id="y", slot_key="bad", claim_id="f1"), "unapproved_baseline")
+def pending_baseline():
+    db.execute("UPDATE book_claim_access SET access_state='pending' WHERE build_id='a1' AND character_id='x' AND claim_id='f1'")
+    insert("book_character_baselines", **scope(), character_id="x", slot_key="pending", claim_id="f1")
+expect("pending-access-baseline", pending_baseline, "unapproved_baseline")
 expect("invalid-evidence-span", lambda: insert("book_evidence", id="bad", **scope(),
        claim_id="f1", segment_id="s1-seg", local_start=0, local_end=99, quote_text="bad",
        quote_hash="bad"), "invalid_evidence_span")

@@ -866,3 +866,36 @@ WHEN NEW.speaker_type='character' AND EXISTS (SELECT 1 FROM book_room_rounds r
  WHERE r.id=NEW.round_id AND r.window_elapsed_ms>=r.time_limit_seconds*1000)
 BEGIN SELECT RAISE(ABORT,'round_timeout'); END;
 
+-- Additional guards registered by production T03 migration 16.
+CREATE TRIGGER IF NOT EXISTS tr_book_baseline_accepted_insert BEFORE INSERT ON book_character_baselines
+WHEN NOT EXISTS (SELECT 1 FROM book_claim_access a JOIN book_claims c ON c.id=a.claim_id AND c.build_id=a.build_id
+ WHERE a.book_id=NEW.book_id AND a.source_version_id=NEW.source_version_id AND a.build_id=NEW.build_id
+ AND a.character_id=NEW.character_id AND a.claim_id=NEW.claim_id AND a.access_state='accepted' AND c.support_state='accepted')
+BEGIN SELECT RAISE(ABORT,'unapproved_baseline'); END;
+
+CREATE TRIGGER IF NOT EXISTS tr_book_baseline_accepted_update BEFORE UPDATE ON book_character_baselines
+WHEN NOT EXISTS (SELECT 1 FROM book_claim_access a JOIN book_claims c ON c.id=a.claim_id AND c.build_id=a.build_id
+ WHERE a.book_id=NEW.book_id AND a.source_version_id=NEW.source_version_id AND a.build_id=NEW.build_id
+ AND a.character_id=NEW.character_id AND a.claim_id=NEW.claim_id AND a.access_state='accepted' AND c.support_state='accepted')
+BEGIN SELECT RAISE(ABORT,'unapproved_baseline'); END;
+
+CREATE TRIGGER IF NOT EXISTS tr_book_steps_frozen_insert BEFORE INSERT ON book_build_steps
+WHEN EXISTS (SELECT 1 FROM book_builds b JOIN book_books k ON k.id=b.book_id WHERE b.id=NEW.build_id
+ AND b.status IN ('published','partial_published') AND b.lifecycle_state='active' AND k.lifecycle_state='active')
+BEGIN SELECT RAISE(ABORT,'immutable_published_canon'); END;
+
+CREATE TRIGGER IF NOT EXISTS tr_book_steps_frozen_update BEFORE UPDATE ON book_build_steps
+WHEN EXISTS (SELECT 1 FROM book_builds b JOIN book_books k ON k.id=b.book_id WHERE b.id=OLD.build_id
+ AND b.status IN ('published','partial_published') AND b.lifecycle_state='active' AND k.lifecycle_state='active')
+BEGIN SELECT RAISE(ABORT,'immutable_published_canon'); END;
+
+CREATE TRIGGER IF NOT EXISTS tr_book_steps_frozen_delete BEFORE DELETE ON book_build_steps
+WHEN EXISTS (SELECT 1 FROM book_builds b JOIN book_books k ON k.id=b.book_id WHERE b.id=OLD.build_id
+ AND b.status IN ('published','partial_published') AND b.lifecycle_state='active' AND k.lifecycle_state='active')
+BEGIN SELECT RAISE(ABORT,'immutable_published_canon'); END;
+
+CREATE TRIGGER IF NOT EXISTS tr_book_published_config BEFORE UPDATE OF config_snapshot_json,build_fingerprint,policy_version,parent_build_id,stage ON book_builds
+WHEN OLD.status IN ('published','partial_published') AND (NEW.config_snapshot_json IS NOT OLD.config_snapshot_json
+ OR NEW.build_fingerprint IS NOT OLD.build_fingerprint OR NEW.policy_version IS NOT OLD.policy_version
+ OR NEW.parent_build_id IS NOT OLD.parent_build_id OR NEW.stage IS NOT OLD.stage)
+BEGIN SELECT RAISE(ABORT,'immutable_published_config'); END;

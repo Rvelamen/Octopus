@@ -23,8 +23,8 @@
     "more": "Load more segments",
     "original": "Original location",
     "openPdf": "Open original version · Page {{page}}",
-    "characterTitle": "Character candidates",
-    "candidateHint": "Discover characters across the whole source and retain identity conflicts. Candidates have no canonical knowledge and cannot chat yet. Builds call the configured library extraction model.",
+    "characterTitle": "Candidates and character archives",
+    "candidateHint": "After discovery, build evidence-backed character archives. Missing evidence stays unknown; groups and ambiguous identities need review. Character chat is a later stage.",
     "discover": "Discover characters",
     "cancelBuild": "Cancel build",
     "retryBuild": "Retry / continue build",
@@ -41,11 +41,15 @@
       "running": "Discovering",
       "failed": "Build failed",
       "cancelled": "Cancelled",
-      "blocked_config": "Configure extraction model"
+      "blocked_config": "Configure extraction model",
+      "published": "Canonical archive published",
+      "partial_published": "Partially published"
     },
     "characterStatus": {
       "candidate": "Candidate, chat unavailable",
-      "needs_review": "Identity needs review"
+      "needs_review": "Identity needs review",
+      "ready": "Archive ready",
+      "sparse": "Sparse; missing evidence stays unknown"
     },
     "presence": {
       "active": "Acting / speaking",
@@ -53,7 +57,48 @@
       "referenced": "Only mentioned",
       "uncertain": "Presence uncertain"
     },
-    "resumeBuild": "Resume build"
+    "resumeBuild": "Resume build",
+    "buildPersona": "Build canonical archive",
+    "personaTitle": "Canonical archive",
+    "viewPersona": "View archive",
+    "closeArchive": "Close",
+    "personaExtracting": "Extracting claims and reviewing acquisition paths",
+    "readerArchiveHint": "Reader archive: source quotes may contain narrator or other-character secrets. Agents receive only their authorized content.",
+    "baselineTitle": "Current canonical baseline",
+    "baselineUnknown": "No supported current baseline. Missing motivations, values and beliefs stay unknown.",
+    "claimsTitle": "Episodes, beliefs and persona evidence",
+    "noClaims": "No claims extracted yet",
+    "beliefTruth": "Belief vs. truth: {{truth}}",
+    "correctedBelief": "Explicitly corrects an earlier belief or state",
+    "accessAllowed": "Acquisition verified",
+    "accessDenied": "Unavailable to this character",
+    "publicationCoverage": "Published {{published}} · Review {{unresolved}} · Failed units {{failed}} · Uncertain slots {{conflicts}}",
+    "claimKind": {
+      "fact": "World fact",
+      "episode": "Episode",
+      "belief": "Belief",
+      "trait": "Value / trait",
+      "relation": "Relation",
+      "emotion": "Emotion pattern",
+      "style": "Speech sample"
+    },
+    "supportState": {
+      "accepted": "Supported",
+      "rejected": "Support rejected",
+      "pending": "Pending review"
+    },
+    "truthState": {
+      "true": "True",
+      "false": "False",
+      "disputed": "Disputed",
+      "unknown": "Unknown"
+    },
+    "accessRoute": {
+      "firsthand": "Firsthand / own mind",
+      "observed": "Observed",
+      "told": "Told",
+      "common": "Common background"
+    }
   },
   "nav": {
     "group": {

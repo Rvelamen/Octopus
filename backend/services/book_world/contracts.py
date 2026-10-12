@@ -20,11 +20,14 @@ class BookWorldRequest(BaseModel):
         "cancel_build",
         "retry_build",
         "resume_build",
+        "start_persona",
+        "get_character",
     ]
     item_id: int = Field(strict=True, gt=0)
     source_version_id: str | None = None
     segment_id: str | None = None
     build_id: str | None = Field(default=None, max_length=100)
+    character_id: str | None = Field(default=None, max_length=100)
     expected_attachment_sha256: str | None = None
     after_ordinal: int = Field(default=-1, strict=True, ge=-1)
     limit: int = Field(default=50, strict=True, ge=1, le=200)
@@ -43,8 +46,18 @@ class BookWorldRequest(BaseModel):
         if self.action == "resolve_evidence" and not self.segment_id:
             raise ValueError("segment_id is required")
         if (
-            self.action in ("list_characters", "cancel_build", "retry_build", "resume_build")
+            self.action
+            in (
+                "list_characters",
+                "cancel_build",
+                "retry_build",
+                "resume_build",
+                "start_persona",
+                "get_character",
+            )
             and not self.build_id
         ):
             raise ValueError("build_id is required")
+        if self.action == "get_character" and not self.character_id:
+            raise ValueError("character_id is required")
         return self
