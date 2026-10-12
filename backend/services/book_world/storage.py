@@ -1,9 +1,16 @@
 """Short-lived, foreign-key enabled connections for one fixed workspace."""
 
+import hashlib
+import os
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
+
+
+def workspace_identity(root: Path) -> str:
+    """Identify a canonical workspace without exposing an absolute path."""
+    return hashlib.sha256(os.path.normcase(str(root.resolve())).encode("utf-8")).hexdigest()
 
 
 @contextmanager

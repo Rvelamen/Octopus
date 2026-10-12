@@ -8,7 +8,7 @@
 
 ## 前置依赖
 
-[T01 在书目中准备可定位的全文来源](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/01-narrative-source.md)。
+[T18 图书馆 TXT 导入与全文来源](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/18-txt-library-source.md)，已覆盖 T01 的前置来源要求。
 
 ## 实施步骤
 

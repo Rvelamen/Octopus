@@ -5,13 +5,15 @@ import json
 import shutil
 import sqlite3
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 from backend.services.knowledge_migrations import run_knowledge_index_migrations
 
 from .pdf_source import parse_pdf, sha256_file
 from .storage import connect
+from .text_source import PARSER_VERSION as TEXT_PARSER_VERSION
+from .text_source import parse_text, read_text_file
 
 PARSER_VERSION = "narrative-pdf-lines-v1"
 
@@ -42,7 +44,7 @@ class BookSourceService:
         row = db.execute("SELECT * FROM library_items WHERE id=?", (item_id,)).fetchone()
         if row is None:
             raise BookWorldError("item_not_found", "Library item no longer exists")
-        return row
+        return cast(sqlite3.Row, row)
 
     def _source(self, db: sqlite3.Connection, item_id: int, version: str) -> sqlite3.Row:
         row = db.execute(
@@ -53,7 +55,31 @@ class BookSourceService:
         ).fetchone()
         if row is None:
             raise BookWorldError("source_removed", "Source is unavailable for this item")
-        return row
+        return cast(sqlite3.Row, row)
+
+    @staticmethod
+    def _attachment(db: sqlite3.Connection, item: sqlite3.Row) -> dict[str, str]:
+        if item["pdf_sha256"]:
+            return {
+                "format": "pdf",
+                "filename": "main.pdf",
+                "sha256": item["pdf_sha256"],
+                "parser": PARSER_VERSION,
+            }
+        text = db.execute(
+            "SELECT sha256 FROM library_attachments WHERE item_id=? AND rel_path='main.txt' AND file_type='txt' ORDER BY id DESC LIMIT 1",
+            (item["id"],),
+        ).fetchone()
+        if text and text["sha256"]:
+            return {
+                "format": "txt",
+                "filename": "main.txt",
+                "sha256": text["sha256"],
+                "parser": TEXT_PARSER_VERSION,
+            }
+        raise BookWorldError(
+            "source_not_ready", "Wait for a supported PDF or TXT attachment to be ready"
+        )
 
     @staticmethod
     def _snapshot(row: sqlite3.Row) -> dict[str, Any]:
@@ -65,6 +91,7 @@ class BookSourceService:
             "quality": quality,
             "segment_count": quality["segment_count"],
             "parser_version": row["parser_version"],
+            "format": row["format"],
         }
 
     def _verify_snapshot(self, row: sqlite3.Row) -> None:
@@ -87,29 +114,34 @@ class BookSourceService:
             item = self._item(db, item_id)
             if source_version_id:
                 return self._snapshot(self._source(db, item_id, source_version_id))
+            try:
+                attachment = self._attachment(db, item)
+            except BookWorldError:
+                return {"status": "not_prepared", "quality": {}}
             row = db.execute(
                 "SELECT s.* FROM book_source_versions s JOIN book_books b ON b.id=s.book_id "
                 "WHERE b.library_item_id=? AND b.lifecycle_state='active' AND s.lifecycle_state='available' "
                 "AND s.attachment_sha256=? AND s.parser_version=? "
                 "ORDER BY s.created_at DESC,s.rowid DESC LIMIT 1",
-                (item_id, item["pdf_sha256"], PARSER_VERSION),
+                (item_id, attachment["sha256"], attachment["parser"]),
             ).fetchone()
             return self._snapshot(row) if row else {"status": "not_prepared", "quality": {}}
 
     def prepare_source(
         self, item_id: int, *, expected_attachment_sha256: str | None = None
     ) -> dict[str, Any]:
-        """Snapshot the ready PDF and atomically publish all narrative segments."""
+        """Snapshot a ready PDF/TXT and atomically publish all narrative segments."""
         with connect(self.db_path) as db:
             item = self._item(db, item_id)
-            if not item["library_path"] or not item["pdf_sha256"]:
-                raise BookWorldError("source_not_ready", "Wait for the PDF attachment to be ready")
+            attachment = self._attachment(db, item)
+            if not item["library_path"]:
+                raise BookWorldError("source_not_ready", "The attachment folder is not ready")
             folder = self._path(item["library_path"])
-            pdf = self._path(str(folder / "main.pdf"))
-            if not pdf.is_file():
-                raise BookWorldError("source_not_ready", "The PDF attachment is missing")
-            digest = sha256_file(pdf)
-            if digest != item["pdf_sha256"] or (
+            original = self._path(str(folder / attachment["filename"]))
+            if not original.is_file():
+                raise BookWorldError("source_not_ready", "The attachment is missing")
+            digest = sha256_file(original)
+            if digest != attachment["sha256"] or (
                 expected_attachment_sha256 and digest != expected_attachment_sha256
             ):
                 raise BookWorldError(
@@ -119,7 +151,7 @@ class BookSourceService:
                 "SELECT s.* FROM book_source_versions s JOIN book_books b ON b.id=s.book_id "
                 "WHERE b.library_item_id=? AND b.lifecycle_state='active' AND s.lifecycle_state='available' "
                 "AND s.attachment_sha256=? AND s.parser_version=? LIMIT 1",
-                (item_id, digest, PARSER_VERSION),
+                (item_id, digest, attachment["parser"]),
             ).fetchone()
             if cached:
                 self._verify_snapshot(cached)
@@ -127,16 +159,19 @@ class BookSourceService:
         version_id = str(uuid4())
         version_dir = folder / "narrative" / version_id
         version_dir.mkdir(parents=True, exist_ok=False)
-        asset = version_dir / "main.pdf"
+        asset = version_dir / attachment["filename"]
         text_file = version_dir / "canonical.txt"
         locator_file = version_dir / "locators.json"
         try:
-            shutil.copyfile(pdf, asset)
+            shutil.copyfile(original, asset)
             if sha256_file(asset) != digest:
                 raise BookWorldError(
                     "source_changed", "Attachment changed while preparing its snapshot"
                 )
-            parsed = parse_pdf(asset)
+            try:
+                parsed = parse_text(asset) if attachment["format"] == "txt" else parse_pdf(asset)
+            except ValueError as error:
+                raise BookWorldError("invalid_source", str(error)) from error
             text_file.write_text(parsed.text, encoding="utf-8", newline="")
             locator_file.write_text(
                 json.dumps(parsed.page_locators, ensure_ascii=False), encoding="utf-8"
@@ -150,7 +185,7 @@ class BookSourceService:
             with connect(self.db_path) as db:
                 db.execute("BEGIN IMMEDIATE")
                 current = self._item(db, item_id)
-                if current["pdf_sha256"] != digest:
+                if self._attachment(db, current)["sha256"] != digest:
                     raise BookWorldError(
                         "source_changed", "The attachment was replaced during preparation"
                     )
@@ -168,7 +203,7 @@ class BookSourceService:
                 cached = db.execute(
                     "SELECT * FROM book_source_versions WHERE book_id=? AND attachment_sha256=? "
                     "AND parser_version=? AND canonical_text_sha256=? AND lifecycle_state='available'",
-                    (book_id, digest, PARSER_VERSION, text_digest),
+                    (book_id, digest, attachment["parser"], text_digest),
                 ).fetchone()
                 if cached:
                     self._verify_snapshot(cached)
@@ -176,15 +211,16 @@ class BookSourceService:
                 else:
                     db.execute(
                         "INSERT INTO book_source_versions(id,book_id,attachment_sha256,parser_version,canonical_text_sha256,"
-                        "asset_rel_path,text_rel_path,format,quality_json) VALUES (?,?,?,?,?,?,?,'pdf',?)",
+                        "asset_rel_path,text_rel_path,format,quality_json) VALUES (?,?,?,?,?,?,?,?,?)",
                         (
                             version_id,
                             book_id,
                             digest,
-                            PARSER_VERSION,
+                            attachment["parser"],
                             text_digest,
                             asset.relative_to(self.root).as_posix(),
                             text_file.relative_to(self.root).as_posix(),
+                            attachment["format"],
                             json.dumps(quality, ensure_ascii=False),
                         ),
                     )
@@ -217,7 +253,7 @@ class BookSourceService:
 
     @staticmethod
     def _discard(folder: Path) -> None:
-        for name in ("main.pdf", "canonical.txt", "locators.json"):
+        for name in ("main.pdf", "main.txt", "canonical.txt", "locators.json"):
             (folder / name).unlink(missing_ok=True)
         if folder.exists():
             folder.rmdir()
@@ -254,7 +290,7 @@ class BookSourceService:
         local_start: int = 0,
         local_end: int | None = None,
     ) -> dict[str, Any]:
-        """Resolve a Unicode-codepoint span against the immutable PDF snapshot."""
+        """Resolve a Unicode-codepoint span against its immutable attachment."""
         with connect(self.db_path) as db:
             source = self._source(db, item_id, source_version_id)
             row = db.execute(
@@ -286,6 +322,41 @@ class BookSourceService:
                 "start_offset": row["start_offset"] + local_start,
                 "end_offset": row["start_offset"] + end,
                 "asset_path": source["asset_rel_path"],
-                "page_start": locator["page_start"] + local_start,
-                "page_end": locator["page_start"] + end,
+                "format": source["format"],
+                "page_start": locator["page_start"] + local_start
+                if source["format"] == "pdf"
+                else None,
+                "page_end": locator["page_start"] + end if source["format"] == "pdf" else None,
+                "source_start": locator["source_start"] + local_start
+                if source["format"] == "txt"
+                else None,
+                "source_end": locator["source_start"] + end if source["format"] == "txt" else None,
+                "line_number": locator.get("line_number"),
+            }
+
+    def read_source(
+        self, item_id: int, source_version_id: str, offset: int = 0, limit: int = 12000
+    ) -> dict[str, Any]:
+        """Read a bounded original TXT window for the reader, never for character retrieval."""
+        if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
+            raise BookWorldError("invalid_request", "Invalid text offset")
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 20000:
+            raise BookWorldError(
+                "invalid_request", "Text window must be between 1 and 20000 codepoints"
+            )
+        with connect(self.db_path) as db:
+            source = self._source(db, item_id, source_version_id)
+            if source["format"] != "txt":
+                raise BookWorldError("unsupported_format", "Use the PDF reader for this source")
+            self._verify_snapshot(source)
+            text, _ = read_text_file(self._path(source["asset_rel_path"]))
+            if offset > len(text):
+                raise BookWorldError("invalid_request", "Text offset is beyond the source")
+            end = min(len(text), offset + limit)
+            return {
+                "format": "txt",
+                "text": text[offset:end],
+                "offset": offset,
+                "next_offset": end if end < len(text) else None,
+                "total_characters": len(text),
             }

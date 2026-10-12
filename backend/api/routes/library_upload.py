@@ -1,13 +1,14 @@
-"""REST API for Library PDF upload via HTTP (faster than WebSocket hex)."""
+"""REST API for supported library documents via HTTP multipart upload."""
 
 import asyncio
 import shutil
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from loguru import logger
 
+from backend.services.book_world.storage import workspace_identity
 from backend.utils.helpers import get_workspace_path
 
 router = APIRouter(prefix="/api/library")
@@ -16,7 +17,7 @@ router = APIRouter(prefix="/api/library")
 @router.post("/upload")
 async def library_upload(file: UploadFile = File(...)):
     """
-    Upload a PDF file directly via HTTP multipart/form-data.
+    Upload a PDF or TXT document directly via HTTP multipart/form-data.
     Returns a temp path relative to workspace for subsequent library_create WS call.
     """
     try:
@@ -26,6 +27,9 @@ async def library_upload(file: UploadFile = File(...)):
 
         original_name = file.filename or "upload.pdf"
         safe_name = Path(original_name).name
+        file_format = Path(safe_name).suffix.lower().lstrip(".")
+        if file_format not in ("pdf", "txt"):
+            raise HTTPException(status_code=400, detail="Only PDF and TXT documents are supported")
         temp_name = f"_tmp_{uuid.uuid4().hex[:8]}_{safe_name}"
         dest = uploads_dir / temp_name
 
@@ -41,7 +45,15 @@ async def library_upload(file: UploadFile = File(...)):
 
         rel_path = str(dest.relative_to(workspace))
         logger.info(f"[library_upload] Saved upload to {rel_path} ({dest.stat().st_size} bytes)")
-        return {"success": True, "temp_path": rel_path}
+        return {
+            "success": True,
+            "temp_path": rel_path,
+            "format": file_format,
+            "filename": safe_name,
+            "workspace_id": workspace_identity(workspace),
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"[library_upload] Failed: {e}")
         return {"success": False, "error": str(e)}

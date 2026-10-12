@@ -440,6 +440,8 @@ class LibraryEngine:
             ).fetchall()
         ]
 
+        primary = next((attachment for attachment in attachments if attachment["rel_path"] == "main.txt"), None)
+        source_format = "txt" if primary and not row["pdf_sha256"] else "pdf" if row["pdf_sha256"] else None
         return {
             "id": row["id"],
             "citekey": row["citekey"],
@@ -455,6 +457,10 @@ class LibraryEngine:
             "metadata": json.loads(row["metadata_json"]) if row["metadata_json"] else {},
             "library_path": row["library_path"],
             "pdf_sha256": row["pdf_sha256"],
+            "source_format": source_format,
+            "source_sha256": primary["sha256"] if source_format == "txt" else row["pdf_sha256"],
+            "source_file": f"{row['library_path']}/main.{source_format}" if source_format else None,
+            "chunk_status": row["chunk_status"],
             "thumbnail_path": row["thumbnail_path"],
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
@@ -462,6 +468,41 @@ class LibraryEngine:
             "linked_notes": linked_notes,
             "collections": collections,
         }
+
+    def import_text_attachment(self, item_id: int, path: Path) -> None:
+        """Publish a validated TXT attachment and normal library search chunks."""
+        import shutil
+
+        from backend.services.book_world.pdf_source import sha256_file
+        from backend.services.book_world.storage import connect
+        from backend.services.book_world.text_source import parse_text
+
+        parsed = parse_text(path)
+        digest = sha256_file(path)
+        with connect(self.db_path) as db:
+            row = db.execute("SELECT * FROM library_items WHERE id=?", (item_id,)).fetchone()
+            if row is None:
+                raise ValueError("Library item was removed before TXT processing")
+            folder = (self.workspace_root / row["library_path"]).resolve()
+            if not folder.is_relative_to(self.library_dir.resolve()):
+                raise ValueError("TXT destination is outside the workspace library")
+            target = folder / "main.txt"
+            if path.resolve() != target.resolve():
+                shutil.copyfile(path, target)
+            if sha256_file(target) != digest:
+                raise ValueError("TXT changed during import")
+            metadata = json.loads(row["metadata_json"] or "{}")
+            metadata.update(source_format="txt", source_encoding=parsed.quality["encoding"])
+            db.execute("DELETE FROM library_attachments WHERE item_id=? AND rel_path='main.txt'", (item_id,))
+            db.execute("INSERT INTO library_attachments(item_id,filename,file_type,sha256,rel_path,size) VALUES (?,?,'txt',?,'main.txt',?)",
+                       (item_id, "main.txt", digest, target.stat().st_size))
+            db.execute("DELETE FROM library_chunks WHERE item_id=?", (item_id,))
+            db.executemany("INSERT INTO library_chunks(item_id,chunk_index,page,section,text,token_count) VALUES (?,?,NULL,?,?,?)",
+                           [(item_id, segment["ordinal"], segment["chapter"] or "", segment["text"], max(1, len(segment["text"]) // 2)) for segment in parsed.segments])
+            db.execute("UPDATE library_items SET pdf_sha256=NULL,metadata_json=?,chunk_status='completed' WHERE id=?",
+                       (json.dumps(metadata, ensure_ascii=False), item_id))
+        self._write_metadata_yaml(folder, metadata)
+        self._write_octopus_meta(folder, item_id, metadata)
 
     def update_metadata(self, item_id: int, metadata: dict) -> dict:
         """Update item metadata and rewrite metadata.yaml."""
@@ -570,8 +611,9 @@ class LibraryEngine:
             placeholders = ",".join("?" * len(item_ids))
             rows = self.db.execute(
                 f"""
-                SELECT id, citekey, title, authors_json, year, venue, doi, url, abstract, tags_json,
-                       library_path, pdf_sha256, thumbnail_path, chunk_status, created_at
+                SELECT id, citekey, title, authors_json, year, venue, doi, url, abstract, tags_json, metadata_json,
+                       library_path, pdf_sha256, thumbnail_path, chunk_status, created_at,
+                       EXISTS(SELECT 1 FROM library_attachments a WHERE a.item_id=library_items.id AND a.rel_path='main.txt' AND a.file_type='txt') AS has_text_source
                 FROM library_items WHERE id IN ({placeholders}) ORDER BY year DESC NULLS LAST
                 """,
                 item_ids,
@@ -583,8 +625,9 @@ class LibraryEngine:
         elif collection_id:
             rows = self.db.execute(
                 """
-                SELECT i.id, i.citekey, i.title, i.authors_json, i.year, i.venue, i.doi, i.url, i.abstract, i.tags_json,
-                       i.library_path, i.pdf_sha256, i.thumbnail_path, i.chunk_status, i.created_at
+                SELECT i.id, i.citekey, i.title, i.authors_json, i.year, i.venue, i.doi, i.url, i.abstract, i.tags_json, i.metadata_json,
+                       i.library_path, i.pdf_sha256, i.thumbnail_path, i.chunk_status, i.created_at,
+                       EXISTS(SELECT 1 FROM library_attachments a WHERE a.item_id=i.id AND a.rel_path='main.txt' AND a.file_type='txt') AS has_text_source
                 FROM library_items i
                 JOIN library_collection_items ci ON i.id = ci.item_id
                 WHERE ci.collection_id = ?
@@ -600,8 +643,9 @@ class LibraryEngine:
         else:
             rows = self.db.execute(
                 """
-                SELECT id, citekey, title, authors_json, year, venue, doi, url, abstract, tags_json,
-                       library_path, pdf_sha256, thumbnail_path, chunk_status, created_at
+                SELECT id, citekey, title, authors_json, year, venue, doi, url, abstract, tags_json, metadata_json,
+                       library_path, pdf_sha256, thumbnail_path, chunk_status, created_at,
+                       EXISTS(SELECT 1 FROM library_attachments a WHERE a.item_id=library_items.id AND a.rel_path='main.txt' AND a.file_type='txt') AS has_text_source
                 FROM library_items
                 ORDER BY year DESC NULLS LAST
                 LIMIT ? OFFSET ?
@@ -628,6 +672,7 @@ class LibraryEngine:
                     "pdf_sha256": row["pdf_sha256"],
                     "thumbnail_path": row["thumbnail_path"],
                     "chunk_status": row["chunk_status"],
+                    "source_format": "pdf" if row["pdf_sha256"] else "txt" if row["has_text_source"] else None,
                     "created_at": row["created_at"],
                 }
             )

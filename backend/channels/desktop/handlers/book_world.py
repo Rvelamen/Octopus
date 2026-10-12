@@ -1,8 +1,6 @@
 """Book-world desktop boundary with a fixed server workspace per request."""
 
 import asyncio
-import hashlib
-import os
 from pathlib import Path
 from typing import Any
 
@@ -14,12 +12,8 @@ from backend.channels.desktop.handlers.base import MessageHandler
 from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.services.book_world import BookSourceService, BookWorldError
 from backend.services.book_world.contracts import BookWorldRequest
+from backend.services.book_world.storage import workspace_identity
 from backend.utils.helpers import get_workspace_path
-
-
-def workspace_identity(root: Path) -> str:
-    """Return an opaque identity, without disclosing an absolute filesystem path."""
-    return hashlib.sha256(os.path.normcase(str(root.resolve())).encode("utf-8")).hexdigest()
 
 
 class BookWorldHandler(MessageHandler):
@@ -38,7 +32,7 @@ class BookWorldHandler(MessageHandler):
             result = service.list_segments(
                 request.item_id, request.source_version_id, request.after_ordinal, request.limit
             )
-        else:
+        elif request.action == "resolve_evidence":
             result = service.resolve_evidence(
                 request.item_id,
                 request.source_version_id,
@@ -46,6 +40,8 @@ class BookWorldHandler(MessageHandler):
                 request.local_start,
                 request.local_end,
             )
+        else:
+            result = service.read_source(request.item_id, request.source_version_id, request.offset, request.text_limit)
         return {
             "action": request.action,
             "workspace_id": workspace_identity(root),

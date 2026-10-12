@@ -8,7 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 class BookWorldRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    action: Literal["prepare_source", "get_source", "list_segments", "resolve_evidence"]
+    action: Literal[
+        "prepare_source", "get_source", "list_segments", "resolve_evidence", "read_source"
+    ]
     item_id: int = Field(strict=True, gt=0)
     source_version_id: str | None = None
     segment_id: str | None = None
@@ -17,10 +19,15 @@ class BookWorldRequest(BaseModel):
     limit: int = Field(default=50, strict=True, ge=1, le=200)
     local_start: int = Field(default=0, strict=True, ge=0)
     local_end: int | None = Field(default=None, strict=True, gt=0)
+    offset: int = Field(default=0, strict=True, ge=0)
+    text_limit: int = Field(default=12000, strict=True, ge=1, le=20000)
 
     @model_validator(mode="after")
     def required_source_identity(self) -> "BookWorldRequest":
-        if self.action in ("list_segments", "resolve_evidence") and not self.source_version_id:
+        if (
+            self.action in ("list_segments", "resolve_evidence", "read_source")
+            and not self.source_version_id
+        ):
             raise ValueError("source_version_id is required")
         if self.action == "resolve_evidence" and not self.segment_id:
             raise ValueError("segment_id is required")

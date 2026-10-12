@@ -8,8 +8,6 @@ from test_book_source import add_pdf
 from backend.channels.desktop.handlers.book_world import BookWorldHandler
 from backend.channels.desktop.protocol import MessageType, WSMessage
 
-pytest_plugins = ["test_book_source"]
-
 
 class Socket:
     def __init__(self):
@@ -21,7 +19,8 @@ class Socket:
 
 
 @pytest.mark.asyncio
-async def test_source_contract_returns_scope_and_request_identity(library, monkeypatch):
+async def test_source_contract_returns_scope_and_request_identity(book_library, monkeypatch):
+    library = book_library
     monkeypatch.setattr(
         "backend.channels.desktop.handlers.book_world.get_workspace_path",
         lambda: library.workspace_root,

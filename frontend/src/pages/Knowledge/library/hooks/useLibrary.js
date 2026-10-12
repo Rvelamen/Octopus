@@ -28,7 +28,7 @@ const uploadPdf = async (file, onProgress) => {
         try {
           const result = JSON.parse(xhr.responseText);
           if (result.success) {
-            resolve(result.temp_path);
+            resolve(result);
           } else {
             reject(new Error(result.error || 'Upload failed'));
           }
@@ -188,10 +188,11 @@ const useLibrary = (libraryWS, sendWSMessage) => {
   const importPdf = useCallback(
     async (file, metadata = {}, collectionIds, onProgress) => {
       try {
-        const tempPath = await uploadPdf(file, onProgress);
+        const upload = await uploadPdf(file, onProgress);
         const response = await libraryWS.createItem({
-          temp_pdf_path: tempPath,
-          metadata,
+          temp_file_path: upload.temp_path,
+          upload_workspace_id: upload.workspace_id,
+          metadata: { title: file.name.replace(/\.[^.]+$/, ''), ...metadata },
           collection_ids: collectionIds,
         });
         await loadItems(selectedCollectionId, searchQuery, 0);

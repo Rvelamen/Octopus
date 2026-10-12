@@ -1,14 +1,14 @@
 # Octopus 书籍人物 Agent 实施计划
 
-日期：2026 年 10 月 10 日。状态：首版实施计划草案，已同步跨书群聊、秒数配置、圆桌交互与主题 / 自由聊天复核。
+更新日期：2026 年 10 月 12 日。状态：按依赖实施中，T01、T15、T18 已落实；下一项为 T02 人物发现。
 
-目标是逐步交付自动生成人物 Agent、原著知识约束和多人聊天室。共 15 项首版任务与 2 项增强任务，每项包含可演示的用户行为、真正的前置依赖、实施步骤、验收标准和验证场景。权威约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，背景见[研究报告](F:/god/project/Octopus/docs/research/2026-10-10-book-character-agents.md)。
+目标是逐步交付自动生成人物 Agent、原著知识约束和多人聊天室。共 16 项首版任务与 2 项增强任务，每项包含可演示的用户行为、真正的前置依赖、实施步骤、验收标准和验证场景。权威约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，背景见[研究报告](F:/god/project/Octopus/docs/research/2026-10-10-book-character-agents.md)。
 
 ## 交付顺序与完成标志
 
 | 阶段 | 任务 | 阶段完成时可以演示的行为 |
 | --- | --- | --- |
-| M1 人物构建 | T01 至 T04 | 准备整本小说，生成有出处的人物名单与 Agent，纠错后产生修订版本 |
+| M1 人物构建 | T01、T18、T02 至 T04 | 准备整本小说，生成有出处的人物名单与 Agent，纠错后产生修订版本 |
 | M2 原著约束单聊 | T05 至 T07 | 看清人物知道什么，与其对话，房间记忆可恢复且不改写原著 |
 | M3 多人聊天室 | T08、T09、T16、T17 | 独立 Tab 中圆桌落座、右侧对话及头顶气泡同步；跨书回应、@、禁言移除、全体队列与恢复有效 |
 | M4 自动化与首版交付 | T10 至 T12 | 导入触发构建、恢复任务、管理版本与删除，两部书籍的单聊与混聊通过验收 |
@@ -22,7 +22,7 @@
 | 任务 | 用户可见交付 | 直接依赖 | 阶段 |
 | --- | --- | --- | --- |
 | [T01](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/01-narrative-source.md) | 在书目中准备可定位的全文来源 | 无 | M1 |
-| [T02](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/02-character-discovery.md) | 手动构建全书人物候选名单 | T01 | M1 |
+| [T02](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/02-character-discovery.md) | 手动构建全书人物候选名单 | T18 | M1 |
 | [T03](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/03-evidence-persona-agents.md) | 生成有原著证据的人物档案与 Agent | T02 | M1 |
 | [T04](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/04-evidence-corrections.md) | 纠正人物身份与依据并发布修订版本 | T03 | M1 |
 | [T05](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/05-scoped-knowledge.md) | 查询人物知道什么并查看原著依据 | T03 | M2 |
@@ -33,17 +33,18 @@
 | [T10](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/10-automatic-import-build.md) | 导入小说后自动构建人物并恢复后台任务 | T03 | M4 |
 | [T11](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/11-source-lifecycle.md) | 处理书籍版本更换与删除后的房间状态 | T04、T09、T10 | M4 |
 | [T12](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/12-mvp-acceptance.md) | 完成首版回归评测与开关发布 | T11、T16、T17 | M4 |
-| [T13](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/13-epub-txt-support.md) | 扩展 EPUB 与 TXT 的导入和人物构建 | T10 | 增强 |
+| [T13](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/13-epub-txt-support.md) | 扩展 EPUB 的导入和人物构建，TXT 移至 T18 | T10 | 增强 |
 | [T14](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/14-retrieval-performance.md) | 增强长书检索与控制多人调用成本 | T09 | 增强 |
 | [T15](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/15-chat-timeout-settings.md) | 配置人物聊天室时间上限并持久化 | 无 | 设置 |
 | [T16](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/16-roundtable-chat-ui.md) | 独立聊天室 Tab、3D 圆桌与同步气泡 | T08 | M3 |
 | [T17](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/17-discussion-modes.md) | 主题 / 自由聊天、讨论配置和轮次快照 | T08 | M3 |
+| [T18](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/18-txt-library-source.md) | 图书馆 TXT 导入、原文阅读与来源定位 | T01 | M1 |
 
 以下为直接依赖；由依赖链已覆盖的前置任务不重复列出。T13 与 T14 不阻塞首版验收。
 
 ```mermaid
 flowchart LR
-  T01 --> T02 --> T03
+  T01 --> T18 --> T02 --> T03
   T03 --> T04
   T03 --> T05 --> T06 --> T07 --> T08 --> T09
   T15 --> T06
@@ -58,7 +59,13 @@ flowchart LR
   T09 -.-> T14
 ```
 
-T15 的设置与持久化已完成。当前可开始 T01；T06 仍等待 T05 的人物受限检索，随后读取 T15 已有的秒数设置。任务完成只表示其验收范围生效，不能据此把未完成的自动构建、知识约束或群聊标为已支持。
+T01 的 PDF 来源、T15 的设置与持久化和 T18 的 TXT 来源已实施。当前推进 T02；T06 仍等待 T05 的人物受限检索，随后读取 T15 已有的秒数设置。任务完成只表示其验收范围生效，不能据此把未完成的自动构建、知识约束或群聊标为已支持。
+
+## 已验证阶段与真实语料
+
+T01 与 T18 的来源阶段已通过 51 项设置/来源/上传/Handler 回归、Mypy、Ruff 及浏览器联调。TXT 上传、原文窗口、引用高亮和工作区切换已验证；人物发现、知识约束和聊天室尚未实施，不能以来源就绪代替 Agent 可用。
+
+按用户指定语料仓库固定提交，选取完整《西游记》《红楼梦》，验证全部 3311 / 2665 个片段及原文尾部。当前在隔离验收工作区，书籍完整性和模型质量分别报告。详细证据见[验证说明](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-source-validation.md)与[语料记录](F:/god/project/Octopus/docs/plans/book-character-agents/validation/corpus-sources.json)。
 
 ## 每项任务的执行方式
 
@@ -90,7 +97,7 @@ T15 的设置与持久化已完成。当前可开始 T01；T06 仍等待 T05 的
 | T10 | 自动构建意图、来源就绪检查、启动补偿、构建恢复 | [library_create](F:/god/project/Octopus/backend/channels/desktop/handlers/library.py:112)、[LibraryImportModal.jsx](F:/god/project/Octopus/frontend/src/pages/Knowledge/library/LibraryImportModal.jsx:41) |
 | T11 | 来源失效、版本快照、缓存与工作器生命周期、只读房间 | [删除书目](F:/god/project/Octopus/backend/services/library_engine.py:510)、[服务 lifespan](F:/god/project/Octopus/backend/api/server.py:29) |
 | T12 | 验收入口、特性开关、评测记录、迁移与回滚说明 | [pyproject.toml](F:/god/project/Octopus/pyproject.toml:11)、[frontend/package.json](F:/god/project/Octopus/frontend/package.json:6) |
-| T13 | EPUB/TXT 解析、附件与原文阅读分支 | [library_upload.py](F:/god/project/Octopus/backend/api/routes/library_upload.py:16)、现有附件管理 |
+| T13 | EPUB 解析、附件与原文阅读分支；TXT 已提前交付 T18 | [library_upload.py](F:/god/project/Octopus/backend/api/routes/library_upload.py:16)、现有附件管理 |
 | T14 | 允许集语义检索、固定依据缓存、usage 与预算控制 | 新 knowledge、worker 和 coordinator 接口 |
 | T16 | book-rooms 页面、useBookRoom、BookRoomScene/Canvas、头顶 DOM 气泡与座位分配 | [App.jsx](F:/god/project/Octopus/frontend/src/App.jsx)、[LibrarySceneCanvas.jsx](F:/god/project/Octopus/frontend/src/pages/Knowledge/library/scene/LibrarySceneCanvas.jsx)、现有 Babylon.js 依赖 |
 | T17 | set_discussion、讨论 revision、轮次快照、主题上下文与模式控件 | 新 room_store、coordinator、book_room Handler 和房间页面 |
@@ -255,7 +262,7 @@ npm run build --prefix frontend
 
 时间配置已落实到现有设置页与后端持久化。验证：20 项实际后端测试通过，Ruff 检查通过，前端生产构建通过。测试使用 .gitignore 的精确例外纳入版本控制范围。群聊运行计时和窗口恢复为 T06/T09 待实施内容。
 
-本次交付为存储细化后的详细设计、实施计划、17 份本地任务草案、领域词汇、SQL 结构草案和内存校验脚本。SQL 附件是设计契约，尚未注册为生产迁移；任务仍为实施草案。圆桌视觉方案 T16 与主题/自由模式 T17 已加入，生产 Tab、角色模型、气泡和两种讨论运行时尚未实现。
+本次交付为存储细化后的详细设计、实施计划、18 份本地任务、领域词汇、SQL 结构草案和内存校验脚本。完整 SQL 附件是设计契约；来源部分已注册为工作区迁移 14，后续表仍按任务分批实现。圆桌视觉方案 T16 与主题/自由模式 T17 已加入，生产 Tab、角色模型、气泡和两种讨论运行时尚未实现。
 
-docs/ 与 tests/ 当前被 Git 忽略。实施时应仅对本功能需要的文档和测试进行定向纳入，或针对新目录设置精确规则；不要整体取消项目现有忽略策略。首版具体书籍与真实模型质量基线在 T12 的人工验收中补齐。
+docs/ 与 tests/ 当前被 Git 忽略。实施时应仅对本功能需要的文档和测试进行定向纳入，或针对新目录设置精确规则；不要整体取消项目现有忽略策略。首版书籍已确定为用户语料仓库的《西游记》《红楼梦》；真实模型质量基线仍在 T12 人工验收中补齐。
 

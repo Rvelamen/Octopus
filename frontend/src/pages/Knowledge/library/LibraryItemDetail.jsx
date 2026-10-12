@@ -5,6 +5,7 @@ import { Button, Tag, Popconfirm, Spin, message, Input, Modal, Select } from 'an
 import { useDistillTasks } from '@contexts/DistillTaskContext';
 import LibraryAnnotationModal from './LibraryAnnotationModal';
 import NarrativeSourcePanel from './NarrativeSourcePanel';
+import TextSourceReader from './TextSourceReader';
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -28,6 +29,7 @@ const LibraryItemDetail = ({ item, onClose, onDelete, onUpdateItem, onRefreshIte
   const [saving, setSaving] = useState(false);
   const [aiExtracting, setAiExtracting] = useState(false);
   const [annotationModalOpen, setAnnotationModalOpen] = useState(false);
+  const [textReaderOpen, setTextReaderOpen] = useState(false);
   const thumbnailCanvasRef = useRef(null);
   const renderTaskRef = useRef(null);
   const pdfDocRef = useRef(null);
@@ -97,8 +99,10 @@ const LibraryItemDetail = ({ item, onClose, onDelete, onUpdateItem, onRefreshIte
 
   // Load PDF content when item changes
   useEffect(() => {
-    if (!item?.library_path) {
+    if (!item?.library_path || item.source_format === 'txt') {
       setPdfContent(null);
+      setPdfError(null);
+      setPdfLoading(false);
       return;
     }
 
@@ -139,7 +143,7 @@ const LibraryItemDetail = ({ item, onClose, onDelete, onUpdateItem, onRefreshIte
 
     loadPdf();
     return () => { isCancelled = true; };
-  }, [item?.id, item?.library_path, sendWSMessage]);
+  }, [item?.id, item?.library_path, item?.source_format, sendWSMessage]);
   if (!item) {
     return (
       <div
@@ -408,6 +412,10 @@ Please write in English, use academic tone, and include specific details from th
     if (!item?.library_path || !att.rel_path) return;
     const filePath = `${item.library_path}/${att.rel_path}`;
     const ext = att.filename.split('.').pop()?.toLowerCase();
+    if (ext === 'txt' && att.rel_path === 'main.txt') {
+      setTextReaderOpen(true);
+      return;
+    }
 
     // PDF → open in PdfViewerWindow (only for main.pdf)
     if (ext === 'pdf' && att.rel_path === 'main.pdf' && window.electronAPI?.openPdfWindow) {
@@ -1015,6 +1023,10 @@ Please write in English, use academic tone, and include specific details from th
             size="small"
             icon={<FileText size={14} />}
             onClick={() => {
+              if (item.source_format === 'txt') {
+                setTextReaderOpen(true);
+                return;
+              }
               if (window.electronAPI?.openPdfWindow) {
                 window.electronAPI.openPdfWindow(item.library_path, item.title, item.id);
               } else {
@@ -1040,8 +1052,9 @@ Please write in English, use academic tone, and include specific details from th
               }
             }}
           >
-            {t('paper.btnOpenPdf')}
+            {item.source_format === 'txt' ? t('bookWorld.openText') : t('paper.btnOpenPdf')}
           </Button>
+          {textReaderOpen && <TextSourceReader item={item} sendWSMessage={sendWSMessage} onClose={() => setTextReaderOpen(false)} />}
           <Button size="small" icon={<Sparkles size={14} />} loading={noteGenerating} onClick={handleGenerateNote}>
             {t('paper.btnAiNote')}
           </Button>

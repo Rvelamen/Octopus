@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Modal, Spin, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
+import TextSourceReader from './TextSourceReader';
 
 export default function NarrativeSourcePanel({ item, sendWSMessage }) {
   const { t } = useTranslation();
@@ -10,6 +11,8 @@ export default function NarrativeSourcePanel({ item, sendWSMessage }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [locator, setLocator] = useState(null);
+  const [textReader, setTextReader] = useState(null);
+  const attachmentHash = item.source_sha256 || item.pdf_sha256;
   const generation = useRef(0);
   const sourceRequest = useRef(0);
   const segmentRequest = useRef(0);
@@ -35,6 +38,7 @@ export default function NarrativeSourcePanel({ item, sendWSMessage }) {
     setSegments([]);
     setError('');
     setLocator(null);
+    setTextReader(null);
     setNextOrdinal(null);
     setBusy(false);
     request('get_source').then(async (data) => {
@@ -45,7 +49,7 @@ export default function NarrativeSourcePanel({ item, sendWSMessage }) {
       if (generation.current === current && sourceRequest.current === revision) setError(failure.message);
     });
     return () => { generation.current += 1; };
-  }, [request, loadSegments, item.pdf_sha256]);
+  }, [request, loadSegments, attachmentHash]);
 
   const prepare = async () => {
     const current = generation.current;
@@ -55,7 +59,7 @@ export default function NarrativeSourcePanel({ item, sendWSMessage }) {
     setError('');
     setLocator(null);
     try {
-      const data = await request('prepare_source', { expected_attachment_sha256: item.pdf_sha256 });
+      const data = await request('prepare_source', { expected_attachment_sha256: attachmentHash });
       if (generation.current !== current || sourceRequest.current !== revision) return;
       setSource(data);
       await loadSegments(data.source_version_id);
@@ -77,6 +81,11 @@ export default function NarrativeSourcePanel({ item, sendWSMessage }) {
   };
 
   const openOriginal = () => {
+    if (locator.format === 'txt') {
+      setTextReader(locator);
+      setLocator(null);
+      return;
+    }
     const folder = locator.asset_path.slice(0, locator.asset_path.lastIndexOf('/'));
     if (window.electronAPI?.openPdfWindow) {
       window.electronAPI.openPdfWindow(folder, item.title, undefined, { page: locator.page });
@@ -88,15 +97,15 @@ export default function NarrativeSourcePanel({ item, sendWSMessage }) {
   return <section aria-label={t('bookWorld.sourceTitle')} style={{ marginBottom: 18, padding: 12, border: '1px solid var(--border)', borderRadius: 8 }}>
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
       <strong style={{ fontSize: 13 }}>{t('bookWorld.sourceTitle')}</strong>
-      <Button size="small" loading={busy} disabled={!item.pdf_sha256} onClick={prepare}>{t('bookWorld.prepare')}</Button>
+      <Button size="small" loading={busy} disabled={!attachmentHash} onClick={prepare}>{t('bookWorld.prepare')}</Button>
     </div>
     <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '8px 0' }}>{t('bookWorld.sourceHint')}</p>
-    {!item.pdf_sha256 && <span style={{ fontSize: 12 }}>{t('bookWorld.waitAttachment')}</span>}
+    {!attachmentHash && <span style={{ fontSize: 12 }}>{t('bookWorld.waitAttachment')}</span>}
     {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 8 }} />}
     {busy && <div role="status"><Spin size="small" /> {t('bookWorld.preparing')}</div>}
     {source?.source_version_id && <>
       <Tag color={source.status === 'ready' ? 'green' : 'orange'}>{t(`bookWorld.${source.status}`)}</Tag>
-      <span style={{ fontSize: 12 }}>{t('bookWorld.coverage', { pages: source.quality.pages_processed, total: source.quality.pages_total, segments: source.segment_count })}</span>
+      <span style={{ fontSize: 12 }}>{source.format === 'txt' ? t('bookWorld.textCoverage', { lines: source.quality.lines_processed, chapters: source.quality.chapter_count, segments: source.segment_count }) : t('bookWorld.coverage', { pages: source.quality.pages_processed, total: source.quality.pages_total, segments: source.segment_count })}</span>
       {source.status === 'needs_ocr' && <Alert type="warning" showIcon title={t('bookWorld.ocrHint')} style={{ margin: '8px 0' }} />}
       {source.quality.empty_pages?.length > 0 && <div style={{ fontSize: 12, marginTop: 6 }}>{t('bookWorld.emptyPages', { pages: source.quality.empty_pages.join(', ') })}</div>}
       <details style={{ marginTop: 10 }}>
@@ -104,14 +113,15 @@ export default function NarrativeSourcePanel({ item, sendWSMessage }) {
         <ol style={{ paddingLeft: 20, maxHeight: 280, overflowY: 'auto', marginBottom: 8 }}>
           {segments.map((segment) => <li key={segment.id} style={{ fontSize: 12, margin: '10px 0', whiteSpace: 'pre-wrap' }}>
             {segment.text}
-            <Button type="link" size="small" onClick={() => locate(segment)}>{t('bookWorld.locatePage', { page: segment.page })}</Button>
+            <Button type="link" size="small" onClick={() => locate(segment)}>{segment.page ? t('bookWorld.locatePage', { page: segment.page }) : t('bookWorld.locateText')}</Button>
           </li>)}
         </ol>
         {nextOrdinal !== null && <Button size="small" onClick={() => loadSegments(source.source_version_id, nextOrdinal, true).catch((failure) => setError(failure.message))}>{t('bookWorld.more')}</Button>}
       </details>
     </>}
-    <Modal open={Boolean(locator)} title={t('bookWorld.original')} onCancel={() => setLocator(null)} footer={locator ? <Button onClick={openOriginal}>{t('bookWorld.openPdf', { page: locator.page })}</Button> : null}>
-      {locator && <><p>{t('bookWorld.locatePage', { page: locator.page })} · {locator.source_version_id.slice(0, 8)}</p><blockquote style={{ whiteSpace: 'pre-wrap' }}>{locator.quote}</blockquote></>}
+    <Modal open={Boolean(locator)} title={t('bookWorld.original')} onCancel={() => setLocator(null)} footer={locator ? <Button onClick={openOriginal}>{locator.format === 'txt' ? t('bookWorld.openText') : t('bookWorld.openPdf', { page: locator.page })}</Button> : null}>
+      {locator && <><p>{locator.page ? t('bookWorld.locatePage', { page: locator.page }) : t('bookWorld.locateLine', { line: locator.line_number })} · {locator.source_version_id.slice(0, 8)}</p><blockquote style={{ whiteSpace: 'pre-wrap' }}>{locator.quote}</blockquote></>}
     </Modal>
+    {textReader && <TextSourceReader item={item} sendWSMessage={sendWSMessage} versionId={textReader.source_version_id} locator={textReader} onClose={() => setTextReader(null)} />}
   </section>;
 }

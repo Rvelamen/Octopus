@@ -1,6 +1,7 @@
 """Library (Zotero-style) handlers for Desktop channel."""
 
 import asyncio
+import sqlite3
 from pathlib import Path
 
 from fastapi import WebSocket
@@ -8,6 +9,8 @@ from loguru import logger
 
 from backend.channels.desktop.handlers.base import MessageHandler
 from backend.channels.desktop.protocol import MessageType, WSMessage
+from backend.services.book_world.storage import workspace_identity
+from backend.services.knowledge_migrations import run_knowledge_index_migrations
 from backend.services.library_engine import LibraryEngine
 from backend.utils.helpers import get_workspace_path
 
@@ -15,12 +18,19 @@ from backend.utils.helpers import get_workspace_path
 class LibraryHandler(MessageHandler):
     """Handle all library-related WebSocket messages."""
 
-    def __init__(self, bus):
+    def __init__(self, bus, workspace_root=None):
         super().__init__(bus)
-        workspace_root = str(get_workspace_path())
-        self.engine = LibraryEngine(workspace_root)
+        self.engine = LibraryEngine(str(workspace_root or get_workspace_path()))
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        root = Path(get_workspace_path()).resolve()
+        await asyncio.to_thread(
+            run_knowledge_index_migrations, root / "knowledge" / ".knowledge_index.db"
+        )
+        scoped = LibraryHandler(self.bus, workspace_root=root)
+        await scoped._dispatch(websocket, message)
+
+    async def _dispatch(self, websocket: WebSocket, message: WSMessage) -> None:
         handler_map = {
             MessageType.LIBRARY_LIST: self._handle_list,
             MessageType.LIBRARY_GET: self._handle_get,
@@ -110,7 +120,7 @@ class LibraryHandler(MessageHandler):
         await self._send_success(websocket, message, MessageType.LIBRARY_GET_RESULT, {"item": item})
 
     async def _handle_create(self, websocket: WebSocket, message: WSMessage) -> None:
-        temp_pdf_path = message.data.get("temp_pdf_path")
+        temp_pdf_path = message.data.get("temp_file_path") or message.data.get("temp_pdf_path")
         metadata = message.data.get("metadata", {})
         collection_ids = message.data.get("collection_ids")
 
@@ -119,18 +129,41 @@ class LibraryHandler(MessageHandler):
             return
 
         workspace = Path(self.engine.workspace_root)
+        uploaded_workspace = message.data.get("upload_workspace_id")
+        if uploaded_workspace and uploaded_workspace != workspace_identity(workspace):
+            await self._send_error(
+                websocket,
+                message.request_id,
+                "Workspace changed since upload; upload the document again",
+            )
+            return
         pdf_path = workspace / temp_pdf_path
         if not pdf_path.exists():
             await self._send_error(websocket, message.request_id, f"PDF not found: {temp_pdf_path}")
             return
 
         # Security check
-        if not str(pdf_path.resolve()).startswith(str(workspace.resolve())):
+        if not pdf_path.resolve().is_relative_to(workspace.resolve()):
             await self._send_error(
                 websocket, message.request_id, "Access denied: path outside workspace"
             )
             return
 
+        file_format = pdf_path.suffix.lower()
+        if file_format not in (".pdf", ".txt"):
+            await self._send_error(
+                websocket, message.request_id, "Only PDF and TXT documents are supported"
+            )
+            return
+        if file_format == ".txt":
+            from backend.services.book_world.text_source import read_text_file
+
+            try:
+                await asyncio.to_thread(read_text_file, pdf_path)
+            except ValueError as error:
+                await self._send_error(websocket, message.request_id, str(error))
+                return
+            metadata = {"item_type": "book", **metadata}
         try:
             item = self.engine.create_item(
                 pdf_path=pdf_path,
@@ -140,6 +173,27 @@ class LibraryHandler(MessageHandler):
         except Exception as e:
             logger.error(f"Failed to create library item: {e}")
             await self._send_error(websocket, message.request_id, f"Failed to create item: {e}")
+            return
+
+        if file_format == ".txt":
+            engine = self.engine
+            try:
+                await asyncio.to_thread(engine.import_text_attachment, item["id"], pdf_path)
+            except (OSError, ValueError, RuntimeError, sqlite3.Error) as error:
+                engine._set_chunk_status(item["id"], "failed")
+                await self._send_error(
+                    websocket, message.request_id, f"TXT processing failed: {error}"
+                )
+                return
+            if pdf_path.resolve().is_relative_to((engine.library_dir / "_uploads").resolve()):
+                try:
+                    pdf_path.unlink(missing_ok=True)
+                except OSError as error:
+                    logger.warning(f"TXT imported, but upload cleanup failed: {error}")
+            item = engine.get_item(item["id"])
+            await self._send_success(
+                websocket, message, MessageType.LIBRARY_CREATE_RESULT, {"item": item}
+            )
             return
 
         # Process PDF in background: copy, hash, extract title, chunks
@@ -268,9 +322,7 @@ class LibraryHandler(MessageHandler):
                 websocket, message.request_id, f"Failed to save annotations: {e}"
             )
 
-    async def _handle_annotation_upsert(
-        self, websocket: WebSocket, message: WSMessage
-    ) -> None:
+    async def _handle_annotation_upsert(self, websocket: WebSocket, message: WSMessage) -> None:
         item_id = message.data.get("item_id")
         annotation = message.data.get("annotation")
         if not item_id or not annotation:
@@ -329,9 +381,7 @@ class LibraryHandler(MessageHandler):
     ) -> None:
         annotation_id = message.data.get("annotation_id")
         if not annotation_id:
-            await self._send_error(
-                websocket, message.request_id, "annotation_id is required"
-            )
+            await self._send_error(websocket, message.request_id, "annotation_id is required")
             return
         try:
             comments = self.engine.list_comments(int(annotation_id))
@@ -383,9 +433,7 @@ class LibraryHandler(MessageHandler):
     ) -> None:
         comment_id = message.data.get("comment_id")
         if not comment_id:
-            await self._send_error(
-                websocket, message.request_id, "comment_id is required"
-            )
+            await self._send_error(websocket, message.request_id, "comment_id is required")
             return
         try:
             result = self.engine.delete_comment(int(comment_id))

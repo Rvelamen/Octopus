@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-12",
+  "scope": "full-text import and source location; not model/persona quality",
+  "books": [
+    {
+      "title": "西游记",
+      "repository": "https://github.com/tennessine/corpus",
+      "revision": "c5ce96aca36c6a3cb4da5f0ff7d2d5fa30c32aea",
+      "bytes": 1999157,
+      "sha256": "3f2bf2164ee63ad7ce3ef88c830e88e860f47719740b13e6c4a1fe4d3be09b80",
+      "characters": 684043,
+      "segments": 3311,
+      "chapters": 100,
+      "tail_verified": true,
+      "repeated_prepare_reused": true,
+      "item_id": 1
+    },
+    {
+      "title": "红楼梦",
+      "repository": "https://github.com/tennessine/corpus",
+      "revision": "c5ce96aca36c6a3cb4da5f0ff7d2d5fa30c32aea",
+      "bytes": 2522985,
+      "sha256": "5eca888fb54188d644df70fa555dd3c9cbdd3a8d7b3034fb59f7a81e16f05dc7",
+      "characters": 860933,
+      "segments": 2665,
+      "chapters": 122,
+      "tail_verified": true,
+      "repeated_prepare_reused": true,
+      "item_id": 2
+    }
+  ]
+}

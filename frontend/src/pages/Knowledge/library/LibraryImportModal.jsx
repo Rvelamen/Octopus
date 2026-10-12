@@ -42,14 +42,14 @@ const LibraryImportModal = ({ open, onClose, onImportPdf, onImportDoi, onImportA
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    const files = Array.from(e.dataTransfer.files).filter((f) => f.name.endsWith('.pdf'));
+    const files = Array.from(e.dataTransfer.files).filter((f) => /\.(pdf|txt)$/i.test(f.name));
     if (files.length > 0) {
       handlePdfImports(files);
     }
   };
 
   const handleFileSelect = (e) => {
-    const files = Array.from(e.target.files).filter((f) => f.name.endsWith('.pdf'));
+    const files = Array.from(e.target.files).filter((f) => /\.(pdf|txt)$/i.test(f.name));
     if (files.length > 0) {
       handlePdfImports(files);
     }
@@ -81,7 +81,7 @@ const LibraryImportModal = ({ open, onClose, onImportPdf, onImportDoi, onImportA
 
     // Show summary toast
     if (failCount === 0) {
-      message.success(`${successCount} PDF(s) imported successfully`);
+      message.success(`${successCount} document(s) imported successfully`);
       setTimeout(() => {
         setUploads([]);
         onClose();
@@ -258,7 +258,7 @@ const LibraryImportModal = ({ open, onClose, onImportPdf, onImportDoi, onImportA
       key: 'pdf',
       label: (
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <FileText size={14} /> PDF
+          <FileText size={14} /> PDF / TXT
         </span>
       ),
       children: (
@@ -281,11 +281,11 @@ const LibraryImportModal = ({ open, onClose, onImportPdf, onImportDoi, onImportA
             }}
           >
             <Upload size={32} style={{ color: 'var(--text-muted)', marginBottom: 12 }} />
-            <div style={{ fontSize: 14, color: 'var(--text)' }}>Drop PDF(s) here or click to select</div>
+            <div style={{ fontSize: 14, color: 'var(--text)' }}>Drop PDF or TXT files here or click to select</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-              Supports multiple PDF files
+              Supports multiple PDF and TXT files
             </div>
-            <input ref={fileInputRef} type="file" accept=".pdf" multiple style={{ display: 'none' }} onChange={handleFileSelect} />
+            <input ref={fileInputRef} type="file" accept=".pdf,.txt" multiple style={{ display: 'none' }} onChange={handleFileSelect} />
           </div>
 
           {/* Upload list */}
@@ -409,7 +409,7 @@ const LibraryImportModal = ({ open, onClose, onImportPdf, onImportDoi, onImportA
 
   return (
     <Modal
-      title="Import Paper"
+      title="Import document"
       open={open}
       onCancel={() => {
         if (!isImporting) {

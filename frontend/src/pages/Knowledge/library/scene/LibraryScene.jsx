@@ -5,6 +5,7 @@ import LibrarySceneCanvas from './LibrarySceneCanvas';
 import useLibraryScene from './useLibraryScene';
 import { useWebSocket } from '../../../../contexts/WebSocketContext';
 import { useLibraryChat } from '../hooks/useLibraryChat';
+import TextSourceReader from '../TextSourceReader';
 import { AREA_COLORS, SHELF_PAGE_SIZE } from './librarySceneState.mjs';
 import './LibraryScene.css';
 
@@ -218,6 +219,7 @@ export default function LibraryScene({ collections, libraryWS, sendWSMessage, on
   const [regionSaving, setRegionSaving] = useState(false);
   const [placingArea, setPlacingArea] = useState(null);
   const [readingId, setReadingId] = useState(null);
+  const [textReadingItem, setTextReadingItem] = useState(null);
   // ── 思考者石像聊天 ──
   const [thinkerOpen, setThinkerOpen] = useState(false);
   const [thinkerInput, setThinkerInput] = useState('');
@@ -297,14 +299,20 @@ export default function LibraryScene({ collections, libraryWS, sendWSMessage, on
     if (readLock.current) return;
     const nativeReader = window.electronAPI?.openPdfWindow;
     // Open during the user gesture so an asynchronous metadata fetch cannot trigger a popup blocker.
-    const readerWindow = nativeReader ? null : window.open('about:blank', `octopus-pdf-${book.id}`, 'popup,width=1150,height=850');
-    if (!nativeReader && !readerWindow) { message.warning('请允许打开阅读窗口后再试。'); return; }
+    const isText = book.source_format === 'txt';
+    const readerWindow = nativeReader || isText ? null : window.open('about:blank', `octopus-pdf-${book.id}`, 'popup,width=1150,height=850');
+    if (!nativeReader && !isText && !readerWindow) { message.warning('请允许打开阅读窗口后再试。'); return; }
     if (readerWindow) readerWindow.document.body.textContent = '正在打开书籍…';
     readLock.current = true;
     setReadingId(book.id);
     try {
       const response = await libraryWS.getItem(book.id);
       const item = response.data.item;
+      if (item?.source_format === 'txt') {
+        readerWindow?.close();
+        setTextReadingItem(item);
+        return;
+      }
       if (!item?.library_path || !item.attachments?.some((attachment) => attachment.rel_path === 'main.pdf')) {
         readerWindow?.close();
         message.info('这本书尚未附带 PDF 文件，请先在图书馆中导入正文。');
@@ -459,6 +467,7 @@ export default function LibraryScene({ collections, libraryWS, sendWSMessage, on
         {regionEditor && <div className="library-scene-region-form"><label htmlFor="library-scene-region-name">区域名称</label><Input id="library-scene-region-name" value={regionEditor.name} maxLength={60} placeholder="例如：文学小屋、科学探索、我的收藏" onChange={(event) => setRegionEditor({ ...regionEditor, name: event.target.value })} onPressEnter={saveRegion} disabled={regionSaving} /><label htmlFor="library-scene-region-color">地毯颜色</label><div className="library-scene-color-palette">{AREA_COLORS.map((color) => <button type="button" key={color} style={{ background: color }} aria-label={`使用颜色 ${color}`} aria-pressed={regionEditor.color === color} onClick={() => setRegionEditor({ ...regionEditor, color })}>{regionEditor.color === color && <Check size={17} />}</button>)}<input id="library-scene-region-color" type="color" value={regionEditor.color} onChange={(event) => setRegionEditor({ ...regionEditor, color: event.target.value })} /></div><p className="library-scene-modal-note">区域对应图书馆分类，名称与书籍配置会同步保存。</p></div>}
       </Modal>
       {placingArea && <PlaceBooksModal area={placingArea} libraryWS={libraryWS} onClose={() => setPlacingArea(null)} onPlaced={refreshBooks} />}
+      {textReadingItem && <TextSourceReader item={textReadingItem} sendWSMessage={sendWSMessage} onClose={() => setTextReadingItem(null)} />}
     </section>
   );
 }
