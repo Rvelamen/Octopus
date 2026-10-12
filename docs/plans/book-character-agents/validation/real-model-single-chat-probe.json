@@ -1,0 +1,194 @@
+{
+  "date": "2026-10-12",
+  "scope": "T06 isolated original excerpt UI/model probe; not full-book acceptance or quality A/B",
+  "actual_calls": 5,
+  "calls": [
+    {
+      "phase": "generate",
+      "finish_reason": "end_turn",
+      "content": "{\"claims\":[{\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"88d3203a-9c10-4aff-9817-37e581787d9c\",\"evidence_id\":\"1c597318-eeab-4bf4-8ac0-0617e8171834\"}],\"text\":\"瀑布里面无水无波，有一座铁板桥，桥后是一处宜居的石洞。\"},{\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"aed74df7-75a9-4bc0-8acb-b91aea57b212\",\"evidence_id\":\"cdfc37e9-d8a3-4a5c-a8e6-7e2bb4ab8955\"}],\"text\":\"众猴曾约定：有本事钻进瀑布寻出源头而不伤身体者，即拜他为王。\"}],\"content\":\"哈哈，问得好！那瀑布里面啊，可不是你们想的水潭——里头无水无波，我跳进去一瞧，竟有一座铁板桥！桥后更妙，藏着一处好石洞，宽宽敞敞，正好住得咱们这班猴儿。先前众猴可是说好的：有本事钻进瀑布寻个源头、不伤身体者，就拜他为王。如今我进去走了一遭又出来，这洞府嘛——你们倒是进来瞧瞧！\",\"dialogue_action\":\"answer\",\"action_basis_claim_ids\":[\"6742efce-da5c-4892-ac66-0d6c3de1b76f\"],\"ephemeral_emotion\":null}",
+      "usage": {
+        "prompt_tokens": 2209,
+        "completion_tokens": 339,
+        "total_tokens": 2548,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "generate",
+      "finish_reason": "end_turn",
+      "content": "```json\n{\n  \"content\": \"嘿嘿，我钻进去看过！那瀑布里面无水无波，干净得很。入眼先是一座铁板桥，过桥再走，便是一处石洞，天造地设，正好安家。\",\n  \"dialogue_action\": \"answer\",\n  \"claims\": [\n    {\n      \"text\": \"瀑布泉里面无水无波。\",\n      \"origin\": \"canon\",\n      \"refs\": [\n        {\n          \"claim_id\": \"88d3203a-9c10-4aff-9817-37e581787d9c\",\n          \"evidence_id\": \"1c597318-eeab-4bf4-8ac0-0617e8171834\"\n        }\n      ]\n    },\n    {\n      \"text\": \"瀑布里面有一座铁板桥，桥后是一处宜居的石洞。\",\n      \"origin\": \"canon\",\n      \"refs\": [\n        {\n          \"claim_id\": \"88d3203a-9c10-4aff-9817-37e581787d9c\",\n          \"evidence_id\": \"1c597318-eeab-4bf4-8ac0-0617e8171834\"\n        }\n      ]\n    },\n    {\n      \"text\": \"石猴曾亲自跳入瀑布泉中探看。\",\n      \"origin\": \"canon\",\n      \"refs\": [\n        {\n          \"claim_id\": \"88d3203a-9c10-4aff-9817-37e581787d9c\",\n          \"evidence_id\": \"5a1c583f-a11b-4a7f-8755-06e603df7e24\"\n        }\n      ]\n    }\n  ],\n  \"ephemeral_emotion\": null\n}\n```",
+      "usage": {
+        "prompt_tokens": 182,
+        "completion_tokens": 467,
+        "total_tokens": 649,
+        "cache_read_input_tokens": 2048,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "review",
+      "finish_reason": "end_turn",
+      "content": "{\"supported\":false,\"facts_complete\":false,\"persona_consistent\":false,\"action_supported\":false,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[\"瀑布泉中无水无波，有一座铁板桥，桥后是一处宜居的石洞\"],\"claims\":[],\"reason\":\"用户问瀑布里面有些什么，而上下文知识明确包含石猴第一手跳入瀑布、发现无水无波、铁板桥及宜居石洞的经历。候选却称没有足够依据无法确定，遗漏了可直接回答的核心事实，虽不构成错误归属，但内容未被上下文支持且与石猴已知亲历不一致。\"}",
+      "usage": {
+        "prompt_tokens": 1929,
+        "completion_tokens": 194,
+        "total_tokens": 2123,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "generate",
+      "finish_reason": "end_turn",
+      "content": "{\"content\":\"我跳进去一看，里头无水无波，明明朗朗的。有一座铁板桥，桥后是一处石洞，正是个宜居的去处。再往里的细节，我还没细看，就不乱说了。\",\"dialogue_action\":\"answer\",\"claims\":[{\"text\":\"我跳进去一看，里头无水无波\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"88d3203a-9c10-4aff-9817-37e581787d9c\",\"evidence_id\":\"1c597318-eeab-4bf4-8ac0-0617e8171834\"}]},{\"text\":\"有一座铁板桥，桥后是一处石洞，正是个宜居的去处\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"88d3203a-9c10-4aff-9817-37e581787d9c\",\"evidence_id\":\"1c597318-eeab-4bf4-8ac0-0617e8171834\"}]},{\"text\":\"再往里的细节，我还没细看，就不乱说了\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[\"6742efce-da5c-4892-ac66-0d6c3de1b76f\"],\"ephemeral_emotion\":null}",
+      "usage": {
+        "prompt_tokens": 2400,
+        "completion_tokens": 292,
+        "total_tokens": 2692,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "review",
+      "finish_reason": "end_turn",
+      "content": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":2,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"正文三句分别对应canon情节证据（无水无波、铁板桥、宜居石洞）及合理的认知边界声明（conversation来源），且符合用户'只说已知道细节'的要求。'明明朗朗的'是原著细节的自然呈现，'宜居的去处'与证据一致。回答以第一人称亲历视角作答，归属正确，胆识trait支撑跳入叙述，无越界或遗漏断言。\"}",
+      "usage": {
+        "prompt_tokens": 1783,
+        "completion_tokens": 292,
+        "total_tokens": 2075,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      }
+    }
+  ],
+  "rounds": [
+    {
+      "round_id": "e7813ca2-b13e-46cc-a2c3-fcb6bc91f556",
+      "room_id": "cb3f288b-884e-40e0-aaf5-e1813bbb6c57",
+      "epoch": 1,
+      "status": "failed",
+      "error_code": "fallback_validation_failed",
+      "elapsed_ms": 31125,
+      "config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": false,
+        "expression_sets": {
+          "715d5241-a330-46bf-8e2e-df681943e550": null
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v1",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v1",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "messages": [
+        {
+          "id": "6a05775a-fd20-4588-8886-725e1eb29356",
+          "seq": 1,
+          "round_id": "e7813ca2-b13e-46cc-a2c3-fcb6bc91f556",
+          "speaker_type": "user",
+          "speaker_member_id": null,
+          "content": "瀑布里面有些什么？",
+          "reply_to_id": null,
+          "created_at": "2026-10-12T13:24:59.629Z",
+          "identity": {},
+          "refs": []
+        }
+      ]
+    },
+    {
+      "round_id": "a276ad32-538e-4353-a4c0-221d47a67511",
+      "room_id": "cb3f288b-884e-40e0-aaf5-e1813bbb6c57",
+      "epoch": 1,
+      "status": "completed",
+      "error_code": null,
+      "elapsed_ms": 28172,
+      "config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": false,
+        "expression_sets": {
+          "715d5241-a330-46bf-8e2e-df681943e550": null
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v2",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v1",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "messages": [
+        {
+          "id": "2fd98856-21ed-46de-8062-c6e9f4dd7ea1",
+          "seq": 2,
+          "round_id": "a276ad32-538e-4353-a4c0-221d47a67511",
+          "speaker_type": "user",
+          "speaker_member_id": null,
+          "content": "你在瀑布泉里面亲眼见到了什么？请只说已经知道的细节。",
+          "reply_to_id": null,
+          "created_at": "2026-10-12T13:40:18.066Z",
+          "identity": {},
+          "refs": []
+        },
+        {
+          "id": "57d20350-5a5b-478d-b3fb-735557e22828",
+          "seq": 3,
+          "round_id": "a276ad32-538e-4353-a4c0-221d47a67511",
+          "speaker_type": "character",
+          "speaker_member_id": "715d5241-a330-46bf-8e2e-df681943e550",
+          "content": "我跳进去一看，里头无水无波，明明朗朗的。有一座铁板桥，桥后是一处石洞，正是个宜居的去处。再往里的细节，我还没细看，就不乱说了。",
+          "reply_to_id": "2fd98856-21ed-46de-8062-c6e9f4dd7ea1",
+          "created_at": "2026-10-12T13:40:46.301Z",
+          "identity": {
+            "book_title": "西游记 · 石猴发现联调样本（非全书）",
+            "name": "石猴"
+          },
+          "refs": [
+            {
+              "assertion_ordinal": 0,
+              "assertion_text": "我跳进去一看，里头无水无波",
+              "origin": "canon",
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "claim_id": "88d3203a-9c10-4aff-9817-37e581787d9c",
+              "evidence_id": "1c597318-eeab-4bf4-8ac0-0617e8171834",
+              "heard_message_id": null
+            },
+            {
+              "assertion_ordinal": 1,
+              "assertion_text": "有一座铁板桥，桥后是一处石洞，正是个宜居的去处",
+              "origin": "canon",
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "claim_id": "88d3203a-9c10-4aff-9817-37e581787d9c",
+              "evidence_id": "1c597318-eeab-4bf4-8ac0-0617e8171834",
+              "heard_message_id": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "observation": "v1 declined malformed annotations and fallback refusal; v2 published source facts but also an unsupported autobiographical negative (not finely inspected), mislabeled conversation. It remains diagnostic only. v3 adds explicit negative-autobiography checks and needs fresh validation."
+}

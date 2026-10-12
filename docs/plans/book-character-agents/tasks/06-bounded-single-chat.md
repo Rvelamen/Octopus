@@ -71,3 +71,8 @@
 
 表达选择、预算与对照按[适配设计](F:/god/project/Octopus/docs/plans/book-character-agents/chatharuhi-adoption-design.md) Q02 实施，完整收益评测留在 T12。
 
+## ChatHaruhi 适配的精度与质量补充
+
+本任务按[质量验证协议](F:/god/project/Octopus/docs/plans/book-character-agents/chat-quality-protocol.md)完成 Q02。补齐完整正文与否定自传的反例，条件句/引述/有据否定的正例；模型审查与实际断言有分歧时保留诊断并复验。
+
+至少完成有据回应和无据诱导两组真实模型 A/B，固定同一原著构建、人物、模型、策略及秒数。表达通道须实际选中有出处的本人素材，记录规则/对白数量和输入差异；空素材只验证降级，不计表达收益。四次用户提交最多 20 次生成/审查调用，素材准备单独记录预算。受控构建与自动提取结果分开报告；该小试验验证接入，完整质量结论仍由 T12 给出。
