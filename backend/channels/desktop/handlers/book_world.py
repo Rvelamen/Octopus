@@ -1,6 +1,7 @@
 """Book-world desktop boundary with a fixed server workspace per request."""
 
 import asyncio
+from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
@@ -12,12 +13,116 @@ from backend.channels.desktop.handlers.base import MessageHandler
 from backend.channels.desktop.protocol import MessageType, WSMessage
 from backend.services.book_world import BookSourceService, BookWorldError
 from backend.services.book_world.contracts import BookWorldRequest
+from backend.services.book_world.discovery import BookDiscoveryService, DiscoveryConfig
+from backend.services.book_world.discovery_provider import DiscoveryModel, resolve_discovery_model
 from backend.services.book_world.storage import workspace_identity
 from backend.utils.helpers import get_workspace_path
 
 
 class BookWorldHandler(MessageHandler):
     """Run synchronous PDF/SQLite work off the desktop event loop."""
+
+    _build_tasks: dict[tuple[str, str], asyncio.Task] = {}
+    _worker_slots: dict[tuple[Any, str], asyncio.Semaphore] = {}
+
+    @classmethod
+    async def _stop_worker(cls, root: Path, build_id: str) -> None:
+        task = cls._build_tasks.get((workspace_identity(root), build_id))
+        if task is not None and not task.done():
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+
+    @classmethod
+    def _schedule(cls, root: Path, build_id: str, model: DiscoveryModel) -> None:
+        key = (workspace_identity(root), build_id)
+        task = cls._build_tasks.get(key)
+        if task is not None and not task.done():
+            return
+
+        async def execute() -> None:
+            try:
+                slots_key = (asyncio.get_running_loop(), workspace_identity(root))
+                slots = cls._worker_slots.setdefault(slots_key, asyncio.Semaphore(1))
+                async with slots:
+                    service = await asyncio.to_thread(BookDiscoveryService, root)
+                    await service.run(build_id, model.provider, model.config)
+            except Exception:
+                logger.error("Book discovery worker failed before completion")
+            finally:
+                cls._build_tasks.pop(key, None)
+
+        cls._build_tasks[key] = asyncio.create_task(execute())
+
+    async def _discovery(self, root: Path, request: BookWorldRequest) -> dict[str, Any]:
+        service = await asyncio.to_thread(BookDiscoveryService, root)
+        model = None
+        if request.action == "start_discovery":
+            assert request.source_version_id is not None
+            try:
+                model = await asyncio.to_thread(resolve_discovery_model)
+                result = await asyncio.to_thread(
+                    service.create_build, request.item_id, request.source_version_id, model.config
+                )
+            except BookWorldError as error:
+                if error.code != "blocked_config":
+                    raise
+                result = await asyncio.to_thread(
+                    service.create_build,
+                    request.item_id,
+                    request.source_version_id,
+                    DiscoveryConfig(),
+                    config_error=str(error),
+                )
+        elif request.action in ("retry_build", "resume_build"):
+            assert request.build_id is not None
+            model = await asyncio.to_thread(resolve_discovery_model)
+            previous = await asyncio.to_thread(service.get_build, request.item_id, request.build_id)
+            if previous["config"] != model.config.model_dump():
+                raise BookWorldError("config_changed", "Configuration changed; start a new build")
+            if request.action == "retry_build":
+                result = await asyncio.to_thread(
+                    service.retry_build, request.item_id, request.build_id
+                )
+                await self._stop_worker(root, request.build_id)
+            elif previous["can_resume"]:
+                result = previous
+                await self._stop_worker(root, request.build_id)
+            else:
+                raise BookWorldError(
+                    "invalid_build_state", "Build is still active or cannot be resumed"
+                )
+        elif request.action == "cancel_build":
+            assert request.build_id is not None
+            result = await asyncio.to_thread(
+                service.cancel_build, request.item_id, request.build_id
+            )
+            await self._stop_worker(root, request.build_id)
+        elif request.action == "list_characters":
+            assert request.build_id is not None
+            result = await asyncio.to_thread(
+                service.list_characters,
+                request.item_id,
+                request.build_id,
+                request.offset,
+                request.limit,
+            )
+        else:
+            result = await asyncio.to_thread(
+                service.get_build, request.item_id, request.build_id, request.source_version_id
+            )
+        if (
+            model
+            and result.get("stage") == "character_discovery"
+            and result.get("status") in ("queued", "running")
+        ):
+            self._schedule(root, result["build_id"], model)
+        return {
+            "action": request.action,
+            "workspace_id": workspace_identity(root),
+            "item_id": request.item_id,
+            **result,
+        }
 
     @staticmethod
     def _execute(root: Path, request: BookWorldRequest) -> dict[str, Any]:
@@ -29,10 +134,12 @@ class BookWorldHandler(MessageHandler):
         elif request.action == "get_source":
             result = service.get_source(request.item_id, request.source_version_id)
         elif request.action == "list_segments":
+            assert request.source_version_id is not None
             result = service.list_segments(
                 request.item_id, request.source_version_id, request.after_ordinal, request.limit
             )
         elif request.action == "resolve_evidence":
+            assert request.source_version_id is not None and request.segment_id is not None
             result = service.resolve_evidence(
                 request.item_id,
                 request.source_version_id,
@@ -40,8 +147,13 @@ class BookWorldHandler(MessageHandler):
                 request.local_start,
                 request.local_end,
             )
+        elif request.action == "read_source":
+            assert request.source_version_id is not None
+            result = service.read_source(
+                request.item_id, request.source_version_id, request.offset, request.text_limit
+            )
         else:
-            result = service.read_source(request.item_id, request.source_version_id, request.offset, request.text_limit)
+            raise BookWorldError("invalid_request", "Unknown source operation")
         return {
             "action": request.action,
             "workspace_id": workspace_identity(root),
@@ -68,7 +180,17 @@ class BookWorldHandler(MessageHandler):
             return
         root = Path(get_workspace_path()).resolve()
         try:
-            result = await asyncio.to_thread(self._execute, root, request)
+            if request.action in (
+                "start_discovery",
+                "get_build",
+                "list_characters",
+                "cancel_build",
+                "retry_build",
+                "resume_build",
+            ):
+                result = await self._discovery(root, request)
+            else:
+                result = await asyncio.to_thread(self._execute, root, request)
             response = WSMessage(
                 type=MessageType.BOOK_WORLD_RESULT, request_id=message.request_id, data=result
             )
@@ -88,8 +210,8 @@ class BookWorldHandler(MessageHandler):
                 type=MessageType.ERROR,
                 request_id=message.request_id,
                 data={
-                    "error": "Could not prepare or read the book source",
-                    "code": "source_failed",
+                    "error": "Could not complete the book operation",
+                    "code": "book_world_failed",
                 },
             )
         await self.send_response(websocket, response)

@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-12",
+  "scope": "Deterministic full-source orchestration only. Fixture returns no character claims; NOT extraction/persona quality.",
+  "books": [
+    {
+      "title": "西游记",
+      "result": {
+        "build_id": "7bba9b5c-1a06-40a2-99b5-241f11be89db",
+        "book_id": "38b26a66-6472-43aa-8f2b-f507bba91567",
+        "source_version_id": "1aef951e-c84c-4e29-9ccc-71e1e2718de8",
+        "status": "queued",
+        "stage": "discovery_complete",
+        "total_units": 322,
+        "completed_units": 322,
+        "failed_units": 0,
+        "processed_segments": 3311,
+        "total_segments": 3311,
+        "error_code": null,
+        "error_detail": null,
+        "can_resume": false,
+        "config": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 4096,
+          "model": "coverage-fixture-v2",
+          "policy_version": "candidate-identity-v2",
+          "prompt_version": "character-discovery-v5",
+          "provider_id": null,
+          "provider_signature": "",
+          "reasoning_effort": null,
+          "unit_char_limit": 8000,
+          "unit_segment_limit": 12
+        }
+      },
+      "calls": 322,
+      "max_unit_codepoints": 4433,
+      "tail_received": true,
+      "candidate_count": 0
+    },
+    {
+      "title": "红楼梦",
+      "result": {
+        "build_id": "edb9c790-8925-47f4-bea2-2aa7676c29f5",
+        "book_id": "79e0fbfd-1ce5-4ec9-a690-f7e51e4eb9eb",
+        "source_version_id": "5a25df59-9904-46f8-ada6-cc7acd70da50",
+        "status": "queued",
+        "stage": "discovery_complete",
+        "total_units": 275,
+        "completed_units": 275,
+        "failed_units": 0,
+        "processed_segments": 2665,
+        "total_segments": 2665,
+        "error_code": null,
+        "error_detail": null,
+        "can_resume": false,
+        "config": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 4096,
+          "model": "coverage-fixture-v2",
+          "policy_version": "candidate-identity-v2",
+          "prompt_version": "character-discovery-v5",
+          "provider_id": null,
+          "provider_signature": "",
+          "reasoning_effort": null,
+          "unit_char_limit": 8000,
+          "unit_segment_limit": 12
+        }
+      },
+      "calls": 275,
+      "max_unit_codepoints": 7913,
+      "tail_received": true,
+      "candidate_count": 0
+    }
+  ]
+}

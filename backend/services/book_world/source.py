@@ -15,7 +15,7 @@ from .storage import connect
 from .text_source import PARSER_VERSION as TEXT_PARSER_VERSION
 from .text_source import parse_text, read_text_file
 
-PARSER_VERSION = "narrative-pdf-lines-v1"
+PARSER_VERSION = "narrative-pdf-lines-v2"
 
 
 class BookWorldError(ValueError):

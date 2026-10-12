@@ -58,6 +58,7 @@ class AnthropicProvider(RetryableProvider):
         max_tokens: int = 8192,
         temperature: float = 0.7,
         stream: bool = False,
+        reasoning_effort: str | None = None,
     ) -> LLMResponse | AsyncGenerator[str, None]:
         model = model or self.default_model
         logger.info(f"Calling ANTHROPIC API with model: {model}")
@@ -80,6 +81,8 @@ class AnthropicProvider(RetryableProvider):
                 "system": system_message,
                 "messages": anthropic_messages,
             }
+            if reasoning_effort is not None:
+                kwargs["output_config"] = {"effort": reasoning_effort}
             if tools:
                 anthropic_tools = convert_tools_to_anthropic_format(tools)
                 kwargs["tools"] = anthropic_tools

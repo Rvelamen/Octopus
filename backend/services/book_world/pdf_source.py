@@ -54,29 +54,31 @@ def parse_pdf(path: Path) -> ParsedSource:
                 local_start = match.start() + leading
                 if re.match(r"^(第.{1,20}[章回卷]|chapter\s+\w+)", line, re.IGNORECASE):
                     chapter = line[:120]
-                if texts:
-                    offset += 2
-                segments.append(
-                    {
-                        "ordinal": len(segments),
-                        "page": number,
-                        "chapter": chapter,
-                        "start_offset": offset,
-                        "end_offset": offset + len(line),
-                        "text": line,
-                        "text_sha256": hashlib.sha256(line.encode("utf-8")).hexdigest(),
-                    }
-                )
-                locators.append(
-                    {
-                        "page": number,
-                        "page_start": local_start,
-                        "page_end": local_start + len(line),
-                        "page_text": line,
-                    }
-                )
-                texts.append(line)
-                offset += len(line)
+                for part_start in range(0, len(line), 2000):
+                    part = line[part_start : part_start + 2000]
+                    if texts:
+                        offset += 2
+                    segments.append(
+                        {
+                            "ordinal": len(segments),
+                            "page": number,
+                            "chapter": chapter,
+                            "start_offset": offset,
+                            "end_offset": offset + len(part),
+                            "text": part,
+                            "text_sha256": hashlib.sha256(part.encode("utf-8")).hexdigest(),
+                        }
+                    )
+                    locators.append(
+                        {
+                            "page": number,
+                            "page_start": local_start + part_start,
+                            "page_end": local_start + part_start + len(part),
+                            "page_text": part,
+                        }
+                    )
+                    texts.append(part)
+                    offset += len(part)
                 lines_on_page.add(line)
             repeated.update(lines_on_page)
     needs_ocr = not segments or bool(image_only_pages)

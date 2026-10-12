@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-12",
+  "scope": "Bounded real-model integration smoke test; excerpt only, not full-book/persona evaluation",
+  "source": "https://github.com/tennessine/corpus",
+  "sample_codepoints": 5000,
+  "model": "K3",
+  "provider_id": 2,
+  "result": {
+    "build_id": "012bc090-d43d-46ba-8fae-bedf92d569f2",
+    "book_id": "5d68e1d9-9133-4a46-befb-20e36c9eb7f1",
+    "source_version_id": "b2057a30-fa5f-4c1b-89f1-de5fa7ae443a",
+    "status": "failed",
+    "stage": "character_discovery",
+    "total_units": 3,
+    "completed_units": 1,
+    "failed_units": 1,
+    "processed_segments": 1,
+    "total_segments": 48,
+    "error_code": "discovery_failed",
+    "error_detail": "A discovery unit failed twice; retry the failed build",
+    "can_resume": false,
+    "config": {
+      "call_timeout_seconds": 90,
+      "max_tokens": 4096,
+      "model": "K3",
+      "policy_version": "candidate-identity-v1",
+      "prompt_version": "character-discovery-v2",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "unit_char_limit": 8000
+    }
+  },
+  "candidates": []
+}

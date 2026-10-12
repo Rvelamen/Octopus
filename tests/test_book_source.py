@@ -80,6 +80,33 @@ def test_library_delete_fences_source_before_removing_item(library: LibraryEngin
     assert failure.value.code == "source_removed"
 
 
+def test_long_pdf_line_is_bounded_without_losing_page_locator(library: LibraryEngine):
+    item = library.create_item(metadata={"title": "Long line", "item_type": "book"})
+    path = library.workspace_root / item["library_path"] / "main.pdf"
+    line = "A" * 4200 + "FINAL"
+    with fitz.open() as document:
+        page = document.new_page(width=15000, height=80)
+        page.insert_text((5, 30), line, fontsize=1)
+        document.save(path)
+    library.db.execute(
+        "UPDATE library_items SET pdf_sha256=?,chunk_status='completed' WHERE id=?",
+        (library._compute_sha256(path), item["id"]),
+    )
+    library.db.commit()
+    service = BookSourceService(library.workspace_root)
+    source = service.prepare_source(item["id"])
+    rows = service.list_segments(item["id"], source["source_version_id"])["segments"]
+    assert len(rows) == 3
+    assert all(len(row["text"]) <= 2000 for row in rows)
+    assert "".join(row["text"] for row in rows) == line
+    location = service.resolve_evidence(
+        item["id"], source["source_version_id"], rows[-1]["id"], 200, 205
+    )
+    assert location["quote"] == "FINAL"
+    assert location["page_start"] == 4200
+    assert location["page_end"] == 4205
+
+
 def test_repeated_prepare_reuses_identity_and_detects_snapshot_corruption(library: LibraryEngine):
     item = add_pdf(library, [["A short story", "The end"]])
     service = BookSourceService(library.workspace_root)

@@ -22,7 +22,38 @@
     "locatePage": "Locate page {{page}}",
     "more": "Load more segments",
     "original": "Original location",
-    "openPdf": "Open original version · Page {{page}}"
+    "openPdf": "Open original version · Page {{page}}",
+    "characterTitle": "Character candidates",
+    "candidateHint": "Discover characters across the whole source and retain identity conflicts. Candidates have no canonical knowledge and cannot chat yet. Builds call the configured library extraction model.",
+    "discover": "Discover characters",
+    "cancelBuild": "Cancel build",
+    "retryBuild": "Retry / continue build",
+    "refreshBuild": "Refresh progress",
+    "discoveryComplete": "Character discovery complete",
+    "buildProgress": "Checkpoints {{completed}} / {{total}} · Covered {{processed}} / {{segments}} segments",
+    "candidateCount": "{{count}} candidates",
+    "ambiguousAlias": "Ambiguous alias",
+    "candidateEvidence": "Source evidence",
+    "previousCharacters": "Previous",
+    "nextCharacters": "Next",
+    "buildStatus": {
+      "queued": "Queued",
+      "running": "Discovering",
+      "failed": "Build failed",
+      "cancelled": "Cancelled",
+      "blocked_config": "Configure extraction model"
+    },
+    "characterStatus": {
+      "candidate": "Candidate, chat unavailable",
+      "needs_review": "Identity needs review"
+    },
+    "presence": {
+      "active": "Acting / speaking",
+      "silent": "Present, silent",
+      "referenced": "Only mentioned",
+      "uncertain": "Presence uncertain"
+    },
+    "resumeBuild": "Resume build"
   },
   "nav": {
     "group": {

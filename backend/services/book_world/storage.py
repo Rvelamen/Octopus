@@ -46,3 +46,10 @@ def disable_item_sources(db: sqlite3.Connection, item_id: int) -> None:
         "WHERE library_item_id=?",
         (item_id,),
     )
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='book_builds'").fetchone():
+        db.execute(
+            "UPDATE book_builds SET lifecycle_state='unavailable',cancel_requested=1,"
+            "lease_generation=lease_generation+1,lease_owner=NULL,lease_expires_at=NULL "
+            "WHERE book_id IN (SELECT id FROM book_books WHERE library_item_id=?)",
+            (item_id,),
+        )

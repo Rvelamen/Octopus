@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Modal, Spin, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import TextSourceReader from './TextSourceReader';
+import CharacterDiscoveryPanel from './CharacterDiscoveryPanel';
 
 export default function NarrativeSourcePanel({ item, sendWSMessage }) {
   const { t } = useTranslation();
@@ -73,7 +74,7 @@ export default function NarrativeSourcePanel({ item, sendWSMessage }) {
   const locate = async (segment) => {
     const current = generation.current;
     try {
-      const data = await request('resolve_evidence', { source_version_id: source.source_version_id, segment_id: segment.id });
+      const data = await request('resolve_evidence', { source_version_id: source.source_version_id, segment_id: segment.id || segment.segment_id, local_start: segment.local_start || 0, ...(segment.local_end ? { local_end: segment.local_end } : {}) });
       if (generation.current === current) setLocator(data);
     } catch (failure) {
       if (generation.current === current) setError(failure.message);
@@ -118,6 +119,7 @@ export default function NarrativeSourcePanel({ item, sendWSMessage }) {
         </ol>
         {nextOrdinal !== null && <Button size="small" onClick={() => loadSegments(source.source_version_id, nextOrdinal, true).catch((failure) => setError(failure.message))}>{t('bookWorld.more')}</Button>}
       </details>
+      <CharacterDiscoveryPanel source={source} request={request} onLocate={locate} />
     </>}
     <Modal open={Boolean(locator)} title={t('bookWorld.original')} onCancel={() => setLocator(null)} footer={locator ? <Button onClick={openOriginal}>{locator.format === 'txt' ? t('bookWorld.openText') : t('bookWorld.openPdf', { page: locator.page })}</Button> : null}>
       {locator && <><p>{locator.page ? t('bookWorld.locatePage', { page: locator.page }) : t('bookWorld.locateLine', { line: locator.line_number })} · {locator.source_version_id.slice(0, 8)}</p><blockquote style={{ whiteSpace: 'pre-wrap' }}>{locator.quote}</blockquote></>}

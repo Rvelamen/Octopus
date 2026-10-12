@@ -22,7 +22,38 @@
     "locatePage": "定位第 {{page}} 页",
     "more": "继续加载片段",
     "original": "原著位置",
-    "openPdf": "打开原始版本 · 第 {{page}} 页"
+    "openPdf": "打开原始版本 · 第 {{page}} 页",
+    "characterTitle": "人物候选",
+    "candidateHint": "按全书发现人物，保留身份与称呼歧义。候选不具备原著知识，暂不能聊天。构建会调用已配置的图书馆提取模型。",
+    "discover": "构建人物候选",
+    "cancelBuild": "取消构建",
+    "retryBuild": "重试 / 继续构建",
+    "refreshBuild": "刷新进度",
+    "discoveryComplete": "人物发现完成",
+    "buildProgress": "检查点 {{completed}} / {{total}} · 已覆盖 {{processed}} / {{segments}} 片段",
+    "candidateCount": "共 {{count}} 位候选",
+    "ambiguousAlias": "称呼待消歧",
+    "candidateEvidence": "原文依据",
+    "previousCharacters": "上一页",
+    "nextCharacters": "下一页",
+    "buildStatus": {
+      "queued": "排队中",
+      "running": "人物发现中",
+      "failed": "构建失败",
+      "cancelled": "已取消",
+      "blocked_config": "需要配置提取模型"
+    },
+    "characterStatus": {
+      "candidate": "候选，暂不能聊天",
+      "needs_review": "身份待复核"
+    },
+    "presence": {
+      "active": "行动 / 发言",
+      "silent": "在场未发言",
+      "referenced": "仅被提及",
+      "uncertain": "在场情况不明"
+    },
+    "resumeBuild": "恢复任务"
   },
   "nav": {
     "group": {

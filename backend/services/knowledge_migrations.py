@@ -631,6 +631,18 @@ def _migration_014_book_sources(conn: sqlite3.Connection) -> None:
     apply_source_schema(conn)
 
 
+def _migration_015_book_discovery(conn: sqlite3.Connection) -> None:
+    database_file = conn.execute("PRAGMA database_list").fetchone()[2]
+    if database_file:
+        backup = Path(database_file).with_name(Path(database_file).name + ".pre-discovery-v15.bak")
+        if not backup.exists():
+            with sqlite3.connect(str(backup)) as target:
+                conn.backup(target)
+    conn.executescript(
+        (Path(__file__).parent / "book_world" / "discovery_schema.sql").read_text(encoding="utf-8")
+    )
+
+
 def run_knowledge_index_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_initial_schema", _migration_001_create_initial_schema)
@@ -657,6 +669,7 @@ def run_knowledge_index_migrations(db_path: Path) -> None:
         _migration_013_pdf_annotation_chat_tables,
     )
     runner.register(14, "book_narrative_sources", _migration_014_book_sources)
+    runner.register(15, "book_character_discovery", _migration_015_book_discovery)
     runner.run()
 
 

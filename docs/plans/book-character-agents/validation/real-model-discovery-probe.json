@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-12",
+  "scope": "Bounded real-model integration smoke test; excerpt only, not full-book/persona evaluation",
+  "source": "https://github.com/tennessine/corpus",
+  "sample_codepoints": 1000,
+  "model": "k3",
+  "provider_id": 2,
+  "result": {
+    "build_id": "e6849fdb-7258-423d-bc1f-068b63b18467",
+    "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+    "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+    "status": "queued",
+    "stage": "discovery_complete",
+    "total_units": 1,
+    "completed_units": 1,
+    "failed_units": 0,
+    "processed_segments": 11,
+    "total_segments": 11,
+    "error_code": null,
+    "error_detail": null,
+    "can_resume": false,
+    "config": {
+      "call_timeout_seconds": 180,
+      "max_tokens": 4096,
+      "model": "k3",
+      "policy_version": "candidate-identity-v2",
+      "prompt_version": "character-discovery-v5",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "unit_char_limit": 4000,
+      "unit_segment_limit": 12
+    }
+  },
+  "candidates": [
+    {
+      "name": "仙卿",
+      "agent_status": "needs_review"
+    },
+    {
+      "name": "众猴",
+      "agent_status": "needs_review"
+    },
+    {
+      "name": "千里眼",
+      "agent_status": "candidate"
+    },
+    {
+      "name": "玉皇大天尊玄穹高上帝",
+      "agent_status": "candidate"
+    },
+    {
+      "name": "石猴",
+      "agent_status": "candidate"
+    },
+    {
+      "name": "顺风耳",
+      "agent_status": "candidate"
+    }
+  ]
+}
