@@ -123,7 +123,27 @@
     "revisionChanges": "查看本版修订差异",
     "extensionTitle": "读者扩展材料",
     "extensionHint": "仅用于读者记录，不属于原著，不进入严格原著 Agent 的知识或人设。",
-    "saveExtension": "保存扩展材料"
+    "saveExtension": "保存扩展材料",
+    "knowledgeTitle": "人物知道什么与原著表达",
+    "knowledgeHint": "只预览本人物获准的原著依据与表达素材。找到相关依据不等于已验证你的问题前提。",
+    "knowledgeQuery": "输入人物、情节或观念关键词",
+    "previewKnowledge": "查询依据",
+    "retrospective": "回顾历史信念",
+    "expressionAction": "本次表达用途",
+    "knowledgeMatched": "找到相关的允许依据",
+    "knowledgeUnknown": "没有相关的允许依据，人物应保持未知",
+    "propositionOnly": "仅提供已授权命题；没有可供人物使用的安全原句",
+    "expressionRebuildHint": "尚无通过审查的表达素材。可通过有原文依据的新人物构建补充素材，或调整模型配置后准备新表达集；现有人物知识与基线继续可用。",
+    "selectedExpression": "本次可用表达素材",
+    "expressionMaterials": "原著表达素材与审查",
+    "prepareExpressions": "准备表达素材",
+    "resumeExpressions": "继续 / 重试表达构建",
+    "noExpression": "尚无可用表达素材；人物仍使用有据基线，缺项保持未知",
+    "expressionProgress": "单元 {{completed}} / {{total}} · 已审查可用 {{accepted}} 条",
+    "expressionActionType": {"other": "不限用途", "answer": "回答", "ask": "询问", "challenge": "质疑", "comfort": "安慰", "avoid": "回避", "greet": "寒暄", "disagree": "表达分歧", "express_unknown": "表达未知"},
+    "expressionKind": {"style_rule": "表达规则", "dialogue_example": "原著对白样例"},
+    "expressionStatus": {"not_built": "尚未构建", "queued": "等待构建", "running": "正在构建", "ready": "表达构建已完成", "partial": "表达构建部分完成", "failed": "构建失败", "paused": "预算耗尽，已暂停", "cancelled": "已取消"},
+    "knowledgeTime": {"current": "当前依据", "historical": "历史依据", "unspecified": "原著经历 / 事实"}
   },
   "nav": {
     "group": {

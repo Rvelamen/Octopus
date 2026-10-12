@@ -19,6 +19,7 @@ from .source import BookWorldError
 class DiscoveryModel:
     provider: LLMProvider
     config: DiscoveryConfig
+    context_window: int = 32768
 
 
 def resolve_discovery_model() -> DiscoveryModel:
@@ -101,4 +102,6 @@ def resolve_discovery_model() -> DiscoveryModel:
     )
     if isinstance(provider, MockProvider):
         raise BookWorldError("blocked_config", "A real extraction model is required")
-    return DiscoveryModel(provider=provider, config=config)
+    return DiscoveryModel(
+        provider=provider, config=config, context_window=model_record.context_window or 32768
+    )

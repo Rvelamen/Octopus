@@ -7,6 +7,8 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
+from .search_terms import register_search_functions
+
 
 def workspace_identity(root: Path) -> str:
     """Identify a canonical workspace without exposing an absolute path."""
@@ -18,6 +20,7 @@ def connect(db_path: Path) -> Iterator[sqlite3.Connection]:
     """Commit a successful operation and close its private connection."""
     db = sqlite3.connect(str(db_path), timeout=10)
     db.row_factory = sqlite3.Row
+    register_search_functions(db)
     db.execute("PRAGMA foreign_keys=ON")
     db.execute("PRAGMA busy_timeout=10000")
     try:
@@ -51,5 +54,10 @@ def disable_item_sources(db: sqlite3.Connection, item_id: int) -> None:
             "UPDATE book_builds SET lifecycle_state='unavailable',cancel_requested=1,"
             "lease_generation=lease_generation+1,lease_owner=NULL,lease_expires_at=NULL "
             "WHERE book_id IN (SELECT id FROM book_books WHERE library_item_id=?)",
+            (item_id,),
+        )
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='book_expression_sets'").fetchone():
+        db.execute(
+            "UPDATE book_expression_sets SET lifecycle_state='unavailable',cancel_requested=1,lease_generation=lease_generation+1,lease_owner=NULL,lease_expires_at=NULL WHERE book_id IN (SELECT id FROM book_books WHERE library_item_id=?)",
             (item_id,),
         )

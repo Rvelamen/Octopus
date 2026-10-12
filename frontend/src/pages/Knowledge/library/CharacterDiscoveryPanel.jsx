@@ -134,7 +134,7 @@ export default function CharacterDiscoveryPanel({ source, request, onLocate }) {
         <Button size="small" disabled={offset + characters.length >= total} onClick={() => refresh(build.build_id, offset + 25).catch((failure) => setError(failure.message))}>{t('bookWorld.nextCharacters')}</Button>
       </div>
     </>}
-    {detail && <CharacterPersonaModal key={`${detail.build_id}:${detail.character_id}`} detail={detail}
+    {detail && <CharacterPersonaModal key={`${detail.build_id}:${detail.character_id}`} detail={detail} request={request}
       onCorrect={() => setCorrecting(true)}
       onSaveExtension={async (text) => {
         const current = generation.current; const sequence = ++detailRevision.current;

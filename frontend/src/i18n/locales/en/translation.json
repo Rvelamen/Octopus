@@ -123,7 +123,27 @@
     "revisionChanges": "View revision changes",
     "extensionTitle": "Reader extensions",
     "extensionHint": "Reader notes only. These are outside canon and never enter the strict character Agent’s knowledge or persona.",
-    "saveExtension": "Save extension"
+    "saveExtension": "Save extension",
+    "knowledgeTitle": "Character knowledge and source expressions",
+    "knowledgeHint": "Preview only this character’s authorized evidence and expression materials. A related match does not verify the premise of your question.",
+    "knowledgeQuery": "Enter character, event or belief keywords",
+    "previewKnowledge": "Find evidence",
+    "retrospective": "Recall historical beliefs",
+    "expressionAction": "Expression purpose",
+    "knowledgeMatched": "Related authorized evidence found",
+    "knowledgeUnknown": "No related authorized evidence; the character should express uncertainty",
+    "propositionOnly": "Authorized proposition only; no safe source quotation is available to the character",
+    "expressionRebuildHint": "No expression materials passed review. A new source-backed character build can add materials, or changed model settings can create a new expression set. Existing knowledge and baselines remain available.",
+    "selectedExpression": "Expressions available for this query",
+    "expressionMaterials": "Source expressions and review",
+    "prepareExpressions": "Prepare expressions",
+    "resumeExpressions": "Resume / retry expression build",
+    "noExpression": "No usable expressions yet. The character retains supported baselines and unknown fields.",
+    "expressionProgress": "Units {{completed}} / {{total}} · {{accepted}} approved materials",
+    "expressionActionType": {"other": "Any purpose", "answer": "Answer", "ask": "Ask", "challenge": "Challenge", "comfort": "Comfort", "avoid": "Avoid", "greet": "Greet", "disagree": "Disagree", "express_unknown": "Express uncertainty"},
+    "expressionKind": {"style_rule": "Expression rule", "dialogue_example": "Source dialogue example"},
+    "expressionStatus": {"not_built": "Not built", "queued": "Queued", "running": "Building", "ready": "Expression build complete", "partial": "Expression build partly complete", "failed": "Build failed", "paused": "Budget exhausted; paused", "cancelled": "Cancelled"},
+    "knowledgeTime": {"current": "Current evidence", "historical": "Historical evidence", "unspecified": "Canonical event / fact"}
   },
   "nav": {
     "group": {

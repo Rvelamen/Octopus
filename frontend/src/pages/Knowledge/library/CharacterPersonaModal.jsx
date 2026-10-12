@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Alert, Button, Empty, Input, Modal, Space, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
+import CharacterKnowledgePanel from './CharacterKnowledgePanel';
 
-export default function CharacterPersonaModal({ detail, onClose, onLocate, onCorrect, onSaveExtension }) {
+export default function CharacterPersonaModal({ detail, request, onClose, onLocate, onCorrect, onSaveExtension }) {
   const { t } = useTranslation();
   const [extension, setExtension] = useState('');
   const [saving, setSaving] = useState(false);
@@ -18,6 +19,7 @@ export default function CharacterPersonaModal({ detail, onClose, onLocate, onCor
   return <Modal open={Boolean(detail)} title={`${detail?.public?.name || ''} · ${t('bookWorld.personaTitle')}`} width={760} onCancel={onClose} footer={<Button onClick={onClose}>{t('bookWorld.closeArchive')}</Button>}>
     <Alert type="info" showIcon title={t('bookWorld.readerArchiveHint')} style={{ marginBottom: 12 }} />
     {detail.published && <Button size="small" onClick={onCorrect}>{t('bookWorld.correctPersona')}</Button>}
+    {detail.published && ['ready', 'sparse'].includes(detail.agent_status) && <CharacterKnowledgePanel key={`${detail.build_id}:${detail.character_id}`} detail={detail} request={request} onLocate={onLocate} />}
     <h4>{t('bookWorld.baselineTitle')}</h4>
     {baseline.length ? <ul>{baseline.map(([slot, entry]) => <li key={slot}>{entry.proposition}</li>)}</ul> : <p>{t('bookWorld.baselineUnknown')}</p>}
     <h4>{t('bookWorld.claimsTitle')}</h4>

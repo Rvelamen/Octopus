@@ -659,6 +659,29 @@ def _migration_017_book_revisions(conn: sqlite3.Connection) -> None:
     conn.executescript((Path(__file__).parent / "book_world" / "revision_schema.sql").read_text(encoding="utf-8"))
 
 
+def _migration_018_book_knowledge(conn: sqlite3.Connection) -> None:
+    from backend.services.book_world.search_terms import register_search_functions
+
+    _backup_book_migration(conn, ".pre-knowledge-v18.bak")
+    register_search_functions(conn)
+    conn.executescript((Path(__file__).parent / "book_world" / "knowledge_schema.sql").read_text(encoding="utf-8"))
+
+
+def _migration_019_book_expressions(conn: sqlite3.Connection) -> None:
+    _backup_book_migration(conn, ".pre-expressions-v19.bak")
+    conn.executescript((Path(__file__).parent / "book_world" / "expression_schema.sql").read_text(encoding="utf-8"))
+
+
+def _migration_020_book_expression_guards(conn: sqlite3.Connection) -> None:
+    _backup_book_migration(conn, ".pre-expression-guards-v20.bak")
+    conn.executescript((Path(__file__).parent / "book_world" / "expression_guards.sql").read_text(encoding="utf-8"))
+
+
+def _migration_021_book_expression_propositions(conn: sqlite3.Connection) -> None:
+    _backup_book_migration(conn, ".pre-expression-propositions-v21.bak")
+    conn.executescript((Path(__file__).parent / "book_world" / "expression_proposition_guards.sql").read_text(encoding="utf-8"))
+
+
 def run_knowledge_index_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_initial_schema", _migration_001_create_initial_schema)
@@ -688,6 +711,10 @@ def run_knowledge_index_migrations(db_path: Path) -> None:
     runner.register(15, "book_character_discovery", _migration_015_book_discovery)
     runner.register(16, "book_character_persona", _migration_016_book_persona)
     runner.register(17, "book_character_revisions", _migration_017_book_revisions)
+    runner.register(18, "book_scoped_knowledge", _migration_018_book_knowledge)
+    runner.register(19, "book_character_expressions", _migration_019_book_expressions)
+    runner.register(20, "book_expression_guards", _migration_020_book_expression_guards)
+    runner.register(21, "book_expression_propositions", _migration_021_book_expression_propositions)
     runner.run()
 
 

@@ -15,6 +15,8 @@ from backend.services.book_world import BookSourceService, BookWorldError
 from backend.services.book_world.contracts import BookWorldRequest
 from backend.services.book_world.discovery import BookDiscoveryService, DiscoveryConfig
 from backend.services.book_world.discovery_provider import DiscoveryModel, resolve_discovery_model
+from backend.services.book_world.expressions import CharacterExpressionService, ExpressionConfig
+from backend.services.book_world.knowledge import CharacterKnowledgeService
 from backend.services.book_world.persona import BookPersonaService, PersonaConfig
 from backend.services.book_world.revisions import BookRevisionService
 from backend.services.book_world.storage import workspace_identity
@@ -28,6 +30,12 @@ class BookWorldHandler(MessageHandler):
     _worker_slots: dict[tuple[Any, str], asyncio.Semaphore] = {}
     _revision_requests: set[asyncio.Task] = set()
     _revision_slots: dict[tuple[Any, str], asyncio.Semaphore] = {}
+    _expression_controls: dict[tuple[Any, str, str], asyncio.Lock] = {}
+
+    @classmethod
+    def _expression_lock(cls, root: Path, set_id: str) -> asyncio.Lock:
+        key = (asyncio.get_running_loop(), workspace_identity(root), set_id)
+        return cls._expression_controls.setdefault(key, asyncio.Lock())
 
     @classmethod
     async def _stop_worker(cls, root: Path, build_id: str) -> None:
@@ -41,7 +49,10 @@ class BookWorldHandler(MessageHandler):
     def _schedule(
         cls, root: Path, build_id: str, model: DiscoveryModel, phase: str = "discovery"
     ) -> None:
-        key = (workspace_identity(root), build_id)
+        key = (
+            workspace_identity(root),
+            f"expression:{build_id}" if phase == "expression" else build_id,
+        )
         task = cls._build_tasks.get(key)
         if task is not None and not task.done():
             return
@@ -51,7 +62,16 @@ class BookWorldHandler(MessageHandler):
                 slots_key = (asyncio.get_running_loop(), workspace_identity(root))
                 slots = cls._worker_slots.setdefault(slots_key, asyncio.Semaphore(1))
                 async with slots:
-                    if phase == "persona":
+                    if phase == "expression":
+                        expression_service = await asyncio.to_thread(
+                            CharacterExpressionService, root
+                        )
+                        await expression_service.run(
+                            build_id,
+                            model.provider,
+                            ExpressionConfig.from_model(model.config, model.context_window),
+                        )
+                    elif phase == "persona":
                         service = await asyncio.to_thread(BookPersonaService, root)
                         await service.run(
                             build_id, model.provider, PersonaConfig.from_model(model.config)
@@ -62,7 +82,8 @@ class BookWorldHandler(MessageHandler):
             except Exception:
                 logger.error("Book discovery worker failed before completion")
             finally:
-                cls._build_tasks.pop(key, None)
+                if cls._build_tasks.get(key) is asyncio.current_task():
+                    cls._build_tasks.pop(key, None)
 
         cls._build_tasks[key] = asyncio.create_task(execute())
 
@@ -232,6 +253,92 @@ class BookWorldHandler(MessageHandler):
             **result,
         }
 
+    async def _knowledge(self, root: Path, request: BookWorldRequest) -> dict[str, Any]:
+        assert request.build_id is not None and request.character_id is not None
+        knowledge = await asyncio.to_thread(CharacterKnowledgeService, root)
+        scope = await asyncio.to_thread(
+            knowledge.bind_character, request.item_id, request.build_id, request.character_id
+        )
+        expressions = await asyncio.to_thread(CharacterExpressionService, root)
+        model = None
+        if request.action == "preview_knowledge":
+            facts = await asyncio.to_thread(
+                knowledge.retrieve,
+                scope,
+                request.query,
+                request.knowledge_limit,
+                request.retrospective,
+            )
+            baseline = await asyncio.to_thread(knowledge.baseline, scope)
+            expression = await asyncio.to_thread(
+                expressions.retrieve,
+                scope,
+                request.query,
+                request.dialogue_action,
+                knowledge_context=facts,
+            )
+            result = {
+                "knowledge": facts.model_dump(mode="json"),
+                "baseline": baseline.model_dump(mode="json"),
+                "expression": expression.model_dump(mode="json"),
+            }
+        elif request.action == "list_expression_materials":
+            assert request.expression_set_id is not None
+            if request.limit > 100:
+                raise BookWorldError("invalid_request", "Expression page limit must not exceed 100")
+            result = await asyncio.to_thread(
+                expressions.list_materials,
+                scope,
+                request.expression_set_id,
+                request.offset,
+                request.limit,
+            )
+        elif request.action == "get_expression_set":
+            result = await asyncio.to_thread(expressions.get_set, scope, request.expression_set_id)
+        elif request.action == "cancel_expression_set":
+            assert request.expression_set_id is not None
+            async with self._expression_lock(root, request.expression_set_id):
+                result = await asyncio.to_thread(
+                    expressions.control, scope, request.expression_set_id, "cancel"
+                )
+                await self._stop_worker(root, f"expression:{request.expression_set_id}")
+        else:
+            model = await asyncio.to_thread(resolve_discovery_model)
+            config = ExpressionConfig.from_model(model.config, model.context_window)
+            if request.action == "start_expression_set":
+                result = await asyncio.to_thread(expressions.create_set, scope, config)
+                async with self._expression_lock(root, result["set_id"]):
+                    result = await asyncio.to_thread(expressions.get_set, scope, result["set_id"])
+                    if result["status"] in ("queued", "running"):
+                        self._schedule(root, result["set_id"], model, phase="expression")
+            else:
+                assert request.expression_set_id is not None
+                async with self._expression_lock(root, request.expression_set_id):
+                    current = await asyncio.to_thread(
+                        expressions.get_set, scope, request.expression_set_id
+                    )
+                    if current["config"] != config.model_dump():
+                        raise BookWorldError(
+                            "config_changed",
+                            "Resume requires the original expression configuration",
+                        )
+                    result = await asyncio.to_thread(
+                        expressions.control,
+                        scope,
+                        request.expression_set_id,
+                        "retry" if request.action == "retry_expression_set" else "resume",
+                    )
+                    await self._stop_worker(root, f"expression:{request.expression_set_id}")
+                    self._schedule(root, result["set_id"], model, phase="expression")
+        return {
+            "action": request.action,
+            "workspace_id": workspace_identity(root),
+            "item_id": request.item_id,
+            "build_id": request.build_id,
+            "character_id": request.character_id,
+            **result,
+        }
+
     @staticmethod
     def _execute(root: Path, request: BookWorldRequest) -> dict[str, Any]:
         service = BookSourceService(root)
@@ -326,7 +433,17 @@ class BookWorldHandler(MessageHandler):
         self, websocket: WebSocket, message: WSMessage, root: Path, request: BookWorldRequest
     ) -> None:
         try:
-            if request.action in ("get_revision_context", "create_revision", "save_extension"):
+            if request.action in (
+                "preview_knowledge",
+                "start_expression_set",
+                "get_expression_set",
+                "list_expression_materials",
+                "cancel_expression_set",
+                "resume_expression_set",
+                "retry_expression_set",
+            ):
+                result = await self._knowledge(root, request)
+            elif request.action in ("get_revision_context", "create_revision", "save_extension"):
                 result = await self._revision(root, request)
             elif request.action in (
                 "start_discovery",

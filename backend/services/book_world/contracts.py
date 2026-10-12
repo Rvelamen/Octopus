@@ -27,6 +27,13 @@ class BookWorldRequest(BaseModel):
         "get_revision_context",
         "create_revision",
         "save_extension",
+        "preview_knowledge",
+        "start_expression_set",
+        "get_expression_set",
+        "list_expression_materials",
+        "cancel_expression_set",
+        "resume_expression_set",
+        "retry_expression_set",
     ]
     item_id: int = Field(strict=True, gt=0)
     source_version_id: str | None = None
@@ -44,6 +51,21 @@ class BookWorldRequest(BaseModel):
     revision_request_id: str | None = Field(default=None, min_length=1, max_length=100)
     patches: list[RevisionPatch] | None = Field(default=None, min_length=1, max_length=12)
     extension_text: str | None = Field(default=None, min_length=1, max_length=4000)
+    query: str = Field(default="", max_length=1000)
+    retrospective: bool = Field(default=False, strict=True)
+    knowledge_limit: int = Field(default=6, strict=True, ge=1, le=50)
+    expression_set_id: str | None = Field(default=None, min_length=1, max_length=100)
+    dialogue_action: Literal[
+        "answer",
+        "ask",
+        "challenge",
+        "comfort",
+        "avoid",
+        "greet",
+        "disagree",
+        "express_unknown",
+        "other",
+    ] = "other"
 
     @model_validator(mode="after")
     def required_source_identity(self) -> "BookWorldRequest":
@@ -66,11 +88,32 @@ class BookWorldRequest(BaseModel):
                 "get_revision_context",
                 "create_revision",
                 "save_extension",
+                "preview_knowledge",
+                "start_expression_set",
+                "get_expression_set",
+                "list_expression_materials",
+                "cancel_expression_set",
+                "resume_expression_set",
+                "retry_expression_set",
             )
             and not self.build_id
         ):
             raise ValueError("build_id is required")
-        if self.action in ("get_character", "save_extension") and not self.character_id:
+        if (
+            self.action
+            in (
+                "get_character",
+                "save_extension",
+                "preview_knowledge",
+                "start_expression_set",
+                "get_expression_set",
+                "list_expression_materials",
+                "cancel_expression_set",
+                "resume_expression_set",
+                "retry_expression_set",
+            )
+            and not self.character_id
+        ):
             raise ValueError("character_id is required")
         if self.action == "create_revision" and (
             self.expected_revision is None or not self.revision_request_id or not self.patches
@@ -78,4 +121,15 @@ class BookWorldRequest(BaseModel):
             raise ValueError("Revision, request identity and patches are required")
         if self.action == "save_extension" and not self.extension_text:
             raise ValueError("extension_text is required")
+        if (
+            self.action
+            in (
+                "list_expression_materials",
+                "cancel_expression_set",
+                "resume_expression_set",
+                "retry_expression_set",
+            )
+            and not self.expression_set_id
+        ):
+            raise ValueError("expression_set_id is required")
         return self

@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-12",
+  "scope": "Actual isolated browser component + desktop WS expression build; not full desktop or chat quality",
+  "character": "玉皇大天尊玄穹高上帝",
+  "canonical_scope": {
+    "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+    "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+    "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+    "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+    "character_id": "c7c5d16c-7e1f-44f8-9d79-62ddd4264138",
+    "canonical_policy_version": "canonical-persona-v3",
+    "knowledge_policy_version": "canonical-perspective-v1"
+  },
+  "result": {
+    "set_id": "f9189c03-378f-4d29-849a-df0086514f36",
+    "status": "partial",
+    "config": {
+      "call_timeout_seconds": 180,
+      "context_window": 1000000,
+      "max_calls_per_window": 80,
+      "max_tokens": 4096,
+      "max_units_per_window": 20,
+      "model": "k3",
+      "policy_version": "expression-material-v1",
+      "prompt_version": "expression-extract-v1",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "expression-review-v1",
+      "unit_char_limit": 4000,
+      "unit_segment_limit": 12
+    },
+    "total_units": 1,
+    "completed_units": 0,
+    "failed_units": 1,
+    "accepted_materials": 0,
+    "window_calls": 2,
+    "total_calls": 2,
+    "error_code": "partial_expressions",
+    "error_detail": "Some expression candidates or units remain unresolved",
+    "can_resume": false
+  },
+  "checkpoints": [
+    {
+      "attempts": 2,
+      "error": "Expression output invalid, context exhausted or timed out",
+      "ids": [
+        [
+          "32627886-ff0e-4db4-a014-708a8ad7bc26",
+          "a5857bd6-694c-4027-8ef0-e26fb9bbe5a4"
+        ],
+        [
+          "2bf4798c-3956-4d14-94ed-6dc22d04b055",
+          "f9e90064-1f51-42b1-bb53-08d412d0386d"
+        ]
+      ],
+      "input_hash": "9493a82b8d3f60a0d5ca4444a65dedf6751ad237f34acf6e71a617dbd5906e97",
+      "status": "failed"
+    }
+  ],
+  "actor_context": {
+    "scope": {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+      "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+      "character_id": "c7c5d16c-7e1f-44f8-9d79-62ddd4264138",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    },
+    "set_id": "f9189c03-378f-4d29-849a-df0086514f36",
+    "policy_version": "expression-material-v1",
+    "status": "unknown",
+    "rules": [],
+    "examples": []
+  },
+  "limitation": "UI build output not captured: failed units recorded but precise invalid-output cause not established. No material accepted."
+}
