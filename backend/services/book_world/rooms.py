@@ -38,6 +38,70 @@ class BookRoomService:
             self._room(db, scope)
         return scope
 
+    def reset_memory(self, scope: RoomScope) -> dict[str, Any]:
+        """Advance only this room's memory epoch and revoke its unfinished publication leases."""
+        with connect(self.db_path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            self._room(db, scope)
+            cancelled = [
+                row[0]
+                for row in db.execute(
+                    "SELECT id FROM book_room_rounds WHERE room_id=? AND epoch=? AND status IN ('queued','running','paused','interrupted')",
+                    (scope.room_id, scope.epoch),
+                )
+            ]
+            db.execute(
+                "UPDATE book_room_rounds SET status='cancelled',cancel_requested=1,lease_generation=lease_generation+1,lease_owner=NULL,lease_expires_at=NULL WHERE room_id=? AND epoch=? AND status IN ('queued','running','paused','interrupted')",
+                (scope.room_id, scope.epoch),
+            )
+            db.execute(
+                "UPDATE book_round_slots SET status='cancelled' WHERE room_id=? AND epoch=? AND status IN ('pending','running','failed')",
+                (scope.room_id, scope.epoch),
+            )
+            db.execute(
+                "UPDATE book_room_epochs SET state='cleared',cleared_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE room_id=? AND epoch=?",
+                (scope.room_id, scope.epoch),
+            )
+            next_epoch = scope.epoch + 1
+            db.execute(
+                "INSERT INTO book_room_epochs(room_id,epoch,state) VALUES (?,?,'active')",
+                (scope.room_id, next_epoch),
+            )
+            db.execute(
+                "UPDATE book_rooms SET current_epoch=? WHERE id=?",
+                (next_epoch, scope.room_id),
+            )
+            db.execute(
+                "UPDATE book_room_members SET state_epoch=?,membership_generation=membership_generation+1,ephemeral_state_json='{}' WHERE room_id=?",
+                (next_epoch, scope.room_id),
+            )
+        return {
+            **self.get_room(scope.model_copy(update={"epoch": next_epoch})),
+            "cancelled_round_ids": cancelled,
+        }
+
+    def cleanup_cleared_memory(self, scope: RoomScope) -> None:
+        """Room maintenance may outlive its epoch; only cleared epochs can be deleted."""
+        with connect(self.db_path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                "SELECT current_epoch FROM book_rooms WHERE id=?", (scope.room_id,)
+            ).fetchone()
+            if row is None:
+                raise BookWorldError("stale_room_epoch", "Room no longer exists")
+            self._room(db, scope.model_copy(update={"epoch": row["current_epoch"]}))
+            for table in (
+                "book_room_summaries",
+                "book_message_refs",
+                "book_room_messages",
+                "book_round_slots",
+                "book_room_rounds",
+            ):
+                db.execute(
+                    f"DELETE FROM {table} WHERE room_id=? AND epoch IN (SELECT epoch FROM book_room_epochs WHERE room_id=? AND state='cleared')",
+                    (scope.room_id, scope.room_id),
+                )
+
     def create_single_room(
         self,
         character: CanonicalScope,

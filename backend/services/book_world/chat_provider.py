@@ -109,6 +109,8 @@ def resolve_character_chat_model(
         context_window=context_window,
         reasoning_effort="low" if kimi else None,
         expression_selection_version="expression-selection-v2",
+        memory_policy_version="typed-room-memory-v1",
+        memory_prompt_version="room-memory-v2",
     )
     resolved = create_provider(
         {

@@ -44,6 +44,11 @@ def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
     messages = {item["id"] for item in context.payload["room_history"]} | {
         context.payload["current_message"]["id"]
     }
+    messages |= {
+        source
+        for item in context.payload.get("room_memory", {}).get("items", [])
+        for source in item["source_message_ids"]
+    }
     if not set(candidate.action_basis_claim_ids) <= baseline:
         raise ValueError("Action basis is outside current baseline")
     if candidate.ephemeral_emotion and (

@@ -1,0 +1,479 @@
+{
+  "date": "2026-10-13",
+  "scope": "T07 real k3 scoped room memory over controlled public history and existing original excerpt persona; not full-book or group quality acceptance",
+  "call_budget": 7,
+  "actual_calls": 7,
+  "character_scope": {
+    "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+    "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+    "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+    "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+    "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+    "canonical_policy_version": "canonical-persona-v3",
+    "knowledge_policy_version": "canonical-perspective-v1"
+  },
+  "room_id": "2f7182f1-5f98-43b5-9345-b8468b3c8aac",
+  "round_id": "f59e3f8a-be22-4f75-b30f-8c659881771e",
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-chat-v3",
+    "policy_version": "bounded-room-v1",
+    "model_record_id": 337,
+    "review_prompt_version": "character-chat-review-v2",
+    "context_window": 1000000,
+    "max_input_tokens": 24000,
+    "expression_enabled": false,
+    "memory_policy_version": "typed-room-memory-v1",
+    "memory_prompt_version": "room-memory-v2",
+    "expression_selection_version": "expression-selection-v2",
+    "expression_sets": {}
+  },
+  "seed_public_messages": 42,
+  "summary": {
+    "id": "30124263-1d9c-4190-a32c-2b541ca624d1",
+    "room_id": "2f7182f1-5f98-43b5-9345-b8468b3c8aac",
+    "epoch": 1,
+    "through_seq": 20,
+    "policy_version": "typed-room-memory-v1",
+    "items": [
+      {
+        "text": "用户说自己的代号是青禾；此为自称代号，未作为原著事实确认。",
+        "origin": "room_hearsay",
+        "speaker_type": "user",
+        "speaker_member_id": null,
+        "source_message_ids": [
+          "b7977cdc-bc1c-40eb-8cca-eb59e29b6128"
+        ]
+      },
+      {
+        "text": "用户推测：北边的门也许开着；用户明确说明这只是猜测，且随后表示没有确认门的位置。",
+        "origin": "inference",
+        "speaker_type": "user",
+        "speaker_member_id": null,
+        "source_message_ids": [
+          "0184db58-dca6-4eb6-8de7-6cae86ec0b37",
+          "2aaf5f41-e9c5-4c3d-8c4e-43cef4096114"
+        ]
+      },
+      {
+        "text": "用户请求把猜测和确认区分开。",
+        "origin": "conversation",
+        "speaker_type": "user",
+        "speaker_member_id": null,
+        "source_message_ids": [
+          "6988fbea-13a4-4a41-8560-514f8e2f27cc"
+        ]
+      }
+    ]
+  },
+  "round": {
+    "round_id": "f59e3f8a-be22-4f75-b30f-8c659881771e",
+    "room_id": "2f7182f1-5f98-43b5-9345-b8468b3c8aac",
+    "epoch": 1,
+    "status": "completed",
+    "mode": "directed",
+    "cursor": 1,
+    "time_limit_seconds": 60,
+    "execution_window": 1,
+    "window_elapsed_ms": 57344,
+    "total_elapsed_ms": 57344,
+    "error_code": null,
+    "run_started_at": "2026-10-12T16:50:58.501+00:00",
+    "discussion": {
+      "goal": null,
+      "mode": "free",
+      "revision": 0,
+      "topic": null
+    },
+    "generation_config": {
+      "call_timeout_seconds": 180,
+      "context_window": 1000000,
+      "expression_enabled": false,
+      "expression_selection_version": "expression-selection-v2",
+      "expression_sets": {
+        "7ac6f9a3-c67d-4cb9-88ee-7beebbbd3723": null
+      },
+      "max_input_tokens": 24000,
+      "max_tokens": 4096,
+      "memory_policy_version": "typed-room-memory-v1",
+      "memory_prompt_version": "room-memory-v2",
+      "model": "k3",
+      "model_record_id": 337,
+      "policy_version": "bounded-room-v1",
+      "prompt_version": "character-chat-v3",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "character-chat-review-v2",
+      "unit_char_limit": 8000,
+      "unit_segment_limit": 12
+    },
+    "can_resume": false,
+    "slots": [
+      {
+        "id": "6186f025-3532-4763-8614-b0b58cdc5833",
+        "position": 0,
+        "member_id": "7ac6f9a3-c67d-4cb9-88ee-7beebbbd3723",
+        "status": "published",
+        "attempts": 2,
+        "member_generation": 0
+      }
+    ],
+    "timeLimitSeconds": 60,
+    "executionWindow": 1,
+    "elapsedSeconds": 57.344,
+    "remainingSeconds": 2.655999999999999,
+    "timeoutReason": null
+  },
+  "reply_messages": [
+    {
+      "id": "e43bee2b-a78b-4b5a-baf9-f79cc9902899",
+      "seq": 44,
+      "round_id": "f59e3f8a-be22-4f75-b30f-8c659881771e",
+      "speaker_type": "user",
+      "speaker_member_id": null,
+      "content": "你还记得我告诉你的代号吗？北边的门是否已经确认开着？请区分听说、猜测和亲历。",
+      "reply_to_id": null,
+      "created_at": "2026-10-12T16:50:58.438Z",
+      "identity": {},
+      "refs": []
+    },
+    {
+      "id": "1e461025-094b-4ca1-9309-dc6694749c8b",
+      "seq": 45,
+      "round_id": "f59e3f8a-be22-4f75-b30f-8c659881771e",
+      "speaker_type": "character",
+      "speaker_member_id": "7ac6f9a3-c67d-4cb9-88ee-7beebbbd3723",
+      "content": "这件事我没有足够的依据，无法确定。",
+      "reply_to_id": "e43bee2b-a78b-4b5a-baf9-f79cc9902899",
+      "created_at": "2026-10-12T16:51:55.841Z",
+      "identity": {
+        "book_title": "西游记 · 石猴发现联调样本（非全书）",
+        "name": "石猴"
+      },
+      "refs": []
+    }
+  ],
+  "canonical_baseline_unchanged": true,
+  "calls": [
+    {
+      "phase": "summary_generate",
+      "status": "completed",
+      "content": "{\"items\":[{\"text\":\"用户自称代号是“青禾”。\",\"origin\":\"room_hearsay\",\"speaker_type\":\"user\",\"speaker_member_id\":null,\"source_message_ids\":[\"b7977cdc-bc1c-40eb-8cca-eb59e29b6128\"]},{\"text\":\"用户说“北边的门也许开着”，并明确这只是猜测；随后又澄清并没有确认门的位置。\",\"origin\":\"room_hearsay\",\"speaker_type\":\"user\",\"speaker_member_id\":null,\"source_message_ids\":[\"0184db58-dca6-4eb6-8de7-6cae86ec0b37\",\"2aaf5f41-e9c5-4c3d-8c4e-43cef4096114\"]},{\"text\":\"用户要求把猜测和确认区分开。\",\"origin\":\"conversation\",\"speaker_type\":\"user\",\"speaker_member_id\":null,\"source_message_ids\":[\"6988fbea-13a4-4a41-8560-514f8e2f27cc\"]},{\"text\":\"用户连续发送“暂时记录日常话题序号4-19，不增加任何已确认事实”的占位消息。\",\"origin\":\"conversation\",\"speaker_type\":\"user\",\"speaker_member_id\":null,\"source_message_ids\":[\"770e4343-bd30-432d-8bcb-0b8995f1216e\",\"0ada7f9c-f4b1-4a3d-b451-c1ff2bfc2837\",\"f7cb07ca-d94c-468a-8be1-8ace09f1a5b4\",\"907a186c-50e6-47c3-8da2-975889203702\",\"8e72e184-4fa9-4196-bc7d-11b0b96e19ea\",\"1e8b69cc-8992-4232-9d36-209b71f7192c\"]}]}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1792,
+        "completion_tokens": 984,
+        "total_tokens": 2776,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "summary_review",
+      "status": "completed",
+      "content": "{\"supported\":false,\"attribution_correct\":true,\"uncertainty_preserved\":true,\"items\":[{\"ordinal\":0,\"origin_correct\":false,\"supported\":true},{\"ordinal\":1,\"origin_correct\":true,\"supported\":true},{\"ordinal\":2,\"origin_correct\":true,\"supported\":true},{\"ordinal\":3,\"origin_correct\":true,\"supported\":false}],\"reason\":\"前三项均准确归属于用户，且保留了代号、门的猜测性质及随后澄清；但第0项是用户直接陈述，不应标为 room_hearsay。第3项声称连续发送序号4-19，所列来源却缺少多个中间消息，不能由来源完整支持。\"}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 2120,
+        "completion_tokens": 256,
+        "total_tokens": 2376,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "summary_generate",
+      "status": "completed",
+      "content": "{\"items\":[{\"text\":\"用户说自己的代号是青禾；此为自称代号，未作为原著事实确认。\",\"origin\":\"room_hearsay\",\"speaker_type\":\"user\",\"speaker_member_id\":null,\"source_message_ids\":[\"b7977cdc-bc1c-40eb-8cca-eb59e29b6128\"]},{\"text\":\"用户推测：北边的门也许开着；用户明确说明这只是猜测，且随后表示没有确认门的位置。\",\"origin\":\"inference\",\"speaker_type\":\"user\",\"speaker_member_id\":null,\"source_message_ids\":[\"0184db58-dca6-4eb6-8de7-6cae86ec0b37\",\"2aaf5f41-e9c5-4c3d-8c4e-43cef4096114\"]},{\"text\":\"用户请求把猜测和确认区分开。\",\"origin\":\"conversation\",\"speaker_type\":\"user\",\"speaker_member_id\":null,\"source_message_ids\":[\"6988fbea-13a4-4a41-8560-514f8e2f27cc\"]}]}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1878,
+        "completion_tokens": 318,
+        "total_tokens": 2196,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "summary_review",
+      "status": "completed",
+      "content": "{\"supported\":true,\"attribution_correct\":true,\"uncertainty_preserved\":true,\"items\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true},{\"ordinal\":2,\"supported\":true,\"origin_correct\":true}],\"reason\":\"三项均只归于用户并按原消息支持：代号青禾为自称，保留未确认为原著事实；北门开着明确标为猜测且随后否认确认位置；区分猜测与确认仅为交流请求。说话者归属、来源序号和不确定性均保留。\"}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 2018,
+        "completion_tokens": 603,
+        "total_tokens": 2621,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "content": "{\n  \"content\": \"记得。你此前说自己的代号是“青禾”，这是你的自称，不是我亲历确认的原著事实。北边的门还不能说已经确认开着：你只说过“也许开着”，并明确那只是猜测，也没有确认门的位置。我没有亲眼见过北边的门开着。\",\n  \"dialogue_action\": \"answer\",\n  \"claims\": [\n    {\n      \"text\": \"你此前说自己的代号是“青禾”，这是你的自称，不是我亲历确认的原著事实。\",\n      \"origin\": \"room_hearsay\",\n      \"message_ids\": [\n        \"b7977cdc-bc1c-40eb-8cca-eb59e29b6128\"\n      ]\n    },\n    {\n      \"text\": \"你只说过“也许开着”，并明确那只是猜测，也没有确认门的位置。\",\n      \"origin\": \"room_hearsay\",\n      \"message_ids\": [\n        \"0184db58-dca6-4eb6-8de7-6cae86ec0b37\",\n        \"2aaf5f41-e9c5-4c3d-8c4e-43cef4096114\"\n      ]\n    },\n    {\n      \"text\": \"北边的门还不能说已经确认开着\",\n      \"origin\": \"inference\"\n    },\n    {\n      \"text\": \"我没有亲眼见过北边的门开着。\",\n      \"origin\": \"conversation\"\n    }\n  ],\n  \"ephemeral_emotion\": null\n}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 3462,
+        "completion_tokens": 613,
+        "total_tokens": 4075,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "content": "{\"content\":\"我记得你在房间里说过，自己的代号是“青禾”；这只是你的自称，不是原著事实。北边的门并没有已经确认开着：你之前只说过它也许开着，也明说那只是猜测，随后又说没有确认门的位置。我也没有亲眼见过那扇门，所以不能把它算作亲历。\",\"dialogue_action\":\"answer\",\"claims\":[{\"text\":\"我记得你在房间里说过，自己的代号是“青禾”；这只是你的自称，不是原著事实。\",\"origin\":\"room_hearsay\",\"message_ids\":[\"b7977cdc-bc1c-40eb-8cca-eb59e29b6128\"]},{\"text\":\"北边的门并没有已经确认开着：你之前只说过它也许开着，也明说那只是猜测，随后又说没有确认门的位置。\",\"origin\":\"inference\",\"message_ids\":[\"0184db58-dca6-4eb6-8de7-6cae86ec0b37\",\"2aaf5f41-e9c5-4c3d-8c4e-43cef4096114\"]},{\"text\":\"我也没有亲眼见过那扇门，所以不能把它算作亲历。\",\"origin\":\"conversation\",\"message_ids\":[\"394830bc-8de7-485c-b7f6-d99fda5c7fb8\"]}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 165,
+        "completion_tokens": 333,
+        "total_tokens": 498,
+        "cache_read_input_tokens": 3328,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "content": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[],\"reason\":\"回复仅表达'没有足够依据、无法确定'，与对话动作express_unknown一致，未对代号、北边的门等作出任何事实断言，也未冒充亲历或挪用听说。房间记忆中仅有用户自称代号'青禾'（hearsay）和对门开着的猜测（inference），均无确认依据，因此坦承不知符合证据边界与人物一致性。无遗漏断言。\"}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 3115,
+        "completion_tokens": 226,
+        "total_tokens": 3341,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    }
+  ],
+  "agent_semantic_review": "Root agent inspected complete candidates and public source messages: v2 summary preserves alias, explicit guess and absence of confirmation; both reply candidates violate source schema (room-derived inference is supplied without canonical reference pairs), so neither is published. Reviewed unknown fallback is safe but unnecessarily refuses the answerable alias. No memory-QA or full-book quality pass is claimed.",
+  "human_blind_review": false,
+  "initial_v1_diagnostic": {
+    "date": "2026-10-13",
+    "scope": "T07 real k3 scoped room memory over controlled public history and existing original excerpt persona; not full-book or group quality acceptance",
+    "call_budget": 7,
+    "actual_calls": 2,
+    "character_scope": {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+      "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+      "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    },
+    "room_id": "2f7182f1-5f98-43b5-9345-b8468b3c8aac",
+    "round_id": "123ba14e-1181-4229-b446-1f92f0792dc2",
+    "model_config": {
+      "provider_id": 2,
+      "model": "k3",
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "unit_char_limit": 8000,
+      "unit_segment_limit": 12,
+      "max_tokens": 4096,
+      "call_timeout_seconds": 180,
+      "prompt_version": "character-chat-v3",
+      "policy_version": "bounded-room-v1",
+      "model_record_id": 337,
+      "review_prompt_version": "character-chat-review-v2",
+      "context_window": 1000000,
+      "max_input_tokens": 24000,
+      "expression_enabled": false,
+      "memory_policy_version": "typed-room-memory-v1",
+      "expression_selection_version": "expression-selection-v2",
+      "expression_sets": {}
+    },
+    "seed_public_messages": 42,
+    "summary": null,
+    "round": {
+      "round_id": "123ba14e-1181-4229-b446-1f92f0792dc2",
+      "room_id": "2f7182f1-5f98-43b5-9345-b8468b3c8aac",
+      "epoch": 1,
+      "status": "failed",
+      "mode": "directed",
+      "cursor": 0,
+      "time_limit_seconds": 60,
+      "execution_window": 1,
+      "window_elapsed_ms": 43391,
+      "total_elapsed_ms": 43391,
+      "error_code": "memory_validation_failed",
+      "run_started_at": "2026-10-12T16:25:33.295+00:00",
+      "discussion": {
+        "goal": null,
+        "mode": "free",
+        "revision": 0,
+        "topic": null
+      },
+      "generation_config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": false,
+        "expression_selection_version": "expression-selection-v2",
+        "expression_sets": {
+          "7ac6f9a3-c67d-4cb9-88ee-7beebbbd3723": null
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "memory_policy_version": "typed-room-memory-v1",
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v3",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v2",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "can_resume": false,
+      "slots": [
+        {
+          "id": "fa7242b3-c36b-4699-aa78-58fc14e304c6",
+          "position": 0,
+          "member_id": "7ac6f9a3-c67d-4cb9-88ee-7beebbbd3723",
+          "status": "failed",
+          "attempts": 0,
+          "member_generation": 0
+        }
+      ],
+      "timeLimitSeconds": 60,
+      "executionWindow": 1,
+      "elapsedSeconds": 43.391,
+      "remainingSeconds": 16.609,
+      "timeoutReason": null
+    },
+    "reply_messages": [
+      {
+        "id": "394830bc-8de7-485c-b7f6-d99fda5c7fb8",
+        "seq": 43,
+        "round_id": "123ba14e-1181-4229-b446-1f92f0792dc2",
+        "speaker_type": "user",
+        "speaker_member_id": null,
+        "content": "你还记得我告诉你的代号吗？北边的门是否已经确认开着？请区分听说、猜测和亲历。",
+        "reply_to_id": null,
+        "created_at": "2026-10-12T16:25:33.218Z",
+        "identity": {},
+        "refs": []
+      }
+    ],
+    "canonical_baseline_unchanged": true,
+    "calls": [
+      {
+        "phase": "summary_generate",
+        "status": "completed",
+        "content": "{\"items\":[{\"text\":\"用户自称代号是“青禾”。\",\"origin\":\"room_hearsay\",\"speaker_type\":\"user\",\"speaker_member_id\":null,\"source_message_ids\":[\"b7977cdc-bc1c-40eb-8cca-eb59e29b6128\"]},{\"text\":\"用户说“北边的门也许开着”，并明确这只是猜测；随后又澄清并没有确认门的位置。\",\"origin\":\"room_hearsay\",\"speaker_type\":\"user\",\"speaker_member_id\":null,\"source_message_ids\":[\"0184db58-dca6-4eb6-8de7-6cae86ec0b37\",\"2aaf5f41-e9c5-4c3d-8c4e-43cef4096114\"]},{\"text\":\"用户要求把猜测和确认区分开。\",\"origin\":\"conversation\",\"speaker_type\":\"user\",\"speaker_member_id\":null,\"source_message_ids\":[\"6988fbea-13a4-4a41-8560-514f8e2f27cc\"]},{\"text\":\"用户连续发送“暂时记录日常话题序号4-19，不增加任何已确认事实”的占位消息。\",\"origin\":\"conversation\",\"speaker_type\":\"user\",\"speaker_member_id\":null,\"source_message_ids\":[\"770e4343-bd30-432d-8bcb-0b8995f1216e\",\"0ada7f9c-f4b1-4a3d-b451-c1ff2bfc2837\",\"f7cb07ca-d94c-468a-8be1-8ace09f1a5b4\",\"907a186c-50e6-47c3-8da2-975889203702\",\"8e72e184-4fa9-4196-bc7d-11b0b96e19ea\",\"1e8b69cc-8992-4232-9d36-209b71f7192c\"]}]}",
+        "finish_reason": "end_turn",
+        "usage": {
+          "prompt_tokens": 1792,
+          "completion_tokens": 984,
+          "total_tokens": 2776,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 0
+        }
+      },
+      {
+        "phase": "summary_review",
+        "status": "completed",
+        "content": "{\"supported\":false,\"attribution_correct\":true,\"uncertainty_preserved\":true,\"items\":[{\"ordinal\":0,\"origin_correct\":false,\"supported\":true},{\"ordinal\":1,\"origin_correct\":true,\"supported\":true},{\"ordinal\":2,\"origin_correct\":true,\"supported\":true},{\"ordinal\":3,\"origin_correct\":true,\"supported\":false}],\"reason\":\"前三项均准确归属于用户，且保留了代号、门的猜测性质及随后澄清；但第0项是用户直接陈述，不应标为 room_hearsay。第3项声称连续发送序号4-19，所列来源却缺少多个中间消息，不能由来源完整支持。\"}",
+        "finish_reason": "end_turn",
+        "usage": {
+          "prompt_tokens": 2120,
+          "completion_tokens": 256,
+          "total_tokens": 2376,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 0
+        }
+      }
+    ],
+    "agent_semantic_review": "pending full-body/source inspection",
+    "human_blind_review": false,
+    "revised_round_id": "f59e3f8a-be22-4f75-b30f-8c659881771e"
+  },
+  "execution_windows": [
+    {
+      "round_id": "f59e3f8a-be22-4f75-b30f-8c659881771e",
+      "room_id": "2f7182f1-5f98-43b5-9345-b8468b3c8aac",
+      "epoch": 1,
+      "status": "completed",
+      "mode": "directed",
+      "cursor": 1,
+      "time_limit_seconds": 60,
+      "execution_window": 1,
+      "window_elapsed_ms": 57344,
+      "total_elapsed_ms": 57344,
+      "error_code": null,
+      "run_started_at": "2026-10-12T16:50:58.501+00:00",
+      "discussion": {
+        "goal": null,
+        "mode": "free",
+        "revision": 0,
+        "topic": null
+      },
+      "generation_config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": false,
+        "expression_selection_version": "expression-selection-v2",
+        "expression_sets": {
+          "7ac6f9a3-c67d-4cb9-88ee-7beebbbd3723": null
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "memory_policy_version": "typed-room-memory-v1",
+        "memory_prompt_version": "room-memory-v2",
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v3",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v2",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "can_resume": false,
+      "slots": [
+        {
+          "id": "6186f025-3532-4763-8614-b0b58cdc5833",
+          "position": 0,
+          "member_id": "7ac6f9a3-c67d-4cb9-88ee-7beebbbd3723",
+          "status": "published",
+          "attempts": 2,
+          "member_generation": 0
+        }
+      ],
+      "timeLimitSeconds": 60,
+      "executionWindow": 1,
+      "elapsedSeconds": 57.344,
+      "remainingSeconds": 2.655999999999999,
+      "timeoutReason": null
+    }
+  ],
+  "manual_probe_continue_maximum": 1,
+  "quality_observations": {
+    "summary_alias_and_uncertainty_supported": true,
+    "published_reply_recalls_alias": false,
+    "published_reply_confirms_door": false,
+    "safe_reviewed_fallback": true,
+    "candidate_schema_failures": [
+      "1 validation error for ChatCandidate\nclaims.2\n  Value error, Canonical assertion requires canonical reference pairs only [type=value_error, input_value={'text': '北边的门还..., 'origin': 'inference'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/value_error",
+      "2 validation errors for ChatCandidate\nclaims.1\n  Value error, Canonical assertion requires canonical reference pairs only [type=value_error, input_value={'text': '北边的门并...c3d-8c4e-43cef4096114']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/value_error\nclaims.2\n  Value error, Conversation is not a factual source [type=value_error, input_value={'text': '我也没有亲...85c-b7f6-d99fda5c7fb8']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/value_error"
+    ],
+    "real_memory_question_answer_quality": "failed: answerable alias refused",
+    "human_blind_review": false,
+    "remaining_call_budget": 0,
+    "followup": "T12: separate memory origin labels from reply assertion source requirements; inspect partial-answer and unknown-autobiography failures without loosening boundary checks"
+  }
+}

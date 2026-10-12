@@ -1081,8 +1081,10 @@ async def test_style_evidence_cannot_be_used_as_an_emotion_pattern(book_library)
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("resume_older", [False, True])
 async def test_reviewed_emotion_uses_current_room_trigger_and_original_emotion_pattern(
     book_library,
+    resume_older,
 ):
     import json
 
@@ -1132,10 +1134,26 @@ async def test_reviewed_emotion_uses_current_room_trigger_and_original_emotion_p
     character = rooms.knowledge.bind_character(item, build, actor)
     room = rooms.create_single_room(character, client_room_id="emotion-room")
     scope = rooms.bind_room(room["room_id"], 1)
-    chat_config = CharacterChatConfig(provider_id=1, model="fixture")
-    turn = BookRoundService(book_library.workspace_root).submit(
-        scope, "emotion-turn", "我骗了你", chat_config, time_limit_seconds=60
+    chat_config = CharacterChatConfig(
+        provider_id=1,
+        model="fixture",
+        memory_policy_version="typed-room-memory-v1" if resume_older else "legacy-history-v1",
     )
+    rounds = BookRoundService(book_library.workspace_root)
+    if resume_older:
+        old_turn = rounds.submit(
+            scope, "earlier-failed", "旧问题", chat_config, time_limit_seconds=60
+        )
+
+        class Unavailable:
+            async def chat(self, messages, **kwargs):
+                raise RuntimeError("fixture provider failure")
+
+        await BookChatWorker(book_library.workspace_root).run(
+            scope, old_turn["round_id"], Unavailable(), chat_config
+        )
+        assert rounds.get_round(scope, old_turn["round_id"])["status"] == "failed"
+    turn = rounds.submit(scope, "emotion-turn", "我骗了你", chat_config, time_limit_seconds=60)
 
     class SupportedEmotion:
         async def chat(self, messages, **kwargs):
@@ -1172,11 +1190,42 @@ async def test_reviewed_emotion_uses_current_room_trigger_and_original_emotion_p
     )
     history = rooms.read_messages(scope)["messages"]
     assert history[-1]["content"] == "听到你说骗了我，我生气。"
-    assert history[-1]["refs"][0]["heard_message_id"] == history[0]["id"]
+    trigger = next(
+        message
+        for message in history
+        if message["round_id"] == turn["round_id"] and message["speaker_type"] == "user"
+    )
+    assert history[-1]["refs"][0]["heard_message_id"] == trigger["id"]
     assert "ephemeral_emotion" not in str(history)
     with connect(rooms.db_path) as db:
         state = db.execute(
             "SELECT ephemeral_state_json FROM book_room_members WHERE id=?",
             (room["members"][0]["id"],),
         ).fetchone()[0]
-    assert "生气" in state and history[0]["id"] in state
+    assert "生气" in state and trigger["id"] in state
+    if resume_older:
+        rounds.control(scope, old_turn["round_id"], "resume", time_limit_seconds=60)
+
+        class Resumed:
+            async def chat(self, messages, **kwargs):
+                data = json.loads(messages[-1]["content"])
+                if data["phase"] == "generate":
+                    assert data["context"]["current_message"]["content"] == "旧问题"
+                    assert data["context"]["room_state"]["trigger_message_ids"] == [trigger["id"]]
+                    assert trigger["id"] in {
+                        message["id"] for message in data["context"]["room_history"]
+                    }
+                    result = {
+                        "content": "我们继续谈刚才的问题。",
+                        "dialogue_action": "answer",
+                        "claims": [],
+                    }
+                else:
+                    result = empty_review()
+                return LLMResponse(content=json.dumps(result, ensure_ascii=False))
+
+        await BookChatWorker(book_library.workspace_root).run(
+            scope, old_turn["round_id"], Resumed(), chat_config
+        )
+        assert rounds.get_round(scope, old_turn["round_id"])["status"] == "completed"
+        assert rooms.read_messages(scope)["messages"][-1]["content"] == "我们继续谈刚才的问题。"

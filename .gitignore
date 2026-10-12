@@ -161,6 +161,7 @@ tests/
 !/tests/test_book_revisions.py
 !/tests/test_book_knowledge.py
 !/tests/test_book_rooms.py
+!/tests/test_book_room_memory.py
 .agents/skills/ai-elements/SKILL.md
 .agents/skills/ai-elements/references/agent.md
 .agents/skills/ai-elements/references/artifact.md

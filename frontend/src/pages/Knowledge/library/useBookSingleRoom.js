@@ -4,6 +4,7 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
   const [room, setRoom] = useState(null);
   const [messages, setMessages] = useState([]);
   const [round, setRound] = useState(null);
+  const [memory, setMemory] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [models, setModels] = useState([]);
@@ -24,20 +25,26 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
   const refresh = useCallback(async (identity) => {
     const current = generation.current;
     const sequence = ++revision.current;
-    const snapshot = await request('get_room', identity);
-    const job = snapshot.latest_round_id ? await request('get_round', { ...identity, round_id: snapshot.latest_round_id }) : null;
-    const history = [];
-    let cursor = 0;
-    do {
-      const page = await request('read_messages', { ...identity, after_seq: cursor, limit: 100 });
-      if (current !== generation.current || sequence !== revision.current) return;
-      history.push(...page.messages);
-      cursor = page.next_seq;
-    } while (cursor !== null);
-    if (current !== generation.current || sequence !== revision.current) return;
-    roomRef.current = { ...identity, workspace_id: snapshot.workspace_id };
-    setRoom(snapshot); setMessages(history); setRound(job);
-    if (job?.generation_config?.model_record_id && (!modelTouched.current || ['queued', 'running', 'paused', 'interrupted'].includes(job.status))) setModelKey(`${job.generation_config.provider_id}:${job.generation_config.model_record_id}`);
+    const valid = () => current === generation.current && sequence === revision.current;
+    try {
+      const snapshot = await request('get_room', identity);
+      if (!valid()) return;
+      const job = snapshot.latest_round_id ? await request('get_round', { ...identity, round_id: snapshot.latest_round_id }) : null;
+      if (!valid()) return;
+      const recalled = await request('get_memory', identity);
+      if (!valid()) return;
+      const history = [];
+      let cursor = 0;
+      do {
+        const page = await request('read_messages', { ...identity, after_seq: cursor, limit: 100 });
+        if (!valid()) return;
+        history.push(...page.messages);
+        cursor = page.next_seq;
+      } while (cursor !== null);
+      roomRef.current = { ...identity, workspace_id: snapshot.workspace_id };
+      setRoom(snapshot); setMessages(history); setRound(job); setMemory(recalled.memory);
+      if (job?.generation_config?.model_record_id && (!modelTouched.current || ['queued', 'running', 'paused', 'interrupted'].includes(job.status))) setModelKey(`${job.generation_config.provider_id}:${job.generation_config.model_record_id}`);
+    } catch (failure) { if (valid()) throw failure; }
   }, [request]);
 
   useEffect(() => {
@@ -70,7 +77,7 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
 
   const act = async (operation, content) => {
     if (!roomRef.current) return false;
-    const current = generation.current;
+    const current = operation === 'reset_memory' ? ++generation.current : generation.current;
     revision.current += 1;
     setBusy(true); setError('');
     try {
@@ -80,9 +87,14 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
         values = pendingTurn.current;
         const model = models.find((entry) => `${entry.provider_id}:${entry.model_record_id}` === modelKey);
         if (model) values = { ...values, provider_id: model.provider_id, model_record_id: model.model_record_id };
-      } else values = { round_id: round.round_id };
-      await request(operation, { ...roomRef.current, ...values });
+      } else values = operation === 'reset_memory' ? {} : { round_id: round.round_id };
+      const result = await request(operation, { ...roomRef.current, ...values });
       if (current !== generation.current) return false;
+      if (operation === 'reset_memory') {
+        roomRef.current = { room_id: result.room_id, expected_epoch: result.epoch, workspace_id: result.workspace_id };
+        pendingTurn.current = null;
+        setMessages([]); setRound(null); setMemory(null); setRoom(result);
+      }
       await refresh(roomRef.current);
       if (operation === 'submit_turn') pendingTurn.current = null;
       return true;
@@ -92,5 +104,5 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
 
   const evidence = async (messageId) => request('get_message_evidence', { ...roomRef.current, message_id: messageId });
   const chooseModel = (value) => { modelTouched.current = true; setModelKey(value); };
-  return { room, messages, round, busy, error, models, modelKey, setModelKey: chooseModel, act, evidence, refresh: () => roomRef.current && refresh(roomRef.current) };
+  return { room, messages, round, memory, busy, error, models, modelKey, setModelKey: chooseModel, act, evidence, refresh: () => roomRef.current && refresh(roomRef.current) };
 }

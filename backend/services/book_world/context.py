@@ -6,9 +6,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .chat_models import EphemeralEmotion
 from .discovery import _json
 from .expressions import CharacterExpressionService
 from .knowledge_models import AllowedEvidence, CanonicalScope
+from .memory import RoomMemoryService
 from .room_models import CharacterChatConfig, RoomScope
 from .rounds import BookRoundService
 from .search_terms import query_terms
@@ -36,6 +38,7 @@ class CharacterContextBuilder:
         self.rounds = BookRoundService(workspace_root)
         self.knowledge = self.rounds.rooms.knowledge
         self.expressions = CharacterExpressionService(workspace_root)
+        self.memory = RoomMemoryService(workspace_root)
 
     @staticmethod
     def _message(row) -> dict[str, Any]:
@@ -52,6 +55,7 @@ class CharacterContextBuilder:
         with connect(self.knowledge.db_path) as db:
             db.execute("BEGIN")
             round_row = self.rounds._round(db, scope, round_id)
+            visible_before = self.rounds.rooms._room(db, scope)["next_seq"]
             config = CharacterChatConfig.model_validate_json(round_row["generation_snapshot_json"])
             member = db.execute(
                 "SELECT m.*,b.policy_version FROM book_room_members m JOIN book_builds b ON b.id=m.build_id AND b.book_id=m.book_id AND b.source_version_id=m.source_version_id WHERE m.room_id=? AND m.id=? AND m.active=1 AND m.state_epoch=?",
@@ -79,8 +83,8 @@ class CharacterContextBuilder:
             history = [
                 self._message(row)
                 for row in db.execute(
-                    "SELECT * FROM book_room_messages WHERE room_id=? AND epoch=? AND id<>? ORDER BY seq DESC LIMIT 60",
-                    (scope.room_id, scope.epoch, user["id"]),
+                    "SELECT * FROM book_room_messages WHERE room_id=? AND epoch=? AND id<>? AND seq<? ORDER BY seq DESC LIMIT 60",
+                    (scope.room_id, scope.epoch, user["id"], visible_before),
                 )
             ]
             history.reverse()
@@ -112,6 +116,56 @@ class CharacterContextBuilder:
             if set_id
             else None
         )
+        memory = None
+        recalled = []
+        state = None
+        protected_history: set[str] = set()
+        if config.memory_policy_version == "typed-room-memory-v1":
+            memory = self.memory.read(scope, before_seq=visible_before)
+            recalled = [
+                item
+                for item in self.memory.recall(scope, user["content"], before_seq=visible_before)
+                if item["id"] != user["id"]
+            ]
+            if memory:
+                words = query_terms(user["content"], [])
+                ranked = sorted(
+                    memory["items"], key=lambda item: -sum(word in item["text"] for word in words)
+                )
+                memory = {**memory, "items": ranked[:6]}
+                history = [item for item in history if item["seq"] > memory["through_seq"]]
+                # A sourced summary can replace raw messages only for the query terms
+                # it actually preserves. Unsummarized details remain optional recall.
+                summary_terms: dict[str, set[str]] = {}
+                for item in memory["items"]:
+                    for source in item["source_message_ids"]:
+                        summary_terms.setdefault(source, set()).update(
+                            word for word in words if word in item["text"]
+                        )
+                recalled = [
+                    item
+                    for item in recalled
+                    if not (
+                        item["id"] in summary_terms
+                        and {word for word in words if word in item["content"]}
+                        <= summary_terms[item["id"]]
+                    )
+                ]
+            history = list({item["id"]: item for item in [*recalled, *history]}.values())
+            stored_state = json.loads(member["ephemeral_state_json"])
+            if stored_state:
+                emotion: EphemeralEmotion = EphemeralEmotion.model_validate(stored_state)
+                patterns = {
+                    item.claim_id for item in baseline.slots.values() if item.kind == "emotion"
+                }
+                if set(emotion.pattern_claim_ids) <= patterns:
+                    triggers = self.memory.sources(
+                        scope, emotion.trigger_message_ids, before_seq=visible_before
+                    )
+                    history = list({item["id"]: item for item in [*history, *triggers]}.values())
+                    protected_history.update(emotion.trigger_message_ids)
+                    state = emotion.model_dump()
+            history.sort(key=lambda item: item["seq"])
         payload = {
             "context_policy": "actor-context-v1",
             "room": scope.model_dump(),
@@ -133,13 +187,26 @@ class CharacterContextBuilder:
             },
             "room_history": history,
         }
+        if config.memory_policy_version == "typed-room-memory-v1":
+            payload["room_memory"] = memory or {"items": [], "through_seq": 0}
+            payload["room_state"] = state
         budget = min(config.max_input_tokens, config.context_window - 2 * config.max_tokens - 6000)
         omitted_examples, omitted_history = 0, 0
         while len(_json(payload).encode("utf-8")) > budget and payload["expressions"]["examples"]:
             payload["expressions"]["examples"].pop()
             omitted_examples += 1
         while len(_json(payload).encode("utf-8")) > budget and payload["room_history"]:
-            payload["room_history"].pop(0)
+            removable = next(
+                (
+                    index
+                    for index, item in enumerate(payload["room_history"])
+                    if item["id"] not in protected_history
+                ),
+                None,
+            )
+            if removable is None:
+                break
+            payload["room_history"].pop(removable)
             omitted_history += 1
         encoded = _json(payload)
         if len(encoded.encode("utf-8")) > budget:
@@ -165,6 +232,11 @@ class CharacterContextBuilder:
             ],
             "omitted_examples": omitted_examples,
             "omitted_history": omitted_history,
+            "memory_policy_version": config.memory_policy_version,
+            "memory_prompt_version": config.memory_prompt_version,
+            "memory_summary_id": memory["id"] if memory else None,
+            "memory_through_seq": memory["through_seq"] if memory else 0,
+            "visible_before_seq": visible_before,
         }
         return CharacterContext(
             scope, character, member_id, config, payload, tuple(allowed.values()), diagnostics

@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-13",
+  "scope": "actual React component and desktop WS handler over persisted controlled room; no additional model calls",
+  "room_id": "2f7182f1-5f98-43b5-9345-b8468b3c8aac",
+  "before_epoch": 1,
+  "after_epoch": 2,
+  "next_seq": 46,
+  "restored_summary_entries": 3,
+  "speaker_and_four_raw_source_messages_visible": true,
+  "reset_cleared_history_and_summary": true,
+  "old_epoch_rejected": true,
+  "reopened_room_empty": true,
+  "character_binding_preserved": true,
+  "native_model_calls_unchanged": 7,
+  "screenshots": [
+    "room-memory-live-sources.png",
+    "room-memory-live-reset.png",
+    "room-memory-live-reopen.png"
+  ]
+}

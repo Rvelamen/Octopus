@@ -1,0 +1,8 @@
+{
+  "date": "2026-10-13",
+  "scope": "actual single-chat component with delayed transport fixture; no model calls",
+  "reset_discards_old_history_and_summary": true,
+  "late_evidence_does_not_reopen": true,
+  "late_memory_error_does_not_pollute_reset_room": true,
+  "reopen_uses_current_epoch_without_generation": true
+}

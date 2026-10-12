@@ -19,6 +19,8 @@ class BookRoomRequest(StrictModel):
         "cancel_round",
         "resume_round",
         "get_message_evidence",
+        "get_memory",
+        "reset_memory",
     ]
     workspace_id: str | None = Field(default=None, min_length=1, max_length=100)
     item_id: int | None = Field(default=None, ge=1)

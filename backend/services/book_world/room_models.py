@@ -24,6 +24,10 @@ class CharacterChatConfig(DiscoveryConfig):
     context_window: int = Field(default=32768, ge=16000)
     max_input_tokens: int = Field(default=24000, ge=1000, le=200000)
     expression_enabled: bool = False
+    memory_policy_version: Literal["legacy-history-v1", "typed-room-memory-v1"] = (
+        "legacy-history-v1"
+    )
+    memory_prompt_version: Literal["room-memory-v1", "room-memory-v2"] = "room-memory-v1"
     expression_selection_version: Literal["expression-selection-v1", "expression-selection-v2"] = (
         "expression-selection-v1"
     )

@@ -17,6 +17,7 @@ from backend.services.book_world.chat_provider import (
     resolve_character_chat_model,
 )
 from backend.services.book_world.chat_worker import BookChatWorker
+from backend.services.book_world.memory import RoomMemoryService
 from backend.services.book_world.room_contracts import BookRoomRequest
 from backend.services.book_world.room_models import CharacterChatConfig, RoomScope
 from backend.services.book_world.rooms import BookRoomService
@@ -30,6 +31,7 @@ class BookRoomHandler(MessageHandler):
     _tasks: dict[tuple[str, str], asyncio.Task] = {}
     _slots: dict[tuple[Any, str], asyncio.Semaphore] = {}
     _controls: dict[tuple[Any, str, str], asyncio.Lock] = {}
+    _cleanup_tasks: dict[tuple[str, str], asyncio.Task] = {}
 
     async def _original_model(
         self, generation: dict, preferred: CharacterChatModel | None = None
@@ -76,6 +78,23 @@ class BookRoomHandler(MessageHandler):
             task.cancel()
             with suppress(asyncio.CancelledError):
                 await task
+
+    def _schedule_cleanup(self, root: Path, scope: RoomScope) -> None:
+        key = scope.workspace_id, scope.room_id
+        if key in self._cleanup_tasks and not self._cleanup_tasks[key].done():
+            return
+
+        async def cleanup():
+            try:
+                rooms = await asyncio.to_thread(BookRoomService, root)
+                await asyncio.to_thread(rooms.cleanup_cleared_memory, scope)
+            except Exception:
+                logger.warning("Cleared room memory cleanup deferred until the next room read")
+            finally:
+                if self._cleanup_tasks.get(key) is asyncio.current_task():
+                    self._cleanup_tasks.pop(key, None)
+
+        self._cleanup_tasks[key] = asyncio.create_task(cleanup())
 
     def _schedule(
         self, root: Path, scope: RoomScope, round_id: str, model: CharacterChatModel
@@ -135,7 +154,23 @@ class BookRoomHandler(MessageHandler):
         scope = await asyncio.to_thread(rooms.bind_room, request.room_id, request.expected_epoch)
         rounds = await asyncio.to_thread(BookRoundService, root)
         if request.action == "get_room":
-            return await asyncio.to_thread(rooms.get_room, scope)
+            room_result = await asyncio.to_thread(rooms.get_room, scope)
+            self._schedule_cleanup(root, scope)
+            return room_result
+        if request.action == "get_memory":
+            memory = await asyncio.to_thread(RoomMemoryService, root)
+            return {"memory": await asyncio.to_thread(memory.read, scope)}
+        if request.action == "reset_memory":
+            reset_result = await asyncio.to_thread(rooms.reset_memory, scope)
+            for round_id in reset_result["cancelled_round_ids"]:
+                try:
+                    async with self._lock(root, round_id):
+                        await self._stop(root, round_id)
+                except Exception:
+                    logger.warning("Reset revoked publication; worker cancellation failed")
+            current = scope.model_copy(update={"epoch": reset_result["epoch"]})
+            self._schedule_cleanup(root, current)
+            return reset_result
         if request.action == "read_messages":
             return await asyncio.to_thread(
                 rooms.read_messages, scope, request.after_seq, request.limit

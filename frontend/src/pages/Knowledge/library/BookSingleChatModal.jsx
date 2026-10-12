@@ -10,6 +10,8 @@ export default function BookSingleChatModal({ detail, sendWSMessage, onClose }) 
   const [evidence, setEvidence] = useState(null);
   const [evidenceError, setEvidenceError] = useState('');
   const [seconds, setSeconds] = useState(0);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [memoryOpen, setMemoryOpen] = useState(false);
   const anchor = useRef(null);
   const generation = useRef(0);
   const evidenceRevision = useRef(0);
@@ -41,6 +43,12 @@ export default function BookSingleChatModal({ detail, sendWSMessage, onClose }) 
       if (current === generation.current && revision === evidenceRevision.current) setEvidence(result.evidence);
     } catch (failure) { if (current === generation.current && revision === evidenceRevision.current) setEvidenceError(failure.message); }
   };
+  const resetMemory = async () => {
+    generation.current += 1;
+    evidenceRevision.current += 1;
+    setEvidence(null); setEvidenceError(''); setMemoryOpen(false);
+    if (await chat.act('reset_memory')) { setDraft(''); setResetOpen(false); }
+  };
 
   return <Modal open title={`${detail.public.name} · ${t('bookRoom.title')}`} width={800} onCancel={onClose} footer={<Button onClick={onClose}>{t('bookWorld.closeArchive')}</Button>}>
     <Alert type="info" showIcon title={t('bookRoom.hint')} style={{ marginBottom: 12 }} />
@@ -50,6 +58,10 @@ export default function BookSingleChatModal({ detail, sendWSMessage, onClose }) 
     {chat.room && !chat.models.length && <Alert type="warning" title={t('bookRoom.noModels')} />}
     <Select aria-label={t('bookRoom.model')} placeholder={t('bookRoom.model')} value={chat.modelKey} onChange={chat.setModelKey} disabled={chat.busy || active} style={{ width: '100%', margin: '10px 0' }} options={chat.models.map((entry) => ({ value: `${entry.provider_id}:${entry.model_record_id}`, label: entry.label }))} />
     <small>{t('bookRoom.modelHint')}</small>
+    <div style={{ margin: '8px 0' }}>
+      <Button size="small" disabled={!chat.room || chat.busy} onClick={() => setResetOpen(true)}>{t('bookRoom.reset')}</Button>
+      {chat.memory && <Button type="link" size="small" onClick={() => setMemoryOpen(true)}>{t('bookRoom.memoryCount', { count: chat.memory.items.length })}</Button>}
+    </div>
     <div aria-label={t('bookRoom.messages')} style={{ maxHeight: '45vh', overflowY: 'auto', padding: '8px 0' }}>
       {!chat.messages.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('bookRoom.empty')} />}
       {chat.messages.map((message) => <article key={message.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
@@ -73,6 +85,19 @@ export default function BookSingleChatModal({ detail, sendWSMessage, onClose }) 
       <Button type="primary" loading={chat.busy} disabled={!draft.trim() || active || !available || !chat.modelKey} onClick={send}>{t('bookRoom.send')}</Button>
       <Button disabled={chat.busy} onClick={() => chat.refresh().catch((failure) => setEvidenceError(failure.message))}>{t('bookWorld.refreshBuild')}</Button>
     </Space>
+    <Modal open={resetOpen} title={t('bookRoom.resetTitle')} onOk={resetMemory} onCancel={() => setResetOpen(false)} confirmLoading={chat.busy} okText={t('bookRoom.reset')} cancelText={t('bookRoom.keepMemory')}>
+      <p>{t('bookRoom.resetHint')}</p>
+    </Modal>
+    <Modal open={memoryOpen && chat.memory !== null} title={t('bookRoom.memoryTitle')} onCancel={() => setMemoryOpen(false)} footer={null}>
+      {(chat.memory?.items || []).map((item, index) => <article key={index} style={{ marginBottom: 12 }}>
+        <strong>{item.speaker_type === 'user' ? t('bookRoom.you') : chat.room?.members.find((member) => member.id === item.speaker_member_id)?.identity.name}</strong>
+        <p><Tag>{t(`bookRoom.origin.${item.origin}`)}</Tag>{item.text}</p>
+        {item.source_message_ids.map((id) => {
+          const source = chat.messages.find((message) => message.id === id);
+          return source && <blockquote key={id} style={{ whiteSpace: 'pre-wrap' }}>{source.content}</blockquote>;
+        })}
+      </article>)}
+    </Modal>
     <Modal open={evidence !== null} title={t('bookRoom.evidence')} onCancel={() => { evidenceRevision.current += 1; setEvidence(null); }} footer={null}>
       <Alert type="info" title={t('bookRoom.readerEvidence')} />
       {(evidence || []).map((item) => <article key={item.id} style={{ padding: '8px 0' }}>

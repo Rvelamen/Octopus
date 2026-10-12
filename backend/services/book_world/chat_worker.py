@@ -9,8 +9,15 @@ from typing import Any
 
 from .chat_models import GENERATE_PROMPT, REVIEW_PROMPT, UNKNOWN_REPLY, ChatCandidate, ChatReview
 from .chat_validation import validate_candidate, validate_review
-from .context import CharacterContextBuilder
+from .context import CharacterContext, CharacterContextBuilder
 from .discovery import _json
+from .memory import RoomMemoryService
+from .memory_models import (
+    MEMORY_PROMPTS,
+    MemoryCandidate,
+    MemoryReview,
+)
+from .persona_validation import parse_json
 from .room_models import CharacterChatConfig, RoomScope
 from .round_execution import RoundExecution
 from .rounds import BookRoundService
@@ -24,6 +31,7 @@ class BookChatWorker:
         self.rounds = BookRoundService(workspace_root)
         self.contexts = CharacterContextBuilder(workspace_root)
         self.execution = RoundExecution(self.rounds)
+        self.memory = RoomMemoryService(workspace_root)
         self.monotonic = monotonic
 
     async def run(
@@ -55,12 +63,10 @@ class BookChatWorker:
 
         ticker = asyncio.create_task(heartbeat())
         try:
-            context = await asyncio.to_thread(
-                self.contexts.compose, scope, round_id, lease.member_id
-            )
+            context: CharacterContext | None = None
 
             async def call(
-                phase: str, prompt: str, schema, *, candidate=None, feedback=None
+                phase: str, prompt: str, schema, *, candidate=None, feedback=None, context_data=None
             ) -> str:
                 if not await asyncio.to_thread(
                     self.execution.tick, lease, elapsed, attempt=phase == "generate"
@@ -69,7 +75,11 @@ class BookChatWorker:
                 remaining = lease.seconds - (lease.window_before + elapsed()) / 1000
                 payload = {
                     "phase": phase,
-                    "context": context.payload,
+                    "context": context_data
+                    if context_data is not None
+                    else context.payload
+                    if context
+                    else {},
                     "candidate": candidate,
                     "feedback": feedback,
                 }
@@ -103,6 +113,62 @@ class BookChatWorker:
                 if response.tool_calls or response.finish_reason not in ("stop", "end_turn"):
                     raise ValueError("Reply requested tools or was incomplete")
                 return response.content or ""
+
+            if lease.config.memory_policy_version == "typed-room-memory-v1":
+                plan = await asyncio.to_thread(
+                    self.memory.prepare_for_turn,
+                    scope,
+                    round_id,
+                    max_input_bytes=min(18000, lease.config.max_input_tokens),
+                )
+                if plan is not None:
+                    memory_prompt, memory_review_prompt = MEMORY_PROMPTS[
+                        lease.config.memory_prompt_version
+                    ]
+                    try:
+                        proposal = MemoryCandidate.model_validate_json(
+                            parse_json(
+                                await call(
+                                    "summary_generate",
+                                    memory_prompt,
+                                    MemoryCandidate.model_json_schema(),
+                                    context_data=plan.payload,
+                                )
+                            )
+                        )
+                        review = MemoryReview.model_validate_json(
+                            parse_json(
+                                await call(
+                                    "summary_review",
+                                    memory_review_prompt,
+                                    MemoryReview.model_json_schema(),
+                                    context_data=plan.payload,
+                                    candidate=proposal.model_dump(),
+                                )
+                            )
+                        )
+                        if not await asyncio.to_thread(self.execution.tick, lease, elapsed):
+                            raise BookWorldError(
+                                "round_timeout", "Memory processing reached the time limit"
+                            )
+                        await asyncio.to_thread(
+                            self.memory.publish,
+                            plan,
+                            proposal.model_dump(),
+                            review.model_dump(),
+                            fence=lease,
+                            elapsed=elapsed,
+                        )
+                    except BookWorldError:
+                        raise
+                    except ValueError:
+                        raise BookWorldError(
+                            "memory_validation_failed", "Room memory could not be safely reviewed"
+                        ) from None
+
+            context = await asyncio.to_thread(
+                self.contexts.compose, scope, round_id, lease.member_id
+            )
 
             feedback = None
             for _attempt in range(2):
