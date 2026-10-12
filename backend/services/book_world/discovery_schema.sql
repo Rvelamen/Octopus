@@ -112,4 +112,3 @@ CREATE TABLE IF NOT EXISTS book_scene_characters (
   FOREIGN KEY (book_id, source_version_id, build_id,character_id) REFERENCES book_characters(book_id, source_version_id, build_id,id) ON DELETE RESTRICT
 );
 CREATE INDEX IF NOT EXISTS ix_book_character_scenes ON book_scene_characters(book_id, source_version_id, build_id,character_id,scene_id);
-
