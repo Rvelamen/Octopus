@@ -1,6 +1,6 @@
 # Octopus 书籍人物 Agent 与多人聊天室详细设计
 
-版本：首版设计草案，已复核 Agent 理论依据并补充主题 / 自由聊天。更新日期：2026 年 10 月 12 日。
+版本：首版设计草案，已复核 Agent 理论依据、主题 / 自由聊天及 ChatHaruhi 方法适配。更新日期：2026 年 10 月 12 日。
 
 本设计从书籍建立有原著依据的人物 Agent，支持同一工作区内多部书的人物进入同一聊天室。每个成员绑定自己的来源与人物构建，公共交流共享，原著知识与核心人设保持独立。复用现有图书馆的书目、附件、模型配置和 WebSocket；新增人物构建、视角受限的证据检索、人物运行时与聊天室调度。实施顺序及逐项任务见[实施计划](F:/god/project/Octopus/docs/plans/book-character-agents/implementation-plan.md)。
 
@@ -89,6 +89,8 @@
 | BookBuildService | request_build、get_build、cancel_build、retry_build | 持久状态、版本快照、断点与发布原子性 |
 | CharacterCatalogService | list_characters、get_character、create_revision | 人物身份、公开与读者详情分开，修订不改旧版本 |
 | CharacterKnowledgeService | retrieve、get_allowed_evidence | 身份在服务端绑定，允许集内检索，无结果不扩大范围 |
+| CharacterExpressionService | build_materials、retrieve、preview | 在完整人物范围内派生/检索表达，原句与说话者审查、基线相容、缺素材明确为空 |
+| CharacterContextBuilder | compose | 基线与事实/表达/房间记忆分别投影，保留关键预算，读者私密字段不进入运行输入 |
 | BookCharacterRuntime | respond | 人设固定，只接收受限原著依据与可见房间消息 |
 | CharacterReplyValidator | validate | 检查引用权限、事实支持、信息类型与人格约束 |
 | BookRoomService | create、list_messages、submit_turn、reset | 房间版本固定、序号与幂等、记忆隔离 |
@@ -454,6 +456,18 @@ origin 为 canon、character_belief、room_hearsay、inference 或无事实内�
 普通寒暄与有依据的情境推演不要求原书出现问题原句；具体事实和自传经历仍需要依据。dialogue_action 与 action_basis_claim_ids 是候选行为和依据，不是模型隐藏推理；无依据的常规寒暄可为空，涉及人物价值判断则必须有可用依据。ephemeral_emotion 的触发消息和模式依据分别验证同 R 与本人允许集，未批准候选不得更新房间情绪。
 
 当前 LLMProvider 无统一结构化输出契约，因此由窄适配器解析、Pydantic 校验并处理格式失败。首版不用通用 ReAct 工具循环。
+
+### ChatHaruhi 方法适配与表达质量
+
+采用人物资料整理、相关原著表达样例及原著/聊天历史分别分配预算的方法，接入现有知识、模型与发布接口。具体决策、派生表、版本、默认预算和验收见[表达增强设计](F:/god/project/Octopus/docs/plans/book-character-agents/chatharuhi-adoption-design.md)。这是已纳入计划的设计，尚未接入运行时；不以论文结果宣称本项目已提升质量。
+
+T05 增加 CharacterExpressionService 与 ExpressionContext，和 CharacterKnowledgeService/AllowlistedContext 分开。表达规则只取当前有效的本人 style 依据；对白从本人已获准安全引文中选择连续子串，并独立确认发言者、用途及基线相容。历史错误信念、已改变关系及未知时序的片段不能在普通样例中恢复旧人设。样例所含事实须出现在本次允许依据或已验证当前基线，素材 ID 不能替代事实引用；缺素材时保留 unknown 和现有人设，不扩大到全书或外部人物包。
+
+新增 book_expression_sets、book_expression_materials、book_expression_refs 作为工作区的派生索引，按完整 B＋人物关联 accepted 获知关系及可见证据，保留原引文哈希、码点偏移、说话者审查和独立构建状态。派生集可以建立在旧版原著上，但不能修改已发布断言、权限、引文或基线。模型配置、素材策略与基线哈希进入指纹；新原著版本独立构建，来源删除先禁用并清理派生载荷。DDL 与相关回归随 T05 新迁移实施，不修改已执行迁移，也不宣称当前 177 项 SQL 检查覆盖新增表。
+
+T06 由 CharacterContextBuilder 组装身份约束、当前基线、问题与讨论快照、允许事实、表达素材和当前房间记忆。初始内部上限为 2 个对白样例、每个 160 码点、3 条已有表达规则；样例与无关历史先让出预算，当前问题、约束与必要事实保留。样例整条放不下时舍弃。候选仍经过全部断言、人设和情绪校验，并受用户秒数窗口限制；原始 token 不公开。
+
+T07 保留原著表达与同 R 房间听说的分区、来源和说话者；T10 在原著发布后编排表达派生任务，完整交付增加 T05 前置；T11 清理对应派生集与缓存。T12 保留原 60 项边界评测，另加 24 项表达/交流质量对照，分别报告事实正确性、合理问题误拒、人物忠实度、自然度及成本。增强策略只有在边界通过且可复核质量改善时由特性开关启用；缺数据或结果不确定时继续评测。
 
 ### 发布前校验
 

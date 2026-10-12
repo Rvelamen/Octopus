@@ -21,6 +21,7 @@
 | Ran 等，BookWorld，ACL 2025，[论文](https://aclanthology.org/2025.acl-long.773/) | 从小说构造人物世界并组织互动具有直接研究先例 | 支持自动构建路线；其故事生成评测不能替代本项目的私密知情隔离、跨书交流或交互验收 |
 | Sacks / Schegloff / Jefferson，1974，[原文](https://www.conversationanalysis.org/wp-content/uploads/2019/06/04_Sacks_Schegloff_Jefferson_A_simplest_systematics_fir_the_organization_of_turn-taking_for_conversation_Language_.pdf)，AutoGen [选人](https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/selector-group-chat.html)与[终止](https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/tutorial/termination.html) | 对话需要话轮组织；多 Agent 系统可将选人和终止条件分开 | 主持人调度、@ 定向、顺序消息和有限轮次有依据；每轮至多三人、每人一次和 60/300 秒是项目设计值，不是理论推导 |
 | Wang 等，InCharacter，ACL 2024，[论文](https://aclanthology.org/2024.acl-long.102/) | 人物忠实度还应评测价值、人格表现，不能只检查名字和措辞 | 增加情境访谈、两难选择和重复提问一致性；量表可作辅助，不能无依据给文学人物填完整人格分数 |
+| Li 等，ChatHaruhi，2023 技术报告，[论文](https://arxiv.org/abs/2308.09597)及[运行代码](https://github.com/LC1332/Haruhi-2-Dev/blob/776c401092ef726d786e23dea7ec4771f3ac9428/ChatHaruhi/ChatHaruhi.py) | 人物提示词、原著表达资料与相关场景可用于改进角色表现 | T05 派生经审查的本人表达素材，T06 分区与预算组装，T12 同模型质量对照；材料仍需人物允许集和当前基线校验，研究结果不证明本项目知情或群聊隔离 |
 | Liu 等，Tell Me What You Don’t Know，Findings ACL 2025，[论文](https://aclanthology.org/2025.findings-acl.311/) | 角色模型面临上下文知识与参数知识冲突，拒答和过度拒答都需评估 | 原著允许集不等于抹去模型预训练知识；增加未知事实、错误前提、跨书信息和非冲突问题测试。首版不采用其模型表示编辑方案 |
 
 ## Agent 设计修正
@@ -34,6 +35,8 @@
 允许的自由表达包括寒暄、提问、对眼前公开对话的回应和有原著价值依据的情境推演，不要求原书出现问题的原句。对具体事件、自传经历、他人秘密和世界设定的断言仍需依据。未知现代事物可以请求解释，用户解释归为房间听说；不能自称在原著生活中亲历。
 
 发布校验继续覆盖正文实际断言及遗漏，不能通过把内容标成 conversation / inference 绕过检查。语义人设一致性和参数知识泄漏属于真实模型质量风险，SQL 结构测试不证明已解决。
+
+2026 年 10 月 12 日进一步采用 ChatHaruhi 的表达检索与上下文组织方法，详见[适配设计](F:/god/project/Octopus/docs/plans/book-character-agents/chatharuhi-adoption-design.md)。保持事实/信念、表达素材及房间听说分别处理；素材中的事实和情绪依然需要独立依据，历史表达不能改写当前基线。新增 24 项表达/交流质量 A/B 作为原有 60 项边界评测的补充，分别检查自然程度、复读、准确性与成本。当前属于设计更新，未安装其运行库或导入角色包。
 
 ## 两层聊天方式
 
