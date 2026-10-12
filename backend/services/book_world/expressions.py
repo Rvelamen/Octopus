@@ -715,9 +715,19 @@ class CharacterExpressionService:
         *,
         set_id: str | None = None,
         knowledge_context=None,
+        selection_version: str = "expression-selection-v2",
     ) -> ExpressionContext:
         if not isinstance(query, str) or len(query) > 1000:
             raise BookWorldError("invalid_request", "Invalid expression query")
+        if selection_version not in ("expression-selection-v1", "expression-selection-v2"):
+            raise BookWorldError("invalid_request", "Unknown expression selection version")
+        selected_terms = set(query_terms(query, []))
+        if selection_version == "expression-selection-v2":
+            selected_terms = {
+                term
+                for selected in selected_terms
+                for term in terms(selected, single_characters=False)
+            }
         allowed = knowledge_context or self.knowledge.retrieve(scope, query)
         if allowed.scope != scope:
             raise BookWorldError(
@@ -812,7 +822,7 @@ class CharacterExpressionService:
                                 + " "
                                 + " ".join(json.loads(material["topic_terms_json"]))
                             )
-                            for term in query_terms(query, [])
+                            for term in selected_terms
                         )
                         matches_action = (
                             dialogue_action != "other"

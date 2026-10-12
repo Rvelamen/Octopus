@@ -87,6 +87,6 @@ B 的可知正确性、误拒及未知错误确认在固定对照中不得退于
 
 ## 当前证据与下一步
 
-T05 的受限知识与表达派生服务已完成。已有摘录真实探针未取得可用本人对白，不构成有效表达 A/B。T06 的聊天链路在工作区实施中；五次真实 k3 调用暴露了否定自传漏检，见[诊断记录](F:/god/project/Octopus/docs/plans/book-character-agents/validation/real-model-single-chat-probe.json)。已调整策略，但新策略复验和有效表达对照仍待完成。
+T05 的受限知识与表达派生服务已完成。已有摘录真实探针未取得可用本人对白，不构成有效表达 A/B。T06 聊天链路已完成阶段验证；累计十次真实 k3 界面调用保留早期否定自传漏检并完成干净房间复验，见[诊断记录](F:/god/project/Octopus/docs/plans/book-character-agents/validation/real-model-single-chat-probe.json)。新策略复验及两组有效表达对照已完成，后者包含两次素材和十六次聊天调用。已知回答几乎相同，增强未知回复存在原句复读；未证明总体质量改善，增强仍默认关闭，见[阶段验收](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-single-chat-validation.md)。
 
 依次完成 T06 的完整正文反例/正例和小对照，T07 的来源记忆，T08/T09/T17 的有限多人互动，T10/T11 的素材生命周期，最后由 T12 完成上述完整评测与开关决定。既有任务依赖和完成状态保持真实，不提前标记质量改善。

@@ -459,7 +459,7 @@ origin 为 canon、character_belief、room_hearsay、inference 或无事实内�
 
 ### ChatHaruhi 方法适配与表达质量
 
-采用人物资料整理、相关原著表达样例及原著/聊天历史分别分配预算的方法，接入现有知识、模型与发布接口。具体决策、派生表、版本、默认预算和验收见[表达增强设计](F:/god/project/Octopus/docs/plans/book-character-agents/chatharuhi-adoption-design.md)。T05 的服务、迁移和预览已完成，T06 聊天接入及复验中；质量收益仍待实测。
+采用人物资料整理、相关原著表达样例及原著/聊天历史分别分配预算的方法，接入现有知识、模型与发布接口。具体决策、派生表、版本、默认预算和验收见[表达增强设计](F:/god/project/Octopus/docs/plans/book-character-agents/chatharuhi-adoption-design.md)。T05 的服务、迁移和预览已完成，T06 聊天接入及阶段验证已完成；完整质量收益仍由 T12 实测判断。
 
 T05 增加 CharacterExpressionService 与 ExpressionContext，和 CharacterKnowledgeService/AllowlistedContext 分开。表达规则只取当前有效的本人 style 依据；对白从本人已获准安全引文中选择连续子串，并独立确认发言者、用途及基线相容。历史错误信念、已改变关系及未知时序的片段不能在普通样例中恢复旧人设。样例所含事实须出现在本次允许依据或已验证当前基线，素材 ID 不能替代事实引用；缺素材时保留 unknown 和现有人设，不扩大到全书或外部人物包。
 

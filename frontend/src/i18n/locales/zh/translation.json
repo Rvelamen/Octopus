@@ -1,4 +1,12 @@
 {
+  "bookRoom": {
+    "noModels": "没有可用聊天模型，请在设置中配置并启用聊天模型。",
+    "model": "聊天模型", "modelHint": "所选模型用于新轮次；继续已暂停的轮次会沿用其原模型。",
+    "title": "人物单聊", "start": "与人物聊天", "hint": "人物只使用本人原著依据与本房间交流。回复校验完成后才显示；每次提交启动有限轮次。", "messages": "已发布对话", "empty": "向人物提出第一个问题", "you": "我", "question": "输入问题或想交流的话题", "send": "发送", "evidence": "查看依据", "readerEvidence": "以下是供读者核对的原文；人物只收到获准命题与安全引文。", "heardSource": "本房间消息 {{id}} 的公开说法", "sourceUnavailable": "人物来源不可用或已被移除，已有交流仍可阅读。", "validating": "人物正在回应并校验，正文尚未发布。", "resume": "继续本轮", "stop": "停止本轮", "window": "第 {{window}} 次执行 · 上限 {{limit}} 秒 · 剩余约 {{remaining}} 秒",
+    "status": {"queued": "等待回应", "running": "生成与校验中", "paused": "已暂停", "completed": "本轮已完成", "cancelled": "已停止", "interrupted": "执行已中断", "failed": "本轮失败"},
+    "origin": {"canon": "原著依据", "character_belief": "人物信念", "inference": "有据推演", "room_hearsay": "房间听说", "conversation": "交流"},
+    "error": {"model_unavailable": "模型服务暂不可用，未发布人物回复。", "fallback_validation_failed": "备用回复也未通过校验，正文没有发布。", "round_timeout": "达到本次秒数上限，已暂停。继续会按最新设置开启新的有限窗口。", "model_timeout": "模型请求超时，可手动继续。", "chat_failed": "模型执行失败，未发布未经校验的正文。", "context_insufficient": "必要的人设、问题与依据超过当前模型容量。", "config_changed": "模型配置发生变化，需要恢复原配置后继续，或提交新轮次。", "character_unavailable": "人物原著来源已不可用。", "member_unavailable": "人物当前无发言权限。", "source_unavailable": "人物的原著绑定不可用。"}
+  },
   "bookWorld": {
     "textReaderTitle": "{{title}} · 原著文本",
     "textPosition": "文本位置 {{offset}} / {{total}}",
@@ -24,7 +32,7 @@
     "original": "原著位置",
     "openPdf": "打开原始版本 · 第 {{page}} 页",
     "characterTitle": "人物候选与档案",
-    "candidateHint": "人物发现完成后，可构建有原著依据的档案。证据不足保留未知，群体或身份歧义待复核。人物聊天在后续阶段开放。",
+    "candidateHint": "人物发现完成后，可构建有原著依据的档案，并与可用人物聊天。证据不足保留未知，群体或身份歧义待复核。",
     "discover": "构建人物候选",
     "cancelBuild": "取消构建",
     "retryBuild": "重试 / 继续构建",

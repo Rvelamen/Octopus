@@ -106,6 +106,8 @@ class MessageType(Enum):
     BOOK_WORLD = "book_world"
     BOOK_WORLD_RESULT = "book_world_result"
     BOOK_WORLD_EVENT = "book_world_event"
+    BOOK_ROOM = "book_room"
+    BOOK_ROOM_RESULT = "book_room_result"
 
     # PDF Chat - Client -> Server
     PDF_CHAT = "pdf_chat"  # PDF chat operations
@@ -603,6 +605,7 @@ class WSMessage(BaseModel):
 
 # Message type validation
 CLIENT_MESSAGE_TYPES = {
+    MessageType.BOOK_ROOM,
     MessageType.BOOK_WORLD,
     MessageType.CHAT,
     MessageType.GET_CONFIG,
@@ -974,6 +977,7 @@ SERVER_MESSAGE_TYPES = {
     MessageType.LIBRARY_AI_EXTRACT_META_RESULT,
     MessageType.LIBRARY_GRAPH_RESULT,
     MessageType.BOOK_WORLD_RESULT,
+    MessageType.BOOK_ROOM_RESULT,
     MessageType.BOOK_WORLD_EVENT,
     MessageType.FILE_PREVIEW_PDF_RESULT,
     MessageType.MEMORY_LIST_RESULT,

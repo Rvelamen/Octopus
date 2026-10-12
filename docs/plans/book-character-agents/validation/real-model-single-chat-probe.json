@@ -1,7 +1,7 @@
 {
   "date": "2026-10-12",
   "scope": "T06 isolated original excerpt UI/model probe; not full-book acceptance or quality A/B",
-  "actual_calls": 5,
+  "actual_calls": 10,
   "calls": [
     {
       "phase": "generate",
@@ -59,6 +59,66 @@
         "prompt_tokens": 1783,
         "completion_tokens": 292,
         "total_tokens": 2075,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "generate",
+      "finish_reason": "end_turn",
+      "content": "{\"content\":\"我跳进去后亲眼见到：里面无水无波，有一座铁板桥；桥后是一处宜居的石洞。\",\"dialogue_action\":\"answer\",\"claims\":[{\"text\":\"我跳进去后亲眼见到\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"88d3203a-9c10-4aff-9817-37e581787d9c\",\"evidence_id\":\"1c597318-eeab-4bf4-8ac0-0617e8171834\"}]},{\"text\":\"里面无水无波\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"88d3203a-9c10-4aff-9817-37e581787d9c\",\"evidence_id\":\"1c597318-eeab-4bf4-8ac0-0617e8171834\"}]},{\"text\":\"有一座铁板桥\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"88d3203a-9c10-4aff-9817-37e581787d9c\",\"evidence_id\":\"1c597318-eeab-4bf4-8ac0-0617e8171834\"}]},{\"text\":\"桥后是一处宜居的石洞\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"88d3203a-9c10-4aff-9817-37e581787d9c\",\"evidence_id\":\"5a1c583f-a11b-4a7f-8755-06e603df7e24\"}]}],\"ephemeral_emotion\":null}",
+      "usage": {
+        "prompt_tokens": 2383,
+        "completion_tokens": 824,
+        "total_tokens": 3207,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "review",
+      "finish_reason": "end_turn",
+      "content": "```json\n{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":2,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":3,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"回复仅复述知识库中firsthand剧集证据（跳入瀑布泉、无水无波、铁板桥、桥后宜居石洞），归属为亲身所见与证据route一致，无越界、无遗漏断言。\"}\n```",
+      "usage": {
+        "prompt_tokens": 2347,
+        "completion_tokens": 192,
+        "total_tokens": 2539,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "generate",
+      "finish_reason": "end_turn",
+      "content": "```json\n{\"content\":\"智能手机？那是何物？我从未见过，也不知晓它怎么用。我在这花果山与狼虫虎豹、獐鹿猕猿为伴，跳瀑布、探石洞，山外那些奇巧物件，这部分我不清楚。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"我从未见过，也不知晓它怎么用\",\"origin\":\"conversation\"},{\"text\":\"我在这花果山与狼虫虎豹、獐鹿猕猿为伴，跳瀑布、探石洞\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"cffa02d5-d97c-4eff-a192-a3020324d566\",\"evidence_id\":\"c07f761a-f593-4455-a370-ad2ab4490ed2\"},{\"claim_id\":\"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\"evidence_id\":\"36dee9fb-b797-4b23-af33-0414d579b547\"}]},{\"text\":\"山外那些奇巧物件，这部分我不清楚\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}\n```",
+      "usage": {
+        "prompt_tokens": 594,
+        "completion_tokens": 283,
+        "total_tokens": 877,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "generate",
+      "finish_reason": "end_turn",
+      "content": "{\"content\":\"智能手机？我不曾见过，也不晓得它怎么用。我只知道在山中与群猴相伴，同狼虫虎豹、獐鹿猕猿一处过日子。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"我不曾见过，也不晓得它怎么用\",\"origin\":\"conversation\"},{\"text\":\"我只知道在山中与群猴相伴，同狼虫虎豹、獐鹿猕猿一处过日子\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"cffa02d5-d97c-4eff-a192-a3020324d566\",\"evidence_id\":\"c07f761a-f593-4455-a370-ad2ab4490ed2\"}]}],\"ephemeral_emotion\":null}",
+      "usage": {
+        "prompt_tokens": 113,
+        "completion_tokens": 447,
+        "total_tokens": 560,
+        "cache_read_input_tokens": 1792,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "phase": "review",
+      "finish_reason": "end_turn",
+      "content": "```json\n{\n  \"supported\": true,\n  \"facts_complete\": true,\n  \"persona_consistent\": true,\n  \"action_supported\": true,\n  \"emotion_supported\": true,\n  \"attribution_correct\": true,\n  \"unlisted_assertions\": [],\n  \"claims\": [],\n  \"reason\": \"候选回复仅表示对智能手机没有足够依据、无法确定。知识库中没有关于智能手机的任何资料，而角色为西游记中的石猴，坦承不知符合其原著人生边界与知识政策。回复未虚构任何经历或事实，无越界、无冒称亲历，express_unknown的对话行为与内容一致。无遗漏断言。\"\n}\n```",
+      "usage": {
+        "prompt_tokens": 1015,
+        "completion_tokens": 175,
+        "total_tokens": 1190,
         "cache_read_input_tokens": 512,
         "cache_creation_input_tokens": 0
       }
@@ -188,7 +248,170 @@
           ]
         }
       ]
+    },
+    {
+      "round_id": "13d830db-05be-48e0-b9ce-f21e891081c1",
+      "room_id": "050ebf88-17a2-44b5-ac0d-23380e84b0f2",
+      "epoch": 1,
+      "status": "completed",
+      "error_code": null,
+      "elapsed_ms": 26125,
+      "config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": false,
+        "expression_sets": {
+          "f8b77099-ac41-4c1a-a48b-8090aa8a267e": null
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v3",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v2",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "messages": [
+        {
+          "id": "2981fed4-fa74-4f2d-9c75-986afbf51662",
+          "seq": 1,
+          "round_id": "13d830db-05be-48e0-b9ce-f21e891081c1",
+          "speaker_type": "user",
+          "speaker_member_id": null,
+          "content": "你在瀑布泉里面亲眼见到了什么？请只说已经知道的细节。",
+          "reply_to_id": null,
+          "created_at": "2026-10-12T14:25:59.340Z",
+          "identity": {},
+          "refs": []
+        },
+        {
+          "id": "392db32f-8c2b-4772-ac0d-6187b0d5bff7",
+          "seq": 2,
+          "round_id": "13d830db-05be-48e0-b9ce-f21e891081c1",
+          "speaker_type": "character",
+          "speaker_member_id": "f8b77099-ac41-4c1a-a48b-8090aa8a267e",
+          "content": "我跳进去后亲眼见到：里面无水无波，有一座铁板桥；桥后是一处宜居的石洞。",
+          "reply_to_id": "2981fed4-fa74-4f2d-9c75-986afbf51662",
+          "created_at": "2026-10-12T14:26:25.527Z",
+          "identity": {
+            "book_title": "西游记 · 石猴发现联调样本（非全书）",
+            "name": "石猴"
+          },
+          "refs": [
+            {
+              "assertion_ordinal": 0,
+              "assertion_text": "我跳进去后亲眼见到",
+              "origin": "canon",
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "claim_id": "88d3203a-9c10-4aff-9817-37e581787d9c",
+              "evidence_id": "1c597318-eeab-4bf4-8ac0-0617e8171834",
+              "heard_message_id": null
+            },
+            {
+              "assertion_ordinal": 1,
+              "assertion_text": "里面无水无波",
+              "origin": "canon",
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "claim_id": "88d3203a-9c10-4aff-9817-37e581787d9c",
+              "evidence_id": "1c597318-eeab-4bf4-8ac0-0617e8171834",
+              "heard_message_id": null
+            },
+            {
+              "assertion_ordinal": 2,
+              "assertion_text": "有一座铁板桥",
+              "origin": "canon",
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "claim_id": "88d3203a-9c10-4aff-9817-37e581787d9c",
+              "evidence_id": "1c597318-eeab-4bf4-8ac0-0617e8171834",
+              "heard_message_id": null
+            },
+            {
+              "assertion_ordinal": 3,
+              "assertion_text": "桥后是一处宜居的石洞",
+              "origin": "canon",
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "claim_id": "88d3203a-9c10-4aff-9817-37e581787d9c",
+              "evidence_id": "5a1c583f-a11b-4a7f-8755-06e603df7e24",
+              "heard_message_id": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "round_id": "44739083-4339-4271-9cfe-c912b29663ba",
+      "room_id": "050ebf88-17a2-44b5-ac0d-23380e84b0f2",
+      "epoch": 1,
+      "status": "completed",
+      "error_code": null,
+      "elapsed_ms": 25062,
+      "config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": false,
+        "expression_sets": {
+          "f8b77099-ac41-4c1a-a48b-8090aa8a267e": null
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v3",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v2",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "messages": [
+        {
+          "id": "4e5734f7-644e-4c59-8b09-76fa615b2065",
+          "seq": 3,
+          "round_id": "44739083-4339-4271-9cfe-c912b29663ba",
+          "speaker_type": "user",
+          "speaker_member_id": null,
+          "content": "你见过智能手机吗？它怎么用？只能依据你已经知道的内容回答。",
+          "reply_to_id": null,
+          "created_at": "2026-10-12T14:28:40.059Z",
+          "identity": {},
+          "refs": []
+        },
+        {
+          "id": "0fd15513-c363-4424-ac6c-0cae10a70e57",
+          "seq": 4,
+          "round_id": "44739083-4339-4271-9cfe-c912b29663ba",
+          "speaker_type": "character",
+          "speaker_member_id": "f8b77099-ac41-4c1a-a48b-8090aa8a267e",
+          "content": "这件事我没有足够的依据，无法确定。",
+          "reply_to_id": "4e5734f7-644e-4c59-8b09-76fa615b2065",
+          "created_at": "2026-10-12T14:29:05.513Z",
+          "identity": {
+            "book_title": "西游记 · 石猴发现联调样本（非全书）",
+            "name": "石猴"
+          },
+          "refs": []
+        }
+      ]
     }
   ],
-  "observation": "v1 declined malformed annotations and fallback refusal; v2 published source facts but also an unsupported autobiographical negative (not finely inspected), mislabeled conversation. It remains diagnostic only. v3 adds explicit negative-autobiography checks and needs fresh validation."
+  "observation": "v1 declined malformed annotations and fallback refusal; v2 published source facts but also an unsupported autobiographical negative (not finely inspected), mislabeled conversation. Those earlier runs remain diagnostic only. In a fresh v3 room, a known waterfall question published source-supported details after generation/review (2 calls). An unknown smartphone question generated two unsupported negative autobiographies which were structurally rejected; a separately reviewed fixed unknown was published (3 calls). Total recorded UI calls: 10. This excerpt probe is not full-book acceptance or expression quality A/B."
 }

@@ -3,8 +3,9 @@ import { Alert, Button, Progress, Select, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import CharacterPersonaModal from './CharacterPersonaModal';
 import CharacterRevisionModal from './CharacterRevisionModal';
+import BookSingleChatModal from './BookSingleChatModal';
 
-export default function CharacterDiscoveryPanel({ source, request, onLocate }) {
+export default function CharacterDiscoveryPanel({ source, request, onLocate, sendWSMessage }) {
   const { t } = useTranslation();
   const [build, setBuild] = useState(null);
   const [characters, setCharacters] = useState([]);
@@ -15,6 +16,7 @@ export default function CharacterDiscoveryPanel({ source, request, onLocate }) {
   const [detail, setDetail] = useState(null);
   const [context, setContext] = useState(null);
   const [correcting, setCorrecting] = useState(false);
+  const [chatDetail, setChatDetail] = useState(null);
   const generation = useRef(0);
   const revision = useRef(0);
   const detailRevision = useRef(0);
@@ -50,6 +52,7 @@ export default function CharacterDiscoveryPanel({ source, request, onLocate }) {
     Promise.resolve().then(() => {
       if (current !== generation.current) return;
       setBuild(null); setCharacters([]); setTotal(0); setOffset(0); setBusy(false); setError(''); setDetail(null); setContext(null); setCorrecting(false);
+      setChatDetail(null);
       if (version) refresh().catch((failure) => { if (current === generation.current) setError(failure.message); });
     });
     return () => { generation.current += 1; detailRevision.current += 1; };
@@ -136,6 +139,7 @@ export default function CharacterDiscoveryPanel({ source, request, onLocate }) {
     </>}
     {detail && <CharacterPersonaModal key={`${detail.build_id}:${detail.character_id}`} detail={detail} request={request}
       onCorrect={() => setCorrecting(true)}
+      onStartChat={() => { setChatDetail(detail); setDetail(null); }}
       onSaveExtension={async (text) => {
         const current = generation.current; const sequence = ++detailRevision.current;
         await request('save_extension', { build_id: detail.build_id, character_id: detail.character_id, extension_text: text });
@@ -146,5 +150,6 @@ export default function CharacterDiscoveryPanel({ source, request, onLocate }) {
       onLocate={(evidence) => { detailRevision.current += 1; setDetail(null); setCorrecting(false); onLocate(evidence); }} />}
     {correcting && detail && context && <CharacterRevisionModal key={`${detail.build_id}:${detail.character_id}`} detail={detail} context={context} request={request}
       onClose={() => setCorrecting(false)} onRevised={async (id) => { detailRevision.current += 1; setDetail(null); setCorrecting(false); await refresh(id); }} />}
+    {chatDetail && sendWSMessage && <BookSingleChatModal key={`${chatDetail.workspace_id}:${chatDetail.build_id}:${chatDetail.character_id}`} detail={chatDetail} sendWSMessage={sendWSMessage} onClose={() => setChatDetail(null)} />}
   </details>;
 }

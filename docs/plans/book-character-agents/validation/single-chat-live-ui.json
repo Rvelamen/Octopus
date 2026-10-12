@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-12",
+  "scope": "Actual React component + current WS Handler reopened persisted real k3 excerpt replies; not full-book quality",
+  "known_and_unknown_replies_present": true,
+  "earlier_v2_unsupported_reply_not_in_fresh_room": true,
+  "reader_evidence_panel_has_original_source_and_hint": true,
+  "model_calls_before": 10,
+  "model_calls_after": 10,
+  "no_generation_on_reopen_or_evidence_read": true
+}

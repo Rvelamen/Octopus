@@ -35,14 +35,16 @@ export default function NarrativeSourcePanel({ item, sendWSMessage }) {
   useEffect(() => {
     const current = ++generation.current;
     const revision = ++sourceRequest.current;
-    setSource(null);
-    setSegments([]);
-    setError('');
-    setLocator(null);
-    setTextReader(null);
-    setNextOrdinal(null);
-    setBusy(false);
-    request('get_source').then(async (data) => {
+    Promise.resolve().then(async () => {
+      if (generation.current !== current || sourceRequest.current !== revision) return;
+      setSource(null);
+      setSegments([]);
+      setError('');
+      setLocator(null);
+      setTextReader(null);
+      setNextOrdinal(null);
+      setBusy(false);
+      const data = await request('get_source');
       if (generation.current !== current || sourceRequest.current !== revision) return;
       setSource(data);
       if (data.source_version_id) await loadSegments(data.source_version_id);
@@ -119,7 +121,7 @@ export default function NarrativeSourcePanel({ item, sendWSMessage }) {
         </ol>
         {nextOrdinal !== null && <Button size="small" onClick={() => loadSegments(source.source_version_id, nextOrdinal, true).catch((failure) => setError(failure.message))}>{t('bookWorld.more')}</Button>}
       </details>
-      <CharacterDiscoveryPanel source={source} request={request} onLocate={locate} />
+      <CharacterDiscoveryPanel source={source} request={request} onLocate={locate} sendWSMessage={sendWSMessage} />
     </>}
     <Modal open={Boolean(locator)} title={t('bookWorld.original')} onCancel={() => setLocator(null)} footer={locator ? <Button onClick={openOriginal}>{locator.format === 'txt' ? t('bookWorld.openText') : t('bookWorld.openPdf', { page: locator.page })}</Button> : null}>
       {locator && <><p>{locator.page ? t('bookWorld.locatePage', { page: locator.page }) : t('bookWorld.locateLine', { line: locator.line_number })} · {locator.source_version_id.slice(0, 8)}</p><blockquote style={{ whiteSpace: 'pre-wrap' }}>{locator.quote}</blockquote></>}

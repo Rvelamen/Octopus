@@ -682,6 +682,16 @@ def _migration_021_book_expression_propositions(conn: sqlite3.Connection) -> Non
     conn.executescript((Path(__file__).parent / "book_world" / "expression_proposition_guards.sql").read_text(encoding="utf-8"))
 
 
+def _migration_022_book_rooms(conn: sqlite3.Connection) -> None:
+    _backup_book_migration(conn, ".pre-book-rooms-v22.bak")
+    conn.executescript((Path(__file__).parent / "book_world" / "room_schema.sql").read_text(encoding="utf-8"))
+
+
+def _migration_023_book_room_guards(conn: sqlite3.Connection) -> None:
+    _backup_book_migration(conn, ".pre-book-room-guards-v23.bak")
+    conn.executescript((Path(__file__).parent / "book_world" / "room_guards.sql").read_text(encoding="utf-8"))
+
+
 def run_knowledge_index_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_initial_schema", _migration_001_create_initial_schema)
@@ -715,6 +725,8 @@ def run_knowledge_index_migrations(db_path: Path) -> None:
     runner.register(19, "book_character_expressions", _migration_019_book_expressions)
     runner.register(20, "book_expression_guards", _migration_020_book_expression_guards)
     runner.register(21, "book_expression_propositions", _migration_021_book_expression_propositions)
+    runner.register(22, "book_bounded_rooms", _migration_022_book_rooms)
+    runner.register(23, "book_room_publication_guards", _migration_023_book_room_guards)
     runner.run()
 
 

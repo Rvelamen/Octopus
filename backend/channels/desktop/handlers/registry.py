@@ -19,6 +19,7 @@ from backend.channels.desktop.handlers.agent import (
     AgentSaveSystemFileHandler,
 )
 from backend.channels.desktop.handlers.base import MessageHandler
+from backend.channels.desktop.handlers.book_room import BookRoomHandler
 from backend.channels.desktop.handlers.book_world import BookWorldHandler
 
 # Import chat handlers
@@ -106,8 +107,8 @@ from backend.channels.desktop.handlers.memory import (
 # Import models handlers
 from backend.channels.desktop.handlers.models import GetModelsHandler
 from backend.channels.desktop.handlers.notes_chat import NotesChatHandler
-from backend.channels.desktop.handlers.pdf_chat import PdfChatHandler
 from backend.channels.desktop.handlers.pdf_annotation_chat import PdfAnnotationChatHandler
+from backend.channels.desktop.handlers.pdf_chat import PdfChatHandler
 
 # Import schedule handlers
 from backend.channels.desktop.handlers.schedule import (
@@ -127,8 +128,8 @@ from backend.channels.desktop.handlers.schedule import (
 
 # Import session handlers
 from backend.channels.desktop.handlers.session import (
-    SessionCompressContextHandler,
     SessionArchiveInstanceHandler,
+    SessionCompressContextHandler,
     SessionCreateHandler,
     SessionDeleteInstanceHandler,
     SessionGetChannelSessionsHandler,
@@ -511,6 +512,7 @@ class HandlerRegistry:
 
         library_handler = LibraryHandler(bus)
         self.handlers[MessageType.BOOK_WORLD] = BookWorldHandler(bus)
+        self.handlers[MessageType.BOOK_ROOM] = BookRoomHandler(bus)
         self.handlers.update(
             {
                 MessageType.LIBRARY_LIST: library_handler,

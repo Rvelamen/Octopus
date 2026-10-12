@@ -1,6 +1,6 @@
 # Octopus 书籍人物 Agent 实施计划
 
-更新日期：2026 年 10 月 12 日。状态：T01、T02、T03、T04、T05、T15、T18 已落实；下一项 T06 接入受限单聊、上下文与校验发布。ChatHaruhi 的表达派生与检索已有实现，聊天质量收益仍待 T06/T12 验证；T10 完整交付新增 T05 前置。
+更新日期：2026 年 10 月 12 日。状态：T01、T02、T03、T04、T05、T06、T15、T18 已落实；下一项 T07 房间记忆与独立重置。ChatHaruhi 聊天接入和有效小对照已验证，完整质量收益仍由 T12 判断；T10 完整交付新增 T05 前置。
 
 目标是逐步交付自动生成人物 Agent、原著知识约束和多人聊天室。共 16 项首版任务与 2 项增强任务，每项包含可演示的用户行为、真正的前置依赖、实施步骤、验收标准和验证场景。权威约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，背景见[研究报告](F:/god/project/Octopus/docs/research/2026-10-10-book-character-agents.md)。
 
@@ -59,7 +59,7 @@ flowchart LR
   T09 -.-> T14
 ```
 
-T01 的 PDF 来源、T02 的候选发现、T03 的原著档案与逻辑 Agent、T04 的有据纠错、T05 的受限知识/表达预览、T15 的设置和 T18 的 TXT 来源已实施。下一项 T06；T10 的完整增强编排已满足接口依赖。人物聊天、自动导入构建和群聊仍按后续任务推进。
+T01 的 PDF 来源、T02 的候选发现、T03 的原著档案与逻辑 Agent、T04 的有据纠错、T05 的受限知识/表达预览、T06 的原著约束单聊、T15 的设置和 T18 的 TXT 来源已实施。下一项 T07；T10 的完整增强编排已满足接口依赖。自动导入构建、完整记忆和群聊继续按任务交付。
 
 ## 已验证阶段与真实语料
 
@@ -70,6 +70,8 @@ T03 新增 17 项确定性回归，并完成真实 k3 摘录联调及读者档�
 T04 新增 14 项公共服务与 Handler 回归，完整项目 108 通过、13 既有环境跳过。迁移 17 落实修订头、审计和读者扩展；原文审查、同来源子构建、重新提取、独立归属完成检查、编辑/发布 CAS、旧版回溯和纠错界面均已接通。真实 k3 以单任务 8192 token 预算完成 6 次调用，纠正对象 sparse、2 单元通过，全局模型设置未变；早期 4096 截断探针暴露的身份发布问题已增加失败保护。范围与限制见[纠错验证记录](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-revision-validation.md)。
 
 T05 已完成：迁移 18–21、CanonicalScope/AllowlistedContext、安全基线与历史回顾、表达独立构建及审查、桌面协议与人物预览已接通。新增 16 项行为回归，完整项目 124 通过、13 既有环境跳过；Mypy 22 文件、Ruff、ESLint 与前端构建通过。真实 k3 两个人物摘录路径共 4 次调用，尚无可用对白，保留空素材和部分完成状态；不能据此宣称聊天质量提升。范围与后续验证见[知识/表达验证记录](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-knowledge-expression-validation.md)。
+
+T06 已完成：迁移 22/23、作用域上下文、有限生成/独立审查/改写、原子发布、计时与停止/继续、桌面协议及单聊入口已贯通。新增 30 项回归，完整项目 154 通过、13 环境跳过；模块 Mypy 33 文件、Ruff、ESLint 与生产构建通过。真实界面探针 10 次调用，有效表达对照累计 18 次调用；B 实际使用本人对白，但未证明质量改善，增强仍默认关闭。六项 UI 竞态、重开计时与当前 WS 历史/取证验收通过；原预算恢复、幂等和情绪类型问题完成复核。见[单聊阶段验收](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-single-chat-validation.md)。
 
 T02 两部完整语料的工作器遍历使用不生成任何人物断言的替身，覆盖 322 / 275 个检查点；真实 k3 仅做原著摘录联调。样本四个个体候选及两个待复核群体不代表全书召回或人格质量。具体限制、模型适配与证据见[人物发现验证记录](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-discovery-validation.md)。
 
@@ -87,7 +89,7 @@ T02 两部完整语料的工作器遍历使用不生成任何人物断言的替�
 
 ## 建议的代码接入图
 
-以下新增路径是实施建议，尚未创建生产代码。实际路径若调整，必须保持接口和测试边界；逐任务正文不绑定内部文件路径。
+已完成任务的接入已存在，后续任务的路径仍为实施建议。实际路径若调整，必须保持接口和测试边界；逐任务正文不绑定内部文件路径。
 
 拟新增的服务包为 backend/services/book_world，公开入口集中在 __init__.py；将来源解析、构建、原著查询和房间调度分成小模块。存储可按 build_store、canon_store 和 room_store 分开，避免单个仓储文件过大。模型适配不复用 LibraryChatAgent 的通用工具映射。
 
@@ -98,7 +100,7 @@ T02 两部完整语料的工作器遍历使用不生成任何人物断言的替�
 | T03 | canon_store、构建证据校验、人物基线与运行策略、详情与引用 | [LLMProvider](F:/god/project/Octopus/backend/core/providers/base.py:45)、[LibraryTab.jsx](F:/god/project/Octopus/frontend/src/pages/Knowledge/library/LibraryTab.jsx:22) |
 | T04 | evidence_bound_revision、候选合并与修订发布、纠错界面 | 新人物详情与构建接口 |
 | T05 | knowledge、AllowlistedContext、CharacterExpressionService、ExpressionContext、中文词项/表达索引与双通道预览 | [现有片段检索](F:/god/project/Octopus/backend/services/library_engine.py:1530) 作为对照，不直接复用其全局查询 |
-| T06 | runtime、CharacterContextBuilder、reply_validator、provider_resolver、room_store、单聊面板、表达策略与预算诊断 | [provider factory 的调用方式](F:/god/project/Octopus/backend/agent/library_chat_agent.py:366)、[LibraryChatDrawer.jsx](F:/god/project/Octopus/frontend/src/pages/Knowledge/library/LibraryChatDrawer.jsx:1) 的展示样式 |
+| T06 | rooms/rounds、context、chat_worker/chat_validation/chat_provider、book_room Handler、单聊面板和预算诊断 | [provider factory 的调用方式](F:/god/project/Octopus/backend/agent/library_chat_agent.py:366)、[LibraryChatDrawer.jsx](F:/god/project/Octopus/frontend/src/pages/Knowledge/library/LibraryChatDrawer.jsx:1) 的展示样式 |
 | T07 | typed_room_summary、房间重置与 epoch、新人物聊天 Hook | [useChat.js](F:/god/project/Octopus/frontend/src/pages/Knowledge/hooks/useChat.js:1) 的传输模式，独立实现多人状态 |
 | T08 | coordinator、成员管理、directed/natural 策略、人物消息列表 | 新 book_room Handler 与单聊房间服务 |
 | T09 | 持久队列、租约与 cursor、停止继续、断线补拉 | [WebSocket Handler 基类](F:/god/project/Octopus/backend/channels/desktop/handlers/base.py:14)、[DesktopChannel](F:/god/project/Octopus/backend/channels/desktop/channel.py:267) |
@@ -156,7 +158,7 @@ T17 在 T08 基础上实现 free/topic，与 natural/directed/all 发言方式�
 | Q04 导入、恢复与清理 | T10、T11 | 新原著发布后排表达任务；取消/预算失败保留可用人物；源失效只清理对应书的素材 |
 | Q05 真实质量对照 | T12 | 原 60 项＋24 项表达样本，同模型 A/B，逐人物报告正确性、误拒、表现和成本 |
 
-Q01–Q05 为既有任务内子交付，不另设跳过原任务依赖的路径。初始表达上限为 2 个对白、各 160 码点及 3 条已有表达规则，T12 调优；语义/向量增强仍在 T14。Q01 的原生服务、迁移及预览已完成；Q02–Q05 继续按依赖实施，质量收益须由实测证明。未安装第三方运行库或导入外部角色包。
+Q01–Q05 为既有任务内子交付，不另设跳过原任务依赖的路径。初始表达上限为 2 个对白、各 160 码点及 3 条已有表达规则，T12 调优；语义/向量增强仍在 T14。Q01 的原生服务、迁移及预览与 Q02 的运行时接入/小对照已完成；Q03–Q05 继续按依赖实施，质量收益须由实测证明。未安装第三方运行库或导入外部角色包。
 
 ## 圆桌界面实施
 
@@ -282,9 +284,9 @@ npm run build --prefix frontend
 
 ## 当前交付状态
 
-时间配置已落实到现有设置页与后端持久化。验证：20 项实际后端测试通过，Ruff 检查通过，前端生产构建通过。测试使用 .gitignore 的精确例外纳入版本控制范围。群聊运行计时和窗口恢复为 T06/T09 待实施内容。
+时间配置已落实到现有设置页与后端持久化。验证：20 项实际后端测试通过，Ruff 检查通过，前端生产构建通过。测试使用 .gitignore 的精确例外纳入版本控制范围。T06 已落实单聊计时与窗口恢复，群聊队列扩展继续由 T09 交付。
 
-已交付详细设计、实施计划、18 份本地任务、领域词汇、SQL 草案及内存校验脚本，并落实 T01、T02、T03、T04、T15、T18。来源为工作区迁移 14，候选为 15，原著断言/权限/基线与冻结为 16，修订与读者扩展为 17；完整 SQL 附件仍为核心设计契约，修订补充 DDL 已单独链接。T16 圆桌与 T17 主题/自由聊天仍为设计，聊天室 Tab、气泡和讨论运行时尚未实现。
+已交付详细设计、实施计划、18 份本地任务、领域词汇、SQL 草案及内存校验脚本，并落实 T01、T02、T03、T04、T05、T06、T15、T18。来源为工作区迁移 14，候选为 15，原著断言/权限/基线与冻结为 16，修订与读者扩展为 17、知识/表达为 18–21、单聊房间为 22/23；完整 SQL 附件仍为核心设计契约，修订补充 DDL 已单独链接。T16 圆桌与 T17 主题/自由聊天仍为设计，聊天室 Tab、气泡和讨论运行时尚未实现。
 
 本功能 docs 已纳入版本控制；tests/ 仍按精确文件例外跟踪新增回归。首版书籍已确定为用户语料仓库的《西游记》《红楼梦》，正文保留在忽略的验收工作区；提交来源哈希、验证记录及截图。真实模型质量基线仍在 T12 人工验收中补齐。
 
@@ -298,4 +300,4 @@ ChatHaruhi 的方法适配继续沿用 Q01–Q05；新增[质量验证协议](F:
 - T10/T11：构建/素材策略变化产生新版本，自动派生和失效清理保留来源，不用外部人物包补原著授权。
 - T12：60 项边界与 24 项表达题分别报告提取、检索、正文正确性、人物/交流质量及成本；实际有效 A/B、人工盲评和关键失败复核通过后决定增强默认开关。
 
-当前 T05 服务已完成，T06 实施及复验中。既有真实摘录探针出现过无依据否定经历，作为待修复诊断保留；不能以引用存在、模型复核通过或空素材探针宣称质量收益。
+当前 T05/T06 服务与阶段验证已完成。早期无依据否定经历及空对白对照保留为诊断；新策略和有效输入对照已复验，但仍不能以引用存在、模型复核通过或小样本宣布完整质量收益。

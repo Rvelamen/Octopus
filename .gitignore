@@ -160,6 +160,7 @@ tests/
 !/tests/test_book_persona.py
 !/tests/test_book_revisions.py
 !/tests/test_book_knowledge.py
+!/tests/test_book_rooms.py
 .agents/skills/ai-elements/SKILL.md
 .agents/skills/ai-elements/references/agent.md
 .agents/skills/ai-elements/references/artifact.md

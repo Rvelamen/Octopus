@@ -1,0 +1,1245 @@
+{
+  "date": "2026-10-12",
+  "scope": "T06 controlled original-excerpt runtime A/B; not automatic extraction, full-book persona acceptance or demonstrated quality gain",
+  "source": {
+    "repository": "https://github.com/tennessine/corpus",
+    "revision": "c5ce96aca36c6a3cb4da5f0ff7d2d5fa30c32aea",
+    "book": "西游记",
+    "full_source_sha256": "6c989498348cafc7242d767767cf41dfc66ca7159e34a595270fd7cfbb707933",
+    "full_source_file_sha256": "3f2bf2164ee63ad7ce3ef88c830e88e860f47719740b13e6c4a1fe4d3be09b80",
+    "excerpt_start": 1632,
+    "excerpt_end": 1886,
+    "excerpt_sha256": "531acd89f45698fe6ec0c3928e602eff76419c836a8517ed4c53b4854e967102",
+    "excerpt_characters": 254,
+    "canonical_setup": "Deterministic reviewed fixture from exact original spans; does not assess automatic extraction"
+  },
+  "character_scope": {
+    "workspace_id": "8a1a09a8d5d73448601e33889669dabbe02d289cafa36a6ed597bcfceb1ea22f",
+    "book_id": "55d6af2a-8f93-4a42-9db1-8b8edcf82283",
+    "source_version_id": "d0bc56cc-1132-4c09-acb9-4da919a01f1e",
+    "build_id": "e4cea733-a79a-4348-8902-ad6e02b80ac2",
+    "character_id": "297343b1-128e-4015-9c01-996abb0d675a",
+    "canonical_policy_version": "canonical-persona-v3",
+    "knowledge_policy_version": "canonical-perspective-v1"
+  },
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-chat-v3",
+    "policy_version": "bounded-room-v1",
+    "model_record_id": 337,
+    "review_prompt_version": "character-chat-review-v2",
+    "context_window": 1000000,
+    "max_input_tokens": 24000,
+    "expression_enabled": false,
+    "expression_selection_version": "expression-selection-v2",
+    "expression_sets": {}
+  },
+  "call_budgets": {
+    "expression": 4,
+    "chat": 20
+  },
+  "expression_set_id": "66b4ee0a-850b-470d-8e22-9c7bd9fb53cb",
+  "runs": [
+    {
+      "case": "known",
+      "variant": "A",
+      "question": "你当时是怎样主动提出进去探看瀑布的？请根据已有资料回答。",
+      "room_id": "c987879c-fc61-46eb-9c2d-134ce542cd81",
+      "epoch": 1,
+      "round_id": "8d8ca057-f6c6-4ffa-a353-a14618ae79d6",
+      "status": "completed",
+      "error_code": null,
+      "elapsed_seconds": 15.734,
+      "generation_config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": false,
+        "expression_selection_version": "expression-selection-v2",
+        "expression_sets": {
+          "ab74735d-9139-447d-a240-251e536f1c5b": null
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v3",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v2",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "input_diagnostics": {
+        "context_policy": "actor-context-v1",
+        "context_sha256": "a992183d341b20124360912f87ae3719fd94eacfa162883a4cf44a60a9f2940a",
+        "input_bytes": 1832,
+        "input_budget": 24000,
+        "budget_strategy": "conservative_utf8_bytes",
+        "expression_set_id": null,
+        "expression_selection_version": "expression-selection-v2",
+        "expression_material_ids": [],
+        "omitted_examples": 0,
+        "omitted_history": 0
+      },
+      "example_count": 0,
+      "rule_count": 0,
+      "selected_examples": [],
+      "calls": 2,
+      "messages": [
+        {
+          "id": "4f5c961a-9cbc-4997-b2d2-4c5f8ebe11bb",
+          "seq": 1,
+          "round_id": "8d8ca057-f6c6-4ffa-a353-a14618ae79d6",
+          "speaker_type": "user",
+          "speaker_member_id": null,
+          "content": "你当时是怎样主动提出进去探看瀑布的？请根据已有资料回答。",
+          "reply_to_id": null,
+          "created_at": "2026-10-12T14:55:54.591Z",
+          "identity": {},
+          "refs": []
+        },
+        {
+          "id": "a115da47-5239-492b-a006-4e0552d40267",
+          "seq": 2,
+          "round_id": "8d8ca057-f6c6-4ffa-a353-a14618ae79d6",
+          "speaker_type": "character",
+          "speaker_member_id": "ab74735d-9139-447d-a240-251e536f1c5b",
+          "content": "我当时应声高叫道：“我进去！我进去！”",
+          "reply_to_id": "4f5c961a-9cbc-4997-b2d2-4c5f8ebe11bb",
+          "created_at": "2026-10-12T14:56:10.505Z",
+          "identity": {
+            "book_title": "原著样本",
+            "name": "石猴"
+          },
+          "refs": [
+            {
+              "assertion_ordinal": 0,
+              "assertion_text": "我当时应声高叫道：“我进去！我进去！”",
+              "origin": "canon",
+              "book_id": "55d6af2a-8f93-4a42-9db1-8b8edcf82283",
+              "source_version_id": "d0bc56cc-1132-4c09-acb9-4da919a01f1e",
+              "build_id": "e4cea733-a79a-4348-8902-ad6e02b80ac2",
+              "character_id": "297343b1-128e-4015-9c01-996abb0d675a",
+              "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+              "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+              "heard_message_id": null
+            }
+          ]
+        }
+      ],
+      "human_semantic_verdict": "not performed; human blind evaluation remains T12",
+      "agent_semantic_review": {
+        "reviewer": "Codex root agent, full published body/source inspection",
+        "verdict": "No unsupported original-world or smartphone-operation assertion found in this narrow case",
+        "quality_gain": "not established"
+      }
+    },
+    {
+      "case": "known",
+      "variant": "B",
+      "question": "你当时是怎样主动提出进去探看瀑布的？请根据已有资料回答。",
+      "room_id": "25b1ed00-c807-4b78-9f08-c9f3d277f8d9",
+      "epoch": 1,
+      "round_id": "51354b05-2c60-42dd-8792-21a627764aa5",
+      "status": "completed",
+      "error_code": null,
+      "elapsed_seconds": 14.375,
+      "generation_config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": true,
+        "expression_selection_version": "expression-selection-v2",
+        "expression_sets": {
+          "dd73614f-b245-4f5d-9fda-5e701665bf23": "66b4ee0a-850b-470d-8e22-9c7bd9fb53cb"
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v3",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v2",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "input_diagnostics": {
+        "context_policy": "actor-context-v1",
+        "context_sha256": "01e8063a704361b758a44284ae76c65ac6b0eb2576b571eaba5d8285e6c08b05",
+        "input_bytes": 2934,
+        "input_budget": 24000,
+        "budget_strategy": "conservative_utf8_bytes",
+        "expression_set_id": "66b4ee0a-850b-470d-8e22-9c7bd9fb53cb",
+        "expression_selection_version": "expression-selection-v2",
+        "expression_material_ids": [
+          "ac4e6e04-f9a3-4cba-8902-6ac29d88fbfb",
+          "4f6f3f78-7994-447e-bec8-461a0dbed86d"
+        ],
+        "omitted_examples": 0,
+        "omitted_history": 0
+      },
+      "example_count": 1,
+      "rule_count": 1,
+      "selected_examples": [
+        {
+          "material_id": "4f6f3f78-7994-447e-bec8-461a0dbed86d",
+          "kind": "dialogue_example",
+          "text": "我进去！我进去！",
+          "refs": [
+            {
+              "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+              "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+              "purpose": "fact",
+              "segment_id": "3adc6318-46a2-4389-86c4-f8d0a174447d",
+              "local_start": 81,
+              "local_end": 99
+            },
+            {
+              "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+              "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+              "purpose": "speaker",
+              "segment_id": "3adc6318-46a2-4389-86c4-f8d0a174447d",
+              "local_start": 90,
+              "local_end": 98
+            },
+            {
+              "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+              "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+              "purpose": "style",
+              "segment_id": "3adc6318-46a2-4389-86c4-f8d0a174447d",
+              "local_start": 81,
+              "local_end": 99
+            }
+          ]
+        }
+      ],
+      "calls": 2,
+      "messages": [
+        {
+          "id": "7efe1e55-0daa-444a-bfed-4f38bb9d6a19",
+          "seq": 1,
+          "round_id": "51354b05-2c60-42dd-8792-21a627764aa5",
+          "speaker_type": "user",
+          "speaker_member_id": null,
+          "content": "你当时是怎样主动提出进去探看瀑布的？请根据已有资料回答。",
+          "reply_to_id": null,
+          "created_at": "2026-10-12T14:56:10.792Z",
+          "identity": {},
+          "refs": []
+        },
+        {
+          "id": "15eb57dd-5de7-4bd4-8ea0-a1e7e5c3b85a",
+          "seq": 2,
+          "round_id": "51354b05-2c60-42dd-8792-21a627764aa5",
+          "speaker_type": "character",
+          "speaker_member_id": "dd73614f-b245-4f5d-9fda-5e701665bf23",
+          "content": "我应声高叫道：“我进去！我进去！”",
+          "reply_to_id": "7efe1e55-0daa-444a-bfed-4f38bb9d6a19",
+          "created_at": "2026-10-12T14:56:25.330Z",
+          "identity": {
+            "book_title": "原著样本",
+            "name": "石猴"
+          },
+          "refs": [
+            {
+              "assertion_ordinal": 0,
+              "assertion_text": "我应声高叫道：“我进去！我进去！”",
+              "origin": "canon",
+              "book_id": "55d6af2a-8f93-4a42-9db1-8b8edcf82283",
+              "source_version_id": "d0bc56cc-1132-4c09-acb9-4da919a01f1e",
+              "build_id": "e4cea733-a79a-4348-8902-ad6e02b80ac2",
+              "character_id": "297343b1-128e-4015-9c01-996abb0d675a",
+              "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+              "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+              "heard_message_id": null
+            }
+          ]
+        }
+      ],
+      "human_semantic_verdict": "not performed; human blind evaluation remains T12",
+      "agent_semantic_review": {
+        "reviewer": "Codex root agent, full published body/source inspection",
+        "verdict": "No unsupported original-world or smartphone-operation assertion found in this narrow case",
+        "quality_gain": "not established"
+      }
+    },
+    {
+      "case": "unknown",
+      "variant": "B",
+      "question": "你当时说要进去。如果改用智能手机找路进去，你知道具体怎么操作吗？只依据已有资料回答。",
+      "room_id": "3bea15ad-283f-4962-bec9-913ff1b6c301",
+      "epoch": 1,
+      "round_id": "76d43c8f-7c62-471e-8166-9c5c5d6d8692",
+      "status": "completed",
+      "error_code": null,
+      "elapsed_seconds": 16.5,
+      "generation_config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": true,
+        "expression_selection_version": "expression-selection-v2",
+        "expression_sets": {
+          "81cbf102-1c39-4785-a6ca-5d226f440248": "66b4ee0a-850b-470d-8e22-9c7bd9fb53cb"
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v3",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v2",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "input_diagnostics": {
+        "context_policy": "actor-context-v1",
+        "context_sha256": "bdbe05e0d138d2743a124ec8eddde004d328c1c69709b54f47d06c9f3960aac1",
+        "input_bytes": 2988,
+        "input_budget": 24000,
+        "budget_strategy": "conservative_utf8_bytes",
+        "expression_set_id": "66b4ee0a-850b-470d-8e22-9c7bd9fb53cb",
+        "expression_selection_version": "expression-selection-v2",
+        "expression_material_ids": [
+          "ac4e6e04-f9a3-4cba-8902-6ac29d88fbfb",
+          "4f6f3f78-7994-447e-bec8-461a0dbed86d"
+        ],
+        "omitted_examples": 0,
+        "omitted_history": 0
+      },
+      "example_count": 1,
+      "rule_count": 1,
+      "selected_examples": [
+        {
+          "material_id": "4f6f3f78-7994-447e-bec8-461a0dbed86d",
+          "kind": "dialogue_example",
+          "text": "我进去！我进去！",
+          "refs": [
+            {
+              "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+              "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+              "purpose": "fact",
+              "segment_id": "3adc6318-46a2-4389-86c4-f8d0a174447d",
+              "local_start": 81,
+              "local_end": 99
+            },
+            {
+              "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+              "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+              "purpose": "speaker",
+              "segment_id": "3adc6318-46a2-4389-86c4-f8d0a174447d",
+              "local_start": 90,
+              "local_end": 98
+            },
+            {
+              "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+              "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+              "purpose": "style",
+              "segment_id": "3adc6318-46a2-4389-86c4-f8d0a174447d",
+              "local_start": 81,
+              "local_end": 99
+            }
+          ]
+        }
+      ],
+      "calls": 2,
+      "messages": [
+        {
+          "id": "74851743-c636-4449-8669-ade8dfb414dd",
+          "seq": 1,
+          "round_id": "76d43c8f-7c62-471e-8166-9c5c5d6d8692",
+          "speaker_type": "user",
+          "speaker_member_id": null,
+          "content": "你当时说要进去。如果改用智能手机找路进去，你知道具体怎么操作吗？只依据已有资料回答。",
+          "reply_to_id": null,
+          "created_at": "2026-10-12T14:56:25.523Z",
+          "identity": {},
+          "refs": []
+        },
+        {
+          "id": "efe910f2-4a2b-47d4-8bee-db1580ac778b",
+          "seq": 2,
+          "round_id": "76d43c8f-7c62-471e-8166-9c5c5d6d8692",
+          "speaker_type": "character",
+          "speaker_member_id": "81cbf102-1c39-4785-a6ca-5d226f440248",
+          "content": "我进去！我进去！智能手机怎么找路，这部分我不清楚。",
+          "reply_to_id": "74851743-c636-4449-8669-ade8dfb414dd",
+          "created_at": "2026-10-12T14:56:42.203Z",
+          "identity": {
+            "book_title": "原著样本",
+            "name": "石猴"
+          },
+          "refs": [
+            {
+              "assertion_ordinal": 0,
+              "assertion_text": "我进去！我进去！",
+              "origin": "canon",
+              "book_id": "55d6af2a-8f93-4a42-9db1-8b8edcf82283",
+              "source_version_id": "d0bc56cc-1132-4c09-acb9-4da919a01f1e",
+              "build_id": "e4cea733-a79a-4348-8902-ad6e02b80ac2",
+              "character_id": "297343b1-128e-4015-9c01-996abb0d675a",
+              "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+              "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+              "heard_message_id": null
+            }
+          ]
+        }
+      ],
+      "human_semantic_verdict": "not performed; human blind evaluation remains T12",
+      "agent_semantic_review": {
+        "reviewer": "Codex root agent, full published body/source inspection",
+        "verdict": "No unsupported original-world or smartphone-operation assertion found in this narrow case",
+        "quality_gain": "not established"
+      }
+    },
+    {
+      "case": "unknown",
+      "variant": "A",
+      "question": "你当时说要进去。如果改用智能手机找路进去，你知道具体怎么操作吗？只依据已有资料回答。",
+      "room_id": "24504f71-9c40-4d47-ab3d-ee1c9c793652",
+      "epoch": 1,
+      "round_id": "b46a83ca-38d3-421e-a4fc-e04cb174f6c3",
+      "status": "completed",
+      "error_code": null,
+      "elapsed_seconds": 25.937,
+      "generation_config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": false,
+        "expression_selection_version": "expression-selection-v2",
+        "expression_sets": {
+          "5f5f4673-9198-44c6-b971-0b3979023a7a": null
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v3",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v2",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "input_diagnostics": {
+        "context_policy": "actor-context-v1",
+        "context_sha256": "32d19804794c397231a0297286c1e63eca0372ab5671a0c1e474107a3b2a5d90",
+        "input_bytes": 1886,
+        "input_budget": 24000,
+        "budget_strategy": "conservative_utf8_bytes",
+        "expression_set_id": null,
+        "expression_selection_version": "expression-selection-v2",
+        "expression_material_ids": [],
+        "omitted_examples": 0,
+        "omitted_history": 0
+      },
+      "example_count": 0,
+      "rule_count": 0,
+      "selected_examples": [],
+      "calls": 2,
+      "messages": [
+        {
+          "id": "41f8613b-a138-4b01-a64e-8661f2544bc7",
+          "seq": 1,
+          "round_id": "b46a83ca-38d3-421e-a4fc-e04cb174f6c3",
+          "speaker_type": "user",
+          "speaker_member_id": null,
+          "content": "你当时说要进去。如果改用智能手机找路进去，你知道具体怎么操作吗？只依据已有资料回答。",
+          "reply_to_id": null,
+          "created_at": "2026-10-12T14:56:42.312Z",
+          "identity": {},
+          "refs": []
+        },
+        {
+          "id": "b068b834-310a-4c09-9f45-da3953d3a649",
+          "seq": 2,
+          "round_id": "b46a83ca-38d3-421e-a4fc-e04cb174f6c3",
+          "speaker_type": "character",
+          "speaker_member_id": "5f5f4673-9198-44c6-b971-0b3979023a7a",
+          "content": "我当时只说：“我进去！我进去！”已有资料里没有用智能手机找路进去的操作办法，所以这部分我不清楚。",
+          "reply_to_id": "41f8613b-a138-4b01-a64e-8661f2544bc7",
+          "created_at": "2026-10-12T14:57:08.381Z",
+          "identity": {
+            "book_title": "原著样本",
+            "name": "石猴"
+          },
+          "refs": [
+            {
+              "assertion_ordinal": 0,
+              "assertion_text": "我进去！我进去！",
+              "origin": "canon",
+              "book_id": "55d6af2a-8f93-4a42-9db1-8b8edcf82283",
+              "source_version_id": "d0bc56cc-1132-4c09-acb9-4da919a01f1e",
+              "build_id": "e4cea733-a79a-4348-8902-ad6e02b80ac2",
+              "character_id": "297343b1-128e-4015-9c01-996abb0d675a",
+              "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+              "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+              "heard_message_id": null
+            }
+          ]
+        }
+      ],
+      "human_semantic_verdict": "not performed; human blind evaluation remains T12",
+      "agent_semantic_review": {
+        "reviewer": "Codex root agent, full published body/source inspection",
+        "verdict": "No unsupported original-world or smartphone-operation assertion found in this narrow case",
+        "quality_gain": "not established"
+      }
+    }
+  ],
+  "expression_status": "ready",
+  "reviewed_expression_preview": {
+    "scope": {
+      "workspace_id": "8a1a09a8d5d73448601e33889669dabbe02d289cafa36a6ed597bcfceb1ea22f",
+      "book_id": "55d6af2a-8f93-4a42-9db1-8b8edcf82283",
+      "source_version_id": "d0bc56cc-1132-4c09-acb9-4da919a01f1e",
+      "build_id": "e4cea733-a79a-4348-8902-ad6e02b80ac2",
+      "character_id": "297343b1-128e-4015-9c01-996abb0d675a",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    },
+    "set_id": "66b4ee0a-850b-470d-8e22-9c7bd9fb53cb",
+    "policy_version": "expression-material-v1",
+    "status": "known",
+    "rules": [
+      {
+        "material_id": "ac4e6e04-f9a3-4cba-8902-6ac29d88fbfb",
+        "kind": "style_rule",
+        "text": "石猴自告奋勇时用简短重复的第一人称句子",
+        "refs": [
+          {
+            "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+            "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+            "purpose": "style",
+            "segment_id": "3adc6318-46a2-4389-86c4-f8d0a174447d",
+            "local_start": 81,
+            "local_end": 99
+          }
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "material_id": "4f6f3f78-7994-447e-bec8-461a0dbed86d",
+        "kind": "dialogue_example",
+        "text": "我进去！我进去！",
+        "refs": [
+          {
+            "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+            "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+            "purpose": "fact",
+            "segment_id": "3adc6318-46a2-4389-86c4-f8d0a174447d",
+            "local_start": 81,
+            "local_end": 99
+          },
+          {
+            "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+            "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+            "purpose": "speaker",
+            "segment_id": "3adc6318-46a2-4389-86c4-f8d0a174447d",
+            "local_start": 90,
+            "local_end": 98
+          },
+          {
+            "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+            "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+            "purpose": "style",
+            "segment_id": "3adc6318-46a2-4389-86c4-f8d0a174447d",
+            "local_start": 81,
+            "local_end": 99
+          }
+        ]
+      }
+    ]
+  },
+  "outcome": "Two effective runtime A/B pairs completed after the short-term fix. No general quality improvement established; enhancement stays disabled.",
+  "actual_calls": 18,
+  "calls": [
+    {
+      "group": "expression",
+      "phase": "extract",
+      "status": "completed",
+      "content": "```json\n{\n  \"materials\": [\n    {\n      \"local_key\": \"style_自告奋勇\",\n      \"kind\": \"style_rule\",\n      \"text\": \"石猴自告奋勇时用简短重复的第一人称句子\",\n      \"refs\": [\n        {\n          \"claim_id\": \"0867a438-3f8a-46eb-8a80-130cf00acf4e\",\n          \"evidence_id\": \"02a10beb-e172-48db-acde-f517bcad27d7\",\n          \"purpose\": \"style\"\n        }\n      ],\n      \"topic_terms\": [\"石猴\", \"自告奋勇\"]\n    },\n    {\n      \"local_key\": \"example_我进去\",\n      \"kind\": \"dialogue_example\",\n      \"text\": \"我进去！我进去！\",\n      \"dialogue_action\": \"answer\",\n      \"refs\": [\n        {\n          \"claim_id\": \"0867a438-3f8a-46eb-8a80-130cf00acf4e\",\n          \"evidence_id\": \"02a10beb-e172-48db-acde-f517bcad27d7\",\n          \"purpose\": \"speaker\"\n        },\n        {\n          \"claim_id\": \"0867a438-3f8a-46eb-8a80-130cf00acf4e\",\n          \"evidence_id\": \"02a10beb-e172-48db-acde-f517bcad27d7\",\n          \"purpose\": \"style\"\n        }\n      ],\n      \"topic_terms\": [\"我\", \"进去\"]\n    }\n  ]\n}\n```",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 967,
+        "completion_tokens": 360,
+        "total_tokens": 1327,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "expression",
+      "phase": "review",
+      "status": "completed",
+      "content": "{\"materials\":[{\"local_key\":\"style_自告奋勇\",\"supported\":true,\"speaker_confirmed\":true,\"safe\":true,\"baseline_compatible\":true,\"purpose_supported\":true,\"facts_complete\":true,\"fact_claim_ids\":[\"0867a438-3f8a-46eb-8a80-130cf00acf4e\"],\"reason\":\"与基线当前style命题完全一致，仅表述石猴自告奋勇时的本人说话方式，无新增事实或他人内心。\"},{\"local_key\":\"example_我进去\",\"supported\":true,\"speaker_confirmed\":true,\"safe\":true,\"baseline_compatible\":true,\"purpose_supported\":true,\"facts_complete\":true,\"fact_claim_ids\":[\"0867a438-3f8a-46eb-8a80-130cf00acf4e\"],\"reason\":\"逐字来自approved excerpt中石猴本人原话，符合简短重复第一人称风格；作应声回答/自告奋勇可用，无越界信息。\"}]}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1099,
+        "completion_tokens": 504,
+        "total_tokens": 1603,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "generate",
+      "status": "completed",
+      "content": "{\"content\":\"我应声高叫：“我进去！我进去！”\",\"dialogue_action\":\"answer\",\"claims\":[{\"text\":\"我应声高叫：“我进去！我进去！”\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"0867a438-3f8a-46eb-8a80-130cf00acf4e\",\"evidence_id\":\"02a10beb-e172-48db-acde-f517bcad27d7\"}]}],\"ephemeral_emotion\":null}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 804,
+        "completion_tokens": 485,
+        "total_tokens": 1289,
+        "cache_read_input_tokens": 768,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "review",
+      "status": "completed",
+      "content": "```json\n{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"回复仅有一句自告奋勇的话，与baseline批准摘录“石猴应声高叫道：我进去！我进去！”完全一致，claim的refs指向该证据且齐全。无额外事实断言，符合石猴第一人称简短重复的原著风格，归属为canon正确，无冒充未亲历内容。\"}\n```",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 791,
+        "completion_tokens": 169,
+        "total_tokens": 960,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "generate",
+      "status": "completed",
+      "content": "{\"content\":\"我便应声高叫道：“我进去！我进去！”——就是这样，抢先一声把自己举了出去。至于当时前后还有些什么言语安排，这上头我没有更多的凭据，就不多说了。\",\"dialogue_action\":\"answer\",\"claims\":[{\"text\":\"我便应声高叫道：“我进去！我进去！”\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"0867a438-3f8a-46eb-8a80-130cf00acf4e\",\"evidence_id\":\"02a10beb-e172-48db-acde-f517bcad27d7\"}]},{\"text\":\"至于当时前后还有些什么言语安排，这上头我没有更多的凭据，就不多说了。\",\"origin\":\"conversation\"}],\"ephemeral_emotion\":null}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 431,
+        "completion_tokens": 198,
+        "total_tokens": 629,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "review",
+      "status": "completed",
+      "content": "```json\n{\n  \"supported\": true,\n  \"facts_complete\": true,\n  \"persona_consistent\": true,\n  \"action_supported\": true,\n  \"emotion_supported\": true,\n  \"attribution_correct\": true,\n  \"unlisted_assertions\": [],\n  \"claims\": [\n    {\n      \"ordinal\": 0,\n      \"supported\": true,\n      \"origin_correct\": true,\n      \"references_complete\": true\n    },\n    {\n      \"ordinal\": 1,\n      \"supported\": true,\n      \"origin_correct\": true,\n      \"references_complete\": true\n    }\n  ],\n  \"reason\": \"候选人仅复述已有证据支持的原著语句“我进去！我进去！”，与baseline风格证据相符，且如实说明对前后言语安排没有更多凭据，未虚构任何情节。第一条claim来源标注为canon且refs正确指向该证据；第二条属conversation性质的边界声明，合理无需refs。无遗漏断言，归属、身份一致性均无问题。\"\n}\n```",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 987,
+        "completion_tokens": 265,
+        "total_tokens": 1252,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "generate",
+      "status": "completed",
+      "content": "```json\n{\"content\":\"我进去！我进去！这话是我说的。可你说的“智能手机”是个什么东西？怎么操作，我全然不知，不能凭空瞎说。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"我进去！我进去！这话是我说的。\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"0867a438-3f8a-46eb-8a80-130cf00acf4e\",\"evidence_id\":\"02a10beb-e172-48db-acde-f517bcad27d7\"}]},{\"text\":\"可你说的“智能手机”是个什么东西？怎么操作，我全然不知，不能凭空瞎说。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[\"0867a438-3f8a-46eb-8a80-130cf00acf4e\"],\"ephemeral_emotion\":null}\n```",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 694,
+        "completion_tokens": 214,
+        "total_tokens": 908,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "review",
+      "status": "completed",
+      "content": "{\n  \"supported\": true,\n  \"facts_complete\": true,\n  \"persona_consistent\": true,\n  \"action_supported\": true,\n  \"emotion_supported\": true,\n  \"attribution_correct\": true,\n  \"unlisted_assertions\": [],\n  \"claims\": [\n    {\n      \"ordinal\": 0,\n      \"supported\": true,\n      \"origin_correct\": true,\n      \"references_complete\": true\n    },\n    {\n      \"ordinal\": 1,\n      \"supported\": true,\n      \"origin_correct\": true,\n      \"references_complete\": true\n    }\n  ],\n  \"reason\": \"正文直接引用有原著依据的自告奋勇话语，并正确归属于本人；对智能手机表示全然不知，与当前知识状态unknown一致，没有虚构操作方法。express_unknown行动有明确依据，无额外情绪断言或遗漏事实。\"\n}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1012,
+        "completion_tokens": 253,
+        "total_tokens": 1265,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "generate",
+      "status": "completed",
+      "content": "{\"content\":\"我进去！我进去！这声是我应下的。可换成智能手机找路，具体按哪几下、看哪张图，我这儿没有凭据，不能编。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"我进去！我进去！\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"0867a438-3f8a-46eb-8a80-130cf00acf4e\",\"evidence_id\":\"02a10beb-e172-48db-acde-f517bcad27d7\"}]},{\"text\":\"可换成智能手机找路，具体按哪几下、看哪张图，我这儿没有凭据，不能编。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[\"0867a438-3f8a-46eb-8a80-130cf00acf4e\"],\"ephemeral_emotion\":null}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 309,
+        "completion_tokens": 637,
+        "total_tokens": 946,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "review",
+      "status": "completed",
+      "content": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"回复引用原著中石猴自告奋勇的原话“我进去！我进去！”，与baseline证据一致且归属为本人亲历的正确台词；对智能手机操作坦承无凭据不编造，符合只依据已有资料的要求，无越界或虚构。action_basis与自告奋勇的风格依据一致，无emotion触发需要。\"}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 891,
+        "completion_tokens": 185,
+        "total_tokens": 1076,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "generate",
+      "status": "completed",
+      "content": "{\n  \"content\": \"我当时应声高叫道：“我进去！我进去！”\",\n  \"dialogue_action\": \"answer\",\n  \"claims\": [\n    {\n      \"text\": \"我当时应声高叫道：“我进去！我进去！”\",\n      \"origin\": \"canon\",\n      \"refs\": [\n        {\n          \"claim_id\": \"0867a438-3f8a-46eb-8a80-130cf00acf4e\",\n          \"evidence_id\": \"02a10beb-e172-48db-acde-f517bcad27d7\"\n        }\n      ]\n    }\n  ],\n  \"ephemeral_emotion\": null\n}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 293,
+        "completion_tokens": 225,
+        "total_tokens": 518,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "review",
+      "status": "completed",
+      "content": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"回答内容为石猴原著台词“我进去！我进去！”的第一人称转述，与baseline中已批准的canon证据完全一致，直接回应用户关于主动提出进瀑布探看的问题，归属正确，无遗漏断言。\"}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 792,
+        "completion_tokens": 135,
+        "total_tokens": 927,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "generate",
+      "status": "completed",
+      "content": "{\"content\":\"我应声高叫道：“我进去！我进去！”\",\"dialogue_action\":\"answer\",\"action_basis_claim_ids\":[\"0867a438-3f8a-46eb-8a80-130cf00acf4e\"],\"claims\":[{\"text\":\"我应声高叫道：“我进去！我进去！”\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"0867a438-3f8a-46eb-8a80-130cf00acf4e\",\"evidence_id\":\"02a10beb-e172-48db-acde-f517bcad27d7\"}]}],\"ephemeral_emotion\":null}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 756,
+        "completion_tokens": 432,
+        "total_tokens": 1188,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "review",
+      "status": "completed",
+      "content": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"候选内容逐字引用已批准的原文“石猴应声高叫道：‘我进去！我进去！’”，与用户询问的自告奋勇情景直接对应，来源归属为原著经历且引用完整，符合石猴简洁重复的第一人称风格，无越界或遗漏断言。\"}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1279,
+        "completion_tokens": 143,
+        "total_tokens": 1422,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "generate",
+      "status": "completed",
+      "content": "{\"content\":\"我进去！我进去！智能手机怎么找路，这部分我不清楚。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"我进去！我进去！\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"0867a438-3f8a-46eb-8a80-130cf00acf4e\",\"evidence_id\":\"02a10beb-e172-48db-acde-f517bcad27d7\"}]},{\"text\":\"这部分我不清楚\",\"origin\":\"conversation\"}],\"ephemeral_emotion\":null}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 759,
+        "completion_tokens": 415,
+        "total_tokens": 1174,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "review",
+      "status": "completed",
+      "content": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"回复引用原著自告奋勇的语句，有evidence支持；'这部分我不清楚'与knowledge状态unknown一致，未虚构智能手机找路的知识，符合原著人生边界。所有断言已被候选claims覆盖，归属正确。\"}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1273,
+        "completion_tokens": 196,
+        "total_tokens": 1469,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "generate",
+      "status": "completed",
+      "content": "{\"content\":\"我当时只说：“我进去！我进去！”已有资料里没有用智能手机找路进去的操作办法，所以这部分我不清楚。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"我进去！我进去！\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"0867a438-3f8a-46eb-8a80-130cf00acf4e\",\"evidence_id\":\"02a10beb-e172-48db-acde-f517bcad27d7\"}]},{\"text\":\"已有资料里没有用智能手机找路进去的操作办法，所以这部分我不清楚。\",\"origin\":\"conversation\"}],\"ephemeral_emotion\":null}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 305,
+        "completion_tokens": 336,
+        "total_tokens": 641,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "group": "chat",
+      "phase": "review",
+      "status": "completed",
+      "content": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"引用的'我进去！我进去！'与approved excerpt完全一致；智能手机属原著外的现代概念，知识库状态为unknown，回答'不清楚'符合只依据已有资料的要求，无越界断言。\"}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 842,
+        "completion_tokens": 165,
+        "total_tokens": 1007,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      }
+    }
+  ],
+  "diagnostic_runs_without_dialogue": [
+    {
+      "case": "known",
+      "variant": "A",
+      "question": "你当时是怎样主动提出进去探看瀑布的？请根据已有资料回答。",
+      "room_id": "e8cfcdb9-af93-4292-a59d-8787027525e4",
+      "epoch": 1,
+      "round_id": "5aa99689-03e2-4d64-9f5b-fdb96ee5adb2",
+      "status": "completed",
+      "error_code": null,
+      "elapsed_seconds": 18.25,
+      "generation_config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": false,
+        "expression_sets": {
+          "a4372e50-054a-4770-961f-c2530a37f73a": null
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v3",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v2",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "input_diagnostics": {
+        "context_policy": "actor-context-v1",
+        "context_sha256": "25c2673993fa72c43b06a806bd44bbe867c51c4842910f34184ad2c125158a41",
+        "input_bytes": 1832,
+        "input_budget": 24000,
+        "budget_strategy": "conservative_utf8_bytes",
+        "expression_set_id": null,
+        "expression_material_ids": [],
+        "omitted_examples": 0,
+        "omitted_history": 0
+      },
+      "example_count": 0,
+      "rule_count": 0,
+      "selected_examples": [],
+      "calls": 2,
+      "messages": [
+        {
+          "id": "7be787cc-ef2a-4b8f-bb15-a92a8a961e5c",
+          "seq": 1,
+          "round_id": "5aa99689-03e2-4d64-9f5b-fdb96ee5adb2",
+          "speaker_type": "user",
+          "speaker_member_id": null,
+          "content": "你当时是怎样主动提出进去探看瀑布的？请根据已有资料回答。",
+          "reply_to_id": null,
+          "created_at": "2026-10-12T14:40:40.446Z",
+          "identity": {},
+          "refs": []
+        },
+        {
+          "id": "a8f4dbba-d778-4c97-ab0c-42437b07dcf3",
+          "seq": 2,
+          "round_id": "5aa99689-03e2-4d64-9f5b-fdb96ee5adb2",
+          "speaker_type": "character",
+          "speaker_member_id": "a4372e50-054a-4770-961f-c2530a37f73a",
+          "content": "我应声高叫：“我进去！我进去！”",
+          "reply_to_id": "7be787cc-ef2a-4b8f-bb15-a92a8a961e5c",
+          "created_at": "2026-10-12T14:40:58.793Z",
+          "identity": {
+            "book_title": "原著样本",
+            "name": "石猴"
+          },
+          "refs": [
+            {
+              "assertion_ordinal": 0,
+              "assertion_text": "我应声高叫：“我进去！我进去！”",
+              "origin": "canon",
+              "book_id": "55d6af2a-8f93-4a42-9db1-8b8edcf82283",
+              "source_version_id": "d0bc56cc-1132-4c09-acb9-4da919a01f1e",
+              "build_id": "e4cea733-a79a-4348-8902-ad6e02b80ac2",
+              "character_id": "297343b1-128e-4015-9c01-996abb0d675a",
+              "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+              "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+              "heard_message_id": null
+            }
+          ]
+        }
+      ],
+      "human_semantic_verdict": "pending full-body review"
+    },
+    {
+      "case": "known",
+      "variant": "B",
+      "question": "你当时是怎样主动提出进去探看瀑布的？请根据已有资料回答。",
+      "room_id": "27f40736-1974-434a-831c-7f97db591ba4",
+      "epoch": 1,
+      "round_id": "4d89d7d5-920a-4049-9dc3-a9f2dc7d456d",
+      "status": "completed",
+      "error_code": null,
+      "elapsed_seconds": 23.203,
+      "generation_config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": true,
+        "expression_sets": {
+          "3de1a2ad-905e-4aa1-bd16-39a10b06497f": "66b4ee0a-850b-470d-8e22-9c7bd9fb53cb"
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v3",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v2",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "input_diagnostics": {
+        "context_policy": "actor-context-v1",
+        "context_sha256": "3af920e36f21c799b19d0732e51687fafb6f00eb12245bc6fd66e374d6429052",
+        "input_bytes": 2189,
+        "input_budget": 24000,
+        "budget_strategy": "conservative_utf8_bytes",
+        "expression_set_id": "66b4ee0a-850b-470d-8e22-9c7bd9fb53cb",
+        "expression_material_ids": [
+          "ac4e6e04-f9a3-4cba-8902-6ac29d88fbfb"
+        ],
+        "omitted_examples": 0,
+        "omitted_history": 0
+      },
+      "example_count": 0,
+      "rule_count": 1,
+      "selected_examples": [],
+      "calls": 2,
+      "messages": [
+        {
+          "id": "519979a5-bd94-482b-9450-6ba8a2b6b486",
+          "seq": 1,
+          "round_id": "4d89d7d5-920a-4049-9dc3-a9f2dc7d456d",
+          "speaker_type": "user",
+          "speaker_member_id": null,
+          "content": "你当时是怎样主动提出进去探看瀑布的？请根据已有资料回答。",
+          "reply_to_id": null,
+          "created_at": "2026-10-12T14:40:58.873Z",
+          "identity": {},
+          "refs": []
+        },
+        {
+          "id": "b5fe8ab5-d4c7-4c7d-bf61-34fbd88aa3fa",
+          "seq": 2,
+          "round_id": "4d89d7d5-920a-4049-9dc3-a9f2dc7d456d",
+          "speaker_type": "character",
+          "speaker_member_id": "3de1a2ad-905e-4aa1-bd16-39a10b06497f",
+          "content": "我便应声高叫道：“我进去！我进去！”——就是这样，抢先一声把自己举了出去。至于当时前后还有些什么言语安排，这上头我没有更多的凭据，就不多说了。",
+          "reply_to_id": "519979a5-bd94-482b-9450-6ba8a2b6b486",
+          "created_at": "2026-10-12T14:41:22.200Z",
+          "identity": {
+            "book_title": "原著样本",
+            "name": "石猴"
+          },
+          "refs": [
+            {
+              "assertion_ordinal": 0,
+              "assertion_text": "我便应声高叫道：“我进去！我进去！”",
+              "origin": "canon",
+              "book_id": "55d6af2a-8f93-4a42-9db1-8b8edcf82283",
+              "source_version_id": "d0bc56cc-1132-4c09-acb9-4da919a01f1e",
+              "build_id": "e4cea733-a79a-4348-8902-ad6e02b80ac2",
+              "character_id": "297343b1-128e-4015-9c01-996abb0d675a",
+              "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+              "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+              "heard_message_id": null
+            }
+          ]
+        }
+      ],
+      "human_semantic_verdict": "pending full-body review"
+    },
+    {
+      "case": "unknown",
+      "variant": "B",
+      "question": "你当时说要进去。如果改用智能手机找路进去，你知道具体怎么操作吗？只依据已有资料回答。",
+      "room_id": "37485c08-8200-45ae-a794-798a066bb340",
+      "epoch": 1,
+      "round_id": "3bb38729-9541-4683-8cdf-70abbdd97309",
+      "status": "completed",
+      "error_code": null,
+      "elapsed_seconds": 12.906,
+      "generation_config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": true,
+        "expression_sets": {
+          "2ca97241-1fc2-470a-8f37-dc5f3920e5c0": "66b4ee0a-850b-470d-8e22-9c7bd9fb53cb"
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v3",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v2",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "input_diagnostics": {
+        "context_policy": "actor-context-v1",
+        "context_sha256": "7f01b0a6280d23b0139a32bc5f1c4bc8e17d8089e519289205e223b38f48abda",
+        "input_bytes": 2243,
+        "input_budget": 24000,
+        "budget_strategy": "conservative_utf8_bytes",
+        "expression_set_id": "66b4ee0a-850b-470d-8e22-9c7bd9fb53cb",
+        "expression_material_ids": [
+          "ac4e6e04-f9a3-4cba-8902-6ac29d88fbfb"
+        ],
+        "omitted_examples": 0,
+        "omitted_history": 0
+      },
+      "example_count": 0,
+      "rule_count": 1,
+      "selected_examples": [],
+      "calls": 2,
+      "messages": [
+        {
+          "id": "b0633226-e614-4392-a881-26c325da6db2",
+          "seq": 1,
+          "round_id": "3bb38729-9541-4683-8cdf-70abbdd97309",
+          "speaker_type": "user",
+          "speaker_member_id": null,
+          "content": "你当时说要进去。如果改用智能手机找路进去，你知道具体怎么操作吗？只依据已有资料回答。",
+          "reply_to_id": null,
+          "created_at": "2026-10-12T14:41:22.283Z",
+          "identity": {},
+          "refs": []
+        },
+        {
+          "id": "e1996d05-1759-45eb-adf1-48a9ebc52526",
+          "seq": 2,
+          "round_id": "3bb38729-9541-4683-8cdf-70abbdd97309",
+          "speaker_type": "character",
+          "speaker_member_id": "2ca97241-1fc2-470a-8f37-dc5f3920e5c0",
+          "content": "我进去！我进去！这话是我说的。可你说的“智能手机”是个什么东西？怎么操作，我全然不知，不能凭空瞎说。",
+          "reply_to_id": "b0633226-e614-4392-a881-26c325da6db2",
+          "created_at": "2026-10-12T14:41:35.324Z",
+          "identity": {
+            "book_title": "原著样本",
+            "name": "石猴"
+          },
+          "refs": [
+            {
+              "assertion_ordinal": 0,
+              "assertion_text": "我进去！我进去！这话是我说的。",
+              "origin": "canon",
+              "book_id": "55d6af2a-8f93-4a42-9db1-8b8edcf82283",
+              "source_version_id": "d0bc56cc-1132-4c09-acb9-4da919a01f1e",
+              "build_id": "e4cea733-a79a-4348-8902-ad6e02b80ac2",
+              "character_id": "297343b1-128e-4015-9c01-996abb0d675a",
+              "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+              "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+              "heard_message_id": null
+            }
+          ]
+        }
+      ],
+      "human_semantic_verdict": "pending full-body review"
+    },
+    {
+      "case": "unknown",
+      "variant": "A",
+      "question": "你当时说要进去。如果改用智能手机找路进去，你知道具体怎么操作吗？只依据已有资料回答。",
+      "room_id": "c0d36f00-900c-41d4-8995-643daff6f792",
+      "epoch": 1,
+      "round_id": "3b4ad471-0b68-49b2-9005-b1f89c2af652",
+      "status": "completed",
+      "error_code": null,
+      "elapsed_seconds": 29.78,
+      "generation_config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": false,
+        "expression_sets": {
+          "5d37a676-17dd-4404-96d1-47ca82c92c12": null
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v3",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v2",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "input_diagnostics": {
+        "context_policy": "actor-context-v1",
+        "context_sha256": "efd91eedcf36ec555b7615c651ec58b4e202e7532a7e08fc39f1821ef5bd05f6",
+        "input_bytes": 1886,
+        "input_budget": 24000,
+        "budget_strategy": "conservative_utf8_bytes",
+        "expression_set_id": null,
+        "expression_material_ids": [],
+        "omitted_examples": 0,
+        "omitted_history": 0
+      },
+      "example_count": 0,
+      "rule_count": 0,
+      "selected_examples": [],
+      "calls": 2,
+      "messages": [
+        {
+          "id": "f78f8a86-65d6-46e2-a423-fa4c9b7d6536",
+          "seq": 1,
+          "round_id": "3b4ad471-0b68-49b2-9005-b1f89c2af652",
+          "speaker_type": "user",
+          "speaker_member_id": null,
+          "content": "你当时说要进去。如果改用智能手机找路进去，你知道具体怎么操作吗？只依据已有资料回答。",
+          "reply_to_id": null,
+          "created_at": "2026-10-12T14:41:35.415Z",
+          "identity": {},
+          "refs": []
+        },
+        {
+          "id": "afebd446-f2cf-425d-8914-01eaf69b05ee",
+          "seq": 2,
+          "round_id": "3b4ad471-0b68-49b2-9005-b1f89c2af652",
+          "speaker_type": "character",
+          "speaker_member_id": "5d37a676-17dd-4404-96d1-47ca82c92c12",
+          "content": "我进去！我进去！这声是我应下的。可换成智能手机找路，具体按哪几下、看哪张图，我这儿没有凭据，不能编。",
+          "reply_to_id": "f78f8a86-65d6-46e2-a423-fa4c9b7d6536",
+          "created_at": "2026-10-12T14:42:05.288Z",
+          "identity": {
+            "book_title": "原著样本",
+            "name": "石猴"
+          },
+          "refs": [
+            {
+              "assertion_ordinal": 0,
+              "assertion_text": "我进去！我进去！",
+              "origin": "canon",
+              "book_id": "55d6af2a-8f93-4a42-9db1-8b8edcf82283",
+              "source_version_id": "d0bc56cc-1132-4c09-acb9-4da919a01f1e",
+              "build_id": "e4cea733-a79a-4348-8902-ad6e02b80ac2",
+              "character_id": "297343b1-128e-4015-9c01-996abb0d675a",
+              "claim_id": "0867a438-3f8a-46eb-8a80-130cf00acf4e",
+              "evidence_id": "02a10beb-e172-48db-acde-f517bcad27d7",
+              "heard_message_id": null
+            }
+          ]
+        }
+      ],
+      "human_semantic_verdict": "pending full-body review"
+    }
+  ],
+  "diagnostic_model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-chat-v3",
+    "policy_version": "bounded-room-v1",
+    "model_record_id": 337,
+    "review_prompt_version": "character-chat-review-v2",
+    "context_window": 1000000,
+    "max_input_tokens": 24000,
+    "expression_enabled": false,
+    "expression_sets": {}
+  },
+  "rerun_started": true,
+  "rerun_reason": "Long-query trigrams excluded related two-character words. expression-selection-v2 expands retained words for matching, with the version pinned per turn.",
+  "sampling_limit": "temperature=0 was requested but ignored by the Anthropic adapter; no supported seed or deterministic sampling guarantee",
+  "effective_comparison": {
+    "pairs": [
+      {
+        "case": "known",
+        "same_canonical_facts_and_baseline": true,
+        "A_example_count": 0,
+        "B_example_count": 1,
+        "A_calls": 2,
+        "B_calls": 2
+      },
+      {
+        "case": "unknown",
+        "same_canonical_facts_and_baseline": true,
+        "A_example_count": 0,
+        "B_example_count": 1,
+        "A_calls": 2,
+        "B_calls": 2
+      }
+    ],
+    "case_pairs": 2,
+    "effective_runs": 4,
+    "books": 1,
+    "characters": 1,
+    "controlled_canonical_setup": true,
+    "human_blind_review": false,
+    "quality_gain_demonstrated": false,
+    "notes": [
+      "Known replies were nearly identical original quotations.",
+      "Enhanced unknown reply repeated the volunteer quotation before admitting unknown; relevance/naturalness gain was not demonstrated.",
+      "Default expression enhancement remains disabled; complete boundary and quality evaluation belongs to T12."
+    ]
+  },
+  "actual_call_counts": {
+    "expression": 2,
+    "chat": 16
+  }
+}

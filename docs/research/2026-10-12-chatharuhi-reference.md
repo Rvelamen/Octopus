@@ -14,7 +14,7 @@
 
 用户要求将参考工程用于提升精度与聊天质量后，采用其素材组织和表达检索方法，适配当前模块。具体[适配设计](F:/god/project/Octopus/docs/plans/book-character-agents/chatharuhi-adoption-design.md)定义事实与表达双通道、说话者/原句/当前基线审查、表达派生存储与生命周期、上下文预算及同模型质量对照。原项目固定版本的直接运行仅作为可选研究实验，主线继续使用 Octopus 的 Provider、允许集和发布校验。
 
-落地任务为 T05 表达素材及检索、T06 上下文/样例/候选校验、T07 记忆分区、T10 自动派生任务、T11 来源清理、T12 原有 60 项加 24 项表达质量问题的 A/B。T10 完整交付新增 T05 前置；已完成 T01–T04 不回溯改写。T05 的原生服务与预览现已实施，见[验证记录](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-knowledge-expression-validation.md)；聊天接入及质量收益仍待 T06/T12，不将当前空素材探针当作质量提升证明。
+落地任务为 T05 表达素材及检索、T06 上下文/样例/候选校验、T07 记忆分区、T10 自动派生任务、T11 来源清理、T12 原有 60 项加 24 项表达质量问题的 A/B。T10 完整交付新增 T05 前置；已完成 T01–T04 不回溯改写。T05 的原生服务与预览现已实施，见[验证记录](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-knowledge-expression-validation.md)。T06 聊天接入与有效小对照已完成，见[阶段验收](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-single-chat-validation.md)；完整收益仍待 T12，空素材、诊断及受控摘录均不证明全书质量提升。
 
 ## 当前设计的精度与聊天质量补充
 
