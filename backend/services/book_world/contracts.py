@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .revisions import RevisionPatch
+
 
 class BookWorldRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -22,6 +24,9 @@ class BookWorldRequest(BaseModel):
         "resume_build",
         "start_persona",
         "get_character",
+        "get_revision_context",
+        "create_revision",
+        "save_extension",
     ]
     item_id: int = Field(strict=True, gt=0)
     source_version_id: str | None = None
@@ -35,6 +40,10 @@ class BookWorldRequest(BaseModel):
     local_end: int | None = Field(default=None, strict=True, gt=0)
     offset: int = Field(default=0, strict=True, ge=0)
     text_limit: int = Field(default=12000, strict=True, ge=1, le=20000)
+    expected_revision: int | None = Field(default=None, strict=True, gt=0)
+    revision_request_id: str | None = Field(default=None, min_length=1, max_length=100)
+    patches: list[RevisionPatch] | None = Field(default=None, min_length=1, max_length=12)
+    extension_text: str | None = Field(default=None, min_length=1, max_length=4000)
 
     @model_validator(mode="after")
     def required_source_identity(self) -> "BookWorldRequest":
@@ -54,10 +63,19 @@ class BookWorldRequest(BaseModel):
                 "resume_build",
                 "start_persona",
                 "get_character",
+                "get_revision_context",
+                "create_revision",
+                "save_extension",
             )
             and not self.build_id
         ):
             raise ValueError("build_id is required")
-        if self.action == "get_character" and not self.character_id:
+        if self.action in ("get_character", "save_extension") and not self.character_id:
             raise ValueError("character_id is required")
+        if self.action == "create_revision" and (
+            self.expected_revision is None or not self.revision_request_id or not self.patches
+        ):
+            raise ValueError("Revision, request identity and patches are required")
+        if self.action == "save_extension" and not self.extension_text:
+            raise ValueError("extension_text is required")
         return self

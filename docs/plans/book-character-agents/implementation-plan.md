@@ -1,6 +1,6 @@
 # Octopus 书籍人物 Agent 实施计划
 
-更新日期：2026 年 10 月 12 日。状态：按依赖实施中，T01、T02、T03、T15、T18 已落实；下一项按序为 T04 纠错，T05 与 T10 的前置也已具备。
+更新日期：2026 年 10 月 12 日。状态：按依赖实施中，T01、T02、T03、T04、T15、T18 已落实；下一项按序为 T05 受限检索，T10 的前置也已具备。
 
 目标是逐步交付自动生成人物 Agent、原著知识约束和多人聊天室。共 16 项首版任务与 2 项增强任务，每项包含可演示的用户行为、真正的前置依赖、实施步骤、验收标准和验证场景。权威约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，背景见[研究报告](F:/god/project/Octopus/docs/research/2026-10-10-book-character-agents.md)。
 
@@ -59,13 +59,15 @@ flowchart LR
   T09 -.-> T14
 ```
 
-T01 的 PDF 来源、T02 的候选发现、T03 的原著档案与逻辑 Agent、T15 的设置和 T18 的 TXT 来源已实施。下一项 T04；T05、T10 也已解除前置依赖。T06 仍等待人物受限检索。阶段完成不能被解释为人物聊天、自动导入构建或群聊已开放。
+T01 的 PDF 来源、T02 的候选发现、T03 的原著档案与逻辑 Agent、T04 的有据纠错、T15 的设置和 T18 的 TXT 来源已实施。下一项 T05；T10 也已解除前置依赖。T06 仍等待人物受限检索。阶段完成不能被解释为人物聊天、自动导入构建或群聊已开放。
 
 ## 已验证阶段与真实语料
 
 T01 与 T18 的来源阶段已通过 51 项设置/来源/上传/Handler 回归、Mypy、Ruff 及浏览器联调。T02 候选发现新增 17 项回归。T03 以新增子构建发布有证据的原著档案与逻辑 Agent，仍未开放聊天室回复。
 
 T03 新增 17 项确定性回归，并完成真实 k3 摘录联调及读者档案/原文浏览器验收：1 ready、3 sparse、2 群体待复核，部分发布明确显示拒绝项和不确定基线。全书模型质量仍留在 T12，具体结果见[原著档案验证](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-persona-validation.md)。
+
+T04 新增 14 项公共服务与 Handler 回归，完整项目 108 通过、13 既有环境跳过。迁移 17 落实修订头、审计和读者扩展；原文审查、同来源子构建、重新提取、独立归属完成检查、编辑/发布 CAS、旧版回溯和纠错界面均已接通。真实 k3 以单任务 8192 token 预算完成 6 次调用，纠正对象 sparse、2 单元通过，全局模型设置未变；早期 4096 截断探针暴露的身份发布问题已增加失败保护。范围与限制见[纠错验证记录](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-revision-validation.md)。
 
 T02 两部完整语料的工作器遍历使用不生成任何人物断言的替身，覆盖 322 / 275 个检查点；真实 k3 仅做原著摘录联调。样本四个个体候选及两个待复核群体不代表全书召回或人格质量。具体限制、模型适配与证据见[人物发现验证记录](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-discovery-validation.md)。
 
@@ -173,7 +175,7 @@ T15 已交付设置保存、刷新回读、恢复默认和非法值拒绝。T06 
 | T01 | book_books、book_source_versions、book_segments；来源唯一组合、片段 ordinal、来源不可变与最小删除禁用 | 同一书籍的不同附件或解析版本不混用；原文尾部和短对白保留 |
 | T02 | book_builds、book_build_steps、book_scenes、book_scene_segments、book_characters、book_character_aliases、book_scene_characters | 场景片段与人物绑定同书同来源同构建；同名别名允许歧义 |
 | T03 | book_claims、book_evidence、book_claim_access、book_access_evidence、book_character_baselines；原文位置、私有人格所有权、发布冻结 | 不能授权他人人格项；可见引文属于该人物与该断言；基线只能引用本人权限 |
-| T04 | 使用修订构建及父版本复合外键，不修改已发布原著 | 父版本必须同来源；旧房间使用的构建保持不变 |
+| T04 | 修订构建及父版本复合外键；book_revision_heads、book_revisions、book_user_extensions，迁移 17 | 同来源父版、请求幂等、编辑与发布 CAS；读者扩展不进入 Agent；旧构建保持不变 |
 | T05 | book_claims_fts 与同步触发器；CanonicalScope 查询和人物允许集索引 | 联接允许集后才排序与 LIMIT；无证据、降级和缓存不扩大范围 |
 | T15 | app.db 的 agent_defaults 新增两项正整数秒字段；设置加载、保存、校验与默认值 | 刷新和重启仍可回读，非法输入不修改已有偏好 |
 | T06 | book_rooms、book_room_sources、book_room_epochs、book_room_members、book_room_rounds、book_round_slots、book_room_messages、book_message_refs | 单聊也建立来源绑定和槽位；成员以自己的 B 匹配来源绑定与人物，消息及引用匹配发言者，另记录时间快照与当前窗口用时 |
@@ -266,7 +268,7 @@ npm run build --prefix frontend
 
 时间配置已落实到现有设置页与后端持久化。验证：20 项实际后端测试通过，Ruff 检查通过，前端生产构建通过。测试使用 .gitignore 的精确例外纳入版本控制范围。群聊运行计时和窗口恢复为 T06/T09 待实施内容。
 
-已交付详细设计、实施计划、18 份本地任务、领域词汇、SQL 草案及内存校验脚本，并落实 T01、T02、T03、T15、T18。来源为工作区迁移 14，候选为 15，原著断言/权限/基线与冻结为 16；完整 SQL 附件仍为设计契约。T16 圆桌与 T17 主题/自由聊天仍为设计，聊天室 Tab、气泡和讨论运行时尚未实现。
+已交付详细设计、实施计划、18 份本地任务、领域词汇、SQL 草案及内存校验脚本，并落实 T01、T02、T03、T04、T15、T18。来源为工作区迁移 14，候选为 15，原著断言/权限/基线与冻结为 16，修订与读者扩展为 17；完整 SQL 附件仍为核心设计契约，修订补充 DDL 已单独链接。T16 圆桌与 T17 主题/自由聊天仍为设计，聊天室 Tab、气泡和讨论运行时尚未实现。
 
 本功能 docs 已纳入版本控制；tests/ 仍按精确文件例外跟踪新增回归。首版书籍已确定为用户语料仓库的《西游记》《红楼梦》，正文保留在忽略的验收工作区；提交来源哈希、验证记录及截图。真实模型质量基线仍在 T12 人工验收中补齐。
 

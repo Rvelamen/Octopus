@@ -10,15 +10,18 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from .discovery import BookDiscoveryService, _hash, _json, _now
+from .identity_graph import clone_graph
 from .persona_models import (
     EXTRACT_PROMPT,
     REVIEW_PROMPT,
     PersonaBatch,
     PersonaConfig,
     PersonaReview,
+    RevisedPersonaReview,
 )
 from .persona_publication import publish_personas
 from .persona_validation import apply_life_events, validate_batch, validate_review
+from .revision_storage import correction_hints
 from .source import BookWorldError
 from .storage import connect
 
@@ -66,108 +69,58 @@ class BookPersonaService:
                     ),
                 )
                 people = db.execute(
-                    "SELECT * FROM book_characters WHERE build_id=?", (parent_id,)
-                ).fetchall()
+                    "SELECT 1 FROM book_characters WHERE build_id=? LIMIT 1", (parent_id,)
+                ).fetchone()
                 if not people:
                     raise BookWorldError(
                         "no_characters", "Discovery has no characters to construct"
                     )
-                character_ids = {person["id"]: str(uuid4()) for person in people}
-                scenes = db.execute(
-                    "SELECT * FROM book_scenes WHERE build_id=? ORDER BY narrative_order",
-                    (parent_id,),
-                ).fetchall()
-                scene_ids = {scene["id"]: str(uuid4()) for scene in scenes}
-                for person in people:
-                    db.execute(
-                        "INSERT INTO book_characters(id,book_id,source_version_id,build_id,lineage_id,name,agent_status,public_profile_json) VALUES (?,?,?,?,?,?,?,?)",
-                        (
-                            character_ids[person["id"]],
-                            *scope,
-                            person["lineage_id"],
-                            person["name"],
-                            person["agent_status"],
-                            person["public_profile_json"],
-                        ),
-                    )
-                for alias in db.execute(
-                    "SELECT * FROM book_character_aliases WHERE build_id=?", (parent_id,)
-                ):
-                    provenance = json.loads(alias["provenance_json"])
-                    provenance["scene_id"] = scene_ids.get(provenance.get("scene_id"))
-                    db.execute(
-                        "INSERT INTO book_character_aliases(book_id,source_version_id,build_id,character_id,alias,normalized_alias,review_state,provenance_json) VALUES (?,?,?,?,?,?,?,?)",
-                        (
-                            *scope,
-                            character_ids[alias["character_id"]],
-                            alias["alias"],
-                            alias["normalized_alias"],
-                            alias["review_state"],
-                            _json(provenance),
-                        ),
-                    )
-                unit = 0
-                for scene in scenes:
-                    scene_id = scene_ids[scene["id"]]
-                    db.execute(
-                        "INSERT INTO book_scenes(id,book_id,source_version_id,build_id,narrative_order,story_time_json,location_label) VALUES (?,?,?,?,?,?,?)",
-                        (
-                            scene_id,
-                            *scope,
-                            scene["narrative_order"],
-                            scene["story_time_json"],
-                            scene["location_label"],
-                        ),
-                    )
-                    rows = db.execute(
-                        "SELECT s.id,s.ordinal,s.text,x.position FROM book_scene_segments x JOIN book_segments s ON s.id=x.segment_id AND s.source_version_id=x.source_version_id WHERE x.build_id=? AND x.scene_id=? ORDER BY x.position",
-                        (parent_id, scene["id"]),
-                    ).fetchall()
-                    db.executemany(
-                        "INSERT INTO book_scene_segments(book_id,source_version_id,build_id,scene_id,position,segment_id) VALUES (?,?,?,?,?,?)",
-                        [(*scope, scene_id, row["position"], row["id"]) for row in rows],
-                    )
-                    db.executemany(
-                        "INSERT INTO book_scene_characters(book_id,source_version_id,build_id,scene_id,character_id,presence) VALUES (?,?,?,?,?,?)",
-                        [
-                            (*scope, scene_id, character_ids[row["character_id"]], row["presence"])
-                            for row in db.execute(
-                                "SELECT * FROM book_scene_characters WHERE build_id=? AND scene_id=?",
-                                (parent_id, scene["id"]),
-                            )
-                        ],
-                    )
-                    batch: list[dict[str, Any]] = []
-                    size = 0
-                    groups = []
-                    for row in rows:
-                        if len(row["text"]) > config.unit_char_limit:
-                            raise BookWorldError(
-                                "segment_too_large", "Prepare source with the latest parser"
-                            )
-                        if batch and (
-                            len(batch) >= config.unit_segment_limit
-                            or size + len(row["text"]) > max(2000, config.unit_char_limit // 2)
-                        ):
-                            groups.append(batch)
-                            batch, size = [], 0
-                        batch.append(
-                            {"id": row["id"], "ordinal": row["ordinal"], "text": row["text"]}
-                        )
-                        size += len(row["text"])
-                    if batch:
-                        groups.append(batch)
-                    for segments in groups:
-                        payload = {
-                            "scene_id": scene_id,
-                            "segment_ids": [segment["id"] for segment in segments],
-                        }
-                        db.execute(
-                            "INSERT INTO book_build_steps(book_id,source_version_id,build_id,stage,unit_key,input_hash,status,result_json,lease_generation) VALUES (?,?,?,'evidence',?,?,'pending',?,0)",
-                            (*scope, str(unit), _hash(segments), _json(payload)),
-                        )
-                        unit += 1
+                clone_graph(db, parent_id, scope)
+                self.seed_evidence_steps(db, scope, config)
         return self.discovery.get_build(item_id, build_id)
+
+    def seed_evidence_steps(
+        self, db: sqlite3.Connection, scope: tuple[str, str, str], config: PersonaConfig
+    ) -> None:
+        scenes = db.execute(
+            "SELECT * FROM book_scenes WHERE build_id=? ORDER BY narrative_order", (scope[2],)
+        ).fetchall()
+
+        unit = 0
+        for scene in scenes:
+            scene_id = scene["id"]
+            rows = db.execute(
+                "SELECT s.id,s.ordinal,s.text FROM book_scene_segments x JOIN book_segments s ON s.id=x.segment_id AND s.source_version_id=x.source_version_id WHERE x.build_id=? AND x.scene_id=? ORDER BY x.position",
+                (scope[2], scene_id),
+            ).fetchall()
+            batch: list[dict[str, Any]] = []
+            size = 0
+            groups = []
+            for row in rows:
+                if len(row["text"]) > config.unit_char_limit:
+                    raise BookWorldError(
+                        "segment_too_large", "Prepare source with the latest parser"
+                    )
+                if batch and (
+                    len(batch) >= config.unit_segment_limit
+                    or size + len(row["text"]) > max(2000, config.unit_char_limit // 2)
+                ):
+                    groups.append(batch)
+                    batch, size = [], 0
+                batch.append({"id": row["id"], "ordinal": row["ordinal"], "text": row["text"]})
+                size += len(row["text"])
+            if batch:
+                groups.append(batch)
+            for segments in groups:
+                payload = {
+                    "scene_id": scene_id,
+                    "segment_ids": [segment["id"] for segment in segments],
+                }
+                db.execute(
+                    "INSERT INTO book_build_steps(book_id,source_version_id,build_id,stage,unit_key,input_hash,status,result_json,lease_generation) VALUES (?,?,?,'evidence',?,?,'pending',?,0)",
+                    (*scope, str(unit), _hash(segments), _json(payload)),
+                )
+                unit += 1
 
     def get_character(self, item_id: int, build_id: str, character_id: str) -> dict[str, Any]:
         with connect(self.db_path) as db:
@@ -205,8 +158,16 @@ class BookPersonaService:
                 "reader": {
                     "claims": claims,
                     "baseline": self._baseline(db, build_id, character_id),
+                    "extensions": [
+                        dict(row)
+                        for row in db.execute(
+                            "SELECT id,text,created_at FROM book_user_extensions WHERE build_id=? AND character_id=? ORDER BY created_at,rowid",
+                            (build_id, character_id),
+                        )
+                    ],
                 },
-                "published": build["status"] in ("published", "partial_published"),
+                "published": build["stage"] == "persona_published"
+                and build["status"] in ("published", "partial_published"),
             }
 
     @staticmethod
@@ -432,6 +393,7 @@ class BookPersonaService:
                 "segments": rows,
                 "characters": characters,
                 "prior_claims": prior,
+                "correction_hints": correction_hints(db, build_id, ids),
                 "known_life_states": {
                     key: value
                     for key, value in life_states.items()
@@ -688,6 +650,10 @@ class BookPersonaService:
                     "Persona input exceeds context budget; reduce proposed claims/quotes"
                 )
             await asyncio.to_thread(self._renew, build_id, owner, generation, config)
+            if data.get("correction_hints"):
+                prompt += "\ncorrection_hints 是经过原文审查的归属纠错请求。依据本单元原文重新提取相应 kind 的内容，使用新版 target_character_id 和提示指定的 local_key；proposition 也应按正确归属改写。独立复核必须验证这些要求，不允许继续授权错误原人物。无法确认就拒绝，不凭请求增加原著事实。\n"
+                if data["phase"] == "review":
+                    prompt += "逐项返回 revision_checks：same_claim_repaired 判断指定 local_key 的新断言是否修复了提示 proposition 的同一语义内容，不能用同段另一个特征冒充；original_assignment_removed 判断全部 proposals 中是否已不存在原错误归属，改写或同义表达也视为残留。分别审查并说明原文理由；不能确定就 false。\n"
             response = await asyncio.wait_for(
                 provider.chat(
                     [
@@ -722,7 +688,15 @@ class BookPersonaService:
                         },
                     }
                     review = validate_review(
-                        await call(REVIEW_PROMPT, PersonaReview.model_json_schema(), checked),
+                        await call(
+                            REVIEW_PROMPT,
+                            (
+                                RevisedPersonaReview
+                                if data.get("correction_hints")
+                                else PersonaReview
+                            ).model_json_schema(),
+                            checked,
+                        ),
                         batch,
                         data,
                     )

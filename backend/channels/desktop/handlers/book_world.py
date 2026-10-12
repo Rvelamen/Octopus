@@ -16,6 +16,7 @@ from backend.services.book_world.contracts import BookWorldRequest
 from backend.services.book_world.discovery import BookDiscoveryService, DiscoveryConfig
 from backend.services.book_world.discovery_provider import DiscoveryModel, resolve_discovery_model
 from backend.services.book_world.persona import BookPersonaService, PersonaConfig
+from backend.services.book_world.revisions import BookRevisionService
 from backend.services.book_world.storage import workspace_identity
 from backend.utils.helpers import get_workspace_path
 
@@ -25,6 +26,8 @@ class BookWorldHandler(MessageHandler):
 
     _build_tasks: dict[tuple[str, str], asyncio.Task] = {}
     _worker_slots: dict[tuple[Any, str], asyncio.Semaphore] = {}
+    _revision_requests: set[asyncio.Task] = set()
+    _revision_slots: dict[tuple[Any, str], asyncio.Semaphore] = {}
 
     @classmethod
     async def _stop_worker(cls, root: Path, build_id: str) -> None:
@@ -190,6 +193,45 @@ class BookWorldHandler(MessageHandler):
             **result,
         }
 
+    async def _revision(self, root: Path, request: BookWorldRequest) -> dict[str, Any]:
+        service = await asyncio.to_thread(BookRevisionService, root)
+        assert request.build_id is not None
+        if request.action == "get_revision_context":
+            result = await asyncio.to_thread(service.get_context, request.item_id, request.build_id)
+        elif request.action == "save_extension":
+            assert request.character_id is not None and request.extension_text is not None
+            result = await asyncio.to_thread(
+                service.save_extension,
+                request.item_id,
+                request.build_id,
+                request.character_id,
+                request.extension_text,
+            )
+        else:
+            assert (
+                request.expected_revision is not None
+                and request.patches is not None
+                and request.revision_request_id is not None
+            )
+            model = await asyncio.to_thread(resolve_discovery_model)
+            result = await service.create_revision(
+                request.item_id,
+                request.build_id,
+                request.expected_revision,
+                request.patches,
+                request.revision_request_id,
+                model.provider,
+                PersonaConfig.from_model(model.config),
+            )
+            if result["status"] in ("queued", "running"):
+                self._schedule(root, result["build_id"], model, phase="persona")
+        return {
+            "action": request.action,
+            "workspace_id": workspace_identity(root),
+            "item_id": request.item_id,
+            **result,
+        }
+
     @staticmethod
     def _execute(root: Path, request: BookWorldRequest) -> dict[str, Any]:
         service = BookSourceService(root)
@@ -245,8 +287,48 @@ class BookWorldHandler(MessageHandler):
             )
             return
         root = Path(get_workspace_path()).resolve()
+        if request.action == "create_revision":
+            if len(self._revision_requests) >= 32:
+                await self.send_response(
+                    websocket,
+                    WSMessage(
+                        type=MessageType.ERROR,
+                        request_id=message.request_id,
+                        data={
+                            "error": "Too many pending correction requests",
+                            "code": "revision_busy",
+                        },
+                    ),
+                )
+                return
+
+            async def execute_revision() -> None:
+                key = (asyncio.get_running_loop(), workspace_identity(root))
+                slots = self._revision_slots.setdefault(key, asyncio.Semaphore(2))
+                async with slots:
+                    await self._respond(websocket, message, root, request)
+
+            task = asyncio.create_task(execute_revision())
+            self._revision_requests.add(task)
+
+            def finished(completed: asyncio.Task) -> None:
+                self._revision_requests.discard(completed)
+                if not completed.cancelled() and completed.exception():
+                    logger.warning(
+                        "Correction result could not reach the disconnected client; inspect persisted build history"
+                    )
+
+            task.add_done_callback(finished)
+            return
+        await self._respond(websocket, message, root, request)
+
+    async def _respond(
+        self, websocket: WebSocket, message: WSMessage, root: Path, request: BookWorldRequest
+    ) -> None:
         try:
-            if request.action in (
+            if request.action in ("get_revision_context", "create_revision", "save_extension"):
+                result = await self._revision(root, request)
+            elif request.action in (
                 "start_discovery",
                 "get_build",
                 "list_characters",

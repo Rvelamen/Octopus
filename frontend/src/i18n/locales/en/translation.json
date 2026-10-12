@@ -98,7 +98,32 @@
       "observed": "Observed",
       "told": "Told",
       "common": "Common background"
-    }
+    },
+    "revisionTitle": "Revise {{name}}’s canonical archive",
+    "revisionHint": "Supply a verbatim source quote. After review, a new build re-extracts knowledge and baselines. The published version stays fixed.",
+    "revisionStale": "This is an older build. Switch to the current published build before correcting it.",
+    "submitRevision": "Review and build revision",
+    "revisionUniqueQuote": "Copy a continuous quote that uniquely identifies a passage in the selected segment.",
+    "revisionOperation": "Correction type",
+    "revisionTarget": "Choose the target character",
+    "revisionName": "Enter a source-backed name or alias",
+    "revisionClaim": "Choose the incorrectly attributed claim",
+    "revisionSegment": "Select the supporting source segment",
+    "revisionFirstSegments": "Back to source beginning",
+    "revisionQuote": "Paste a continuous supporting quote (up to 1400 characters)",
+    "revisionOp": {
+      "rename": "Correct name",
+      "add_alias": "Add alias",
+      "remove_alias": "Remove incorrect alias",
+      "merge": "Merge duplicate identities",
+      "correct_owner": "Correct evidence ownership"
+    },
+    "correctPersona": "Correct canonical archive",
+    "buildHistory": "Character build versions",
+    "revisionChanges": "View revision changes",
+    "extensionTitle": "Reader extensions",
+    "extensionHint": "Reader notes only. These are outside canon and never enter the strict character Agent’s knowledge or persona.",
+    "saveExtension": "Save extension"
   },
   "nav": {
     "group": {

@@ -158,6 +158,7 @@ tests/
 !/tests/test_library_text_upload.py
 !/tests/test_book_discovery.py
 !/tests/test_book_persona.py
+!/tests/test_book_revisions.py
 .agents/skills/ai-elements/SKILL.md
 .agents/skills/ai-elements/references/agent.md
 .agents/skills/ai-elements/references/artifact.md

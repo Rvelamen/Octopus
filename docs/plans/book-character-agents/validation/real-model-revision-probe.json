@@ -1,0 +1,98 @@
+{
+  "date": "2026-10-12",
+  "scope": "T04 bounded excerpt identity revision only, not full-book quality",
+  "model": "k3",
+  "job_output_budget_tokens": 8192,
+  "global_model_settings_changed": false,
+  "calls": 6,
+  "finish_reasons": [
+    "end_turn",
+    "end_turn",
+    "end_turn",
+    "end_turn",
+    "end_turn",
+    "end_turn"
+  ],
+  "result": {
+    "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+    "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+    "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+    "parent_build_id": "3fb0030b-c7f5-428f-8b70-e6a5b2254af7",
+    "status": "partial_published",
+    "stage": "persona_published",
+    "total_units": 2,
+    "completed_units": 2,
+    "failed_units": 0,
+    "processed_segments": 11,
+    "total_segments": 11,
+    "error_code": "partial_build",
+    "error_detail": "Some identities, evidence units or baseline slots remain unresolved",
+    "can_resume": false,
+    "config": {
+      "call_timeout_seconds": 180,
+      "max_tokens": 8192,
+      "model": "k3",
+      "policy_version": "canonical-persona-v3",
+      "prompt_version": "persona-extract-v3",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "persona-review-v3",
+      "unit_char_limit": 4000,
+      "unit_segment_limit": 12
+    },
+    "publication_report": {
+      "baseline_conflicts": 0,
+      "failed_units": [],
+      "published_characters": 2,
+      "rejected_claims": 0,
+      "unresolved_characters": 4
+    }
+  },
+  "corrected_character": {
+    "id": "c7c5d16c-7e1f-44f8-9d79-62ddd4264138",
+    "name": "玉皇大天尊玄穹高上帝",
+    "agent_status": "sparse",
+    "entity_kind": "person",
+    "aliases": [
+      {
+        "alias": "玉帝",
+        "review_state": "candidate",
+        "evidence": {
+          "local_end": 210,
+          "local_start": 0,
+          "offset_resolution": "model",
+          "quote": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”",
+          "segment_id": "655edb81-d520-4041-8848-022283505355"
+        }
+      },
+      {
+        "alias": "玉皇大天尊玄穹高上帝",
+        "review_state": "candidate",
+        "evidence": {
+          "local_end": 210,
+          "local_start": 0,
+          "offset_resolution": "model",
+          "quote": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”",
+          "segment_id": "655edb81-d520-4041-8848-022283505355"
+        }
+      }
+    ],
+    "appearances": [
+      {
+        "scene_id": "d644aaf0-0a7d-4274-862d-427e36cad271",
+        "presence": "active"
+      }
+    ]
+  },
+  "original_build_preserved": true,
+  "base_archive_snapshot_assertion_passed": true,
+  "source_sample_sha256": "c723212e0b0d4044892e3eb9c34ceab2ef0d429955fa89d0f8abf39e75184f18",
+  "earlier_4096_probe": {
+    "build_id": "3fb0030b-c7f5-428f-8b70-e6a5b2254af7",
+    "affected_identity_unverified": true,
+    "failed_unit_reason": "response truncation",
+    "scope": "before affected-identity publication guard; not final acceptance"
+  },
+  "report_recovery": "Probe finished and compared both archived snapshots, then report serialization used a missing public source hash field. Recovered from persisted build, captured calls and original T03 golden record; no additional model calls."
+}

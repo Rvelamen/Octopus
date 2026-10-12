@@ -5,11 +5,13 @@ import sqlite3
 from typing import Any
 
 from .discovery import _json
+from .revision_storage import advance_revision_head, check_revision_head, check_revision_identities
 from .source import BookWorldError
 
 
 def publish_personas(db: sqlite3.Connection, build: sqlite3.Row) -> None:
     build_id = build["id"]
+    check_revision_head(db, build)
     scope = (build["book_id"], build["source_version_id"], build_id)
     steps = db.execute(
         "SELECT * FROM book_build_steps WHERE build_id=? AND stage='evidence' ORDER BY CAST(unit_key AS INTEGER)",
@@ -107,6 +109,7 @@ def publish_personas(db: sqlite3.Connection, build: sqlite3.Row) -> None:
             "UPDATE book_characters SET agent_status=?,public_profile_json=?,runtime_policy_json=? WHERE id=? AND build_id=?",
             (status, _json(public), _json(policy), person["id"], build_id),
         )
+    check_revision_identities(db, build)
     if not ready:
         raise BookWorldError(
             "no_publishable_characters", "No independently verified person can be published"
@@ -140,3 +143,4 @@ def publish_personas(db: sqlite3.Connection, build: sqlite3.Row) -> None:
             build_id,
         ),
     )
+    advance_revision_head(db, build)

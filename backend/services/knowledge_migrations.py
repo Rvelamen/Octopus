@@ -654,6 +654,11 @@ def _migration_016_book_persona(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migration_017_book_revisions(conn: sqlite3.Connection) -> None:
+    _backup_book_migration(conn, ".pre-revisions-v17.bak")
+    conn.executescript((Path(__file__).parent / "book_world" / "revision_schema.sql").read_text(encoding="utf-8"))
+
+
 def run_knowledge_index_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_initial_schema", _migration_001_create_initial_schema)
@@ -682,6 +687,7 @@ def run_knowledge_index_migrations(db_path: Path) -> None:
     runner.register(14, "book_narrative_sources", _migration_014_book_sources)
     runner.register(15, "book_character_discovery", _migration_015_book_discovery)
     runner.register(16, "book_character_persona", _migration_016_book_persona)
+    runner.register(17, "book_character_revisions", _migration_017_book_revisions)
     runner.run()
 
 

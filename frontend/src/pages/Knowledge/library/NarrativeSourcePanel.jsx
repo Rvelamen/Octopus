@@ -18,8 +18,8 @@ export default function NarrativeSourcePanel({ item, sendWSMessage }) {
   const sourceRequest = useRef(0);
   const segmentRequest = useRef(0);
 
-  const request = useCallback(async (action, data = {}) => {
-    const response = await sendWSMessage('book_world', { action, item_id: item.id, ...data }, 120000);
+  const request = useCallback(async (action, data = {}, timeout = 120000) => {
+    const response = await sendWSMessage('book_world', { action, item_id: item.id, ...data }, timeout);
     return response.data;
   }, [item.id, sendWSMessage]);
 

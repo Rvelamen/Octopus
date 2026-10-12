@@ -4,7 +4,7 @@ import re
 from typing import Any, cast
 
 from .discovery_models import DiscoverySpan
-from .persona_models import ClaimProposal, PersonaBatch, PersonaReview
+from .persona_models import ClaimProposal, PersonaBatch, PersonaReview, RevisedPersonaReview
 
 
 def parse_json(raw: str) -> str:
@@ -133,7 +133,13 @@ def validate_batch(raw: str, data: dict[str, Any]) -> PersonaBatch:
 
 
 def validate_review(raw: str, batch: PersonaBatch, data: dict[str, Any]) -> PersonaReview:
-    review = PersonaReview.model_validate_json(parse_json(raw))
+    model = RevisedPersonaReview if data.get("correction_hints") else PersonaReview
+    review = model.model_validate_json(parse_json(raw))
+    if isinstance(review, RevisedPersonaReview):
+        requested = {hint["local_key"] for hint in data["correction_hints"]}
+        reviewed = [check.local_key for check in review.revision_checks]
+        if len(reviewed) != len(requested) or set(reviewed) != requested:
+            raise ValueError("Review must assess every ownership correction exactly once")
     expected = {claim.local_key: claim for claim in batch.claims}
     if len(review.claims) != len(expected) or {item.local_key for item in review.claims} != set(
         expected

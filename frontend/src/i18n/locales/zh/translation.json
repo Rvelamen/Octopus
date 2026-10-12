@@ -98,7 +98,32 @@
       "observed": "实际观察",
       "told": "被告知",
       "common": "共同背景"
-    }
+    },
+    "revisionTitle": "修订 {{name}} 的原著档案",
+    "revisionHint": "修订必须提供逐字原文依据，经审查后建立新版并重新提取知识与基线。旧版保持固定。",
+    "revisionStale": "当前查看的是旧构建，请切换到最新可用构建后纠错。",
+    "submitRevision": "审查并构建新版",
+    "revisionUniqueQuote": "请从所选片段复制一段能唯一定位的连续原文。",
+    "revisionOperation": "纠错类型",
+    "revisionTarget": "选择目标人物",
+    "revisionName": "填写原文中的姓名或别名",
+    "revisionClaim": "选择归属错误的原著断言",
+    "revisionSegment": "选择依据所在原文片段",
+    "revisionFirstSegments": "返回原文开头",
+    "revisionQuote": "粘贴支持本次纠错的连续原文，最多 1400 字",
+    "revisionOp": {
+      "rename": "更正姓名",
+      "add_alias": "补充别名",
+      "remove_alias": "移除错误别名",
+      "merge": "合并重复人物",
+      "correct_owner": "更正证据归属"
+    },
+    "correctPersona": "原著纠错",
+    "buildHistory": "人物构建版本",
+    "revisionChanges": "查看本版修订差异",
+    "extensionTitle": "读者扩展材料",
+    "extensionHint": "仅用于读者记录，不属于原著，不进入严格原著 Agent 的知识或人设。",
+    "saveExtension": "保存扩展材料"
   },
   "nav": {
     "group": {

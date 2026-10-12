@@ -1,13 +1,23 @@
-import React from 'react';
-import { Alert, Button, Empty, Modal, Tag } from 'antd';
+import React, { useState } from 'react';
+import { Alert, Button, Empty, Input, Modal, Space, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 
-export default function CharacterPersonaModal({ detail, onClose, onLocate }) {
+export default function CharacterPersonaModal({ detail, onClose, onLocate, onCorrect, onSaveExtension }) {
   const { t } = useTranslation();
+  const [extension, setExtension] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const saveExtension = async () => {
+    setSaving(true); setError('');
+    try { await onSaveExtension(extension); setExtension(''); }
+    catch (failure) { setError(failure.message); }
+    finally { setSaving(false); }
+  };
   const baseline = Object.entries(detail?.reader?.baseline || {});
   const claims = detail?.reader?.claims || [];
   return <Modal open={Boolean(detail)} title={`${detail?.public?.name || ''} · ${t('bookWorld.personaTitle')}`} width={760} onCancel={onClose} footer={<Button onClick={onClose}>{t('bookWorld.closeArchive')}</Button>}>
     <Alert type="info" showIcon title={t('bookWorld.readerArchiveHint')} style={{ marginBottom: 12 }} />
+    {detail.published && <Button size="small" onClick={onCorrect}>{t('bookWorld.correctPersona')}</Button>}
     <h4>{t('bookWorld.baselineTitle')}</h4>
     {baseline.length ? <ul>{baseline.map(([slot, entry]) => <li key={slot}>{entry.proposition}</li>)}</ul> : <p>{t('bookWorld.baselineUnknown')}</p>}
     <h4>{t('bookWorld.claimsTitle')}</h4>
@@ -26,5 +36,13 @@ export default function CharacterPersonaModal({ detail, onClose, onLocate }) {
         </div>)}
       </article>)}
     </div>
+    <h4>{t('bookWorld.extensionTitle')}</h4>
+    <p>{t('bookWorld.extensionHint')}</p>
+    {(detail.reader.extensions || []).map((entry) => <blockquote key={entry.id} style={{ whiteSpace: 'pre-wrap' }}>{entry.text}</blockquote>)}
+    {error && <Alert type="error" title={error} />}
+    <Space orientation="vertical" style={{ width: '100%' }}>
+      <Input.TextArea aria-label={t('bookWorld.extensionTitle')} value={extension} maxLength={4000} rows={2} onChange={(event) => setExtension(event.target.value)} />
+      <Button size="small" disabled={!extension.trim()} loading={saving} onClick={saveExtension}>{t('bookWorld.saveExtension')}</Button>
+    </Space>
   </Modal>;
 }
