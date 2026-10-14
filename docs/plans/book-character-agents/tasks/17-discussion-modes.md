@@ -51,3 +51,5 @@
 
 理论映射与完整模式规则见[复核报告](F:/god/project/Octopus/docs/plans/book-character-agents/agent-design-review.md)，权威契约见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，依赖见[实施计划](F:/god/project/Octopus/docs/plans/book-character-agents/implementation-plan.md)。
 
+恢复推进后，v7 审查复验阻止“率先进入 ⇒ 群猴观看”的错误推断；v11 原生复验仍暴露“不是我自己见过的”否定经历。最新 v12/v8 增加按版本的否定防线并取得两题有限安全发布，保留格式重写与旧失败。圆桌历史气泡/右栏同消息及原文证据抽屉操作通过；新的转述例外只在完整公开源语境匹配时放行词面检查。范围与最终验证见[细节/否定复验](../validation/2026-10-14-detail-grounding-validation.md)。任务保持进行中，不据这两题关闭合理回应与听说质量条款。
+

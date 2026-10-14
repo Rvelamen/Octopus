@@ -1,0 +1,48 @@
+{
+  "scope": "Read-only diagnosis of native full-source v12-02 unit 16; no model calls, checkpoint edits or publication",
+  "unit_key": "16",
+  "native_calls": 0,
+  "quality_pass": false,
+  "attempts": [
+    {
+      "attempt": 1,
+      "input_sha256": "23d4f5abf289379e23a4e7e6a692a16595a35b0e69d12df92128c945cfc5eef0",
+      "output_sha256": "4ddcbe72fcd7361f472b89f90f1d9627186abdde6e09546c9daeafe0813961e3",
+      "proposed_key_splits": [
+        {
+          "scene_index": 4,
+          "character_index": 0,
+          "name": "猴王",
+          "before": "wukong",
+          "after": "diagnosis-uncertain-4-0",
+          "identity": "uncertain",
+          "existing_character_id": null
+        }
+      ],
+      "original_valid": false,
+      "original_error": "Local identity references inconsistent existing candidates",
+      "counterfactual_full_validation": false,
+      "counterfactual_error": "Unsupported name/alias '弼马温'; choose a literal label present in its quote"
+    },
+    {
+      "attempt": 2,
+      "input_sha256": "e48f42bfb8cefd72c448d9313164079df9f78f87065cac72856c8fc83f1f9c4e",
+      "output_sha256": "fc4700f16a8f4a28583721b2be1bf75f91d13398f4731956192991adf140058b",
+      "proposed_key_splits": [
+        {
+          "scene_index": 6,
+          "character_index": 1,
+          "name": "众",
+          "before": "jianofficers",
+          "after": "diagnosis-uncertain-6-1",
+          "identity": "uncertain",
+          "existing_character_id": null
+        }
+      ],
+      "original_valid": false,
+      "original_error": "Local identity references inconsistent existing candidates",
+      "counterfactual_full_validation": false,
+      "counterfactual_error": "Existing identity has no unambiguous matching alias"
+    }
+  ]
+}

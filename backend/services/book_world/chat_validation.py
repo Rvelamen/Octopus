@@ -33,12 +33,14 @@ def _actual_negative_autobiography(text: str) -> bool:
     return False
 
 
-def _negative_experience_sentences(text: str) -> list[str]:
+def _negative_experience_sentences(text: str, *, include_copula: bool = False) -> list[str]:
     """Recognize explicit denial forms; semantic review still handles other wording."""
     pattern = (
         r"(?:并非|(?:并)?(?:没有|没|未曾|从未|从没|不曾))[^。！？；\n]{0,12}(?:亲眼见过|住在|住过|去过|到过|经历过|听说过|见过|发生过)|"
         + _NEGATIVE_AUTOBIOGRAPHY
     )
+    if include_copula:
+        pattern += r"|(?:并)?不是(?:我|俺|在下)(?:自己|亲身|亲自|亲眼|曾经)?(?:见过|见到|听说过|经历过|亲历过|住过|去过|到过)"
     denied = []
     for match in re.finditer(pattern, text):
         preceding = text[: match.start()]
@@ -62,6 +64,26 @@ def _without_punctuation(text: str) -> str:
     )
 
 
+def _attributed_user_denial(denied: str, candidate: ChatCandidate, context: CharacterContext) -> bool:
+    if not re.match(r"^你(?:说|猜想|猜测|推测|认为|讲)", denied.strip()):
+        return False
+    sources = {
+        item["id"]: item
+        for item in [*context.payload["room_history"], context.payload["current_message"]]
+    }
+    for assertion in candidate.claims:
+        if assertion.origin != "room_hearsay" or denied not in assertion.text:
+            continue
+        for message_id in assertion.message_ids:
+            source = sources.get(message_id)
+            if source is None or source["speaker_type"] != "user":
+                continue
+            rebased = source["content"].translate(str.maketrans("我你", "你我"))
+            if denied.strip().rstrip("。！？；\n") == rebased.strip().rstrip("。！？；\n"):
+                return True
+    return False
+
+
 def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
     if (
         hashlib.sha256(context.serialized.encode()).hexdigest()
@@ -77,6 +99,8 @@ def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
         "character-chat-v8",
         "character-chat-v9",
         "character-chat-v10",
+        "character-chat-v11",
+        "character-chat-v12",
     ):
         raise ValueError("Silence requires the new versioned chat policy")
     if candidate.dialogue_action != "no_comment" and not candidate.content.strip():
@@ -107,7 +131,8 @@ def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
         if not assertion.text.strip() or assertion.text not in candidate.content:
             raise ValueError("Assertion text must identify a verbatim part of the reply")
         if (
-            context.config.prompt_version != "character-chat-v10"
+            context.config.prompt_version
+            not in ("character-chat-v10", "character-chat-v11", "character-chat-v12")
             and assertion.origin == "conversation"
             and _actual_negative_autobiography(assertion.text)
         ):
@@ -118,7 +143,13 @@ def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
             raise ValueError("Hearsay is outside the supplied public messages")
         if (
             context.config.prompt_version
-            in ("character-chat-v8", "character-chat-v9", "character-chat-v10")
+            in (
+                "character-chat-v8",
+                "character-chat-v9",
+                "character-chat-v10",
+                "character-chat-v11",
+                "character-chat-v12",
+            )
             and assertion.origin == "inference"
             and not re.search(
                 r"可能|或许|也许|推测|推想|猜测|猜想|假设|假如|如果|倘若|(?:^|[，。；！？\s])若",
@@ -139,8 +170,10 @@ def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
                 proof.kind == "belief"
             ) and assertion.origin != "inference":
                 raise ValueError("Character belief must not become objective canon")
-    if context.config.prompt_version == "character-chat-v10":
-        for denied in _negative_experience_sentences(candidate.content):
+    if context.config.prompt_version in ("character-chat-v10", "character-chat-v11", "character-chat-v12"):
+        for denied in _negative_experience_sentences(
+            candidate.content, include_copula=context.config.prompt_version == "character-chat-v12"
+        ):
             grounded = any(
                 assertion.origin == "canon"
                 and denied in assertion.text
@@ -155,7 +188,11 @@ def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
                 )
                 for assertion in candidate.claims
             )
-            if not grounded:
+            attributed = (
+                context.config.prompt_version == "character-chat-v12"
+                and _attributed_user_denial(denied, candidate, context)
+            )
+            if not grounded and not attributed:
                 raise ValueError(
                     "Negative experience needs explicit canonical support for the same event and scope; state current uncertainty or who supplied the information: "
                     + denied[:100]
@@ -164,6 +201,8 @@ def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
         "character-chat-v8",
         "character-chat-v9",
         "character-chat-v10",
+        "character-chat-v11",
+        "character-chat-v12",
     ):
         trusted_fallback = (
             candidate.content == UNKNOWN_REPLY

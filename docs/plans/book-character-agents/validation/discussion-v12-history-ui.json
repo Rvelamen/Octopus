@@ -1,0 +1,42 @@
+{
+  "scope": "Production room component with real Handler, WebSocket and published development history; read-only proxy; not full-app or full-book acceptance",
+  "roomId": "68a443d2-0286-4d6b-a43d-b7bd6d829a84",
+  "bubbles": [
+    {
+      "id": "c08aa13d-b1c7-4acd-8a93-fa555dddd37e",
+      "seq": "2",
+      "text": "Historical message\n原著里，我曾率先跳进瀑布泉中探路。我也曾与山中群猴和狼虫虎豹獐鹿猕猿为伴。若是同伴再遇未知险境，假设由我拿主意，我会先试探前路，不会干等别人先走；这只是本次设想。\nRead full message"
+    }
+  ],
+  "messages": [
+    {
+      "id": "332f048d-de66-46c9-9bc8-21ac20d22d45",
+      "text": "如果同伴遇到未知的险境，你会选择先试探还是等别人先走？请把假设打算与已经发生的原著事实区分开。"
+    },
+    {
+      "id": "c08aa13d-b1c7-4acd-8a93-fa555dddd37e",
+      "text": "原著里，我曾率先跳进瀑布泉中探路。我也曾与山中群猴和狼虫虎豹獐鹿猕猿为伴。若是同伴再遇未知险境，假设由我拿主意，我会先试探前路，不会干等别人先走；这只是本次设想。"
+    }
+  ],
+  "diagnostics": {
+    "created": 1,
+    "disposed": 0,
+    "active": 1,
+    "meshes": 157,
+    "fps": 60.01200239976477
+  },
+  "errors": [],
+  "requestActions": [
+    "list_rooms",
+    "open_room",
+    "list_chat_models",
+    "get_room",
+    "get_memory",
+    "get_summary_job",
+    "read_messages",
+    "get_round",
+    "get_message_evidence"
+  ],
+  "same_message_confirmed": true,
+  "native_calls": 0
+}

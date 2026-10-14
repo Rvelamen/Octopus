@@ -139,6 +139,38 @@ async def test_versioned_review_receives_explicit_assertion_indices_and_publishe
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("question,denial,faithful", [
+    ("我猜想那不是你亲眼见过的场景。", "你猜想那不是我亲眼见过的场景", True),
+    ("我说电灯能照亮夜路。", "你猜想那不是我亲眼见过的场景", False),
+    ("我说“你从未见过电灯”这句话不成立。", "你说我从未见过电灯", False),
+    ("我说你从未见过电灯，这句话不成立。", "你说我从未见过电灯", False),
+    ("我说你从未见过电灯。刚才这句话不成立。", "你说我从未见过电灯", False),
+])
+async def test_unquoted_user_denial_remains_hearsay_only_when_the_public_source_matches(book_library, question, denial, faithful):
+    from backend.services.book_world.chat_validation import validate_candidate
+    from backend.services.book_world.context import CharacterContextBuilder
+    from backend.services.book_world.discovery import _json
+
+    actor = (await style_character(book_library))[3]
+    rooms = BookRoomService(book_library.workspace_root)
+    room = rooms.create_single_room(actor, client_room_id="attributed-denial")
+    scope = rooms.bind_room(room["room_id"], 1)
+    config = CharacterChatConfig(provider_id=1, model="fixture", prompt_version="character-chat-v12")
+    turn = BookRoundService(book_library.workspace_root).submit(scope, "attributed", question, config, time_limit_seconds=60)
+    context = CharacterContextBuilder(book_library.workspace_root).compose(scope, turn["round_id"], room["members"][0]["id"])
+    content = denial + "；我无法确认。"
+    raw = _json({"content": content, "dialogue_action": "answer", "claims": [
+        {"text": denial, "origin": "room_hearsay", "message_ids": [context.payload["current_message"]["id"]]},
+        {"text": "我无法确认。", "origin": "conversation"},
+    ]})
+    if faithful:
+        assert validate_candidate(raw, context).content == content
+    else:
+        with pytest.raises(ValueError, match="Negative experience"):
+            validate_candidate(raw, context)
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "failure", ["format_once", "semantic_once", "mixed_once", "details_once", "format_always"]
 )
@@ -318,7 +350,8 @@ async def test_unlisted_body_and_certain_inference_cannot_hide_behind_an_approve
 
 
 @pytest.mark.asyncio
-async def test_negative_experience_needs_explicit_canonical_support_in_every_origin(book_library):
+@pytest.mark.parametrize("version", ["character-chat-v10", "character-chat-v11", "character-chat-v12"])
+async def test_negative_experience_needs_explicit_canonical_support_in_every_origin(book_library, version):
     from dataclasses import replace
 
     from backend.services.book_world.chat_validation import validate_candidate
@@ -330,7 +363,7 @@ async def test_negative_experience_needs_explicit_canonical_support_in_every_ori
     room = rooms.create_single_room(actor, client_room_id="negative-experience-all-origins")
     scope = rooms.bind_room(room["room_id"], 1)
     config = CharacterChatConfig(
-        provider_id=1, model="fixture", prompt_version="character-chat-v10"
+        provider_id=1, model="fixture", prompt_version=version
     )
     turn = BookRoundService(book_library.workspace_root).submit(
         scope, "negative", "我说电灯能照亮夜路。", config, time_limit_seconds=60
@@ -340,13 +373,16 @@ async def test_negative_experience_needs_explicit_canonical_support_in_every_ori
     )
     proof = context.allowed[0]
     refs = [{"claim_id": proof.claim_id, "evidence_id": proof.evidence_id}]
-    for denied in [
+    denials = [
         "并非我亲眼见过的物事。",
         "并没有什么住在月宫的事。",
         "我从未见过电灯。",
         "我还没细看。",
         "我从未听说电灯。",
-    ]:
+    ]
+    if version == "character-chat-v12":
+        denials.extend(["这话是你告诉我的，不是我自己见过的。", "并不是我亲历过的事。"])
+    for denied in denials:
         for origin in ["canon", "inference", "room_hearsay", "conversation"]:
             content = "如果你问，" + denied
             assertion = {"text": content, "origin": origin}
@@ -363,6 +399,10 @@ async def test_negative_experience_needs_explicit_canonical_support_in_every_ori
         ("这原理我不清楚。", "conversation"),
         ("你说：‘我从未见过电灯。’", "room_hearsay"),
         ("如果我未曾见过那灯，我会先问明白。", "inference"),
+        ("这个信息来自你，我无法独立确认。", "room_hearsay"),
+        ("不能据此认作我的原著经历。", "conversation"),
+        ("你说：‘这不是我自己见过的。’", "room_hearsay"),
+        ("如果这不是我自己见过的，我会先问明白。", "inference"),
     ]:
         assertion = {"text": content, "origin": origin}
         if origin == "room_hearsay":
@@ -405,7 +445,7 @@ async def test_negative_experience_needs_explicit_canonical_support_in_every_ori
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "version", ["character-chat-v6", "character-chat-v7", "character-chat-v8", "character-chat-v9"]
+    "version", ["character-chat-v6", "character-chat-v7", "character-chat-v8", "character-chat-v9", "character-chat-v10", "character-chat-v11", "character-chat-v12"]
 )
 async def test_silence_remains_valid_for_all_newer_chat_policies(book_library, version):
     from backend.services.book_world.chat_validation import validate_candidate
@@ -432,10 +472,11 @@ async def test_silence_remains_valid_for_all_newer_chat_policies(book_library, v
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("latest", [False, True])
 @pytest.mark.parametrize("repair", [True, False])
-@pytest.mark.parametrize("defect", ["unlisted", "negative"])
+@pytest.mark.parametrize("defect", ["unlisted", "negative", "negative_copula"])
 async def test_full_body_guard_prevents_publishing_unlisted_fact_despite_positive_judge(
-    book_library, repair, defect
+    book_library, repair, defect, latest
 ):
     from backend.services.book_world.chat_models import UNKNOWN_REPLY
 
@@ -446,14 +487,18 @@ async def test_full_body_guard_prevents_publishing_unlisted_fact_despite_positiv
     config = CharacterChatConfig(
         provider_id=1,
         model="fixture",
-        prompt_version="character-chat-v10" if defect == "negative" else "character-chat-v8",
-        review_prompt_version="character-chat-review-v5",
+        prompt_version="character-chat-v12" if latest else "character-chat-v10" if defect != "unlisted" else "character-chat-v8",
+        review_prompt_version="character-chat-review-v8" if latest else "character-chat-review-v5",
     )
     rounds = BookRoundService(book_library.workspace_root)
     turn = rounds.submit(scope, "unlisted", "我自称青禾。", config, time_limit_seconds=60)
     calls = []
     supported = "你说自称青禾。"
-    unsupported = "我从未见过电灯。" if defect == "negative" else "我在洞里见过明月。"
+    unsupported = {
+        "negative": "我从未见过电灯。",
+        "negative_copula": "这话是你告诉我的，不是我自己见过的。",
+        "unlisted": "我在洞里见过明月。",
+    }[defect]
 
     class MissingFact:
         generated = 0
@@ -466,7 +511,7 @@ async def test_full_body_guard_prevents_publishing_unlisted_fact_despite_positiv
                 fixed = repair and self.generated == 2
                 if self.generated == 2:
                     assert (
-                        "Negative experience" if defect == "negative" else "Unreviewed body"
+                        "Negative experience" if defect != "unlisted" else "Unreviewed body"
                     ) in data["feedback"]
                 result = {
                     "content": supported if fixed else supported + unsupported,
@@ -479,7 +524,7 @@ async def test_full_body_guard_prevents_publishing_unlisted_fact_despite_positiv
                         }
                     ],
                 }
-                if defect == "negative" and not fixed:
+                if defect != "unlisted" and not fixed:
                     result["claims"].append({"text": unsupported, "origin": "conversation"})
             else:
                 result = empty_review()
@@ -497,6 +542,10 @@ async def test_full_body_guard_prevents_publishing_unlisted_fact_despite_positiv
     await BookChatWorker(book_library.workspace_root).run(
         scope, turn["round_id"], MissingFact(), config
     )
+    if defect == "negative_copula" and not latest:
+        assert len(calls) == 2
+        assert rooms.read_messages(scope)["messages"][-1]["content"] == supported + unsupported
+        return
     assert len(calls) == 3 and [call["phase"] for call in calls] == [
         "generate",
         "generate",
@@ -508,7 +557,7 @@ async def test_full_body_guard_prevents_publishing_unlisted_fact_despite_positiv
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("review_version", ["character-chat-review-v5", "character-chat-review-v6"])
+@pytest.mark.parametrize("review_version", ["character-chat-review-v5", "character-chat-review-v6", "character-chat-review-v7", "character-chat-review-v8"])
 async def test_compact_review_budget_keeps_claim_sources_and_generation_context_intact(
     book_library,
     review_version,

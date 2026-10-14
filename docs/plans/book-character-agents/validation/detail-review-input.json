@@ -1,0 +1,126 @@
+{
+  "source_trace_sha256": "4cd263c70b37a9f7da140de75d8297b2cf52e6d19a950256a301fcf1575ea5b5",
+  "context": {
+    "baseline": {
+      "relation:山中群兽与群猴": {
+        "approved_excerpt": "",
+        "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+        "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+        "kind": "relation",
+        "local_end": 55,
+        "local_start": 0,
+        "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+        "route": "firsthand",
+        "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+        "temporal_state": "current"
+      },
+      "trait:胆识": {
+        "approved_excerpt": "",
+        "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+        "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+        "kind": "trait",
+        "local_end": 99,
+        "local_start": 67,
+        "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+        "route": "firsthand",
+        "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+        "temporal_state": "current"
+      }
+    },
+    "character_scope": {
+      "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+      "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+      "canonical_policy_version": "canonical-persona-v3",
+      "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+      "knowledge_policy_version": "canonical-perspective-v1",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+    },
+    "context_policy": "actor-context-v1",
+    "current_message": {
+      "content": "如果同伴遇到未知的险境，你会选择先试探还是等别人先走？请把假设打算与已经发生的原著事实区分开。",
+      "id": "e2784382-ce48-4dcd-8e24-08e283f87043",
+      "identity": {},
+      "seq": 1,
+      "speaker_member_id": null,
+      "speaker_type": "user"
+    },
+    "discussion": {
+      "goal": "回答有据部分，保持说法归属和未知。",
+      "mode": "topic",
+      "revision": 1,
+      "speaker_request": {
+        "mode": "directed",
+        "selection_policy": "public-room-selection-v1",
+        "target_member_ids": [
+          "e447da38-22df-40e1-8994-873cd8bb38c6"
+        ]
+      },
+      "topic": "有性格依据的假设"
+    },
+    "expressions": {
+      "examples": [],
+      "rules": []
+    },
+    "identity": {
+      "book_title": "西游记 · 石猴发现联调样本（非全书）",
+      "name": "石猴"
+    },
+    "knowledge": {
+      "items": [],
+      "query": "与已经 事实区 人先走 会选择 伴遇到 你会选 依据的 保持说 假设打 先试探 别人先 到未知 区分开 发生的 同伴遇 和未知 回答有 如果同 实区分 属和未 已经发 归属和 性格依 打算与 把假设 择先试 持说法 据的假 据部分 探还是 是等别 有性格",
+      "status": "unknown"
+    },
+    "room": {
+      "epoch": 1,
+      "policy_version": "bounded-room-v1",
+      "room_id": "5f6cce90-12af-4d29-abf4-b22b3b8b828e",
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+    },
+    "room_history": [],
+    "room_memory": {
+      "items": [],
+      "through_seq": 0
+    },
+    "room_state": null
+  },
+  "candidate": {
+    "content": "原著里，我确曾率先跳进瀑布泉里探路，那时群猴还在外头看。若只说这回的假设，同伴遇到未知险境，我多半会先上前试探，不会干等别人先走；但这只是按我性子推测，不是已经发生的事实。",
+    "dialogue_action": "answer",
+    "claims": [
+      {
+        "text": "原著里，我确曾率先跳进瀑布泉里探路，那时群猴还在外头看。",
+        "origin": "canon",
+        "refs": [
+          {
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547"
+          },
+          {
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2"
+          }
+        ]
+      },
+      {
+        "text": "若只说这回的假设，同伴遇到未知险境，我多半会先上前试探，不会干等别人先走；",
+        "origin": "inference",
+        "refs": [
+          {
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547"
+          }
+        ]
+      },
+      {
+        "text": "但这只是按我性子推测，不是已经发生的事实。",
+        "origin": "conversation"
+      }
+    ],
+    "action_basis_claim_ids": [
+      "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+      "cffa02d5-d97c-4eff-a192-a3020324d566"
+    ],
+    "ephemeral_emotion": null
+  }
+}

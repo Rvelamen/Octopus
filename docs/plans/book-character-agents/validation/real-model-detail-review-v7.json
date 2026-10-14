@@ -1,0 +1,103 @@
+{
+  "scope": "Frozen development replay through native review; not full-book acceptance",
+  "native_call_budget": 2,
+  "source_sha256": "4cd263c70b37a9f7da140de75d8297b2cf52e6d19a950256a301fcf1575ea5b5",
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-chat-v11",
+    "policy_version": "bounded-room-v1",
+    "model_record_id": 337,
+    "review_prompt_version": "character-chat-review-v7",
+    "context_window": 1000000,
+    "max_input_tokens": 24000,
+    "expression_enabled": false,
+    "memory_policy_version": "typed-room-memory-v1",
+    "memory_prompt_version": "room-memory-v2",
+    "expression_selection_version": "expression-selection-v2",
+    "expression_sets": {}
+  },
+  "publication": false,
+  "quality_pass": false,
+  "calls": [
+    {
+      "case_id": "unsupported_observer_detail",
+      "expected_support": false,
+      "input_sha256": "0ed1e48559942323e7e54170ad7b5dd0c5daee9035b6d7d277a910b8c5cf970b",
+      "status": "completed",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 2564,
+        "completion_tokens": 329,
+        "total_tokens": 2893,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "rejection": {
+        "reason": "候选0的前半句'率先跳进瀑布泉里探路'有胆识trait支持，但'那时群猴还在外头看'无依据：群猴relation仅证明一同生活为伴，不能补出跳瀑布时群猴的位置与旁观行为，属新增原著细节。候选1是明确标注为假设的条件性打算，由胆识trait支持，且正确声明非既成事实；候选2为来源区分说明，无新增事实。假设与原著事实的区分处理正确，但候选0的群猴细节缺独立支持，故整体拒绝。",
+        "unlisted_assertions": [],
+        "rejected_ordinals": [
+          0
+        ]
+      },
+      "actual_support": false,
+      "expectation_met": true,
+      "elapsed_seconds": 9.875
+    },
+    {
+      "case_id": "grounded_event_and_new_hypothesis",
+      "expected_support": true,
+      "input_sha256": "d30ae65f2e9a462a19c689332089f8ed29c501b92c407f8c7b8f9c694326b4f5",
+      "status": "completed",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1268,
+        "completion_tokens": 226,
+        "total_tokens": 1494,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "review": {
+        "supported": true,
+        "facts_complete": true,
+        "persona_consistent": true,
+        "action_supported": true,
+        "emotion_supported": true,
+        "attribution_correct": true,
+        "unlisted_assertions": [],
+        "claims": [
+          {
+            "ordinal": 0,
+            "supported": true,
+            "origin_correct": true,
+            "references_complete": true
+          },
+          {
+            "ordinal": 1,
+            "supported": true,
+            "origin_correct": true,
+            "references_complete": true
+          },
+          {
+            "ordinal": 2,
+            "supported": true,
+            "origin_correct": true,
+            "references_complete": true
+          }
+        ],
+        "reason": "正文三部分均已标注：率先跳瀑布泉探路由胆识命题（含'率先跳入瀑布泉中探险'）直接支持；对新险境假设的试探倾向属条件性打算，由同一胆识特质合理推演，并明确标注为推测；末句正确区分假设与事实，属自然交流。群猴为伴的引用虽非必需但不与内容冲突。无遗漏断言，无越界或无据经历。"
+      },
+      "actual_support": true,
+      "expectation_met": true,
+      "elapsed_seconds": 5.859
+    }
+  ],
+  "terminal": true,
+  "actual_calls": 2
+}

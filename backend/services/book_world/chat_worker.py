@@ -125,6 +125,8 @@ class BookChatWorker:
                     "character-chat-review-v4",
                     "character-chat-review-v5",
                     "character-chat-review-v6",
+                    "character-chat-review-v7",
+                    "character-chat-review-v8",
                 ):
                     payload["review_claims"] = [
                         {"ordinal": index, "assertion": assertion}
@@ -133,6 +135,8 @@ class BookChatWorker:
                 compact_review = phase == "review" and lease.config.review_prompt_version in (
                     "character-chat-review-v5",
                     "character-chat-review-v6",
+                    "character-chat-review-v7",
+                    "character-chat-review-v8",
                 )
                 omitted_history = omitted_memory = omitted_expressions = 0
                 if compact_review:
@@ -329,6 +333,8 @@ class BookChatWorker:
                         "character-chat-review-v4",
                         "character-chat-review-v5",
                         "character-chat-review-v6",
+                        "character-chat-review-v7",
+                        "character-chat-review-v8",
                     ):
                         review_feedback = (
                             str(error)
@@ -341,6 +347,8 @@ class BookChatWorker:
                         "character-chat-v8",
                         "character-chat-v9",
                         "character-chat-v10",
+                        "character-chat-v11",
+                        "character-chat-v12",
                     ):
                         feedback = (
                             str(error)[:300]
@@ -352,7 +360,12 @@ class BookChatWorker:
                     ):
                         feedback += " The independent reviewer rejected the body or its support; remove unsupported assertions and correct attribution."
                     if (
-                        lease.config.review_prompt_version == "character-chat-review-v6"
+                        lease.config.review_prompt_version
+                        in (
+                            "character-chat-review-v6",
+                            "character-chat-review-v7",
+                            "character-chat-review-v8",
+                        )
                         and isinstance(error, SemanticReviewError)
                     ):
                         feedback += (
