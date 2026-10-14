@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-PROMPT_VERSION = "character-discovery-v5"
+PROMPT_VERSION = "character-discovery-v6"
 POLICY_VERSION = "candidate-identity-v2"
 
 
@@ -87,3 +87,14 @@ name 必须逐字出现在 evidence.quote 内，使用原文当前称呼，不�
 previous_error 非空时，修复其指出的字段；不要重复提交相同无效结果。
 不生成性格、信念、经历知识或可聊天 Agent。输出严格 JSON，结构遵循下面的 schema：
 """
+
+DISCOVERY_PROMPTS = {
+    "character-discovery-v5": SYSTEM_PROMPT,
+    "character-discovery-v6": SYSTEM_PROMPT.replace(
+        "不生成性格、信念、经历知识或可聊天 Agent。输出严格 JSON，结构遵循下面的 schema：",
+        "本次响应中重复出现一个新人物，仍写 identity=new 并复用同一 local_character_key；只有 known_characters 给出的真实 id 才可写 existing_character_id，不能用本次局部键当 id。\n"
+        "人名在一个 segment 中重复时，quote 必须带上所在原句的左右语境（通常十几到几十字），不得仅给两个字的名字。偏移数不确定时也必须复制一个在该 segment 中只出现一次的连续原句，不得臆造数字。段内两个同名人物不能凭名字合并。\n"
+        "previous_error 若指出引文歧义，应换成更长的逐字原句；若指出 existing 身份字段，就严格区分已给出的 id 和本次 local_character_key。\n"
+        "不生成性格、信念、经历知识或可聊天 Agent。输出严格 JSON，结构遵循下面的 schema：",
+    ),
+}

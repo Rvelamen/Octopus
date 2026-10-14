@@ -702,6 +702,11 @@ def _migration_025_book_room_queue(conn: sqlite3.Connection) -> None:
     conn.executescript((Path(__file__).parent / "book_world" / "queue_schema.sql").read_text(encoding="utf-8"))
 
 
+def _migration_026_book_auto_import(conn: sqlite3.Connection) -> None:
+    _backup_book_migration(conn, ".pre-book-auto-import-v26.bak")
+    conn.executescript((Path(__file__).parent / "book_world" / "automatic_schema.sql").read_text(encoding="utf-8"))
+
+
 def run_knowledge_index_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_initial_schema", _migration_001_create_initial_schema)
@@ -739,6 +744,7 @@ def run_knowledge_index_migrations(db_path: Path) -> None:
     runner.register(23, "book_room_publication_guards", _migration_023_book_room_guards)
     runner.register(24, "book_room_memory", _migration_024_book_room_memory)
     runner.register(25, "book_room_queue", _migration_025_book_room_queue)
+    runner.register(26, "book_auto_import", _migration_026_book_auto_import)
     runner.run()
 
 

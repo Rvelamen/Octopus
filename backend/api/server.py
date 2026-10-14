@@ -89,6 +89,9 @@ async def lifespan(app: FastAPI):
             "Interrupted {} book-room turns; manual continuation required",
             len(interrupted_book_rounds),
         )
+    from backend.services.book_world.automatic_runner import AutoImportRunner
+
+    AutoImportRunner.start(Path(workspace))
 
     # 4. Initialize Agent Loop (Lazy import to avoid circular deps)
     from backend.agent.container import AgentContainer
@@ -202,6 +205,7 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down Octopus Desktop Service...")
+    await AutoImportRunner.shutdown()
 
     # Stop cron service
     if cron_service:

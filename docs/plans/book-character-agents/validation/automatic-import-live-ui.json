@@ -1,0 +1,136 @@
+{
+  "native_model_calls": 0,
+  "controlled_calls": [
+    "discovery",
+    "extract",
+    "review"
+  ],
+  "items": [
+    {
+      "id": 1,
+      "citekey": null,
+      "item_type": "book",
+      "title": "_tmp_15d4523d_auto-ui-novel",
+      "authors": [],
+      "year": null,
+      "venue": null,
+      "doi": null,
+      "url": null,
+      "abstract": null,
+      "tags": [],
+      "metadata": {
+        "item_type": "book",
+        "book_world": {
+          "kind": "novel",
+          "automatic": true
+        },
+        "source_format": "txt",
+        "source_encoding": "utf-8"
+      },
+      "library_path": "knowledge\\library\\00001_tmp_15d4523d_auto_ui_novel",
+      "pdf_sha256": null,
+      "source_format": "txt",
+      "source_sha256": "2ca0cb3252dbcc4f9f03416d867e78fa435fd12b4982dc20e01390e48a4fef2b",
+      "source_file": "knowledge\\library\\00001_tmp_15d4523d_auto_ui_novel/main.txt",
+      "chunk_status": "completed",
+      "thumbnail_path": null,
+      "created_at": "2026-10-14 03:54:39",
+      "updated_at": "2026-10-14 03:54:39",
+      "attachments": [
+        {
+          "id": 1,
+          "filename": "main.txt",
+          "file_type": "txt",
+          "sha256": "2ca0cb3252dbcc4f9f03416d867e78fa435fd12b4982dc20e01390e48a4fef2b",
+          "rel_path": "main.txt",
+          "size": 36,
+          "created_at": "2026-10-14 03:54:39"
+        }
+      ],
+      "linked_notes": [],
+      "collections": [
+        {
+          "id": 2,
+          "name": "Uncategorized",
+          "color": "#1890ff"
+        }
+      ]
+    }
+  ],
+  "jobs": [
+    {
+      "job_id": "32d6fc34-72f2-4ced-989e-147d61f24606",
+      "workspace_id": "d5d78c3aa0831850e20702e41030c937e06ed0302eb47a3b68cb0493ec72ee52",
+      "library_item_id": 1,
+      "status": "completed",
+      "phase": "complete",
+      "generation": 1,
+      "book_id": "8bd722a4-9320-4221-ab8c-c9a56684cc7b",
+      "source_version_id": "06d16196-d63f-4744-91ed-e7c12051a181",
+      "discovery_build_id": "77146419-d4bd-4ae7-8583-52fc8fcfbc47",
+      "persona_build_id": "fe76fc88-d1d3-4ea5-85b0-f695235cd186",
+      "actual_calls": 3,
+      "error_code": null,
+      "error_detail": null,
+      "strategy": {
+        "context_window": 32768,
+        "discovery": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 4096,
+          "model": "controlled-ui",
+          "policy_version": "candidate-identity-v2",
+          "prompt_version": "character-discovery-v6",
+          "provider_id": 1,
+          "provider_signature": "",
+          "reasoning_effort": null,
+          "unit_char_limit": 4000,
+          "unit_segment_limit": 12
+        },
+        "expression": {
+          "call_timeout_seconds": 180,
+          "context_window": 32768,
+          "max_calls_per_window": 80,
+          "max_tokens": 4096,
+          "max_units_per_window": 20,
+          "model": "controlled-ui",
+          "policy_version": "expression-material-v1",
+          "prompt_version": "expression-extract-v1",
+          "provider_id": 1,
+          "provider_signature": "",
+          "reasoning_effort": null,
+          "review_prompt_version": "expression-review-v1",
+          "unit_char_limit": 4000,
+          "unit_segment_limit": 12
+        },
+        "model_record_id": null,
+        "persona": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 4096,
+          "model": "controlled-ui",
+          "policy_version": "canonical-persona-v3",
+          "prompt_version": "persona-extract-v3",
+          "provider_id": 1,
+          "provider_signature": "",
+          "reasoning_effort": null,
+          "review_prompt_version": "persona-review-v3",
+          "unit_char_limit": 8000,
+          "unit_segment_limit": 12
+        }
+      },
+      "expression_sets": [
+        {
+          "character_id": "27b423a4-c7ba-4a00-8d68-26ff67f13cce",
+          "set_id": "1cf38ac1-e18f-4a35-80a7-169340e570ff",
+          "status": "ready",
+          "error_code": null,
+          "total_calls": 0,
+          "name": "人物甲",
+          "accepted_materials": 0
+        }
+      ],
+      "usage": {},
+      "canon_available": true,
+      "canonical_status": "published"
+    }
+  ]
+}

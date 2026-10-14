@@ -20,14 +20,21 @@ class DiscoveryModel:
     provider: LLMProvider
     config: DiscoveryConfig
     context_window: int = 32768
+    model_record_id: int | None = None
 
 
-def resolve_discovery_model() -> DiscoveryModel:
+def resolve_discovery_model(
+    *, original_config: DiscoveryConfig | None = None, model_record_id: int | None = None
+) -> DiscoveryModel:
     db = Database()
     defaults = AgentDefaultsRepository(db).get_or_create_defaults()
     providers = ProviderRepository(db)
     models = ModelRepository(db)
-    selected_id = defaults.library_extract_provider_id or defaults.default_provider_id
+    selected_id = (
+        original_config.provider_id
+        if original_config
+        else defaults.library_extract_provider_id or defaults.default_provider_id
+    )
     provider_record = (
         providers.get_provider_by_id(selected_id)
         if selected_id
@@ -37,7 +44,11 @@ def resolve_discovery_model() -> DiscoveryModel:
         raise BookWorldError(
             "blocked_config", "Configure an enabled library extraction provider in Settings"
         )
-    selected_model = defaults.library_extract_model_id or defaults.default_model_id
+    selected_model = (
+        model_record_id
+        if original_config
+        else defaults.library_extract_model_id or defaults.default_model_id
+    )
     model_record = models.get_model_by_id(selected_model) if selected_model else None
     if selected_model and (
         not model_record
@@ -49,14 +60,29 @@ def resolve_discovery_model() -> DiscoveryModel:
         )
     if model_record is None:
         available = models.get_enabled_models_by_provider(provider_record.id)
-        model_record = next((record for record in available if record.is_default), None) or next(
-            iter(available), None
+        model_record = (
+            next(
+                (
+                    record
+                    for record in available
+                    if original_config
+                    and record.model_id.casefold() == original_config.model.casefold()
+                ),
+                None,
+            )
+            if original_config
+            else next((record for record in available if record.is_default), None)
+            or next(iter(available), None)
         )
     if not model_record:
         raise BookWorldError(
             "blocked_config", "Choose an enabled library extraction model in Settings"
         )
-    max_tokens = min(model_record.max_tokens or 4096, 4096)
+    max_tokens = (
+        original_config.max_tokens
+        if original_config
+        else min(model_record.max_tokens or 4096, 4096)
+    )
     # Reserve schema, known identities and response tokens; Chinese input uses a conservative budget.
     input_budget = min(4000, ((model_record.context_window or 32768) - max_tokens - 10000) // 2)
     if input_budget < 2000 or max_tokens < 512:
@@ -84,6 +110,22 @@ def resolve_discovery_model() -> DiscoveryModel:
         unit_char_limit=input_budget,
         max_tokens=max_tokens,
     )
+    if original_config is not None:
+        if (
+            config.provider_id != original_config.provider_id
+            or config.provider_signature != original_config.provider_signature
+            or config.model != original_config.model
+        ):
+            raise BookWorldError("config_changed", "Original extraction endpoint or model changed")
+        # Stored max_tokens is a default response budget, not a provider capability.
+        # A saved task budget remains bounded by DiscoveryConfig and the context window.
+        if original_config.unit_char_limit * 2 + max_tokens + 10000 > (
+            model_record.context_window or 32768
+        ):
+            raise BookWorldError(
+                "blocked_config", "Original extraction budget exceeds current model capacity"
+            )
+        config = original_config
     provider = create_provider(
         {
             provider_record.name: ProviderConfig(
@@ -103,5 +145,8 @@ def resolve_discovery_model() -> DiscoveryModel:
     if isinstance(provider, MockProvider):
         raise BookWorldError("blocked_config", "A real extraction model is required")
     return DiscoveryModel(
-        provider=provider, config=config, context_window=model_record.context_window or 32768
+        provider=provider,
+        config=config,
+        context_window=model_record.context_window or 32768,
+        model_record_id=model_record.id,
     )

@@ -20,6 +20,7 @@ from backend.services.book_world.knowledge import CharacterKnowledgeService
 from backend.services.book_world.persona import BookPersonaService, PersonaConfig
 from backend.services.book_world.revisions import BookRevisionService
 from backend.services.book_world.storage import workspace_identity
+from backend.services.book_world.worker_pool import build_slot
 from backend.utils.helpers import get_workspace_path
 
 
@@ -27,7 +28,6 @@ class BookWorldHandler(MessageHandler):
     """Run synchronous PDF/SQLite work off the desktop event loop."""
 
     _build_tasks: dict[tuple[str, str], asyncio.Task] = {}
-    _worker_slots: dict[tuple[Any, str], asyncio.Semaphore] = {}
     _revision_requests: set[asyncio.Task] = set()
     _revision_slots: dict[tuple[Any, str], asyncio.Semaphore] = {}
     _expression_controls: dict[tuple[Any, str, str], asyncio.Lock] = {}
@@ -59,9 +59,7 @@ class BookWorldHandler(MessageHandler):
 
         async def execute() -> None:
             try:
-                slots_key = (asyncio.get_running_loop(), workspace_identity(root))
-                slots = cls._worker_slots.setdefault(slots_key, asyncio.Semaphore(1))
-                async with slots:
+                async with build_slot(root):
                     if phase == "expression":
                         expression_service = await asyncio.to_thread(
                             CharacterExpressionService, root
@@ -434,6 +432,44 @@ class BookWorldHandler(MessageHandler):
     ) -> None:
         try:
             if request.action in (
+                "get_auto_import",
+                "cancel_auto_import",
+                "retry_auto_import",
+                "restart_auto_import",
+            ):
+                from backend.services.book_world.automatic import AutoImportService
+                from backend.services.book_world.automatic_runner import AutoImportRunner
+
+                service = await asyncio.to_thread(AutoImportService, root)
+                if (
+                    request.workspace_id is not None
+                    and request.workspace_id != service.workspace_id
+                ):
+                    raise BookWorldError(
+                        "invalid_scope", "Workspace changed; reload the current import"
+                    )
+                if request.action == "get_auto_import":
+                    result = {
+                        "workspace_id": service.workspace_id,
+                        "job": await asyncio.to_thread(service.get_job, request.item_id),
+                    }
+                else:
+                    assert request.automatic_job_id is not None
+                    async with AutoImportRunner.control_lock(root, request.automatic_job_id):
+                        controlled = await asyncio.to_thread(
+                            service.control,
+                            request.item_id,
+                            request.automatic_job_id,
+                            "cancel"
+                            if request.action == "cancel_auto_import"
+                            else "restart"
+                            if request.action == "restart_auto_import"
+                            else "retry",
+                        )
+                        await AutoImportRunner.stop_job(root, request.automatic_job_id)
+                    result = {"workspace_id": service.workspace_id, "job": controlled}
+                    AutoImportRunner.start(root)
+            elif request.action in (
                 "preview_knowledge",
                 "start_expression_set",
                 "get_expression_set",

@@ -1,8 +1,12 @@
 import React, { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, FileText, Globe, BookOpen, X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Modal, Tabs, Input, Button, TreeSelect, message, Progress } from 'antd';
+import { Modal, Tabs, Input, Button, TreeSelect, message, Progress, Select, Checkbox } from 'antd';
 
 const LibraryImportModal = ({ open, onClose, onImportPdf, onImportDoi, onImportArxiv, collections }) => {
+  const { t } = useTranslation();
+  const [documentKind, setDocumentKind] = useState('document');
+  const [automaticCharacters, setAutomaticCharacters] = useState(true);
   const [activeTab, setActiveTab] = useState('pdf');
   const [doi, setDoi] = useState('');
   const [arxivId, setArxivId] = useState('');
@@ -67,7 +71,7 @@ const LibraryImportModal = ({ open, onClose, onImportPdf, onImportDoi, onImportA
       try {
         await onImportPdf(
           file,
-          {},
+          documentKind === 'novel' ? { item_type: 'book', book_world: { kind: 'novel', automatic: automaticCharacters } } : {},
           selectedCollections,
           (progress) => updateUpload(file, { progress })
         );
@@ -263,6 +267,11 @@ const LibraryImportModal = ({ open, onClose, onImportPdf, onImportDoi, onImportA
       ),
       children: (
         <div style={{ padding: '8px 0' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+            <Select aria-label={t('bookAuto.kind')} value={documentKind} onChange={setDocumentKind} disabled={isImporting} style={{ width: 160 }} options={['document', 'novel'].map(value => ({ value, label: t(`bookAuto.kindOptions.${value}`) }))} />
+            {documentKind === 'novel' && <Checkbox checked={automaticCharacters} disabled={isImporting} onChange={event => setAutomaticCharacters(event.target.checked)}>{t('bookAuto.enable')}</Checkbox>}
+          </div>
+          {documentKind === 'novel' && <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('bookAuto.importHint')}</p>}
           {/* Drop zone */}
           <div
             onDragEnter={() => setDragActive(true)}

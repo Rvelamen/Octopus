@@ -34,8 +34,14 @@ class BookWorldRequest(BaseModel):
         "cancel_expression_set",
         "resume_expression_set",
         "retry_expression_set",
+        "get_auto_import",
+        "cancel_auto_import",
+        "retry_auto_import",
+        "restart_auto_import",
     ]
     item_id: int = Field(strict=True, gt=0)
+    workspace_id: str | None = Field(default=None, min_length=1, max_length=100)
+    automatic_job_id: str | None = Field(default=None, min_length=1, max_length=100)
     source_version_id: str | None = None
     segment_id: str | None = None
     build_id: str | None = Field(default=None, max_length=100)
@@ -69,6 +75,10 @@ class BookWorldRequest(BaseModel):
 
     @model_validator(mode="after")
     def required_source_identity(self) -> "BookWorldRequest":
+        if self.action in ("cancel_auto_import", "retry_auto_import", "restart_auto_import") and (
+            self.workspace_id is None or self.automatic_job_id is None
+        ):
+            raise ValueError("Automatic controls require workspace and current pipeline identity")
         if (
             self.action in ("list_segments", "resolve_evidence", "read_source", "start_discovery")
             and not self.source_version_id

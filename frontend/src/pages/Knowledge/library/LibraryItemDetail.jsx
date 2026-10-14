@@ -5,6 +5,7 @@ import { Button, Tag, Popconfirm, Spin, message, Input, Modal, Select } from 'an
 import { useDistillTasks } from '@contexts/DistillTaskContext';
 import LibraryAnnotationModal from './LibraryAnnotationModal';
 import NarrativeSourcePanel from './NarrativeSourcePanel';
+import AutoBookImportPanel from './AutoBookImportPanel';
 import TextSourceReader from './TextSourceReader';
 import * as pdfjsLib from 'pdfjs-dist';
 
@@ -806,6 +807,7 @@ Please write in English, use academic tone, and include specific details from th
         )}
 
         {/* Abstract */}
+        <AutoBookImportPanel key={`auto:${item.id}:${item.library_path}`} item={item} sendWSMessage={sendWSMessage} />
         <NarrativeSourcePanel key={`${item.id}:${item.library_path}`} item={item} sendWSMessage={sendWSMessage} />
         {item.abstract && (
           <div style={{ marginBottom: 16 }}>

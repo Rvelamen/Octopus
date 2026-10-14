@@ -13,7 +13,7 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from .discovery_models import (
-    SYSTEM_PROMPT,
+    DISCOVERY_PROMPTS,
     DiscoveryConfig,
     DiscoveryResult,
     DiscoverySpan,
@@ -177,7 +177,16 @@ class BookDiscoveryService:
                 (build_id,),
             ).fetchone()[0]
             if progress_stage == "evidence":
-                processed = len({segment for step in db.execute("SELECT result_json FROM book_build_steps WHERE build_id=? AND stage='evidence' AND status='validated'", (build_id,)) for segment in json.loads(step["result_json"]).get("segment_ids", [])})
+                processed = len(
+                    {
+                        segment
+                        for step in db.execute(
+                            "SELECT result_json FROM book_build_steps WHERE build_id=? AND stage='evidence' AND status='validated'",
+                            (build_id,),
+                        )
+                        for segment in json.loads(step["result_json"]).get("segment_ids", [])
+                    }
+                )
             total = db.execute(
                 "SELECT COUNT(*) FROM book_segments WHERE book_id=? AND source_version_id=?",
                 (row["book_id"], row["source_version_id"]),
@@ -663,7 +672,9 @@ class BookDiscoveryService:
         if lease is None:
             return
         owner, generation = lease
-        prompt = SYSTEM_PROMPT + _json(DiscoveryResult.model_json_schema())
+        prompt = DISCOVERY_PROMPTS.get(
+            config.prompt_version, DISCOVERY_PROMPTS["character-discovery-v5"]
+        ) + _json(DiscoveryResult.model_json_schema())
         try:
             while True:
                 data = await asyncio.to_thread(self._input, build_id, owner, generation, config)

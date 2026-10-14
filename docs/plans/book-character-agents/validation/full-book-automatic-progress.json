@@ -1,0 +1,147 @@
+{
+  "date": "2026-10-14",
+  "scope": "Native full-source automatic construction; Agent source review pending; not quality acceptance",
+  "budget": "User explicitly authorized no upper limit",
+  "jobs": [
+    {
+      "job_id": "1d7908a6-50b0-4de2-9e28-d2f2e20acc71",
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "library_item_id": 1,
+      "status": "failed",
+      "phase": "discovery",
+      "generation": 1,
+      "book_id": "38b26a66-6472-43aa-8f2b-f507bba91567",
+      "source_version_id": "1aef951e-c84c-4e29-9ccc-71e1e2718de8",
+      "discovery_build_id": "0209a852-38d9-4689-a8c4-c8b393234176",
+      "persona_build_id": null,
+      "actual_calls": 3,
+      "error_code": "discovery_failed",
+      "error_detail": "Discovery did not complete; inspect rejected checkpoints before retrying",
+      "strategy": {
+        "context_window": 1000000,
+        "discovery": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 4096,
+          "model": "k3",
+          "policy_version": "candidate-identity-v2",
+          "prompt_version": "character-discovery-v6",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "unit_char_limit": 2000,
+          "unit_segment_limit": 12
+        },
+        "expression": {
+          "call_timeout_seconds": 180,
+          "context_window": 1000000,
+          "max_calls_per_window": 80,
+          "max_tokens": 4096,
+          "max_units_per_window": 20,
+          "model": "k3",
+          "policy_version": "expression-material-v1",
+          "prompt_version": "expression-extract-v1",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "expression-review-v1",
+          "unit_char_limit": 2000,
+          "unit_segment_limit": 12
+        },
+        "model_record_id": 337,
+        "persona": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 4096,
+          "model": "k3",
+          "policy_version": "canonical-persona-v3",
+          "prompt_version": "persona-extract-v3",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "persona-review-v3",
+          "unit_char_limit": 8000,
+          "unit_segment_limit": 12
+        }
+      },
+      "expression_sets": [],
+      "usage": {
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 2304,
+        "completion_tokens": 7443,
+        "prompt_tokens": 4735,
+        "total_tokens": 12178
+      },
+      "canon_available": false,
+      "canonical_status": null
+    },
+    {
+      "job_id": "2431ec43-b1c0-4ca2-b953-08cad3d6095d",
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "library_item_id": 2,
+      "status": "failed",
+      "phase": "discovery",
+      "generation": 1,
+      "book_id": "79e0fbfd-1ce5-4ec9-a690-f7e51e4eb9eb",
+      "source_version_id": "5a25df59-9904-46f8-ada6-cc7acd70da50",
+      "discovery_build_id": "fe945520-9ba8-46a6-898d-c8827ee0624e",
+      "persona_build_id": null,
+      "actual_calls": 6,
+      "error_code": "discovery_failed",
+      "error_detail": "Discovery did not complete; inspect rejected checkpoints before retrying",
+      "strategy": {
+        "context_window": 1000000,
+        "discovery": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 4096,
+          "model": "k3",
+          "policy_version": "candidate-identity-v2",
+          "prompt_version": "character-discovery-v6",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "unit_char_limit": 2000,
+          "unit_segment_limit": 12
+        },
+        "expression": {
+          "call_timeout_seconds": 180,
+          "context_window": 1000000,
+          "max_calls_per_window": 80,
+          "max_tokens": 4096,
+          "max_units_per_window": 20,
+          "model": "k3",
+          "policy_version": "expression-material-v1",
+          "prompt_version": "expression-extract-v1",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "expression-review-v1",
+          "unit_char_limit": 2000,
+          "unit_segment_limit": 12
+        },
+        "model_record_id": 337,
+        "persona": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 4096,
+          "model": "k3",
+          "policy_version": "canonical-persona-v3",
+          "prompt_version": "persona-extract-v3",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "persona-review-v3",
+          "unit_char_limit": 8000,
+          "unit_segment_limit": 12
+        }
+      },
+      "expression_sets": [],
+      "usage": {
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 6656,
+        "completion_tokens": 16726,
+        "prompt_tokens": 9385,
+        "total_tokens": 26111
+      },
+      "canon_available": false,
+      "canonical_status": null
+    }
+  ]
+}
