@@ -23,7 +23,7 @@ export default function BookSingleChatModal({ detail, sendWSMessage, onClose, gr
   const available = chat.room?.status === 'active' && chat.room.members.some((member) => member.available && member.active && member.speaking_mode !== 'muted');
   const eligible = chat.room?.members.filter((member) => member.available && member.active && member.speaking_mode !== 'muted') || [];
   const speakerLabel = (message) => message.speaker_type === 'user' ? t('bookRoom.you') : group ? `${message.identity.name} · ${message.identity.book_title} · ${message.speaker_member_id?.slice(0, 6)}` : message.identity.name;
-  const canSend = available && (!group || (speakerMode === 'natural' ? eligible.some((member) => member.speaking_mode === 'auto') : targets.length > 0 && targets.every((id) => eligible.some((member) => member.id === id))));
+  const canSend = available && (!group || speakerMode === 'all' || (speakerMode === 'natural' ? eligible.some((member) => member.speaking_mode === 'auto') : targets.length > 0 && targets.every((id) => eligible.some((member) => member.id === id))));
 
   useEffect(() => { if (refreshRevision) refreshChat().catch((failure) => setEvidenceError(failure.message)); }, [refreshRevision, refreshChat]);
 
@@ -76,8 +76,8 @@ export default function BookSingleChatModal({ detail, sendWSMessage, onClose, gr
       </div>)}
       <Button size="small" disabled={!chat.room || chat.busy || active || chat.room.status !== 'active'} onClick={() => onAddMembers?.(chat.room)}>{t('bookRoom.addMembers')}</Button>
       <p>{t('bookRoom.naturalHint')}</p>
-      <Select aria-label={t('bookRoom.speakerMode')} value={speakerMode} disabled={chat.busy || active} onChange={setSpeakerMode} style={{ width: 130 }} options={['natural', 'directed'].map((value) => ({ value, label: t(`bookRoom.selection.${value}`) }))} />
-      {speakerMode === 'directed' && <Select aria-label={t('bookRoom.mention')} mode="multiple" placeholder={t('bookRoom.mention')} value={targets} disabled={chat.busy || active} onChange={setTargets} optionFilterProp="label" style={{ width: '100%', marginTop: 8 }} options={eligible.map((member) => ({ value: member.id, label: `${member.identity.name} · ${member.identity.book_title} · ${member.id.slice(0, 6)}` }))} />}
+      <Select aria-label={t('bookRoom.speakerMode')} value={active ? round.mode : speakerMode} disabled={chat.busy || active} onChange={setSpeakerMode} style={{ width: 150 }} options={['natural', 'directed', 'all'].map((value) => ({ value, label: t(`bookRoom.selection.${value}`) }))} />
+      {(active ? round.mode : speakerMode) === 'directed' && <Select aria-label={t('bookRoom.mention')} mode="multiple" placeholder={t('bookRoom.mention')} value={targets} disabled={chat.busy || active} onChange={setTargets} optionFilterProp="label" style={{ width: '100%', marginTop: 8 }} options={eligible.map((member) => ({ value: member.id, label: `${member.identity.name} · ${member.identity.book_title} · ${member.id.slice(0, 6)}` }))} />}
     </section>}
     <div style={{ margin: '8px 0' }}>
       <Button size="small" disabled={!chat.room || chat.busy} onClick={() => setResetOpen(true)}>{t('bookRoom.reset')}</Button>
@@ -95,11 +95,12 @@ export default function BookSingleChatModal({ detail, sendWSMessage, onClose, gr
     {round && <div style={{ margin: '10px 0' }}>
       <Tag>{t(`bookRoom.status.${round.status}`)}</Tag>
       <span>{t('bookRoom.window', { window: round.executionWindow, limit: round.timeLimitSeconds, remaining: Math.max(0, Math.ceil(round.timeLimitSeconds - (round.status === 'running' ? seconds : round.elapsedSeconds))) })}</span>
-      {round.status === 'running' && <p role="status">{t('bookRoom.validating')}</p>}
+      {round.generation && <p role="status">{t('bookRoom.generationProgress', { name: chat.room?.members.find((member) => member.id === round.generation.member_id)?.identity.name, phase: t(`bookRoom.phase.${round.generation.phase}`) })}</p>}
       {round.error_code && <Alert type="warning" title={t(`bookRoom.error.${round.error_code}`, { defaultValue: round.error_code })} />}
-      {group && <ul>{round.slots.map((slot) => <li key={slot.id}>{chat.room?.members.find((member) => member.id === slot.member_id)?.identity.name} · {slot.member_id.slice(0, 6)} · {t(`bookRoom.slot.${slot.status}`, { defaultValue: slot.status })}</li>)}</ul>}
+      {group && <ul>{round.slots.map((slot) => <li key={slot.id}>{chat.room?.members.find((member) => member.id === slot.member_id)?.identity.name} · {slot.member_id.slice(0, 6)} · {t(`bookRoom.slot.${slot.status}`, { defaultValue: slot.status })}{slot.skip_reason && ` · ${t(`bookRoom.skip.${slot.skip_reason}`, { defaultValue: slot.skip_reason })}`}</li>)}</ul>}
       <Space style={{ marginTop: 8 }}>
         {(round.can_resume || round.status === 'failed') && <Button size="small" disabled={chat.busy || !available} onClick={() => chat.act('resume_round')}>{t('bookRoom.resume')}</Button>}
+        {['queued', 'running'].includes(round.status) && <Button size="small" disabled={chat.busy} onClick={() => chat.act('pause_round')}>{t('bookRoom.pause')}</Button>}
         {active && <Button size="small" disabled={chat.busy} onClick={() => chat.act('cancel_round')}>{t('bookRoom.stop')}</Button>}
       </Space>
     </div>}

@@ -341,7 +341,12 @@ async def test_late_generation_after_cancellation_or_source_removal_never_publis
         await asyncio.wait_for(task, 5)
         assert [entry["content"] for entry in rooms.read_messages(scope)["messages"]] == ["你好"]
         assert rooms.get_room(scope)["next_seq"] == 2 and calls == ["generate"]
-        assert rounds.get_round(scope, turn["round_id"])["status"] in ("cancelled", "failed")
+        final = rounds.get_round(scope, turn["round_id"])
+        if final["status"] == "completed":
+            assert final["slots"][0]["status"] == "no_comment"
+            assert final["slots"][0]["skip_reason"] == "source_unavailable"
+        else:
+            assert final["status"] in ("cancelled", "failed")
     finally:
         release.set()
         if not task.done():

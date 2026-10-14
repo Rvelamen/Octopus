@@ -96,16 +96,39 @@ class RoundExecution:
                 raise BookWorldError(
                     "config_changed", "Continue with the original chat model and policy"
                 )
-            slot = db.execute(
-                "SELECT * FROM book_round_slots WHERE room_id=? AND epoch=? AND round_id=? AND position=? AND status IN ('pending','failed')",
-                (scope.room_id, scope.epoch, round_id, row["cursor"]),
-            ).fetchone()
-            if slot is None:
-                raise BookWorldError("invalid_round", "No unfinished slot matches the cursor")
-            self._member(db, scope, slot)
+            while True:
+                slot = db.execute(
+                    "SELECT * FROM book_round_slots WHERE room_id=? AND epoch=? AND round_id=? AND position=? AND status IN ('pending','failed')",
+                    (scope.room_id, scope.epoch, round_id, row["cursor"]),
+                ).fetchone()
+                if slot is None:
+                    raise BookWorldError("invalid_round", "No unfinished slot matches the cursor")
+                try:
+                    self._member(db, scope, slot)
+                    break
+                except BookWorldError as error:
+                    if error.code not in (
+                        "member_unavailable",
+                        "source_unavailable",
+                        "character_unavailable",
+                    ):
+                        raise
+                    db.execute(
+                        "UPDATE book_round_slots SET status='no_comment',skip_reason=? WHERE id=?",
+                        (
+                            "authorization_changed"
+                            if error.code == "member_unavailable"
+                            else "source_unavailable",
+                            slot["id"],
+                        ),
+                    )
+                    advance_cursor(db, scope, round_id)
+                    row = self.rounds._round(db, scope, round_id)
+                    if row["status"] == "completed":
+                        return None
             owner, generation = str(uuid4()), row["lease_generation"] + 1
             db.execute(
-                "UPDATE book_room_rounds SET status='running',lease_owner=?,lease_generation=?,lease_expires_at=?,run_started_at=?,error_code=NULL WHERE id=?",
+                "UPDATE book_room_rounds SET status='running',lease_owner=?,lease_generation=?,lease_expires_at=?,run_started_at=?,error_code=NULL,progress_phase='preparing' WHERE id=?",
                 (owner, generation, _now(row["time_limit_seconds"] + 60), _now(), round_id),
             )
             db.execute("UPDATE book_round_slots SET status='running' WHERE id=?", (slot["id"],))
@@ -123,7 +146,9 @@ class RoundExecution:
                 row["execution_window"],
             )
 
-    def checkpoint_revoked(self, lease: RoundLease, elapsed: Callable[[], int]) -> None:
+    def checkpoint_revoked(
+        self, lease: RoundLease, elapsed: Callable[[], int], *, cancelled: bool = False
+    ) -> None:
         """Keep spent time when member control revokes a worker before handing off its queue."""
         with connect(self.db_path) as db:
             db.execute("BEGIN IMMEDIATE")
@@ -137,6 +162,7 @@ class RoundExecution:
                 or row["lease_generation"] != lease.generation + 1
                 or row["lease_owner"] is not None
                 or row["status"] not in ("queued", "paused", "completed", "cancelled")
+                or (row["status"] == "paused" and not cancelled)
             ):
                 return
             try:
@@ -205,6 +231,7 @@ class RoundExecution:
         *,
         attempt: bool = False,
         verify_member: bool = True,
+        phase: str | None = None,
     ) -> bool:
         with connect(self.db_path) as db:
             db.execute("BEGIN IMMEDIATE")
@@ -217,6 +244,11 @@ class RoundExecution:
                 db.execute(
                     "UPDATE book_round_slots SET attempts=attempts+1 WHERE id=?", (lease.slot_id,)
                 )
+            if phase is not None:
+                db.execute(
+                    "UPDATE book_room_rounds SET progress_phase=? WHERE id=?",
+                    (phase, lease.round_id),
+                )
             return True
 
     def stop(self, lease: RoundLease, code: str, elapsed: Callable[[], int]) -> None:
@@ -228,13 +260,30 @@ class RoundExecution:
                 return
             if not self._elapsed(db, lease, elapsed()):
                 return
-            db.execute(
-                "UPDATE book_room_rounds SET status='failed',error_code=?,lease_generation=lease_generation+1,lease_owner=NULL,lease_expires_at=NULL WHERE id=?",
-                (code, lease.round_id),
+            if code in ("character_unavailable", "source_unavailable", "member_unavailable"):
+                db.execute(
+                    "UPDATE book_round_slots SET status='no_comment',skip_reason=? WHERE id=? AND status='running'",
+                    (
+                        "authorization_changed"
+                        if code == "member_unavailable"
+                        else "source_unavailable",
+                        lease.slot_id,
+                    ),
+                )
+                advance_cursor(db, lease.scope, lease.round_id, revoke_current=True)
+                return
+            paused = code in (
+                "context_insufficient",
+                "memory_context_insufficient",
+                "model_timeout",
             )
             db.execute(
-                "UPDATE book_round_slots SET status='failed' WHERE id=? AND status='running'",
-                (lease.slot_id,),
+                "UPDATE book_room_rounds SET status=?,error_code=?,lease_generation=lease_generation+1,lease_owner=NULL,lease_expires_at=NULL,progress_phase=NULL WHERE id=?",
+                ("paused" if paused else "failed", code, lease.round_id),
+            )
+            db.execute(
+                "UPDATE book_round_slots SET status=? WHERE id=? AND status='running'",
+                ("pending" if paused else "failed", lease.slot_id),
             )
 
     def publish(
@@ -345,7 +394,10 @@ class RoundExecution:
         final_ms = elapsed()
         if lease.window_before + final_ms >= lease.seconds * 1000:
             raise BookWorldError("round_timeout", "Publication crossed its time boundary")
-        db.execute("UPDATE book_round_slots SET status=? WHERE id=?", (status, lease.slot_id))
+        db.execute(
+            "UPDATE book_round_slots SET status=?,skip_reason=? WHERE id=?",
+            (status, "no_comment" if status == "no_comment" else None, lease.slot_id),
+        )
         db.execute(
             "UPDATE book_room_rounds SET window_elapsed_ms=?,total_elapsed_ms=? WHERE id=?",
             (lease.window_before + final_ms, lease.total_before + final_ms, lease.round_id),

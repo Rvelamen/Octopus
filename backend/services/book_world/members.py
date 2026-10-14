@@ -174,8 +174,19 @@ class RoomMembershipService:
                     (scope.room_id, scope.epoch, member_id),
                 ).fetchall()
                 db.execute(
-                    "UPDATE book_round_slots SET status='no_comment' WHERE room_id=? AND epoch=? AND member_id=? AND status IN ('pending','running','failed') AND round_id IN (SELECT id FROM book_room_rounds WHERE room_id=? AND epoch=? AND status IN ('queued','running','paused','interrupted','failed'))",
-                    (scope.room_id, scope.epoch, member_id, scope.room_id, scope.epoch),
+                    "UPDATE book_round_slots SET status='no_comment',skip_reason=? WHERE room_id=? AND epoch=? AND member_id=? AND status IN ('pending','running','failed') AND round_id IN (SELECT id FROM book_room_rounds WHERE room_id=? AND epoch=? AND status IN ('queued','running','paused','interrupted','failed'))",
+                    (
+                        "removed"
+                        if not next_active
+                        else "muted"
+                        if mode == "muted"
+                        else "authorization_changed",
+                        scope.room_id,
+                        scope.epoch,
+                        member_id,
+                        scope.room_id,
+                        scope.epoch,
+                    ),
                 )
                 for row in affected:
                     revoke = row["status"] == "running" and row["cursor"] == row["position"]

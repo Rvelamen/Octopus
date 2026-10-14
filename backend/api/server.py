@@ -81,6 +81,15 @@ async def lifespan(app: FastAPI):
     logger.info(f"Workspace: {workspace}")
     logger.info(f"Workspace Path: {get_workspace_path()}")
 
+    from backend.channels.desktop.handlers.book_room import BookRoomHandler
+
+    interrupted_book_rounds = await BookRoomHandler.initialize_workspace(Path(workspace))
+    if interrupted_book_rounds:
+        logger.info(
+            "Interrupted {} book-room turns; manual continuation required",
+            len(interrupted_book_rounds),
+        )
+
     # 4. Initialize Agent Loop (Lazy import to avoid circular deps)
     from backend.agent.container import AgentContainer
     from backend.agent.loop import AgentLoop

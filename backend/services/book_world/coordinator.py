@@ -10,7 +10,7 @@ from .source import BookWorldError
 def select_speakers(
     db, scope: RoomScope, content: str, mode: str, target_member_ids: list[str] | None
 ):
-    if mode not in ("directed", "natural") or (
+    if mode not in ("directed", "natural", "all") or (
         target_member_ids is not None
         and (
             not 1 <= len(target_member_ids) <= 100
@@ -22,6 +22,13 @@ def select_speakers(
         )
     ):
         raise BookWorldError("invalid_request", "Invalid bounded speaker request")
+    if mode == "all":
+        if target_member_ids is not None:
+            raise BookWorldError("invalid_request", "All-member turns cannot restrict their targets")
+        return db.execute(
+            "SELECT m.*,b.policy_version,CASE WHEN m.active=0 THEN 'removed' WHEN m.speaking_mode='muted' THEN 'muted' WHEN rs.status<>'active' OR k.lifecycle_state<>'active' OR v.lifecycle_state<>'available' OR b.lifecycle_state<>'active' OR c.agent_status NOT IN ('ready','sparse') THEN 'source_unavailable' ELSE NULL END AS skip_reason FROM book_room_members m JOIN book_builds b ON b.book_id=m.book_id AND b.source_version_id=m.source_version_id AND b.id=m.build_id JOIN book_room_sources rs ON rs.room_id=m.room_id AND rs.book_id=m.book_id AND rs.source_version_id=m.source_version_id AND rs.build_id=m.build_id JOIN book_books k ON k.id=m.book_id JOIN book_source_versions v ON v.book_id=m.book_id AND v.id=m.source_version_id JOIN book_characters c ON c.book_id=m.book_id AND c.source_version_id=m.source_version_id AND c.build_id=m.build_id AND c.id=m.character_id WHERE m.room_id=? AND m.state_epoch=? ORDER BY m.seat_index",
+            (scope.room_id, scope.epoch),
+        ).fetchall()
     members = db.execute(
         "SELECT m.*,b.policy_version FROM book_room_members m JOIN book_builds b ON b.book_id=m.book_id AND b.source_version_id=m.source_version_id AND b.id=m.build_id JOIN book_room_sources rs ON rs.room_id=m.room_id AND rs.book_id=m.book_id AND rs.source_version_id=m.source_version_id AND rs.build_id=m.build_id JOIN book_books k ON k.id=m.book_id JOIN book_source_versions v ON v.book_id=m.book_id AND v.id=m.source_version_id JOIN book_characters c ON c.book_id=m.book_id AND c.source_version_id=m.source_version_id AND c.build_id=m.build_id AND c.id=m.character_id WHERE m.room_id=? AND m.state_epoch=? AND m.active=1 AND m.speaking_mode<>'muted' AND rs.status='active' AND k.lifecycle_state='active' AND v.lifecycle_state='available' AND b.lifecycle_state='active' AND c.agent_status IN ('ready','sparse') ORDER BY m.seat_index",
         (scope.room_id, scope.epoch),

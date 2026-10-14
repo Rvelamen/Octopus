@@ -23,6 +23,7 @@ class BookRoomRequest(StrictModel):
         "get_round",
         "submit_turn",
         "cancel_round",
+        "pause_round",
         "resume_round",
         "get_message_evidence",
         "get_memory",
@@ -53,7 +54,7 @@ class BookRoomRequest(StrictModel):
     member_id: str | None = Field(default=None, min_length=1, max_length=100)
     active: bool | None = None
     speaking_mode: Literal["auto", "mention_only", "muted"] | None = None
-    mode: Literal["directed", "natural"] = "directed"
+    mode: Literal["directed", "natural", "all"] = "directed"
     target_member_ids: list[str] | None = Field(default=None, min_length=1, max_length=100)
     query: str = Field(default="", max_length=200)
     after_seq: int = Field(default=0, ge=0)
@@ -78,7 +79,10 @@ class BookRoomRequest(StrictModel):
             raise ValueError("Room identity and expected epoch are required")
         if (self.provider_id is None) != (self.model_record_id is None):
             raise ValueError("Provider and model selection must be supplied together")
-        if self.action in ("get_round", "cancel_round", "resume_round") and self.round_id is None:
+        if (
+            self.action in ("get_round", "cancel_round", "pause_round", "resume_round")
+            and self.round_id is None
+        ):
             raise ValueError("Round identity is required")
         if self.action == "submit_turn" and None in (self.client_turn_id, self.content):
             raise ValueError("Turn identity and message are required")

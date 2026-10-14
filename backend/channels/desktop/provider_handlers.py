@@ -824,6 +824,9 @@ class AgentDefaultsHandler:
                 )
                 setup_workspace_from_template(Path(new_workspace_path))
                 init_workspace_path(new_workspace_path)
+                from backend.channels.desktop.handlers.book_room import BookRoomHandler
+
+                await BookRoomHandler.initialize_workspace(Path(new_workspace_path))
 
             await websocket.send_json(
                 {

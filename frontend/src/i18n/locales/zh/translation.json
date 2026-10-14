@@ -1,5 +1,9 @@
 {
   "bookRoom": {
+    "pause": "暂停本轮",
+    "generationProgress": "{{name}} · {{phase}}（校验后发布正文）",
+    "phase": {"preparing": "准备上下文", "generating": "生成中", "validating": "校验中"},
+    "skip": {"muted": "已禁言", "removed": "已移除", "source_unavailable": "来源失效", "authorization_changed": "发言授权已变更", "no_comment": "审查后保持沉默"},
     "manager": "人物聊天室",
     "createGroup": "创建聊天室",
     "members": "房间成员",
@@ -9,7 +13,7 @@
     "addMembers": "加入人物",
     "naturalHint": "自然模式每轮最多选择三位人物；公开发言不会自动启动下一轮。",
     "speakerMode": "发言方式",
-    "selection": { "natural": "自然选人", "directed": "@ 指定人物" },
+    "selection": { "all": "全体提问", "natural": "自然选人", "directed": "@ 指定人物" },
     "speaking": { "auto": "自动参与", "mention_only": "仅被点名", "muted": "禁言" },
     "mention": "@ 选择人物（可多选）",
     "roomName": "聊天室名称",
@@ -36,7 +40,7 @@
     "title": "人物单聊", "start": "与人物聊天", "hint": "人物只使用本人原著依据与本房间交流。回复校验完成后才显示；每次提交启动有限轮次。", "messages": "已发布对话", "empty": "向人物提出第一个问题", "you": "我", "question": "输入问题或想交流的话题", "send": "发送", "evidence": "查看依据", "readerEvidence": "以下是供读者核对的原文；人物只收到获准命题与安全引文。", "heardSource": "本房间消息 {{id}} 的公开说法", "sourceUnavailable": "人物来源不可用或已被移除，已有交流仍可阅读。", "validating": "人物正在回应并校验，正文尚未发布。", "resume": "继续本轮", "stop": "停止本轮", "window": "第 {{window}} 次执行 · 上限 {{limit}} 秒 · 剩余约 {{remaining}} 秒",
     "status": {"queued": "等待回应", "running": "生成与校验中", "paused": "已暂停", "completed": "本轮已完成", "cancelled": "已停止", "interrupted": "执行已中断", "failed": "本轮失败"},
     "origin": {"canon": "原著依据", "character_belief": "人物信念", "inference": "有据推演", "room_hearsay": "房间听说", "conversation": "交流"},
-    "error": {"memory_validation_failed": "房间摘要未通过校验，可手动继续或停止。", "memory_context_insufficient": "房间记忆来源超过当前整理容量。", "memory_conflict": "房间记忆已更新，可手动继续。", "memory_unavailable": "房间记忆暂不可用，请刷新。", "model_unavailable": "模型服务暂不可用，未发布人物回复。", "fallback_validation_failed": "备用回复也未通过校验，正文没有发布。", "round_timeout": "达到本次秒数上限，已暂停。继续会按最新设置开启新的有限窗口。", "model_timeout": "模型请求超时，可手动继续。", "chat_failed": "模型执行失败，未发布未经校验的正文。", "context_insufficient": "必要的人设、问题与依据超过当前模型容量。", "config_changed": "模型配置发生变化，需要恢复原配置后继续，或提交新轮次。", "character_unavailable": "人物原著来源已不可用。", "member_unavailable": "人物当前无发言权限。", "source_unavailable": "人物的原著绑定不可用。"}
+    "error": {"user_pause": "已手动暂停，继续将开启新的有限窗口。", "service_interrupted": "服务重启后已中断，请手动继续。", "lease_expired": "执行租约已失效，请手动继续。", "memory_validation_failed": "房间摘要未通过校验，可手动继续或停止。", "memory_context_insufficient": "房间记忆来源超过当前整理容量。", "memory_conflict": "房间记忆已更新，可手动继续。", "memory_unavailable": "房间记忆暂不可用，请刷新。", "model_unavailable": "模型服务暂不可用，未发布人物回复。", "fallback_validation_failed": "备用回复也未通过校验，正文没有发布。", "round_timeout": "达到本次秒数上限，已暂停。继续会按最新设置开启新的有限窗口。", "model_timeout": "模型请求超时，可手动继续。", "chat_failed": "模型执行失败，未发布未经校验的正文。", "context_insufficient": "必要的人设、问题与依据超过当前模型容量。", "config_changed": "模型配置发生变化，需要恢复原配置后继续，或提交新轮次。", "character_unavailable": "人物原著来源已不可用。", "member_unavailable": "人物当前无发言权限。", "source_unavailable": "人物的原著绑定不可用。"}
   },
   "bookWorld": {
     "textReaderTitle": "{{title}} · 原著文本",

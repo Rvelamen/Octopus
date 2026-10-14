@@ -11,6 +11,7 @@ from .discovery import _json, _now
 from .knowledge_models import CanonicalScope
 from .room_models import CharacterChatConfig, RoomScope
 from .rooms import BookRoomService
+from .round_queue import advance_cursor
 from .source import BookWorldError
 from .storage import connect
 
@@ -30,17 +31,77 @@ class BookRoundService:
             raise BookWorldError("round_unavailable", "Turn belongs to another room or epoch")
         return cast(sqlite3.Row, row)
 
+    def recover_interrupted(self) -> list[str]:
+        """Called once at server startup: revoke old work, never schedule a model."""
+        with connect(self.db_path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            identifiers = [
+                row["id"]
+                for row in db.execute(
+                    "SELECT r.id FROM book_room_rounds r JOIN book_rooms room ON room.id=r.room_id AND room.current_epoch=r.epoch WHERE r.status IN ('queued','running') ORDER BY r.created_at,r.id"
+                )
+            ]
+            for identifier in identifiers:
+                db.execute(
+                    "UPDATE book_room_rounds SET status='interrupted',error_code='service_interrupted',lease_generation=lease_generation+1,lease_owner=NULL,lease_expires_at=NULL,progress_phase=NULL WHERE id=?",
+                    (identifier,),
+                )
+                db.execute(
+                    "UPDATE book_round_slots SET status='pending' WHERE round_id=? AND status='running'",
+                    (identifier,),
+                )
+        return identifiers
+
     def get_round(self, scope: RoomScope, round_id: str) -> dict[str, Any]:
         with connect(self.db_path) as db:
-            db.execute("BEGIN")
+            db.execute("BEGIN IMMEDIATE")
             row = self._round(db, scope, round_id)
+            if row["status"] == "running" and row["lease_expires_at"] <= _now():
+                db.execute(
+                    "UPDATE book_room_rounds SET status='interrupted',error_code='lease_expired',lease_generation=lease_generation+1,lease_owner=NULL,lease_expires_at=NULL,progress_phase=NULL WHERE id=?",
+                    (round_id,),
+                )
+                db.execute(
+                    "UPDATE book_round_slots SET status='pending' WHERE round_id=? AND status='running'",
+                    (round_id,),
+                )
+                row = self._round(db, scope, round_id)
             slots = [
                 dict(slot)
                 for slot in db.execute(
-                    "SELECT id,position,member_id,status,attempts,member_generation FROM book_round_slots WHERE room_id=? AND epoch=? AND round_id=? ORDER BY position",
+                    "SELECT id,position,member_id,status,attempts,member_generation,skip_reason FROM book_round_slots WHERE room_id=? AND epoch=? AND round_id=? ORDER BY position",
                     (scope.room_id, scope.epoch, round_id),
                 )
             ]
+            generation = None
+            if (
+                row["status"] == "running"
+                and not row["cancel_requested"]
+                and row["lease_expires_at"] > _now()
+                and row["window_elapsed_ms"] < row["time_limit_seconds"] * 1000
+                and self.rooms._room(db, scope)["status"] == "active"
+            ):
+                from .round_execution import RoundExecution
+
+                slot = db.execute(
+                    "SELECT * FROM book_round_slots WHERE room_id=? AND epoch=? AND round_id=? AND position=? AND status='running'",
+                    (scope.room_id, scope.epoch, round_id, row["cursor"]),
+                ).fetchone()
+                try:
+                    if slot is not None:
+                        RoundExecution(self)._member(db, scope, slot)
+                        generation = {
+                            "round_id": round_id,
+                            "slot_id": slot["id"],
+                            "member_id": slot["member_id"],
+                            "epoch": scope.epoch,
+                            "lease_generation": row["lease_generation"],
+                            "execution_window": row["execution_window"],
+                            "phase": row["progress_phase"] or "preparing",
+                            "expires_at": row["lease_expires_at"],
+                        }
+                except BookWorldError:
+                    pass
             return {
                 "round_id": row["id"],
                 "room_id": scope.room_id,
@@ -65,6 +126,7 @@ class BookRoundService:
                 or (row["status"] == "queued" and not row["lease_owner"])
                 or (row["status"] == "running" and row["lease_expires_at"] <= _now()),
                 "slots": slots,
+                "generation": generation,
                 "timeLimitSeconds": row["time_limit_seconds"],
                 "executionWindow": row["execution_window"],
                 "elapsedSeconds": row["window_elapsed_ms"] / 1000,
@@ -174,8 +236,11 @@ class BookRoundService:
                     },
                 }
                 round_id = str(uuid4())
-                expression_sets = {}
+                expression_sets: dict[str, str | None] = {}
                 for member in members:
+                    if mode == "all" and member["skip_reason"]:
+                        expression_sets[member["id"]] = None
+                        continue
                     character = CanonicalScope(
                         workspace_id=scope.workspace_id,
                         canonical_policy_version=member["policy_version"],
@@ -209,8 +274,9 @@ class BookRoundService:
                     ),
                 )
                 for position, member in enumerate(members):
+                    skip = member["skip_reason"] if mode == "all" else None
                     db.execute(
-                        "INSERT INTO book_round_slots(id,room_id,epoch,round_id,position,member_id,member_generation) VALUES (?,?,?,?,?,?,?)",
+                        "INSERT INTO book_round_slots(id,room_id,epoch,round_id,position,member_id,member_generation,status,skip_reason) VALUES (?,?,?,?,?,?,?,?,?)",
                         (
                             str(uuid4()),
                             scope.room_id,
@@ -219,12 +285,15 @@ class BookRoundService:
                             position,
                             member["id"],
                             member["membership_generation"],
+                            "no_comment" if skip else "pending",
+                            skip,
                         ),
                     )
                 db.execute(
                     "INSERT INTO book_room_messages(id,room_id,epoch,seq,round_id,speaker_type,content,validation_state) VALUES (?,?,?,?,?,'user',?,'not_applicable')",
                     (str(uuid4()), scope.room_id, scope.epoch, room["next_seq"], round_id, content),
                 )
+                advance_cursor(db, scope, round_id)
         return self.get_round(scope, round_id)
 
     def control(
@@ -233,7 +302,19 @@ class BookRoundService:
         with connect(self.db_path) as db:
             db.execute("BEGIN IMMEDIATE")
             row = self._round(db, scope, round_id)
-            if action == "cancel":
+            if action == "pause":
+                if row["status"] not in ("queued", "running", "paused"):
+                    raise BookWorldError("invalid_round_state", "Only an active turn can pause")
+                if row["status"] != "paused":
+                    db.execute(
+                        "UPDATE book_room_rounds SET status='paused',error_code='user_pause',lease_generation=lease_generation+1,lease_owner=NULL,lease_expires_at=NULL,progress_phase=NULL WHERE id=?",
+                        (round_id,),
+                    )
+                    db.execute(
+                        "UPDATE book_round_slots SET status='pending' WHERE round_id=? AND status='running'",
+                        (round_id,),
+                    )
+            elif action == "cancel":
                 if row["status"] not in ("completed", "cancelled"):
                     db.execute(
                         "UPDATE book_room_rounds SET status='cancelled',cancel_requested=1,lease_generation=lease_generation+1,lease_owner=NULL,lease_expires_at=NULL WHERE id=?",
@@ -251,6 +332,13 @@ class BookRoundService:
                 if type(time_limit_seconds) is not int or not 1 <= time_limit_seconds <= 2147483647:
                     raise BookWorldError(
                         "invalid_request", "Continue requires a positive seconds snapshot"
+                    )
+                if db.execute(
+                    "SELECT 1 FROM book_room_rounds WHERE room_id=? AND id<>? AND status IN ('queued','running','paused','interrupted')",
+                    (scope.room_id, round_id),
+                ).fetchone():
+                    raise BookWorldError(
+                        "room_busy", "Finish the newer active turn before continuing"
                     )
                 if not (
                     row["status"] in ("paused", "interrupted", "failed")

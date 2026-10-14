@@ -96,7 +96,11 @@ class BookChatWorker:
                 phase: str, prompt: str, schema, *, candidate=None, feedback=None, context_data=None
             ) -> str:
                 if not await asyncio.to_thread(
-                    self.execution.tick, lease, elapsed, attempt=phase == "generate"
+                    self.execution.tick,
+                    lease,
+                    elapsed,
+                    attempt=phase == "generate",
+                    phase="validating" if phase in ("review", "summary_review") else "generating",
                 ):
                     raise BookWorldError("round_timeout", "Execution window reached its limit")
                 remaining = lease.seconds - (lease.window_before + elapsed()) / 1000
@@ -264,9 +268,16 @@ class BookChatWorker:
                 await asyncio.to_thread(self.execution.checkpoint_revoked, lease, elapsed)
             else:
                 await asyncio.to_thread(self.execution.stop, lease, error.code, elapsed)
+                if error.code in (
+                    "character_unavailable",
+                    "source_unavailable",
+                    "member_unavailable",
+                ):
+                    remaining = await asyncio.to_thread(self.rounds.get_round, scope, round_id)
+                    return bool(remaining["status"] == "queued")
         except asyncio.CancelledError:
             await asyncio.shield(
-                asyncio.to_thread(self.execution.checkpoint_revoked, lease, elapsed)
+                asyncio.to_thread(self.execution.checkpoint_revoked, lease, elapsed, cancelled=True)
             )
             raise
         except Exception:

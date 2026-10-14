@@ -154,6 +154,11 @@ export function WebSocketProvider({ children }) {
 
       ws.current.onclose = (event) => {
         if (!isComponentMounted) return;
+        // A closed socket cannot deliver outcomes of its sent requests.
+        // Callers refresh state or explicitly retry the same idempotent action.
+        const lost = pendingRequests.current;
+        pendingRequests.current = new Map();
+        lost.forEach(({ reject }) => reject(new Error("WebSocket disconnected; refresh current state")));
         setConnectionStatus("disconnected");
         setShowLoadingOverlay(true);
         overlayShowTimeRef.current = Date.now();
@@ -165,9 +170,8 @@ export function WebSocketProvider({ children }) {
           queue.forEach(({ reject }) => {
             reject(new Error("WebSocket closed"));
           });
-        } else {
-          reconnectTimer = setTimeout(connectWS, 3000);
         }
+        reconnectTimer = setTimeout(connectWS, 3000);
       };
 
       ws.current.onerror = () => {

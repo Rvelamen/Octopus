@@ -7,11 +7,13 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
   const [memory, setMemory] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [pollError, setPollError] = useState('');
   const [models, setModels] = useState([]);
   const [modelKey, setModelKey] = useState(null);
   const generation = useRef(0);
   const revision = useRef(0);
   const roomRef = useRef(null);
+  const historyRef = useRef({ key: null, messages: [] });
   const requestId = useRef(crypto.randomUUID());
   const pendingTurn = useRef(null);
   const modelTouched = useRef(false);
@@ -33,15 +35,18 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
       if (!valid()) return;
       const recalled = await request('get_memory', identity);
       if (!valid()) return;
-      const history = [];
-      let cursor = 0;
+      const key = `${snapshot.workspace_id}:${identity.room_id}:${identity.expected_epoch}`;
+      const history = historyRef.current.key === key ? [...historyRef.current.messages] : [];
+      let cursor = history.at(-1)?.seq || 0;
       do {
         const page = await request('read_messages', { ...identity, after_seq: cursor, limit: 100 });
         if (!valid()) return;
-        history.push(...page.messages);
+        const ids = new Set(history.map((message) => message.id));
+        history.push(...page.messages.filter((message) => !ids.has(message.id)));
         cursor = page.next_seq;
       } while (cursor !== null);
       roomRef.current = { ...identity, workspace_id: snapshot.workspace_id };
+      historyRef.current = { key, messages: history };
       setRoom(snapshot); setMessages(history); setRound(job); setMemory(recalled.memory);
       if (job?.generation_config?.model_record_id && (!modelTouched.current || ['queued', 'running', 'paused', 'interrupted'].includes(job.status))) setModelKey(`${job.generation_config.provider_id}:${job.generation_config.model_record_id}`);
     } catch (failure) { if (valid()) throw failure; }
@@ -63,17 +68,17 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
   }, [detail.item_id, detail.build_id, detail.character_id, detail.room_id, detail.epoch, request, refresh]);
 
   useEffect(() => {
-    if (!roomRef.current || busy || !['queued', 'running'].includes(round?.status)) return undefined;
+    if (!roomRef.current || busy) return undefined;
     let stopped = false;
     let timer;
     const poll = async () => {
-      try { await refresh(roomRef.current); }
-      catch (failure) { if (!stopped) setError(failure.message); }
-      if (!stopped) timer = setTimeout(poll, 1000);
+      try { await refresh(roomRef.current); if (!stopped) setPollError(''); }
+      catch (failure) { if (!stopped) setPollError(failure.message); }
+      if (!stopped) timer = setTimeout(poll, ['queued', 'running'].includes(round?.status) ? 1000 : 5000);
     };
     timer = setTimeout(poll, 500);
     return () => { stopped = true; clearTimeout(timer); };
-  }, [round?.status, busy, refresh]);
+  }, [round?.status, room?.room_id, busy, refresh]);
 
   const act = async (operation, content, controls = {}) => {
     if (!roomRef.current) return false;
@@ -94,6 +99,7 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
       if (operation === 'reset_memory') {
         roomRef.current = { room_id: result.room_id, expected_epoch: result.epoch, workspace_id: result.workspace_id };
         pendingTurn.current = null;
+        historyRef.current = { key: null, messages: [] };
         setMessages([]); setRound(null); setMemory(null); setRoom(result);
       }
       await refresh(roomRef.current);
@@ -106,5 +112,5 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
   const evidence = async (messageId) => request('get_message_evidence', { ...roomRef.current, message_id: messageId });
   const chooseModel = (value) => { modelTouched.current = true; setModelKey(value); };
   const refreshCurrent = useCallback(() => roomRef.current && refresh(roomRef.current), [refresh]);
-  return { room, messages, round, memory, busy, error, models, modelKey, setModelKey: chooseModel, act, evidence, refresh: refreshCurrent };
+  return { room, messages, round: pollError && round ? { ...round, generation: null } : round, memory, busy, error: error || pollError, models, modelKey, setModelKey: chooseModel, act, evidence, refresh: refreshCurrent };
 }

@@ -34,6 +34,21 @@ class BookRoomHandler(MessageHandler):
     _slots: dict[tuple[Any, str], asyncio.Semaphore] = {}
     _controls: dict[tuple[Any, str, str], asyncio.Lock] = {}
     _cleanup_tasks: dict[tuple[str, str], asyncio.Task] = {}
+    _initialized_workspaces: set[tuple[Any, str]] = set()
+    _initialization_locks: dict[tuple[Any, str], asyncio.Lock] = {}
+
+    @classmethod
+    async def initialize_workspace(cls, root: Path) -> list[str]:
+        """First entry interrupts old work; same-process reentry preserves live workers."""
+        key = asyncio.get_running_loop(), workspace_identity(root)
+        lock = cls._initialization_locks.setdefault(key, asyncio.Lock())
+        async with lock:
+            if key in cls._initialized_workspaces:
+                return []
+            rounds = await asyncio.to_thread(BookRoundService, root)
+            interrupted = await asyncio.to_thread(rounds.recover_interrupted)
+            cls._initialized_workspaces.add(key)
+            return interrupted
 
     async def _original_model(
         self, generation: dict, preferred: CharacterChatModel | None = None
@@ -180,6 +195,7 @@ class BookRoomHandler(MessageHandler):
         if request.action in (
             "submit_turn",
             "cancel_round",
+            "pause_round",
             "resume_round",
             "set_member",
             "add_members",
@@ -289,9 +305,15 @@ class BookRoomHandler(MessageHandler):
             return result
         assert request.round_id
         async with self._lock(root, request.round_id):
-            if request.action == "cancel_round":
-                result = await asyncio.to_thread(rounds.control, scope, request.round_id, "cancel")
+            if request.action in ("cancel_round", "pause_round"):
+                result = await asyncio.to_thread(
+                    rounds.control,
+                    scope,
+                    request.round_id,
+                    "cancel" if request.action == "cancel_round" else "pause",
+                )
                 await self._stop(root, request.round_id)
+                result = await asyncio.to_thread(rounds.get_round, scope, request.round_id)
             else:
                 current = await asyncio.to_thread(rounds.get_round, scope, request.round_id)
                 model = await self._original_model(current["generation_config"])
