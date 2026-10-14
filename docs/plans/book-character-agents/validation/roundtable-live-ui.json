@@ -1,0 +1,618 @@
+{
+  "deletingMember": {
+    "epoch": 4,
+    "execution_window": 1,
+    "expires_at": "2026-10-14T07:22:18.736+00:00",
+    "lease_generation": 1,
+    "member_id": "745bf9a6-6c68-4f4f-ad32-3c7ff130640f",
+    "phase": "generating",
+    "round_id": "87470e02-536d-47ab-9392-abf5de66aa53",
+    "slot_id": "beffabf1-2931-46db-9529-4ed1ce2e3b47"
+  },
+  "deletion": {
+    "bubbles": 0,
+    "characterMessages": 0,
+    "diagnostics": {
+      "active": 1,
+      "created": 3,
+      "disposed": 2,
+      "fps": 60.02400960375224,
+      "meshes": 157
+    },
+    "room": {
+      "action": "get_room",
+      "discussion": {
+        "goal": null,
+        "mode": "free",
+        "revision": 0,
+        "topic": null
+      },
+      "epoch": 4,
+      "latest_round_id": "87470e02-536d-47ab-9392-abf5de66aa53",
+      "members": [
+        {
+          "active": 0,
+          "available": false,
+          "book_id": "e2b0ea09-293d-401d-a027-cac9858e2373",
+          "build_id": "dc9648eb-91f6-498d-b4e4-81c8ec24d139",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "5b14b4e2-6438-4418-8007-4f56647b3c28",
+          "id": "745bf9a6-6c68-4f4f-ad32-3c7ff130640f",
+          "identity": {
+            "book_title": "原著样本",
+            "name": "人物甲"
+          },
+          "membership_generation": 4,
+          "removed_reason": "source_removed",
+          "seat_index": 0,
+          "source_version_id": "8fc36739-81b9-4062-8930-da0f930233ee",
+          "speaking_mode": "auto"
+        },
+        {
+          "active": 1,
+          "available": true,
+          "book_id": "9d8dd23a-2d70-48b6-b7b4-2bc68933999e",
+          "build_id": "55354a60-161d-4a2a-8574-ca9f260e7420",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "7e7caa09-6fb4-41de-99a4-629b576ca2af",
+          "id": "4e875d77-3fb9-4be3-a1b4-ee2d83b0706a",
+          "identity": {
+            "book_title": "原著样本",
+            "name": "人物甲"
+          },
+          "membership_generation": 3,
+          "removed_reason": null,
+          "seat_index": 1,
+          "source_version_id": "8f8a88e4-00d8-4602-80d9-aa47f3a5a397",
+          "speaking_mode": "auto"
+        }
+      ],
+      "next_seq": 14,
+      "room_id": "9719bb8f-183a-41b7-b723-46f253d95032",
+      "scene_capacity": 8,
+      "scene_layout_version": 1,
+      "sources": [
+        {
+          "book_id": "e2b0ea09-293d-401d-a027-cac9858e2373",
+          "build_id": "dc9648eb-91f6-498d-b4e4-81c8ec24d139",
+          "cleanup_status": "completed",
+          "identity": {
+            "book_title": "原著样本",
+            "canonical_policy_version": "canonical-persona-v3"
+          },
+          "is_latest_version": false,
+          "source_version_id": "8fc36739-81b9-4062-8930-da0f930233ee",
+          "status": "source_removed"
+        },
+        {
+          "book_id": "9d8dd23a-2d70-48b6-b7b4-2bc68933999e",
+          "build_id": "55354a60-161d-4a2a-8574-ca9f260e7420",
+          "cleanup_status": null,
+          "identity": {
+            "book_title": "原著样本",
+            "canonical_policy_version": "canonical-persona-v3"
+          },
+          "is_latest_version": true,
+          "source_version_id": "8f8a88e4-00d8-4602-80d9-aa47f3a5a397",
+          "status": "active"
+        }
+      ],
+      "status": "active",
+      "title": "林间圆桌 · 两书同名人物",
+      "workspace_id": "aec75bae08888d2ca5e4a086b23f4678cd9ea0a7fc2b99889df5cbad470066ec"
+    },
+    "round": {
+      "action": "get_round",
+      "can_resume": false,
+      "cursor": 1,
+      "discussion": {
+        "goal": null,
+        "mode": "free",
+        "revision": 0,
+        "speaker_request": {
+          "mode": "directed",
+          "selection_policy": "public-room-selection-v1",
+          "target_member_ids": [
+            "745bf9a6-6c68-4f4f-ad32-3c7ff130640f"
+          ]
+        },
+        "topic": null
+      },
+      "elapsedSeconds": 20.656,
+      "epoch": 4,
+      "error_code": null,
+      "executionWindow": 1,
+      "execution_window": 1,
+      "generation": null,
+      "generation_config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": false,
+        "expression_selection_version": "expression-selection-v2",
+        "expression_sets": {
+          "745bf9a6-6c68-4f4f-ad32-3c7ff130640f": null
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "memory_policy_version": "typed-room-memory-v1",
+        "memory_prompt_version": "room-memory-v2",
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v5",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v3",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "mode": "directed",
+      "remainingSeconds": 39.344,
+      "room_id": "9719bb8f-183a-41b7-b723-46f253d95032",
+      "round_id": "87470e02-536d-47ab-9392-abf5de66aa53",
+      "run_started_at": "2026-10-14T07:20:18.736+00:00",
+      "slots": [
+        {
+          "attempts": 1,
+          "id": "beffabf1-2931-46db-9529-4ed1ce2e3b47",
+          "member_generation": 3,
+          "member_id": "745bf9a6-6c68-4f4f-ad32-3c7ff130640f",
+          "position": 0,
+          "skip_reason": "source_unavailable",
+          "status": "no_comment"
+        }
+      ],
+      "status": "completed",
+      "timeLimitSeconds": 60,
+      "time_limit_seconds": 60,
+      "timeoutReason": null,
+      "total_elapsed_ms": 20656,
+      "window_elapsed_ms": 20656,
+      "workspace_id": "aec75bae08888d2ca5e4a086b23f4678cd9ea0a7fc2b99889df5cbad470066ec"
+    },
+    "late_result_published": false
+  },
+  "fallback": {
+    "canvas": 0,
+    "diagnostics": {
+      "active": 0,
+      "created": 4,
+      "disposed": 4,
+      "fps": 45.99463395897737,
+      "meshes": 565
+    },
+    "overflow": false,
+    "seats": 32,
+    "width": 800
+  },
+  "large": {
+    "diagnostics": {
+      "active": 1,
+      "created": 4,
+      "disposed": 3,
+      "fps": 45.99463395897737,
+      "meshes": 565
+    },
+    "members": 32
+  },
+  "native_model_calls": 0,
+  "oldEpoch": 3,
+  "publicProfile": {
+    "action": "get_member_profile",
+    "agent_status": "sparse",
+    "book_id": "e2b0ea09-293d-401d-a027-cac9858e2373",
+    "build_id": "dc9648eb-91f6-498d-b4e4-81c8ec24d139",
+    "character_id": "5b14b4e2-6438-4418-8007-4f56647b3c28",
+    "epoch": 4,
+    "identity": {
+      "book_title": "原著样本",
+      "name": "人物甲"
+    },
+    "member_id": "745bf9a6-6c68-4f4f-ad32-3c7ff130640f",
+    "public": {
+      "entity_kind": "person",
+      "identity_state": "verified",
+      "name": "人物甲"
+    },
+    "room_id": "9719bb8f-183a-41b7-b723-46f253d95032",
+    "source_version_id": "8fc36739-81b9-4062-8930-da0f930233ee",
+    "workspace_id": "aec75bae08888d2ca5e4a086b23f4678cd9ea0a7fc2b99889df5cbad470066ec"
+  },
+  "reset": {
+    "bubbles": 0,
+    "epoch": 4,
+    "errors": [
+      {
+        "code": "stale_room_epoch",
+        "message": "Room is missing or its memory epoch changed"
+      }
+    ],
+    "messages": 0
+  },
+  "sync": {
+    "announcements": 1,
+    "diagnostics": {
+      "active": 1,
+      "created": 2,
+      "disposed": 1,
+      "fps": 60.0240096037524,
+      "meshes": 157
+    },
+    "mismatches": 0,
+    "reduced": true,
+    "sample": {
+      "body": "你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。",
+      "head": "你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。…",
+      "id": "1588fbf8-73f3-4393-ae1c-e379f08a28d4",
+      "match": true,
+      "seq": "12"
+    },
+    "samples": 3
+  },
+  "date": "2026-10-14",
+  "scope": "Actual React components, production WebSocketProvider, real room services/SQLite; controlled provider, not persona quality acceptance",
+  "earlier_route_harness_evidence": {
+    "scene-sync-proof": {
+      "diagnostics": {
+        "created": 1,
+        "disposed": 0,
+        "active": 1,
+        "meshes": 157,
+        "fps": 59.92808629626529
+      },
+      "messages": [
+        {
+          "id": "5e9db606-c5b0-417f-968a-d92d6f56fb81",
+          "seq": "6",
+          "bubble": "你好。请慢慢说，我听着。你好。请慢",
+          "body": "你好。请慢慢说，我听着。你好。请慢"
+        }
+      ]
+    },
+    "scene-reset-reconnect": {
+      "epoch": 2,
+      "bubbles": 0,
+      "scope": {
+        "type": "book_room",
+        "action": "get_room",
+        "workspace_id": "aec75bae08888d2ca5e4a086b23f4678cd9ea0a7fc2b99889df5cbad470066ec",
+        "room_id": "9719bb8f-183a-41b7-b723-46f253d95032",
+        "expected_epoch": 2
+      },
+      "diagnostics": {
+        "created": 1,
+        "disposed": 0,
+        "active": 1,
+        "meshes": 157,
+        "fps": 60.00000000000005
+      }
+    },
+    "scene-flat-rejoin": {
+      "id": "1f407dad-5969-451d-be46-166a0e2c820f",
+      "book_id": "9e6c1056-06ee-4db9-805d-17972bfd36b2",
+      "source_version_id": "95bdec88-aac4-426f-abc2-a50db22c92d9",
+      "build_id": "5a5e7ea6-cf2a-4b82-b8dc-4a78d2805de8",
+      "character_id": "2a69491e-2af4-4b76-a04a-d1c7dd303047",
+      "seat_index": 0,
+      "active": 1,
+      "speaking_mode": "muted",
+      "membership_generation": 3,
+      "removed_reason": null,
+      "identity": {
+        "book_title": "原著样本",
+        "name": "人物00"
+      },
+      "available": true,
+      "canonical_policy_version": "canonical-persona-v3"
+    },
+    "scene-narrow-directed": {
+      "reduced": true,
+      "requests": {
+        "type": "book_room",
+        "action": "submit_turn",
+        "workspace_id": "aec75bae08888d2ca5e4a086b23f4678cd9ea0a7fc2b99889df5cbad470066ec",
+        "room_id": "6ead54a8-4a3e-4b17-94d9-fec09231f196",
+        "expected_epoch": 1,
+        "client_turn_id": "c9a22198-ab94-4716-944b-0de523e36bc2",
+        "content": "你好",
+        "mode": "directed",
+        "target_member_ids": [
+          "1f407dad-5969-451d-be46-166a0e2c820f"
+        ],
+        "provider_id": 2,
+        "model_record_id": 337
+      }
+    },
+    "scene-ui-created": {
+      "url": "#/book-rooms/d2f17ce3-6df9-407d-bfe6-715d021d361a",
+      "title": "T16 浏览器创建验收",
+      "room": {
+        "action": "get_room",
+        "workspace_id": "aec75bae08888d2ca5e4a086b23f4678cd9ea0a7fc2b99889df5cbad470066ec",
+        "room_id": "d2f17ce3-6df9-407d-bfe6-715d021d361a",
+        "epoch": 1,
+        "title": "T16 浏览器创建验收",
+        "next_seq": 1,
+        "status": "active",
+        "discussion": {
+          "revision": 0,
+          "mode": "free",
+          "topic": null,
+          "goal": null
+        },
+        "scene_capacity": 8,
+        "scene_layout_version": 1,
+        "members": [
+          {
+            "id": "96145dc0-0680-4903-a30c-5d7e32acec9d",
+            "book_id": "e2b0ea09-293d-401d-a027-cac9858e2373",
+            "source_version_id": "8fc36739-81b9-4062-8930-da0f930233ee",
+            "build_id": "dc9648eb-91f6-498d-b4e4-81c8ec24d139",
+            "character_id": "5b14b4e2-6438-4418-8007-4f56647b3c28",
+            "seat_index": 0,
+            "active": 1,
+            "speaking_mode": "auto",
+            "membership_generation": 0,
+            "removed_reason": null,
+            "identity": {
+              "book_title": "原著样本",
+              "name": "人物甲"
+            },
+            "available": true,
+            "canonical_policy_version": "canonical-persona-v3"
+          },
+          {
+            "id": "dea3a338-b822-438b-ad59-570e1621c9da",
+            "book_id": "9d8dd23a-2d70-48b6-b7b4-2bc68933999e",
+            "source_version_id": "8f8a88e4-00d8-4602-80d9-aa47f3a5a397",
+            "build_id": "55354a60-161d-4a2a-8574-ca9f260e7420",
+            "character_id": "7e7caa09-6fb4-41de-99a4-629b576ca2af",
+            "seat_index": 1,
+            "active": 1,
+            "speaking_mode": "auto",
+            "membership_generation": 0,
+            "removed_reason": null,
+            "identity": {
+              "book_title": "原著样本",
+              "name": "人物甲"
+            },
+            "available": true,
+            "canonical_policy_version": "canonical-persona-v3"
+          }
+        ],
+        "sources": [
+          {
+            "book_id": "e2b0ea09-293d-401d-a027-cac9858e2373",
+            "source_version_id": "8fc36739-81b9-4062-8930-da0f930233ee",
+            "build_id": "dc9648eb-91f6-498d-b4e4-81c8ec24d139",
+            "status": "active",
+            "cleanup_status": null,
+            "is_latest_version": true,
+            "identity": {
+              "book_title": "原著样本",
+              "canonical_policy_version": "canonical-persona-v3"
+            }
+          },
+          {
+            "book_id": "9d8dd23a-2d70-48b6-b7b4-2bc68933999e",
+            "source_version_id": "8f8a88e4-00d8-4602-80d9-aa47f3a5a397",
+            "build_id": "55354a60-161d-4a2a-8574-ca9f260e7420",
+            "status": "active",
+            "cleanup_status": null,
+            "is_latest_version": true,
+            "identity": {
+              "book_title": "原著样本",
+              "canonical_policy_version": "canonical-persona-v3"
+            }
+          }
+        ],
+        "latest_round_id": null
+      },
+      "diagnostics": {
+        "created": 6,
+        "disposed": 5,
+        "active": 1,
+        "meshes": 157,
+        "fps": 59.97600959625092
+      }
+    },
+    "scene-webgl-fallback": {
+      "diagnostics": {
+        "created": 3,
+        "disposed": 3,
+        "active": 0,
+        "meshes": 565,
+        "fps": 59.58291956305779
+      },
+      "flatSeats": 32,
+      "canvas": 0
+    },
+    "scene-32-seats": {
+      "url": "#/book-rooms/6ead54a8-4a3e-4b17-94d9-fec09231f196",
+      "diagnostics": {
+        "created": 3,
+        "disposed": 2,
+        "active": 1,
+        "meshes": 565,
+        "fps": 27.84407319009398
+      },
+      "seats": [
+        {
+          "id": "1f407dad-5969-451d-be46-166a0e2c820f",
+          "seat": 0
+        },
+        {
+          "id": "873fe9cb-75b6-4cda-a484-060f4682ec7b",
+          "seat": 1
+        },
+        {
+          "id": "db62b63b-f160-45e5-a287-1bfb736e1c4c",
+          "seat": 2
+        },
+        {
+          "id": "762c65ae-92f4-4a38-831f-169d85539b67",
+          "seat": 3
+        },
+        {
+          "id": "2373fff4-1aef-44a7-a705-c9f10a4e20fa",
+          "seat": 4
+        },
+        {
+          "id": "5bd51ba1-6d9c-4fc3-82b7-1711b744ca3f",
+          "seat": 5
+        },
+        {
+          "id": "abb8bf2f-2b79-4f80-93a5-9996b5f453a8",
+          "seat": 6
+        },
+        {
+          "id": "660805b9-90b4-4f06-aaee-854c45da7c68",
+          "seat": 7
+        },
+        {
+          "id": "27f241de-a9c2-4398-b266-ec3ba0fe14a8",
+          "seat": 8
+        },
+        {
+          "id": "c424cfd0-15b0-4650-b260-8bdc3d8f74dc",
+          "seat": 9
+        },
+        {
+          "id": "18f2b92b-3774-4d5c-84c3-3aac9cbd717f",
+          "seat": 10
+        },
+        {
+          "id": "b5928992-5858-4599-af0e-106cfe1b39b5",
+          "seat": 11
+        },
+        {
+          "id": "1b1aeac6-2039-4a6b-aef1-63e1fa3712a0",
+          "seat": 12
+        },
+        {
+          "id": "aa8e1d58-fa32-42b5-b3a2-a71b3330f825",
+          "seat": 13
+        },
+        {
+          "id": "76f1cb88-be3e-442c-8257-c2e9941962b0",
+          "seat": 14
+        },
+        {
+          "id": "a4319952-831e-4f49-8118-29ed1aa8b1ac",
+          "seat": 15
+        },
+        {
+          "id": "0c4bd08e-6a27-4abb-861a-9489e13f4de4",
+          "seat": 16
+        },
+        {
+          "id": "f5c9b1db-06c7-4a6e-91d7-88127aa10220",
+          "seat": 17
+        },
+        {
+          "id": "1a5afb6e-a130-4fb4-9f0a-2438eb067b64",
+          "seat": 18
+        },
+        {
+          "id": "46e3dd5d-4e29-40fd-8c66-8dacda07c18b",
+          "seat": 19
+        },
+        {
+          "id": "7aaaf34a-0dea-4864-b909-7688a304f5d7",
+          "seat": 20
+        },
+        {
+          "id": "65b78e21-662a-4043-89c2-c232840653e9",
+          "seat": 21
+        },
+        {
+          "id": "29952b7c-6a7f-4e93-9ccd-4f7682ed951d",
+          "seat": 22
+        },
+        {
+          "id": "604f946f-bf81-4c0b-9a64-96ca46d3eeee",
+          "seat": 23
+        },
+        {
+          "id": "bfd87f99-f822-43ee-9b61-43c8f8a84e4a",
+          "seat": 24
+        },
+        {
+          "id": "63e8fe32-6417-4c55-bf8d-317072c510c2",
+          "seat": 25
+        },
+        {
+          "id": "f30b0cf0-4bdf-42e6-af7c-1e2038f1f93b",
+          "seat": 26
+        },
+        {
+          "id": "b6e0ba1d-6fc5-47a3-b258-449e958a77e7",
+          "seat": 27
+        },
+        {
+          "id": "b87bae57-32dc-49d7-8198-d2c504c7bafd",
+          "seat": 28
+        },
+        {
+          "id": "aad66052-15c7-4a5f-a2d0-3ad7afda96d4",
+          "seat": 29
+        },
+        {
+          "id": "5024bbbf-5285-497e-92a2-318bc9982701",
+          "seat": 30
+        },
+        {
+          "id": "4b304fe1-a42c-41d2-949e-00e0ca7f2d3d",
+          "seat": 31
+        }
+      ]
+    }
+  },
+  "earlier_size_harness_evidence": [
+    {
+      "size": 16,
+      "diagnostics": {
+        "created": 2,
+        "disposed": 1,
+        "active": 1,
+        "meshes": 293,
+        "fps": 60.024009603752155
+      },
+      "names": 16
+    },
+    {
+      "size": 8,
+      "diagnostics": {
+        "created": 3,
+        "disposed": 2,
+        "active": 1,
+        "meshes": 157,
+        "fps": 58.04953560404992
+      },
+      "names": 8
+    },
+    {
+      "size": 4,
+      "diagnostics": {
+        "created": 4,
+        "disposed": 3,
+        "active": 1,
+        "meshes": 157,
+        "fps": 60.949063995726405
+      },
+      "names": 4
+    },
+    {
+      "size": 1,
+      "diagnostics": {
+        "created": 5,
+        "disposed": 4,
+        "active": 1,
+        "meshes": 157,
+        "fps": 57.67844268080827
+      },
+      "names": 1
+    }
+  ]
+}

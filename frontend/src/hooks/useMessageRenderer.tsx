@@ -33,7 +33,7 @@ export function useMessageRenderer() {
 
   const markdownComponents = useMemo(
     () => ({
-      a: ({ href, children }) => (
+      a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
         <a
           href={href}
           target="_blank"

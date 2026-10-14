@@ -5,7 +5,7 @@ import BookSingleChatModal from './BookSingleChatModal';
 
 const characterKey = (entry) => `${entry.item_id}:${entry.build_id}:${entry.character_id}`;
 
-export default function BookRoomManager({ sendWSMessage, onClose }) {
+export default function BookRoomManager({ sendWSMessage, onClose, onOpenRoom, initialCreate = false, initialAdding = null, initialCharacters = [] }) {
   const { t } = useTranslation();
   const [rooms, setRooms] = useState([]);
   const [roomCursor, setRoomCursor] = useState(null);
@@ -24,6 +24,8 @@ export default function BookRoomManager({ sendWSMessage, onClose }) {
   const listRevision = useRef(0);
   const pendingCreation = useRef(null);
   const workspaceRef = useRef(null);
+  const initialized = useRef(false);
+  const initialKey = JSON.stringify(initialCharacters);
 
   const request = useCallback(async (action, data = {}) => {
     const response = await sendWSMessage('book_room', { action, ...data }, 120000);
@@ -38,15 +40,28 @@ export default function BookRoomManager({ sendWSMessage, onClose }) {
       const [list, characters] = await Promise.all([request('list_rooms', { limit: 25 }), request('list_room_characters', { limit: 100 })]);
       if (current !== generation.current || sequence !== listRevision.current) return;
       if (list.workspace_id !== characters.workspace_id) throw new Error(t('bookRoom.workspaceChanged'));
+      const entries = JSON.parse(initialKey);
+      const availableCharacters = [...characters.characters];
+      for (const preset of entries) {
+        if (!availableCharacters.some(entry => characterKey(entry) === characterKey(preset))) {
+          const result = await request('get_room_character', {workspace_id: list.workspace_id, ...preset});
+          if (current !== generation.current || sequence !== listRevision.current) return;
+          availableCharacters.push(result.character);
+        }
+      }
       if (workspaceRef.current && workspaceRef.current !== list.workspace_id) {
         setOpened(null); setAdding(null); setChoosing(false); setSelected([]);
         pendingCreation.current = null;
       }
       workspaceRef.current = list.workspace_id;
       setWorkspace(list.workspace_id); setRooms(list.rooms); setRoomCursor(list.next_offset);
-      setCatalog(characters.characters); setCatalogCursor(characters.next_offset);
+      setCatalog(availableCharacters); setCatalogCursor(characters.next_offset);
+      if (!initialized.current && (initialCreate || initialAdding)) {
+        initialized.current = true; setChoosing(true); setAdding(initialAdding);
+        setSelected(availableCharacters.filter(entry => entries.some(preset => characterKey(entry) === characterKey(preset))).map(characterKey));
+      }
     } catch (failure) { if (current === generation.current && sequence === listRevision.current) throw failure; }
-  }, [request, t]);
+  }, [request, t, initialKey, initialCreate, initialAdding]);
 
   useEffect(() => {
     const current = ++generation.current;
@@ -62,7 +77,7 @@ export default function BookRoomManager({ sendWSMessage, onClose }) {
       const result = await request(kind === 'rooms' ? 'list_rooms' : 'list_room_characters', { workspace_id: workspace, offset: kind === 'rooms' ? roomCursor : catalogCursor, limit: kind === 'rooms' ? 25 : 100 });
       if (current !== generation.current || sequence !== listRevision.current) return;
       if (kind === 'rooms') { setRooms((previous) => [...previous, ...result.rooms]); setRoomCursor(result.next_offset); }
-      else { setCatalog((previous) => [...previous, ...result.characters]); setCatalogCursor(result.next_offset); }
+      else { setCatalog((previous) => [...new Map([...previous, ...result.characters].map(entry => [characterKey(entry), entry])).values()]); setCatalogCursor(result.next_offset); }
     } catch (failure) { if (current === generation.current && sequence === listRevision.current) setError(failure.message); }
     finally { if (current === generation.current) setBusy(false); }
   };
@@ -86,7 +101,7 @@ export default function BookRoomManager({ sendWSMessage, onClose }) {
       if (current !== generation.current) return;
       setChoosing(false);
       if (adding) setRevision((value) => value + 1);
-      else { setOpened(result); pendingCreation.current = null; setTitle(''); }
+      else { if (onOpenRoom) onOpenRoom(result); else setOpened(result); pendingCreation.current = null; setTitle(''); }
       await load();
     } catch (failure) { if (current === generation.current) setError(failure.message); }
     finally { if (current === generation.current) setBusy(false); }
@@ -100,7 +115,7 @@ export default function BookRoomManager({ sendWSMessage, onClose }) {
       {rooms.map((room) => <article key={room.room_id} style={{ padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
         <strong>{room.title}</strong> <Tag>{room.members.filter((member) => member.active).length}</Tag>
         <p>{room.sources.map((source) => `${source.identity.book_title} · ${source.status !== 'active' ? t('bookRoom.deletedSource') : source.is_latest_version ? t('bookRoom.latestVersion') : t('bookRoom.fixedOldVersion')} · ${source.build_id.slice(0, 8)}`).join(' / ')}</p>
-        <Button onClick={() => setOpened(room)}>{t('bookRoom.openRoom')}</Button>
+        <Button onClick={() => onOpenRoom ? onOpenRoom(room) : setOpened(room)}>{t('bookRoom.openRoom')}</Button>
       </article>)}
       {roomCursor !== null && <Button disabled={busy} onClick={() => loadMore('rooms')}>{t('bookRoom.moreRooms')}</Button>}
     </Modal>

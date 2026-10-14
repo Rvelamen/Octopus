@@ -1,6 +1,6 @@
 # 人物聊天室 Tab 与 3D 圆桌交互设计
 
-日期：2026 年 10 月 10 日。状态：首版设计草案，尚未实现界面。所属任务：[T16](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/16-roundtable-chat-ui.md)。
+日期：2026 年 10 月 10 日。状态：首版界面已实现，操作与限制见[验证记录](validation/2026-10-14-roundtable-validation.md)。所属任务：[T16](F:/god/project/Octopus/docs/plans/book-character-agents/tasks/16-roundtable-chat-ui.md)。
 
 ## 入口与页面结构
 

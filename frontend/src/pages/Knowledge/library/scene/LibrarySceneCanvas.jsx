@@ -22,13 +22,11 @@ import { CreateSphere } from '@babylonjs/core/Meshes/Builders/sphereBuilder';
 import { CreatePlane } from '@babylonjs/core/Meshes/Builders/planeBuilder';
 import { CreateCylinder } from '@babylonjs/core/Meshes/Builders/cylinderBuilder';
 import { CreateTorus } from '@babylonjs/core/Meshes/Builders/torusBuilder';
+import { BOOK_COLORS, STONE, WOOD, sceneBox, sceneSphere } from './scenePrimitives';
 
 const MeshBuilder = { CreateBox, CreateSphere, CreatePlane, CreateCylinder, CreateTorus };
 
 // 通用色板 — 暖石灰岩 / 木材 / 织物
-const STONE = { light: '#c2b294', mid: '#a89a82', dark: '#7e7058', shadow: '#5d5240' };
-const WOOD = { oak: '#caa17a', walnut: '#9c6f44', cherry: '#bd8a5e', ebony: '#5d4126' };
-const BOOK_COLORS = ['#c27e69', '#7e9e92', '#8ca9be', '#d0b477', '#af92af', '#708e9b', '#c9947d', '#8a8265', '#b08a6e'];
 
 // The renderer owns GPU resources; application state and book data stay in React.
 class LibraryRenderer {
@@ -228,21 +226,13 @@ class LibraryRenderer {
   }
 
   box(name, dimensions, position, color, parent = null, shadow = true) {
-    const mesh = MeshBuilder.CreateBox(name, dimensions, this.scene);
-    mesh.position = new Vector3(...position);
-    mesh.material = this.material(color);
-    mesh.parent = parent;
-    mesh.receiveShadows = true;
+    const mesh = sceneBox(this.scene, color => this.material(color), name, dimensions, position, color, parent);
     if (shadow) this.shadows.addShadowCaster(mesh);
     return mesh;
   }
 
   sphere(name, diameter, position, color, parent = null, scale = [1, 1, 1]) {
-    const mesh = MeshBuilder.CreateSphere(name, { diameter, segments: 8 }, this.scene);
-    mesh.position = new Vector3(...position);
-    mesh.scaling = new Vector3(...scale);
-    mesh.material = this.material(color);
-    mesh.parent = parent;
+    const mesh = sceneSphere(this.scene, color => this.material(color), name, diameter, position, color, parent, scale);
     this.shadows.addShadowCaster(mesh);
     return mesh;
   }
@@ -859,15 +849,14 @@ class LibraryRenderer {
     if (this.editing || this.dragging) return;
     let mesh = info.pickInfo?.pickedMesh;
     // Thinker click — walk up the parent chain to find the marker
-    let thinkerMarker = null;
     let walk = mesh;
     while (walk && !walk.metadata?.areaId && !walk.metadata?.thinker) walk = walk.parent;
     const data = walk?.metadata;
     if (info.type === PointerEventTypes.POINTERMOVE) {
+      const rect = this.canvas.getBoundingClientRect();
       if (this.hovered !== mesh) this.clearHover();
       if (data?.book) {
         this.hovered = mesh;
-        const rect = this.canvas.getBoundingClientRect();
         this.callbacks.onHover({ book: data.book, x: info.event.clientX - rect.left, y: info.event.clientY - rect.top, type: 'book' });
       } else if (data?.thinker) {
         this.callbacks.onHover({ type: 'thinker', x: info.event.clientX - rect.left, y: info.event.clientY - rect.top });

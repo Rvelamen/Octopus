@@ -128,7 +128,7 @@ export function WebSocketProvider({ children }) {
           const { resolve, reject } = pendingRequests.current.get(request_id);
           pendingRequests.current.delete(request_id);
           type === "error" 
-            ? reject(new Error(data?.error || "Unknown error"))
+            ? reject(Object.assign(new Error(data?.error || "Unknown error"), { code: data?.code }))
             : resolve({ type, data });
           return;
         }

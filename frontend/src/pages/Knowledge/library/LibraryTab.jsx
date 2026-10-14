@@ -17,13 +17,11 @@ import LibraryImportModal from './LibraryImportModal';
 import LibraryCollectionModal from './LibraryCollectionModal';
 import LibraryGraphTab from './LibraryGraphTab';
 import LibraryChatDrawer from './LibraryChatDrawer';
-import BookRoomManager from './BookRoomManager';
 
 const DEFAULT_PAGE_SIZE = 20;
 
 const LibraryTab = ({ sendWSMessage }) => {
   const { t } = useTranslation();
-  const [bookRoomsOpen, setBookRoomsOpen] = useState(false);
   const { subscribe, unsubscribe } = useWebSocket();
   const libraryWS = useLibraryWS(sendWSMessage);
   const {
@@ -447,7 +445,7 @@ const LibraryTab = ({ sendWSMessage }) => {
         >
           Chat
         </Button>
-        <Button size="small" onClick={() => setBookRoomsOpen(true)}>{t('bookRoom.manager')}</Button>
+        <Button size="small" href="#/book-rooms">{t('nav.bookRooms')}</Button>
 
         <TaskIndicator
           onViewTaskDetail={handleViewTaskDetail}
@@ -646,7 +644,6 @@ const LibraryTab = ({ sendWSMessage }) => {
         onImportArxiv={importByArxiv}
         collections={collections}
       />
-      {bookRoomsOpen && <BookRoomManager sendWSMessage={sendWSMessage} onClose={() => setBookRoomsOpen(false)} />}
 
       <LibraryCollectionModal
         open={collectionModalOpen}

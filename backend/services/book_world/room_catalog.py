@@ -11,6 +11,13 @@ class RoomCharacterCatalog:
     def __init__(self, workspace_root: str | Path):
         self.rooms = BookRoomService(workspace_root)
 
+    def get(self, item_id: int, build_id: str, character_id: str) -> dict:
+        scope = self.rooms.knowledge.bind_character(item_id, build_id, character_id)
+        with connect(self.rooms.db_path) as db:
+            self.rooms.knowledge.validate_scope(db, scope)
+            row = db.execute("SELECT k.library_item_id AS item_id,k.title_snapshot AS book_title,c.name,c.id AS character_id,c.agent_status,c.book_id,c.source_version_id,c.build_id,b.created_at FROM book_characters c JOIN book_builds b ON b.book_id=c.book_id AND b.source_version_id=c.source_version_id AND b.id=c.build_id JOIN book_books k ON k.id=c.book_id WHERE c.book_id=? AND c.source_version_id=? AND c.build_id=? AND c.id=?", scope.binding).fetchone()
+        return {"workspace_id": self.rooms.workspace_id, "character": dict(row)}
+
     def list(self, *, limit: int = 25, offset: int = 0, query: str = "") -> dict:
         if (
             type(limit) is not int

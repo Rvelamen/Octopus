@@ -171,6 +171,10 @@ class BookRoomHandler(MessageHandler):
             return await asyncio.to_thread(
                 catalog.list, limit=request.limit, offset=request.offset, query=request.query
             )
+        if request.action == "get_room_character":
+            assert request.item_id is not None and request.build_id and request.character_id
+            catalog = await asyncio.to_thread(RoomCharacterCatalog, root)
+            return await asyncio.to_thread(catalog.get, request.item_id, request.build_id, request.character_id)
         if request.action == "create_group_room":
             assert request.characters and request.client_room_id
             selections = [
@@ -216,6 +220,9 @@ class BookRoomHandler(MessageHandler):
             }
         if request.action == "list_chat_models":
             return {"models": await asyncio.to_thread(list_character_chat_models)}
+        if request.action == "open_room":
+            assert request.room_id
+            return await asyncio.to_thread(rooms.open_room, request.room_id)
         assert request.room_id and request.expected_epoch is not None
         scope = await asyncio.to_thread(rooms.bind_room, request.room_id, request.expected_epoch)
         if request.action in (
@@ -235,6 +242,9 @@ class BookRoomHandler(MessageHandler):
         self, root: Path, scope: RoomScope, request: BookRoomRequest, rooms: BookRoomService
     ) -> dict[str, Any]:
         rounds = await asyncio.to_thread(BookRoundService, root)
+        if request.action == "get_member_profile":
+            assert request.member_id
+            return await asyncio.to_thread(rooms.get_member_profile, scope, request.member_id)
         if request.action == "retry_source_cleanup":
             from backend.services.book_world.lifecycle import BookLifecycleService
 

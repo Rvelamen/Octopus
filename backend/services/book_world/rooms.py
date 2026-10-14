@@ -38,6 +38,33 @@ class BookRoomService:
             self._room(db, scope)
         return scope
 
+    def open_room(self, room_id: str) -> dict[str, Any]:
+        """Bootstrap a route with the current epoch; later actions require that epoch."""
+        with connect(self.db_path) as db:
+            row = db.execute("SELECT current_epoch FROM book_rooms WHERE id=?", (room_id,)).fetchone()
+            if row is None:
+                raise BookWorldError("room_unavailable", "Room does not exist in this workspace")
+            epoch = row["current_epoch"]
+        return self.get_room(RoomScope(workspace_id=self.workspace_id, room_id=room_id, epoch=epoch))
+
+    def get_member_profile(self, scope: RoomScope, member_id: str) -> dict[str, Any]:
+        """Reader-facing public identity only, bound to this room's fixed source."""
+        with connect(self.db_path) as db:
+            db.execute("BEGIN")
+            self._room(db, scope)
+            row = db.execute(
+                "SELECT m.identity_snapshot_json,c.public_profile_json,c.agent_status,m.book_id,m.source_version_id,m.build_id,m.character_id FROM book_room_members m JOIN book_characters c ON c.book_id=m.book_id AND c.source_version_id=m.source_version_id AND c.build_id=m.build_id AND c.id=m.character_id WHERE m.room_id=? AND m.id=? AND m.state_epoch=?",
+                (scope.room_id, member_id, scope.epoch),
+            ).fetchone()
+            if row is None:
+                raise BookWorldError("invalid_scope", "Member does not belong to this room")
+            return {
+                "room_id": scope.room_id, "epoch": scope.epoch, "member_id": member_id,
+                "identity": json.loads(row["identity_snapshot_json"]),
+                "public": json.loads(row["public_profile_json"]),
+                **{key: row[key] for key in ("agent_status", "book_id", "source_version_id", "build_id", "character_id")},
+            }
+
     def reset_memory(self, scope: RoomScope) -> dict[str, Any]:
         """Advance only this room's memory epoch and revoke its unfinished publication leases."""
         with connect(self.db_path) as db:

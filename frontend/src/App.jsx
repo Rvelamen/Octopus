@@ -45,6 +45,7 @@ const LibraryTab = lazy(() =>
 const LibrarySceneView = lazy(() =>
   import("./pages/Knowledge/library").then((m) => ({ default: m.LibrarySceneView }))
 );
+const BookRooms = lazy(() => import('./pages/BookRooms'));
 const PdfViewerWindow = lazy(() => import("./pages/PdfViewerWindow"));
 const MarkdownEditorWindow = lazy(() => import("./pages/MarkdownEditorWindow"));
 const WorkflowWindow = lazy(() => import("./pages/WorkflowWindow"));
@@ -106,7 +107,7 @@ function App() {
       '/workflows': 'workflows',
       '/schedule': 'schedule',
     };
-    return tabMap[location.pathname] || 'chat';
+    return location.pathname.startsWith('/book-rooms') ? 'book-rooms' : tabMap[location.pathname] || 'chat';
   }, [location.pathname]);
 
   // 切回 chat tab 时，把 ref 中累积的 streamingContent 同步到 state
@@ -242,6 +243,7 @@ function App() {
       workspaces: '/workspaces',
       library: '/library',
       'library-scene': '/library-scene',
+      'book-rooms': '/book-rooms',
       history: '/history',
       memory: '/memory',
       tokens: '/tokens',
@@ -362,6 +364,7 @@ function App() {
                 { key: 'knowledge', icon: BookOpen, label: t('nav.knowledge') },
                 { key: 'library', icon: Library, label: t('nav.library') },
                 { key: 'library-scene', icon: Sprout, label: t('nav.libraryScene'), muted: true },
+                { key: 'book-rooms', icon: Users, label: t('nav.bookRooms') },
               ])}
               {renderNavGroup(t('nav.group.automation'), [
                 { key: 'agents', icon: Users, label: t('nav.agents') },
@@ -455,6 +458,8 @@ function App() {
               <Route path="/knowledge" element={<Knowledge sendWSMessage={sendMessage} />} />
               <Route path="/library" element={<LibraryTab sendWSMessage={sendMessage} />} />
               <Route path="/library-scene" element={<LibrarySceneView sendWSMessage={sendMessage} />} />
+              <Route path="/book-rooms" element={<BookRooms sendWSMessage={sendMessage} connectionStatus={connectionStatus} connectionIdentity={ws.current} />} />
+              <Route path="/book-rooms/:roomId" element={<BookRooms sendWSMessage={sendMessage} connectionStatus={connectionStatus} connectionIdentity={ws.current} />} />
               <Route path="/workflows" element={<WorkflowWindow />} />
               <Route path="/pdf-viewer" element={<PdfViewerWindow />} />
               <Route path="/markdown-editor" element={<MarkdownEditorWindow />} />

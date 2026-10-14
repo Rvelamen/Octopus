@@ -19,6 +19,7 @@ class BookRoomRequest(StrictModel):
         "list_rooms",
         "list_chat_models",
         "get_room",
+        "open_room",
         "read_messages",
         "get_round",
         "submit_turn",
@@ -26,9 +27,11 @@ class BookRoomRequest(StrictModel):
         "pause_round",
         "resume_round",
         "get_message_evidence",
+        "get_member_profile",
         "get_memory",
         "reset_memory",
         "list_room_characters",
+        "get_room_character",
         "create_group_room",
         "add_members",
         "set_member",
@@ -70,12 +73,18 @@ class BookRoomRequest(StrictModel):
         listings = ("list_rooms", "list_chat_models", "list_room_characters")
         if self.action not in listings and self.workspace_id is None:
             raise ValueError("Workspace identity is required")
-        if self.action == "create_single_room":
+        if self.action == "get_room_character":
+            if None in (self.item_id, self.build_id, self.character_id):
+                raise ValueError("Public character lookup requires a complete published identity")
+        elif self.action == "create_single_room":
             if None in (self.item_id, self.build_id, self.character_id, self.client_room_id):
                 raise ValueError("Room creation requires a published character and client identity")
         elif self.action == "create_group_room":
             if self.characters is None or self.client_room_id is None:
                 raise ValueError("Group creation requires characters and creation identity")
+        elif self.action == "open_room":
+            if self.room_id is None:
+                raise ValueError("Opening a room requires its identity")
         elif self.action not in listings and None in (
             self.room_id,
             self.expected_epoch,
@@ -98,6 +107,8 @@ class BookRoomRequest(StrictModel):
             raise ValueError("Directed targets must be distinct member identities")
         if self.action == "get_message_evidence" and self.message_id is None:
             raise ValueError("Message identity is required")
+        if self.action == "get_member_profile" and self.member_id is None:
+            raise ValueError("Member identity is required")
         if self.action == "add_members" and self.characters is None:
             raise ValueError("Joining requires published character selections")
         if self.action == "set_member" and (

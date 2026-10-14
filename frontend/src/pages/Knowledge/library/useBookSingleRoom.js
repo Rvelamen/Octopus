@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export default function useBookSingleRoom(detail, sendWSMessage) {
+export default function useBookSingleRoom(detail, sendWSMessage, connectionStatus = 'connected', connectionIdentity) {
   const [room, setRoom] = useState(null);
-  const [messages, setMessages] = useState([]);
+  const [messageState, setMessageState] = useState({ messages: [], liveIds: [], liveAt: {} });
+  const messages = messageState.messages;
   const [round, setRound] = useState(null);
   const [memory, setMemory] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -17,9 +18,14 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
   const requestId = useRef(crypto.randomUUID());
   const pendingTurn = useRef(null);
   const modelTouched = useRef(false);
+  const resync = useRef(false);
+  const liveRef = useRef({ key: null, liveIds: [], liveAt: {} });
+  const offline = connectionStatus !== 'connected';
+  useEffect(() => { resync.current = true; }, [connectionStatus, connectionIdentity]);
 
   const request = useCallback(async (action, values = {}) => {
-    const response = await sendWSMessage('book_room', { action, workspace_id: detail.workspace_id, ...values }, 120000);
+    const requestedGeneration = generation.current;
+    const response = await sendWSMessage('book_room', { action, workspace_id: detail.workspace_id, ...values }, 120000).catch(failure => {if (requestedGeneration === generation.current) resync.current = true; throw failure;});
     if (response.type === 'error') {
       const failure = new Error(response.data.error);
       failure.code = response.data.code;
@@ -28,14 +34,12 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
     return response.data;
   }, [detail.workspace_id, sendWSMessage]);
 
-  const refresh = useCallback(async (identity) => {
+  const refresh = useCallback(async function refreshScope(identity, recoverEpoch = true) {
     const current = generation.current;
     const sequence = ++revision.current;
     const valid = () => current === generation.current && sequence === revision.current;
     try {
       const snapshot = await request('get_room', identity);
-      if (!valid()) return;
-      const job = snapshot.latest_round_id ? await request('get_round', { ...identity, round_id: snapshot.latest_round_id }) : null;
       if (!valid()) return;
       const recalled = await request('get_memory', identity);
       if (!valid()) return;
@@ -49,30 +53,48 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
         history.push(...page.messages.filter((message) => !ids.has(message.id)));
         cursor = page.next_seq;
       } while (cursor !== null);
+      // Read progress after published messages so an already-published slot cannot
+      // mask its body with an older generating/validating placeholder.
+      const job = snapshot.latest_round_id ? await request('get_round', { ...identity, round_id: snapshot.latest_round_id }) : null;
+      if (!valid()) return;
       roomRef.current = { ...identity, workspace_id: snapshot.workspace_id };
+      const priorIds = new Set(historyRef.current.messages.map(message => message.id));
+      const continuing = historyRef.current.key === key && !resync.current;
+      const added = continuing ? history.filter(message => !priorIds.has(message.id)).map(message => message.id) : [];
+      const liveIds = continuing ? [...liveRef.current.liveIds, ...added] : [];
+      const liveAt = continuing ? { ...liveRef.current.liveAt, ...Object.fromEntries(added.map(id => [id, performance.now()])) } : {};
+      liveRef.current = { key, liveIds, liveAt }; resync.current = false;
       historyRef.current = { key, messages: history };
-      setRoom(snapshot); setMessages(history); setRound(job); setMemory(recalled.memory);
+      setRoom(snapshot); setMessageState({ messages: history, liveIds, liveAt, transport: connectionIdentity }); setRound(job); setMemory(recalled.memory);
       if (job?.generation_config?.model_record_id && (!modelTouched.current || ['queued', 'running', 'paused', 'interrupted'].includes(job.status))) setModelKey(`${job.generation_config.provider_id}:${job.generation_config.model_record_id}`);
     } catch (failure) {
       if (valid()) {
-        if (failure.code === 'invalid_scope') {
+        if (['invalid_scope', 'stale_room_epoch'].includes(failure.code)) {
           roomRef.current = null; historyRef.current = { key: null, messages: [] };
-          setRoom(null); setMessages([]); setRound(null); setMemory(null);
+          liveRef.current = { key: null, liveIds: [], liveAt: {} };
+          pendingTurn.current = null; resync.current = true;
+          setRoom(null); setMessageState({ messages: [], liveIds: [], liveAt: {} }); setRound(null); setMemory(null);
+          if (failure.code === 'stale_room_epoch' && recoverEpoch) {
+            const reopened = await request('open_room', { room_id: identity.room_id });
+            if (!valid()) return;
+            return refreshScope({ room_id: reopened.room_id, expected_epoch: reopened.epoch }, false);
+          }
         }
         throw failure;
       }
     }
-  }, [request]);
+  }, [request, connectionIdentity]);
 
   useEffect(() => {
     const current = ++generation.current;
     Promise.resolve().then(async () => {
       if (current !== generation.current) return;
+      setBusy(false); setError('');
       const choices = await request('list_chat_models');
       if (current !== generation.current) return;
       setModels(choices.models);
       if (choices.models.length) setModelKey(`${choices.models[0].provider_id}:${choices.models[0].model_record_id}`);
-      const created = detail.room_id ? { room_id: detail.room_id, epoch: detail.epoch } : await request('create_single_room', { item_id: detail.item_id, build_id: detail.build_id, character_id: detail.character_id, client_room_id: requestId.current, reuse_existing: true });
+      const created = detail.room_id ? await request('open_room', { room_id: detail.room_id }) : await request('create_single_room', { item_id: detail.item_id, build_id: detail.build_id, character_id: detail.character_id, client_room_id: requestId.current, reuse_existing: true });
       if (current !== generation.current) return;
       await refresh({ room_id: created.room_id, expected_epoch: created.epoch });
     }).catch((failure) => { if (current === generation.current) setError(failure.message); });
@@ -85,7 +107,7 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
     let timer;
     const poll = async () => {
       try { await refresh(roomRef.current); if (!stopped) setPollError(''); }
-      catch (failure) { if (!stopped) setPollError(failure.message); }
+      catch (failure) { if (!stopped) { resync.current = true; setPollError(failure.message); } }
       if (!stopped) timer = setTimeout(poll, ['queued', 'running'].includes(round?.status) ? 1000 : 5000);
     };
     timer = setTimeout(poll, 500);
@@ -95,6 +117,7 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
   const act = async (operation, content, controls = {}) => {
     if (!roomRef.current) return false;
     const current = operation === 'reset_memory' ? ++generation.current : generation.current;
+    const identity = { ...roomRef.current };
     revision.current += 1;
     setBusy(true); setError('');
     try {
@@ -112,17 +135,39 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
         roomRef.current = { room_id: result.room_id, expected_epoch: result.epoch, workspace_id: result.workspace_id };
         pendingTurn.current = null;
         historyRef.current = { key: null, messages: [] };
-        setMessages([]); setRound(null); setMemory(null); setRoom(result);
+        liveRef.current = { key: null, liveIds: [], liveAt: {} };
+        setMessageState({ messages: [], liveIds: [], liveAt: {} }); setRound(null); setMemory(null); setRoom(result);
       }
       await refresh(roomRef.current);
       if (operation === 'submit_turn') pendingTurn.current = null;
       return true;
-    } catch (failure) { if (current === generation.current) setError(failure.message); return false; }
+    } catch (failure) {
+      if (current === generation.current) {
+        if (['invalid_scope', 'stale_room_epoch'].includes(failure.code) && roomRef.current?.room_id === identity.room_id && roomRef.current?.expected_epoch === identity.expected_epoch) {
+          roomRef.current = null; historyRef.current = { key: null, messages: [] };liveRef.current = { key: null, liveIds: [], liveAt: {} };
+          pendingTurn.current = null; resync.current = true;
+          setRoom(null);setMessageState({messages:[],liveIds:[],liveAt:{}});setRound(null);setMemory(null);
+          if (failure.code === 'stale_room_epoch') {
+            await refresh(identity).catch(recovery => { if (current === generation.current) setError(recovery.message); });
+          }
+        }
+        setError(failure.message);
+      }
+      return false;
+    }
     finally { if (current === generation.current) setBusy(false); }
   };
 
   const evidence = async (messageId) => request('get_message_evidence', { ...roomRef.current, message_id: messageId });
+  const profile = async (memberId) => request('get_member_profile', { ...roomRef.current, member_id: memberId });
   const chooseModel = (value) => { modelTouched.current = true; setModelKey(value); };
-  const refreshCurrent = useCallback(() => roomRef.current && refresh(roomRef.current), [refresh]);
-  return { room, messages, round: pollError && round ? { ...round, generation: null } : round, memory, busy, error: error || pollError, models, modelKey, setModelKey: chooseModel, act, evidence, refresh: refreshCurrent };
+  const refreshCurrent = useCallback(async () => {
+    if (roomRef.current) return refresh(roomRef.current);
+    if (detail.room_id) {
+      const reopened = await request('open_room', { room_id: detail.room_id });
+      return refresh({ room_id: reopened.room_id, expected_epoch: reopened.epoch });
+    }
+  }, [detail.room_id, request, refresh]);
+  const synchronized = !offline && messageState.transport === connectionIdentity;
+  return { room, messages, liveIds: synchronized ? messageState.liveIds : [], liveAt: synchronized ? messageState.liveAt : {}, round: (!synchronized || pollError) && round ? { ...round, generation: null } : round, memory, busy: busy || !synchronized, error: error || pollError, models, modelKey, setModelKey: chooseModel, act, evidence, profile, refresh: refreshCurrent };
 }
