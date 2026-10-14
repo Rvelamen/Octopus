@@ -35,6 +35,10 @@ class BookRoomRequest(StrictModel):
         "create_group_room",
         "add_members",
         "set_member",
+        "set_discussion",
+        "summarize_room",
+        "get_summary_job",
+        "cancel_summary",
         "retry_source_cleanup",
     ]
     workspace_id: str | None = Field(default=None, min_length=1, max_length=100)
@@ -50,6 +54,8 @@ class BookRoomRequest(StrictModel):
     expected_epoch: int | None = Field(default=None, gt=0)
     round_id: str | None = Field(default=None, min_length=1, max_length=100)
     client_turn_id: str | None = Field(default=None, min_length=1, max_length=100)
+    client_summary_id: str | None = Field(default=None, min_length=1, max_length=100)
+    summary_job_id: str | None = Field(default=None, min_length=1, max_length=100)
     content: str | None = Field(default=None, min_length=1, max_length=4000)
     message_id: str | None = Field(default=None, min_length=1, max_length=100)
     characters: list[RoomCharacterSelection] | None = Field(
@@ -59,6 +65,10 @@ class BookRoomRequest(StrictModel):
     source_book_id: str | None = Field(default=None, min_length=1, max_length=100)
     active: bool | None = None
     speaking_mode: Literal["auto", "mention_only", "muted"] | None = None
+    expected_discussion_revision: int | None = Field(default=None, ge=0)
+    discussion_mode: Literal["free", "topic"] | None = None
+    topic: str | None = Field(default=None, max_length=200)
+    goal: str | None = Field(default=None, max_length=1000)
     mode: Literal["directed", "natural", "all"] = "directed"
     target_member_ids: list[str] | None = Field(default=None, min_length=1, max_length=100)
     query: str = Field(default="", max_length=200)
@@ -109,6 +119,14 @@ class BookRoomRequest(StrictModel):
             raise ValueError("Message identity is required")
         if self.action == "get_member_profile" and self.member_id is None:
             raise ValueError("Member identity is required")
+        if self.action == "set_discussion" and (
+            self.discussion_mode is None or self.expected_discussion_revision is None
+        ):
+            raise ValueError("Discussion changes require a mode and expected revision")
+        if self.action == "summarize_room" and self.client_summary_id is None:
+            raise ValueError("Summary requires a client request identity")
+        if self.action == "cancel_summary" and self.summary_job_id is None:
+            raise ValueError("Choose a summary job to cancel")
         if self.action == "add_members" and self.characters is None:
             raise ValueError("Joining requires published character selections")
         if self.action == "set_member" and (

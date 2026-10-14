@@ -6,6 +6,7 @@ export default function useBookSingleRoom(detail, sendWSMessage, connectionStatu
   const messages = messageState.messages;
   const [round, setRound] = useState(null);
   const [memory, setMemory] = useState(null);
+  const [summaryJob, setSummaryJob] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [pollError, setPollError] = useState('');
@@ -17,6 +18,7 @@ export default function useBookSingleRoom(detail, sendWSMessage, connectionStatu
   const historyRef = useRef({ key: null, messages: [] });
   const requestId = useRef(crypto.randomUUID());
   const pendingTurn = useRef(null);
+  const pendingSummary = useRef(null);
   const modelTouched = useRef(false);
   const resync = useRef(false);
   const liveRef = useRef({ key: null, liveIds: [], liveAt: {} });
@@ -42,6 +44,7 @@ export default function useBookSingleRoom(detail, sendWSMessage, connectionStatu
       const snapshot = await request('get_room', identity);
       if (!valid()) return;
       const recalled = await request('get_memory', identity);
+      const summary = await request('get_summary_job', identity);
       if (!valid()) return;
       const key = `${snapshot.workspace_id}:${identity.room_id}:${identity.expected_epoch}`;
       const history = historyRef.current.key === key ? [...historyRef.current.messages] : [];
@@ -65,14 +68,14 @@ export default function useBookSingleRoom(detail, sendWSMessage, connectionStatu
       const liveAt = continuing ? { ...liveRef.current.liveAt, ...Object.fromEntries(added.map(id => [id, performance.now()])) } : {};
       liveRef.current = { key, liveIds, liveAt }; resync.current = false;
       historyRef.current = { key, messages: history };
-      setRoom(snapshot); setMessageState({ messages: history, liveIds, liveAt, transport: connectionIdentity }); setRound(job); setMemory(recalled.memory);
+      setRoom(snapshot); setMessageState({ messages: history, liveIds, liveAt, transport: connectionIdentity }); setRound(job); setMemory(summary.summary_job?.result?.memory?.through_seq > (recalled.memory?.through_seq || 0) ? summary.summary_job.result.memory : recalled.memory); setSummaryJob(summary.summary_job);
       if (job?.generation_config?.model_record_id && (!modelTouched.current || ['queued', 'running', 'paused', 'interrupted'].includes(job.status))) setModelKey(`${job.generation_config.provider_id}:${job.generation_config.model_record_id}`);
     } catch (failure) {
       if (valid()) {
         if (['invalid_scope', 'stale_room_epoch'].includes(failure.code)) {
           roomRef.current = null; historyRef.current = { key: null, messages: [] };
           liveRef.current = { key: null, liveIds: [], liveAt: {} };
-          pendingTurn.current = null; resync.current = true;
+          pendingTurn.current = null; pendingSummary.current = null; resync.current = true;
           setRoom(null); setMessageState({ messages: [], liveIds: [], liveAt: {} }); setRound(null); setMemory(null);
           if (failure.code === 'stale_room_epoch' && recoverEpoch) {
             const reopened = await request('open_room', { room_id: identity.room_id });
@@ -108,11 +111,11 @@ export default function useBookSingleRoom(detail, sendWSMessage, connectionStatu
     const poll = async () => {
       try { await refresh(roomRef.current); if (!stopped) setPollError(''); }
       catch (failure) { if (!stopped) { resync.current = true; setPollError(failure.message); } }
-      if (!stopped) timer = setTimeout(poll, ['queued', 'running'].includes(round?.status) ? 1000 : 5000);
+      if (!stopped) timer = setTimeout(poll, (['queued', 'running'].includes(round?.status) || ['queued', 'running'].includes(summaryJob?.status)) ? 1000 : 5000);
     };
     timer = setTimeout(poll, 500);
     return () => { stopped = true; clearTimeout(timer); };
-  }, [round?.status, room?.room_id, busy, refresh]);
+  }, [round?.status, summaryJob?.status, room?.room_id, busy, refresh]);
 
   const act = async (operation, content, controls = {}) => {
     if (!roomRef.current) return false;
@@ -128,10 +131,18 @@ export default function useBookSingleRoom(detail, sendWSMessage, connectionStatu
         values = pendingTurn.current.values;
         const model = models.find((entry) => `${entry.provider_id}:${entry.model_record_id}` === modelKey);
         if (model) values = { ...values, provider_id: model.provider_id, model_record_id: model.model_record_id };
-      } else values = ['set_member', 'add_members', 'retry_source_cleanup'].includes(operation) ? controls : operation === 'reset_memory' ? {} : { round_id: round.round_id };
+      } else values = ['set_member', 'add_members', 'retry_source_cleanup', 'set_discussion', 'summarize_room', 'cancel_summary'].includes(operation) ? controls : operation === 'reset_memory' ? {} : { round_id: round.round_id };
+      if (operation === 'summarize_room') {
+        pendingSummary.current ||= crypto.randomUUID();
+        values = {...values, client_summary_id:pendingSummary.current};
+        const model = models.find(entry => `${entry.provider_id}:${entry.model_record_id}` === modelKey);
+        if (model) values = {...values,provider_id:model.provider_id,model_record_id:model.model_record_id};
+      }
       const result = await request(operation, { ...roomRef.current, ...values });
       if (current !== generation.current) return false;
+      if (operation === 'summarize_room') { setSummaryJob(result.summary_job); pendingSummary.current=null; }
       if (operation === 'reset_memory') {
+        pendingSummary.current = null;
         roomRef.current = { room_id: result.room_id, expected_epoch: result.epoch, workspace_id: result.workspace_id };
         pendingTurn.current = null;
         historyRef.current = { key: null, messages: [] };
@@ -145,7 +156,7 @@ export default function useBookSingleRoom(detail, sendWSMessage, connectionStatu
       if (current === generation.current) {
         if (['invalid_scope', 'stale_room_epoch'].includes(failure.code) && roomRef.current?.room_id === identity.room_id && roomRef.current?.expected_epoch === identity.expected_epoch) {
           roomRef.current = null; historyRef.current = { key: null, messages: [] };liveRef.current = { key: null, liveIds: [], liveAt: {} };
-          pendingTurn.current = null; resync.current = true;
+          pendingTurn.current = null; pendingSummary.current = null; resync.current = true;
           setRoom(null);setMessageState({messages:[],liveIds:[],liveAt:{}});setRound(null);setMemory(null);
           if (failure.code === 'stale_room_epoch') {
             await refresh(identity).catch(recovery => { if (current === generation.current) setError(recovery.message); });
@@ -169,5 +180,5 @@ export default function useBookSingleRoom(detail, sendWSMessage, connectionStatu
     }
   }, [detail.room_id, request, refresh]);
   const synchronized = !offline && messageState.transport === connectionIdentity;
-  return { room, messages, liveIds: synchronized ? messageState.liveIds : [], liveAt: synchronized ? messageState.liveAt : {}, round: (!synchronized || pollError) && round ? { ...round, generation: null } : round, memory, busy: busy || !synchronized, error: error || pollError, models, modelKey, setModelKey: chooseModel, act, evidence, profile, refresh: refreshCurrent };
+  return { room, messages, liveIds: synchronized ? messageState.liveIds : [], liveAt: synchronized ? messageState.liveAt : {}, round: (!synchronized || pollError) && round ? { ...round, generation: null } : round, memory, summaryJob: summaryJob?.room_id === room?.room_id && summaryJob?.epoch === room?.epoch ? summaryJob : null, busy: busy || !synchronized, error: error || pollError, models, modelKey, setModelKey: chooseModel, act, evidence, profile, refresh: refreshCurrent };
 }

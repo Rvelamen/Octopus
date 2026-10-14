@@ -1,4 +1,5 @@
 {
+  "bookDiscussion": {"summaryError":{"summary_failed": "总结未完成，请重试或调整模型。", "summary_timeout": "本次总结已达时间上限，可手动重试。", "memory_validation_failed": "总结未通过独立校验，未保存新内容。", "memory_conflict": "已有更新的总结，请刷新后重试。", "invalid_scope": "房间或工作区已变化，请刷新。", "source_unavailable": "来源已失效，总结已停止。", "service_interrupted": "服务重启已中断总结，请手动重试。", "room_readonly": "房间仅供阅读，不能生成新总结。", "context_insufficient": "当前模型预算不足以容纳总结，请调整模型。"},"anotherRound":"再讨论一轮","cancelSummary":"停止总结","summaryStatus":{"queued": "总结排队中", "running": "正在总结", "completed": "总结已完成", "failed": "总结失败", "cancelled": "总结已停止", "interrupted": "总结已中断，请手动重试"},"summarize":"总结本房间讨论","summaryTitle":"公共讨论总结","summaryHint":"只概括本房间公开说法，保留说话者、分歧与不确定性；不改变原著。每次最多处理40条新消息。","through":"已总结至消息 {{seq}}","partial":"还有 {{count}} 条消息未覆盖，可再次手动总结。","noSummary":"暂无可用总结。","title": "讨论方式", "free": "自由聊天", "topic": "主题", "mode": "选择讨论方式", "edit": "设置讨论", "busy": "本轮结束或停止后可换题", "goal": "讨论目标（可选）", "hint": "换题保留成员、座位和本房间记忆，不会自动发言。", "topicMode": "主题聊天"},
   "bookScene": {
     "publicProfile": "查看公开人物档案",
     "sourceIdentity": "固定原著版本：{{version}}",

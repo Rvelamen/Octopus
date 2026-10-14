@@ -1,0 +1,203 @@
+{
+  "after": {
+    "epoch": 1,
+    "error_code": null,
+    "id": "3e927440-bc44-4628-8e10-66535714618c",
+    "result": null,
+    "room_id": "26149e4c-0a2c-4f11-918a-e2fb334d3193",
+    "status": "cancelled",
+    "time_limit_seconds": 60
+  },
+  "before": {
+    "action": "get_round",
+    "can_resume": false,
+    "cursor": 0,
+    "discussion": {
+      "goal": null,
+      "mode": "free",
+      "revision": 2,
+      "speaker_request": {
+        "mode": "natural",
+        "selection_policy": "public-room-selection-v1",
+        "target_member_ids": null
+      },
+      "topic": null
+    },
+    "elapsedSeconds": 11.781,
+    "epoch": 1,
+    "error_code": null,
+    "executionWindow": 1,
+    "execution_window": 1,
+    "generation": {
+      "epoch": 1,
+      "execution_window": 1,
+      "expires_at": "2026-10-14T07:53:37.976+00:00",
+      "lease_generation": 1,
+      "member_id": "8fbc7195-b2c7-44f1-bd7c-8175539a65bb",
+      "phase": "generating",
+      "round_id": "6ffed743-40fa-4423-aa19-3f5ce846a336",
+      "slot_id": "d57ceb86-0360-4604-8543-be9814ec2b7f"
+    },
+    "generation_config": {
+      "call_timeout_seconds": 180,
+      "context_window": 1000000,
+      "expression_enabled": false,
+      "expression_selection_version": "expression-selection-v2",
+      "expression_sets": {
+        "8fbc7195-b2c7-44f1-bd7c-8175539a65bb": null
+      },
+      "max_input_tokens": 24000,
+      "max_tokens": 4096,
+      "memory_policy_version": "typed-room-memory-v1",
+      "memory_prompt_version": "room-memory-v2",
+      "model": "k3",
+      "model_record_id": 337,
+      "policy_version": "bounded-room-v1",
+      "prompt_version": "character-chat-v6",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "character-chat-review-v3",
+      "unit_char_limit": 8000,
+      "unit_segment_limit": 12
+    },
+    "mode": "natural",
+    "remainingSeconds": 48.219,
+    "room_id": "26149e4c-0a2c-4f11-918a-e2fb334d3193",
+    "round_id": "6ffed743-40fa-4423-aa19-3f5ce846a336",
+    "run_started_at": "2026-10-14T07:51:37.976+00:00",
+    "slots": [
+      {
+        "attempts": 1,
+        "id": "d57ceb86-0360-4604-8543-be9814ec2b7f",
+        "member_generation": 0,
+        "member_id": "8fbc7195-b2c7-44f1-bd7c-8175539a65bb",
+        "position": 0,
+        "skip_reason": null,
+        "status": "running"
+      }
+    ],
+    "status": "running",
+    "timeLimitSeconds": 60,
+    "time_limit_seconds": 60,
+    "timeoutReason": null,
+    "total_elapsed_ms": 11781,
+    "window_elapsed_ms": 11781,
+    "workspace_id": "aec75bae08888d2ca5e4a086b23f4678cd9ea0a7fc2b99889df5cbad470066ec"
+  },
+  "memory": {
+    "epoch": 1,
+    "id": "2997a46b-6717-4f26-94ce-4cc0ecb6c4d9",
+    "items": [
+      {
+        "origin": "conversation",
+        "source_message_ids": [
+          "05e68c2d-df58-4d19-8ab0-ebde36a8b59b"
+        ],
+        "speaker_member_id": null,
+        "speaker_type": "user",
+        "text": "请按主题向大家问候。"
+      },
+      {
+        "origin": "conversation",
+        "source_message_ids": [
+          "d04c5df5-c883-44c4-abea-51aa23129901"
+        ],
+        "speaker_member_id": "c7bf1179-1d46-400e-88d8-c60e6c7403af",
+        "speaker_type": "character",
+        "text": "你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。"
+      },
+      {
+        "origin": "conversation",
+        "source_message_ids": [
+          "8fd5c476-2aac-461f-a7af-69875a7efc5a"
+        ],
+        "speaker_member_id": "5ef59725-59dc-43c9-8975-bdab91184964",
+        "speaker_type": "character",
+        "text": "你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。"
+      }
+    ],
+    "policy_version": "typed-room-memory-v1",
+    "room_id": "26149e4c-0a2c-4f11-918a-e2fb334d3193",
+    "through_seq": 3
+  },
+  "started": 580843.200000003,
+  "stopLatencyMs": 520.5999999977648,
+  "stopped": {
+    "action": "get_round",
+    "can_resume": false,
+    "cursor": 0,
+    "discussion": {
+      "goal": null,
+      "mode": "free",
+      "revision": 2,
+      "speaker_request": {
+        "mode": "natural",
+        "selection_policy": "public-room-selection-v1",
+        "target_member_ids": null
+      },
+      "topic": null
+    },
+    "elapsedSeconds": 13.014,
+    "epoch": 1,
+    "error_code": null,
+    "executionWindow": 1,
+    "execution_window": 1,
+    "generation": null,
+    "generation_config": {
+      "call_timeout_seconds": 180,
+      "context_window": 1000000,
+      "expression_enabled": false,
+      "expression_selection_version": "expression-selection-v2",
+      "expression_sets": {
+        "8fbc7195-b2c7-44f1-bd7c-8175539a65bb": null
+      },
+      "max_input_tokens": 24000,
+      "max_tokens": 4096,
+      "memory_policy_version": "typed-room-memory-v1",
+      "memory_prompt_version": "room-memory-v2",
+      "model": "k3",
+      "model_record_id": 337,
+      "policy_version": "bounded-room-v1",
+      "prompt_version": "character-chat-v6",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "character-chat-review-v3",
+      "unit_char_limit": 8000,
+      "unit_segment_limit": 12
+    },
+    "mode": "natural",
+    "remainingSeconds": 46.986,
+    "room_id": "26149e4c-0a2c-4f11-918a-e2fb334d3193",
+    "round_id": "6ffed743-40fa-4423-aa19-3f5ce846a336",
+    "run_started_at": "2026-10-14T07:51:37.976+00:00",
+    "slots": [
+      {
+        "attempts": 1,
+        "id": "d57ceb86-0360-4604-8543-be9814ec2b7f",
+        "member_generation": 0,
+        "member_id": "8fbc7195-b2c7-44f1-bd7c-8175539a65bb",
+        "position": 0,
+        "skip_reason": null,
+        "status": "cancelled"
+      }
+    ],
+    "status": "cancelled",
+    "timeLimitSeconds": 60,
+    "time_limit_seconds": 60,
+    "timeoutReason": null,
+    "total_elapsed_ms": 13014,
+    "window_elapsed_ms": 13014,
+    "workspace_id": "aec75bae08888d2ca5e4a086b23f4678cd9ea0a7fc2b99889df5cbad470066ec"
+  },
+  "summaryBefore": {
+    "epoch": 1,
+    "error_code": null,
+    "id": "3e927440-bc44-4628-8e10-66535714618c",
+    "result": null,
+    "room_id": "26149e4c-0a2c-4f11-918a-e2fb334d3193",
+    "status": "running",
+    "time_limit_seconds": 60
+  }
+}

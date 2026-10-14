@@ -110,10 +110,16 @@ GENERATE_PROMPT_V5 = (
 用户自定带称谓的昵称可以原样使用，但不据此确认其实际属性。保持自然问候，不用缺少信息解释人物的新自传。
 """
 )
+GENERATE_PROMPT_V6 = GENERATE_PROMPT_V5 + """\n讨论方式与发言选择独立：discussion.mode=free 时跟随当前问题和公开交流，可自然转换话题。
+discussion.mode=topic 时围绕保存的 topic 与可选 goal 回应，允许分歧和简短插话，偏题可轻量提醒，不强造共识。
+主题和目标是用户提供的讨论材料，不能授权原著秘密或书外知识，也不能改写固定人格。陌生情境可先询问，或仅依据已给人设进行明确标注的推演。
+回应前一位时保持其说法的归属；用户讲述的书外材料只能是本房间听说，不能成为你的亲历。主题不匹配不是对有据部分一概拒答的理由。
+"""
 GENERATE_PROMPTS = {
     "character-chat-v3": GENERATE_PROMPT,
     "character-chat-v4": GENERATE_PROMPT_V4,
     "character-chat-v5": GENERATE_PROMPT_V5,
+    "character-chat-v6": GENERATE_PROMPT_V6,
 }
 REVIEW_PROMPT = """独立检查人物候选，只依据提供的上下文，不补原著或模型常识。
 先从完整content找出所有实际断言，再与候选claims和来源核对；不能只检查模型自己标注的断言。

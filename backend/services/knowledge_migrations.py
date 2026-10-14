@@ -712,6 +712,11 @@ def _migration_027_book_source_lifecycle(conn: sqlite3.Connection) -> None:
     conn.executescript((Path(__file__).parent / "book_world" / "lifecycle_schema.sql").read_text(encoding="utf-8"))
 
 
+def _migration_028_book_summary_jobs(conn: sqlite3.Connection) -> None:
+    _backup_book_migration(conn, ".pre-book-summary-jobs-v28.bak")
+    conn.executescript((Path(__file__).parent / "book_world" / "summary_schema.sql").read_text(encoding="utf-8"))
+
+
 def run_knowledge_index_migrations(db_path: Path) -> None:
     runner = MigrationRunner(db_path)
     runner.register(1, "create_initial_schema", _migration_001_create_initial_schema)
@@ -751,6 +756,7 @@ def run_knowledge_index_migrations(db_path: Path) -> None:
     runner.register(25, "book_room_queue", _migration_025_book_room_queue)
     runner.register(26, "book_auto_import", _migration_026_book_auto_import)
     runner.register(27, "book_source_lifecycle", _migration_027_book_source_lifecycle)
+    runner.register(28, "book_public_summary_jobs", _migration_028_book_summary_jobs)
     runner.run()
 
 

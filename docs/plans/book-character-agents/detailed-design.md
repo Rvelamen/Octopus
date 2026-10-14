@@ -176,6 +176,7 @@ lineage_id 仅用于人物修订跟踪，不能用于授权或跨版本取知识
 | book_round_slots | id、room_id、epoch、round_id、position、member_id、status、attempts、member_generation |
 | book_room_messages | id、room_id、epoch、seq、round_id、slot_id、speaker_type、speaker_member_id、identity_snapshot_json、reply_to_id、content、validation_state、publish_lease_generation、display_snapshot_json、created_at、publish_member_generation |
 | book_message_refs | id、room_id、epoch、message_id、speaker_member_id、assertion_ordinal、assertion_text、origin、book_id、source_version_id、build_id、character_id、claim_id、evidence_id、heard_message_id |
+| book_room_summary_jobs | id、room_id、epoch、client_summary_id、generation、status、time_limit_seconds、result_json、error_code、created_at |
 | book_room_summaries | id、room_id、epoch、through_seq、summary_json、validation_state、created_at |
 | book_summary_sources | room_id、epoch、summary_id、message_id |
 
@@ -201,7 +202,7 @@ UNIQUE(room_id,seat_index) 同时覆盖在场与离场成员，可直接按座�
 
 room 的 discussion_mode 为 free/topic，默认 free；free 时 discussion_topic 和 discussion_goal 为空，topic 要求非空主题，目标可为空。长度按 Unicode 码点计算，主题至多 200，目标至多 1000；服务端负责所有 Unicode 空白的判断与首尾规范化，SQL 的 trim 检查作为补充。discussion_revision 单调递增，配置更新需期望版本并只在没有活跃轮次时发生。
 
-round 的 discussion_snapshot_json 从创建时固定 revision、mode、topic、goal，与 room 当时配置匹配且不可修改。恢复旧轮次仍用其原主题，只有时间窗口按原有规则读取最新秒数。主题不参与知识权限或 R 的划分，换题不清除房间记忆。字段与保护触发器由 T17 迁移落实。
+round 的 discussion_snapshot_json 从创建时固定 revision、mode、topic、goal，与 room 当时配置匹配且不可修改。恢复旧轮次仍用其原主题，只有时间窗口按原有规则读取最新秒数。主题不参与知识权限或 R 的划分，换题不清除房间记忆。字段与保护触发器已随迁移 22/23 落实，T17 接入服务与界面。
 
 ### 跨书来源绑定
 
@@ -630,3 +631,5 @@ T16 操作验收覆盖固定座位、气泡与右侧同消息同步、长文本�
 
 原著边界与方案比较沿用[研究报告](F:/god/project/Octopus/docs/research/2026-10-10-book-character-agents.md)，理论映射与两种讨论方式补充见[复核报告](F:/god/project/Octopus/docs/plans/book-character-agents/agent-design-review.md)。本设计中的新增表、接口、状态与默认值是面向当前工程的实施选择，尚不是现有能力。
 
+
+公共总结执行采用迁移 28 的持久后台任务：queued/running/completed/failed/cancelled/interrupted，与人物轮次独立，启动立即返回、不阻塞同连接的停止控制。每次至多两次模型调用，使用普通秒数快照，至多覆盖 40 条新公共消息；明确显示 through_seq 与未覆盖条数。总结只使用本 R 的公开消息/已审查记忆，独立复核后写入既有记忆表。发布与任务完成同事务检查 R、任务 generation、工作区、截止时间和 active 状态。取消、重置、最后来源删除与重启撤销未完成任务，重启只标中断、不自动调用模型。

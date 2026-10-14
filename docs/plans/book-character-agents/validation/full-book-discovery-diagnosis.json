@@ -1,0 +1,143 @@
+{
+  "date": "2026-10-14",
+  "scope": "Read-only replay of last eight full-source discovery responses using the current production validator; no new model calls",
+  "temporary_script_limitation": "Older inspect_full_discovery.py passed segment dicts to resolve_span (which expects strings); its slice errors are diagnostic-script errors and are excluded.",
+  "responses": [
+    {
+      "book": "西游记",
+      "unit_key": "0",
+      "finish_reason": "end_turn",
+      "validation_error": null,
+      "input_sha256": "b4a129269210ebeb470ee54c88e1f07b2f40422c5118ea0c875d870d2d1628f6"
+    },
+    {
+      "book": "西游记",
+      "unit_key": "1",
+      "finish_reason": "end_turn",
+      "validation_error": null,
+      "input_sha256": "a3bacd3b63e62a1c2622a6fb757d732b8a9a2eb7ae259f36f2d43607eb127d97"
+    },
+    {
+      "book": "西游记",
+      "unit_key": "2",
+      "finish_reason": "end_turn",
+      "validation_error": null,
+      "input_sha256": "b146b4a16292cfde8bdea3858c94c0e065995c3e915edb8295e2e24c7b6e9f26"
+    },
+    {
+      "book": "西游记",
+      "unit_key": "3",
+      "finish_reason": "end_turn",
+      "validation_error": "Existing identity has no unambiguous matching alias",
+      "input_sha256": "68506e511676d6219c9d12d54e727956eb40b99491e355fdb2b514e748facbeb",
+      "counterexamples": [
+        {
+          "kind": "missing_unambiguous_existing_alias",
+          "name": "一群猿猴、猕猴、马猴",
+          "existing_character_id": "b0151274-6d2f-411c-b7dd-823cd3ba1937",
+          "known_aliases": [
+            {
+              "alias": "众猴",
+              "review_state": "candidate"
+            },
+            {
+              "alias": "群猴",
+              "review_state": "candidate"
+            }
+          ]
+        },
+        {
+          "kind": "missing_unambiguous_existing_alias",
+          "name": "猴王",
+          "existing_character_id": "072ced14-4ff8-433d-ac6f-2dc4ded629ae",
+          "known_aliases": [
+            {
+              "alias": "美猴王",
+              "review_state": "candidate"
+            }
+          ]
+        },
+        {
+          "kind": "missing_unambiguous_existing_alias",
+          "name": "仙猴",
+          "existing_character_id": "072ced14-4ff8-433d-ac6f-2dc4ded629ae",
+          "known_aliases": [
+            {
+              "alias": "美猴王",
+              "review_state": "candidate"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "book": "西游记",
+      "unit_key": "3",
+      "finish_reason": "end_turn",
+      "validation_error": "Unsupported name/alias '美猴王'; choose a literal label present in its quote",
+      "input_sha256": "5df273e3c3f1e6bb6f35319e1702b8a93324ff2f7afae568e64c16534a503d6e",
+      "counterexamples": [
+        {
+          "kind": "name_not_in_quote",
+          "name": "美猴王",
+          "evidence": {
+            "segment_id": "803e020a-2fe6-48fa-9833-ea4273a2dc7c",
+            "local_start": 120,
+            "local_end": 175,
+            "quote": "他走近前弄个把戏妆个□【上左“齿”右“可”下“女”】虎吓得那些人丢筐弃网四散奔跑",
+            "offset_resolution": "unique_quote"
+          },
+          "existing_character_id": null
+        }
+      ]
+    },
+    {
+      "book": "红楼梦",
+      "unit_key": "0",
+      "finish_reason": "end_turn",
+      "validation_error": null,
+      "input_sha256": "4633d7104d7d0e52bb5bc2e0c44962cc8a73a334c206d113e057dcf35d1a232b"
+    },
+    {
+      "book": "红楼梦",
+      "unit_key": "1",
+      "finish_reason": "end_turn",
+      "validation_error": "Unsupported name/alias '大石'; choose a literal label present in its quote",
+      "input_sha256": "08458805e55bea839d1577b97c3c1117434de5c2f9e3f4f7649d86456a71ba24",
+      "counterexamples": [
+        {
+          "kind": "name_not_in_quote",
+          "name": "大石",
+          "evidence": {
+            "segment_id": "3186171a-ac19-41a2-907d-e88dc1a77c3c",
+            "local_start": 0,
+            "local_end": 75,
+            "quote": "忽见一大块石上字迹分明，编述历历",
+            "offset_resolution": "unique_quote"
+          },
+          "existing_character_id": null
+        }
+      ]
+    },
+    {
+      "book": "红楼梦",
+      "unit_key": "1",
+      "finish_reason": "end_turn",
+      "validation_error": "Unsupported name/alias '那僧'; choose a literal label present in its quote",
+      "input_sha256": "996effd3623e0a29f3655a4a6c9555e1774e3c83fcdcadd3a0392cc45c56585c",
+      "counterexamples": [
+        {
+          "kind": "name_not_in_quote",
+          "name": "那僧",
+          "evidence": {
+            "segment_id": "012fb4c8-e96e-4977-abcf-1c22ce7b8cb3",
+            "local_start": 482,
+            "local_end": 484,
+            "quote": "若说你性灵，却又如此质蠢，并更无奇贵之处"
+          },
+          "existing_character_id": null
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,419 @@
+{
+  "configured": {
+    "action": "get_room",
+    "discussion": {
+      "goal": "各自表达，不把陌生传闻当作亲历。",
+      "mode": "topic",
+      "revision": 1,
+      "topic": "人物00与人物01如何互相问候"
+    },
+    "epoch": 1,
+    "latest_round_id": null,
+    "members": [
+      {
+        "active": 1,
+        "available": true,
+        "book_id": "9e6c1056-06ee-4db9-805d-17972bfd36b2",
+        "build_id": "5a5e7ea6-cf2a-4b82-b8dc-4a78d2805de8",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "2a69491e-2af4-4b76-a04a-d1c7dd303047",
+        "id": "c7bf1179-1d46-400e-88d8-c60e6c7403af",
+        "identity": {
+          "book_title": "原著样本",
+          "name": "人物00"
+        },
+        "membership_generation": 0,
+        "removed_reason": null,
+        "seat_index": 0,
+        "source_version_id": "95bdec88-aac4-426f-abc2-a50db22c92d9",
+        "speaking_mode": "auto"
+      },
+      {
+        "active": 1,
+        "available": true,
+        "book_id": "9e6c1056-06ee-4db9-805d-17972bfd36b2",
+        "build_id": "5a5e7ea6-cf2a-4b82-b8dc-4a78d2805de8",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "aff572b3-5dfb-4846-8c5a-99052d8a3716",
+        "id": "5ef59725-59dc-43c9-8975-bdab91184964",
+        "identity": {
+          "book_title": "原著样本",
+          "name": "人物01"
+        },
+        "membership_generation": 0,
+        "removed_reason": null,
+        "seat_index": 1,
+        "source_version_id": "95bdec88-aac4-426f-abc2-a50db22c92d9",
+        "speaking_mode": "auto"
+      },
+      {
+        "active": 1,
+        "available": true,
+        "book_id": "9e6c1056-06ee-4db9-805d-17972bfd36b2",
+        "build_id": "5a5e7ea6-cf2a-4b82-b8dc-4a78d2805de8",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "b04d4417-1fbd-4b36-b46b-a505d3163fd6",
+        "id": "8fbc7195-b2c7-44f1-bd7c-8175539a65bb",
+        "identity": {
+          "book_title": "原著样本",
+          "name": "人物02"
+        },
+        "membership_generation": 0,
+        "removed_reason": null,
+        "seat_index": 2,
+        "source_version_id": "95bdec88-aac4-426f-abc2-a50db22c92d9",
+        "speaking_mode": "auto"
+      },
+      {
+        "active": 1,
+        "available": true,
+        "book_id": "9e6c1056-06ee-4db9-805d-17972bfd36b2",
+        "build_id": "5a5e7ea6-cf2a-4b82-b8dc-4a78d2805de8",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "12f11fba-f943-4498-9f7f-979c6f4ca314",
+        "id": "a69e354d-2875-443e-94d3-34d06d17d944",
+        "identity": {
+          "book_title": "原著样本",
+          "name": "人物03"
+        },
+        "membership_generation": 0,
+        "removed_reason": null,
+        "seat_index": 3,
+        "source_version_id": "95bdec88-aac4-426f-abc2-a50db22c92d9",
+        "speaking_mode": "auto"
+      }
+    ],
+    "next_seq": 1,
+    "room_id": "26149e4c-0a2c-4f11-918a-e2fb334d3193",
+    "scene_capacity": 8,
+    "scene_layout_version": 1,
+    "sources": [
+      {
+        "book_id": "9e6c1056-06ee-4db9-805d-17972bfd36b2",
+        "build_id": "5a5e7ea6-cf2a-4b82-b8dc-4a78d2805de8",
+        "cleanup_status": null,
+        "identity": {
+          "book_title": "原著样本",
+          "canonical_policy_version": "canonical-persona-v3"
+        },
+        "is_latest_version": true,
+        "source_version_id": "95bdec88-aac4-426f-abc2-a50db22c92d9",
+        "status": "active"
+      }
+    ],
+    "status": "active",
+    "title": "4 人圆桌",
+    "workspace_id": "aec75bae08888d2ca5e4a086b23f4678cd9ea0a7fc2b99889df5cbad470066ec"
+  },
+  "free": {
+    "action": "get_room",
+    "discussion": {
+      "goal": null,
+      "mode": "free",
+      "revision": 2,
+      "topic": null
+    },
+    "epoch": 1,
+    "latest_round_id": "6cb7e786-b8d7-4807-a669-1a293db6b021",
+    "members": [
+      {
+        "active": 1,
+        "available": true,
+        "book_id": "9e6c1056-06ee-4db9-805d-17972bfd36b2",
+        "build_id": "5a5e7ea6-cf2a-4b82-b8dc-4a78d2805de8",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "2a69491e-2af4-4b76-a04a-d1c7dd303047",
+        "id": "c7bf1179-1d46-400e-88d8-c60e6c7403af",
+        "identity": {
+          "book_title": "原著样本",
+          "name": "人物00"
+        },
+        "membership_generation": 0,
+        "removed_reason": null,
+        "seat_index": 0,
+        "source_version_id": "95bdec88-aac4-426f-abc2-a50db22c92d9",
+        "speaking_mode": "auto"
+      },
+      {
+        "active": 1,
+        "available": true,
+        "book_id": "9e6c1056-06ee-4db9-805d-17972bfd36b2",
+        "build_id": "5a5e7ea6-cf2a-4b82-b8dc-4a78d2805de8",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "aff572b3-5dfb-4846-8c5a-99052d8a3716",
+        "id": "5ef59725-59dc-43c9-8975-bdab91184964",
+        "identity": {
+          "book_title": "原著样本",
+          "name": "人物01"
+        },
+        "membership_generation": 0,
+        "removed_reason": null,
+        "seat_index": 1,
+        "source_version_id": "95bdec88-aac4-426f-abc2-a50db22c92d9",
+        "speaking_mode": "auto"
+      },
+      {
+        "active": 1,
+        "available": true,
+        "book_id": "9e6c1056-06ee-4db9-805d-17972bfd36b2",
+        "build_id": "5a5e7ea6-cf2a-4b82-b8dc-4a78d2805de8",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "b04d4417-1fbd-4b36-b46b-a505d3163fd6",
+        "id": "8fbc7195-b2c7-44f1-bd7c-8175539a65bb",
+        "identity": {
+          "book_title": "原著样本",
+          "name": "人物02"
+        },
+        "membership_generation": 0,
+        "removed_reason": null,
+        "seat_index": 2,
+        "source_version_id": "95bdec88-aac4-426f-abc2-a50db22c92d9",
+        "speaking_mode": "auto"
+      },
+      {
+        "active": 1,
+        "available": true,
+        "book_id": "9e6c1056-06ee-4db9-805d-17972bfd36b2",
+        "build_id": "5a5e7ea6-cf2a-4b82-b8dc-4a78d2805de8",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "12f11fba-f943-4498-9f7f-979c6f4ca314",
+        "id": "a69e354d-2875-443e-94d3-34d06d17d944",
+        "identity": {
+          "book_title": "原著样本",
+          "name": "人物03"
+        },
+        "membership_generation": 0,
+        "removed_reason": null,
+        "seat_index": 3,
+        "source_version_id": "95bdec88-aac4-426f-abc2-a50db22c92d9",
+        "speaking_mode": "auto"
+      }
+    ],
+    "next_seq": 7,
+    "room_id": "26149e4c-0a2c-4f11-918a-e2fb334d3193",
+    "scene_capacity": 8,
+    "scene_layout_version": 1,
+    "sources": [
+      {
+        "book_id": "9e6c1056-06ee-4db9-805d-17972bfd36b2",
+        "build_id": "5a5e7ea6-cf2a-4b82-b8dc-4a78d2805de8",
+        "cleanup_status": null,
+        "identity": {
+          "book_title": "原著样本",
+          "canonical_policy_version": "canonical-persona-v3"
+        },
+        "is_latest_version": true,
+        "source_version_id": "95bdec88-aac4-426f-abc2-a50db22c92d9",
+        "status": "active"
+      }
+    ],
+    "status": "active",
+    "title": "4 人圆桌",
+    "workspace_id": "aec75bae08888d2ca5e4a086b23f4678cd9ea0a7fc2b99889df5cbad470066ec"
+  },
+  "repeat": {
+    "action": "get_round",
+    "can_resume": false,
+    "cursor": 2,
+    "discussion": {
+      "goal": "各自表达，不把陌生传闻当作亲历。",
+      "mode": "topic",
+      "revision": 1,
+      "speaker_request": {
+        "mode": "natural",
+        "selection_policy": "public-room-selection-v1",
+        "target_member_ids": null
+      },
+      "topic": "人物00与人物01如何互相问候"
+    },
+    "elapsedSeconds": 2.546,
+    "epoch": 1,
+    "error_code": null,
+    "executionWindow": 1,
+    "execution_window": 1,
+    "generation": null,
+    "generation_config": {
+      "call_timeout_seconds": 180,
+      "context_window": 1000000,
+      "expression_enabled": false,
+      "expression_selection_version": "expression-selection-v2",
+      "expression_sets": {
+        "5ef59725-59dc-43c9-8975-bdab91184964": null,
+        "c7bf1179-1d46-400e-88d8-c60e6c7403af": null
+      },
+      "max_input_tokens": 24000,
+      "max_tokens": 4096,
+      "memory_policy_version": "typed-room-memory-v1",
+      "memory_prompt_version": "room-memory-v2",
+      "model": "k3",
+      "model_record_id": 337,
+      "policy_version": "bounded-room-v1",
+      "prompt_version": "character-chat-v6",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "character-chat-review-v3",
+      "unit_char_limit": 8000,
+      "unit_segment_limit": 12
+    },
+    "mode": "natural",
+    "remainingSeconds": 57.454,
+    "room_id": "26149e4c-0a2c-4f11-918a-e2fb334d3193",
+    "round_id": "6cb7e786-b8d7-4807-a669-1a293db6b021",
+    "run_started_at": "2026-10-14T07:47:35.944+00:00",
+    "slots": [
+      {
+        "attempts": 1,
+        "id": "261bc250-39bc-4a00-b82f-33e2b88373af",
+        "member_generation": 0,
+        "member_id": "c7bf1179-1d46-400e-88d8-c60e6c7403af",
+        "position": 0,
+        "skip_reason": null,
+        "status": "published"
+      },
+      {
+        "attempts": 1,
+        "id": "3a89797b-2b3d-4794-b6c5-e6725b94ca6d",
+        "member_generation": 0,
+        "member_id": "5ef59725-59dc-43c9-8975-bdab91184964",
+        "position": 1,
+        "skip_reason": null,
+        "status": "published"
+      }
+    ],
+    "status": "completed",
+    "timeLimitSeconds": 60,
+    "time_limit_seconds": 60,
+    "timeoutReason": null,
+    "total_elapsed_ms": 2546,
+    "window_elapsed_ms": 2546,
+    "workspace_id": "aec75bae08888d2ca5e4a086b23f4678cd9ea0a7fc2b99889df5cbad470066ec"
+  },
+  "summary": {
+    "epoch": 1,
+    "error_code": null,
+    "id": "c09748a9-f07e-4cb6-aa91-f9b90e137d9f",
+    "result": {
+      "calls": 2,
+      "memory": {
+        "epoch": 1,
+        "id": "2997a46b-6717-4f26-94ce-4cc0ecb6c4d9",
+        "items": [
+          {
+            "origin": "conversation",
+            "source_message_ids": [
+              "05e68c2d-df58-4d19-8ab0-ebde36a8b59b"
+            ],
+            "speaker_member_id": null,
+            "speaker_type": "user",
+            "text": "请按主题向大家问候。"
+          },
+          {
+            "origin": "conversation",
+            "source_message_ids": [
+              "d04c5df5-c883-44c4-abea-51aa23129901"
+            ],
+            "speaker_member_id": "c7bf1179-1d46-400e-88d8-c60e6c7403af",
+            "speaker_type": "character",
+            "text": "你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。"
+          },
+          {
+            "origin": "conversation",
+            "source_message_ids": [
+              "8fd5c476-2aac-461f-a7af-69875a7efc5a"
+            ],
+            "speaker_member_id": "5ef59725-59dc-43c9-8975-bdab91184964",
+            "speaker_type": "character",
+            "text": "你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。你好。请慢慢说，我听着。"
+          }
+        ],
+        "policy_version": "typed-room-memory-v1",
+        "room_id": "26149e4c-0a2c-4f11-918a-e2fb334d3193",
+        "through_seq": 3
+      },
+      "pending": 0,
+      "timeLimitSeconds": 60
+    },
+    "room_id": "26149e4c-0a2c-4f11-918a-e2fb334d3193",
+    "status": "completed",
+    "time_limit_seconds": 60
+  },
+  "topicRound": {
+    "action": "get_round",
+    "can_resume": false,
+    "cursor": 2,
+    "discussion": {
+      "goal": "各自表达，不把陌生传闻当作亲历。",
+      "mode": "topic",
+      "revision": 1,
+      "speaker_request": {
+        "mode": "natural",
+        "selection_policy": "public-room-selection-v1",
+        "target_member_ids": null
+      },
+      "topic": "人物00与人物01如何互相问候"
+    },
+    "elapsedSeconds": 2.688,
+    "epoch": 1,
+    "error_code": null,
+    "executionWindow": 1,
+    "execution_window": 1,
+    "generation": null,
+    "generation_config": {
+      "call_timeout_seconds": 180,
+      "context_window": 1000000,
+      "expression_enabled": false,
+      "expression_selection_version": "expression-selection-v2",
+      "expression_sets": {
+        "5ef59725-59dc-43c9-8975-bdab91184964": null,
+        "c7bf1179-1d46-400e-88d8-c60e6c7403af": null
+      },
+      "max_input_tokens": 24000,
+      "max_tokens": 4096,
+      "memory_policy_version": "typed-room-memory-v1",
+      "memory_prompt_version": "room-memory-v2",
+      "model": "k3",
+      "model_record_id": 337,
+      "policy_version": "bounded-room-v1",
+      "prompt_version": "character-chat-v6",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "character-chat-review-v3",
+      "unit_char_limit": 8000,
+      "unit_segment_limit": 12
+    },
+    "mode": "natural",
+    "remainingSeconds": 57.312,
+    "room_id": "26149e4c-0a2c-4f11-918a-e2fb334d3193",
+    "round_id": "9c2202fd-c258-4b93-8818-c31b899cc736",
+    "run_started_at": "2026-10-14T07:45:43.231+00:00",
+    "slots": [
+      {
+        "attempts": 1,
+        "id": "4f81d072-c949-44ba-889a-e82cf2876ff2",
+        "member_generation": 0,
+        "member_id": "c7bf1179-1d46-400e-88d8-c60e6c7403af",
+        "position": 0,
+        "skip_reason": null,
+        "status": "published"
+      },
+      {
+        "attempts": 1,
+        "id": "1a43a76f-69c0-4dc5-a1a0-d216aaaa3fd9",
+        "member_generation": 0,
+        "member_id": "5ef59725-59dc-43c9-8975-bdab91184964",
+        "position": 1,
+        "skip_reason": null,
+        "status": "published"
+      }
+    ],
+    "status": "completed",
+    "timeLimitSeconds": 60,
+    "time_limit_seconds": 60,
+    "timeoutReason": null,
+    "total_elapsed_ms": 2688,
+    "window_elapsed_ms": 2688,
+    "workspace_id": "aec75bae08888d2ca5e4a086b23f4678cd9ea0a7fc2b99889df5cbad470066ec"
+  }
+}

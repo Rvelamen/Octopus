@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -163,7 +164,7 @@ class RoomMemoryService:
         if (
             type(before_seq) is not int
             or before_seq < 1
-            or not 1 <= keep_recent <= 60
+            or not 0 <= keep_recent <= 60
             or not 1 <= trigger_messages <= 100
             or not 1 <= max_messages <= 40
             or not 2000 <= max_input_bytes <= 200000
@@ -205,7 +206,8 @@ class RoomMemoryService:
                     len(old_items) - len(retained),
                 )
 
-            for row in rows[:-keep_recent][:max_messages]:
+            eligible = rows[:-keep_recent] if keep_recent else rows
+            for row in eligible[:max_messages]:
                 message = self._message(row)
                 # Make room for one complete new message by evicting whole old entries.
                 # Their original public sources remain available to scoped recall.
@@ -276,11 +278,17 @@ class RoomMemoryService:
         *,
         fence=None,
         elapsed: Callable[[], int] | None = None,
+        guard: Callable[[sqlite3.Connection], None] | None = None,
+        on_publish: Callable[[sqlite3.Connection, dict], None] | None = None,
     ) -> dict:
         proposal = self.validate(plan, candidate, review)
         with connect(self.db_path) as db:
             db.execute("BEGIN IMMEDIATE")
-            self.rooms._room(db, plan.scope)
+            room = self.rooms._room(db, plan.scope)
+            if room["status"] != "active":
+                raise BookWorldError("room_readonly", "Room cannot publish a new summary")
+            if guard is not None:
+                guard(db)
             if fence is not None:
                 row = db.execute(
                     "SELECT * FROM book_room_rounds WHERE room_id=? AND epoch=? AND id=?",
@@ -323,8 +331,12 @@ class RoomMemoryService:
                     raise BookWorldError(
                         "invalid_memory", "Memory source changed or is outside its range"
                     )
-            latest = self._read(db, plan.scope, plan.through_seq + 1)
+            latest = self._read(db, plan.scope)
             if latest is not None and latest["through_seq"] == plan.through_seq:
+                if guard is not None:
+                    guard(db)
+                if on_publish is not None:
+                    on_publish(db, latest)
                 return latest
             if (latest["id"] if latest else None) != plan.previous_id:
                 raise BookWorldError(
@@ -362,6 +374,14 @@ class RoomMemoryService:
                 raise BookWorldError(
                     "round_timeout", "Memory publication crossed its time boundary"
                 )
+            if guard is not None:
+                guard(db)
+            if on_publish is not None:
+                on_publish(db, {
+                    "id": identifier, "room_id": plan.scope.room_id, "epoch": plan.scope.epoch,
+                    "through_seq": plan.through_seq, "policy_version": MEMORY_POLICY,
+                    "items": [item.model_dump() for item in proposal.items],
+                })
         result = self.read(plan.scope, before_seq=plan.through_seq + 1)
         assert result is not None
         return result

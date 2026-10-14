@@ -144,7 +144,12 @@ class BookRoundService:
         content: str,
         mode: str = "directed",
         target_member_ids: list[str] | None = None,
+        expected_discussion_revision: int | None = None,
     ) -> sqlite3.Row | None:
+        if expected_discussion_revision is not None and (
+            type(expected_discussion_revision) is not int or expected_discussion_revision < 0
+        ):
+            raise BookWorldError("invalid_request", "Invalid discussion revision")
         existing = db.execute(
             "SELECT r.id,r.mode,r.discussion_snapshot_json,m.content FROM book_room_rounds r JOIN book_room_messages m ON m.round_id=r.id AND m.room_id=r.room_id AND m.epoch=r.epoch AND m.speaker_type='user' WHERE r.room_id=? AND r.epoch=? AND r.client_turn_id=?",
             (scope.room_id, scope.epoch, client_turn_id),
@@ -152,6 +157,7 @@ class BookRoundService:
         if existing is not None and (
             existing["content"] != content
             or existing["mode"] != mode
+            or (expected_discussion_revision is not None and json.loads(existing["discussion_snapshot_json"])["revision"] != expected_discussion_revision)
             or json.loads(existing["discussion_snapshot_json"])
             .get("speaker_request", {})
             .get("target_member_ids")
@@ -170,6 +176,7 @@ class BookRoundService:
         *,
         mode: str = "directed",
         target_member_ids: list[str] | None = None,
+        expected_discussion_revision: int | None = None,
     ) -> dict[str, Any] | None:
         """Look up an acknowledged turn before resolving model defaults for a new turn."""
         with connect(self.db_path) as db:
@@ -177,7 +184,7 @@ class BookRoundService:
             room = self.rooms._room(db, scope)
             if room["status"] != "active":
                 raise BookWorldError("room_readonly", "Room no longer accepts new turns")
-            existing = self._submitted(db, scope, client_turn_id, content, mode, target_member_ids)
+            existing = self._submitted(db, scope, client_turn_id, content, mode, target_member_ids, expected_discussion_revision)
         return self.get_round(scope, existing["id"]) if existing is not None else None
 
     def submit(
@@ -190,6 +197,7 @@ class BookRoundService:
         time_limit_seconds: int,
         mode: str = "directed",
         target_member_ids: list[str] | None = None,
+        expected_discussion_revision: int | None = None,
     ) -> dict[str, Any]:
         if (
             not isinstance(client_turn_id, str)
@@ -206,10 +214,13 @@ class BookRoundService:
             room = self.rooms._room(db, scope)
             if room["status"] != "active":
                 raise BookWorldError("room_readonly", "Room no longer accepts new turns")
-            existing = self._submitted(db, scope, client_turn_id, content, mode, target_member_ids)
+            existing = self._submitted(db, scope, client_turn_id, content, mode, target_member_ids, expected_discussion_revision)
             if existing:
                 round_id = existing["id"]
             else:
+                from .discussion import check_discussion_revision
+
+                check_discussion_revision(room, expected_discussion_revision)
                 if (
                     not config.model
                     or config.provider_id is None
@@ -223,7 +234,7 @@ class BookRoundService:
                     (scope.room_id,),
                 ).fetchone():
                     raise BookWorldError("room_busy", "Complete or cancel the current turn first")
-                members = select_speakers(db, scope, content, mode, target_member_ids)
+                members = select_speakers(db, scope, content, mode, target_member_ids, discussion_topic=room["discussion_topic"])
                 discussion = {
                     "revision": room["discussion_revision"],
                     "mode": room["discussion_mode"],

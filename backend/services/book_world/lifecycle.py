@@ -44,6 +44,7 @@ def fence_book_rooms(db, book_id: str, workspace_id: str) -> None:
             (identifier, scope.epoch, identifier, book_id),
         )
         if active is None:
+            db.execute("UPDATE book_room_summary_jobs SET status='cancelled',generation=generation+1,error_code='source_unavailable' WHERE room_id=? AND status IN ('queued','running')", (identifier,))
             db.execute(
                 "UPDATE book_rooms SET status='readonly' WHERE id=? AND status='active'",
                 (identifier,),

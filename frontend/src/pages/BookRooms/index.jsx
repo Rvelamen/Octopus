@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Alert, Button, Empty, Modal, Select, Spin, Tag } from 'antd';
+import { Alert, Button, Empty, Modal, Select, Spin } from 'antd';
 import { useTranslation } from 'react-i18next';
 import BookRoomManager from '../Knowledge/library/BookRoomManager';
 import { BookConversation } from '../Knowledge/library/BookSingleChatModal';
 import BookRoomScene from './BookRoomScene';
 import useBookRoom from './useBookRoom';
+import BookRoomDiscussion from '../Knowledge/library/BookRoomDiscussion';
 import './BookRooms.css';
 
 function ActiveRoom({snapshot,sendWSMessage,onAdd,connectionStatus,connectionIdentity}) {
@@ -21,9 +22,10 @@ function ActiveRoom({snapshot,sendWSMessage,onAdd,connectionStatus,connectionIde
     if(message){chat.showHistory(message);chat.pin(id);setSelected(message.speaker_member_id);document.getElementById(`book-room-message-${id}`)?.scrollIntoView({block:'nearest',behavior:chat.reduced?'instant':'smooth'});}
   };
   return <>
+    <BookRoomDiscussion chat={chat}/>
     <div className="book-room-body" style={{'--conversation-width':`${width}px`}}>
       <BookRoomScene chat={chat} selected={selected} onSelect={id=>{setSelected(id);setCard(id);setProfile(null);setProfileError('');}} onMessage={showMessage}/>
-      <div className="book-room-divider" role="separator" aria-orientation="vertical" aria-label={t('bookScene.resize')} tabIndex={0} aria-valuemin={360} aria-valuemax={560} aria-valuenow={width} onKeyDown={event=>{if(['ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();setWidth(value=>Math.min(560,Math.max(360,value+(event.key==='ArrowLeft'?20:-20))));}}} onPointerDown={event=>event.currentTarget.setPointerCapture(event.pointerId)} onPointerMove={event=>{if(event.currentTarget.hasPointerCapture(event.pointerId)){const right=event.currentTarget.parentElement.getBoundingClientRect().right;setWidth(Math.max(360,Math.min(560,right-event.clientX)));}}}/>
+      <input type="range" className="book-room-divider" min={360} max={560} step={20} value={width} onChange={event=>setWidth(Number(event.target.value))} aria-orientation="vertical" aria-label={t('bookScene.resize')} tabIndex={0} aria-valuemin={360} aria-valuemax={560} aria-valuenow={width} onKeyDown={event=>{if(['ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();setWidth(value=>Math.min(560,Math.max(360,value+(event.key==='ArrowLeft'?20:-20))));}}} onPointerDown={event=>event.currentTarget.setPointerCapture(event.pointerId)} onPointerMove={event=>{if(event.currentTarget.hasPointerCapture(event.pointerId)){const right=event.currentTarget.parentElement.getBoundingClientRect().right;setWidth(Math.max(360,Math.min(560,right-event.clientX)));}}}/>
       <BookConversation embedded group detail={detail} chat={chat} onAddMembers={onAdd} mention={mention} displayText={chat.displayText} onShowMessage={message=>showMessage(message.id)}/>
     </div>
     <Modal open={Boolean(member)} title={member&&`${member.identity.name} · ${member.identity.book_title}`} onCancel={()=>setCard(null)} footer={<Button onClick={()=>setCard(null)}>{t('bookWorld.closeArchive')}</Button>}>
@@ -67,7 +69,7 @@ export default function BookRooms({sendWSMessage,connectionStatus,connectionIden
     return()=>{generation.current+=1;};
   },[load,connectionStatus]);
   return <main className="book-rooms-page">
-    <header><div><h1>{snapshot?.title||t('nav.bookRooms')}</h1><Tag>{t('bookScene.free')}</Tag></div><nav><Button onClick={()=>setManager({})}>{t('bookScene.switchRoom')}</Button><Button onClick={()=>setManager({create:true})}>{t('bookRoom.createGroup')}</Button><Button onClick={()=>load()} disabled={loading}>{t('bookWorld.refreshBuild')}</Button><Button onClick={()=>navigate('/config')}>{t('nav.config')}</Button></nav></header>
+    <header><div><h1>{snapshot?.title||t('nav.bookRooms')}</h1></div><nav><Button onClick={()=>setManager({})}>{t('bookScene.switchRoom')}</Button><Button onClick={()=>setManager({create:true})}>{t('bookRoom.createGroup')}</Button><Button onClick={()=>load()} disabled={loading}>{t('bookWorld.refreshBuild')}</Button><Button onClick={()=>navigate('/config')}>{t('nav.config')}</Button></nav></header>
     {error&&<Alert type="error" title={error}/>}
     {loading?<Spin/>:snapshot?<ActiveRoom key={`${snapshot.workspace_id}:${snapshot.room_id}`} snapshot={snapshot} sendWSMessage={sendWSMessage} connectionStatus={connectionStatus} connectionIdentity={connectionIdentity} onAdd={room=>setManager({adding:room})}/>:<div className="book-room-empty"><Empty description={t('bookScene.empty')}/><Button type="primary" onClick={()=>setManager({create:true})}>{t('bookRoom.createGroup')}</Button></div>}
     {manager&&<BookRoomManager sendWSMessage={sendWSMessage} onClose={()=>setManager(null)} initialCreate={manager.create} initialAdding={manager.adding} initialCharacters={manager.characters} onOpenRoom={room=>{setManager(null);navigate(`/book-rooms/${room.room_id}`);if(room.room_id===roomId)load();}}/>}

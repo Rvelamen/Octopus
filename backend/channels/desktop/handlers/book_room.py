@@ -34,6 +34,7 @@ class BookRoomHandler(MessageHandler):
     _slots: dict[tuple[Any, str], asyncio.Semaphore] = {}
     _controls: dict[tuple[Any, str, str], asyncio.Lock] = {}
     _cleanup_tasks: dict[tuple[str, str], asyncio.Task] = {}
+    _summary_tasks: dict[tuple[str, str], asyncio.Task] = {}
     _initialized_workspaces: set[tuple[Any, str]] = set()
     _initialization_locks: dict[tuple[Any, str], asyncio.Lock] = {}
     _worker_roots: dict[str, Path] = {}
@@ -53,13 +54,16 @@ class BookRoomHandler(MessageHandler):
                 continue
             rounds = await asyncio.to_thread(BookRoundService, root)
             await asyncio.to_thread(rounds.recover_interrupted)
-        tasks = [*cls._tasks.values(), *cls._cleanup_tasks.values()]
+            from backend.services.book_world.summary_jobs import RoomSummaryJobs
+            await asyncio.to_thread(RoomSummaryJobs(root).recover)
+        tasks = [*cls._tasks.values(), *cls._cleanup_tasks.values(), *cls._summary_tasks.values()]
         for task in tasks:
             if not task.done():
                 task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
         cls._tasks.clear()
         cls._cleanup_tasks.clear()
+        cls._summary_tasks.clear()
         cls._worker_roots.clear()
 
     @classmethod
@@ -71,6 +75,9 @@ class BookRoomHandler(MessageHandler):
             if key in cls._initialized_workspaces:
                 return []
             rounds = await asyncio.to_thread(BookRoundService, root)
+            from backend.services.book_world.summary_jobs import RoomSummaryJobs
+            jobs = await asyncio.to_thread(RoomSummaryJobs, root)
+            await asyncio.to_thread(jobs.recover)
             interrupted = await asyncio.to_thread(rounds.recover_interrupted)
             cls._initialized_workspaces.add(key)
             return interrupted
@@ -231,6 +238,7 @@ class BookRoomHandler(MessageHandler):
             "pause_round",
             "resume_round",
             "set_member",
+            "set_discussion",
             "add_members",
             "reset_memory",
         ):
@@ -242,6 +250,60 @@ class BookRoomHandler(MessageHandler):
         self, root: Path, scope: RoomScope, request: BookRoomRequest, rooms: BookRoomService
     ) -> dict[str, Any]:
         rounds = await asyncio.to_thread(BookRoundService, root)
+        if request.action in ("summarize_room", "get_summary_job", "cancel_summary"):
+            from backend.services.book_world.public_summary import PublicRoomSummaryService
+            from backend.services.book_world.summary_jobs import RoomSummaryJobs
+
+            jobs = await asyncio.to_thread(RoomSummaryJobs, root)
+            if request.action == "get_summary_job":
+                return {"summary_job": await asyncio.to_thread(jobs.latest, scope)}
+            if request.action == "cancel_summary":
+                assert request.summary_job_id
+                state = await asyncio.to_thread(jobs.cancel, scope, request.summary_job_id)
+                task = self._summary_tasks.get((scope.workspace_id, request.summary_job_id))
+                if task is not None:
+                    task.cancel()
+                return {"summary_job": state}
+            async with self._lock(root, f"summary:{scope.room_id}"):
+                summary_model = await asyncio.to_thread(resolve_character_chat_model, request.provider_id, request.model_record_id)
+                assert request.client_summary_id
+                state = await asyncio.to_thread(jobs.create, scope, request.client_summary_id, summary_model.timeouts.seconds_for_mode("directed"))
+                key = scope.workspace_id, state["id"]
+                if state["status"] == "queued" and key not in self._summary_tasks:
+                    self._worker_roots[scope.workspace_id] = root
+                    async def execute_summary():
+                        generation = None
+                        try:
+                            generation = await asyncio.to_thread(jobs.start, scope, state["id"])
+                            if generation is None:
+                                return
+                            summary = await asyncio.to_thread(PublicRoomSummaryService, root)
+                            await summary.summarize(scope, summary_model.provider, summary_model.config,
+                                time_limit_seconds=state["time_limit_seconds"],
+                                authorized=lambda: not self._stopping and Path(get_workspace_path()).resolve() == root,
+                                publication_authorized=lambda db: jobs.authorized(scope, state["id"], generation, db),
+                                on_commit=lambda db, result: jobs.finish(scope, state["id"], generation, result=result, db=db))
+                        except asyncio.CancelledError:
+                            await asyncio.to_thread(jobs.finish, scope, state["id"], generation if generation is not None else 0, error="service_interrupted")
+                            raise
+                        except Exception as error:
+                            await asyncio.to_thread(jobs.finish, scope, state["id"], generation if generation is not None else 0, error=error.code if isinstance(error, BookWorldError) else "summary_failed")
+                        finally:
+                            self._summary_tasks.pop(key, None)
+                    self._summary_tasks[key] = asyncio.create_task(execute_summary())
+                    def discard(task):
+                        if self._summary_tasks.get(key) is task:
+                            self._summary_tasks.pop(key, None)
+                        if not task.cancelled():
+                            task.exception()
+                    self._summary_tasks[key].add_done_callback(discard)
+                return {"summary_job": state}
+        if request.action == "set_discussion":
+            from backend.services.book_world.discussion import RoomDiscussionService
+
+            assert request.expected_discussion_revision is not None and request.discussion_mode
+            discussion = await asyncio.to_thread(RoomDiscussionService, root)
+            return await asyncio.to_thread(discussion.set, scope, request.expected_discussion_revision, request.discussion_mode, request.topic, request.goal)
         if request.action == "get_member_profile":
             assert request.member_id
             return await asyncio.to_thread(rooms.get_member_profile, scope, request.member_id)
@@ -327,6 +389,7 @@ class BookRoomHandler(MessageHandler):
                 request.content,
                 mode=request.mode,
                 target_member_ids=request.target_member_ids,
+                expected_discussion_revision=request.expected_discussion_revision,
             )
             model = None
             if result is None:
@@ -346,6 +409,7 @@ class BookRoomHandler(MessageHandler):
                     time_limit_seconds=model.timeouts.seconds_for_mode(request.mode),
                     mode=request.mode,
                     target_member_ids=request.target_member_ids,
+                    expected_discussion_revision=request.expected_discussion_revision,
                 )
             async with self._lock(root, result["round_id"]):
                 current = await asyncio.to_thread(rounds.get_round, scope, result["round_id"])

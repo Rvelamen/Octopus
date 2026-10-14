@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Empty, Input, Modal, Select, Space, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import useBookSingleRoom from './useBookSingleRoom';
+import BookRoomDiscussion from './BookRoomDiscussion';
 
 export default function BookSingleChatModal(props) {
   const chat = useBookSingleRoom(props.detail, props.sendWSMessage);
@@ -38,6 +39,9 @@ export function BookConversation({ detail, chat, onClose, group = false, onAddMe
   const mentionAvailable = eligible.some(member => member.id === mention?.member_id);
   const visibleScope = `${chat.room?.room_id}:${chat.room?.epoch}:${chat.room?.sources.map(source => source.status).join(':')}`;
   const lastVisibleText = chat.messages.length ? displayText(chat.messages.at(-1)) : '';
+  const previousQuestion = chat.messages.find(message=>message.round_id===round?.round_id&&message.speaker_type==='user')?.content;
+  const repeatTargets = round?.slots.map(slot=>slot.member_id) || [];
+  const canRepeat = round?.mode !== 'directed' || repeatTargets.every(id=>eligible.some(member=>member.id===id));
 
   useEffect(() => { if (followLatest.current && log.current) log.current.scrollTop = log.current.scrollHeight; }, [chat.messages.length, lastVisibleText]);
 
@@ -66,7 +70,7 @@ export function BookConversation({ detail, chat, onClose, group = false, onAddMe
     return () => clearInterval(timer);
   }, [round?.round_id, round?.status, round?.execution_window, round?.run_started_at, round?.timeLimitSeconds, round?.elapsedSeconds]);
 
-  const send = async () => { if (await chat.act('submit_turn', draft.trim(), group ? { mode: chosenMode, ...(chosenMode === 'directed' ? { target_member_ids: chosenTargets } : {}) } : {})) setDraft(''); };
+  const send = async () => { if (await chat.act('submit_turn', draft.trim(), { expected_discussion_revision: chat.room.discussion.revision, ...(group ? { mode: chosenMode, ...(chosenMode === 'directed' ? { target_member_ids: chosenTargets } : {}) } : {}) })) setDraft(''); };
   const openEvidence = async (id) => {
     const current = generation.current;
     const revision = ++evidenceRevision.current;
@@ -84,6 +88,7 @@ export function BookConversation({ detail, chat, onClose, group = false, onAddMe
   };
 
   const body = <>
+    {!embedded&&<BookRoomDiscussion chat={chat}/>}
     <Alert type="info" showIcon title={t('bookRoom.hint')} style={{ marginBottom: 12 }} />
     {chat.error && <Alert type="error" showIcon title={chat.error} />}
     {evidenceError && <Alert type="error" showIcon title={evidenceError} />}
@@ -117,6 +122,7 @@ export function BookConversation({ detail, chat, onClose, group = false, onAddMe
       {round.error_code && <Alert type="warning" title={t(`bookRoom.error.${round.error_code}`, { defaultValue: round.error_code })} />}
       {group && <details open={!embedded}><summary>{t('bookScene.queue', { cursor: round.cursor, total: round.slots.length })}</summary><ul>{round.slots.map((slot) => <li key={slot.id}>{chat.room?.members.find((member) => member.id === slot.member_id)?.identity.name} · {slot.member_id.slice(0, 6)} · {t(`bookRoom.slot.${slot.status}`, { defaultValue: slot.status })}{slot.skip_reason && ` · ${t(`bookRoom.skip.${slot.skip_reason}`, { defaultValue: slot.skip_reason })}`}</li>)}</ul></details>}
       <Space style={{ marginTop: 8 }}>
+        {round.status==='completed'&&previousQuestion&&<Button size="small" disabled={chat.busy||!available||!canRepeat} onClick={()=>chat.act('submit_turn',previousQuestion,{expected_discussion_revision:chat.room.discussion.revision,mode:round.mode,...(round.mode==='directed'?{target_member_ids:repeatTargets}:{})})}>{t('bookDiscussion.anotherRound')}</Button>}
         {(round.can_resume || round.status === 'failed') && <Button size="small" disabled={chat.busy || !available} onClick={() => chat.act('resume_round')}>{t('bookRoom.resume')}</Button>}
         {['queued', 'running'].includes(round.status) && <Button size="small" disabled={chat.busy} onClick={() => chat.act('pause_round')}>{t('bookRoom.pause')}</Button>}
         {active && <Button size="small" disabled={chat.busy} onClick={() => chat.act('cancel_round')}>{t('bookRoom.stop')}</Button>}

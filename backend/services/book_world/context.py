@@ -97,7 +97,7 @@ class CharacterContextBuilder:
             ]
             identity = json.loads(member["identity_snapshot_json"])
             discussion = json.loads(round_row["discussion_snapshot_json"])
-        words = query_terms(user["content"] + " " + (discussion.get("topic") or ""), aliases)
+        words = query_terms(" ".join([user["content"], discussion.get("topic") or "", discussion.get("goal") or ""]), aliases)
         query = ""
         for word in words:
             if len(query) + len(word) + 1 <= 1000:

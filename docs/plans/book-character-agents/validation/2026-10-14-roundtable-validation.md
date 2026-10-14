@@ -34,3 +34,5 @@
 1/4/8/16/32 人均在同一桌面中保有独立座位。Windows 本机 headless Chromium 观测约 45–61 FPS：32 人 565 mesh；这是短时环境观测，不是性能承诺。上下文丢失测试后 32 个二维座位、canvas 0、累计 created=disposed=4、active=0；800px 视口无页面横向溢出，见[降级截图](roundtable-native-fallback.png)。历史房间刷新/重连不批量重播气泡。长中文、遮挡折叠、人物列表与窄屏定向入口见[长消息](roundtable-live-bubble.png)、[窄屏](roundtable-narrow-directed.png)、[32 人](roundtable-32-seats.png)。
 
 原林间图书馆实际组件、阅读与受控思考者问答回归见[阅读](library-reader-regression.png)、[问答](library-thinker-regression.png)，没有真实模型调用。完整应用开关、两部全书人格、六种讨论组合与真实模型质量仍由 T17/T12 完成，不能用这些受控结果代替。
+
+后续 T17 显式加 `--ext .js,.jsx,.mjs` 扩大了圆桌 JSX 的 ESLint 覆盖，发现原宽度分隔控件的 a11y 规则告警，已改为有原生键盘行为的 range。此前仅目录命令通过不能表述为已完整扫描全部 JSX；修正后的全部圆桌 JSX 检查通过。

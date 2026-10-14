@@ -167,6 +167,7 @@ tests/
 !/tests/test_book_auto_import.py
 !/tests/test_book_world_lifecycle.py
 !/tests/test_book_room_scene.py
+!/tests/test_book_discussion.py
 .agents/skills/ai-elements/SKILL.md
 .agents/skills/ai-elements/references/agent.md
 .agents/skills/ai-elements/references/artifact.md

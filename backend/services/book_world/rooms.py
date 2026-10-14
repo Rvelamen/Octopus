@@ -77,6 +77,7 @@ class BookRoomService:
                     (scope.room_id, scope.epoch),
                 )
             ]
+            db.execute("UPDATE book_room_summary_jobs SET status='cancelled',generation=generation+1 WHERE room_id=? AND epoch=? AND status IN ('queued','running')", (scope.room_id, scope.epoch))
             db.execute(
                 "UPDATE book_room_rounds SET status='cancelled',cancel_requested=1,lease_generation=lease_generation+1,lease_owner=NULL,lease_expires_at=NULL WHERE room_id=? AND epoch=? AND status IN ('queued','running','paused','interrupted')",
                 (scope.room_id, scope.epoch),

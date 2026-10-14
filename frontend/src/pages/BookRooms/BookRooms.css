@@ -12,3 +12,7 @@
 .book-conversation .book-chat-composer{position:sticky;bottom:0;background:#fffef9;padding-top:10px}
 @media(max-width:1100px){.book-room-body{grid-template-columns:1fr;overflow:auto;display:flex;flex-direction:column}.book-room-divider{display:none}.book-room-scene{min-height:380px;flex:none;height:45vh}.book-conversation{overflow:visible;flex:1}.book-rooms-page>header{align-items:flex-start;padding:12px;flex-direction:column}}
 @media(prefers-reduced-motion:reduce){.book-rooms-page *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.book-discussion{padding:10px 20px;background:#f6f8ef;border-bottom:1px solid #d6ddce;display:flex;align-items:center;gap:8px;flex-wrap:wrap;overflow-wrap:anywhere}
+
+input.book-room-divider{appearance:none;width:8px;height:100%;margin:0;writing-mode:vertical-lr;direction:rtl;accent-color:#648156}

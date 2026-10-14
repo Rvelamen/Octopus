@@ -8,7 +8,8 @@ from .source import BookWorldError
 
 
 def select_speakers(
-    db, scope: RoomScope, content: str, mode: str, target_member_ids: list[str] | None
+    db, scope: RoomScope, content: str, mode: str, target_member_ids: list[str] | None,
+    *, discussion_topic: str | None = None,
 ):
     if mode not in ("directed", "natural", "all") or (
         target_member_ids is not None
@@ -51,7 +52,14 @@ def select_speakers(
     members = [member for member in members if member["speaking_mode"] == "auto"]
     if not members:
         raise BookWorldError("member_unavailable", "No automatic speaker is available")
-    words = query_terms(content, [])
+    recent = db.execute(
+        "SELECT content FROM book_room_messages WHERE room_id=? AND epoch=? ORDER BY seq DESC LIMIT 4",
+        (scope.room_id, scope.epoch),
+    ).fetchall()
+    relevance = " ".join([content, discussion_topic or ""])
+    history = " ".join(row["content"] for row in recent)
+    words = query_terms(relevance, [])
+    history_words = query_terms(history, [])
     aliases: dict[str, list[str]] = {}
     for member in members:
         aliases[member["id"]] = [
@@ -83,11 +91,12 @@ def select_speakers(
         identity = json.loads(member["identity_snapshot_json"])
         name, label = identity.get("name", ""), identity.get("book_title", "")
         names = [name, *aliases[member["id"]]]
-        score = (100 if any(len(value) > 1 and value in content for value in names) else 0) + sum(
+        score = (100 if any(len(value) > 1 and value in relevance for value in names) else 0) + sum(
             word in label or word in name for word in words
         )
         return (
             -score,
+            -sum(word in label or word in name for word in history_words),
             opportunities.get(member["id"], 0),
             last_spoken.get(member["id"], 0),
             member["seat_index"],
