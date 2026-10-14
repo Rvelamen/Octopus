@@ -28,6 +28,13 @@ from .discovery_repair import (
     apply_repair,
     prepare_repair,
 )
+from .discovery_selection import (
+    SELECTION_PROMPT,
+    SelectedRepairs,
+    apply_selection,
+    prepare_selection,
+    selection_input,
+)
 from .source import BookSourceService, BookWorldError
 from .storage import connect
 
@@ -439,6 +446,7 @@ class BookDiscoveryService:
                 "character-discovery-v9",
                 "character-discovery-v10",
                 "character-discovery-v11",
+                "character-discovery-v12",
             ):
                 result["repair_packet"] = (
                     json.loads(step["result_json"]).get("repair_packet")
@@ -702,24 +710,37 @@ class BookDiscoveryService:
                 data = await asyncio.to_thread(self._input, build_id, owner, generation, config)
                 if data is None:
                     return
+                selected = (
+                    bool(data.get("repair_packet", {}).get("selection_protocol"))
+                    if data.get("repair_packet")
+                    else False
+                )
+                if selected:
+                    system_prompt = SELECTION_PROMPT + _json(SelectedRepairs.model_json_schema())
+                    model_input = selection_input(data["repair_packet"])
+                else:
+                    repair_prompt = (
+                        REPAIR_V10_PROMPT
+                        if config.prompt_version
+                        in ("character-discovery-v10", "character-discovery-v11")
+                        else REPAIR_V9_PROMPT
+                        if config.prompt_version == "character-discovery-v9"
+                        else REPAIR_PROMPT
+                    )
+                    system_prompt = (
+                        repair_prompt + _json(DiscoveryRepairs.model_json_schema())
+                        if data.get("repair_packet")
+                        else prompt
+                    )
+                    model_input = discovery_model_input(data, config.prompt_version)
                 messages = [
                     {
                         "role": "system",
-                        "content": (
-                            REPAIR_V10_PROMPT
-                            if config.prompt_version
-                            in ("character-discovery-v10", "character-discovery-v11")
-                            else REPAIR_V9_PROMPT
-                            if config.prompt_version == "character-discovery-v9"
-                            else REPAIR_PROMPT
-                        )
-                        + _json(DiscoveryRepairs.model_json_schema())
-                        if data.get("repair_packet")
-                        else prompt,
+                        "content": system_prompt,
                     },
                     {
                         "role": "user",
-                        "content": _json(discovery_model_input(data, config.prompt_version)),
+                        "content": _json(model_input),
                     },
                 ]
                 raw_for_repair = None
@@ -739,7 +760,11 @@ class BookDiscoveryService:
                         raise ValueError("Discovery response is truncated or requests a tool")
                     raw_for_repair = response.content or ""
                     result = (
-                        apply_repair(
+                        apply_selection(
+                            raw_for_repair, data["repair_packet"], data, self._validate_result
+                        )
+                        if selected
+                        else apply_repair(
                             raw_for_repair, data["repair_packet"], data, self._validate_result
                         )
                         if data.get("repair_packet")
@@ -770,6 +795,7 @@ class BookDiscoveryService:
                             "character-discovery-v9",
                             "character-discovery-v10",
                             "character-discovery-v11",
+                            "character-discovery-v12",
                         )
                         and raw_for_repair
                         and not data.get("repair_packet")
@@ -781,8 +807,17 @@ class BookDiscoveryService:
                             self._validate_result,
                             allow_anonymous_split=config.prompt_version == "character-discovery-v9",
                             allow_uncertain_split=config.prompt_version
-                            in ("character-discovery-v10", "character-discovery-v11"),
+                            in (
+                                "character-discovery-v10",
+                                "character-discovery-v11",
+                                "character-discovery-v12",
+                            ),
                         )
+                        if (
+                            packet is not None
+                            and config.prompt_version == "character-discovery-v12"
+                        ):
+                            packet = await asyncio.to_thread(prepare_selection, packet, data)
                     await asyncio.to_thread(
                         self._failed_attempt,
                         build_id,
@@ -797,6 +832,7 @@ class BookDiscoveryService:
                             "character-discovery-v9",
                             "character-discovery-v10",
                             "character-discovery-v11",
+                            "character-discovery-v12",
                         ),
                     )
         except BookWorldError as error:

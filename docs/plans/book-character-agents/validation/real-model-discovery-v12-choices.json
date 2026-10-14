@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-14",
+  "scope": "Fixed failed native v11 unit2 repairs using v12 source choices; not full-book/persona acceptance",
+  "budget": 2,
+  "calls": [
+    {
+      "book": "西游记",
+      "unit_key": "2",
+      "status": "completed",
+      "targets": 1,
+      "input_bytes": 1878,
+      "input_sha256": "ccaffc23843663db0d5484b185fd42c48c9fef5b6c3df4b8953b0babe119b721",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1099,
+        "completion_tokens": 141,
+        "total_tokens": 1240,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "output_sha256": "9e34299fe95ff013532b13c0954cc9dbab2bbb6f8d034e48417dcf59b6caefbb",
+      "valid": true,
+      "untouched_entries_preserved": true,
+      "characters": 6,
+      "target_outcomes": [
+        {
+          "name": "石猴",
+          "identity": "existing"
+        }
+      ],
+      "elapsed_seconds": 6.234
+    },
+    {
+      "book": "红楼梦",
+      "unit_key": "2",
+      "status": "completed",
+      "targets": 1,
+      "input_bytes": 1657,
+      "input_sha256": "aad03c3ce25ab7561e937e18ee9bd4b0aab27c070be987006bc983c886d1110b",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 556,
+        "completion_tokens": 126,
+        "total_tokens": 682,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "output_sha256": "61006a53871f91a5fc099c8630191cbe9e58b90eb0a3e4dac26b7abdad5c5403",
+      "valid": true,
+      "untouched_entries_preserved": true,
+      "characters": 7,
+      "target_outcomes": [
+        {
+          "name": "甄士隐",
+          "identity": "existing"
+        }
+      ],
+      "elapsed_seconds": 3.672
+    }
+  ],
+  "database_publication": false,
+  "quality_pass": false,
+  "actual_calls": 2,
+  "terminal": true
+}

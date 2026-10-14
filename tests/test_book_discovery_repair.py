@@ -8,7 +8,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
-from test_book_discovery import story
+from test_book_discovery import RecordedProvider, story
 
 from backend.core.providers.base import LLMResponse
 from backend.services.book_world.discovery import BookDiscoveryService, DiscoveryConfig
@@ -86,6 +86,73 @@ class RepairProvider:
         return LLMResponse(content=json.dumps(result, ensure_ascii=False))
 
 
+class ChoiceProvider(RepairProvider):
+    async def chat(self, messages, **kwargs):
+        if not self.inputs:
+            return await super().chat(messages, **kwargs)
+        data = json.loads(messages[-1]["content"])
+        self.inputs.append(data)
+        assert data["phase"] == "discovery_repair_choices"
+        assert "segments" not in data and "known_characters" not in data
+        target = data["repair_targets"][0]
+        assert "character" not in target and "candidate" not in data
+        choice = next(option for option in target["choices"] if option["name"] == "人物甲")
+        self.entered.set()
+        if self.hold:
+            await self.release.wait()
+        return LLMResponse(
+            content=json.dumps(
+                {
+                    "repairs": [
+                        {
+                            "scene_index": 0,
+                            "character_index": 0,
+                            "identity": "preserve",
+                            "presence": "active",
+                            "evidence_choice": 999 if self.corrupt else choice["id"],
+                        }
+                    ]
+                }
+            )
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("corrupt", [False, True])
+async def test_choice_repair_uses_exact_server_source_and_preserves_other_entries(
+    book_library, corrupt
+):
+    item, source = story(book_library, "人物甲开口，他离开。人物乙安坐。")
+    service = BookDiscoveryService(book_library.workspace_root)
+    config = DiscoveryConfig(
+        provider_id=1, model="fixture", prompt_version="character-discovery-v12"
+    )
+    build = service.create_build(item, source, config)
+    provider = ChoiceProvider(corrupt=corrupt)
+    await service.run(build["build_id"], provider, config)
+    outcome = service.get_build(item, build["build_id"])
+    assert len(provider.inputs) == 2
+    if corrupt:
+        assert outcome["status"] == "failed"
+        assert not service.list_characters(item, build["build_id"])["characters"]
+    else:
+        assert outcome["stage"] == "discovery_complete"
+        with connect(service.db_path) as db:
+            saved = json.loads(
+                db.execute(
+                    "SELECT result_json FROM book_build_steps WHERE build_id=?",
+                    (build["build_id"],),
+                ).fetchone()[0]
+            )["result"]
+        untouched = DiscoveryResult.model_validate(provider.initial).model_dump()["scenes"][0][
+            "characters"
+        ][1]
+        assert saved["scenes"][0]["characters"][1] == untouched
+        evidence = saved["scenes"][0]["characters"][0]["evidence"]
+        assert "人物甲" in evidence["quote"]
+        assert evidence["local_end"] > evidence["local_start"]
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("corrupt", [False, True])
 async def test_targeted_retry_retains_valid_characters_and_cannot_patch_other_entries(
@@ -123,16 +190,15 @@ async def test_targeted_retry_retains_valid_characters_and_cannot_patch_other_en
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("action", ["cancel", "delete"])
+@pytest.mark.parametrize("version", ["character-discovery-v8", "character-discovery-v12"])
 async def test_late_targeted_repair_cannot_publish_after_cancellation_or_delete(
-    book_library, action
+    book_library, action, version
 ):
     item, source = story(book_library, "人物甲开口，他离开。人物乙安坐。")
     service = BookDiscoveryService(book_library.workspace_root)
-    config = DiscoveryConfig(
-        provider_id=1, model="fixture", prompt_version="character-discovery-v8"
-    )
+    config = DiscoveryConfig(provider_id=1, model="fixture", prompt_version=version)
     build = service.create_build(item, source, config)
-    provider = RepairProvider(hold=True)
+    provider = ChoiceProvider(hold=True) if version.endswith("v12") else RepairProvider(hold=True)
     task = asyncio.create_task(service.run(build["build_id"], provider, config))
     try:
         await asyncio.wait_for(provider.entered.wait(), 5)
@@ -153,6 +219,207 @@ async def test_late_targeted_repair_cannot_publish_after_cancellation_or_delete(
         if not task.done():
             task.cancel()
             await asyncio.gather(task, return_exceptions=True)
+
+
+def choice_fixture():
+    from backend.services.book_world.discovery_selection import prepare_selection
+
+    data = {
+        "segments": [
+            {"id": "s1", "text": "士隐说话。他离开。"},
+            {"id": "s2", "text": "人物乙安坐。另一场景的秘密。"},
+        ],
+        "known_characters": [
+            {
+                "id": "known",
+                "name": "甄士隐",
+                "aliases": [{"alias": "甄士隐", "review_state": "candidate"}],
+            }
+        ],
+    }
+    first = {
+        "local_character_key": "same",
+        "name": "甄士隐",
+        "presence": "active",
+        "identity": "existing",
+        "existing_character_id": "known",
+        "evidence": {"segment_id": "s1", "local_start": 0, "local_end": 0, "quote": "他离开。"},
+    }
+    second = {
+        "local_character_key": "other",
+        "name": "人物乙",
+        "presence": "silent",
+        "evidence": {"segment_id": "s2", "local_start": 0, "local_end": 6, "quote": "人物乙安坐。"},
+    }
+    raw = json.dumps(
+        {
+            "scenes": [
+                {"segment_ids": ["s1"], "characters": [first]},
+                {"segment_ids": ["s2"], "characters": [second]},
+            ]
+        }
+    )
+    packet = prepare_repair(
+        raw, data, BookDiscoveryService._validate_result, allow_uncertain_split=True
+    )
+    return data, prepare_selection(packet, data)
+
+
+@pytest.mark.parametrize(
+    "mutation", ["valid", "preserve", "alias", "foreign", "duplicate", "other_target"]
+)
+def test_source_choices_are_scoped_and_cannot_claim_an_unconfirmed_alias(mutation):
+    from backend.services.book_world.discovery_selection import apply_selection, selection_input
+
+    data, packet = choice_fixture()
+    frozen = copy.deepcopy(packet)
+    offered = selection_input(packet)
+    assert "另一场景的秘密" not in json.dumps(offered, ensure_ascii=False)
+    assert all(c["evidence"]["segment_id"] == "s1" for c in packet["targets"][0]["choices"])
+    choice = next(c for c in packet["targets"][0]["choices"] if c["name"] == "士隐")
+    assert not choice["can_preserve"]
+    repair = {
+        "scene_index": 0,
+        "character_index": 0,
+        "identity": "uncertain",
+        "presence": "active",
+        "evidence_choice": choice["id"],
+    }
+    if mutation == "preserve":
+        repair["identity"] = "preserve"
+    if mutation == "alias":
+        repair["alias_choices"] = [choice["id"]]
+    if mutation == "foreign":
+        choice["evidence"].update(segment_id="s2", quote="人物乙安坐。", local_start=0, local_end=6)
+    if mutation == "other_target":
+        repair["scene_index"] = 1
+    raw = json.dumps({"repairs": [repair, repair] if mutation == "duplicate" else [repair]})
+    if mutation == "valid":
+        result = apply_selection(raw, packet, data, BookDiscoveryService._validate_result)
+        person = result.scenes[0].characters[0]
+        assert person.name == "士隐" and person.identity == "uncertain"
+        assert person.existing_character_id is None
+        assert person.local_character_key == packet["targets"][0]["independent_local_key"]
+        assert not person.aliases
+        assert result.scenes[1].characters[0].name == "人物乙"
+        assert packet == frozen
+    else:
+        with pytest.raises(ValueError):
+            apply_selection(raw, packet, data, BookDiscoveryService._validate_result)
+
+
+def test_choice_input_is_bounded_and_only_offered_ids_remain_in_packet():
+    from backend.services.book_world.discovery_selection import (
+        MAX_INPUT_BYTES,
+        SELECTION_PROMPT,
+        SelectedRepairs,
+        apply_selection,
+        prepare_selection,
+        selection_input,
+    )
+
+    data, packet = choice_fixture()
+    data["segments"][0]["text"] = "士隐说话。他离开。" * 12
+    # Many independently scoped targets exercise the optional-choice trimming.
+    template = packet["targets"][0]
+    packet["targets"] = [{**copy.deepcopy(template), "scene_index": i} for i in range(8)]
+    prepared = prepare_selection(packet, data)
+    assert prepared is not None
+    assert (
+        len(json.dumps(selection_input(prepared), ensure_ascii=False).encode()) <= MAX_INPUT_BYTES
+    )
+    assert all(target["choices"] for target in prepared["targets"])
+    assert sum(len(t["choices"]) for t in prepared["targets"]) < 8 * 4
+    # A pruned option must not remain selectable from an internal superset.
+    for target in prepared["targets"]:
+        missing = {0, 1, 2, 3} - {choice["id"] for choice in target["choices"]}
+        if missing:
+            with pytest.raises(ValueError, match="not offered"):
+                apply_selection(
+                    json.dumps(
+                        {
+                            "repairs": [
+                                {
+                                    "scene_index": target["scene_index"],
+                                    "character_index": 0,
+                                    "identity": "uncertain",
+                                    "presence": "active",
+                                    "evidence_choice": min(missing),
+                                }
+                            ]
+                        }
+                    ),
+                    prepared,
+                    data,
+                    BookDiscoveryService._validate_result,
+                )
+            break
+    assert (
+        len(
+            (
+                SELECTION_PROMPT
+                + json.dumps(SelectedRepairs.model_json_schema(), ensure_ascii=False)
+            ).encode()
+        )
+        < 5000
+    )
+    packet["targets"] = [{**copy.deepcopy(template), "scene_index": i} for i in range(128)]
+    assert prepare_selection(packet, data) is None
+
+
+def test_registered_literal_alias_can_preserve_existing_identity():
+    from backend.services.book_world.discovery_selection import apply_selection, prepare_selection
+
+    data, packet = choice_fixture()
+    data["known_characters"][0]["aliases"].append({"alias": "士隐", "review_state": "candidate"})
+    packet = prepare_selection(packet, data)
+    choice = next(c for c in packet["targets"][0]["choices"] if c["name"] == "士隐")
+    assert choice["can_preserve"]
+    result = apply_selection(
+        json.dumps(
+            {
+                "repairs": [
+                    {
+                        "scene_index": 0,
+                        "character_index": 0,
+                        "identity": "preserve",
+                        "presence": "active",
+                        "evidence_choice": choice["id"],
+                    }
+                ]
+            }
+        ),
+        packet,
+        data,
+        BookDiscoveryService._validate_result,
+    )
+    assert result.scenes[0].characters[0].existing_character_id == "known"
+    assert result.scenes[0].characters[0].local_character_key == "same"
+
+
+@pytest.mark.asyncio
+async def test_no_source_choices_falls_back_to_one_complete_regeneration(book_library):
+    item, source = story(book_library, "人物甲开口。")
+    service = BookDiscoveryService(book_library.workspace_root)
+    config = DiscoveryConfig(
+        provider_id=1, model="fixture", prompt_version="character-discovery-v12"
+    )
+    build = service.create_build(item, source, config)
+
+    class NoChoice(RecordedProvider):
+        async def chat(self, messages, **kwargs):
+            response = await super().chat(messages, **kwargs)
+            assert self.inputs[-1].get("phase") != "discovery_repair_choices"
+            if len(self.inputs) == 1:
+                value = json.loads(response.content)
+                value["scenes"][0]["characters"][0]["name"] = "无此姓名"
+                return LLMResponse(content=json.dumps(value))
+            return response
+
+    provider = NoChoice()
+    await service.run(build["build_id"], provider, config)
+    assert len(provider.inputs) == 2
+    assert service.get_build(item, build["build_id"])["stage"] == "discovery_complete"
 
 
 def test_failed_repair_checkpoint_cannot_restore_deleted_source(book_library, monkeypatch):

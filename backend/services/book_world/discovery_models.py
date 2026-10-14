@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-PROMPT_VERSION = "character-discovery-v11"
+PROMPT_VERSION = "character-discovery-v12"
 POLICY_VERSION = "candidate-identity-v2"
 
 
@@ -144,6 +144,7 @@ def discovery_model_input(data: dict, prompt_version: str) -> dict:
         "character-discovery-v9",
         "character-discovery-v10",
         "character-discovery-v11",
+        "character-discovery-v12",
     ):
         return data
     known = []
@@ -165,6 +166,7 @@ def discovery_model_input(data: dict, prompt_version: str) -> dict:
         "character-discovery-v9",
         "character-discovery-v10",
         "character-discovery-v11",
+        "character-discovery-v12",
     ):
         packet = result.pop("repair_packet", None)
         if packet is not None:
@@ -186,4 +188,8 @@ DISCOVERY_PROMPTS["character-discovery-v10"] = (
 DISCOVERY_PROMPTS["character-discovery-v11"] = (
     DISCOVERY_PROMPTS["character-discovery-v10"]
     + "\n不能可靠计算偏移时，可将local_start/local_end同时设为0，但quote仍必须是指定scene内该segment唯一出现的连续逐字原文，带足够语境。服务器只按唯一引文定位，歧义、缺失或其他场景引文仍拒绝，不能用占位引文。\n"
+)
+
+DISCOVERY_PROMPTS["character-discovery-v12"] = (
+    DISCOVERY_PROMPTS["character-discovery-v11"] + "\naliases仅列有据的额外称呼，不重复name本身。\n"
 )
