@@ -1,0 +1,398 @@
+{
+  "date": "2026-10-14",
+  "scope": "Two native v7/review-v4 topic probes on existing controlled-preparation excerpt characters, not full-book or blind quality acceptance",
+  "budget": 8,
+  "calls": [
+    {
+      "phase": "generate",
+      "status": "completed",
+      "usage": {
+        "prompt_tokens": 2232,
+        "completion_tokens": 476,
+        "total_tokens": 2708,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "input_sha256": "7ede31995d5f73303edd1b08ef1b916e761cb478f56edcc0c61aa52007b874f2",
+      "output_sha256": "e3b008c4ee19beff055115d35873ccf95853cc9dbc4d67bc620b3bd51b993af1"
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "usage": {
+        "prompt_tokens": 2335,
+        "completion_tokens": 357,
+        "total_tokens": 2692,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "input_sha256": "40a8e2e1d0f2774f692bb7be54f21521b88e7c210917540b094d1319a9e4f29a",
+      "output_sha256": "719d9dfb33482e2042d57a24339a26a2c26710a99a0fc4b497dc6df318d12c7b"
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "usage": {
+        "prompt_tokens": 466,
+        "completion_tokens": 283,
+        "total_tokens": 749,
+        "cache_read_input_tokens": 1792,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "input_sha256": "7853f9349cd492736a8a84159b5114eb02fb40d595379f2feb0e63afeecdc758",
+      "output_sha256": "171e1254baf5df518f127fe825ebacf7ba83978241b7246a5d5cc6fbbbbcec21"
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "usage": {
+        "prompt_tokens": 1552,
+        "completion_tokens": 223,
+        "total_tokens": 1775,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "input_sha256": "1d537a4b235b7a896409861cb2a928481ec2382eff00e74ddb7d4f8b6c2e22e8",
+      "output_sha256": "b71ce72a4abaeddaaafe639b0b196c3e90345b7aa8a72de22de0cb7af33b9e57"
+    }
+  ],
+  "cases": [
+    {
+      "topic": "石猴发现的住处",
+      "question": "请结合你找到的住处，说说里面有什么；不能确认的部分请说明。",
+      "room_id": "7fe854f9-31f7-4f32-b7bd-5c1206d0551f",
+      "round_id": "ff6e0253-cb7d-4e52-a5d8-9b9a9eed0a53",
+      "round": {
+        "round_id": "ff6e0253-cb7d-4e52-a5d8-9b9a9eed0a53",
+        "room_id": "7fe854f9-31f7-4f32-b7bd-5c1206d0551f",
+        "epoch": 1,
+        "status": "completed",
+        "mode": "directed",
+        "cursor": 1,
+        "time_limit_seconds": 60,
+        "execution_window": 1,
+        "window_elapsed_ms": 36625,
+        "total_elapsed_ms": 36625,
+        "error_code": null,
+        "run_started_at": "2026-10-14T08:26:19.598+00:00",
+        "discussion": {
+          "goal": "回答有据部分，保持说法归属和未知。",
+          "mode": "topic",
+          "revision": 1,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "085332f8-6701-45fa-b3d8-75eab03a5139"
+            ]
+          },
+          "topic": "石猴发现的住处"
+        },
+        "generation_config": {
+          "call_timeout_seconds": 180,
+          "context_window": 1000000,
+          "expression_enabled": false,
+          "expression_selection_version": "expression-selection-v2",
+          "expression_sets": {
+            "085332f8-6701-45fa-b3d8-75eab03a5139": null
+          },
+          "max_input_tokens": 24000,
+          "max_tokens": 4096,
+          "memory_policy_version": "typed-room-memory-v1",
+          "memory_prompt_version": "room-memory-v2",
+          "model": "k3",
+          "model_record_id": 337,
+          "policy_version": "bounded-room-v1",
+          "prompt_version": "character-chat-v7",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "character-chat-review-v4",
+          "unit_char_limit": 8000,
+          "unit_segment_limit": 12
+        },
+        "can_resume": false,
+        "slots": [
+          {
+            "id": "b5862d2d-85fe-4a30-8a74-f56775d2f379",
+            "position": 0,
+            "member_id": "085332f8-6701-45fa-b3d8-75eab03a5139",
+            "status": "published",
+            "attempts": 1,
+            "member_generation": 0,
+            "skip_reason": null
+          }
+        ],
+        "generation": null,
+        "timeLimitSeconds": 60,
+        "executionWindow": 1,
+        "elapsedSeconds": 36.625,
+        "remainingSeconds": 23.375,
+        "timeoutReason": null
+      },
+      "messages": [
+        {
+          "id": "adcadd41-d6ad-449b-909d-c3d4dc15d06e",
+          "seq": 1,
+          "round_id": "ff6e0253-cb7d-4e52-a5d8-9b9a9eed0a53",
+          "speaker_type": "user",
+          "speaker_member_id": null,
+          "content": "请结合你找到的住处，说说里面有什么；不能确认的部分请说明。",
+          "reply_to_id": null,
+          "created_at": "2026-10-14T08:26:19.420Z",
+          "identity": {},
+          "refs": []
+        },
+        {
+          "id": "36b78ad6-c405-46e4-9f55-90d24e3173d5",
+          "seq": 2,
+          "round_id": "ff6e0253-cb7d-4e52-a5d8-9b9a9eed0a53",
+          "speaker_type": "character",
+          "speaker_member_id": "085332f8-6701-45fa-b3d8-75eab03a5139",
+          "content": "我当年率先跳进那瀑布泉中，里头便是我寻到的安身去处。只是你要问那里面具体有些什么陈设物件，眼下我手里的凭据没有写到这些，我说不上来，不能给你胡乱编排。能确认的是：那住处藏在瀑布之后，是我壮着胆子第一个跳进去探明的，此后山中群猴、狼虫虎豹、獐鹿猕猿，都与我常在一处为伴。其余细节，我无法确认。",
+          "reply_to_id": "adcadd41-d6ad-449b-909d-c3d4dc15d06e",
+          "created_at": "2026-10-14T08:26:56.173Z",
+          "identity": {
+            "book_title": "西游记 · 石猴发现联调样本（非全书）",
+            "name": "石猴"
+          },
+          "refs": [
+            {
+              "assertion_ordinal": 0,
+              "assertion_text": "我当年率先跳进那瀑布泉中，里头便是我寻到的安身去处",
+              "origin": "canon",
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+              "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+              "heard_message_id": null
+            },
+            {
+              "assertion_ordinal": 1,
+              "assertion_text": "那住处藏在瀑布之后，是我壮着胆子第一个跳进去探明的",
+              "origin": "inference",
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+              "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+              "heard_message_id": null
+            },
+            {
+              "assertion_ordinal": 2,
+              "assertion_text": "此后山中群猴、狼虫虎豹、獐鹿猕猿，都与我常在一处为伴",
+              "origin": "canon",
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+              "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+              "heard_message_id": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "听说与亲历的区别",
+      "question": "我在本房间说：有一盏叫电灯的东西能照亮夜路。请先转述你听到了什么，再说明哪些原理你还不清楚，勿认作你的原著经历。",
+      "room_id": "8eb953f3-6acf-4fc7-a736-37487130abc1",
+      "round_id": "f3f9e562-f4e4-4c24-91c2-a639748f2487",
+      "round": {
+        "round_id": "f3f9e562-f4e4-4c24-91c2-a639748f2487",
+        "room_id": "8eb953f3-6acf-4fc7-a736-37487130abc1",
+        "epoch": 1,
+        "status": "completed",
+        "mode": "directed",
+        "cursor": 1,
+        "time_limit_seconds": 60,
+        "execution_window": 1,
+        "window_elapsed_ms": 15421,
+        "total_elapsed_ms": 15421,
+        "error_code": null,
+        "run_started_at": "2026-10-14T08:26:56.664+00:00",
+        "discussion": {
+          "goal": "回答有据部分，保持说法归属和未知。",
+          "mode": "topic",
+          "revision": 1,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "183a4ec0-a643-4f12-8fc4-41cdd1e4f5e2"
+            ]
+          },
+          "topic": "听说与亲历的区别"
+        },
+        "generation_config": {
+          "call_timeout_seconds": 180,
+          "context_window": 1000000,
+          "expression_enabled": false,
+          "expression_selection_version": "expression-selection-v2",
+          "expression_sets": {
+            "183a4ec0-a643-4f12-8fc4-41cdd1e4f5e2": null
+          },
+          "max_input_tokens": 24000,
+          "max_tokens": 4096,
+          "memory_policy_version": "typed-room-memory-v1",
+          "memory_prompt_version": "room-memory-v2",
+          "model": "k3",
+          "model_record_id": 337,
+          "policy_version": "bounded-room-v1",
+          "prompt_version": "character-chat-v7",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "character-chat-review-v4",
+          "unit_char_limit": 8000,
+          "unit_segment_limit": 12
+        },
+        "can_resume": false,
+        "slots": [
+          {
+            "id": "34cb6c52-e774-4c5a-aef7-fc486c654c36",
+            "position": 0,
+            "member_id": "183a4ec0-a643-4f12-8fc4-41cdd1e4f5e2",
+            "status": "published",
+            "attempts": 1,
+            "member_generation": 0,
+            "skip_reason": null
+          }
+        ],
+        "generation": null,
+        "timeLimitSeconds": 60,
+        "executionWindow": 1,
+        "elapsedSeconds": 15.421,
+        "remainingSeconds": 44.579,
+        "timeoutReason": null
+      },
+      "messages": [
+        {
+          "id": "0125b8b1-7aa4-48a5-a21a-d363dbc9ed62",
+          "seq": 1,
+          "round_id": "f3f9e562-f4e4-4c24-91c2-a639748f2487",
+          "speaker_type": "user",
+          "speaker_member_id": null,
+          "content": "我在本房间说：有一盏叫电灯的东西能照亮夜路。请先转述你听到了什么，再说明哪些原理你还不清楚，勿认作你的原著经历。",
+          "reply_to_id": null,
+          "created_at": "2026-10-14T08:26:56.559Z",
+          "identity": {},
+          "refs": []
+        },
+        {
+          "id": "10d50ed9-6b53-422e-aa49-c0c727e16e22",
+          "seq": 2,
+          "round_id": "f3f9e562-f4e4-4c24-91c2-a639748f2487",
+          "speaker_type": "character",
+          "speaker_member_id": "183a4ec0-a643-4f12-8fc4-41cdd1e4f5e2",
+          "content": "方才你在这房间里说：有一盏叫电灯的东西，能照亮夜路。这话我听见了。只是我石猴在山中与群猴为伴，见的是日月光、洞中明，这电灯为何能亮、亮的道理，我实在不清楚，不敢瞎说。",
+          "reply_to_id": "0125b8b1-7aa4-48a5-a21a-d363dbc9ed62",
+          "created_at": "2026-10-14T08:27:12.062Z",
+          "identity": {
+            "book_title": "西游记 · 石猴发现联调样本（非全书）",
+            "name": "石猴"
+          },
+          "refs": [
+            {
+              "assertion_ordinal": 0,
+              "assertion_text": "方才你在这房间里说：有一盏叫电灯的东西，能照亮夜路。这话我听见了。",
+              "origin": "room_hearsay",
+              "book_id": null,
+              "source_version_id": null,
+              "build_id": null,
+              "character_id": null,
+              "claim_id": null,
+              "evidence_id": null,
+              "heard_message_id": "0125b8b1-7aa4-48a5-a21a-d363dbc9ed62"
+            },
+            {
+              "assertion_ordinal": 1,
+              "assertion_text": "只是我石猴在山中与群猴为伴",
+              "origin": "canon",
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+              "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+              "heard_message_id": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "agent_review": {
+    "reviewer": "Codex direct inspection, not human blind evaluation",
+    "overall": "not_accepted",
+    "cases": [
+      {
+        "case": 1,
+        "verdict": "failed",
+        "reason": "已发布正文加入洞府/住处与先后关系，超出两条稀疏基线。"
+      },
+      {
+        "case": 2,
+        "verdict": "failed",
+        "reason": "正文加入未列入claims的洞中照明经历，独立审查漏检。"
+      }
+    ],
+    "limitations": [
+      "Controlled-preparation excerpt characters with two sparse authorized propositions; not full-book agents.",
+      "Published status and positive independent model review do not establish semantic correctness."
+    ]
+  },
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-chat-v7",
+    "policy_version": "bounded-room-v1",
+    "model_record_id": 337,
+    "review_prompt_version": "character-chat-review-v4",
+    "context_window": 1000000,
+    "max_input_tokens": 24000,
+    "expression_enabled": false,
+    "memory_policy_version": "typed-room-memory-v1",
+    "memory_prompt_version": "room-memory-v2",
+    "expression_selection_version": "expression-selection-v2",
+    "expression_sets": {}
+  },
+  "characters": [
+    {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+      "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+      "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    },
+    {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+      "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+      "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+      "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    }
+  ],
+  "actual_calls": 4,
+  "reported_total_tokens": 7924,
+  "usage_limit": "Only returned usage; missing usage on cancellation is not zero billing. Cached-token fields are reported separately by provider.",
+  "quality_pass": false
+}

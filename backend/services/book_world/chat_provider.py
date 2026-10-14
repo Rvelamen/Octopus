@@ -111,10 +111,10 @@ def resolve_character_chat_model(
         expression_selection_version="expression-selection-v2",
         memory_policy_version="typed-room-memory-v1",
         memory_prompt_version="room-memory-v2",
-        prompt_version=original_config.prompt_version if original_config else "character-chat-v6",
+        prompt_version=original_config.prompt_version if original_config else "character-chat-v10",
         review_prompt_version=original_config.review_prompt_version
         if original_config
-        else "character-chat-review-v3",
+        else "character-chat-review-v6",
     )
     resolved = create_provider(
         {

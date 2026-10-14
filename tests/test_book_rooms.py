@@ -984,12 +984,27 @@ async def test_resume_uses_saved_budget_when_latest_global_budget_is_below_chat_
     class Recording:
         async def chat(self, messages, **kwargs):
             seen.append(kwargs["max_tokens"])
-            phase = json.loads(messages[-1]["content"])["phase"]
+            data = json.loads(messages[-1]["content"])
+            phase = data["phase"]
             result = (
-                {"content": "你好。", "dialogue_action": "greet", "claims": []}
+                {
+                    "content": "你好。",
+                    "dialogue_action": "greet",
+                    "claims": [{"text": "你好。", "origin": "conversation"}],
+                }
                 if phase == "generate"
                 else empty_review()
             )
+            if phase == "review":
+                result["claims"] = [
+                    {
+                        "ordinal": entry["ordinal"],
+                        "supported": True,
+                        "origin_correct": True,
+                        "references_complete": True,
+                    }
+                    for entry in data["review_claims"]
+                ]
             return LLMResponse(content=json.dumps(result))
 
     def factory(providers, config):

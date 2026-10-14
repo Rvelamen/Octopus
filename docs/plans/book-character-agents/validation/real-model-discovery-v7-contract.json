@@ -1,0 +1,632 @@
+{
+  "date": "2026-10-14",
+  "scope": "Two formerly rejected full-source discovery units; no full-book or persona quality acceptance",
+  "budget": 4,
+  "actual_calls": 3,
+  "cases": [
+    {
+      "book": "西游记",
+      "unit_key": "3",
+      "attempts": [
+        {
+          "valid": false,
+          "error": "Unsupported name/alias '群猴'; choose a literal label present in its quote"
+        },
+        {
+          "valid": true,
+          "candidates": 9
+        }
+      ],
+      "validated_result": {
+        "scenes": [
+          {
+            "segment_ids": [
+              "28c3a632-cb61-41a5-a0af-aa040b5d470b",
+              "ed0861e7-7c21-402c-bff7-81d9f54dbc92",
+              "16c5b0c9-c695-4be1-950b-3a36fcb9a59b",
+              "2f6f10dd-4e57-4da5-8e1b-7d51fcf7c4fc"
+            ],
+            "location_label": "花果山水帘洞",
+            "characters": [
+              {
+                "local_character_key": "mei_hou_wang",
+                "name": "美猴王",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "existing",
+                "existing_character_id": "072ced14-4ff8-433d-ac6f-2dc4ded629ae",
+                "presence": "active",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "ed0861e7-7c21-402c-bff7-81d9f54dbc92",
+                  "local_start": 15,
+                  "local_end": 72,
+                  "quote": "美猴王领一群猿猴、猕猴、马猴等分派了君臣佐使朝游花果山暮宿水帘洞合契同情不入飞鸟之丛不从走兽之类独自为王不胜欢乐。",
+                  "offset_resolution": "unique_quote"
+                }
+              }
+            ]
+          },
+          {
+            "segment_ids": [
+              "f98fda1e-8ae8-4045-9827-97579c581c92",
+              "5d5734ad-5d20-4515-ba2b-27704de52dc8"
+            ],
+            "location_label": "水帘洞喜宴",
+            "characters": [
+              {
+                "local_character_key": "mei_hou_wang",
+                "name": "美猴王",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "existing",
+                "existing_character_id": "072ced14-4ff8-433d-ac6f-2dc4ded629ae",
+                "presence": "active",
+                "aliases": [
+                  {
+                    "alias": "猴王",
+                    "evidence": {
+                      "segment_id": "f98fda1e-8ae8-4045-9827-97579c581c92",
+                      "local_start": 50,
+                      "local_end": 75,
+                      "quote": "猴王道：“我虽在欢喜之时却有一点儿远虑故此烦恼。”",
+                      "offset_resolution": "unique_quote"
+                    }
+                  }
+                ],
+                "evidence": {
+                  "segment_id": "f98fda1e-8ae8-4045-9827-97579c581c92",
+                  "local_start": 0,
+                  "local_end": 33,
+                  "quote": "美猴王享乐天真何期有三五百载。一日与群猴喜宴之间忽然忧恼堕下泪来。",
+                  "offset_resolution": "unique_quote"
+                }
+              },
+              {
+                "local_character_key": "zhong_hou",
+                "name": "众猴",
+                "anonymous": false,
+                "entity_kind": "group",
+                "identity": "existing",
+                "existing_character_id": "b0151274-6d2f-411c-b7dd-823cd3ba1937",
+                "presence": "active",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "f98fda1e-8ae8-4045-9827-97579c581c92",
+                  "local_start": 33,
+                  "local_end": 50,
+                  "quote": "众猴慌忙罗拜道：“大王何为烦恼？”",
+                  "offset_resolution": "unique_quote"
+                }
+              },
+              {
+                "local_character_key": "tongbei_yuanhou",
+                "name": "通背猿猴",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "active",
+                "aliases": [
+                  {
+                    "alias": "猿猴",
+                    "evidence": {
+                      "segment_id": "5d5734ad-5d20-4515-ba2b-27704de52dc8",
+                      "local_start": 73,
+                      "local_end": 105,
+                      "quote": "猿猴道：“乃是佛与仙与神圣三者躲过轮回不生不灭与天地山川齐寿。”",
+                      "offset_resolution": "unique_quote"
+                    }
+                  }
+                ],
+                "evidence": {
+                  "segment_id": "5d5734ad-5d20-4515-ba2b-27704de52dc8",
+                  "local_start": 0,
+                  "local_end": 38,
+                  "quote": "只见那班部中忽跳出一个通背猿猴厉声高叫道：“大王若是这般远虑真所谓道心开也！",
+                  "offset_resolution": "unique_quote"
+                }
+              },
+              {
+                "local_character_key": "yanwang_laozi",
+                "name": "阎王老子",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "referenced",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "f98fda1e-8ae8-4045-9827-97579c581c92",
+                  "local_start": 162,
+                  "local_end": 189,
+                  "quote": "将来年老血衰暗中有阎王老子管着一旦身亡可不枉生世界之中",
+                  "offset_resolution": "unique_quote"
+                }
+              }
+            ]
+          },
+          {
+            "segment_ids": [
+              "73f80237-c6e7-4420-b0e5-bbf98a93558c",
+              "db2949d7-acfe-4b68-bd96-f97b62876a2a"
+            ],
+            "location_label": "花果山送别筵宴",
+            "characters": [
+              {
+                "local_character_key": "zhong_hou",
+                "name": "众猴",
+                "anonymous": false,
+                "entity_kind": "group",
+                "identity": "existing",
+                "existing_character_id": "b0151274-6d2f-411c-b7dd-823cd3ba1937",
+                "presence": "active",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "73f80237-c6e7-4420-b0e5-bbf98a93558c",
+                  "local_start": 0,
+                  "local_end": 15,
+                  "quote": "次日众猴果去采仙桃摘异果刨山药",
+                  "offset_resolution": "unique_quote"
+                }
+              },
+              {
+                "local_character_key": "mei_hou_wang",
+                "name": "美猴王",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "existing",
+                "existing_character_id": "072ced14-4ff8-433d-ac6f-2dc4ded629ae",
+                "presence": "active",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "db2949d7-acfe-4b68-bd96-f97b62876a2a",
+                  "local_start": 212,
+                  "local_end": 241,
+                  "quote": "群猴尊美猴王上坐各依齿肩排于下边一个个轮流上前奉酒奉花奉果",
+                  "offset_resolution": "unique_quote"
+                }
+              }
+            ]
+          },
+          {
+            "segment_ids": [
+              "124e17ee-707f-4204-947b-15472ae7c4c1",
+              "ba9844bf-6e1f-4573-bf77-8f65b0fe35d0",
+              "cc6d7332-34aa-452b-b0ab-9dc27abd3ee0",
+              "803e020a-2fe6-48fa-9833-ea4273a2dc7c"
+            ],
+            "location_label": "大海至南赡部洲岸边",
+            "characters": [
+              {
+                "local_character_key": "raft_traveler_he",
+                "name": "他",
+                "anonymous": true,
+                "entity_kind": "unknown",
+                "identity": "uncertain",
+                "existing_character_id": null,
+                "presence": "active",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "803e020a-2fe6-48fa-9833-ea4273a2dc7c",
+                  "local_start": 51,
+                  "local_end": 93,
+                  "quote": "持篙试水偶得浅水弃了筏子跳上岸来只见海边有人捕鱼、打雁、挖蛤、淘盐。他走近前弄个把戏",
+                  "offset_resolution": "unique_quote"
+                }
+              },
+              {
+                "local_character_key": "seaside_people",
+                "name": "那些人",
+                "anonymous": true,
+                "entity_kind": "group",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "active",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "803e020a-2fe6-48fa-9833-ea4273a2dc7c",
+                  "local_start": 111,
+                  "local_end": 141,
+                  "quote": "虎吓得那些人丢筐弃网四散奔跑。将那跑不动的拿住一个剥了他衣裳",
+                  "offset_resolution": "unique_quote"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "book": "红楼梦",
+      "unit_key": "1",
+      "attempts": [
+        {
+          "valid": true,
+          "candidates": 13
+        }
+      ],
+      "validated_result": {
+        "scenes": [
+          {
+            "segment_ids": [
+              "02db63b8-fb1c-4b55-b0ed-af5878ba8411"
+            ],
+            "location_label": null,
+            "characters": [
+              {
+                "local_character_key": "zhen_shiyin_title",
+                "name": "甄士隐",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "referenced",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "02db63b8-fb1c-4b55-b0ed-af5878ba8411",
+                  "local_start": 0,
+                  "local_end": 22,
+                  "quote": "第一回  甄士隐梦幻识通灵　贾雨村风尘怀闺秀",
+                  "offset_resolution": "unique_quote"
+                }
+              },
+              {
+                "local_character_key": "jia_yucun_title",
+                "name": "贾雨村",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "referenced",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "02db63b8-fb1c-4b55-b0ed-af5878ba8411",
+                  "local_start": 0,
+                  "local_end": 22,
+                  "quote": "第一回  甄士隐梦幻识通灵　贾雨村风尘怀闺秀",
+                  "offset_resolution": "unique_quote"
+                }
+              }
+            ]
+          },
+          {
+            "segment_ids": [
+              "2b0969c6-e7fa-435b-b6ac-d4bcecc39a73",
+              "e0591844-fd5a-41b2-a96d-ec8e8369a7e3",
+              "d4f687d3-0892-44aa-adb6-b528e2144ada"
+            ],
+            "location_label": null,
+            "characters": [
+              {
+                "local_character_key": "author_narrator",
+                "name": "作者",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "active",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "2b0969c6-e7fa-435b-b6ac-d4bcecc39a73",
+                  "local_start": 0,
+                  "local_end": 30,
+                  "quote": "此开卷第一回也．作者自云：因曾历过一番梦幻之后，故将真事隐去",
+                  "offset_resolution": "unique_quote"
+                }
+              },
+              {
+                "local_character_key": "zhen_shiyin_title",
+                "name": "甄士隐",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "referenced",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "2b0969c6-e7fa-435b-b6ac-d4bcecc39a73",
+                  "local_start": 31,
+                  "local_end": 60,
+                  "quote": "而借\"通灵\"之说，撰此《石头记》一书也．故曰\"甄士隐\"云云",
+                  "offset_resolution": "unique_quote"
+                }
+              },
+              {
+                "local_character_key": "jia_yucun_title",
+                "name": "贾雨村",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "referenced",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "2b0969c6-e7fa-435b-b6ac-d4bcecc39a73",
+                  "local_start": 314,
+                  "local_end": 367,
+                  "quote": "又何妨用假语村言，敷演出一段故事来，亦可使闺阁昭传，复可悦世之目，破人愁闷，不亦宜乎？\"故曰\"贾雨村\"云云",
+                  "offset_resolution": "unique_quote"
+                }
+              },
+              {
+                "local_character_key": "readers_group",
+                "name": "列位看官",
+                "anonymous": false,
+                "entity_kind": "group",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "referenced",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "d4f687d3-0892-44aa-adb6-b528e2144ada",
+                  "local_start": 0,
+                  "local_end": 30,
+                  "quote": "列位看官：你道此书从何而来？说起根由虽近荒唐，细按则深有趣味",
+                  "offset_resolution": "unique_quote"
+                }
+              }
+            ]
+          },
+          {
+            "segment_ids": [
+              "6665b93e-b780-4cc7-ac4a-9e56e48af524",
+              "012fb4c8-e96e-4977-abcf-1c22ce7b8cb3"
+            ],
+            "location_label": "大荒山无稽崖青埂峰下",
+            "characters": [
+              {
+                "local_character_key": "nuwa",
+                "name": "女娲氏",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "active",
+                "aliases": [
+                  {
+                    "alias": "娲皇氏",
+                    "evidence": {
+                      "segment_id": "6665b93e-b780-4cc7-ac4a-9e56e48af524",
+                      "local_start": 45,
+                      "local_end": 78,
+                      "quote": "娲皇氏只用了三万六千五百块，只单单剩了一块未用，便弃在此山青埂峰下",
+                      "offset_resolution": "unique_quote"
+                    }
+                  }
+                ],
+                "evidence": {
+                  "segment_id": "6665b93e-b780-4cc7-ac4a-9e56e48af524",
+                  "local_start": 0,
+                  "local_end": 26,
+                  "quote": "原来女娲氏炼石补天之时，于大荒山无稽崖练成高经十二丈",
+                  "offset_resolution": "unique_quote"
+                }
+              },
+              {
+                "local_character_key": "stone",
+                "name": "石头",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "active",
+                "aliases": [
+                  {
+                    "alias": "此石",
+                    "evidence": {
+                      "segment_id": "012fb4c8-e96e-4977-abcf-1c22ce7b8cb3",
+                      "local_start": 78,
+                      "local_end": 105,
+                      "quote": "此石听了，不觉打动凡心，也想要到人间去享一享这荣华富贵",
+                      "offset_resolution": "unique_quote"
+                    }
+                  },
+                  {
+                    "alias": "弟子",
+                    "evidence": {
+                      "segment_id": "012fb4c8-e96e-4977-abcf-1c22ce7b8cb3",
+                      "local_start": 116,
+                      "local_end": 143,
+                      "quote": "便口吐人言，向那僧道说道：“大师，弟子蠢物，不能见礼了",
+                      "offset_resolution": "unique_quote"
+                    }
+                  }
+                ],
+                "evidence": {
+                  "segment_id": "012fb4c8-e96e-4977-abcf-1c22ce7b8cb3",
+                  "local_start": 513,
+                  "local_end": 535,
+                  "quote": "石头听了，感谢不尽．那僧便念咒书符，大展幻术",
+                  "offset_resolution": "unique_quote"
+                }
+              },
+              {
+                "local_character_key": "monk",
+                "name": "那僧",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "active",
+                "aliases": [
+                  {
+                    "alias": "一僧",
+                    "evidence": {
+                      "segment_id": "012fb4c8-e96e-4977-abcf-1c22ce7b8cb3",
+                      "local_start": 10,
+                      "local_end": 32,
+                      "quote": "俄见一僧一道远远而来，生得骨骼不凡，丰神迥异",
+                      "offset_resolution": "unique_quote"
+                    }
+                  }
+                ],
+                "evidence": {
+                  "segment_id": "012fb4c8-e96e-4977-abcf-1c22ce7b8cb3",
+                  "local_start": 523,
+                  "local_end": 554,
+                  "quote": "那僧便念咒书符，大展幻术，将一块大石登时变成一块鲜明莹洁的美玉",
+                  "offset_resolution": "unique_quote"
+                }
+              },
+              {
+                "local_character_key": "daoist",
+                "name": "那道人",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "active",
+                "aliases": [
+                  {
+                    "alias": "一道",
+                    "evidence": {
+                      "segment_id": "012fb4c8-e96e-4977-abcf-1c22ce7b8cb3",
+                      "local_start": 10,
+                      "local_end": 32,
+                      "quote": "俄见一僧一道远远而来，生得骨骼不凡，丰神迥异",
+                      "offset_resolution": "unique_quote"
+                    }
+                  }
+                ],
+                "evidence": {
+                  "segment_id": "012fb4c8-e96e-4977-abcf-1c22ce7b8cb3",
+                  "local_start": 729,
+                  "local_end": 756,
+                  "quote": "说着，便袖了这石，同那道人飘然而去，竟不知投奔何方何舍",
+                  "offset_resolution": "unique_quote"
+                }
+              }
+            ]
+          },
+          {
+            "segment_ids": [
+              "3186171a-ac19-41a2-907d-e88dc1a77c3c",
+              "52637783-ee90-4e9e-acde-3d91a25668ee",
+              "7214974a-c153-4ee8-ab29-9a90d5f0aceb"
+            ],
+            "location_label": "大荒山无稽崖青埂峰下",
+            "characters": [
+              {
+                "local_character_key": "kongkong_daoren",
+                "name": "空空道人",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "active",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "3186171a-ac19-41a2-907d-e88dc1a77c3c",
+                  "local_start": 0,
+                  "local_end": 40,
+                  "quote": "后来，又不知过了几世几劫，因有个空空道人访道求仙，忽从这大荒山无稽崖青埂峰下经过",
+                  "offset_resolution": "unique_quote"
+                }
+              },
+              {
+                "local_character_key": "mangmang_dashi",
+                "name": "茫茫大士",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "referenced",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "3186171a-ac19-41a2-907d-e88dc1a77c3c",
+                  "local_start": 68,
+                  "local_end": 96,
+                  "quote": "原来就是无材补天，幻形入世，蒙茫茫大士，渺渺真人携入红尘",
+                  "offset_resolution": "unique_quote"
+                }
+              },
+              {
+                "local_character_key": "miaomiao_zhenren",
+                "name": "渺渺真人",
+                "anonymous": false,
+                "entity_kind": "person",
+                "identity": "new",
+                "existing_character_id": null,
+                "presence": "referenced",
+                "aliases": [],
+                "evidence": {
+                  "segment_id": "3186171a-ac19-41a2-907d-e88dc1a77c3c",
+                  "local_start": 68,
+                  "local_end": 96,
+                  "quote": "原来就是无材补天，幻形入世，蒙茫茫大士，渺渺真人携入红尘",
+                  "offset_resolution": "unique_quote"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "calls": [
+    {
+      "book": "西游记",
+      "attempt": 1,
+      "status": "completed",
+      "input_sha256": "ebea2d66b950397729bcd4c77869a24efe39131815d9d29ff81839b1c0e6a738",
+      "output": "{\n  \"scenes\": [\n    {\n      \"segment_ids\": [\n        \"28c3a632-cb61-41a5-a0af-aa040b5d470b\",\n        \"ed0861e7-7c21-402c-bff7-81d9f54dbc92\",\n        \"16c5b0c9-c695-4be1-950b-3a36fcb9a59b\",\n        \"2f6f10dd-4e57-4da5-8e1b-7d51fcf7c4fc\"\n      ],\n      \"location_label\": \"花果山水帘洞\",\n      \"characters\": [\n        {\n          \"local_character_key\": \"mei-hou-wang\",\n          \"name\": \"美猴王\",\n          \"identity\": \"existing\",\n          \"existing_character_id\": \"072ced14-4ff8-433d-ac6f-2dc4ded629ae\",\n          \"entity_kind\": \"person\",\n          \"presence\": \"active\",\n          \"evidence\": {\n            \"segment_id\": \"ed0861e7-7c21-402c-bff7-81d9f54dbc92\",\n            \"local_start\": 16,\n            \"local_end\": 48,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"美猴王领一群猿猴、猕猴、马猴等分派了君臣佐使朝游花果山暮宿水帘洞\"\n          },\n          \"aliases\": []\n        },\n        {\n          \"local_character_key\": \"qun-hou\",\n          \"name\": \"群猴\",\n          \"identity\": \"existing\",\n          \"existing_character_id\": \"b0151274-6d2f-411c-b7dd-823cd3ba1937\",\n          \"entity_kind\": \"group\",\n          \"presence\": \"active\",\n          \"evidence\": {\n            \"segment_id\": \"ed0861e7-7c21-402c-bff7-81d9f54dbc92\",\n            \"local_start\": 16,\n            \"local_end\": 48,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"美猴王领一群猿猴、猕猴、马猴等分派了君臣佐使朝游花果山暮宿水帘洞\"\n          },\n          \"aliases\": [\n            {\n              \"alias\": \"一群猿猴、猕猴、马猴等\",\n              \"evidence\": {\n                \"segment_id\": \"ed0861e7-7c21-402c-bff7-81d9f54dbc92\",\n                \"local_start\": 16,\n                \"local_end\": 48,\n                \"offset_resolution\": \"unique_quote\",\n                \"quote\": \"美猴王领一群猿猴、猕猴、马猴等分派了君臣佐使朝游花果山暮宿水帘洞\"\n              }\n            }\n          ]\n        }\n      ]\n    },\n    {\n      \"segment_ids\": [\n        \"f98fda1e-8ae8-4045-9827-97579c581c92\",\n        \"5d5734ad-5d20-4515-ba2b-27704de52dc8\",\n        \"73f80237-c6e7-4420-b0e5-bbf98a93558c\"\n      ],\n      \"location_label\": \"花果山水帘洞\",\n      \"characters\": [\n        {\n          \"local_character_key\": \"mei-hou-wang\",\n          \"name\": \"美猴王\",\n          \"identity\": \"existing\",\n          \"existing_character_id\": \"072ced14-4ff8-433d-ac6f-2dc4ded629ae\",\n          \"entity_kind\": \"person\",\n          \"presence\": \"active\",\n          \"evidence\": {\n            \"segment_id\": \"f98fda1e-8ae8-4045-9827-97579c581c92\",\n            \"local_start\": 0,\n            \"local_end\": 31,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"美猴王享乐天真何期有三五百载。一日与群猴喜宴之间忽然忧恼堕下泪来。\"\n          },\n          \"aliases\": [\n            {\n              \"alias\": \"猴王\",\n              \"evidence\": {\n                \"segment_id\": \"f98fda1e-8ae8-4045-9827-97579c581c92\",\n                \"local_start\": 42,\n                \"local_end\": 71,\n                \"offset_resolution\": \"unique_quote\",\n                \"quote\": \"猴王道：“我虽在欢喜之时却有一点儿远虑故此烦恼。”\"\n              }\n            },\n            {\n              \"alias\": \"大王\",\n              \"evidence\": {\n                \"segment_id\": \"f98fda1e-8ae8-4045-9827-97579c581c92\",\n                \"local_start\": 32,\n                \"local_end\": 42,\n                \"offset_resolution\": \"unique_quote\",\n                \"quote\": \"众猴慌忙罗拜道：“大王何为烦恼？”\"\n              }\n            }\n          ]\n        },\n        {\n          \"local_character_key\": \"qun-hou\",\n          \"name\": \"群猴\",\n          \"identity\": \"existing\",\n          \"existing_character_id\": \"b0151274-6d2f-411c-b7dd-823cd3ba1937\",\n          \"entity_kind\": \"group\",\n          \"presence\": \"active\",\n          \"evidence\": {\n            \"segment_id\": \"f98fda1e-8ae8-4045-9827-97579c581c92\",\n            \"local_start\": 0,\n            \"local_end\": 31,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"美猴王享乐天真何期有三五百载。一日与群猴喜宴之间忽然忧恼堕下泪来。\"\n          },\n          \"aliases\": [\n            {\n              \"alias\": \"众猴\",\n              \"evidence\": {\n                \"segment_id\": \"f98fda1e-8ae8-4045-9827-97579c581c92\",\n                \"local_start\": 32,\n                \"local_end\": 42,\n                \"offset_resolution\": \"unique_quote\",\n                \"quote\": \"众猴慌忙罗拜道：“大王何为烦恼？”\"\n              }\n            }\n          ]\n        },\n        {\n          \"local_character_key\": \"tongbei-yuanhou\",\n          \"name\": \"通背猿猴\",\n          \"identity\": \"new\",\n          \"existing_character_id\": null,\n          \"entity_kind\": \"person\",\n          \"presence\": \"active\",\n          \"evidence\": {\n            \"segment_id\": \"5d5734ad-5d20-4515-ba2b-27704de52dc8\",\n            \"local_start\": 0,\n            \"local_end\": 21,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"只见那班部中忽跳出一个通背猿猴厉声高叫道\"\n          },\n          \"aliases\": [\n            {\n              \"alias\": \"猿猴\",\n              \"evidence\": {\n                \"segment_id\": \"5d5734ad-5d20-4515-ba2b-27704de52dc8\",\n                \"local_start\": 49,\n                \"local_end\": 91,\n                \"offset_resolution\": \"unique_quote\",\n                \"quote\": \"猿猴道：“乃是佛与仙与神圣三者躲过轮回不生不灭与天地山川齐寿。”\"\n              }\n            }\n          ]\n        },\n        {\n          \"local_character_key\": \"yanwang-laozi\",\n          \"name\": \"阎王老子\",\n          \"identity\": \"new\",\n          \"existing_character_id\": null,\n          \"entity_kind\": \"person\",\n          \"presence\": \"referenced\",\n          \"evidence\": {\n            \"segment_id\": \"f98fda1e-8ae8-4045-9827-97579c581c92\",\n            \"local_start\": 119,\n            \"local_end\": 157,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"将来年老血衰暗中有阎王老子管着一旦身亡可不枉生世界之中不得久住天人之内\"\n          },\n          \"aliases\": []\n        }\n      ]\n    },\n    {\n      \"segment_ids\": [\n        \"db2949d7-acfe-4b68-bd96-f97b62876a2a\",\n        \"124e17ee-707f-4204-947b-15472ae7c4c1\",\n        \"ba9844bf-6e1f-4573-bf77-8f65b0fe35d0\",\n        \"cc6d7332-34aa-452b-b0ab-9dc27abd3ee0\",\n        \"803e020a-2fe6-48fa-9833-ea4273a2dc7c\"\n      ],\n      \"location_label\": \"花果山至南赡部洲\",\n      \"characters\": [\n        {\n          \"local_character_key\": \"mei-hou-wang\",\n          \"name\": \"美猴王\",\n          \"identity\": \"existing\",\n          \"existing_character_id\": \"072ced14-4ff8-433d-ac6f-2dc4ded629ae\",\n          \"entity_kind\": \"person\",\n          \"presence\": \"active\",\n          \"evidence\": {\n            \"segment_id\": \"db2949d7-acfe-4b68-bd96-f97b62876a2a\",\n            \"local_start\": 242,\n            \"local_end\": 318,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"次日美猴王早起教：“小的们替我折些枯松编作筏子取个竹竿作篙收拾些果品之类我将去也。”\"\n          },\n          \"aliases\": []\n        },\n        {\n          \"local_character_key\": \"qun-hou\",\n          \"name\": \"群猴\",\n          \"identity\": \"existing\",\n          \"existing_character_id\": \"b0151274-6d2f-411c-b7dd-823cd3ba1937\",\n          \"entity_kind\": \"group\",\n          \"presence\": \"active\",\n          \"evidence\": {\n            \"segment_id\": \"db2949d7-acfe-4b68-bd96-f97b62876a2a\",\n            \"local_start\": 218,\n            \"local_end\": 242,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"群猴尊美猴王上坐各依齿肩排于下边\"\n          },\n          \"aliases\": []\n        },\n        {\n          \"local_character_key\": \"haibian-zhongren\",\n          \"name\": \"那些人\",\n          \"identity\": \"new\",\n          \"existing_character_id\": null,\n          \"entity_kind\": \"group\",\n          \"presence\": \"active\",\n          \"evidence\": {\n            \"segment_id\": \"803e020a-2fe6-48fa-9833-ea4273a2dc7c\",\n            \"local_start\": 88,\n            \"local_end\": 118,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"他走近前弄个把戏妆个□【上左“齿”右“可”下“女”】虎吓得那些人丢筐弃网四散奔跑。\"\n          },\n          \"aliases\": []\n        },\n        {\n          \"local_character_key\": \"paobudong-zhe\",\n          \"name\": \"跑不动的人\",\n          \"identity\": \"new\",\n          \"existing_character_id\": null,\n          \"entity_kind\": \"person\",\n          \"presence\": \"active\",\n          \"anonymous\": true,\n          \"evidence\": {\n            \"segment_id\": \"803e020a-2fe6-48fa-9833-ea4273a2dc7c\",\n            \"local_start\": 119,\n            \"local_end\": 139,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"将那跑不动的拿住一个剥了他衣裳也学人穿在身上\"\n          },\n          \"aliases\": []\n        }\n      ]\n    }\n  ]\n}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 2961,
+        "completion_tokens": 3744,
+        "total_tokens": 6705,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "error": "Unsupported name/alias '群猴'; choose a literal label present in its quote",
+      "elapsed_seconds": 108.875
+    },
+    {
+      "book": "西游记",
+      "attempt": 2,
+      "status": "completed",
+      "input_sha256": "fb52306a53349d856ce09abca4d2e97608f83ab1dde888a9016cf53b4489774a",
+      "output": "{\n  \"scenes\": [\n    {\n      \"segment_ids\": [\n        \"28c3a632-cb61-41a5-a0af-aa040b5d470b\",\n        \"ed0861e7-7c21-402c-bff7-81d9f54dbc92\",\n        \"16c5b0c9-c695-4be1-950b-3a36fcb9a59b\",\n        \"2f6f10dd-4e57-4da5-8e1b-7d51fcf7c4fc\"\n      ],\n      \"location_label\": \"花果山水帘洞\",\n      \"characters\": [\n        {\n          \"local_character_key\": \"mei_hou_wang\",\n          \"name\": \"美猴王\",\n          \"presence\": \"active\",\n          \"identity\": \"existing\",\n          \"existing_character_id\": \"072ced14-4ff8-433d-ac6f-2dc4ded629ae\",\n          \"entity_kind\": \"person\",\n          \"evidence\": {\n            \"segment_id\": \"ed0861e7-7c21-402c-bff7-81d9f54dbc92\",\n            \"local_start\": 18,\n            \"local_end\": 88,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"美猴王领一群猿猴、猕猴、马猴等分派了君臣佐使朝游花果山暮宿水帘洞合契同情不入飞鸟之丛不从走兽之类独自为王不胜欢乐。\"\n          },\n          \"aliases\": []\n        }\n      ]\n    },\n    {\n      \"segment_ids\": [\n        \"f98fda1e-8ae8-4045-9827-97579c581c92\",\n        \"5d5734ad-5d20-4515-ba2b-27704de52dc8\"\n      ],\n      \"location_label\": \"水帘洞喜宴\",\n      \"characters\": [\n        {\n          \"local_character_key\": \"mei_hou_wang\",\n          \"name\": \"美猴王\",\n          \"presence\": \"active\",\n          \"identity\": \"existing\",\n          \"existing_character_id\": \"072ced14-4ff8-433d-ac6f-2dc4ded629ae\",\n          \"entity_kind\": \"person\",\n          \"evidence\": {\n            \"segment_id\": \"f98fda1e-8ae8-4045-9827-97579c581c92\",\n            \"local_start\": 0,\n            \"local_end\": 24,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"美猴王享乐天真何期有三五百载。一日与群猴喜宴之间忽然忧恼堕下泪来。\"\n          },\n          \"aliases\": [\n            {\n              \"alias\": \"猴王\",\n              \"evidence\": {\n                \"segment_id\": \"f98fda1e-8ae8-4045-9827-97579c581c92\",\n                \"local_start\": 49,\n                \"local_end\": 77,\n                \"offset_resolution\": \"unique_quote\",\n                \"quote\": \"猴王道：“我虽在欢喜之时却有一点儿远虑故此烦恼。”\"\n              }\n            }\n          ]\n        },\n        {\n          \"local_character_key\": \"zhong_hou\",\n          \"name\": \"众猴\",\n          \"presence\": \"active\",\n          \"identity\": \"existing\",\n          \"existing_character_id\": \"b0151274-6d2f-411c-b7dd-823cd3ba1937\",\n          \"entity_kind\": \"group\",\n          \"evidence\": {\n            \"segment_id\": \"f98fda1e-8ae8-4045-9827-97579c581c92\",\n            \"local_start\": 40,\n            \"local_end\": 57,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"众猴慌忙罗拜道：“大王何为烦恼？”\"\n          },\n          \"aliases\": []\n        },\n        {\n          \"local_character_key\": \"tongbei_yuanhou\",\n          \"name\": \"通背猿猴\",\n          \"presence\": \"active\",\n          \"identity\": \"new\",\n          \"existing_character_id\": null,\n          \"entity_kind\": \"person\",\n          \"evidence\": {\n            \"segment_id\": \"5d5734ad-5d20-4515-ba2b-27704de52dc8\",\n            \"local_start\": 0,\n            \"local_end\": 54,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"只见那班部中忽跳出一个通背猿猴厉声高叫道：“大王若是这般远虑真所谓道心开也！\"\n          },\n          \"aliases\": [\n            {\n              \"alias\": \"猿猴\",\n              \"evidence\": {\n                \"segment_id\": \"5d5734ad-5d20-4515-ba2b-27704de52dc8\",\n                \"local_start\": 91,\n                \"local_end\": 128,\n                \"offset_resolution\": \"unique_quote\",\n                \"quote\": \"猿猴道：“乃是佛与仙与神圣三者躲过轮回不生不灭与天地山川齐寿。”\"\n              }\n            }\n          ]\n        },\n        {\n          \"local_character_key\": \"yanwang_laozi\",\n          \"name\": \"阎王老子\",\n          \"presence\": \"referenced\",\n          \"identity\": \"new\",\n          \"existing_character_id\": null,\n          \"entity_kind\": \"person\",\n          \"evidence\": {\n            \"segment_id\": \"f98fda1e-8ae8-4045-9827-97579c581c92\",\n            \"local_start\": 167,\n            \"local_end\": 191,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"将来年老血衰暗中有阎王老子管着一旦身亡可不枉生世界之中\"\n          },\n          \"aliases\": []\n        }\n      ]\n    },\n    {\n      \"segment_ids\": [\n        \"73f80237-c6e7-4420-b0e5-bbf98a93558c\",\n        \"db2949d7-acfe-4b68-bd96-f97b62876a2a\"\n      ],\n      \"location_label\": \"花果山送别筵宴\",\n      \"characters\": [\n        {\n          \"local_character_key\": \"zhong_hou\",\n          \"name\": \"众猴\",\n          \"presence\": \"active\",\n          \"identity\": \"existing\",\n          \"existing_character_id\": \"b0151274-6d2f-411c-b7dd-823cd3ba1937\",\n          \"entity_kind\": \"group\",\n          \"evidence\": {\n            \"segment_id\": \"73f80237-c6e7-4420-b0e5-bbf98a93558c\",\n            \"local_start\": 0,\n            \"local_end\": 24,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"次日众猴果去采仙桃摘异果刨山药\"\n          },\n          \"aliases\": []\n        },\n        {\n          \"local_character_key\": \"mei_hou_wang\",\n          \"name\": \"美猴王\",\n          \"presence\": \"active\",\n          \"identity\": \"existing\",\n          \"existing_character_id\": \"072ced14-4ff8-433d-ac6f-2dc4ded629ae\",\n          \"entity_kind\": \"person\",\n          \"evidence\": {\n            \"segment_id\": \"db2949d7-acfe-4b68-bd96-f97b62876a2a\",\n            \"local_start\": 221,\n            \"local_end\": 251,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"群猴尊美猴王上坐各依齿肩排于下边一个个轮流上前奉酒奉花奉果\"\n          },\n          \"aliases\": []\n        }\n      ]\n    },\n    {\n      \"segment_ids\": [\n        \"124e17ee-707f-4204-947b-15472ae7c4c1\",\n        \"ba9844bf-6e1f-4573-bf77-8f65b0fe35d0\",\n        \"cc6d7332-34aa-452b-b0ab-9dc27abd3ee0\",\n        \"803e020a-2fe6-48fa-9833-ea4273a2dc7c\"\n      ],\n      \"location_label\": \"大海至南赡部洲岸边\",\n      \"characters\": [\n        {\n          \"local_character_key\": \"raft_traveler_he\",\n          \"name\": \"他\",\n          \"anonymous\": true,\n          \"presence\": \"active\",\n          \"identity\": \"uncertain\",\n          \"existing_character_id\": null,\n          \"entity_kind\": \"unknown\",\n          \"evidence\": {\n            \"segment_id\": \"803e020a-2fe6-48fa-9833-ea4273a2dc7c\",\n            \"local_start\": 60,\n            \"local_end\": 112,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"持篙试水偶得浅水弃了筏子跳上岸来只见海边有人捕鱼、打雁、挖蛤、淘盐。他走近前弄个把戏\"\n          },\n          \"aliases\": []\n        },\n        {\n          \"local_character_key\": \"seaside_people\",\n          \"name\": \"那些人\",\n          \"anonymous\": true,\n          \"presence\": \"active\",\n          \"identity\": \"new\",\n          \"existing_character_id\": null,\n          \"entity_kind\": \"group\",\n          \"evidence\": {\n            \"segment_id\": \"803e020a-2fe6-48fa-9833-ea4273a2dc7c\",\n            \"local_start\": 112,\n            \"local_end\": 143,\n            \"offset_resolution\": \"unique_quote\",\n            \"quote\": \"虎吓得那些人丢筐弃网四散奔跑。将那跑不动的拿住一个剥了他衣裳\"\n          },\n          \"aliases\": []\n        }\n      ]\n    }\n  ]\n}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1440,
+        "completion_tokens": 3020,
+        "total_tokens": 4460,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 65.156
+    },
+    {
+      "book": "红楼梦",
+      "attempt": 1,
+      "status": "completed",
+      "input_sha256": "577048916761d11ef2f095e0e7848015b8607524dcef14d62e0b884b737fe1ad",
+      "output": "{\"scenes\":[{\"segment_ids\":[\"02db63b8-fb1c-4b55-b0ed-af5878ba8411\"],\"location_label\":null,\"characters\":[{\"local_character_key\":\"zhen_shiyin_title\",\"name\":\"甄士隐\",\"presence\":\"referenced\",\"evidence\":{\"segment_id\":\"02db63b8-fb1c-4b55-b0ed-af5878ba8411\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"第一回  甄士隐梦幻识通灵　贾雨村风尘怀闺秀\"},\"identity\":\"new\",\"entity_kind\":\"person\",\"aliases\":[]},{\"local_character_key\":\"jia_yucun_title\",\"name\":\"贾雨村\",\"presence\":\"referenced\",\"evidence\":{\"segment_id\":\"02db63b8-fb1c-4b55-b0ed-af5878ba8411\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"第一回  甄士隐梦幻识通灵　贾雨村风尘怀闺秀\"},\"identity\":\"new\",\"entity_kind\":\"person\",\"aliases\":[]}]},{\"segment_ids\":[\"2b0969c6-e7fa-435b-b6ac-d4bcecc39a73\",\"e0591844-fd5a-41b2-a96d-ec8e8369a7e3\",\"d4f687d3-0892-44aa-adb6-b528e2144ada\"],\"location_label\":null,\"characters\":[{\"local_character_key\":\"author_narrator\",\"name\":\"作者\",\"presence\":\"active\",\"evidence\":{\"segment_id\":\"2b0969c6-e7fa-435b-b6ac-d4bcecc39a73\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"此开卷第一回也．作者自云：因曾历过一番梦幻之后，故将真事隐去\"},\"identity\":\"new\",\"entity_kind\":\"person\",\"aliases\":[]},{\"local_character_key\":\"zhen_shiyin_title\",\"name\":\"甄士隐\",\"presence\":\"referenced\",\"evidence\":{\"segment_id\":\"2b0969c6-e7fa-435b-b6ac-d4bcecc39a73\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"而借\\\"通灵\\\"之说，撰此《石头记》一书也．故曰\\\"甄士隐\\\"云云\"},\"identity\":\"new\",\"entity_kind\":\"person\",\"aliases\":[]},{\"local_character_key\":\"jia_yucun_title\",\"name\":\"贾雨村\",\"presence\":\"referenced\",\"evidence\":{\"segment_id\":\"2b0969c6-e7fa-435b-b6ac-d4bcecc39a73\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"又何妨用假语村言，敷演出一段故事来，亦可使闺阁昭传，复可悦世之目，破人愁闷，不亦宜乎？\\\"故曰\\\"贾雨村\\\"云云\"},\"identity\":\"new\",\"entity_kind\":\"person\",\"aliases\":[]},{\"local_character_key\":\"readers_group\",\"name\":\"列位看官\",\"presence\":\"referenced\",\"evidence\":{\"segment_id\":\"d4f687d3-0892-44aa-adb6-b528e2144ada\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"列位看官：你道此书从何而来？说起根由虽近荒唐，细按则深有趣味\"},\"identity\":\"new\",\"entity_kind\":\"group\",\"aliases\":[]}]},{\"segment_ids\":[\"6665b93e-b780-4cc7-ac4a-9e56e48af524\",\"012fb4c8-e96e-4977-abcf-1c22ce7b8cb3\"],\"location_label\":\"大荒山无稽崖青埂峰下\",\"characters\":[{\"local_character_key\":\"nuwa\",\"name\":\"女娲氏\",\"presence\":\"active\",\"evidence\":{\"segment_id\":\"6665b93e-b780-4cc7-ac4a-9e56e48af524\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"原来女娲氏炼石补天之时，于大荒山无稽崖练成高经十二丈\"},\"identity\":\"new\",\"entity_kind\":\"person\",\"aliases\":[{\"alias\":\"娲皇氏\",\"evidence\":{\"segment_id\":\"6665b93e-b780-4cc7-ac4a-9e56e48af524\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"娲皇氏只用了三万六千五百块，只单单剩了一块未用，便弃在此山青埂峰下\"}}]},{\"local_character_key\":\"stone\",\"name\":\"石头\",\"presence\":\"active\",\"evidence\":{\"segment_id\":\"012fb4c8-e96e-4977-abcf-1c22ce7b8cb3\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"石头听了，感谢不尽．那僧便念咒书符，大展幻术\"},\"identity\":\"new\",\"entity_kind\":\"person\",\"aliases\":[{\"alias\":\"此石\",\"evidence\":{\"segment_id\":\"012fb4c8-e96e-4977-abcf-1c22ce7b8cb3\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"此石听了，不觉打动凡心，也想要到人间去享一享这荣华富贵\"}},{\"alias\":\"弟子\",\"evidence\":{\"segment_id\":\"012fb4c8-e96e-4977-abcf-1c22ce7b8cb3\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"便口吐人言，向那僧道说道：“大师，弟子蠢物，不能见礼了\"}}]},{\"local_character_key\":\"monk\",\"name\":\"那僧\",\"presence\":\"active\",\"evidence\":{\"segment_id\":\"012fb4c8-e96e-4977-abcf-1c22ce7b8cb3\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"那僧便念咒书符，大展幻术，将一块大石登时变成一块鲜明莹洁的美玉\"},\"identity\":\"new\",\"entity_kind\":\"person\",\"aliases\":[{\"alias\":\"一僧\",\"evidence\":{\"segment_id\":\"012fb4c8-e96e-4977-abcf-1c22ce7b8cb3\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"俄见一僧一道远远而来，生得骨骼不凡，丰神迥异\"}}]},{\"local_character_key\":\"daoist\",\"name\":\"那道人\",\"presence\":\"active\",\"evidence\":{\"segment_id\":\"012fb4c8-e96e-4977-abcf-1c22ce7b8cb3\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"说着，便袖了这石，同那道人飘然而去，竟不知投奔何方何舍\"},\"identity\":\"new\",\"entity_kind\":\"person\",\"aliases\":[{\"alias\":\"一道\",\"evidence\":{\"segment_id\":\"012fb4c8-e96e-4977-abcf-1c22ce7b8cb3\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"俄见一僧一道远远而来，生得骨骼不凡，丰神迥异\"}}]}]},{\"segment_ids\":[\"3186171a-ac19-41a2-907d-e88dc1a77c3c\",\"52637783-ee90-4e9e-acde-3d91a25668ee\",\"7214974a-c153-4ee8-ab29-9a90d5f0aceb\"],\"location_label\":\"大荒山无稽崖青埂峰下\",\"characters\":[{\"local_character_key\":\"kongkong_daoren\",\"name\":\"空空道人\",\"presence\":\"active\",\"evidence\":{\"segment_id\":\"3186171a-ac19-41a2-907d-e88dc1a77c3c\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"后来，又不知过了几世几劫，因有个空空道人访道求仙，忽从这大荒山无稽崖青埂峰下经过\"},\"identity\":\"new\",\"entity_kind\":\"person\",\"aliases\":[]},{\"local_character_key\":\"mangmang_dashi\",\"name\":\"茫茫大士\",\"presence\":\"referenced\",\"evidence\":{\"segment_id\":\"3186171a-ac19-41a2-907d-e88dc1a77c3c\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"原来就是无材补天，幻形入世，蒙茫茫大士，渺渺真人携入红尘\"},\"identity\":\"new\",\"entity_kind\":\"person\",\"aliases\":[]},{\"local_character_key\":\"miaomiao_zhenren\",\"name\":\"渺渺真人\",\"presence\":\"referenced\",\"evidence\":{\"segment_id\":\"3186171a-ac19-41a2-907d-e88dc1a77c3c\",\"local_start\":0,\"local_end\":1,\"offset_resolution\":\"unique_quote\",\"quote\":\"原来就是无材补天，幻形入世，蒙茫茫大士，渺渺真人携入红尘\"},\"identity\":\"new\",\"entity_kind\":\"person\",\"aliases\":[]}]}]}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1745,
+        "completion_tokens": 2535,
+        "total_tokens": 4280,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 62.641
+    }
+  ],
+  "agent_review": "pending",
+  "config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 2000,
+    "unit_segment_limit": 12,
+    "max_tokens": 8192,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-discovery-v7",
+    "policy_version": "candidate-identity-v2"
+  },
+  "validation_pass": true
+}

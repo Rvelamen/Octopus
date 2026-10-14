@@ -168,6 +168,8 @@ tests/
 !/tests/test_book_world_lifecycle.py
 !/tests/test_book_room_scene.py
 !/tests/test_book_discussion.py
+!/tests/test_book_model_contracts.py
+!/tests/test_book_discovery_repair.py
 .agents/skills/ai-elements/SKILL.md
 .agents/skills/ai-elements/references/agent.md
 .agents/skills/ai-elements/references/artifact.md

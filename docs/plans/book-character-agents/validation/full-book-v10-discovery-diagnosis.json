@@ -1,0 +1,90 @@
+{
+  "date": "2026-10-14",
+  "scope": "Read-only replay of actual failed v10 full-source units, no generation or database writes",
+  "native_calls": 0,
+  "cases": [
+    {
+      "book": "西游记",
+      "unit_key": "1",
+      "phase": "discovery",
+      "input_sha256": "a3bacd3b63e62a1c2622a6fb757d732b8a9a2eb7ae259f36f2d43607eb127d97",
+      "verdict": "rejected",
+      "error": "13 validation errors for DiscoveryResult\nscenes.2.characters.0.evidence.local_end\n  Input should be greater than 0 [type=greater_than, input_value=0, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.12/v/greater_than\nscenes.3.characters.0.evidence.local_end\n  Input should be greater than 0 [type=greater_than, input_value=0, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.12/v/greater_than\nscenes.3.characters.1.evidence.local_end\n  In",
+      "targeted_repair_available": false
+    },
+    {
+      "book": "西游记",
+      "unit_key": "1",
+      "phase": "discovery",
+      "input_sha256": "74cb40e5b9e4f59f15e054d58c0cf3711196cb70e307df50d357b272dc8b066b",
+      "verdict": "rejected",
+      "error": "Discovery evidence does not belong to this scene",
+      "targeted_repair_available": true,
+      "targets": [
+        {
+          "scene_index": 4,
+          "character_index": 0,
+          "error": "Discovery evidence does not belong to this scene",
+          "scene_segment_ids": [
+            "5cac873b-81b0-48ae-a9bd-b3abbfad4555",
+            "8969c69d-7a05-4330-8ae5-e09a014083d2",
+            "2feff901-af71-44a4-8d64-e7a9d0a5ef2b"
+          ]
+        }
+      ]
+    },
+    {
+      "book": "红楼梦",
+      "unit_key": "3",
+      "phase": "discovery",
+      "input_sha256": "fe0a03353d9473718de34a0abbc43b287814cae5999e0ffc2ad424e5b305bd62",
+      "verdict": "rejected",
+      "error": "Unsupported name/alias '甄士隐'; choose a literal label present in its quote",
+      "targeted_repair_available": true,
+      "targets": [
+        {
+          "scene_index": 0,
+          "character_index": 0,
+          "error": "Unsupported name/alias '甄士隐'; choose a literal label present in its quote",
+          "scene_segment_ids": [
+            "fc0809d6-ccff-4723-a4ea-8e94cf28e4fb",
+            "8f96fd71-8280-4194-af51-35e4255c18a3"
+          ]
+        },
+        {
+          "scene_index": 0,
+          "character_index": 2,
+          "error": "Unsupported name/alias '那道人'; choose a literal label present in its quote",
+          "scene_segment_ids": [
+            "fc0809d6-ccff-4723-a4ea-8e94cf28e4fb",
+            "8f96fd71-8280-4194-af51-35e4255c18a3"
+          ]
+        },
+        {
+          "scene_index": 1,
+          "character_index": 4,
+          "error": "Unsupported name/alias '那道人'; choose a literal label present in its quote",
+          "scene_segment_ids": [
+            "fd82ac6e-cb6f-4801-8d37-a653d817b45e",
+            "d475b873-c7f8-421e-933b-c369fc364c89",
+            "8b2e7b30-54b9-47f1-bc83-294e0e321fc9"
+          ]
+        }
+      ]
+    },
+    {
+      "book": "红楼梦",
+      "unit_key": "3",
+      "phase": "discovery_repair",
+      "input_sha256": "57a5e0facd136b0f3adb21a4c0fd13ebbd17a728f19f1c39428d78fb8a569c71",
+      "verdict": "rejected",
+      "error": "Existing identity has no unambiguous matching alias"
+    }
+  ],
+  "offset_hypothesis": {
+    "scope": "Counterfactual read-only diagnostic; no production validator changes, publication, or model calls",
+    "zero_ends_resolved_from_unique_in_scene_quotes": 13,
+    "zero_ends_not_resolvable": 0,
+    "after_offset_only_correction": "valid"
+  }
+}

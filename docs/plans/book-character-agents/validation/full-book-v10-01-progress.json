@@ -1,0 +1,309 @@
+{
+  "date": "2026-10-14",
+  "window": "v10-01",
+  "scope": "Actual full-source automatic construction, progress only; not full-book persona acceptance",
+  "discovery_prompt": "character-discovery-v10",
+  "max_native_calls": 24,
+  "native_calls": [
+    {
+      "book": "西游记",
+      "phase": "discovery",
+      "unit_key": "0",
+      "status": "completed",
+      "input_sha256": "b4a129269210ebeb470ee54c88e1f07b2f40422c5118ea0c875d870d2d1628f6",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1635,
+        "completion_tokens": 91,
+        "total_tokens": 1726,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 4.344
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery",
+      "unit_key": "1",
+      "status": "completed",
+      "input_sha256": "a3bacd3b63e62a1c2622a6fb757d732b8a9a2eb7ae259f36f2d43607eb127d97",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1686,
+        "completion_tokens": 2523,
+        "total_tokens": 4209,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 54.781
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery",
+      "unit_key": "1",
+      "status": "completed",
+      "input_sha256": "74cb40e5b9e4f59f15e054d58c0cf3711196cb70e307df50d357b272dc8b066b",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1788,
+        "completion_tokens": 2281,
+        "total_tokens": 4069,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 51.453
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery",
+      "unit_key": "0",
+      "status": "completed",
+      "input_sha256": "4633d7104d7d0e52bb5bc2e0c44962cc8a73a334c206d113e057dcf35d1a232b",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 94,
+        "completion_tokens": 168,
+        "total_tokens": 262,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 6.546
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery",
+      "unit_key": "1",
+      "status": "completed",
+      "input_sha256": "08458805e55bea839d1577b97c3c1117434de5c2f9e3f4f7649d86456a71ba24",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1586,
+        "completion_tokens": 2364,
+        "total_tokens": 3950,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 65.765
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery",
+      "unit_key": "2",
+      "status": "completed",
+      "input_sha256": "4d4cf9d587eca4ce24d4a679327fd384c9158bffeb04fdb6d1b3d2408abcd48b",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1438,
+        "completion_tokens": 2409,
+        "total_tokens": 3847,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 53.954
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery",
+      "unit_key": "3",
+      "status": "completed",
+      "input_sha256": "fe0a03353d9473718de34a0abbc43b287814cae5999e0ffc2ad424e5b305bd62",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1993,
+        "completion_tokens": 2724,
+        "total_tokens": 4717,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 65.828
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_repair",
+      "unit_key": "3",
+      "status": "completed",
+      "input_sha256": "57a5e0facd136b0f3adb21a4c0fd13ebbd17a728f19f1c39428d78fb8a569c71",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 3415,
+        "completion_tokens": 651,
+        "total_tokens": 4066,
+        "cache_read_input_tokens": 256,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 20.625
+    }
+  ],
+  "jobs": [
+    {
+      "job_id": "0e2279ad-52c7-41cf-a64f-40900ec66c2b",
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "library_item_id": 1,
+      "status": "failed",
+      "phase": "discovery",
+      "generation": 1,
+      "book_id": "38b26a66-6472-43aa-8f2b-f507bba91567",
+      "source_version_id": "1aef951e-c84c-4e29-9ccc-71e1e2718de8",
+      "discovery_build_id": "83c6f156-3472-4fbc-a0de-46aecdb44969",
+      "persona_build_id": null,
+      "actual_calls": 3,
+      "error_code": "discovery_failed",
+      "error_detail": "Discovery did not complete; inspect rejected checkpoints before retrying",
+      "strategy": {
+        "context_window": 1000000,
+        "discovery": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 8192,
+          "model": "k3",
+          "policy_version": "candidate-identity-v2",
+          "prompt_version": "character-discovery-v10",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "unit_char_limit": 2000,
+          "unit_segment_limit": 12
+        },
+        "expression": {
+          "call_timeout_seconds": 180,
+          "context_window": 1000000,
+          "max_calls_per_window": 80,
+          "max_tokens": 8192,
+          "max_units_per_window": 20,
+          "model": "k3",
+          "policy_version": "expression-material-v1",
+          "prompt_version": "expression-extract-v1",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "expression-review-v1",
+          "unit_char_limit": 2000,
+          "unit_segment_limit": 12
+        },
+        "model_record_id": 337,
+        "persona": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 8192,
+          "model": "k3",
+          "policy_version": "canonical-persona-v3",
+          "prompt_version": "persona-extract-v3",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "persona-review-v3",
+          "unit_char_limit": 8000,
+          "unit_segment_limit": 12
+        }
+      },
+      "expression_sets": [],
+      "usage": {
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 3072,
+        "completion_tokens": 4895,
+        "prompt_tokens": 5109,
+        "total_tokens": 10004
+      },
+      "canon_available": false,
+      "canonical_status": null
+    },
+    {
+      "job_id": "ebad8498-9db1-4ea0-9f75-07400e3d79b2",
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "library_item_id": 2,
+      "status": "failed",
+      "phase": "discovery",
+      "generation": 1,
+      "book_id": "79e0fbfd-1ce5-4ec9-a690-f7e51e4eb9eb",
+      "source_version_id": "5a25df59-9904-46f8-ada6-cc7acd70da50",
+      "discovery_build_id": "592c26aa-3a7e-407e-a612-4c834d2aa9c6",
+      "persona_build_id": null,
+      "actual_calls": 5,
+      "error_code": "discovery_failed",
+      "error_detail": "Discovery did not complete; inspect rejected checkpoints before retrying",
+      "strategy": {
+        "context_window": 1000000,
+        "discovery": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 8192,
+          "model": "k3",
+          "policy_version": "candidate-identity-v2",
+          "prompt_version": "character-discovery-v10",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "unit_char_limit": 2000,
+          "unit_segment_limit": 12
+        },
+        "expression": {
+          "call_timeout_seconds": 180,
+          "context_window": 1000000,
+          "max_calls_per_window": 80,
+          "max_tokens": 8192,
+          "max_units_per_window": 20,
+          "model": "k3",
+          "policy_version": "expression-material-v1",
+          "prompt_version": "expression-extract-v1",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "expression-review-v1",
+          "unit_char_limit": 2000,
+          "unit_segment_limit": 12
+        },
+        "model_record_id": 337,
+        "persona": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 8192,
+          "model": "k3",
+          "policy_version": "canonical-persona-v3",
+          "prompt_version": "persona-extract-v3",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "persona-review-v3",
+          "unit_char_limit": 8000,
+          "unit_segment_limit": 12
+        }
+      },
+      "expression_sets": [],
+      "usage": {
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 6400,
+        "completion_tokens": 8316,
+        "prompt_tokens": 8526,
+        "total_tokens": 16842
+      },
+      "canon_available": false,
+      "canonical_status": null
+    }
+  ],
+  "discovery": [
+    {
+      "build_id": "83c6f156-3472-4fbc-a0de-46aecdb44969",
+      "status": "failed",
+      "stage": "character_discovery",
+      "total_units": 411,
+      "completed_units": 1,
+      "failed_units": 1,
+      "processed_segments": 1,
+      "total_segments": 3311,
+      "error_code": "discovery_failed",
+      "error_detail": "Discovery unit 1 failed twice: Discovery evidence does not belong to this scene"
+    },
+    {
+      "build_id": "592c26aa-3a7e-407e-a612-4c834d2aa9c6",
+      "status": "failed",
+      "stage": "character_discovery",
+      "total_units": 581,
+      "completed_units": 3,
+      "failed_units": 1,
+      "processed_segments": 16,
+      "total_segments": 2665,
+      "error_code": "discovery_failed",
+      "error_detail": "Discovery unit 3 failed twice: Existing identity has no unambiguous matching alias"
+    }
+  ],
+  "budget_stop": false,
+  "quality_pass": false,
+  "native_call_count": 8,
+  "terminal": true
+}

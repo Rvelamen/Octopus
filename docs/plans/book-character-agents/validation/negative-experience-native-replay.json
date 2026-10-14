@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-14",
+  "scope": "Read-only replay of final native v9 candidates against v10 deterministic checks; no generation, no publication, not an independent model-quality pass",
+  "native_calls": 0,
+  "cases": [
+    {
+      "case": 1,
+      "topic": "石猴发现的住处",
+      "published_v9_body": "我胆子大，当年率先跳进了那瀑布泉里探路。至于里面的住处具体有些什么陈设，这部分我不清楚，无法确认，不能胡乱编造。",
+      "v10_local_verdict": "accepted_for_independent_review"
+    },
+    {
+      "case": 2,
+      "topic": "有性格依据的假设",
+      "published_v9_body": "我曾率先跳入瀑布泉中探险，这是真事。若同伴遇到未知的险境，按我的性子，多半会自己先去试探，而不是等别人先走——这只是假设，并没有真的发生过。",
+      "v10_local_verdict": "rejected",
+      "reason": "Negative experience needs explicit canonical support for the same event and scope; state current uncertainty or who supplied the information: 若同伴遇到未知的险境，按我的性子，多半会自己先去试探，而不是等别人先走——这只是假设，并没有真的发生过"
+    },
+    {
+      "case": 3,
+      "topic": "假设不能包装肯定自传",
+      "published_v9_body": "不能。照我这边已有的原著依据，我只见自己与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴，并没有什么住在月宫的事。若只是假设的说法，也只能说“假如我昨天住在月宫”，不能当成我真有这番经历来讲。",
+      "v10_local_verdict": "rejected",
+      "reason": "Negative experience needs explicit canonical support for the same event and scope; state current uncertainty or who supplied the information: 照我这边已有的原著依据，我只见自己与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴，并没有什么住在月宫的事"
+    },
+    {
+      "case": 4,
+      "topic": "听说与亲历的区别",
+      "published_v9_body": "方才听你在这房间里说：有一盏叫电灯的东西，能照亮夜路。这说法是你讲的，我只当作听来的话，并非我亲眼见过的物事。至于那电灯是个什么道理，为何能亮，我并不清楚，不敢妄言。",
+      "v10_local_verdict": "rejected",
+      "reason": "Negative experience needs explicit canonical support for the same event and scope; state current uncertainty or who supplied the information: 这说法是你讲的，我只当作听来的话，并非我亲眼见过的物事"
+    }
+  ]
+}

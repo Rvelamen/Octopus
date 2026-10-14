@@ -17,6 +17,16 @@ from .discovery_models import (
     DiscoveryConfig,
     DiscoveryResult,
     DiscoverySpan,
+    discovery_model_input,
+    validate_local_identities,
+)
+from .discovery_repair import (
+    REPAIR_PROMPT,
+    REPAIR_V9_PROMPT,
+    REPAIR_V10_PROMPT,
+    DiscoveryRepairs,
+    apply_repair,
+    prepare_repair,
 )
 from .source import BookSourceService, BookWorldError
 from .storage import connect
@@ -418,12 +428,23 @@ class BookDiscoveryService:
                 "UPDATE book_builds SET lease_expires_at=? WHERE id=?",
                 (_now(config.call_timeout_seconds + 60), build_id),
             )
-            return {
+            result = {
                 "unit_key": step["unit_key"],
                 "segments": segments,
                 "known_characters": known_characters,
                 "previous_error": json.loads(step["result_json"]).get("error"),
             }
+            if config.prompt_version in (
+                "character-discovery-v8",
+                "character-discovery-v9",
+                "character-discovery-v10",
+            ):
+                result["repair_packet"] = (
+                    json.loads(step["result_json"]).get("repair_packet")
+                    if step["attempts"] == 1
+                    else None
+                )
+            return result
 
     @staticmethod
     def _validate_result(raw: str, data: dict[str, Any]) -> DiscoveryResult:
@@ -469,26 +490,15 @@ class BookDiscoveryService:
                 ),
             )
 
-        local_identities: dict[str, str | None] = {}
+        validate_local_identities(result)
         normalized_scenes = []
         for scene in result.scenes:
-            scene_keys: set[str] = set()
             normalized_characters = []
             for character in scene.characters:
                 if character.entity_kind == "person" and "、" in character.name:
                     raise ValueError(
                         f"Split combined person name {character.name!r} into independent candidates; group mentions require entity_kind=group"
                     )
-                key = character.local_character_key
-                if key in scene_keys:
-                    raise ValueError("Duplicate local identity within a scene")
-                scene_keys.add(key)
-                if (
-                    key in local_identities
-                    and local_identities[key] != character.existing_character_id
-                ):
-                    raise ValueError("Local identity references inconsistent existing candidates")
-                local_identities[key] = character.existing_character_id
                 evidence = span_matches(
                     character.evidence,
                     scene.segment_ids,
@@ -642,9 +652,18 @@ class BookDiscoveryService:
             )
 
     def _failed_attempt(
-        self, build_id: str, owner: str, generation: int, unit_key: str, detail: str
+        self,
+        build_id: str,
+        owner: str,
+        generation: int,
+        unit_key: str,
+        detail: str,
+        *,
+        repair_packet=None,
+        record_repair=False,
     ) -> None:
         with connect(self.db_path) as db:
+            db.execute("BEGIN IMMEDIATE")
             self._fence(db, build_id, owner, generation)
             row = db.execute(
                 "SELECT result_json FROM book_build_steps WHERE build_id=? AND unit_key=?",
@@ -652,6 +671,8 @@ class BookDiscoveryService:
             ).fetchone()
             payload = json.loads(row["result_json"])
             payload["error"] = detail
+            if record_repair:
+                payload["repair_packet"] = repair_packet
             db.execute(
                 "UPDATE book_build_steps SET status='failed',result_json=? WHERE build_id=? AND unit_key=? AND lease_generation=?",
                 (_json(payload), build_id, unit_key, generation),
@@ -681,9 +702,25 @@ class BookDiscoveryService:
                 if data is None:
                     return
                 messages = [
-                    {"role": "system", "content": prompt},
-                    {"role": "user", "content": _json(data)},
+                    {
+                        "role": "system",
+                        "content": (
+                            REPAIR_V10_PROMPT
+                            if config.prompt_version == "character-discovery-v10"
+                            else REPAIR_V9_PROMPT
+                            if config.prompt_version == "character-discovery-v9"
+                            else REPAIR_PROMPT
+                        )
+                        + _json(DiscoveryRepairs.model_json_schema())
+                        if data.get("repair_packet")
+                        else prompt,
+                    },
+                    {
+                        "role": "user",
+                        "content": _json(discovery_model_input(data, config.prompt_version)),
+                    },
                 ]
+                raw_for_repair = None
                 try:
                     options: dict[str, Any] = {
                         "model": config.model,
@@ -698,7 +735,14 @@ class BookDiscoveryService:
                     )
                     if response.finish_reason not in ("stop", "end_turn") or response.tool_calls:
                         raise ValueError("Discovery response is truncated or requests a tool")
-                    result = self._validate_result(response.content or "", data)
+                    raw_for_repair = response.content or ""
+                    result = (
+                        apply_repair(
+                            raw_for_repair, data["repair_packet"], data, self._validate_result
+                        )
+                        if data.get("repair_packet")
+                        else self._validate_result(raw_for_repair, data)
+                    )
                     await asyncio.to_thread(
                         self._save_result, build_id, owner, generation, data, result
                     )
@@ -716,8 +760,40 @@ class BookDiscoveryService:
                         if isinstance(error, TimeoutError)
                         else str(error)[:300]
                     )
+                    packet = None
+                    if (
+                        config.prompt_version
+                        in (
+                            "character-discovery-v8",
+                            "character-discovery-v9",
+                            "character-discovery-v10",
+                        )
+                        and raw_for_repair
+                        and not data.get("repair_packet")
+                    ):
+                        packet = await asyncio.to_thread(
+                            prepare_repair,
+                            raw_for_repair,
+                            data,
+                            self._validate_result,
+                            allow_anonymous_split=config.prompt_version == "character-discovery-v9",
+                            allow_uncertain_split=config.prompt_version
+                            == "character-discovery-v10",
+                        )
                     await asyncio.to_thread(
-                        self._failed_attempt, build_id, owner, generation, data["unit_key"], detail
+                        self._failed_attempt,
+                        build_id,
+                        owner,
+                        generation,
+                        data["unit_key"],
+                        detail,
+                        repair_packet=packet,
+                        record_repair=config.prompt_version
+                        in (
+                            "character-discovery-v8",
+                            "character-discovery-v9",
+                            "character-discovery-v10",
+                        ),
                     )
         except BookWorldError as error:
             if error.code != "stale_build":

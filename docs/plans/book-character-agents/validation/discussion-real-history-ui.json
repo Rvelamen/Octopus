@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-14",
+  "scope": "Production React/WebSocketProvider and handler over native-model published excerpt-room history; read-only QA proxy refuses mutation/model actions. Component integration, not full application/full-book acceptance.",
+  "room_id": "766ed45d-0615-466f-be19-8db273868c02",
+  "native_model_calls_during_ui_check": 0,
+  "actions": [
+    "list_rooms",
+    "open_room",
+    "list_chat_models",
+    "get_room",
+    "get_memory",
+    "get_summary_job",
+    "read_messages",
+    "get_round",
+    "get_message_evidence"
+  ],
+  "errors": [],
+  "scene": {
+    "active": 1,
+    "created": 1,
+    "disposed": 0,
+    "fps": 60.00000000000018,
+    "meshes": 157
+  },
+  "verified": [
+    "Actual saved topic and completed finite turn displayed",
+    "Show at seat selects the same published message and labels it historical",
+    "Full body stays readable in right conversation panel",
+    "Reader evidence drawer shows canonical and inference assertions with source quote"
+  ],
+  "screenshots": [
+    "discussion-real-v9-hypothesis.png",
+    "discussion-real-v9-evidence.png"
+  ],
+  "quality_limitation": "The v9 future-choice example is a development sample; ambiguous final negation is preserved and rejected by v10 local replay."
+}

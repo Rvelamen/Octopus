@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-14",
+  "scope": "Fixed failed native full-source unit repairs; not full-book coverage or persona quality",
+  "budget": 2,
+  "calls": [
+    {
+      "book": "西游记",
+      "unit_key": "3",
+      "targets": [
+        {
+          "scene_index": 3,
+          "character_index": 0,
+          "error": "Unsupported name/alias '美猴王'; choose a literal label present in its quote"
+        }
+      ],
+      "status": "completed",
+      "input_sha256": "4567078a39d5439253da5c4425f7dbd633ef201fefaad36e1a31676f82817892",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 2943,
+        "completion_tokens": 304,
+        "total_tokens": 3247,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "valid": false,
+      "error_type": "ValueError",
+      "error": "Local identity references inconsistent existing candidates",
+      "elapsed_seconds": 24.718
+    },
+    {
+      "book": "红楼梦",
+      "unit_key": "3",
+      "targets": [
+        {
+          "scene_index": 1,
+          "character_index": 2,
+          "error": "Unsupported name/alias '那道人'; choose a literal label present in its quote"
+        },
+        {
+          "scene_index": 2,
+          "character_index": 1,
+          "error": "Unsupported name/alias '贾化'; choose a literal label present in its quote"
+        }
+      ],
+      "status": "completed",
+      "input_sha256": "b034e66d70f7118094fe86299bdabf4455b6a3efc9660d73517a75493e06b5d2",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 2903,
+        "completion_tokens": 1154,
+        "total_tokens": 4057,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "valid": false,
+      "error_type": "ValidationError",
+      "error": "1 validation error for DiscoveryRepairs\nrepairs.0.replacement\n  Value error, Existing identity must reference a supplied candidate [type=value_error, input_value={'local_character_key': '...ution': 'unique_quote'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/value_error",
+      "elapsed_seconds": 32.844
+    }
+  ],
+  "database_publication": false,
+  "actual_calls": 2,
+  "terminal": true
+}

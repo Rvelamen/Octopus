@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-14",
+  "scope": "Fixed failed native full-source unit repairs; not full-book coverage or persona quality",
+  "budget": 2,
+  "calls": [
+    {
+      "book": "西游记",
+      "unit_key": "3",
+      "targets": [
+        {
+          "scene_index": 3,
+          "character_index": 0,
+          "error": "Unsupported name/alias '美猴王'; choose a literal label present in its quote"
+        }
+      ],
+      "status": "completed",
+      "input_sha256": "edcdda0e76cab7fefd33d5f5af1aa26b50b81b7c80d3a0a16166aaf997abce4d",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 3060,
+        "completion_tokens": 398,
+        "total_tokens": 3458,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "valid": true,
+      "untouched_entries_preserved": true,
+      "characters": 8,
+      "elapsed_seconds": 10.875
+    },
+    {
+      "book": "红楼梦",
+      "unit_key": "3",
+      "targets": [
+        {
+          "scene_index": 1,
+          "character_index": 2,
+          "error": "Unsupported name/alias '那道人'; choose a literal label present in its quote"
+        },
+        {
+          "scene_index": 2,
+          "character_index": 1,
+          "error": "Unsupported name/alias '贾化'; choose a literal label present in its quote"
+        }
+      ],
+      "status": "completed",
+      "input_sha256": "0fd9bfe89eab62d9872fa094e9240e9de6ca6dbe016cab648bffaad66bcbbe49",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 3037,
+        "completion_tokens": 1152,
+        "total_tokens": 4189,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "valid": false,
+      "error_type": "ValueError",
+      "error": "Unsupported name/alias '那道'; choose a literal label present in its quote",
+      "elapsed_seconds": 26.813
+    }
+  ],
+  "database_publication": false,
+  "actual_calls": 2,
+  "terminal": true
+}
