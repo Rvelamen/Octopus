@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-PROMPT_VERSION = "character-discovery-v10"
+PROMPT_VERSION = "character-discovery-v11"
 POLICY_VERSION = "candidate-identity-v2"
 
 
@@ -28,7 +28,10 @@ class DiscoveryConfig(StrictModel):
 class DiscoverySpan(StrictModel):
     segment_id: str = Field(min_length=1, max_length=100)
     local_start: int = Field(ge=0)
-    local_end: int = Field(gt=0)
+    local_end: int = Field(
+        ge=0,
+        description="Use 0 only when the unique verbatim quote must be resolved by the server; validated offsets are always exact and positive.",
+    )
     quote: str = Field(min_length=1, max_length=2000)
     offset_resolution: Literal["model", "unique_quote"] = "model"
 
@@ -140,6 +143,7 @@ def discovery_model_input(data: dict, prompt_version: str) -> dict:
         "character-discovery-v8",
         "character-discovery-v9",
         "character-discovery-v10",
+        "character-discovery-v11",
     ):
         return data
     known = []
@@ -160,6 +164,7 @@ def discovery_model_input(data: dict, prompt_version: str) -> dict:
         "character-discovery-v8",
         "character-discovery-v9",
         "character-discovery-v10",
+        "character-discovery-v11",
     ):
         packet = result.pop("repair_packet", None)
         if packet is not None:
@@ -176,4 +181,9 @@ DISCOVERY_PROMPTS["character-discovery-v9"] = (
 DISCOVERY_PROMPTS["character-discovery-v10"] = (
     DISCOVERY_PROMPTS["character-discovery-v9"]
     + "\n同一local_character_key必须保持相同身份绑定；同一场景不可重复给出同一已有id。某场景只出现尚未提供的称呼时，用独立key保留uncertain候选，不把旧身份id置空后仍复用它的键。\n"
+)
+
+DISCOVERY_PROMPTS["character-discovery-v11"] = (
+    DISCOVERY_PROMPTS["character-discovery-v10"]
+    + "\n不能可靠计算偏移时，可将local_start/local_end同时设为0，但quote仍必须是指定scene内该segment唯一出现的连续逐字原文，带足够语境。服务器只按唯一引文定位，歧义、缺失或其他场景引文仍拒绝，不能用占位引文。\n"
 )

@@ -438,6 +438,7 @@ class BookDiscoveryService:
                 "character-discovery-v8",
                 "character-discovery-v9",
                 "character-discovery-v10",
+                "character-discovery-v11",
             ):
                 result["repair_packet"] = (
                     json.loads(step["result_json"]).get("repair_packet")
@@ -706,7 +707,8 @@ class BookDiscoveryService:
                         "role": "system",
                         "content": (
                             REPAIR_V10_PROMPT
-                            if config.prompt_version == "character-discovery-v10"
+                            if config.prompt_version
+                            in ("character-discovery-v10", "character-discovery-v11")
                             else REPAIR_V9_PROMPT
                             if config.prompt_version == "character-discovery-v9"
                             else REPAIR_PROMPT
@@ -767,6 +769,7 @@ class BookDiscoveryService:
                             "character-discovery-v8",
                             "character-discovery-v9",
                             "character-discovery-v10",
+                            "character-discovery-v11",
                         )
                         and raw_for_repair
                         and not data.get("repair_packet")
@@ -778,7 +781,7 @@ class BookDiscoveryService:
                             self._validate_result,
                             allow_anonymous_split=config.prompt_version == "character-discovery-v9",
                             allow_uncertain_split=config.prompt_version
-                            == "character-discovery-v10",
+                            in ("character-discovery-v10", "character-discovery-v11"),
                         )
                     await asyncio.to_thread(
                         self._failed_attempt,
@@ -793,6 +796,7 @@ class BookDiscoveryService:
                             "character-discovery-v8",
                             "character-discovery-v9",
                             "character-discovery-v10",
+                            "character-discovery-v11",
                         ),
                     )
         except BookWorldError as error:

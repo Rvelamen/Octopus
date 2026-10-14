@@ -326,8 +326,10 @@ async def test_missing_model_is_a_visible_blocked_build(book_library, monkeypatc
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("model_end", [0, 7])
 async def test_unique_exact_quote_resolves_bad_model_offset_but_ambiguous_quote_is_rejected(
     book_library,
+    model_end,
 ):
     config = DiscoveryConfig(provider_id=1, model="fixture")
 
@@ -336,7 +338,7 @@ async def test_unique_exact_quote_resolves_bad_model_offset_but_ambiguous_quote_
             response = await super().chat(messages, **kwargs)
             result = json.loads(response.content)
             span = result["scenes"][0]["characters"][0]["evidence"]
-            span.update(local_start=4, local_end=7)
+            span.update(local_start=4 if model_end else 0, local_end=model_end)
             return LLMResponse(content=json.dumps(result, ensure_ascii=False))
 
     item_id, version = story(book_library, "人物甲被提起。")
@@ -345,12 +347,44 @@ async def test_unique_exact_quote_resolves_bad_model_offset_but_ambiguous_quote_
     await service.run(build["build_id"], WrongOffsetProvider(), config)
     row = service.list_characters(item_id, build["build_id"])["characters"][0]
     assert row["aliases"][0]["evidence"]["local_start"] == 0
+    assert row["aliases"][0]["evidence"]["local_end"] == 3
     assert row["aliases"][0]["evidence"]["offset_resolution"] == "unique_quote"
     ambiguous_id, ambiguous_version = story(book_library, "人物甲被提起，人物甲再现。")
     other = service.create_build(ambiguous_id, ambiguous_version, config)
     await service.run(other["build_id"], WrongOffsetProvider(), config)
     assert service.get_build(ambiguous_id, other["build_id"])["status"] == "failed"
     assert service.list_characters(ambiguous_id, other["build_id"])["characters"] == []
+
+
+@pytest.mark.parametrize("invalid", ["foreign_scene", "absent_quote"])
+def test_zero_offsets_do_not_authorize_foreign_or_absent_quotes(invalid):
+    data = {
+        "segments": [{"id": "s1", "text": "人物甲开口。"}, {"id": "s2", "text": "人物乙离开。"}],
+        "known_characters": [],
+    }
+    raw = {
+        "scenes": [
+            {
+                "segment_ids": ["s1"],
+                "characters": [
+                    {
+                        "name": "人物乙" if invalid == "foreign_scene" else "不存在",
+                        "local_character_key": "person",
+                        "presence": "active",
+                        "evidence": {
+                            "segment_id": "s2" if invalid == "foreign_scene" else "s1",
+                            "quote": "人物乙离开。" if invalid == "foreign_scene" else "不存在",
+                            "local_start": 0,
+                            "local_end": 0,
+                        },
+                    }
+                ],
+            },
+            {"segment_ids": ["s2"], "characters": []},
+        ]
+    }
+    with pytest.raises(ValueError, match="does not belong|absent or ambiguous"):
+        BookDiscoveryService._validate_result(json.dumps(raw), data)
 
 
 @pytest.mark.asyncio

@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-14",
+  "scope": "Read-only actual v10 raw response through production validator after zero-offset fix; no model call or checkpoint publication",
+  "native_calls": 0,
+  "input_sha256": "a3bacd3b63e62a1c2622a6fb757d732b8a9a2eb7ae259f36f2d43607eb127d97",
+  "output_sha256": "adc7414e7f92689b725f59627f98797f32286e6c459b365a7b6c11296b60b3a2",
+  "verdict": "valid",
+  "spans": 14,
+  "exact_in_source": true,
+  "all_validated_offsets_positive": true,
+  "resolved_from_unique_quote": 14,
+  "full_book_quality_pass": false,
+  "original_failed_build_unchanged": true
+}
