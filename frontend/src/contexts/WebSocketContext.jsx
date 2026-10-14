@@ -2,6 +2,27 @@ import React, { createContext, useContext, useRef, useCallback, useEffect, useSt
 import { BACKEND_PORT } from '../config/constants';
 
 const WebSocketContext = createContext(null);
+const disabledBookFeatures = Object.freeze({ characters: false, single_chat: false, group_chat: false, automatic_import: false });
+
+function effectiveBookFeatures(features) {
+  const characters = features?.characters === true;
+  const single_chat = characters && features?.single_chat === true;
+  return { characters, single_chat, group_chat: single_chat && features?.group_chat === true, automatic_import: characters && features?.automatic_import === true };
+}
+
+function bookRequestCapability(type, data = {}) {
+  const action = data.action;
+  if (type === 'book_world') {
+    if (['retry_auto_import', 'restart_auto_import'].includes(action)) return 'automatic_import';
+    if (['start_discovery', 'retry_build', 'resume_build', 'start_persona', 'create_revision', 'save_extension', 'start_expression_set', 'resume_expression_set', 'retry_expression_set'].includes(action)) return 'characters';
+  }
+  if (type === 'book_room') {
+    if (action === 'set_member' && ((data.active === false && [undefined, null, 'muted'].includes(data.speaking_mode)) || (data.active == null && data.speaking_mode === 'muted'))) return null;
+    if (['create_group_room', 'add_members'].includes(action)) return 'group_chat';
+    if (['create_single_room', 'set_member', 'submit_turn', 'resume_round', 'set_discussion', 'summarize_room', 'reset_memory'].includes(action)) return 'single_chat';
+  }
+  return null;
+}
 
 export function WebSocketProvider({ children }) {
   const ws = useRef(null);
@@ -11,6 +32,8 @@ export function WebSocketProvider({ children }) {
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(true);
   const [wsPort, setWsPort] = useState(BACKEND_PORT);
+  const [bookWorldFeatures, setBookWorldFeatures] = useState(disabledBookFeatures);
+  const bookFeaturesRef = useRef(null);
   const overlayShowTimeRef = useRef(Date.now());
 
   const generateRequestId = () => {
@@ -33,6 +56,13 @@ export function WebSocketProvider({ children }) {
 
   const sendMessage = useCallback((type, data, timeout = 10000, retryCount = 0) => {
     return new Promise((resolve, reject) => {
+      const capability = bookRequestCapability(type, data);
+      if (capability && bookFeaturesRef.current?.[capability] !== true) {
+        const error = new Error('This book feature is disabled or its capabilities are not confirmed');
+        error.code = 'feature_disabled';
+        reject(error);
+        return;
+      }
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
         const requestId = generateRequestId();
         const message = { type, request_id: requestId, data };
@@ -99,10 +129,22 @@ export function WebSocketProvider({ children }) {
       }
 
       ws.current = new WebSocket(`ws://127.0.0.1:${wsPort}/ws`);
+      bookFeaturesRef.current = null;
 
       ws.current.onopen = () => {
         if (!isComponentMounted) return;
         setConnectionStatus("connected");
+        const connectedSocket = ws.current;
+        setBookWorldFeatures(disabledBookFeatures);
+        sendMessage('get_config', {}).then(response => {
+          if (isComponentMounted && ws.current === connectedSocket && connectedSocket.readyState === WebSocket.OPEN) {
+            const effective = effectiveBookFeatures(response.data?.book_world_features);
+            bookFeaturesRef.current = effective;
+            setBookWorldFeatures(effective);
+          }
+        }).catch(() => {
+          if (isComponentMounted && ws.current === connectedSocket) setBookWorldFeatures(disabledBookFeatures);
+        });
         const elapsed = Date.now() - overlayShowTimeRef.current;
         const remaining = Math.max(0, 2000 - elapsed);
         setTimeout(() => {
@@ -160,6 +202,8 @@ export function WebSocketProvider({ children }) {
         pendingRequests.current = new Map();
         lost.forEach(({ reject }) => reject(new Error("WebSocket disconnected; refresh current state")));
         setConnectionStatus("disconnected");
+        setBookWorldFeatures(disabledBookFeatures);
+        bookFeaturesRef.current = null;
         setShowLoadingOverlay(true);
         overlayShowTimeRef.current = Date.now();
 
@@ -177,6 +221,8 @@ export function WebSocketProvider({ children }) {
       ws.current.onerror = () => {
         if (!isComponentMounted) return;
         setConnectionStatus("disconnected");
+        setBookWorldFeatures(disabledBookFeatures);
+        bookFeaturesRef.current = null;
         setShowLoadingOverlay(true);
         overlayShowTimeRef.current = Date.now();
       };
@@ -206,6 +252,7 @@ export function WebSocketProvider({ children }) {
       showLoadingOverlay,
       ws,
       wsPort,
+      bookWorldFeatures,
     }}>
       {children}
     </WebSocketContext.Provider>
@@ -219,3 +266,5 @@ export const useWebSocket = () => {
   }
   return context;
 };
+
+export const useBookWorldFeatures = () => useContext(WebSocketContext)?.bookWorldFeatures || disabledBookFeatures;

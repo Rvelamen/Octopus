@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Space, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { useBookWorldFeatures } from '@contexts/WebSocketContext';
 
 export default function AutoBookImportPanel({ item, sendWSMessage }) {
+  const bookFeatures = useBookWorldFeatures();
   const { t } = useTranslation();
   const [job, setJob] = useState(null);
   const [error, setError] = useState('');
@@ -44,6 +46,7 @@ export default function AutoBookImportPanel({ item, sendWSMessage }) {
   if (!job && !item.metadata?.book_world?.automatic) return null;
   return <section aria-label={t('bookAuto.title')} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 8, marginBottom: 12 }}>
     <strong>{t('bookAuto.title')}</strong>
+    {!bookFeatures.automatic_import && <Alert type="info" title={t('bookRelease.automaticDisabled')} />}
     {error && <Alert type="error" showIcon title={error} />}
     {!job ? <p>{t('bookAuto.waitingIntent')}</p> : <>
       <p><Tag>{t(`bookAuto.status.${job.status}`, { defaultValue: job.status })}</Tag>{t(`bookAuto.phase.${job.phase}`, { defaultValue: job.phase })}</p>
@@ -54,8 +57,8 @@ export default function AutoBookImportPanel({ item, sendWSMessage }) {
       {job.expression_sets.length > 0 && <ul>{job.expression_sets.map(entry => <li key={entry.set_id}>{entry.name} · {t(`bookAuto.expressionStatus.${entry.status}`, { defaultValue: entry.status })} · {entry.accepted_materials === 0 ? t('bookAuto.noExpressionEvidence') : t('bookAuto.materials', { count: entry.accepted_materials })}</li>)}</ul>}
       <Space>
         {['queued', 'running', 'waiting_attachment', 'blocked_config', 'interrupted'].includes(job.status) && <Button size="small" disabled={busy} onClick={() => act('cancel_auto_import')}>{t('bookAuto.cancel')}</Button>}
-        {['failed', 'cancelled', 'partial', 'interrupted', 'blocked_config', 'needs_ocr'].includes(job.status) && <Button size="small" disabled={busy} onClick={() => act('retry_auto_import')}>{t('bookAuto.retry')}</Button>}
-        {['completed', 'failed', 'partial', 'cancelled', 'blocked_config', 'needs_ocr'].includes(job.status) && <Button size="small" disabled={busy} onClick={() => act('restart_auto_import')}>{t('bookAuto.newVersion')}</Button>}
+        {['failed', 'cancelled', 'partial', 'interrupted', 'blocked_config', 'needs_ocr'].includes(job.status) && <Button size="small" disabled={busy || !bookFeatures.automatic_import} onClick={() => act('retry_auto_import')}>{t('bookAuto.retry')}</Button>}
+        {['completed', 'failed', 'partial', 'cancelled', 'blocked_config', 'needs_ocr'].includes(job.status) && <Button size="small" disabled={busy || !bookFeatures.automatic_import} onClick={() => act('restart_auto_import')}>{t('bookAuto.newVersion')}</Button>}
         <Button size="small" disabled={busy} onClick={load}>{t('bookWorld.refreshBuild')}</Button>
       </Space>
     </>}

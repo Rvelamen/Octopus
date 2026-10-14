@@ -1,6 +1,6 @@
 # T12 完成首版回归评测与开关发布
 
-状态：首版任务草案，已同步跨书群聊与成员控制。阶段：M4。
+状态：进行中；开关/保留数据回滚子交付已实现，完整书籍、真实模型与完整操作验收未通过（2026-10-14）。阶段：M4。
 
 ## 用户可见交付
 
@@ -67,6 +67,8 @@
 ## 完成记录
 
 实施时记录实际改动、检查命令、演示结果和未通过项。模型质量与确定性的权限检查分别记录，不把模型替身测试当成真实模型评测。
+
+已接通进程启动能力、后端写入口/自动工作器门控、旧租约恢复、GET_CONFIG 和前端确认/只读界面。新入口关闭不删除记录，停止与安全成员撤销保留；重置与生成禁止。阶段验证见[发布开关记录](../validation/2026-10-14-release-gates-validation.md)，操作见[发布/回滚](../release-and-rollback.md)。使用受控历史夹具的浏览器操作不代表完整应用或人格质量，验收清单仍未关闭。
 
 设计约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，代码接入点和执行顺序见[实施计划](F:/god/project/Octopus/docs/plans/book-character-agents/implementation-plan.md)。
 

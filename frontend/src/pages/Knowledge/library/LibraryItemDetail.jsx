@@ -7,11 +7,13 @@ import LibraryAnnotationModal from './LibraryAnnotationModal';
 import NarrativeSourcePanel from './NarrativeSourcePanel';
 import AutoBookImportPanel from './AutoBookImportPanel';
 import TextSourceReader from './TextSourceReader';
+import { useBookWorldFeatures } from '@contexts/WebSocketContext';
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 const LibraryItemDetail = ({ item, onClose, onDelete, onUpdateItem, onRefreshItem, sendWSMessage }) => {
+  const bookFeatures = useBookWorldFeatures();
   const { t } = useTranslation();
   const [pdfContent, setPdfContent] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -807,8 +809,8 @@ Please write in English, use academic tone, and include specific details from th
         )}
 
         {/* Abstract */}
-        <AutoBookImportPanel key={`auto:${item.id}:${item.library_path}`} item={item} sendWSMessage={sendWSMessage} />
-        <NarrativeSourcePanel key={`${item.id}:${item.library_path}`} item={item} sendWSMessage={sendWSMessage} />
+        {bookFeatures.characters && <><AutoBookImportPanel key={`auto:${item.id}:${item.library_path}`} item={item} sendWSMessage={sendWSMessage} />
+        <NarrativeSourcePanel key={`${item.id}:${item.library_path}`} item={item} sendWSMessage={sendWSMessage} /></>}
         {item.abstract && (
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>{t('paper.sectionAbstract')}</div>

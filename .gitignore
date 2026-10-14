@@ -170,6 +170,7 @@ tests/
 !/tests/test_book_discussion.py
 !/tests/test_book_model_contracts.py
 !/tests/test_book_discovery_repair.py
+!/tests/test_book_feature_flags.py
 .agents/skills/ai-elements/SKILL.md
 .agents/skills/ai-elements/references/agent.md
 .agents/skills/ai-elements/references/artifact.md

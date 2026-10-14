@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Empty, Input, Modal, Select, Space, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { useBookWorldFeatures } from '@contexts/WebSocketContext';
 import BookSingleChatModal from './BookSingleChatModal';
 
 const characterKey = (entry) => `${entry.item_id}:${entry.build_id}:${entry.character_id}`;
 
 export default function BookRoomManager({ sendWSMessage, onClose, onOpenRoom, initialCreate = false, initialAdding = null, initialCharacters = [] }) {
   const { t } = useTranslation();
+  const bookFeatures = useBookWorldFeatures();
   const [rooms, setRooms] = useState([]);
   const [roomCursor, setRoomCursor] = useState(null);
   const [catalog, setCatalog] = useState([]);
@@ -82,7 +84,7 @@ export default function BookRoomManager({ sendWSMessage, onClose, onOpenRoom, in
     finally { if (current === generation.current) setBusy(false); }
   };
 
-  const choose = (room = null) => { setAdding(room); setChoosing(true); setSelected([]); setError(''); };
+  const choose = (room = null) => { if (!bookFeatures.group_chat) return; setAdding(room); setChoosing(true); setSelected([]); setError(''); };
   const save = async () => {
     const current = generation.current;
     listRevision.current += 1;
@@ -110,7 +112,7 @@ export default function BookRoomManager({ sendWSMessage, onClose, onOpenRoom, in
   return <>
     <Modal open title={t('bookRoom.manager')} onCancel={onClose} footer={<Button onClick={onClose}>{t('bookWorld.closeArchive')}</Button>} width={900}>
       {error && <Alert type="error" showIcon title={error} />}
-      <Space><Button type="primary" disabled={!workspace || busy} onClick={() => choose()}>{t('bookRoom.createGroup')}</Button><Button disabled={busy} onClick={() => load().catch((failure) => setError(failure.message))}>{t('bookWorld.refreshBuild')}</Button></Space>
+      <Space><Button type="primary" disabled={!workspace || busy || !bookFeatures.group_chat} onClick={() => choose()}>{t('bookRoom.createGroup')}</Button><Button disabled={busy} onClick={() => load().catch((failure) => setError(failure.message))}>{t('bookWorld.refreshBuild')}</Button></Space>
       {!rooms.length && <Empty description={t('bookRoom.noRooms')} />}
       {rooms.map((room) => <article key={room.room_id} style={{ padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
         <strong>{room.title}</strong> <Tag>{room.members.filter((member) => member.active).length}</Tag>
@@ -120,7 +122,7 @@ export default function BookRoomManager({ sendWSMessage, onClose, onOpenRoom, in
       {roomCursor !== null && <Button disabled={busy} onClick={() => loadMore('rooms')}>{t('bookRoom.moreRooms')}</Button>}
     </Modal>
     {opened && <BookSingleChatModal group detail={{ workspace_id: opened.workspace_id, room_id: opened.room_id, epoch: opened.epoch, public: { name: opened.title } }} sendWSMessage={sendWSMessage} onClose={() => { setOpened(null); load().catch((failure) => setError(failure.message)); }} onAddMembers={choose} refreshRevision={revision} />}
-    <Modal open={choosing} title={t(adding ? 'bookRoom.addMembers' : 'bookRoom.createGroup')} onCancel={() => setChoosing(false)} onOk={save} confirmLoading={busy} okButtonProps={{ disabled: !selected.length || !workspace }} okText={t(adding ? 'bookRoom.addMembers' : 'bookRoom.createGroup')} cancelText={t('bookWorld.closeArchive')}>
+    <Modal open={choosing && bookFeatures.group_chat} title={t(adding ? 'bookRoom.addMembers' : 'bookRoom.createGroup')} onCancel={() => setChoosing(false)} onOk={save} confirmLoading={busy} okButtonProps={{ disabled: !selected.length || !workspace || !bookFeatures.group_chat }} okText={t(adding ? 'bookRoom.addMembers' : 'bookRoom.createGroup')} cancelText={t('bookWorld.closeArchive')}>
       <p>{t('bookRoom.selectCharactersHint')}</p>
       {error && <Alert type="error" title={error} />}
       {!adding && <Input aria-label={t('bookRoom.roomName')} placeholder={t('bookRoom.roomName')} value={title} maxLength={200} onChange={(event) => setTitle(event.target.value)} style={{ marginBottom: 8 }} />}

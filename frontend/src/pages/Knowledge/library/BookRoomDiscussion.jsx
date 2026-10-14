@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Alert, Button, Input, Modal, Select, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { useBookWorldFeatures } from '@contexts/WebSocketContext';
 
 export default function BookRoomDiscussion({chat}) {
+  const features = useBookWorldFeatures();
+  const readOnly = !features.single_chat || ((chat.room?.kind === 'group' || chat.room?.members.length > 1) && !features.group_chat);
   const {t}=useTranslation();
   const [draft,setDraft]=useState(null);
   const [summaryScope,setSummaryScope]=useState(null);
@@ -20,13 +23,13 @@ export default function BookRoomDiscussion({chat}) {
   return <section className="book-discussion" aria-label={t('bookDiscussion.title')}>
     <Tag>{t(discussion.mode==='topic'?'bookDiscussion.topicMode':'bookDiscussion.free')}</Tag>
     {discussion.mode==='topic'&&<span><strong>{discussion.topic}</strong>{discussion.goal&&<small> · {discussion.goal}</small>}</span>}
-    <Button size="small" disabled={chat.busy||active||chat.room.status!=='active'} onClick={()=>setDraft({...discussion,topic:discussion.topic||'',goal:discussion.goal||''})}>{t('bookDiscussion.edit')}</Button>
-    <Button size="small" disabled={chat.busy||working||!chat.modelKey||!chat.messages.length||chat.room.status!=='active'} onClick={async()=>{if(await chat.act('summarize_room'))setSummaryScope(scope);}}>{t('bookDiscussion.summarize')}</Button>
+    <Button size="small" disabled={readOnly||chat.busy||active||chat.room.status!=='active'} onClick={()=>setDraft({...discussion,topic:discussion.topic||'',goal:discussion.goal||''})}>{t('bookDiscussion.edit')}</Button>
+    <Button size="small" disabled={readOnly||chat.busy||working||!chat.modelKey||!chat.messages.length||chat.room.status!=='active'} onClick={async()=>{if(await chat.act('summarize_room'))setSummaryScope(scope);}}>{t('bookDiscussion.summarize')}</Button>
     {working&&<Button size="small" disabled={chat.busy} onClick={()=>chat.act('cancel_summary',null,{summary_job_id:chat.summaryJob.id})}>{t('bookDiscussion.cancelSummary')}</Button>}
     {chat.summaryJob&&<Tag>{t(`bookDiscussion.summaryStatus.${chat.summaryJob.status}`)}</Tag>}
     {chat.summaryJob?.error_code&&<Alert type="warning" title={t(`bookDiscussion.summaryError.${chat.summaryJob.error_code}`,{defaultValue:t('bookDiscussion.summaryError.summary_failed')})}/>}
     {active&&<small>{t('bookDiscussion.busy')}</small>}
-    <Modal open={draft!==null} title={t('bookDiscussion.title')} onCancel={()=>setDraft(null)} onOk={save} okButtonProps={{disabled:invalid||active||chat.busy}} confirmLoading={chat.busy}>
+    <Modal open={draft!==null && !readOnly} title={t('bookDiscussion.title')} onCancel={()=>setDraft(null)} onOk={save} okButtonProps={{disabled:readOnly||invalid||active||chat.busy}} confirmLoading={chat.busy}>
       {chat.error&&<Alert type="error" title={chat.error}/>}
       {draft&&<><Select aria-label={t('bookDiscussion.mode')} value={draft.mode} onChange={mode=>setDraft({...draft,mode})} options={['free','topic'].map(value=>({value,label:t(value==='topic'?'bookDiscussion.topicMode':'bookDiscussion.free')}))}/>
         {draft.mode==='topic'&&<><p>{t('bookDiscussion.topic')}</p><Input aria-label={t('bookDiscussion.topic')} value={draft.topic} onChange={event=>setDraft({...draft,topic:event.target.value})}/><small>{count(draft.topic)}/200</small><p>{t('bookDiscussion.goal')}</p><Input.TextArea aria-label={t('bookDiscussion.goal')} value={draft.goal} onChange={event=>setDraft({...draft,goal:event.target.value})}/><small>{count(draft.goal)}/1000</small></>}

@@ -22,7 +22,7 @@ const DEFAULT_PAGE_SIZE = 20;
 
 const LibraryTab = ({ sendWSMessage }) => {
   const { t } = useTranslation();
-  const { subscribe, unsubscribe } = useWebSocket();
+  const { subscribe, unsubscribe, bookWorldFeatures } = useWebSocket();
   const libraryWS = useLibraryWS(sendWSMessage);
   const {
     collections,
@@ -445,7 +445,7 @@ const LibraryTab = ({ sendWSMessage }) => {
         >
           Chat
         </Button>
-        <Button size="small" href="#/book-rooms">{t('nav.bookRooms')}</Button>
+        {bookWorldFeatures.single_chat && <Button size="small" href="#/book-rooms">{t('nav.bookRooms')}</Button>}
 
         <TaskIndicator
           onViewTaskDetail={handleViewTaskDetail}

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Empty, Input, Modal, Select, Space, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { useBookWorldFeatures } from '@contexts/WebSocketContext';
 import useBookSingleRoom from './useBookSingleRoom';
 import BookRoomDiscussion from './BookRoomDiscussion';
 
@@ -10,6 +11,8 @@ export default function BookSingleChatModal(props) {
 }
 
 export function BookConversation({ detail, chat, onClose, group = false, onAddMembers, refreshRevision = 0, embedded = false, mention = null, displayText = message => message.content, onShowMessage }) {
+  const features = useBookWorldFeatures();
+  const readOnly = !features.single_chat || ((chat.room?.kind === 'group' || chat.room?.members.length > 1) && !features.group_chat);
   const { t } = useTranslation();
   const refreshChat = chat.refresh;
   const [draft, setDraft] = useState('');
@@ -29,7 +32,7 @@ export function BookConversation({ detail, chat, onClose, group = false, onAddMe
   const followLatest = useRef(true);
   const round = chat.round;
   const active = ['queued', 'running', 'paused', 'interrupted'].includes(round?.status);
-  const available = chat.room?.status === 'active' && chat.room.members.some((member) => member.available && member.active && member.speaking_mode !== 'muted');
+  const available = !readOnly && chat.room?.status === 'active' && chat.room.members.some((member) => member.available && member.active && member.speaking_mode !== 'muted');
   const eligible = chat.room?.members.filter((member) => member.available && member.active && member.speaking_mode !== 'muted') || [];
   const speakerLabel = (message) => message.speaker_type === 'user' ? t('bookRoom.you') : group ? `${message.identity.name} · ${message.identity.book_title} · ${message.speaker_member_id?.slice(0, 6)}` : message.identity.name;
   const externalMention = mention?.request && consumedMention !== mention.request;
@@ -92,27 +95,27 @@ export function BookConversation({ detail, chat, onClose, group = false, onAddMe
     <Alert type="info" showIcon title={t('bookRoom.hint')} style={{ marginBottom: 12 }} />
     {chat.error && <Alert type="error" showIcon title={chat.error} />}
     {evidenceError && <Alert type="error" showIcon title={evidenceError} />}
-    {chat.room && !available && <Alert type="warning" title={t('bookRoom.sourceUnavailable')} />}
+    {chat.room && !available && !readOnly && <Alert type="warning" title={t('bookRoom.sourceUnavailable')} />}
     {chat.room && !chat.models.length && <Alert type="warning" title={t('bookRoom.noModels')} />}
-    <Select aria-label={t('bookRoom.model')} placeholder={t('bookRoom.model')} value={chat.modelKey} onChange={chat.setModelKey} disabled={chat.busy || active} style={{ width: '100%', margin: '10px 0' }} options={chat.models.map((entry) => ({ value: `${entry.provider_id}:${entry.model_record_id}`, label: entry.label }))} />
+    <Select aria-label={t('bookRoom.model')} placeholder={t('bookRoom.model')} value={chat.modelKey} onChange={chat.setModelKey} disabled={readOnly || chat.busy || active} style={{ width: '100%', margin: '10px 0' }} options={chat.models.map((entry) => ({ value: `${entry.provider_id}:${entry.model_record_id}`, label: entry.label }))} />
     <small>{t('bookRoom.modelHint')}</small>
     {chat.room?.sources.filter(source => source.status !== 'active').map(source => <Alert key={source.book_id} type="warning" title={`${source.identity.book_title} · ${t('bookRoom.sourceUnavailable')}`} action={source.cleanup_status === 'failed' ? <Button size="small" disabled={chat.busy} onClick={() => chat.act('retry_source_cleanup', null, { source_book_id: source.book_id })}>{t('bookRoom.retryCleanup')}</Button> : null} />)}
     {group && <section aria-label={t('bookRoom.members')} style={{ padding: '10px 0' }}>
       <details open={!embedded}><summary>{t('bookRoom.members')} ({chat.room?.members.length || 0})</summary>
       {chat.room?.members.map((member) => <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '8px 0' }}>
         <span>{member.identity.name} · {member.identity.book_title} · {member.id.slice(0, 6)}</span>
-        <Select aria-label={t('bookRoom.memberMode', { name: member.identity.name, id: member.id.slice(0, 6) })} size="small" value={member.speaking_mode} disabled={chat.busy || !member.active || !member.available} style={{ width: 110 }} onChange={(speaking_mode) => chat.act('set_member', null, { member_id: member.id, speaking_mode })} options={['auto', 'mention_only', 'muted'].map((value) => ({ value, label: t(`bookRoom.speaking.${value}`) }))} />
-        {member.active ? <Button danger size="small" disabled={chat.busy} onClick={() => chat.act('set_member', null, { member_id: member.id, active: false })}>{t('bookRoom.remove')}</Button> : <Button size="small" disabled={chat.busy || active || !member.available} onClick={() => chat.act('set_member', null, { member_id: member.id, active: true })}>{t('bookRoom.rejoin')}</Button>}
+        <Select aria-label={t('bookRoom.memberMode', { name: member.identity.name, id: member.id.slice(0, 6) })} size="small" value={member.speaking_mode} disabled={chat.busy || !member.active || !member.available} style={{ width: 110 }} onChange={(speaking_mode) => chat.act('set_member', null, { member_id: member.id, speaking_mode })} options={['auto', 'mention_only', 'muted'].map((value) => ({ value, label: t(`bookRoom.speaking.${value}`), disabled: readOnly && value !== 'muted' }))} />
+        {member.active ? <Button danger size="small" disabled={chat.busy} onClick={() => chat.act('set_member', null, { member_id: member.id, active: false })}>{t('bookRoom.remove')}</Button> : <Button size="small" disabled={readOnly || chat.busy || active || !member.available} onClick={() => chat.act('set_member', null, { member_id: member.id, active: true })}>{t('bookRoom.rejoin')}</Button>}
         {!member.available && <Tag>{t('bookRoom.sourceUnavailable')}</Tag>}
       </div>)}
       </details>
-      <Button size="small" disabled={!chat.room || chat.busy || active || chat.room.status !== 'active'} onClick={() => onAddMembers?.(chat.room)}>{t('bookRoom.addMembers')}</Button>
+      <Button size="small" disabled={!features.group_chat || !chat.room || chat.busy || active || chat.room.status !== 'active'} onClick={() => onAddMembers?.(chat.room)}>{t('bookRoom.addMembers')}</Button>
       <p>{t('bookRoom.naturalHint')}</p>
-      <Select aria-label={t('bookRoom.speakerMode')} value={active ? round.mode : chosenMode} disabled={chat.busy || active} onChange={value=>{setConsumedMention(mention?.request);setSpeakerMode(value);}} style={{ width: 150 }} options={['natural', 'directed', 'all'].map((value) => ({ value, label: t(`bookRoom.selection.${value}`) }))} />
+      <Select aria-label={t('bookRoom.speakerMode')} value={active ? round.mode : chosenMode} disabled={readOnly || chat.busy || active} onChange={value=>{setConsumedMention(mention?.request);setSpeakerMode(value);}} style={{ width: 150 }} options={['natural', 'directed', 'all'].map((value) => ({ value, label: t(`bookRoom.selection.${value}`) }))} />
       {(active ? round.mode : chosenMode) === 'directed' && <Select aria-label={t('bookRoom.mention')} mode="multiple" placeholder={t('bookRoom.mention')} value={chosenTargets} disabled={chat.busy || active} onChange={value=>{setConsumedMention(mention?.request);setSpeakerMode('directed');setTargets(value);}} optionFilterProp="label" style={{ width: '100%', marginTop: 8 }} options={eligible.map((member) => ({ value: member.id, label: `${member.identity.name} · ${member.identity.book_title} · ${member.id.slice(0, 6)}` }))} />}
     </section>}
     <div style={{ margin: '8px 0' }}>
-      <Button size="small" disabled={!chat.room || chat.busy} onClick={() => setResetOpen(true)}>{t('bookRoom.reset')}</Button>
+      <Button size="small" disabled={readOnly || !chat.room || chat.busy} onClick={() => setResetOpen(true)}>{t('bookRoom.reset')}</Button>
       {chat.memory && <Button type="link" size="small" onClick={() => setMemoryOpen(true)}>{t('bookRoom.memoryCount', { count: chat.memory.items.length })}</Button>}
     </div>
     {round && <div style={{ margin: '10px 0' }}>
@@ -149,7 +152,7 @@ export function BookConversation({ detail, chat, onClose, group = false, onAddMe
       <Button disabled={chat.busy} onClick={() => chat.refresh().catch((failure) => setEvidenceError(failure.message))}>{t('bookWorld.refreshBuild')}</Button>
     </Space>
     </div>
-    <Modal open={resetOpen} title={t('bookRoom.resetTitle')} onOk={resetMemory} onCancel={() => setResetOpen(false)} confirmLoading={chat.busy} okText={t('bookRoom.reset')} cancelText={t('bookRoom.keepMemory')}>
+    <Modal open={resetOpen && !readOnly} title={t('bookRoom.resetTitle')} onOk={resetMemory} onCancel={() => setResetOpen(false)} confirmLoading={chat.busy} okText={t('bookRoom.reset')} cancelText={t('bookRoom.keepMemory')}>
       <p>{t('bookRoom.resetHint')}</p>
     </Modal>
     <Modal open={memoryOpen && chat.memory !== null} title={t('bookRoom.memoryTitle')} onCancel={() => setMemoryOpen(false)} footer={null}>

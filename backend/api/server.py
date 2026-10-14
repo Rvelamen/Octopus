@@ -92,6 +92,9 @@ async def lifespan(app: FastAPI):
     from backend.services.book_world.automatic_runner import AutoImportRunner
 
     AutoImportRunner.startup()
+    from backend.services.book_world.features import recover_disabled_workspace
+
+    await recover_disabled_workspace(workspace)
     AutoImportRunner.start(Path(workspace))
 
     # 4. Initialize Agent Loop (Lazy import to avoid circular deps)

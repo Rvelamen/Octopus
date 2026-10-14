@@ -1,0 +1,142 @@
+{
+  "scope": "Production components, WS and handlers in isolated feature fixture workspace; not complete app/persona acceptance",
+  "connection": "connected",
+  "config": {
+    "type": "config",
+    "data": {
+      "book_world_features": {
+        "characters": false,
+        "single_chat": false,
+        "group_chat": false,
+        "automatic_import": false
+      }
+    }
+  },
+  "transport": {
+    "blocked": {
+      "code": "feature_disabled",
+      "message": "This book feature is disabled or its capabilities are not confirmed"
+    },
+    "sent": [],
+    "connection": "connected"
+  },
+  "diagnostics": {
+    "counts": {
+      "book_builds": 2,
+      "book_auto_imports": 0,
+      "book_rooms": 1,
+      "book_room_messages": 3
+    },
+    "scanners": 0,
+    "workers": 0,
+    "features": {
+      "characters": false,
+      "single_chat": false,
+      "group_chat": false,
+      "automatic_import": false
+    },
+    "model_resolution_attempts": []
+  },
+  "text": "{\"characters\":false,\"single_chat\":false,\"group_chat\":false,\"automatic_import\":false}\n原有图书馆 · 深链接人物聊天室\n保留的历史（受控夹具，非人格验收）\nSwitch room\nCreate room\nRefresh progress\nConfig\nCharacter chat is unavailable or disabled. Read-only history, stopping, muting and removal remain available.\nFree conversation\nSet discussion\nSummarize discussion\nOverview\n＋\n－\n2D seats\n人物甲\n原著样本 · 7993e9\nRoom members (1)\nThe character uses their authorized book evidence and this room's conversation. Replies appear after validation. Each submission starts a finite turn.\nkimi-coding-plan · K3\nThe selected model is used for new turns. Continuing a paused turn preserves its original model.\nRoom members (1)\nAdd characters\n\nNatural mode selects at most three speakers per turn. Public replies never start another turn automatically.\n\nNatural\nReset room memory\nStoppedWindow 1 · Limit 60 seconds · About 60 seconds remaining\nQueue 0 / 1\nJump to latest\nYou\n\n保留的原有对话\n\n人物甲 · 原著样本 · 7993e9\nReply to You\n\n你说保留的原有对话。\n\nShow at seat\nView evidence\nYou\n\n此轮用于验证停用后的停止入口\n\nSend\nRefresh progress",
+  "controls": [
+    {
+      "text": "Switch room",
+      "disabled": false
+    },
+    {
+      "text": "Create room",
+      "disabled": true
+    },
+    {
+      "text": "Refresh progress",
+      "disabled": false
+    },
+    {
+      "text": "Config",
+      "disabled": false
+    },
+    {
+      "text": "Set discussion",
+      "disabled": true
+    },
+    {
+      "text": "Summarize discussion",
+      "disabled": true
+    },
+    {
+      "text": "Overview",
+      "disabled": false
+    },
+    {
+      "text": "＋",
+      "disabled": false
+    },
+    {
+      "text": "－",
+      "disabled": false
+    },
+    {
+      "text": "2D seats",
+      "disabled": false
+    },
+    {
+      "text": "人物甲\n原著样本 · 7993e9",
+      "disabled": false
+    },
+    {
+      "text": "",
+      "disabled": false
+    },
+    {
+      "text": "",
+      "disabled": false
+    },
+    {
+      "text": "Add characters",
+      "disabled": true
+    },
+    {
+      "text": "Reset room memory",
+      "disabled": true
+    },
+    {
+      "text": "Jump to latest",
+      "disabled": false
+    },
+    {
+      "text": "Reply to You",
+      "disabled": false
+    },
+    {
+      "text": "Show at seat",
+      "disabled": false
+    },
+    {
+      "text": "View evidence",
+      "disabled": false
+    },
+    {
+      "text": "Send",
+      "disabled": true
+    },
+    {
+      "text": "Refresh progress",
+      "disabled": false
+    }
+  ],
+  "messages": [
+    {
+      "id": "3846fb29-44e3-4166-8bb9-4c6c9d4f0fd7",
+      "text": "保留的原有对话"
+    },
+    {
+      "id": "d4cb8987-c1fa-43c0-a462-97f43da66a59",
+      "text": "你说保留的原有对话。"
+    },
+    {
+      "id": "d643fdee-8418-4cd3-b61c-01c1d3d02cdf",
+      "text": "此轮用于验证停用后的停止入口"
+    }
+  ],
+  "fixtureNativeCalls": 0
+}

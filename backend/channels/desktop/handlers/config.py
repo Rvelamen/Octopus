@@ -17,6 +17,7 @@ from backend.channels.desktop.schemas import (
 )
 from backend.core.events.bus import MessageBus
 from backend.data import Database
+from backend.services.book_world.features import get_features
 
 
 class GetConfigHandler(MessageHandler):
@@ -29,7 +30,7 @@ class GetConfigHandler(MessageHandler):
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
         """Return current configuration (now stored in database)."""
         await self.send_response(
-            websocket, WSMessage(type=MessageType.CONFIG, request_id=message.request_id, data={})
+            websocket, WSMessage(type=MessageType.CONFIG, request_id=message.request_id, data={"book_world_features": get_features().public()})
         )
 
     async def handle_validated(
@@ -37,7 +38,7 @@ class GetConfigHandler(MessageHandler):
     ) -> None:
         """Return current configuration (now stored in database)."""
         await self.send_response(
-            websocket, WSMessage(type=MessageType.CONFIG, request_id=message.request_id, data={})
+            websocket, WSMessage(type=MessageType.CONFIG, request_id=message.request_id, data={"book_world_features": get_features().public()})
         )
 
     async def _send_error(self, websocket: WebSocket, request_id: str | None, error: str) -> None:

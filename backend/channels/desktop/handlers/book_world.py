@@ -16,6 +16,7 @@ from backend.services.book_world.contracts import BookWorldRequest
 from backend.services.book_world.discovery import BookDiscoveryService, DiscoveryConfig
 from backend.services.book_world.discovery_provider import DiscoveryModel, resolve_discovery_model
 from backend.services.book_world.expressions import CharacterExpressionService, ExpressionConfig
+from backend.services.book_world.features import require_world_action
 from backend.services.book_world.knowledge import CharacterKnowledgeService
 from backend.services.book_world.persona import BookPersonaService, PersonaConfig
 from backend.services.book_world.revisions import BookRevisionService
@@ -432,6 +433,11 @@ class BookWorldHandler(MessageHandler):
             )
             return
         root = Path(get_workspace_path()).resolve()
+        try:
+            require_world_action(request.action)
+        except BookWorldError as error:
+            await self.send_response(websocket, WSMessage(type=MessageType.ERROR, request_id=message.request_id, data={"code": error.code, "error": str(error)}))
+            return
         if request.action == "create_revision":
             if len(self._revision_requests) >= 32:
                 await self.send_response(

@@ -74,7 +74,7 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { sendMessage, subscribe, connectionStatus, showLoadingOverlay, ws } = useWebSocket();
+  const { sendMessage, subscribe, connectionStatus, showLoadingOverlay, ws, bookWorldFeatures } = useWebSocket();
   const chat = useChatState();
 
   // ===== 状态 =====
@@ -364,7 +364,7 @@ function App() {
                 { key: 'knowledge', icon: BookOpen, label: t('nav.knowledge') },
                 { key: 'library', icon: Library, label: t('nav.library') },
                 { key: 'library-scene', icon: Sprout, label: t('nav.libraryScene'), muted: true },
-                { key: 'book-rooms', icon: Users, label: t('nav.bookRooms') },
+                ...(bookWorldFeatures.single_chat ? [{ key: 'book-rooms', icon: Users, label: t('nav.bookRooms') }] : []),
               ])}
               {renderNavGroup(t('nav.group.automation'), [
                 { key: 'agents', icon: Users, label: t('nav.agents') },

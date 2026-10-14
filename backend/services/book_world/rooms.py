@@ -255,6 +255,7 @@ class BookRoomService:
                 "title": row["title"],
                 "next_seq": row["next_seq"],
                 "status": row["status"],
+                "kind": "group" if "creation_members" in json.loads(row["policy_snapshot_json"]) or len(members) > 1 else "single",
                 "discussion": {
                     "revision": row["discussion_revision"],
                     "mode": row["discussion_mode"],

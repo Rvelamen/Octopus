@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Progress, Select, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { useBookWorldFeatures } from '@contexts/WebSocketContext';
 import CharacterPersonaModal from './CharacterPersonaModal';
 import CharacterRevisionModal from './CharacterRevisionModal';
 
 export default function CharacterDiscoveryPanel({ source, request, onLocate, sendWSMessage }) {
   const { t } = useTranslation();
+  const bookFeatures = useBookWorldFeatures();
   const [build, setBuild] = useState(null);
   const [characters, setCharacters] = useState([]);
   const [total, setTotal] = useState(0);
@@ -136,7 +138,7 @@ export default function CharacterDiscoveryPanel({ source, request, onLocate, sen
     </>}
     {detail && <CharacterPersonaModal key={`${detail.build_id}:${detail.character_id}`} detail={detail} request={request}
       onCorrect={() => setCorrecting(true)}
-      onStartChat={async () => {
+      onStartChat={bookFeatures.single_chat ? async () => {
         setBusy(true); setError('');
         try {
           const response = await sendWSMessage('book_room', { action: 'create_single_room', workspace_id: detail.workspace_id, item_id: detail.item_id, build_id: detail.build_id, character_id: detail.character_id, client_room_id: crypto.randomUUID(), reuse_existing: true });
@@ -144,8 +146,8 @@ export default function CharacterDiscoveryPanel({ source, request, onLocate, sen
           window.location.hash = `/book-rooms/${response.data.room_id}`;
         } catch (failure) { setError(failure.message); }
         finally { setBusy(false); }
-      }}
-      onJoinRoom={() => { window.location.hash = `/book-rooms?create=1&item_id=${detail.item_id}&build_id=${encodeURIComponent(detail.build_id)}&character_id=${encodeURIComponent(detail.character_id)}`; }}
+      } : undefined}
+      onJoinRoom={bookFeatures.group_chat ? () => { window.location.hash = `/book-rooms?create=1&item_id=${detail.item_id}&build_id=${encodeURIComponent(detail.build_id)}&character_id=${encodeURIComponent(detail.character_id)}`; } : undefined}
       onSaveExtension={async (text) => {
         const current = generation.current; const sequence = ++detailRevision.current;
         await request('save_extension', { build_id: detail.build_id, character_id: detail.character_id, extension_text: text });

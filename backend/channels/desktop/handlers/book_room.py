@@ -17,6 +17,7 @@ from backend.services.book_world.chat_provider import (
     resolve_character_chat_model,
 )
 from backend.services.book_world.chat_worker import BookChatWorker
+from backend.services.book_world.features import require_room_action
 from backend.services.book_world.members import RoomMembershipService
 from backend.services.book_world.memory import RoomMemoryService
 from backend.services.book_world.room_catalog import RoomCharacterCatalog
@@ -173,6 +174,11 @@ class BookRoomHandler(MessageHandler):
         rooms = await asyncio.to_thread(BookRoomService, root)
         if request.workspace_id is not None and request.workspace_id != rooms.workspace_id:
             raise BookWorldError("invalid_scope", "Workspace changed; reload the current room")
+        revocation = request.action == "set_member" and (
+            request.active is False and request.speaking_mode in (None, "muted")
+            or request.active is None and request.speaking_mode == "muted"
+        )
+        require_room_action(request.action, revocation=revocation)
         if request.action == "list_room_characters":
             catalog = await asyncio.to_thread(RoomCharacterCatalog, root)
             return await asyncio.to_thread(
@@ -232,6 +238,9 @@ class BookRoomHandler(MessageHandler):
             return await asyncio.to_thread(rooms.open_room, request.room_id)
         assert request.room_id and request.expected_epoch is not None
         scope = await asyncio.to_thread(rooms.bind_room, request.room_id, request.expected_epoch)
+        if request.action in ("submit_turn", "resume_round", "set_discussion", "summarize_room", "set_member", "add_members", "reset_memory"):
+            snapshot = await asyncio.to_thread(rooms.get_room, scope)
+            require_room_action(request.action, group_room=snapshot["kind"] == "group", revocation=revocation)
         if request.action in (
             "submit_turn",
             "cancel_round",

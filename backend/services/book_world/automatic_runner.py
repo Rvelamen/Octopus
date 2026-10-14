@@ -7,6 +7,7 @@ from pathlib import Path
 from loguru import logger
 
 from .automatic import AutoImportService
+from .features import get_features
 from .storage import workspace_identity
 from .worker_pool import build_slot
 
@@ -31,7 +32,7 @@ class AutoImportRunner:
     @classmethod
     async def schedule(cls, service: AutoImportService, root: Path, job: dict) -> None:
         key = asyncio.get_running_loop(), workspace_identity(root), job["job_id"]
-        if key[0] in cls._stopping_loops:
+        if key[0] in cls._stopping_loops or not get_features().automatic_import:
             return
         async with cls.control_lock(root, job["job_id"]):
             if key in cls._workers and not cls._workers[key].done():
@@ -60,7 +61,7 @@ class AutoImportRunner:
 
     @classmethod
     def start(cls, root: str | Path) -> None:
-        if asyncio.get_running_loop() in cls._stopping_loops:
+        if asyncio.get_running_loop() in cls._stopping_loops or not get_features().automatic_import:
             return
         root = Path(root).resolve()
         cls._roots[workspace_identity(root)] = root

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Alert, Button, Empty, Modal, Select, Spin } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { useBookWorldFeatures } from '@contexts/WebSocketContext';
 import BookRoomManager from '../Knowledge/library/BookRoomManager';
 import { BookConversation } from '../Knowledge/library/BookSingleChatModal';
 import BookRoomScene from './BookRoomScene';
@@ -10,6 +11,8 @@ import BookRoomDiscussion from '../Knowledge/library/BookRoomDiscussion';
 import './BookRooms.css';
 
 function ActiveRoom({snapshot,sendWSMessage,onAdd,connectionStatus,connectionIdentity}) {
+  const features = useBookWorldFeatures();
+  const readOnly = !features.single_chat || ((snapshot.kind === 'group' || snapshot.members.length > 1) && !features.group_chat);
   const {t}=useTranslation();
   const detail={workspace_id:snapshot.workspace_id,room_id:snapshot.room_id,epoch:snapshot.epoch,public:{name:snapshot.title}};
   const chat=useBookRoom(detail,sendWSMessage,connectionStatus,connectionIdentity);
@@ -33,16 +36,17 @@ function ActiveRoom({snapshot,sendWSMessage,onAdd,connectionStatus,connectionIde
         <Button disabled={chat.busy||!member.available} onClick={()=>{setProfileError('');chat.profile(member.id).then(setProfile).catch(failure=>setProfileError({member_id:member.id,epoch:chat.room.epoch,message:failure.message}));}}>{t('bookScene.publicProfile')}</Button>
         {profileError?.member_id===member.id&&profileError.epoch===chat.room.epoch&&<Alert type="error" title={profileError.message}/>}
         {member.available&&profile?.member_id===member.id&&profile.epoch===chat.room.epoch&&<div><p>{profile.public.name} · {profile.identity.book_title}</p><p>{t(`bookWorld.characterStatus.${profile.agent_status}`,{defaultValue:profile.agent_status})}</p><small>{t('bookScene.sourceIdentity',{version:profile.source_version_id.slice(0,8)})}</small></div>}
-        <Button disabled={chat.busy||active||!member.active||!member.available||member.speaking_mode==='muted'} onClick={()=>{setMention({member_id:member.id,request:crypto.randomUUID()});setCard(null);}}>{t('bookRoom.mention')}</Button>
-        <Select aria-label={t('bookRoom.memberMode',{name:member.identity.name,id:member.id.slice(0,6)})} disabled={chat.busy||!member.active||!member.available} value={member.speaking_mode} onChange={speaking_mode=>chat.act('set_member',null,{member_id:member.id,speaking_mode})} options={['auto','mention_only','muted'].map(value=>({value,label:t(`bookRoom.speaking.${value}`)}))}/>
+        <Button disabled={readOnly||chat.busy||active||!member.active||!member.available||member.speaking_mode==='muted'} onClick={()=>{setMention({member_id:member.id,request:crypto.randomUUID()});setCard(null);}}>{t('bookRoom.mention')}</Button>
+        <Select aria-label={t('bookRoom.memberMode',{name:member.identity.name,id:member.id.slice(0,6)})} disabled={chat.busy||!member.active||!member.available} value={member.speaking_mode} onChange={speaking_mode=>chat.act('set_member',null,{member_id:member.id,speaking_mode})} options={['auto','mention_only','muted'].map(value=>({value,label:t(`bookRoom.speaking.${value}`),disabled:readOnly&&value!=='muted'}))}/>
         <Button danger disabled={chat.busy||!member.active} onClick={()=>chat.act('set_member',null,{member_id:member.id,active:false})}>{t('bookRoom.remove')}</Button>
-        {!member.active&&<Button disabled={chat.busy||active||!member.available} onClick={()=>chat.act('set_member',null,{member_id:member.id,active:true})}>{t('bookRoom.rejoin')}</Button>}
+        {!member.active&&<Button disabled={readOnly||chat.busy||active||!member.available} onClick={()=>chat.act('set_member',null,{member_id:member.id,active:true})}>{t('bookRoom.rejoin')}</Button>}
       </>}
     </Modal>
   </>;
 }
 
 export default function BookRooms({sendWSMessage,connectionStatus,connectionIdentity}) {
+  const bookFeatures = useBookWorldFeatures();
   const {t}=useTranslation(),navigate=useNavigate(),location=useLocation(),{roomId}=useParams();
   const [snapshot,setSnapshot]=useState(null),[error,setError]=useState(''),[loading,setLoading]=useState(false),[manager,setManager]=useState(()=>{
     const query=new URLSearchParams(location.search);
@@ -67,11 +71,13 @@ export default function BookRooms({sendWSMessage,connectionStatus,connectionIden
     if (connectionStatus && connectionStatus !== 'connected') return undefined;
     Promise.resolve().then(load);
     return()=>{generation.current+=1;};
-  },[load,connectionStatus]);
+  },[load,connectionStatus,bookFeatures.single_chat]);
+  const readOnly = !bookFeatures.single_chat || ((snapshot?.kind === 'group' || snapshot?.members.length > 1) && !bookFeatures.group_chat);
   return <main className="book-rooms-page">
-    <header><div><h1>{snapshot?.title||t('nav.bookRooms')}</h1></div><nav><Button onClick={()=>setManager({})}>{t('bookScene.switchRoom')}</Button><Button onClick={()=>setManager({create:true})}>{t('bookRoom.createGroup')}</Button><Button onClick={()=>load()} disabled={loading}>{t('bookWorld.refreshBuild')}</Button><Button onClick={()=>navigate('/config')}>{t('nav.config')}</Button></nav></header>
+    <header><div><h1>{snapshot?.title||t('nav.bookRooms')}</h1></div><nav><Button onClick={()=>setManager({})}>{t('bookScene.switchRoom')}</Button><Button disabled={!bookFeatures.group_chat} onClick={()=>setManager({create:true})}>{t('bookRoom.createGroup')}</Button><Button onClick={()=>load()} disabled={loading}>{t('bookWorld.refreshBuild')}</Button><Button onClick={()=>navigate('/config')}>{t('nav.config')}</Button></nav></header>
     {error&&<Alert type="error" title={error}/>}
-    {loading?<Spin/>:snapshot?<ActiveRoom key={`${snapshot.workspace_id}:${snapshot.room_id}`} snapshot={snapshot} sendWSMessage={sendWSMessage} connectionStatus={connectionStatus} connectionIdentity={connectionIdentity} onAdd={room=>setManager({adding:room})}/>:<div className="book-room-empty"><Empty description={t('bookScene.empty')}/><Button type="primary" onClick={()=>setManager({create:true})}>{t('bookRoom.createGroup')}</Button></div>}
+    {readOnly&&<Alert type="info" title={t('bookRelease.disabled')}/>}
+    {loading?<Spin/>:snapshot?<ActiveRoom key={`${snapshot.workspace_id}:${snapshot.room_id}`} snapshot={snapshot} sendWSMessage={sendWSMessage} connectionStatus={connectionStatus} connectionIdentity={connectionIdentity} onAdd={room=>setManager({adding:room})}/>:<div className="book-room-empty"><Empty description={t('bookScene.empty')}/><Button type="primary" disabled={!bookFeatures.group_chat} onClick={()=>setManager({create:true})}>{t('bookRoom.createGroup')}</Button></div>}
     {manager&&<BookRoomManager sendWSMessage={sendWSMessage} onClose={()=>setManager(null)} initialCreate={manager.create} initialAdding={manager.adding} initialCharacters={manager.characters} onOpenRoom={room=>{setManager(null);navigate(`/book-rooms/${room.room_id}`);if(room.room_id===roomId)load();}}/>}
   </main>;
 }
