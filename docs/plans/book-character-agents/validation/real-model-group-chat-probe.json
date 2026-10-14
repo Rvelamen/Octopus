@@ -1,0 +1,1241 @@
+{
+  "date": "2026-10-13",
+  "scope": "T08 real k3 cross-book excerpt integration; not full-book persona or group quality acceptance",
+  "call_budget": 16,
+  "actual_calls": 13,
+  "red_excerpt": {
+    "item_id": 6,
+    "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+    "start_in_corpus": 20109,
+    "end_in_corpus": 20177,
+    "codepoints": 68,
+    "sha256": "2e6554714c1db2279d14a5ff27c8031cdb2bc39c6d996b04a81e8bdccf413cc3"
+  },
+  "discovery_build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-chat-v4",
+    "policy_version": "bounded-room-v1",
+    "model_record_id": 337,
+    "review_prompt_version": "character-chat-review-v2",
+    "context_window": 1000000,
+    "max_input_tokens": 24000,
+    "expression_enabled": false,
+    "memory_policy_version": "typed-room-memory-v1",
+    "memory_prompt_version": "room-memory-v2",
+    "expression_selection_version": "expression-selection-v2",
+    "expression_sets": {}
+  },
+  "human_blind_review": false,
+  "calls": [
+    {
+      "stage": "discovery",
+      "phase": "discovery",
+      "status": "completed",
+      "content": "{\"scenes\":[{\"segment_ids\":[\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\"],\"location_label\":null,\"characters\":[{\"local_character_key\":\"贾母\",\"name\":\"贾母\",\"presence\":\"active\",\"entity_kind\":\"person\",\"identity\":\"new\",\"evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":0,\"local_end\":10,\"quote\":\"贾母因问黛玉念何书\",\"offset_resolution\":\"unique_quote\"},\"aliases\":[]},{\"local_character_key\":\"黛玉\",\"name\":\"黛玉\",\"presence\":\"active\",\"entity_kind\":\"person\",\"identity\":\"new\",\"evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":10,\"local_end\":13,\"quote\":\"黛玉道\",\"offset_resolution\":\"unique_quote\"},\"aliases\":[]},{\"local_character_key\":\"姊妹们\",\"name\":\"姊妹们\",\"presence\":\"referenced\",\"entity_kind\":\"group\",\"identity\":\"new\",\"evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":29,\"local_end\":35,\"quote\":\"姊妹们读何书\",\"offset_resolution\":\"unique_quote\"},\"aliases\":[]}]}]}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1179,
+        "completion_tokens": 828,
+        "total_tokens": 2007,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "stage": "persona",
+      "phase": "extract",
+      "status": "completed",
+      "content": "{\"claims\":[{\"local_key\":\"jiamu_belief_girls_reading\",\"kind\":\"belief\",\"owner_character_id\":\"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\"proposition\":\"贾母认为女孩子读书不过是认得两个字、不做睁眼瞎子罢了，不必真正读书。\",\"slot_key\":\"belief:女子读书\",\"truth_state\":\"unknown\",\"interpretation_level\":\"explicit\",\"evidence\":[{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":41,\"local_end\":56,\"quote\":\"读的是什么书，不过是认得两个字\"}],\"access\":[{\"character_id\":\"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\"route\":\"firsthand\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":36,\"local_end\":67,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},\"approved_excerpt\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},{\"character_id\":\"e56d6aa4-eb1b-4213-9385-535661969241\",\"route\":\"told\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":36,\"local_end\":67,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},\"identity_evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":25,\"local_end\":35,\"quote\":\"黛玉又问姊妹们读何书．\"}}]},{\"local_key\":\"daiyu_episode_read_sishu\",\"kind\":\"episode\",\"owner_character_id\":\"e56d6aa4-eb1b-4213-9385-535661969241\",\"proposition\":\"贾母问黛玉念何书，黛玉回答说自己只刚念了《四书》。\",\"truth_state\":\"true\",\"interpretation_level\":\"explicit\",\"evidence\":[{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":10,\"local_end\":24,\"quote\":\"黛玉道：“只刚念了《四书》。”\"}],\"access\":[{\"character_id\":\"e56d6aa4-eb1b-4213-9385-535661969241\",\"route\":\"firsthand\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":10,\"local_end\":24,\"quote\":\"黛玉道：“只刚念了《四书》。”\"},\"approved_excerpt\":\"黛玉道：“只刚念了《四书》。”\"},{\"character_id\":\"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\"route\":\"told\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":0,\"local_end\":24,\"quote\":\"贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”\"}}]}]}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1331,
+        "completion_tokens": 1235,
+        "total_tokens": 2566,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "stage": "persona",
+      "phase": "extract",
+      "status": "completed",
+      "content": "```json\n{\n  \"claims\": [\n    {\n      \"local_key\": \"daiyu-read-sishu\",\n      \"kind\": \"fact\",\n      \"proposition\": \"黛玉自称只刚念了《四书》。\",\n      \"owner_character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n      \"truth_state\": \"unknown\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n          \"local_start\": 10,\n          \"local_end\": 25,\n          \"quote\": \"黛玉道：“只刚念了《四书》。”\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n          \"route\": \"told\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 0,\n            \"local_end\": 25,\n            \"quote\": \"贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”\"\n          }\n        },\n        {\n          \"character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 10,\n            \"local_end\": 25,\n            \"quote\": \"黛玉道：“只刚念了《四书》。”\"\n          },\n          \"approved_excerpt\": \"只刚念了《四书》\"\n        }\n      ]\n    },\n    {\n      \"local_key\": \"jiamu-belief-girls-reading\",\n      \"kind\": \"belief\",\n      \"proposition\": \"贾母认为女孩儿读书不过是认得两个字、不做睁眼瞎子罢了，不以读书为要。\",\n      \"owner_character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n      \"slot_key\": \"belief:女子读书\",\n      \"truth_state\": \"unknown\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n          \"local_start\": 36,\n          \"local_end\": 68,\n          \"quote\": \"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 36,\n            \"local_end\": 68,\n            \"quote\": \"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n          },\n          \"approved_excerpt\": \"读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！\"\n        },\n        {\n          \"character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n          \"route\": \"observed\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 25,\n            \"local_end\": 68,\n            \"quote\": \"黛玉又问姊妹们读何书．贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 25,\n            \"local_end\": 27,\n            \"quote\": \"黛玉\"\n          }\n        }\n      ]\n    },\n    {\n      \"local_key\": \"episode-jiamu-asks-reading\",\n      \"kind\": \"episode\",\n      \"proposition\": \"贾母问黛玉念什么书，黛玉作答后又问姊妹们读何书，贾母以家中女儿不过识字作答。\",\n      \"truth_state\": \"true\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n          \"local_start\": 0,\n          \"local_end\": 68,\n          \"quote\": \"贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”黛玉又问姊妹们读何书．贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 0,\n            \"local_end\": 10,\n            \"quote\": \"贾母因问黛玉念何书．\"\n          },\n          \"approved_excerpt\": \"贾母因问黛玉念何书\"\n        },\n        {\n          \"character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 25,\n            \"local_end\": 36,\n            \"quote\": \"黛玉又问姊妹们读何书．\"\n          },\n          \"approved_excerpt\": \"黛玉又问姊妹们读何书\"\n        }\n      ]\n    }\n  ]\n}\n```",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 313,
+        "completion_tokens": 2016,
+        "total_tokens": 2329,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "stage": "persona_schema_repair",
+      "phase": "extract",
+      "status": "completed",
+      "content": "{\"claims\":[{\"local_key\":\"jm_belief_women_education\",\"kind\":\"belief\",\"owner_character_id\":\"3ce447ac-7685-4334-8607-84d55a0756b9\",\"proposition\":\"贾母认为女孩子读书不过是认得两个字、不当睁眼瞎子即可，不必真正研读。\",\"slot_key\":\"value:女子读书\",\"truth_state\":\"unknown\",\"interpretation_level\":\"explicit\",\"evidence\":[{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":50,\"local_end\":85,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"}],\"access\":[{\"character_id\":\"3ce447ac-7685-4334-8607-84d55a0756b9\",\"route\":\"firsthand\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":50,\"local_end\":85,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},\"approved_excerpt\":\"读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！\"},{\"character_id\":\"81affecc-dab6-413d-95bc-e1219f0400a6\",\"route\":\"observed\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":50,\"local_end\":85,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},\"identity_evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":16,\"local_end\":32,\"quote\":\"黛玉道：“只刚念了《四书》。”\"},\"approved_excerpt\":\"读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！\"}]},{\"local_key\":\"dy_episode_reading_sishu\",\"kind\":\"episode\",\"owner_character_id\":\"81affecc-dab6-413d-95bc-e1219f0400a6\",\"proposition\":\"黛玉回答贾母的问话，说自己只刚念了《四书》。\",\"truth_state\":\"true\",\"interpretation_level\":\"explicit\",\"evidence\":[{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":16,\"local_end\":32,\"quote\":\"黛玉道：“只刚念了《四书》。”\"}],\"access\":[{\"character_id\":\"81affecc-dab6-413d-95bc-e1219f0400a6\",\"route\":\"firsthand\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":16,\"local_end\":32,\"quote\":\"黛玉道：“只刚念了《四书》。”\"},\"approved_excerpt\":\"黛玉道：“只刚念了《四书》。”\"},{\"character_id\":\"3ce447ac-7685-4334-8607-84d55a0756b9\",\"route\":\"observed\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":16,\"local_end\":32,\"quote\":\"黛玉道：“只刚念了《四书》。”\"},\"identity_evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":0,\"local_end\":10,\"quote\":\"贾母因问黛玉念何书\"},\"approved_excerpt\":\"黛玉道：“只刚念了《四书》。”\"}]}]}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 455,
+        "completion_tokens": 910,
+        "total_tokens": 1365,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "stage": "persona_schema_repair",
+      "phase": "extract",
+      "status": "completed",
+      "content": "```json\n{\"claims\":[{\"access\":[{\"acquisition\":{\"local_end\":24,\"local_start\":0,\"quote\":\"贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”\",\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\"},\"approved_excerpt\":\"只刚念了《四书》。\",\"character_id\":\"3ce447ac-7685-4334-8607-84d55a0756b9\",\"disclosure\":\"public\",\"route\":\"observed\"}],\"evidence\":[{\"local_end\":24,\"local_start\":15,\"quote\":\"只刚念了《四书》。\",\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\"}],\"kind\":\"fact\",\"local_key\":\"daiyu_reads_sishu\",\"owner_character_id\":null,\"proposition\":\"黛玉当着贾母说自己只刚念了《四书》。\",\"truth_state\":\"true\"},{\"access\":[{\"acquisition\":{\"local_end\":68,\"local_start\":25,\"quote\":\"黛玉又问姊妹们读何书．贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\",\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\"},\"approved_excerpt\":\"读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了\",\"character_id\":\"81affecc-dab6-413d-95bc-e1219f0400a6\",\"disclosure\":\"public\",\"route\":\"observed\"},{\"acquisition\":{\"local_end\":68,\"local_start\":36,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\",\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\"},\"approved_excerpt\":\"读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了\",\"character_id\":\"3ce447ac-7685-4334-8607-84d55a0756b9\",\"disclosure\":\"public\",\"route\":\"firsthand\"}],\"evidence\":[{\"local_end\":66,\"local_start\":41,\"quote\":\"读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了\",\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\"}],\"interpretation_level\":\"explicit\",\"kind\":\"belief\",\"local_key\":\"jiamu_girls_reading\",\"owner_character_id\":\"3ce447ac-7685-4334-8607-84d55a0756b9\",\"proposition\":\"贾母认为女孩儿读书不过是认得两个字、不做睁眼瞎子罢了，不必认真念书。\",\"slot_key\":\"belief:女子读书\",\"truth_state\":\"unknown\"}]}\n```",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 204,
+        "completion_tokens": 1341,
+        "total_tokens": 1545,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "stage": "controlled_persona_native_review",
+      "phase": "review",
+      "status": "completed",
+      "content": "```json\n{\"claims\":[{\"access\":[{\"after_resurrection\":false,\"after_resurrection_evidence\":null,\"authorized\":true,\"before_death\":false,\"before_death_evidence\":null,\"character_id\":\"374ddcfe-aefe-45c6-a9a7-c550deaa881e\",\"excerpt_safe\":true},{\"after_resurrection\":false,\"after_resurrection_evidence\":null,\"authorized\":true,\"before_death\":false,\"before_death_evidence\":null,\"character_id\":\"b68c32ee-a3db-4515-b23c-91d978c909d7\",\"excerpt_safe\":true}],\"baseline_supported\":true,\"correction_supported\":false,\"identity_consistent\":true,\"local_key\":\"original-daiyu-reading-statement\",\"reason\":\"原文明确黛玉回答贾母“只刚念了《四书》”，命题成立。黛玉本人亲口陈述为firsthand，贾母直接听到该回答为told；摘录仅含此对话，对两者均安全。\",\"supported\":true,\"temporal_state\":\"current\"}],\"identities\":[{\"character_id\":\"b68c32ee-a3db-4515-b23c-91d978c909d7\",\"confirmed\":true},{\"character_id\":\"374ddcfe-aefe-45c6-a9a7-c550deaa881e\",\"confirmed\":true}],\"life_events\":[]}\n```",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1772,
+        "completion_tokens": 346,
+        "total_tokens": 2118,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "stage": "group_chat",
+      "phase": "generate",
+      "status": "completed",
+      "content": "```json\n{\n  \"content\": \"哈！青禾，你好！我乃石猴，平日与山中群猴作伴，连狼虫虎豹獐鹿猕猿也都是我的伙伴。今日在这房间里遇见你这位新客，倒是有趣得很！\",\n  \"dialogue_action\": \"greet\",\n  \"claims\": [\n    {\n      \"text\": \"青禾，你好！\",\n      \"origin\": \"conversation\",\n      \"message_ids\": [\"beb8cee8-5a63-415d-b507-30cc84b63cdd\"]\n    },\n    {\n      \"text\": \"我乃石猴，平日与山中群猴作伴，连狼虫虎豹獐鹿猕猿也都是我的伙伴\",\n      \"origin\": \"canon\",\n      \"refs\": [\n        {\n          \"claim_id\": \"cffa02d5-d97c-4eff-a192-a3020324d566\",\n          \"evidence_id\": \"c07f761a-f593-4455-a370-ad2ab4490ed2\"\n        }\n      ]\n    }\n  ],\n  \"action_basis_claim_ids\": [],\n  \"ephemeral_emotion\": null\n}\n```",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1952,
+        "completion_tokens": 656,
+        "total_tokens": 2608,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "stage": "group_chat",
+      "phase": "generate",
+      "status": "completed",
+      "content": "{\"content\":\"青禾，你好。我是石猴，先在这儿向你问一声好。\",\"dialogue_action\":\"greet\",\"claims\":[{\"text\":\"青禾，你好。\",\"origin\":\"conversation\"},{\"text\":\"我是石猴，先在这儿向你问一声好。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 191,
+        "completion_tokens": 237,
+        "total_tokens": 428,
+        "cache_read_input_tokens": 1792,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "stage": "group_chat",
+      "phase": "review",
+      "status": "completed",
+      "content": "```json\n{\n  \"supported\": true,\n  \"facts_complete\": true,\n  \"persona_consistent\": true,\n  \"action_supported\": true,\n  \"emotion_supported\": true,\n  \"attribution_correct\": true,\n  \"unlisted_assertions\": [],\n  \"claims\": [\n    {\"ordinal\": 0, \"supported\": true, \"origin_correct\": true, \"references_complete\": true},\n    {\"ordinal\": 1, \"supported\": true, \"origin_correct\": true, \"references_complete\": true}\n  ],\n  \"reason\": \"内容为简短问候与身份自述。自称'石猴'与身份设定一致，问候为自然交流，无越界事实或冒充亲历，符合人设与发言请求。\"\n}\n```",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1498,
+        "completion_tokens": 185,
+        "total_tokens": 1683,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "stage": "group_chat",
+      "phase": "generate",
+      "status": "completed",
+      "content": "{\"content\":\"青禾姑娘，安好。方才石猴已先向你问了好，我接着这一声，也来向你问候。\",\"dialogue_action\":\"greet\",\"claims\":[{\"text\":\"方才石猴已先向你问了好，我接着这一声，也来向你问候。\",\"origin\":\"room_hearsay\",\"message_ids\":[\"04fa6c13-e116-4f7e-98c9-57acded0fce9\"]}],\"ephemeral_emotion\":null}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 765,
+        "completion_tokens": 170,
+        "total_tokens": 935,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "stage": "group_chat",
+      "phase": "review",
+      "status": "completed",
+      "content": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"黛玉作为第二位发言者，向青禾问好并提及石猴刚公开的问候，内容与房间历史消息04fa6c13完全一致，归属为room_hearsay且引用正确。问候行为符合黛玉身份，无越界断言。\"}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 848,
+        "completion_tokens": 152,
+        "total_tokens": 1000,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "stage": "v5_neutral_address",
+      "phase": "generate",
+      "status": "completed",
+      "content": "{\"content\":\"青禾，你好。\",\"dialogue_action\":\"greet\",\"claims\":[{\"text\":\"青禾，你好。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1689,
+        "completion_tokens": 151,
+        "total_tokens": 1840,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "stage": "v5_neutral_address",
+      "phase": "review",
+      "status": "completed",
+      "content": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"用户明确声明在房间自称青禾，回复仅使用该公开名字问候，无额外事实断言，自然问候可通过。\"}",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1211,
+        "completion_tokens": 122,
+        "total_tokens": 1333,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    }
+  ],
+  "discovery": {
+    "build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+    "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+    "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+    "parent_build_id": null,
+    "status": "queued",
+    "stage": "discovery_complete",
+    "total_units": 1,
+    "completed_units": 1,
+    "failed_units": 0,
+    "processed_segments": 1,
+    "total_segments": 1,
+    "error_code": null,
+    "error_detail": null,
+    "can_resume": false,
+    "config": {
+      "call_timeout_seconds": 180,
+      "max_tokens": 4096,
+      "model": "k3",
+      "policy_version": "candidate-identity-v2",
+      "prompt_version": "character-discovery-v5",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "unit_char_limit": 4000,
+      "unit_segment_limit": 12
+    },
+    "publication_report": null
+  },
+  "persona_build_id": "44f73801-12f2-44eb-9896-be7843c8e57c",
+  "persona": {
+    "build_id": "44f73801-12f2-44eb-9896-be7843c8e57c",
+    "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+    "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+    "parent_build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+    "status": "failed",
+    "stage": "persona_extract",
+    "total_units": 1,
+    "completed_units": 0,
+    "failed_units": 1,
+    "processed_segments": 0,
+    "total_segments": 1,
+    "error_code": "no_publishable_characters",
+    "error_detail": "No independently verified person can be published",
+    "can_resume": false,
+    "config": {
+      "call_timeout_seconds": 180,
+      "max_tokens": 4096,
+      "model": "k3",
+      "policy_version": "canonical-persona-v3",
+      "prompt_version": "persona-extract-v3",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "persona-review-v3",
+      "unit_char_limit": 4000,
+      "unit_segment_limit": 12
+    },
+    "publication_report": null
+  },
+  "profiles": [
+    {
+      "name": "姊妹们",
+      "character_id": "c48016e9-d825-4fe3-97db-3aa987416546",
+      "status": "needs_review"
+    },
+    {
+      "name": "贾母",
+      "character_id": "40d609a1-a7a6-43b5-9811-6cb77eed5aca",
+      "status": "candidate"
+    },
+    {
+      "name": "黛玉",
+      "character_id": "e56d6aa4-eb1b-4213-9385-535661969241",
+      "status": "candidate"
+    }
+  ],
+  "initial_diagnostic": {
+    "date": "2026-10-13",
+    "scope": "T08 real k3 cross-book excerpt integration; not full-book persona or group quality acceptance",
+    "call_budget": 16,
+    "actual_calls": 3,
+    "red_excerpt": {
+      "item_id": 6,
+      "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+      "start_in_corpus": 20109,
+      "end_in_corpus": 20177,
+      "codepoints": 68,
+      "sha256": "2e6554714c1db2279d14a5ff27c8031cdb2bc39c6d996b04a81e8bdccf413cc3"
+    },
+    "discovery_build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+    "model_config": {
+      "provider_id": 2,
+      "model": "k3",
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "unit_char_limit": 8000,
+      "unit_segment_limit": 12,
+      "max_tokens": 4096,
+      "call_timeout_seconds": 180,
+      "prompt_version": "character-chat-v4",
+      "policy_version": "bounded-room-v1",
+      "model_record_id": 337,
+      "review_prompt_version": "character-chat-review-v2",
+      "context_window": 1000000,
+      "max_input_tokens": 24000,
+      "expression_enabled": false,
+      "memory_policy_version": "typed-room-memory-v1",
+      "memory_prompt_version": "room-memory-v2",
+      "expression_selection_version": "expression-selection-v2",
+      "expression_sets": {}
+    },
+    "human_blind_review": false,
+    "calls": [
+      {
+        "stage": "discovery",
+        "phase": "discovery",
+        "status": "completed",
+        "content": "{\"scenes\":[{\"segment_ids\":[\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\"],\"location_label\":null,\"characters\":[{\"local_character_key\":\"贾母\",\"name\":\"贾母\",\"presence\":\"active\",\"entity_kind\":\"person\",\"identity\":\"new\",\"evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":0,\"local_end\":10,\"quote\":\"贾母因问黛玉念何书\",\"offset_resolution\":\"unique_quote\"},\"aliases\":[]},{\"local_character_key\":\"黛玉\",\"name\":\"黛玉\",\"presence\":\"active\",\"entity_kind\":\"person\",\"identity\":\"new\",\"evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":10,\"local_end\":13,\"quote\":\"黛玉道\",\"offset_resolution\":\"unique_quote\"},\"aliases\":[]},{\"local_character_key\":\"姊妹们\",\"name\":\"姊妹们\",\"presence\":\"referenced\",\"entity_kind\":\"group\",\"identity\":\"new\",\"evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":29,\"local_end\":35,\"quote\":\"姊妹们读何书\",\"offset_resolution\":\"unique_quote\"},\"aliases\":[]}]}]}",
+        "finish_reason": "end_turn",
+        "usage": {
+          "prompt_tokens": 1179,
+          "completion_tokens": 828,
+          "total_tokens": 2007,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 0
+        }
+      },
+      {
+        "stage": "persona",
+        "phase": "extract",
+        "status": "completed",
+        "content": "{\"claims\":[{\"local_key\":\"jiamu_belief_girls_reading\",\"kind\":\"belief\",\"owner_character_id\":\"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\"proposition\":\"贾母认为女孩子读书不过是认得两个字、不做睁眼瞎子罢了，不必真正读书。\",\"slot_key\":\"belief:女子读书\",\"truth_state\":\"unknown\",\"interpretation_level\":\"explicit\",\"evidence\":[{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":41,\"local_end\":56,\"quote\":\"读的是什么书，不过是认得两个字\"}],\"access\":[{\"character_id\":\"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\"route\":\"firsthand\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":36,\"local_end\":67,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},\"approved_excerpt\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},{\"character_id\":\"e56d6aa4-eb1b-4213-9385-535661969241\",\"route\":\"told\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":36,\"local_end\":67,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},\"identity_evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":25,\"local_end\":35,\"quote\":\"黛玉又问姊妹们读何书．\"}}]},{\"local_key\":\"daiyu_episode_read_sishu\",\"kind\":\"episode\",\"owner_character_id\":\"e56d6aa4-eb1b-4213-9385-535661969241\",\"proposition\":\"贾母问黛玉念何书，黛玉回答说自己只刚念了《四书》。\",\"truth_state\":\"true\",\"interpretation_level\":\"explicit\",\"evidence\":[{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":10,\"local_end\":24,\"quote\":\"黛玉道：“只刚念了《四书》。”\"}],\"access\":[{\"character_id\":\"e56d6aa4-eb1b-4213-9385-535661969241\",\"route\":\"firsthand\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":10,\"local_end\":24,\"quote\":\"黛玉道：“只刚念了《四书》。”\"},\"approved_excerpt\":\"黛玉道：“只刚念了《四书》。”\"},{\"character_id\":\"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\"route\":\"told\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":0,\"local_end\":24,\"quote\":\"贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”\"}}]}]}",
+        "finish_reason": "end_turn",
+        "usage": {
+          "prompt_tokens": 1331,
+          "completion_tokens": 1235,
+          "total_tokens": 2566,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 0
+        }
+      },
+      {
+        "stage": "persona",
+        "phase": "extract",
+        "status": "completed",
+        "content": "```json\n{\n  \"claims\": [\n    {\n      \"local_key\": \"daiyu-read-sishu\",\n      \"kind\": \"fact\",\n      \"proposition\": \"黛玉自称只刚念了《四书》。\",\n      \"owner_character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n      \"truth_state\": \"unknown\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n          \"local_start\": 10,\n          \"local_end\": 25,\n          \"quote\": \"黛玉道：“只刚念了《四书》。”\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n          \"route\": \"told\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 0,\n            \"local_end\": 25,\n            \"quote\": \"贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”\"\n          }\n        },\n        {\n          \"character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 10,\n            \"local_end\": 25,\n            \"quote\": \"黛玉道：“只刚念了《四书》。”\"\n          },\n          \"approved_excerpt\": \"只刚念了《四书》\"\n        }\n      ]\n    },\n    {\n      \"local_key\": \"jiamu-belief-girls-reading\",\n      \"kind\": \"belief\",\n      \"proposition\": \"贾母认为女孩儿读书不过是认得两个字、不做睁眼瞎子罢了，不以读书为要。\",\n      \"owner_character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n      \"slot_key\": \"belief:女子读书\",\n      \"truth_state\": \"unknown\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n          \"local_start\": 36,\n          \"local_end\": 68,\n          \"quote\": \"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 36,\n            \"local_end\": 68,\n            \"quote\": \"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n          },\n          \"approved_excerpt\": \"读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！\"\n        },\n        {\n          \"character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n          \"route\": \"observed\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 25,\n            \"local_end\": 68,\n            \"quote\": \"黛玉又问姊妹们读何书．贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 25,\n            \"local_end\": 27,\n            \"quote\": \"黛玉\"\n          }\n        }\n      ]\n    },\n    {\n      \"local_key\": \"episode-jiamu-asks-reading\",\n      \"kind\": \"episode\",\n      \"proposition\": \"贾母问黛玉念什么书，黛玉作答后又问姊妹们读何书，贾母以家中女儿不过识字作答。\",\n      \"truth_state\": \"true\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n          \"local_start\": 0,\n          \"local_end\": 68,\n          \"quote\": \"贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”黛玉又问姊妹们读何书．贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 0,\n            \"local_end\": 10,\n            \"quote\": \"贾母因问黛玉念何书．\"\n          },\n          \"approved_excerpt\": \"贾母因问黛玉念何书\"\n        },\n        {\n          \"character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 25,\n            \"local_end\": 36,\n            \"quote\": \"黛玉又问姊妹们读何书．\"\n          },\n          \"approved_excerpt\": \"黛玉又问姊妹们读何书\"\n        }\n      ]\n    }\n  ]\n}\n```",
+        "finish_reason": "end_turn",
+        "usage": {
+          "prompt_tokens": 313,
+          "completion_tokens": 2016,
+          "total_tokens": 2329,
+          "cache_read_input_tokens": 1024,
+          "cache_creation_input_tokens": 0
+        }
+      }
+    ],
+    "discovery": {
+      "build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+      "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+      "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+      "parent_build_id": null,
+      "status": "queued",
+      "stage": "discovery_complete",
+      "total_units": 1,
+      "completed_units": 1,
+      "failed_units": 0,
+      "processed_segments": 1,
+      "total_segments": 1,
+      "error_code": null,
+      "error_detail": null,
+      "can_resume": false,
+      "config": {
+        "call_timeout_seconds": 180,
+        "max_tokens": 4096,
+        "model": "k3",
+        "policy_version": "candidate-identity-v2",
+        "prompt_version": "character-discovery-v5",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "unit_char_limit": 4000,
+        "unit_segment_limit": 12
+      },
+      "publication_report": null
+    },
+    "persona_build_id": "44f73801-12f2-44eb-9896-be7843c8e57c",
+    "persona": {
+      "build_id": "44f73801-12f2-44eb-9896-be7843c8e57c",
+      "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+      "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+      "parent_build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+      "status": "failed",
+      "stage": "persona_extract",
+      "total_units": 1,
+      "completed_units": 0,
+      "failed_units": 1,
+      "processed_segments": 0,
+      "total_segments": 1,
+      "error_code": "no_publishable_characters",
+      "error_detail": "No independently verified person can be published",
+      "can_resume": false,
+      "config": {
+        "call_timeout_seconds": 180,
+        "max_tokens": 4096,
+        "model": "k3",
+        "policy_version": "canonical-persona-v3",
+        "prompt_version": "persona-extract-v3",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "persona-review-v3",
+        "unit_char_limit": 4000,
+        "unit_segment_limit": 12
+      },
+      "publication_report": null
+    },
+    "profiles": [
+      {
+        "name": "姊妹们",
+        "character_id": "c48016e9-d825-4fe3-97db-3aa987416546",
+        "status": "needs_review"
+      },
+      {
+        "name": "贾母",
+        "character_id": "40d609a1-a7a6-43b5-9811-6cb77eed5aca",
+        "status": "candidate"
+      },
+      {
+        "name": "黛玉",
+        "character_id": "e56d6aa4-eb1b-4213-9385-535661969241",
+        "status": "candidate"
+      }
+    ],
+    "error_type": "StopIteration",
+    "failed_stage": "persona"
+  },
+  "repair_started": true,
+  "repair_scope": "One isolated generation-prompt diagnostic: explicit claim owner and approved excerpt rules; original guards/review unchanged, failed original build retained; no production extraction strategy change.",
+  "repair_persona_build_id": "e8b0ba2d-096a-4aea-a6c8-405019f9ed5a",
+  "repair_persona": {
+    "build_id": "e8b0ba2d-096a-4aea-a6c8-405019f9ed5a",
+    "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+    "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+    "parent_build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+    "status": "failed",
+    "stage": "persona_extract",
+    "total_units": 1,
+    "completed_units": 0,
+    "failed_units": 1,
+    "processed_segments": 0,
+    "total_segments": 1,
+    "error_code": "no_publishable_characters",
+    "error_detail": "No independently verified person can be published",
+    "can_resume": false,
+    "config": {
+      "call_timeout_seconds": 180,
+      "max_tokens": 4096,
+      "model": "k3",
+      "policy_version": "canonical-persona-v3",
+      "prompt_version": "persona-extract-v3-explicit-citations-t08",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "persona-review-v3",
+      "unit_char_limit": 4000,
+      "unit_segment_limit": 12
+    },
+    "publication_report": null
+  },
+  "repair_profiles": [
+    {
+      "name": "姊妹们",
+      "character_id": "c2a199ca-04ea-4994-a592-2cd585e09342",
+      "status": "needs_review"
+    },
+    {
+      "name": "贾母",
+      "character_id": "3ce447ac-7685-4334-8607-84d55a0756b9",
+      "status": "candidate"
+    },
+    {
+      "name": "黛玉",
+      "character_id": "81affecc-dab6-413d-95bc-e1219f0400a6",
+      "status": "candidate"
+    }
+  ],
+  "automatic_preparation_diagnostics": {
+    "date": "2026-10-13",
+    "scope": "T08 real k3 cross-book excerpt integration; not full-book persona or group quality acceptance",
+    "call_budget": 16,
+    "actual_calls": 5,
+    "red_excerpt": {
+      "item_id": 6,
+      "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+      "start_in_corpus": 20109,
+      "end_in_corpus": 20177,
+      "codepoints": 68,
+      "sha256": "2e6554714c1db2279d14a5ff27c8031cdb2bc39c6d996b04a81e8bdccf413cc3"
+    },
+    "discovery_build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+    "model_config": {
+      "provider_id": 2,
+      "model": "k3",
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "unit_char_limit": 8000,
+      "unit_segment_limit": 12,
+      "max_tokens": 4096,
+      "call_timeout_seconds": 180,
+      "prompt_version": "character-chat-v4",
+      "policy_version": "bounded-room-v1",
+      "model_record_id": 337,
+      "review_prompt_version": "character-chat-review-v2",
+      "context_window": 1000000,
+      "max_input_tokens": 24000,
+      "expression_enabled": false,
+      "memory_policy_version": "typed-room-memory-v1",
+      "memory_prompt_version": "room-memory-v2",
+      "expression_selection_version": "expression-selection-v2",
+      "expression_sets": {}
+    },
+    "human_blind_review": false,
+    "calls": [
+      {
+        "stage": "discovery",
+        "phase": "discovery",
+        "status": "completed",
+        "content": "{\"scenes\":[{\"segment_ids\":[\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\"],\"location_label\":null,\"characters\":[{\"local_character_key\":\"贾母\",\"name\":\"贾母\",\"presence\":\"active\",\"entity_kind\":\"person\",\"identity\":\"new\",\"evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":0,\"local_end\":10,\"quote\":\"贾母因问黛玉念何书\",\"offset_resolution\":\"unique_quote\"},\"aliases\":[]},{\"local_character_key\":\"黛玉\",\"name\":\"黛玉\",\"presence\":\"active\",\"entity_kind\":\"person\",\"identity\":\"new\",\"evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":10,\"local_end\":13,\"quote\":\"黛玉道\",\"offset_resolution\":\"unique_quote\"},\"aliases\":[]},{\"local_character_key\":\"姊妹们\",\"name\":\"姊妹们\",\"presence\":\"referenced\",\"entity_kind\":\"group\",\"identity\":\"new\",\"evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":29,\"local_end\":35,\"quote\":\"姊妹们读何书\",\"offset_resolution\":\"unique_quote\"},\"aliases\":[]}]}]}",
+        "finish_reason": "end_turn",
+        "usage": {
+          "prompt_tokens": 1179,
+          "completion_tokens": 828,
+          "total_tokens": 2007,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 0
+        }
+      },
+      {
+        "stage": "persona",
+        "phase": "extract",
+        "status": "completed",
+        "content": "{\"claims\":[{\"local_key\":\"jiamu_belief_girls_reading\",\"kind\":\"belief\",\"owner_character_id\":\"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\"proposition\":\"贾母认为女孩子读书不过是认得两个字、不做睁眼瞎子罢了，不必真正读书。\",\"slot_key\":\"belief:女子读书\",\"truth_state\":\"unknown\",\"interpretation_level\":\"explicit\",\"evidence\":[{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":41,\"local_end\":56,\"quote\":\"读的是什么书，不过是认得两个字\"}],\"access\":[{\"character_id\":\"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\"route\":\"firsthand\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":36,\"local_end\":67,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},\"approved_excerpt\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},{\"character_id\":\"e56d6aa4-eb1b-4213-9385-535661969241\",\"route\":\"told\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":36,\"local_end\":67,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},\"identity_evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":25,\"local_end\":35,\"quote\":\"黛玉又问姊妹们读何书．\"}}]},{\"local_key\":\"daiyu_episode_read_sishu\",\"kind\":\"episode\",\"owner_character_id\":\"e56d6aa4-eb1b-4213-9385-535661969241\",\"proposition\":\"贾母问黛玉念何书，黛玉回答说自己只刚念了《四书》。\",\"truth_state\":\"true\",\"interpretation_level\":\"explicit\",\"evidence\":[{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":10,\"local_end\":24,\"quote\":\"黛玉道：“只刚念了《四书》。”\"}],\"access\":[{\"character_id\":\"e56d6aa4-eb1b-4213-9385-535661969241\",\"route\":\"firsthand\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":10,\"local_end\":24,\"quote\":\"黛玉道：“只刚念了《四书》。”\"},\"approved_excerpt\":\"黛玉道：“只刚念了《四书》。”\"},{\"character_id\":\"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\"route\":\"told\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":0,\"local_end\":24,\"quote\":\"贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”\"}}]}]}",
+        "finish_reason": "end_turn",
+        "usage": {
+          "prompt_tokens": 1331,
+          "completion_tokens": 1235,
+          "total_tokens": 2566,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 0
+        }
+      },
+      {
+        "stage": "persona",
+        "phase": "extract",
+        "status": "completed",
+        "content": "```json\n{\n  \"claims\": [\n    {\n      \"local_key\": \"daiyu-read-sishu\",\n      \"kind\": \"fact\",\n      \"proposition\": \"黛玉自称只刚念了《四书》。\",\n      \"owner_character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n      \"truth_state\": \"unknown\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n          \"local_start\": 10,\n          \"local_end\": 25,\n          \"quote\": \"黛玉道：“只刚念了《四书》。”\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n          \"route\": \"told\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 0,\n            \"local_end\": 25,\n            \"quote\": \"贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”\"\n          }\n        },\n        {\n          \"character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 10,\n            \"local_end\": 25,\n            \"quote\": \"黛玉道：“只刚念了《四书》。”\"\n          },\n          \"approved_excerpt\": \"只刚念了《四书》\"\n        }\n      ]\n    },\n    {\n      \"local_key\": \"jiamu-belief-girls-reading\",\n      \"kind\": \"belief\",\n      \"proposition\": \"贾母认为女孩儿读书不过是认得两个字、不做睁眼瞎子罢了，不以读书为要。\",\n      \"owner_character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n      \"slot_key\": \"belief:女子读书\",\n      \"truth_state\": \"unknown\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n          \"local_start\": 36,\n          \"local_end\": 68,\n          \"quote\": \"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 36,\n            \"local_end\": 68,\n            \"quote\": \"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n          },\n          \"approved_excerpt\": \"读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！\"\n        },\n        {\n          \"character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n          \"route\": \"observed\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 25,\n            \"local_end\": 68,\n            \"quote\": \"黛玉又问姊妹们读何书．贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 25,\n            \"local_end\": 27,\n            \"quote\": \"黛玉\"\n          }\n        }\n      ]\n    },\n    {\n      \"local_key\": \"episode-jiamu-asks-reading\",\n      \"kind\": \"episode\",\n      \"proposition\": \"贾母问黛玉念什么书，黛玉作答后又问姊妹们读何书，贾母以家中女儿不过识字作答。\",\n      \"truth_state\": \"true\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n          \"local_start\": 0,\n          \"local_end\": 68,\n          \"quote\": \"贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”黛玉又问姊妹们读何书．贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 0,\n            \"local_end\": 10,\n            \"quote\": \"贾母因问黛玉念何书．\"\n          },\n          \"approved_excerpt\": \"贾母因问黛玉念何书\"\n        },\n        {\n          \"character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 25,\n            \"local_end\": 36,\n            \"quote\": \"黛玉又问姊妹们读何书．\"\n          },\n          \"approved_excerpt\": \"黛玉又问姊妹们读何书\"\n        }\n      ]\n    }\n  ]\n}\n```",
+        "finish_reason": "end_turn",
+        "usage": {
+          "prompt_tokens": 313,
+          "completion_tokens": 2016,
+          "total_tokens": 2329,
+          "cache_read_input_tokens": 1024,
+          "cache_creation_input_tokens": 0
+        }
+      },
+      {
+        "stage": "persona_schema_repair",
+        "phase": "extract",
+        "status": "completed",
+        "content": "{\"claims\":[{\"local_key\":\"jm_belief_women_education\",\"kind\":\"belief\",\"owner_character_id\":\"3ce447ac-7685-4334-8607-84d55a0756b9\",\"proposition\":\"贾母认为女孩子读书不过是认得两个字、不当睁眼瞎子即可，不必真正研读。\",\"slot_key\":\"value:女子读书\",\"truth_state\":\"unknown\",\"interpretation_level\":\"explicit\",\"evidence\":[{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":50,\"local_end\":85,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"}],\"access\":[{\"character_id\":\"3ce447ac-7685-4334-8607-84d55a0756b9\",\"route\":\"firsthand\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":50,\"local_end\":85,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},\"approved_excerpt\":\"读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！\"},{\"character_id\":\"81affecc-dab6-413d-95bc-e1219f0400a6\",\"route\":\"observed\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":50,\"local_end\":85,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},\"identity_evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":16,\"local_end\":32,\"quote\":\"黛玉道：“只刚念了《四书》。”\"},\"approved_excerpt\":\"读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！\"}]},{\"local_key\":\"dy_episode_reading_sishu\",\"kind\":\"episode\",\"owner_character_id\":\"81affecc-dab6-413d-95bc-e1219f0400a6\",\"proposition\":\"黛玉回答贾母的问话，说自己只刚念了《四书》。\",\"truth_state\":\"true\",\"interpretation_level\":\"explicit\",\"evidence\":[{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":16,\"local_end\":32,\"quote\":\"黛玉道：“只刚念了《四书》。”\"}],\"access\":[{\"character_id\":\"81affecc-dab6-413d-95bc-e1219f0400a6\",\"route\":\"firsthand\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":16,\"local_end\":32,\"quote\":\"黛玉道：“只刚念了《四书》。”\"},\"approved_excerpt\":\"黛玉道：“只刚念了《四书》。”\"},{\"character_id\":\"3ce447ac-7685-4334-8607-84d55a0756b9\",\"route\":\"observed\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":16,\"local_end\":32,\"quote\":\"黛玉道：“只刚念了《四书》。”\"},\"identity_evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":0,\"local_end\":10,\"quote\":\"贾母因问黛玉念何书\"},\"approved_excerpt\":\"黛玉道：“只刚念了《四书》。”\"}]}]}",
+        "finish_reason": "end_turn",
+        "usage": {
+          "prompt_tokens": 455,
+          "completion_tokens": 910,
+          "total_tokens": 1365,
+          "cache_read_input_tokens": 1024,
+          "cache_creation_input_tokens": 0
+        }
+      },
+      {
+        "stage": "persona_schema_repair",
+        "phase": "extract",
+        "status": "completed",
+        "content": "```json\n{\"claims\":[{\"access\":[{\"acquisition\":{\"local_end\":24,\"local_start\":0,\"quote\":\"贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”\",\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\"},\"approved_excerpt\":\"只刚念了《四书》。\",\"character_id\":\"3ce447ac-7685-4334-8607-84d55a0756b9\",\"disclosure\":\"public\",\"route\":\"observed\"}],\"evidence\":[{\"local_end\":24,\"local_start\":15,\"quote\":\"只刚念了《四书》。\",\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\"}],\"kind\":\"fact\",\"local_key\":\"daiyu_reads_sishu\",\"owner_character_id\":null,\"proposition\":\"黛玉当着贾母说自己只刚念了《四书》。\",\"truth_state\":\"true\"},{\"access\":[{\"acquisition\":{\"local_end\":68,\"local_start\":25,\"quote\":\"黛玉又问姊妹们读何书．贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\",\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\"},\"approved_excerpt\":\"读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了\",\"character_id\":\"81affecc-dab6-413d-95bc-e1219f0400a6\",\"disclosure\":\"public\",\"route\":\"observed\"},{\"acquisition\":{\"local_end\":68,\"local_start\":36,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\",\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\"},\"approved_excerpt\":\"读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了\",\"character_id\":\"3ce447ac-7685-4334-8607-84d55a0756b9\",\"disclosure\":\"public\",\"route\":\"firsthand\"}],\"evidence\":[{\"local_end\":66,\"local_start\":41,\"quote\":\"读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了\",\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\"}],\"interpretation_level\":\"explicit\",\"kind\":\"belief\",\"local_key\":\"jiamu_girls_reading\",\"owner_character_id\":\"3ce447ac-7685-4334-8607-84d55a0756b9\",\"proposition\":\"贾母认为女孩儿读书不过是认得两个字、不做睁眼瞎子罢了，不必认真念书。\",\"slot_key\":\"belief:女子读书\",\"truth_state\":\"unknown\"}]}\n```",
+        "finish_reason": "end_turn",
+        "usage": {
+          "prompt_tokens": 204,
+          "completion_tokens": 1341,
+          "total_tokens": 1545,
+          "cache_read_input_tokens": 1280,
+          "cache_creation_input_tokens": 0
+        }
+      }
+    ],
+    "discovery": {
+      "build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+      "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+      "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+      "parent_build_id": null,
+      "status": "queued",
+      "stage": "discovery_complete",
+      "total_units": 1,
+      "completed_units": 1,
+      "failed_units": 0,
+      "processed_segments": 1,
+      "total_segments": 1,
+      "error_code": null,
+      "error_detail": null,
+      "can_resume": false,
+      "config": {
+        "call_timeout_seconds": 180,
+        "max_tokens": 4096,
+        "model": "k3",
+        "policy_version": "candidate-identity-v2",
+        "prompt_version": "character-discovery-v5",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "unit_char_limit": 4000,
+        "unit_segment_limit": 12
+      },
+      "publication_report": null
+    },
+    "persona_build_id": "44f73801-12f2-44eb-9896-be7843c8e57c",
+    "persona": {
+      "build_id": "44f73801-12f2-44eb-9896-be7843c8e57c",
+      "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+      "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+      "parent_build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+      "status": "failed",
+      "stage": "persona_extract",
+      "total_units": 1,
+      "completed_units": 0,
+      "failed_units": 1,
+      "processed_segments": 0,
+      "total_segments": 1,
+      "error_code": "no_publishable_characters",
+      "error_detail": "No independently verified person can be published",
+      "can_resume": false,
+      "config": {
+        "call_timeout_seconds": 180,
+        "max_tokens": 4096,
+        "model": "k3",
+        "policy_version": "canonical-persona-v3",
+        "prompt_version": "persona-extract-v3",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "persona-review-v3",
+        "unit_char_limit": 4000,
+        "unit_segment_limit": 12
+      },
+      "publication_report": null
+    },
+    "profiles": [
+      {
+        "name": "姊妹们",
+        "character_id": "c48016e9-d825-4fe3-97db-3aa987416546",
+        "status": "needs_review"
+      },
+      {
+        "name": "贾母",
+        "character_id": "40d609a1-a7a6-43b5-9811-6cb77eed5aca",
+        "status": "candidate"
+      },
+      {
+        "name": "黛玉",
+        "character_id": "e56d6aa4-eb1b-4213-9385-535661969241",
+        "status": "candidate"
+      }
+    ],
+    "initial_diagnostic": {
+      "date": "2026-10-13",
+      "scope": "T08 real k3 cross-book excerpt integration; not full-book persona or group quality acceptance",
+      "call_budget": 16,
+      "actual_calls": 3,
+      "red_excerpt": {
+        "item_id": 6,
+        "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+        "start_in_corpus": 20109,
+        "end_in_corpus": 20177,
+        "codepoints": 68,
+        "sha256": "2e6554714c1db2279d14a5ff27c8031cdb2bc39c6d996b04a81e8bdccf413cc3"
+      },
+      "discovery_build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+      "model_config": {
+        "provider_id": 2,
+        "model": "k3",
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12,
+        "max_tokens": 4096,
+        "call_timeout_seconds": 180,
+        "prompt_version": "character-chat-v4",
+        "policy_version": "bounded-room-v1",
+        "model_record_id": 337,
+        "review_prompt_version": "character-chat-review-v2",
+        "context_window": 1000000,
+        "max_input_tokens": 24000,
+        "expression_enabled": false,
+        "memory_policy_version": "typed-room-memory-v1",
+        "memory_prompt_version": "room-memory-v2",
+        "expression_selection_version": "expression-selection-v2",
+        "expression_sets": {}
+      },
+      "human_blind_review": false,
+      "calls": [
+        {
+          "stage": "discovery",
+          "phase": "discovery",
+          "status": "completed",
+          "content": "{\"scenes\":[{\"segment_ids\":[\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\"],\"location_label\":null,\"characters\":[{\"local_character_key\":\"贾母\",\"name\":\"贾母\",\"presence\":\"active\",\"entity_kind\":\"person\",\"identity\":\"new\",\"evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":0,\"local_end\":10,\"quote\":\"贾母因问黛玉念何书\",\"offset_resolution\":\"unique_quote\"},\"aliases\":[]},{\"local_character_key\":\"黛玉\",\"name\":\"黛玉\",\"presence\":\"active\",\"entity_kind\":\"person\",\"identity\":\"new\",\"evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":10,\"local_end\":13,\"quote\":\"黛玉道\",\"offset_resolution\":\"unique_quote\"},\"aliases\":[]},{\"local_character_key\":\"姊妹们\",\"name\":\"姊妹们\",\"presence\":\"referenced\",\"entity_kind\":\"group\",\"identity\":\"new\",\"evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":29,\"local_end\":35,\"quote\":\"姊妹们读何书\",\"offset_resolution\":\"unique_quote\"},\"aliases\":[]}]}]}",
+          "finish_reason": "end_turn",
+          "usage": {
+            "prompt_tokens": 1179,
+            "completion_tokens": 828,
+            "total_tokens": 2007,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 0
+          }
+        },
+        {
+          "stage": "persona",
+          "phase": "extract",
+          "status": "completed",
+          "content": "{\"claims\":[{\"local_key\":\"jiamu_belief_girls_reading\",\"kind\":\"belief\",\"owner_character_id\":\"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\"proposition\":\"贾母认为女孩子读书不过是认得两个字、不做睁眼瞎子罢了，不必真正读书。\",\"slot_key\":\"belief:女子读书\",\"truth_state\":\"unknown\",\"interpretation_level\":\"explicit\",\"evidence\":[{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":41,\"local_end\":56,\"quote\":\"读的是什么书，不过是认得两个字\"}],\"access\":[{\"character_id\":\"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\"route\":\"firsthand\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":36,\"local_end\":67,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},\"approved_excerpt\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},{\"character_id\":\"e56d6aa4-eb1b-4213-9385-535661969241\",\"route\":\"told\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":36,\"local_end\":67,\"quote\":\"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"},\"identity_evidence\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":25,\"local_end\":35,\"quote\":\"黛玉又问姊妹们读何书．\"}}]},{\"local_key\":\"daiyu_episode_read_sishu\",\"kind\":\"episode\",\"owner_character_id\":\"e56d6aa4-eb1b-4213-9385-535661969241\",\"proposition\":\"贾母问黛玉念何书，黛玉回答说自己只刚念了《四书》。\",\"truth_state\":\"true\",\"interpretation_level\":\"explicit\",\"evidence\":[{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":10,\"local_end\":24,\"quote\":\"黛玉道：“只刚念了《四书》。”\"}],\"access\":[{\"character_id\":\"e56d6aa4-eb1b-4213-9385-535661969241\",\"route\":\"firsthand\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":10,\"local_end\":24,\"quote\":\"黛玉道：“只刚念了《四书》。”\"},\"approved_excerpt\":\"黛玉道：“只刚念了《四书》。”\"},{\"character_id\":\"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\"route\":\"told\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\"local_start\":0,\"local_end\":24,\"quote\":\"贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”\"}}]}]}",
+          "finish_reason": "end_turn",
+          "usage": {
+            "prompt_tokens": 1331,
+            "completion_tokens": 1235,
+            "total_tokens": 2566,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 0
+          }
+        },
+        {
+          "stage": "persona",
+          "phase": "extract",
+          "status": "completed",
+          "content": "```json\n{\n  \"claims\": [\n    {\n      \"local_key\": \"daiyu-read-sishu\",\n      \"kind\": \"fact\",\n      \"proposition\": \"黛玉自称只刚念了《四书》。\",\n      \"owner_character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n      \"truth_state\": \"unknown\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n          \"local_start\": 10,\n          \"local_end\": 25,\n          \"quote\": \"黛玉道：“只刚念了《四书》。”\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n          \"route\": \"told\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 0,\n            \"local_end\": 25,\n            \"quote\": \"贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”\"\n          }\n        },\n        {\n          \"character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 10,\n            \"local_end\": 25,\n            \"quote\": \"黛玉道：“只刚念了《四书》。”\"\n          },\n          \"approved_excerpt\": \"只刚念了《四书》\"\n        }\n      ]\n    },\n    {\n      \"local_key\": \"jiamu-belief-girls-reading\",\n      \"kind\": \"belief\",\n      \"proposition\": \"贾母认为女孩儿读书不过是认得两个字、不做睁眼瞎子罢了，不以读书为要。\",\n      \"owner_character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n      \"slot_key\": \"belief:女子读书\",\n      \"truth_state\": \"unknown\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n          \"local_start\": 36,\n          \"local_end\": 68,\n          \"quote\": \"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 36,\n            \"local_end\": 68,\n            \"quote\": \"贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n          },\n          \"approved_excerpt\": \"读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！\"\n        },\n        {\n          \"character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n          \"route\": \"observed\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 25,\n            \"local_end\": 68,\n            \"quote\": \"黛玉又问姊妹们读何书．贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 25,\n            \"local_end\": 27,\n            \"quote\": \"黛玉\"\n          }\n        }\n      ]\n    },\n    {\n      \"local_key\": \"episode-jiamu-asks-reading\",\n      \"kind\": \"episode\",\n      \"proposition\": \"贾母问黛玉念什么书，黛玉作答后又问姊妹们读何书，贾母以家中女儿不过识字作答。\",\n      \"truth_state\": \"true\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n          \"local_start\": 0,\n          \"local_end\": 68,\n          \"quote\": \"贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”黛玉又问姊妹们读何书．贾母道：“读的是什么书，不过是认得两个字，不是睁眼的瞎子罢了！”\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"40d609a1-a7a6-43b5-9811-6cb77eed5aca\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 0,\n            \"local_end\": 10,\n            \"quote\": \"贾母因问黛玉念何书．\"\n          },\n          \"approved_excerpt\": \"贾母因问黛玉念何书\"\n        },\n        {\n          \"character_id\": \"e56d6aa4-eb1b-4213-9385-535661969241\",\n          \"route\": \"firsthand\",\n          \"disclosure\": \"public\",\n          \"acquisition\": {\n            \"segment_id\": \"1a26ef43-01b2-4df2-92fd-0c3c0b55be89\",\n            \"local_start\": 25,\n            \"local_end\": 36,\n            \"quote\": \"黛玉又问姊妹们读何书．\"\n          },\n          \"approved_excerpt\": \"黛玉又问姊妹们读何书\"\n        }\n      ]\n    }\n  ]\n}\n```",
+          "finish_reason": "end_turn",
+          "usage": {
+            "prompt_tokens": 313,
+            "completion_tokens": 2016,
+            "total_tokens": 2329,
+            "cache_read_input_tokens": 1024,
+            "cache_creation_input_tokens": 0
+          }
+        }
+      ],
+      "discovery": {
+        "build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+        "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+        "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+        "parent_build_id": null,
+        "status": "queued",
+        "stage": "discovery_complete",
+        "total_units": 1,
+        "completed_units": 1,
+        "failed_units": 0,
+        "processed_segments": 1,
+        "total_segments": 1,
+        "error_code": null,
+        "error_detail": null,
+        "can_resume": false,
+        "config": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 4096,
+          "model": "k3",
+          "policy_version": "candidate-identity-v2",
+          "prompt_version": "character-discovery-v5",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "unit_char_limit": 4000,
+          "unit_segment_limit": 12
+        },
+        "publication_report": null
+      },
+      "persona_build_id": "44f73801-12f2-44eb-9896-be7843c8e57c",
+      "persona": {
+        "build_id": "44f73801-12f2-44eb-9896-be7843c8e57c",
+        "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+        "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+        "parent_build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+        "status": "failed",
+        "stage": "persona_extract",
+        "total_units": 1,
+        "completed_units": 0,
+        "failed_units": 1,
+        "processed_segments": 0,
+        "total_segments": 1,
+        "error_code": "no_publishable_characters",
+        "error_detail": "No independently verified person can be published",
+        "can_resume": false,
+        "config": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 4096,
+          "model": "k3",
+          "policy_version": "canonical-persona-v3",
+          "prompt_version": "persona-extract-v3",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "persona-review-v3",
+          "unit_char_limit": 4000,
+          "unit_segment_limit": 12
+        },
+        "publication_report": null
+      },
+      "profiles": [
+        {
+          "name": "姊妹们",
+          "character_id": "c48016e9-d825-4fe3-97db-3aa987416546",
+          "status": "needs_review"
+        },
+        {
+          "name": "贾母",
+          "character_id": "40d609a1-a7a6-43b5-9811-6cb77eed5aca",
+          "status": "candidate"
+        },
+        {
+          "name": "黛玉",
+          "character_id": "e56d6aa4-eb1b-4213-9385-535661969241",
+          "status": "candidate"
+        }
+      ],
+      "error_type": "StopIteration",
+      "failed_stage": "persona"
+    },
+    "repair_started": true,
+    "repair_scope": "One isolated generation-prompt diagnostic: explicit claim owner and approved excerpt rules; original guards/review unchanged, failed original build retained; no production extraction strategy change.",
+    "repair_persona_build_id": "e8b0ba2d-096a-4aea-a6c8-405019f9ed5a",
+    "repair_persona": {
+      "build_id": "e8b0ba2d-096a-4aea-a6c8-405019f9ed5a",
+      "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+      "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+      "parent_build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+      "status": "failed",
+      "stage": "persona_extract",
+      "total_units": 1,
+      "completed_units": 0,
+      "failed_units": 1,
+      "processed_segments": 0,
+      "total_segments": 1,
+      "error_code": "no_publishable_characters",
+      "error_detail": "No independently verified person can be published",
+      "can_resume": false,
+      "config": {
+        "call_timeout_seconds": 180,
+        "max_tokens": 4096,
+        "model": "k3",
+        "policy_version": "canonical-persona-v3",
+        "prompt_version": "persona-extract-v3-explicit-citations-t08",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "persona-review-v3",
+        "unit_char_limit": 4000,
+        "unit_segment_limit": 12
+      },
+      "publication_report": null
+    },
+    "repair_profiles": [
+      {
+        "name": "姊妹们",
+        "character_id": "c2a199ca-04ea-4994-a592-2cd585e09342",
+        "status": "needs_review"
+      },
+      {
+        "name": "贾母",
+        "character_id": "3ce447ac-7685-4334-8607-84d55a0756b9",
+        "status": "candidate"
+      },
+      {
+        "name": "黛玉",
+        "character_id": "81affecc-dab6-413d-95bc-e1219f0400a6",
+        "status": "candidate"
+      }
+    ],
+    "error_type": "StopIteration",
+    "failed_stage": "persona_schema_repair"
+  },
+  "controlled_preparation_started": true,
+  "preparation_scope": "Controlled extract proposes one exact original speech fact; unchanged independent native review and source/owner guards decide publication. This does not prove automatic extraction quality.",
+  "controlled_persona_build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+  "controlled_persona": {
+    "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+    "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+    "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+    "parent_build_id": "39eecba8-de45-4dca-8166-77396c59c1b2",
+    "status": "partial_published",
+    "stage": "persona_published",
+    "total_units": 1,
+    "completed_units": 1,
+    "failed_units": 0,
+    "processed_segments": 1,
+    "total_segments": 1,
+    "error_code": "partial_build",
+    "error_detail": "Some identities, evidence units or baseline slots remain unresolved",
+    "can_resume": false,
+    "config": {
+      "call_timeout_seconds": 180,
+      "max_tokens": 4096,
+      "model": "k3",
+      "policy_version": "canonical-persona-v3",
+      "prompt_version": "persona-controlled-original-speech-t08",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "persona-review-v3",
+      "unit_char_limit": 4000,
+      "unit_segment_limit": 12
+    },
+    "publication_report": {
+      "baseline_conflicts": 0,
+      "failed_units": [],
+      "published_characters": 2,
+      "rejected_claims": 0,
+      "unresolved_characters": 1
+    }
+  },
+  "controlled_profiles": [
+    {
+      "name": "姊妹们",
+      "character_id": "da7b818f-9180-4d0f-b289-673c697ec803",
+      "status": "needs_review"
+    },
+    {
+      "name": "贾母",
+      "character_id": "b68c32ee-a3db-4515-b23c-91d978c909d7",
+      "status": "sparse"
+    },
+    {
+      "name": "黛玉",
+      "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+      "status": "sparse"
+    }
+  ],
+  "room_id": "b660e1f9-412f-49bb-9b19-ae601bc02641",
+  "character_scopes": [
+    {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+      "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+      "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    },
+    {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+      "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+      "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+      "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    }
+  ],
+  "round_id": "0951f339-e1ab-476e-a5f8-b4e025c45510",
+  "round": {
+    "round_id": "0951f339-e1ab-476e-a5f8-b4e025c45510",
+    "room_id": "b660e1f9-412f-49bb-9b19-ae601bc02641",
+    "epoch": 1,
+    "status": "completed",
+    "mode": "directed",
+    "cursor": 2,
+    "time_limit_seconds": 60,
+    "execution_window": 1,
+    "window_elapsed_ms": 31468,
+    "total_elapsed_ms": 31468,
+    "error_code": null,
+    "run_started_at": "2026-10-12T22:41:49.037+00:00",
+    "discussion": {
+      "goal": null,
+      "mode": "free",
+      "revision": 0,
+      "speaker_request": {
+        "mode": "directed",
+        "selection_policy": "public-room-selection-v1",
+        "target_member_ids": [
+          "497173fd-8e69-47c1-ae66-702933f2440e",
+          "79c1199c-0153-4d80-bf9a-23ce3fc462ba"
+        ]
+      },
+      "topic": null
+    },
+    "generation_config": {
+      "call_timeout_seconds": 180,
+      "context_window": 1000000,
+      "expression_enabled": false,
+      "expression_selection_version": "expression-selection-v2",
+      "expression_sets": {
+        "497173fd-8e69-47c1-ae66-702933f2440e": null,
+        "79c1199c-0153-4d80-bf9a-23ce3fc462ba": null
+      },
+      "max_input_tokens": 24000,
+      "max_tokens": 4096,
+      "memory_policy_version": "typed-room-memory-v1",
+      "memory_prompt_version": "room-memory-v2",
+      "model": "k3",
+      "model_record_id": 337,
+      "policy_version": "bounded-room-v1",
+      "prompt_version": "character-chat-v4",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "character-chat-review-v2",
+      "unit_char_limit": 8000,
+      "unit_segment_limit": 12
+    },
+    "can_resume": false,
+    "slots": [
+      {
+        "id": "d2b1fe1f-8926-4b19-8873-949d84f3958c",
+        "position": 0,
+        "member_id": "497173fd-8e69-47c1-ae66-702933f2440e",
+        "status": "published",
+        "attempts": 2,
+        "member_generation": 0
+      },
+      {
+        "id": "ce534297-24db-4695-aea1-a9cada1ddf24",
+        "position": 1,
+        "member_id": "79c1199c-0153-4d80-bf9a-23ce3fc462ba",
+        "status": "published",
+        "attempts": 1,
+        "member_generation": 0
+      }
+    ],
+    "timeLimitSeconds": 60,
+    "executionWindow": 1,
+    "elapsedSeconds": 31.468,
+    "remainingSeconds": 28.532,
+    "timeoutReason": null
+  },
+  "messages": [
+    {
+      "id": "beb8cee8-5a63-415d-b507-30cc84b63cdd",
+      "seq": 1,
+      "round_id": "0951f339-e1ab-476e-a5f8-b4e025c45510",
+      "speaker_type": "user",
+      "speaker_member_id": null,
+      "content": "我在这个房间自称青禾。请第一位先向我问好，第二位回应第一位刚刚公开的话。请只使用房间交流和各自原著的依据。",
+      "reply_to_id": null,
+      "created_at": "2026-10-12T22:41:26.079Z",
+      "identity": {},
+      "refs": []
+    },
+    {
+      "id": "04fa6c13-e116-4f7e-98c9-57acded0fce9",
+      "seq": 2,
+      "round_id": "0951f339-e1ab-476e-a5f8-b4e025c45510",
+      "speaker_type": "character",
+      "speaker_member_id": "497173fd-8e69-47c1-ae66-702933f2440e",
+      "content": "青禾，你好。我是石猴，先在这儿向你问一声好。",
+      "reply_to_id": "beb8cee8-5a63-415d-b507-30cc84b63cdd",
+      "created_at": "2026-10-12T22:41:49.004Z",
+      "identity": {
+        "book_title": "西游记 · 石猴发现联调样本（非全书）",
+        "name": "石猴"
+      },
+      "refs": []
+    },
+    {
+      "id": "a9f826e8-8041-444c-be84-f171cc003155",
+      "seq": 3,
+      "round_id": "0951f339-e1ab-476e-a5f8-b4e025c45510",
+      "speaker_type": "character",
+      "speaker_member_id": "79c1199c-0153-4d80-bf9a-23ce3fc462ba",
+      "content": "青禾姑娘，安好。方才石猴已先向你问了好，我接着这一声，也来向你问候。",
+      "reply_to_id": "beb8cee8-5a63-415d-b507-30cc84b63cdd",
+      "created_at": "2026-10-12T22:41:57.633Z",
+      "identity": {
+        "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+        "name": "黛玉"
+      },
+      "refs": [
+        {
+          "assertion_ordinal": 0,
+          "assertion_text": "方才石猴已先向你问了好，我接着这一声，也来向你问候。",
+          "origin": "room_hearsay",
+          "book_id": null,
+          "source_version_id": null,
+          "build_id": null,
+          "character_id": null,
+          "claim_id": null,
+          "evidence_id": null,
+          "heard_message_id": "04fa6c13-e116-4f7e-98c9-57acded0fce9"
+        }
+      ]
+    }
+  ],
+  "canonical_baselines_unchanged": true,
+  "agent_semantic_review": "v4 queue/source delivery works, but the published Daiyu greeting invents an unsupported female address for the user. Automatic red-book persona preparation also failed. No overall chat or automatic extraction quality pass.",
+  "v5_probe_started": true,
+  "v5_followup": {
+    "scope": "single selected Daiyu in a clean two-book room; no explicit gender cue; not an independent full group-quality pass",
+    "room_id": "43156797-cc11-4296-8e08-07080ac66fb4",
+    "round_id": "088d2f6e-bc5c-4f24-896f-6211eb85076b",
+    "model_config": {
+      "provider_id": 2,
+      "model": "k3",
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "unit_char_limit": 8000,
+      "unit_segment_limit": 12,
+      "max_tokens": 4096,
+      "call_timeout_seconds": 180,
+      "prompt_version": "character-chat-v5",
+      "policy_version": "bounded-room-v1",
+      "model_record_id": 337,
+      "review_prompt_version": "character-chat-review-v3",
+      "context_window": 1000000,
+      "max_input_tokens": 24000,
+      "expression_enabled": false,
+      "memory_policy_version": "typed-room-memory-v1",
+      "memory_prompt_version": "room-memory-v2",
+      "expression_selection_version": "expression-selection-v2",
+      "expression_sets": {}
+    },
+    "round": {
+      "round_id": "088d2f6e-bc5c-4f24-896f-6211eb85076b",
+      "room_id": "43156797-cc11-4296-8e08-07080ac66fb4",
+      "epoch": 1,
+      "status": "completed",
+      "mode": "directed",
+      "cursor": 1,
+      "time_limit_seconds": 60,
+      "execution_window": 1,
+      "window_elapsed_ms": 9500,
+      "total_elapsed_ms": 9500,
+      "error_code": null,
+      "run_started_at": "2026-10-13T04:29:00.095+00:00",
+      "discussion": {
+        "goal": null,
+        "mode": "free",
+        "revision": 0,
+        "speaker_request": {
+          "mode": "directed",
+          "selection_policy": "public-room-selection-v1",
+          "target_member_ids": [
+            "1542715e-49d9-4624-88f9-a366b9105a56"
+          ]
+        },
+        "topic": null
+      },
+      "generation_config": {
+        "call_timeout_seconds": 180,
+        "context_window": 1000000,
+        "expression_enabled": false,
+        "expression_selection_version": "expression-selection-v2",
+        "expression_sets": {
+          "1542715e-49d9-4624-88f9-a366b9105a56": null
+        },
+        "max_input_tokens": 24000,
+        "max_tokens": 4096,
+        "memory_policy_version": "typed-room-memory-v1",
+        "memory_prompt_version": "room-memory-v2",
+        "model": "k3",
+        "model_record_id": 337,
+        "policy_version": "bounded-room-v1",
+        "prompt_version": "character-chat-v5",
+        "provider_id": 2,
+        "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+        "reasoning_effort": "low",
+        "review_prompt_version": "character-chat-review-v3",
+        "unit_char_limit": 8000,
+        "unit_segment_limit": 12
+      },
+      "can_resume": false,
+      "slots": [
+        {
+          "id": "5826e29f-28c4-4bcd-b1ef-e225fab926c6",
+          "position": 0,
+          "member_id": "1542715e-49d9-4624-88f9-a366b9105a56",
+          "status": "published",
+          "attempts": 1,
+          "member_generation": 0
+        }
+      ],
+      "timeLimitSeconds": 60,
+      "executionWindow": 1,
+      "elapsedSeconds": 9.5,
+      "remainingSeconds": 50.5,
+      "timeoutReason": null
+    },
+    "messages": [
+      {
+        "id": "79b06482-146a-4e95-b53f-d7bca9c983d6",
+        "seq": 1,
+        "round_id": "088d2f6e-bc5c-4f24-896f-6211eb85076b",
+        "speaker_type": "user",
+        "speaker_member_id": null,
+        "content": "我在这个房间自称青禾。请向我问好。",
+        "reply_to_id": null,
+        "created_at": "2026-10-13T04:29:00.026Z",
+        "identity": {},
+        "refs": []
+      },
+      {
+        "id": "9d8db73e-e186-4981-be9f-24dfc75a5470",
+        "seq": 2,
+        "round_id": "088d2f6e-bc5c-4f24-896f-6211eb85076b",
+        "speaker_type": "character",
+        "speaker_member_id": "1542715e-49d9-4624-88f9-a366b9105a56",
+        "content": "青禾，你好。",
+        "reply_to_id": "79b06482-146a-4e95-b53f-d7bca9c983d6",
+        "created_at": "2026-10-13T04:29:09.583Z",
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "refs": []
+      }
+    ]
+  }
+}

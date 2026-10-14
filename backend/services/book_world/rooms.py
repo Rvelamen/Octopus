@@ -236,6 +236,19 @@ class BookRoomService:
                 "scene_capacity": row["scene_capacity"],
                 "scene_layout_version": row["scene_layout_version"],
                 "members": members,
+                "sources": [
+                    {
+                        "book_id": source["book_id"],
+                        "source_version_id": source["source_version_id"],
+                        "build_id": source["build_id"],
+                        "status": source["status"],
+                        "identity": json.loads(source["source_snapshot_json"]),
+                    }
+                    for source in db.execute(
+                        "SELECT * FROM book_room_sources WHERE room_id=? ORDER BY created_at,rowid",
+                        (scope.room_id,),
+                    )
+                ],
                 "latest_round_id": (
                     db.execute(
                         "SELECT id FROM book_room_rounds WHERE room_id=? AND epoch=? ORDER BY created_at DESC,rowid DESC LIMIT 1",

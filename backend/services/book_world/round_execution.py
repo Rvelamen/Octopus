@@ -9,6 +9,7 @@ from .context import CharacterContext
 from .discovery import _json, _now
 from .knowledge_models import CanonicalScope
 from .room_models import CharacterChatConfig, RoomScope
+from .round_queue import advance_cursor
 from .rounds import BookRoundService
 from .source import BookWorldError
 from .storage import connect
@@ -26,6 +27,7 @@ class RoundLease:
     seconds: int
     window_before: int
     total_before: int
+    execution_window: int = 1
 
 
 class RoundExecution:
@@ -118,6 +120,37 @@ class RoundExecution:
                 row["time_limit_seconds"],
                 row["window_elapsed_ms"],
                 row["total_elapsed_ms"],
+                row["execution_window"],
+            )
+
+    def checkpoint_revoked(self, lease: RoundLease, elapsed: Callable[[], int]) -> None:
+        """Keep spent time when member control revokes a worker before handing off its queue."""
+        with connect(self.db_path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                "SELECT * FROM book_room_rounds WHERE room_id=? AND epoch=? AND id=?",
+                (lease.scope.room_id, lease.scope.epoch, lease.round_id),
+            ).fetchone()
+            if (
+                row is None
+                or row["execution_window"] != lease.execution_window
+                or row["lease_generation"] != lease.generation + 1
+                or row["lease_owner"] is not None
+                or row["status"] not in ("queued", "paused", "completed", "cancelled")
+            ):
+                return
+            try:
+                self.rounds.rooms._room(db, lease.scope)
+            except BookWorldError:
+                return
+            spent = max(row["window_elapsed_ms"], lease.window_before + elapsed())
+            db.execute(
+                "UPDATE book_room_rounds SET window_elapsed_ms=?,total_elapsed_ms=? WHERE id=?",
+                (
+                    spent,
+                    max(row["total_elapsed_ms"], lease.total_before + spent - lease.window_before),
+                    lease.round_id,
+                ),
             )
 
     def _fence(self, db, lease: RoundLease):
@@ -227,6 +260,9 @@ class RoundExecution:
                 )
             if not self._elapsed(db, lease, elapsed()):
                 return False
+            if candidate.dialogue_action == "no_comment":
+                self._finish_slot(db, lease, elapsed, "no_comment")
+                return True
             room = self.rounds.rooms._room(db, lease.scope)
             message_id = str(uuid4())
             db.execute(
@@ -301,14 +337,17 @@ class RoundExecution:
                         member["membership_generation"],
                     ),
                 )
-            final_ms = elapsed()
-            if lease.window_before + final_ms >= lease.seconds * 1000:
-                raise BookWorldError("round_timeout", "Publication crossed its time boundary")
-            db.execute(
-                "UPDATE book_round_slots SET status='published' WHERE id=?", (lease.slot_id,)
-            )
-            db.execute(
-                "UPDATE book_room_rounds SET cursor=cursor+1,status='completed',window_elapsed_ms=?,total_elapsed_ms=?,lease_owner=NULL,lease_expires_at=NULL WHERE id=?",
-                (lease.window_before + final_ms, lease.total_before + final_ms, lease.round_id),
-            )
+            self._finish_slot(db, lease, elapsed, "published")
             return True
+
+    @staticmethod
+    def _finish_slot(db, lease: RoundLease, elapsed: Callable[[], int], status: str) -> None:
+        final_ms = elapsed()
+        if lease.window_before + final_ms >= lease.seconds * 1000:
+            raise BookWorldError("round_timeout", "Publication crossed its time boundary")
+        db.execute("UPDATE book_round_slots SET status=? WHERE id=?", (status, lease.slot_id))
+        db.execute(
+            "UPDATE book_room_rounds SET window_elapsed_ms=?,total_elapsed_ms=? WHERE id=?",
+            (lease.window_before + final_ms, lease.total_before + final_ms, lease.round_id),
+        )
+        advance_cursor(db, lease.scope, lease.round_id, revoke_current=True)

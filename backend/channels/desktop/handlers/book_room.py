@@ -17,7 +17,9 @@ from backend.services.book_world.chat_provider import (
     resolve_character_chat_model,
 )
 from backend.services.book_world.chat_worker import BookChatWorker
+from backend.services.book_world.members import RoomMembershipService
 from backend.services.book_world.memory import RoomMemoryService
+from backend.services.book_world.room_catalog import RoomCharacterCatalog
 from backend.services.book_world.room_contracts import BookRoomRequest
 from backend.services.book_world.room_models import CharacterChatConfig, RoomScope
 from backend.services.book_world.rooms import BookRoomService
@@ -123,6 +125,29 @@ class BookRoomHandler(MessageHandler):
         rooms = await asyncio.to_thread(BookRoomService, root)
         if request.workspace_id is not None and request.workspace_id != rooms.workspace_id:
             raise BookWorldError("invalid_scope", "Workspace changed; reload the current room")
+        if request.action == "list_room_characters":
+            catalog = await asyncio.to_thread(RoomCharacterCatalog, root)
+            return await asyncio.to_thread(
+                catalog.list, limit=request.limit, offset=request.offset, query=request.query
+            )
+        if request.action == "create_group_room":
+            assert request.characters and request.client_room_id
+            selections = [
+                await asyncio.to_thread(
+                    rooms.knowledge.bind_character,
+                    entry.item_id,
+                    entry.build_id,
+                    entry.character_id,
+                )
+                for entry in request.characters
+            ]
+            membership = await asyncio.to_thread(RoomMembershipService, root)
+            return await asyncio.to_thread(
+                membership.create,
+                selections,
+                client_room_id=request.client_room_id,
+                title=request.title,
+            )
         if request.action == "create_single_room":
             assert (
                 request.item_id is not None
@@ -152,7 +177,53 @@ class BookRoomHandler(MessageHandler):
             return {"models": await asyncio.to_thread(list_character_chat_models)}
         assert request.room_id and request.expected_epoch is not None
         scope = await asyncio.to_thread(rooms.bind_room, request.room_id, request.expected_epoch)
+        if request.action in (
+            "submit_turn",
+            "cancel_round",
+            "resume_round",
+            "set_member",
+            "add_members",
+            "reset_memory",
+        ):
+            async with self._lock(root, f"room:{scope.room_id}"):
+                return await self._scoped_action(root, scope, request, rooms)
+        return await self._scoped_action(root, scope, request, rooms)
+
+    async def _scoped_action(
+        self, root: Path, scope: RoomScope, request: BookRoomRequest, rooms: BookRoomService
+    ) -> dict[str, Any]:
         rounds = await asyncio.to_thread(BookRoundService, root)
+        if request.action == "add_members":
+            assert request.characters
+            selections = [
+                await asyncio.to_thread(
+                    rooms.knowledge.bind_character,
+                    entry.item_id,
+                    entry.build_id,
+                    entry.character_id,
+                )
+                for entry in request.characters
+            ]
+            membership = await asyncio.to_thread(RoomMembershipService, root)
+            return await asyncio.to_thread(membership.add, scope, selections)
+        if request.action == "set_member":
+            assert request.member_id
+            membership = await asyncio.to_thread(RoomMembershipService, root)
+            controlled = await asyncio.to_thread(
+                membership.control,
+                scope,
+                request.member_id,
+                active=request.active,
+                speaking_mode=request.speaking_mode,
+            )
+            for identifier in controlled["revoked_round_ids"]:
+                async with self._lock(root, identifier):
+                    await self._stop(root, identifier)
+                    remaining = await asyncio.to_thread(rounds.get_round, scope, identifier)
+                    if remaining["status"] == "queued":
+                        selected_model = await self._original_model(remaining["generation_config"])
+                        self._schedule(root, scope, identifier, selected_model)
+            return controlled
         if request.action == "get_room":
             room_result = await asyncio.to_thread(rooms.get_room, scope)
             self._schedule_cleanup(root, scope)
@@ -188,6 +259,8 @@ class BookRoomHandler(MessageHandler):
                 scope,
                 request.client_turn_id,
                 request.content,
+                mode=request.mode,
+                target_member_ids=request.target_member_ids,
             )
             model = None
             if result is None:
@@ -204,7 +277,9 @@ class BookRoomHandler(MessageHandler):
                     request.client_turn_id,
                     request.content,
                     model.config,
-                    time_limit_seconds=model.timeouts.seconds_for_mode("directed"),
+                    time_limit_seconds=model.timeouts.seconds_for_mode(request.mode),
+                    mode=request.mode,
+                    target_member_ids=request.target_member_ids,
                 )
             async with self._lock(root, result["round_id"]):
                 current = await asyncio.to_thread(rounds.get_round, scope, result["round_id"])

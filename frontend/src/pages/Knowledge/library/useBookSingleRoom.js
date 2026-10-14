@@ -55,12 +55,12 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
       if (current !== generation.current) return;
       setModels(choices.models);
       if (choices.models.length) setModelKey(`${choices.models[0].provider_id}:${choices.models[0].model_record_id}`);
-      const created = await request('create_single_room', { item_id: detail.item_id, build_id: detail.build_id, character_id: detail.character_id, client_room_id: requestId.current, reuse_existing: true });
+      const created = detail.room_id ? { room_id: detail.room_id, epoch: detail.epoch } : await request('create_single_room', { item_id: detail.item_id, build_id: detail.build_id, character_id: detail.character_id, client_room_id: requestId.current, reuse_existing: true });
       if (current !== generation.current) return;
       await refresh({ room_id: created.room_id, expected_epoch: created.epoch });
     }).catch((failure) => { if (current === generation.current) setError(failure.message); });
     return () => { generation.current += 1; revision.current += 1; };
-  }, [detail.item_id, detail.build_id, detail.character_id, request, refresh]);
+  }, [detail.item_id, detail.build_id, detail.character_id, detail.room_id, detail.epoch, request, refresh]);
 
   useEffect(() => {
     if (!roomRef.current || busy || !['queued', 'running'].includes(round?.status)) return undefined;
@@ -75,7 +75,7 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
     return () => { stopped = true; clearTimeout(timer); };
   }, [round?.status, busy, refresh]);
 
-  const act = async (operation, content) => {
+  const act = async (operation, content, controls = {}) => {
     if (!roomRef.current) return false;
     const current = operation === 'reset_memory' ? ++generation.current : generation.current;
     revision.current += 1;
@@ -83,11 +83,12 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
     try {
       let values;
       if (operation === 'submit_turn') {
-        if (!pendingTurn.current || pendingTurn.current.content !== content) pendingTurn.current = { client_turn_id: crypto.randomUUID(), content };
-        values = pendingTurn.current;
+        const signature = JSON.stringify({ content, controls });
+        if (!pendingTurn.current || pendingTurn.current.signature !== signature) pendingTurn.current = { signature, values: { client_turn_id: crypto.randomUUID(), content, ...controls } };
+        values = pendingTurn.current.values;
         const model = models.find((entry) => `${entry.provider_id}:${entry.model_record_id}` === modelKey);
         if (model) values = { ...values, provider_id: model.provider_id, model_record_id: model.model_record_id };
-      } else values = operation === 'reset_memory' ? {} : { round_id: round.round_id };
+      } else values = ['set_member', 'add_members'].includes(operation) ? controls : operation === 'reset_memory' ? {} : { round_id: round.round_id };
       const result = await request(operation, { ...roomRef.current, ...values });
       if (current !== generation.current) return false;
       if (operation === 'reset_memory') {
@@ -104,5 +105,6 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
 
   const evidence = async (messageId) => request('get_message_evidence', { ...roomRef.current, message_id: messageId });
   const chooseModel = (value) => { modelTouched.current = true; setModelKey(value); };
-  return { room, messages, round, memory, busy, error, models, modelKey, setModelKey: chooseModel, act, evidence, refresh: () => roomRef.current && refresh(roomRef.current) };
+  const refreshCurrent = useCallback(() => roomRef.current && refresh(roomRef.current), [refresh]);
+  return { room, messages, round, memory, busy, error, models, modelKey, setModelKey: chooseModel, act, evidence, refresh: refreshCurrent };
 }

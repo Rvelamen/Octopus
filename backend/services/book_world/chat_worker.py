@@ -7,7 +7,7 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
-from .chat_models import GENERATE_PROMPT, REVIEW_PROMPT, UNKNOWN_REPLY, ChatCandidate, ChatReview
+from .chat_models import GENERATE_PROMPTS, REVIEW_PROMPTS, UNKNOWN_REPLY, ChatCandidate, ChatReview
 from .chat_validation import validate_candidate, validate_review
 from .context import CharacterContext, CharacterContextBuilder
 from .discovery import _json
@@ -38,17 +38,44 @@ class BookChatWorker:
         self, scope: RoomScope, round_id: str, provider: Any, config: CharacterChatConfig
     ) -> None:
         started = self.monotonic()
+        try:
+            snapshot = await asyncio.to_thread(self.rounds.get_round, scope, round_id)
+        except BookWorldError:
+            return
+        window_before_run = int(snapshot["window_elapsed_ms"])
 
-        def elapsed() -> int:
-            return int(max(0, self.monotonic() - started) * 1000)
+        def elapsed_window() -> int:
+            return window_before_run + int(max(0, self.monotonic() - started) * 1000)
 
+        while True:
+            if not await self._run_slot(scope, round_id, provider, config, elapsed_window):
+                return
+            try:
+                remaining = await asyncio.to_thread(self.rounds.get_round, scope, round_id)
+            except BookWorldError:
+                return
+            if remaining["status"] != "queued":
+                return
+
+    async def _run_slot(
+        self,
+        scope: RoomScope,
+        round_id: str,
+        provider: Any,
+        config: CharacterChatConfig,
+        elapsed_window: Callable[[], int],
+    ) -> bool:
         try:
             lease = await asyncio.to_thread(self.execution.lease, scope, round_id, config)
         except BookWorldError as error:
             await asyncio.to_thread(self.execution.fail_before_start, scope, round_id, error.code)
-            return
+            return False
         if lease is None:
-            return
+            return False
+        window_before_slot = lease.window_before
+
+        def elapsed() -> int:
+            return max(0, elapsed_window() - window_before_slot)
 
         async def heartbeat() -> None:
             while True:
@@ -176,7 +203,7 @@ class BookChatWorker:
                     candidate = validate_candidate(
                         await call(
                             "generate",
-                            GENERATE_PROMPT,
+                            GENERATE_PROMPTS[lease.config.prompt_version],
                             ChatCandidate.model_json_schema(),
                             feedback=feedback,
                         ),
@@ -186,15 +213,14 @@ class BookChatWorker:
                         candidate,
                         await call(
                             "review",
-                            REVIEW_PROMPT,
+                            REVIEW_PROMPTS[lease.config.review_prompt_version],
                             ChatReview.model_json_schema(),
                             candidate=candidate.model_dump(),
                         ),
                     )
-                    await asyncio.to_thread(
+                    return await asyncio.to_thread(
                         self.execution.publish, lease, context, candidate, elapsed
                     )
-                    return
                 except BookWorldError:
                     raise
                 except ValueError as error:
@@ -209,7 +235,7 @@ class BookChatWorker:
                     fallback,
                     await call(
                         "review",
-                        REVIEW_PROMPT,
+                        REVIEW_PROMPTS[lease.config.review_prompt_version],
                         ChatReview.model_json_schema(),
                         candidate=fallback.model_dump(),
                     ),
@@ -220,8 +246,8 @@ class BookChatWorker:
                 await asyncio.to_thread(
                     self.execution.stop, lease, "fallback_validation_failed", elapsed
                 )
-                return
-            await asyncio.to_thread(
+                return False
+            return await asyncio.to_thread(
                 self.execution.publish, lease, context, fallback, elapsed, fallback=True
             )
         except TimeoutError:
@@ -234,9 +260,14 @@ class BookChatWorker:
                 elapsed,
             )
         except BookWorldError as error:
-            if error.code != "stale_round":
+            if error.code == "stale_round":
+                await asyncio.to_thread(self.execution.checkpoint_revoked, lease, elapsed)
+            else:
                 await asyncio.to_thread(self.execution.stop, lease, error.code, elapsed)
         except asyncio.CancelledError:
+            await asyncio.shield(
+                asyncio.to_thread(self.execution.checkpoint_revoked, lease, elapsed)
+            )
             raise
         except Exception:
             await asyncio.to_thread(self.execution.stop, lease, "chat_failed", elapsed)
@@ -244,3 +275,4 @@ class BookChatWorker:
             ticker.cancel()
             with suppress(asyncio.CancelledError):
                 await ticker
+        return False

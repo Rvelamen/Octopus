@@ -32,7 +32,12 @@ def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
     ):
         raise ValueError("Actor context changed after composition")
     candidate = ChatCandidate.model_validate_json(parse_json(raw))
-    if not candidate.content.strip():
+    if candidate.dialogue_action == "no_comment" and context.config.prompt_version not in (
+        "character-chat-v4",
+        "character-chat-v5",
+    ):
+        raise ValueError("Silence requires the new versioned chat policy")
+    if candidate.dialogue_action != "no_comment" and not candidate.content.strip():
         raise ValueError("Empty reply")
     pairs = {(item.claim_id, item.evidence_id): item for item in context.allowed}
     baseline = {item["claim_id"] for item in context.payload["baseline"].values()}

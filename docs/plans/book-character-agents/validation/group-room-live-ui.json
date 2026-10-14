@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-14",
+  "scope": "Actual group components and current WS Handler in isolated excerpt corpus workspace; no additional model calls",
+  "cross_book_ui_created": true,
+  "created_title": "T08 浏览器创建验收",
+  "selected_names": ["黛玉", "石猴"],
+  "fixed_build_prefixes": ["58609a52", "c2da28c8"],
+  "persisted_real_model_replies_reopened": true,
+  "mute_remove_rejoin_operated": true,
+  "member_identity_preserved_on_rejoin": true,
+  "published_messages_include_identity_reply_target_and_hearsay_evidence": true,
+  "real_model_call_count_before": 13,
+  "real_model_call_count_after": 13,
+  "controlled_component_list_race": {
+    "old_request_delayed_new_request_returned_first": true,
+    "late_old_list_cannot_replace_new_list": true
+  },
+  "full_book_persona_quality_pass": false
+}

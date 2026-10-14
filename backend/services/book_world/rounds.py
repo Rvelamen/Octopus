@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, cast
 from uuid import uuid4
 
+from .coordinator import select_speakers
 from .discovery import _json, _now
 from .knowledge_models import CanonicalScope
 from .room_models import CharacterChatConfig, RoomScope
@@ -75,20 +76,38 @@ class BookRoundService:
 
     @staticmethod
     def _submitted(
-        db: sqlite3.Connection, scope: RoomScope, client_turn_id: str, content: str
+        db: sqlite3.Connection,
+        scope: RoomScope,
+        client_turn_id: str,
+        content: str,
+        mode: str = "directed",
+        target_member_ids: list[str] | None = None,
     ) -> sqlite3.Row | None:
         existing = db.execute(
-            "SELECT r.id,m.content FROM book_room_rounds r JOIN book_room_messages m ON m.round_id=r.id AND m.room_id=r.room_id AND m.epoch=r.epoch AND m.speaker_type='user' WHERE r.room_id=? AND r.epoch=? AND r.client_turn_id=?",
+            "SELECT r.id,r.mode,r.discussion_snapshot_json,m.content FROM book_room_rounds r JOIN book_room_messages m ON m.round_id=r.id AND m.room_id=r.room_id AND m.epoch=r.epoch AND m.speaker_type='user' WHERE r.room_id=? AND r.epoch=? AND r.client_turn_id=?",
             (scope.room_id, scope.epoch, client_turn_id),
         ).fetchone()
-        if existing is not None and existing["content"] != content:
+        if existing is not None and (
+            existing["content"] != content
+            or existing["mode"] != mode
+            or json.loads(existing["discussion_snapshot_json"])
+            .get("speaker_request", {})
+            .get("target_member_ids")
+            != target_member_ids
+        ):
             raise BookWorldError(
                 "idempotency_conflict", "Turn identity was used for another message"
             )
         return cast(sqlite3.Row | None, existing)
 
     def find_submission(
-        self, scope: RoomScope, client_turn_id: str, content: str
+        self,
+        scope: RoomScope,
+        client_turn_id: str,
+        content: str,
+        *,
+        mode: str = "directed",
+        target_member_ids: list[str] | None = None,
     ) -> dict[str, Any] | None:
         """Look up an acknowledged turn before resolving model defaults for a new turn."""
         with connect(self.db_path) as db:
@@ -96,7 +115,7 @@ class BookRoundService:
             room = self.rooms._room(db, scope)
             if room["status"] != "active":
                 raise BookWorldError("room_readonly", "Room no longer accepts new turns")
-            existing = self._submitted(db, scope, client_turn_id, content)
+            existing = self._submitted(db, scope, client_turn_id, content, mode, target_member_ids)
         return self.get_round(scope, existing["id"]) if existing is not None else None
 
     def submit(
@@ -107,6 +126,8 @@ class BookRoundService:
         config: CharacterChatConfig,
         *,
         time_limit_seconds: int,
+        mode: str = "directed",
+        target_member_ids: list[str] | None = None,
     ) -> dict[str, Any]:
         if (
             not isinstance(client_turn_id, str)
@@ -123,7 +144,7 @@ class BookRoundService:
             room = self.rooms._room(db, scope)
             if room["status"] != "active":
                 raise BookWorldError("room_readonly", "Room no longer accepts new turns")
-            existing = self._submitted(db, scope, client_turn_id, content)
+            existing = self._submitted(db, scope, client_turn_id, content, mode, target_member_ids)
             if existing:
                 round_id = existing["id"]
             else:
@@ -140,76 +161,66 @@ class BookRoundService:
                     (scope.room_id,),
                 ).fetchone():
                     raise BookWorldError("room_busy", "Complete or cancel the current turn first")
-                members = db.execute(
-                    "SELECT m.*,b.policy_version FROM book_room_members m JOIN book_builds b ON b.book_id=m.book_id AND b.source_version_id=m.source_version_id AND b.id=m.build_id WHERE m.room_id=? AND m.active=1",
-                    (scope.room_id,),
-                ).fetchall()
-                if len(members) != 1:
-                    raise BookWorldError(
-                        "invalid_room_mode", "Single chat requires exactly one active character"
-                    )
-                member = members[0]
-                if member["speaking_mode"] == "muted" or member["state_epoch"] != scope.epoch:
-                    raise BookWorldError(
-                        "member_unavailable", "Character cannot speak in this epoch"
-                    )
-                character = CanonicalScope(
-                    workspace_id=scope.workspace_id,
-                    canonical_policy_version=member["policy_version"],
-                    **{
-                        key: member[key]
-                        for key in ("book_id", "source_version_id", "build_id", "character_id")
-                    },
-                )
-                self.rooms.knowledge.validate_scope(db, character)
-                binding = db.execute(
-                    "SELECT status FROM book_room_sources WHERE room_id=? AND book_id=? AND source_version_id=? AND build_id=?",
-                    (scope.room_id, *character.binding[:3]),
-                ).fetchone()
-                if binding is None or binding["status"] != "active":
-                    raise BookWorldError(
-                        "source_unavailable", "Character source binding is unavailable"
-                    )
+                members = select_speakers(db, scope, content, mode, target_member_ids)
                 discussion = {
                     "revision": room["discussion_revision"],
                     "mode": room["discussion_mode"],
                     "topic": room["discussion_topic"],
                     "goal": room["discussion_goal"],
+                    "speaker_request": {
+                        "mode": mode,
+                        "target_member_ids": target_member_ids,
+                        "selection_policy": "public-room-selection-v1",
+                    },
                 }
                 round_id = str(uuid4())
-                expression_set = None
-                if config.expression_enabled:
-                    expression = db.execute(
-                        "SELECT id FROM book_expression_sets WHERE book_id=? AND source_version_id=? AND build_id=? AND character_id=? AND lifecycle_state='active' AND status IN ('ready','partial') ORDER BY created_at DESC,rowid DESC LIMIT 1",
-                        character.binding,
-                    ).fetchone()
-                    expression_set = expression["id"] if expression else None
-                snapshot_config = config.model_copy(
-                    update={"expression_sets": {member["id"]: expression_set}}
-                )
+                expression_sets = {}
+                for member in members:
+                    character = CanonicalScope(
+                        workspace_id=scope.workspace_id,
+                        canonical_policy_version=member["policy_version"],
+                        **{
+                            key: member[key]
+                            for key in ("book_id", "source_version_id", "build_id", "character_id")
+                        },
+                    )
+                    self.rooms.knowledge.validate_scope(db, character)
+                    expression = (
+                        db.execute(
+                            "SELECT id FROM book_expression_sets WHERE book_id=? AND source_version_id=? AND build_id=? AND character_id=? AND lifecycle_state='active' AND status IN ('ready','partial') ORDER BY created_at DESC,rowid DESC LIMIT 1",
+                            character.binding,
+                        ).fetchone()
+                        if config.expression_enabled
+                        else None
+                    )
+                    expression_sets[member["id"]] = expression["id"] if expression else None
+                snapshot_config = config.model_copy(update={"expression_sets": expression_sets})
                 db.execute(
-                    "INSERT INTO book_room_rounds(id,room_id,epoch,client_turn_id,mode,discussion_snapshot_json,generation_snapshot_json,time_limit_seconds) VALUES (?,?,?,?,'directed',?,?,?)",
+                    "INSERT INTO book_room_rounds(id,room_id,epoch,client_turn_id,mode,discussion_snapshot_json,generation_snapshot_json,time_limit_seconds) VALUES (?,?,?,?,?,?,?,?)",
                     (
                         round_id,
                         scope.room_id,
                         scope.epoch,
                         client_turn_id,
+                        mode,
                         _json(discussion),
                         _json(snapshot_config.model_dump()),
                         time_limit_seconds,
                     ),
                 )
-                db.execute(
-                    "INSERT INTO book_round_slots(id,room_id,epoch,round_id,position,member_id,member_generation) VALUES (?,?,?,?,0,?,?)",
-                    (
-                        str(uuid4()),
-                        scope.room_id,
-                        scope.epoch,
-                        round_id,
-                        member["id"],
-                        member["membership_generation"],
-                    ),
-                )
+                for position, member in enumerate(members):
+                    db.execute(
+                        "INSERT INTO book_round_slots(id,room_id,epoch,round_id,position,member_id,member_generation) VALUES (?,?,?,?,?,?,?)",
+                        (
+                            str(uuid4()),
+                            scope.room_id,
+                            scope.epoch,
+                            round_id,
+                            position,
+                            member["id"],
+                            member["membership_generation"],
+                        ),
+                    )
                 db.execute(
                     "INSERT INTO book_room_messages(id,room_id,epoch,seq,round_id,speaker_type,content,validation_state) VALUES (?,?,?,?,?,'user',?,'not_applicable')",
                     (str(uuid4()), scope.room_id, scope.epoch, room["next_seq"], round_id, content),

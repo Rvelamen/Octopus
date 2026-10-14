@@ -7,6 +7,12 @@ from pydantic import Field, model_validator
 from .discovery_models import StrictModel
 
 
+class RoomCharacterSelection(StrictModel):
+    item_id: int = Field(ge=1)
+    build_id: str = Field(min_length=1, max_length=100)
+    character_id: str = Field(min_length=1, max_length=100)
+
+
 class BookRoomRequest(StrictModel):
     action: Literal[
         "create_single_room",
@@ -21,6 +27,10 @@ class BookRoomRequest(StrictModel):
         "get_message_evidence",
         "get_memory",
         "reset_memory",
+        "list_room_characters",
+        "create_group_room",
+        "add_members",
+        "set_member",
     ]
     workspace_id: str | None = Field(default=None, min_length=1, max_length=100)
     item_id: int | None = Field(default=None, ge=1)
@@ -37,18 +47,31 @@ class BookRoomRequest(StrictModel):
     client_turn_id: str | None = Field(default=None, min_length=1, max_length=100)
     content: str | None = Field(default=None, min_length=1, max_length=4000)
     message_id: str | None = Field(default=None, min_length=1, max_length=100)
+    characters: list[RoomCharacterSelection] | None = Field(
+        default=None, min_length=1, max_length=100
+    )
+    member_id: str | None = Field(default=None, min_length=1, max_length=100)
+    active: bool | None = None
+    speaking_mode: Literal["auto", "mention_only", "muted"] | None = None
+    mode: Literal["directed", "natural"] = "directed"
+    target_member_ids: list[str] | None = Field(default=None, min_length=1, max_length=100)
+    query: str = Field(default="", max_length=200)
     after_seq: int = Field(default=0, ge=0)
     limit: int = Field(default=50, ge=1, le=100)
     offset: int = Field(default=0, ge=0)
 
     @model_validator(mode="after")
     def required(self) -> "BookRoomRequest":
-        if self.action not in ("list_rooms", "list_chat_models") and self.workspace_id is None:
+        listings = ("list_rooms", "list_chat_models", "list_room_characters")
+        if self.action not in listings and self.workspace_id is None:
             raise ValueError("Workspace identity is required")
         if self.action == "create_single_room":
             if None in (self.item_id, self.build_id, self.character_id, self.client_room_id):
                 raise ValueError("Room creation requires a published character and client identity")
-        elif self.action not in ("list_rooms", "list_chat_models") and None in (
+        elif self.action == "create_group_room":
+            if self.characters is None or self.client_room_id is None:
+                raise ValueError("Group creation requires characters and creation identity")
+        elif self.action not in listings and None in (
             self.room_id,
             self.expected_epoch,
         ):
@@ -59,6 +82,18 @@ class BookRoomRequest(StrictModel):
             raise ValueError("Round identity is required")
         if self.action == "submit_turn" and None in (self.client_turn_id, self.content):
             raise ValueError("Turn identity and message are required")
+        if self.target_member_ids is not None and (
+            self.mode != "directed"
+            or len(set(self.target_member_ids)) != len(self.target_member_ids)
+            or any(not 1 <= len(member) <= 100 for member in self.target_member_ids)
+        ):
+            raise ValueError("Directed targets must be distinct member identities")
         if self.action == "get_message_evidence" and self.message_id is None:
             raise ValueError("Message identity is required")
+        if self.action == "add_members" and self.characters is None:
+            raise ValueError("Joining requires published character selections")
+        if self.action == "set_member" and (
+            self.member_id is None or (self.active is None and self.speaking_mode is None)
+        ):
+            raise ValueError("Member control requires an identity and a control value")
         return self

@@ -45,11 +45,22 @@ class EphemeralEmotion(StrictModel):
 
 
 class ChatCandidate(StrictModel):
-    content: str = Field(min_length=1, max_length=2000)
-    dialogue_action: ExpressionAction
+    content: str = Field(max_length=2000)
+    dialogue_action: ExpressionAction | Literal["no_comment"]
     action_basis_claim_ids: list[str] = Field(default_factory=list, max_length=8)
     claims: list[ChatAssertion] = Field(default_factory=list, max_length=12)
     ephemeral_emotion: EphemeralEmotion | None = None
+
+    @model_validator(mode="after")
+    def silence(self) -> "ChatCandidate":
+        if self.dialogue_action == "no_comment" and (
+            self.content
+            or self.claims
+            or self.action_basis_claim_ids
+            or self.ephemeral_emotion is not None
+        ):
+            raise ValueError("Silence cannot carry a body, assertions or state changes")
+        return self
 
 
 class AssertionReview(StrictModel):
@@ -83,6 +94,27 @@ conversation仅用于没有事实内容的交流，不能用它掩盖具体事�
 dialogue_action为本次行为；价值性行动用action_basis_claim_ids引用当前基线。情绪只引用同房间触发消息和本人基线模式，材料不足则ephemeral_emotion=null。
 表达样例只帮助语气，不照搬场景，不产生额外知识。输出JSON模式：
 """
+GENERATE_PROMPT_V4 = (
+    GENERATE_PROMPT
+    + """\n本房间可能有其他人物。只回应给定用户请求和已公开消息，不读取对方私有原著。
+room_memory中的inference是说话者的猜测；回复转述它时用room_hearsay和该项消息ID，明确谁猜测，不能照搬为原著推演。
+先回答有依据的部分，再对未确认部分表示无法确认。不能因某部分未知而拒绝其他已给出的房间信息。
+不要用“我没有亲眼见过”或类似新自传解释未知；可直接说“我无法确认”。
+人物可以选择不发言：dialogue_action=no_comment，content为空字符串，claims和action_basis_claim_ids为空，ephemeral_emotion=null。
+沉默仍接受独立审查，但不会公开正文，也不会自动引发下一轮。
+"""
+)
+GENERATE_PROMPT_V5 = (
+    GENERATE_PROMPT_V4
+    + """\n称呼只使用用户公开给定的名字或称呼偏好。不能从名字猜测用户性别、年龄、职业或身份，勿自行加“姑娘/公子/女士/先生”等带属性的称谓。
+用户自定带称谓的昵称可以原样使用，但不据此确认其实际属性。保持自然问候，不用缺少信息解释人物的新自传。
+"""
+)
+GENERATE_PROMPTS = {
+    "character-chat-v3": GENERATE_PROMPT,
+    "character-chat-v4": GENERATE_PROMPT_V4,
+    "character-chat-v5": GENERATE_PROMPT_V5,
+}
 REVIEW_PROMPT = """独立检查人物候选，只依据提供的上下文，不补原著或模型常识。
 先从完整content找出所有实际断言，再与候选claims和来源核对；不能只检查模型自己标注的断言。
 facts_complete确认完整覆盖，unlisted_assertions列出遗漏。conversation/inference标签不能豁免具体事实、原著经历或虚构身份。
@@ -91,3 +123,13 @@ supported检查正文所有内容有据；persona_consistent检查当前信念�
 逐claims检查ordinal、supported、origin_correct和references_complete；action_supported检查价值行为依据；emotion_supported检查同房间触发及本人反应模式。
 没有额外事实的自然交流可通过；表达相似不能抵消越界或矛盾。不确定时拒绝。输出JSON模式：
 """
+REVIEW_PROMPT_V3 = (
+    REVIEW_PROMPT
+    + """\n核对称呼隐含的性别、年龄、身份和职业。用户仅给名字时，“姑娘/公子/女士/先生”等可能是未列出的属性断言，不能以礼貌交流为由自动通过。
+只有公开给定的称呼偏好或明确支持的属性才能使用；人物自己此前猜测的称呼不是用户属性证据。缺支持时标supported=false、facts_complete=false并列入unlisted_assertions。
+"""
+)
+REVIEW_PROMPTS = {
+    "character-chat-review-v2": REVIEW_PROMPT,
+    "character-chat-review-v3": REVIEW_PROMPT_V3,
+}
