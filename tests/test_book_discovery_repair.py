@@ -117,6 +117,189 @@ class ChoiceProvider(RepairProvider):
         )
 
 
+class BindingChoiceProvider:
+    def __init__(self, *, corrupt=False, hold=False, literal_errors=True):
+        self.inputs = []
+        self.initial = None
+        self.corrupt = corrupt
+        self.hold = hold
+        self.literal_errors = literal_errors
+        self.entered = asyncio.Event()
+        self.release = asyncio.Event()
+
+    async def chat(self, messages, **kwargs):
+        data = json.loads(messages[-1]["content"])
+        self.inputs.append(data)
+        if len(self.inputs) == 1:
+            assert len(data["segments"]) == 2
+            first, second = data["segments"]
+
+            def person(segment, name, key, quote, identity="new"):
+                start = segment["text"].index(quote)
+                return {
+                    "local_character_key": key,
+                    "name": name,
+                    "identity": identity,
+                    "presence": "uncertain" if identity == "uncertain" else "active",
+                    "evidence": {
+                        "segment_id": segment["id"],
+                        "local_start": start,
+                        "local_end": start + len(quote),
+                        "quote": quote,
+                    },
+                }
+
+            self.initial = {
+                "scenes": [
+                    {"segment_ids": [first["id"]], "characters": [person(first, "人物甲", "shared", "人物甲走。") ]},
+                    {"segment_ids": [second["id"]], "characters": [
+                        person(second, "人物乙", "shared", "他坐。" if self.literal_errors else "人物乙静坐", "uncertain"),
+                        person(second, "人物丙", "anonymous-repair-1-0-0", "她醒了。" if self.literal_errors else "人物丙思索"),
+                    ]},
+                ]
+            }
+            result = self.initial
+        else:
+            assert data["phase"] == "discovery_repair_choices"
+            assert len(data["repair_targets"]) == (2 if self.literal_errors else 1)
+            repairs = []
+            for target in data["repair_targets"]:
+                choice = next(option for option in target["choices"] if option["name"] == target["original"]["name"])
+                independent = target["original"]["identity"] == "uncertain"
+                if independent:
+                    assert all(not option["can_preserve"] for option in target["choices"])
+                repairs.append({
+                    "scene_index": target["scene_index"],
+                    "character_index": target["character_index"],
+                    "identity": "preserve" if self.corrupt or not independent else "uncertain",
+                    "presence": "uncertain" if independent else "active",
+                    "evidence_choice": choice["id"],
+                })
+            self.entered.set()
+            if self.hold:
+                await self.release.wait()
+            result = {"repairs": repairs}
+        return LLMResponse(content=json.dumps(result, ensure_ascii=False))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("corrupt", [False, True])
+@pytest.mark.parametrize("literal_errors", [False, True])
+async def test_binding_collision_and_literal_errors_share_one_bounded_choice_repair(book_library, corrupt, literal_errors):
+    item, source = story(book_library, "人物甲走。\n\n人物乙静坐，他坐。人物丙思索，她醒了。")
+    service = BookDiscoveryService(book_library.workspace_root)
+    config = DiscoveryConfig(provider_id=1, model="fixture", prompt_version="character-discovery-v12")
+    build = service.create_build(item, source, config)
+    provider = BindingChoiceProvider(corrupt=corrupt, literal_errors=literal_errors)
+    await service.run(build["build_id"], provider, config)
+    outcome = service.get_build(item, build["build_id"])
+    assert len(provider.inputs) == 2
+    if corrupt:
+        assert outcome["status"] == "failed"
+        assert not service.list_characters(item, build["build_id"])["characters"]
+    else:
+        assert outcome["stage"] == "discovery_complete"
+        with connect(service.db_path) as database:
+            saved = json.loads(database.execute("SELECT result_json FROM book_build_steps WHERE build_id=?", (build["build_id"],)).fetchone()[0])["result"]
+        untouched = DiscoveryResult.model_validate(provider.initial).model_dump()["scenes"][0]["characters"][0]
+        assert saved["scenes"][0]["characters"][0] == untouched
+        independent, repaired = saved["scenes"][1]["characters"]
+        assert independent["identity"] == "uncertain" and independent["existing_character_id"] is None
+        assert independent["local_character_key"] != untouched["local_character_key"]
+        assert independent["local_character_key"] == "anonymous-repair-1-0-1"
+        assert independent["aliases"] == []
+        assert repaired["name"] == "人物丙" and "人物丙" in repaired["evidence"]["quote"]
+        if not literal_errors:
+            assert repaired == DiscoveryResult.model_validate(provider.initial).model_dump()["scenes"][1]["characters"][1]
+        characters = service.list_characters(item, build["build_id"])["characters"]
+        assert next(character for character in characters if character["name"] == "人物乙")["agent_status"] == "needs_review"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("action", ["cancel", "delete"])
+async def test_late_binding_repair_is_fenced_after_cancel_or_source_delete(book_library, action):
+    item, source = story(book_library, "人物甲走。\n\n人物乙静坐，他坐。人物丙思索，她醒了。")
+    service = BookDiscoveryService(book_library.workspace_root)
+    config = DiscoveryConfig(provider_id=1, model="fixture", prompt_version="character-discovery-v12")
+    build = service.create_build(item, source, config)
+    provider = BindingChoiceProvider(hold=True)
+    worker = asyncio.create_task(service.run(build["build_id"], provider, config))
+    try:
+        await asyncio.wait_for(provider.entered.wait(), 10)
+        if action == "cancel":
+            service.cancel_build(item, build["build_id"])
+        else:
+            assert book_library.delete_item(item)
+        provider.release.set()
+        await worker
+    finally:
+        provider.release.set()
+        if not worker.done():
+            worker.cancel()
+            await asyncio.gather(worker, return_exceptions=True)
+    with connect(service.db_path) as database:
+        assert not database.execute("SELECT 1 FROM book_build_steps WHERE build_id=? AND status='validated'", (build["build_id"],)).fetchone()
+        assert not database.execute("SELECT 1 FROM book_characters WHERE build_id=?", (build["build_id"],)).fetchone()
+
+
+def test_existing_identity_cannot_absorb_an_uncertain_binding_in_either_repair_entry_point():
+    from backend.services.book_world.discovery_selection import apply_selection, prepare_selection
+
+    data = {"segments": [{"id": "s1", "text": "人物甲行走。"}, {"id": "s2", "text": "人物乙同人物甲谈话。"}],
+        "known_characters": [{"id": "known-a", "name": "人物甲", "aliases": [{"alias": "人物甲", "review_state": "candidate"}]}]}
+
+    def person(name, segment, identity, existing_id):
+        return {"name": name, "local_character_key": "shared", "identity": identity, "existing_character_id": existing_id,
+            "presence": "active", "evidence": {"segment_id": segment["id"], "local_start": 0, "local_end": len(segment["text"]), "quote": segment["text"]}}
+
+    original = {"scenes": [
+        {"segment_ids": ["s1"], "characters": [person("人物甲", data["segments"][0], "existing", "known-a")]},
+        {"segment_ids": ["s2"], "characters": [person("人物乙", data["segments"][1], "uncertain", None)]},
+    ]}
+    packet = prepare_repair(json.dumps(original, ensure_ascii=False), data, BookDiscoveryService._validate_result,
+        allow_uncertain_split=True, allow_binding_split=True)
+    assert packet is not None and len(packet["targets"]) == 1
+    selected = prepare_selection(packet, data)
+    assert selected is not None
+    target = selected["targets"][0]
+    choice = next(option for option in target["choices"] if option["name"] == "人物乙")
+    selection = {"repairs": [{"scene_index": 1, "character_index": 0, "identity": "uncertain", "presence": "uncertain", "evidence_choice": choice["id"]}]}
+    result = apply_selection(json.dumps(selection), selected, data, BookDiscoveryService._validate_result)
+    assert result.scenes[0].characters[0].existing_character_id == "known-a"
+    assert result.scenes[1].characters[0].identity == "uncertain" and result.scenes[1].characters[0].existing_character_id is None
+    selection["repairs"][0]["identity"] = "preserve"
+    with pytest.raises(ValueError, match="cannot preserve"):
+        apply_selection(json.dumps(selection), selected, data, BookDiscoveryService._validate_result)
+    replacement = person("人物甲", data["segments"][1], "existing", "known-a")
+    with pytest.raises(ValueError, match="assigned independent identity"):
+        apply_repair(json.dumps({"repairs": [{"scene_index": 1, "character_index": 0, "replacement": replacement}]}), packet, data, BookDiscoveryService._validate_result)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("version", ["character-discovery-v10", "character-discovery-v11"])
+async def test_legacy_binding_collision_still_requests_one_full_regeneration(book_library, version):
+    item, source = story(book_library, "人物甲走。\n\n人物乙静坐，他坐。人物丙思索，她醒了。")
+    service = BookDiscoveryService(book_library.workspace_root)
+    config = DiscoveryConfig(provider_id=1, model="fixture", prompt_version=version)
+    build = service.create_build(item, source, config)
+
+    class LegacyProvider(BindingChoiceProvider):
+        async def chat(self, messages, **kwargs):
+            if not self.inputs:
+                return await super().chat(messages, **kwargs)
+            data = json.loads(messages[-1]["content"])
+            self.inputs.append(data)
+            assert data.get("phase", "discovery") == "discovery" and "repair_targets" not in data
+            repaired = copy.deepcopy(self.initial)
+            repaired["scenes"][1]["characters"][0]["local_character_key"] = "legacy-independent"
+            return LLMResponse(content=json.dumps(repaired, ensure_ascii=False))
+
+    provider = LegacyProvider(literal_errors=False)
+    await service.run(build["build_id"], provider, config)
+    assert len(provider.inputs) == 2
+    assert service.get_build(item, build["build_id"])["stage"] == "discovery_complete"
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("corrupt", [False, True])
 async def test_choice_repair_uses_exact_server_source_and_preserves_other_entries(
@@ -479,7 +662,8 @@ def test_failed_repair_checkpoint_cannot_restore_deleted_source(book_library, mo
 @pytest.mark.parametrize(
     "structural_error", ["duplicate", "conflicting_binding", "duplicate_existing"]
 )
-def test_mixed_character_and_structure_errors_require_full_retry(structural_error):
+@pytest.mark.parametrize("allow_binding_split", [False, True])
+def test_mixed_character_and_structure_errors_require_full_retry(structural_error, allow_binding_split):
     data = {
         "segments": [
             {"id": "s1", "text": "人物甲开口，他离开。"},
@@ -523,7 +707,8 @@ def test_mixed_character_and_structure_errors_require_full_retry(structural_erro
             {"segment_ids": ["s2"], "characters": [second]},
         ]
     assert (
-        prepare_repair(json.dumps({"scenes": scenes}), data, BookDiscoveryService._validate_result)
+        prepare_repair(json.dumps({"scenes": scenes}), data, BookDiscoveryService._validate_result,
+            allow_uncertain_split=allow_binding_split, allow_binding_split=allow_binding_split)
         is None
     )
 

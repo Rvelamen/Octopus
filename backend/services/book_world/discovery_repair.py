@@ -55,6 +55,44 @@ REPAIR_V10_PROMPT = (
 )
 
 
+def _uncertain_binding_conflicts(result: DiscoveryResult) -> set[tuple[int, int]] | None:
+    groups: dict[str, list[tuple[int, int, DiscoveryCharacter]]] = {}
+    for scene_index, scene in enumerate(result.scenes):
+        scene_keys = set()
+        existing_ids = set()
+        for character_index, character in enumerate(scene.characters):
+            key = character.local_character_key
+            if key in scene_keys:
+                return None
+            scene_keys.add(key)
+            if character.existing_character_id is not None:
+                if character.existing_character_id in existing_ids:
+                    return None
+                existing_ids.add(character.existing_character_id)
+            groups.setdefault(key, []).append((scene_index, character_index, character))
+    targets: set[tuple[int, int]] = set()
+    for entries in groups.values():
+        bindings = {
+            (character.existing_character_id, character.identity, character.anonymous)
+            for _, _, character in entries
+        }
+        if len(bindings) < 2:
+            continue
+        stable = {
+            (character.existing_character_id, character.identity, character.anonymous)
+            for _, _, character in entries
+            if character.identity != "uncertain"
+        }
+        if len(stable) > 1 or not any(character.identity == "uncertain" for _, _, character in entries):
+            return None
+        targets.update(
+            (scene_index, character_index)
+            for scene_index, character_index, character in entries
+            if character.identity == "uncertain" and character.existing_character_id is None
+        )
+    return targets
+
+
 def prepare_repair(
     raw: str,
     data: dict,
@@ -62,15 +100,25 @@ def prepare_repair(
     *,
     allow_anonymous_split: bool = False,
     allow_uncertain_split: bool = False,
+    allow_binding_split: bool = False,
 ) -> dict | None:
     if len(raw) > 100000:
         return None
     try:
         parsed = DiscoveryResult.model_validate_json(parse_json(raw))
-        validate_local_identities(parsed)
         original = parsed.model_dump()
     except ValueError:
         return None
+    binding_targets: set[tuple[int, int]] = set()
+    try:
+        validate_local_identities(parsed)
+    except ValueError:
+        if not allow_binding_split or not allow_uncertain_split:
+            return None
+        conflicts = _uncertain_binding_conflicts(parsed)
+        if not conflicts:
+            return None
+        binding_targets = conflicts
     if [segment for scene in original["scenes"] for segment in scene["segment_ids"]] != [
         row["id"] for row in data["segments"]
     ]:
@@ -89,28 +137,37 @@ def prepare_repair(
                     for index, entry in enumerate(original["scenes"])
                 ]
             }
+            detail = None
             try:
                 validate(json.dumps(probe, ensure_ascii=False), data)
             except ValueError as error:
-                targets.append(
-                    {
-                        "scene_index": scene_index,
-                        "character_index": character_index,
-                        "character": character,
-                        "scene_segment_ids": scene["segment_ids"],
-                        "error": str(error)[:300],
-                    }
-                )
-                if allow_anonymous_split or allow_uncertain_split:
-                    suffix = 0
+                detail = str(error)[:300]
+            independent = (scene_index, character_index) in binding_targets
+            if independent:
+                detail = "Uncertain identity shares a conflicting local key; choose an independent uncertain identity. " + (detail or "")
+            if detail is None:
+                continue
+            targets.append(
+                {
+                    "scene_index": scene_index,
+                    "character_index": character_index,
+                    "character": character,
+                    "scene_segment_ids": scene["segment_ids"],
+                    "error": detail[:300],
+                }
+            )
+            if independent:
+                targets[-1]["requires_independent_identity"] = True
+            if allow_anonymous_split or allow_uncertain_split:
+                suffix = 0
+                key = f"anonymous-repair-{scene_index}-{character_index}-{suffix}"
+                while key in reserved_keys:
+                    suffix += 1
                     key = f"anonymous-repair-{scene_index}-{character_index}-{suffix}"
-                    while key in reserved_keys:
-                        suffix += 1
-                        key = f"anonymous-repair-{scene_index}-{character_index}-{suffix}"
-                    reserved_keys.add(key)
-                    targets[-1][
-                        "independent_local_key" if allow_uncertain_split else "anonymous_local_key"
-                    ] = key
+                reserved_keys.add(key)
+                targets[-1][
+                    "independent_local_key" if allow_uncertain_split else "anonymous_local_key"
+                ] = key
     if not 1 <= len(targets) <= 128:
         return None
     return {
@@ -136,8 +193,14 @@ def apply_repair(
     assembled = copy.deepcopy(packet["candidate"])
     for repair in result.repairs:
         original = assembled["scenes"][repair.scene_index]["characters"][repair.character_index]
+        target = targets[(repair.scene_index, repair.character_index)]
+        if target.get("requires_independent_identity") and not (
+            repair.replacement.local_character_key == target["independent_local_key"]
+            and repair.replacement.identity == "uncertain"
+            and repair.replacement.existing_character_id is None
+        ):
+            raise ValueError("Conflicting uncertain binding requires its assigned independent identity")
         if repair.replacement.local_character_key != original["local_character_key"]:
-            target = targets[(repair.scene_index, repair.character_index)]
             replacement = repair.replacement
             if not (
                 (

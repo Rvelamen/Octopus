@@ -1,0 +1,85 @@
+{
+  "scope": "Fixed native v12-02 unit16 binding and literal repairs; not full-book/persona acceptance",
+  "budget": 2,
+  "calls": [
+    {
+      "attempt": 1,
+      "status": "completed",
+      "targets": 1,
+      "forced_independent_targets": 1,
+      "input_sha256": "be132886d24e72391b3d41b9451a32f83c4f6269901296ecfda8a0907daa0dab",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1081,
+        "completion_tokens": 110,
+        "total_tokens": 1191,
+        "cache_read_input_tokens": 256,
+        "cache_creation_input_tokens": 0
+      },
+      "valid": true,
+      "untouched_entries_preserved": true,
+      "target_outcomes": [
+        {
+          "name": "猴王",
+          "identity": "uncertain",
+          "existing_character_id": null
+        }
+      ],
+      "elapsed_seconds": 3.782
+    },
+    {
+      "attempt": 2,
+      "status": "completed",
+      "targets": 3,
+      "forced_independent_targets": 1,
+      "input_sha256": "fc314e967b1ba39d02a69ab34d04602018f4043c06aa0f9a5943eee3a9880d8d",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1576,
+        "completion_tokens": 1116,
+        "total_tokens": 2692,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "valid": true,
+      "untouched_entries_preserved": true,
+      "target_outcomes": [
+        {
+          "name": "猴王",
+          "identity": "uncertain",
+          "existing_character_id": null
+        },
+        {
+          "name": "老孙",
+          "identity": "existing",
+          "existing_character_id": "14edb165-4120-4527-90cc-c1dff69236a4"
+        },
+        {
+          "name": "未具名人物",
+          "identity": "uncertain",
+          "existing_character_id": null
+        }
+      ],
+      "elapsed_seconds": 30.015
+    }
+  ],
+  "publication": false,
+  "quality_pass": false,
+  "actual_calls": 2,
+  "terminal": true,
+  "model_config": {
+    "call_timeout_seconds": 180,
+    "max_tokens": 8192,
+    "model": "k3",
+    "policy_version": "candidate-identity-v2",
+    "prompt_version": "character-discovery-v12",
+    "provider_id": 2,
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 2000,
+    "unit_segment_limit": 12
+  },
+  "model_record_id": 337,
+  "decoder_patch_base": "28dc3ba",
+  "decoder_patch_uncommitted_at_native_probe": true
+}

@@ -812,6 +812,7 @@ class BookDiscoveryService:
                                 "character-discovery-v11",
                                 "character-discovery-v12",
                             ),
+                            allow_binding_split=config.prompt_version == "character-discovery-v12",
                         )
                         if (
                             packet is not None

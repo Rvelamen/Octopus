@@ -102,6 +102,7 @@ def prepare_selection(packet: dict, data: dict) -> dict | None:
                     preserve = (
                         not anonymous
                         and not original["anonymous"]
+                        and not target.get("requires_independent_identity")
                         and (
                             label in known_names
                             if original["existing_character_id"]
