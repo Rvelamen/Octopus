@@ -35,7 +35,7 @@ def apply_source_schema(db: sqlite3.Connection) -> None:
     db.executescript(Path(__file__).with_name("source_schema.sql").read_text(encoding="utf-8"))
 
 
-def disable_item_sources(db: sqlite3.Connection, item_id: int) -> None:
+def disable_item_sources(db: sqlite3.Connection, item_id: int, *, workspace_id: str) -> None:
     """Fence prepared sources before the legacy item/file deletion begins."""
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name='book_books'").fetchone():
         return
@@ -60,4 +60,22 @@ def disable_item_sources(db: sqlite3.Connection, item_id: int) -> None:
         db.execute(
             "UPDATE book_expression_sets SET lifecycle_state='unavailable',cancel_requested=1,lease_generation=lease_generation+1,lease_owner=NULL,lease_expires_at=NULL WHERE book_id IN (SELECT id FROM book_books WHERE library_item_id=?)",
             (item_id,),
+        )
+    from .lifecycle import fence_book_rooms
+
+    books = db.execute("SELECT id FROM book_books WHERE library_item_id=?", (item_id,)).fetchall()
+    for book in books:
+        fence_book_rooms(db, book["id"], workspace_id)
+        if db.execute("SELECT 1 FROM sqlite_master WHERE name='book_source_purges'").fetchone():
+            row = db.execute(
+                "SELECT library_path FROM library_items WHERE id=?", (item_id,)
+            ).fetchone()
+            db.execute(
+                "INSERT OR IGNORE INTO book_source_purges(book_id,library_item_id,library_rel_path) VALUES (?,?,?)",
+                (book["id"], item_id, row["library_path"]),
+            )
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='book_auto_imports'").fetchone():
+        db.execute(
+            "UPDATE book_auto_imports SET status='cancelled',generation=generation+1,error_code='source_removed',error_detail=NULL WHERE library_item_id=? OR book_id IN (SELECT id FROM book_books WHERE library_item_id=?)",
+            (item_id, item_id),
         )

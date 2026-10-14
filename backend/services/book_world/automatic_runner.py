@@ -15,6 +15,12 @@ class AutoImportRunner:
     _scanners: dict[tuple[asyncio.AbstractEventLoop, str], asyncio.Task] = {}
     _workers: dict[tuple[asyncio.AbstractEventLoop, str, str], asyncio.Task] = {}
     _controls: dict[tuple[asyncio.AbstractEventLoop, str, str], asyncio.Lock] = {}
+    _roots: dict[str, Path] = {}
+    _stopping_loops: set[asyncio.AbstractEventLoop] = set()
+
+    @classmethod
+    def startup(cls) -> None:
+        cls._stopping_loops.discard(asyncio.get_running_loop())
 
     @classmethod
     def control_lock(cls, root: Path, job_id: str) -> asyncio.Lock:
@@ -25,12 +31,15 @@ class AutoImportRunner:
     @classmethod
     async def schedule(cls, service: AutoImportService, root: Path, job: dict) -> None:
         key = asyncio.get_running_loop(), workspace_identity(root), job["job_id"]
+        if key[0] in cls._stopping_loops:
+            return
         async with cls.control_lock(root, job["job_id"]):
             if key in cls._workers and not cls._workers[key].done():
                 return
             current = await asyncio.to_thread(service.get_job, job["library_item_id"])
             if (
-                current is None
+                key[0] in cls._stopping_loops
+                or current is None
                 or current["job_id"] != job["job_id"]
                 or current["status"] != "queued"
                 or current["generation"] != job["generation"]
@@ -51,7 +60,10 @@ class AutoImportRunner:
 
     @classmethod
     def start(cls, root: str | Path) -> None:
+        if asyncio.get_running_loop() in cls._stopping_loops:
+            return
         root = Path(root).resolve()
+        cls._roots[workspace_identity(root)] = root
         key = asyncio.get_running_loop(), workspace_identity(root)
         if key in cls._scanners and not cls._scanners[key].done():
             return
@@ -89,10 +101,16 @@ class AutoImportRunner:
 
     @classmethod
     async def shutdown(cls) -> None:
+        cls._stopping_loops.add(asyncio.get_running_loop())
         tasks = [*cls._scanners.values(), *cls._workers.values()]
         for task in tasks:
             if not task.done():
                 task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
+        for root in cls._roots.values():
+            if (root / "knowledge/.knowledge_index.db").exists():
+                service = await asyncio.to_thread(AutoImportService, root)
+                await asyncio.to_thread(service.recover)
         cls._scanners.clear()
         cls._workers.clear()
+        cls._roots.clear()

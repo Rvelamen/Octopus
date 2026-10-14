@@ -91,6 +91,7 @@ async def lifespan(app: FastAPI):
         )
     from backend.services.book_world.automatic_runner import AutoImportRunner
 
+    AutoImportRunner.startup()
     AutoImportRunner.start(Path(workspace))
 
     # 4. Initialize Agent Loop (Lazy import to avoid circular deps)
@@ -183,6 +184,13 @@ async def lifespan(app: FastAPI):
     agent_task = asyncio.create_task(agent_loop.run())
     logger.info("Agent loop started")
 
+    from backend.channels.desktop.handlers.library import LibraryHandler
+
+    LibraryHandler.startup()
+    from backend.channels.desktop.handlers.book_world import BookWorldHandler
+
+    BookWorldHandler.startup()
+    BookRoomHandler.startup()
     # 8. Start Channel Manager (includes desktop channel and outbound dispatcher)
     channel_manager_task = asyncio.create_task(channel_manager.start_all())
     logger.info("Channel manager started")
@@ -205,7 +213,14 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down Octopus Desktop Service...")
+    LibraryHandler._stopping = True
+    BookWorldHandler._stopping = True
+    BookRoomHandler._stopping = True
     await AutoImportRunner.shutdown()
+    from backend.channels.desktop.handlers.book_world import BookWorldHandler
+
+    await BookWorldHandler.shutdown()
+    await BookRoomHandler.shutdown()
 
     # Stop cron service
     if cron_service:
@@ -220,6 +235,10 @@ async def lifespan(app: FastAPI):
         await channel_manager.stop_all()
     if channel_manager_task:
         channel_manager_task.cancel()
+
+    from backend.channels.desktop.handlers.library import LibraryHandler
+
+    await LibraryHandler.shutdown()
 
     # Stop agent loop
     if agent_loop:

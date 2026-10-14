@@ -1,11 +1,12 @@
 import { useState, useCallback, useRef } from 'react';
+import { message } from 'antd';
 
 const getApiPort = async () => {
   if (window.electronAPI?.getApiPort) {
     try {
       const port = await window.electronAPI.getApiPort();
       if (port) return port;
-    } catch {}
+    } catch { /* Fall back to the browser service port. */ }
   }
   return window.location.port || '18791';
 };
@@ -59,8 +60,9 @@ const useLibrary = (libraryWS, sendWSMessage) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ total: 0, limit: 50, offset: 0 });
-  const loadMoreRef = useRef(false);
   const searchTimeoutRef = useRef(null);
+  const workspaceRef = useRef(null);
+  const listRevisionRef = useRef(0);
 
   // ── Load collections tree ──
   const loadCollections = useCallback(async () => {
@@ -78,25 +80,36 @@ const useLibrary = (libraryWS, sendWSMessage) => {
   // offset is passed explicitly to avoid depending on pagination.offset
   const loadItems = useCallback(
     async (collectionId, query, offset = 0) => {
+      const revision = ++listRevisionRef.current;
       setLoading(true);
       try {
         const limit = pagination.limit;
-        const response = await libraryWS.listItems({
+        let response = await libraryWS.listItems({
           collection_id: collectionId ?? undefined,
           query: query || undefined,
           limit,
           offset,
         });
+        if (revision !== listRevisionRef.current) return;
         if (response?.data) {
+          const changed = workspaceRef.current && response.data.workspace_id && workspaceRef.current !== response.data.workspace_id;
+          if (changed) {
+            setSelectedItem(null); setSelectedCollectionId(null); setSearchQuery(''); setCollections([]);
+            if (offset || collectionId || query) {
+              response = await libraryWS.listItems({ limit, offset: 0 });
+              if (revision !== listRevisionRef.current) return;
+            }
+          }
+          workspaceRef.current = response.data.workspace_id || workspaceRef.current;
           const newItems = response.data.items || [];
-          const isReset = offset === 0;
+          const isReset = offset === 0 || changed;
           setItems((prev) => (isReset ? newItems : [...prev, ...newItems]));
           setPagination(response.data.pagination || { total: 0, limit, offset });
         }
       } catch (e) {
         console.error('Failed to load items:', e);
       } finally {
-        setLoading(false);
+        if (revision === listRevisionRef.current) setLoading(false);
       }
     },
     [libraryWS, pagination.limit]
@@ -117,8 +130,10 @@ const useLibrary = (libraryWS, sendWSMessage) => {
         return;
       }
       try {
+        const revision = listRevisionRef.current;
+        const workspace = workspaceRef.current;
         const response = await libraryWS.getItem(itemId);
-        if (response?.data?.item) {
+        if (response?.data?.item && revision === listRevisionRef.current && workspace === workspaceRef.current) {
           setSelectedItem(response.data.item);
         }
       } catch (e) {
@@ -278,7 +293,8 @@ const useLibrary = (libraryWS, sendWSMessage) => {
   const deleteItem = useCallback(
     async (itemId) => {
       try {
-        await libraryWS.deleteItem(itemId);
+        const response = await libraryWS.deleteItem(itemId, workspaceRef.current);
+        if (response.type === 'error') throw new Error(response.data.error);
         if (selectedItem?.id === itemId) {
           setSelectedItem(null);
         }
@@ -286,6 +302,7 @@ const useLibrary = (libraryWS, sendWSMessage) => {
         await loadCollections(); // update counts
       } catch (e) {
         console.error('Failed to delete item:', e);
+        message.error(e.message);
       }
     },
     [libraryWS, loadItems, loadCollections, selectedItem, selectedCollectionId, searchQuery]
@@ -295,7 +312,8 @@ const useLibrary = (libraryWS, sendWSMessage) => {
   const deleteItems = useCallback(
     async (itemIds) => {
       try {
-        await libraryWS.deleteItems(itemIds);
+        const response = await libraryWS.deleteItems(itemIds, workspaceRef.current);
+        if (response.type === 'error' || response.data?.fail > 0) throw new Error(response.data.error || 'Some sources could not be fully cleaned. Their reply permission remains disabled.');
         if (selectedItem && itemIds.includes(selectedItem.id)) {
           setSelectedItem(null);
         }
@@ -303,6 +321,7 @@ const useLibrary = (libraryWS, sendWSMessage) => {
         await loadCollections(); // update counts
       } catch (e) {
         console.error('Failed to delete items:', e);
+        message.error(e.message);
       }
     },
     [libraryWS, loadItems, loadCollections, selectedItem, selectedCollectionId, searchQuery]

@@ -20,7 +20,11 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
 
   const request = useCallback(async (action, values = {}) => {
     const response = await sendWSMessage('book_room', { action, workspace_id: detail.workspace_id, ...values }, 120000);
-    if (response.type === 'error') throw new Error(response.data.error);
+    if (response.type === 'error') {
+      const failure = new Error(response.data.error);
+      failure.code = response.data.code;
+      throw failure;
+    }
     return response.data;
   }, [detail.workspace_id, sendWSMessage]);
 
@@ -49,7 +53,15 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
       historyRef.current = { key, messages: history };
       setRoom(snapshot); setMessages(history); setRound(job); setMemory(recalled.memory);
       if (job?.generation_config?.model_record_id && (!modelTouched.current || ['queued', 'running', 'paused', 'interrupted'].includes(job.status))) setModelKey(`${job.generation_config.provider_id}:${job.generation_config.model_record_id}`);
-    } catch (failure) { if (valid()) throw failure; }
+    } catch (failure) {
+      if (valid()) {
+        if (failure.code === 'invalid_scope') {
+          roomRef.current = null; historyRef.current = { key: null, messages: [] };
+          setRoom(null); setMessages([]); setRound(null); setMemory(null);
+        }
+        throw failure;
+      }
+    }
   }, [request]);
 
   useEffect(() => {
@@ -93,7 +105,7 @@ export default function useBookSingleRoom(detail, sendWSMessage) {
         values = pendingTurn.current.values;
         const model = models.find((entry) => `${entry.provider_id}:${entry.model_record_id}` === modelKey);
         if (model) values = { ...values, provider_id: model.provider_id, model_record_id: model.model_record_id };
-      } else values = ['set_member', 'add_members'].includes(operation) ? controls : operation === 'reset_memory' ? {} : { round_id: round.round_id };
+      } else values = ['set_member', 'add_members', 'retry_source_cleanup'].includes(operation) ? controls : operation === 'reset_memory' ? {} : { round_id: round.round_id };
       const result = await request(operation, { ...roomRef.current, ...values });
       if (current !== generation.current) return false;
       if (operation === 'reset_memory') {

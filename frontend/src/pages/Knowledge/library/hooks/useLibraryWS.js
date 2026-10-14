@@ -31,11 +31,11 @@ const useLibraryWS = (sendWSMessage) => {
     [send]
   );
   const deleteItem = useCallback(
-    (itemId) => send('library_delete', { item_id: itemId }),
+    (itemId, workspaceId) => send('library_delete', { item_id: itemId, workspace_id: workspaceId }),
     [send]
   );
   const deleteItems = useCallback(
-    (itemIds) => send('library_delete', { item_ids: itemIds }),
+    (itemIds, workspaceId) => send('library_delete', { item_ids: itemIds, workspace_id: workspaceId }),
     [send]
   );
   const searchItems = useCallback(

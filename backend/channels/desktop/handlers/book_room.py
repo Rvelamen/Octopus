@@ -36,6 +36,31 @@ class BookRoomHandler(MessageHandler):
     _cleanup_tasks: dict[tuple[str, str], asyncio.Task] = {}
     _initialized_workspaces: set[tuple[Any, str]] = set()
     _initialization_locks: dict[tuple[Any, str], asyncio.Lock] = {}
+    _worker_roots: dict[str, Path] = {}
+    _inflight: set[asyncio.Future] = set()
+    _stopping = False
+
+    @classmethod
+    def startup(cls) -> None:
+        cls._stopping = False
+
+    @classmethod
+    async def shutdown(cls) -> None:
+        cls._stopping = True
+        await asyncio.gather(*cls._inflight, return_exceptions=True)
+        for root in cls._worker_roots.values():
+            if not (root / "knowledge/.knowledge_index.db").exists():
+                continue
+            rounds = await asyncio.to_thread(BookRoundService, root)
+            await asyncio.to_thread(rounds.recover_interrupted)
+        tasks = [*cls._tasks.values(), *cls._cleanup_tasks.values()]
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        cls._tasks.clear()
+        cls._cleanup_tasks.clear()
+        cls._worker_roots.clear()
 
     @classmethod
     async def initialize_workspace(cls, root: Path) -> list[str]:
@@ -117,6 +142,7 @@ class BookRoomHandler(MessageHandler):
         self, root: Path, scope: RoomScope, round_id: str, model: CharacterChatModel
     ) -> None:
         key = workspace_identity(root), round_id
+        self._worker_roots[key[0]] = root
         if key in self._tasks and not self._tasks[key].done():
             return
 
@@ -209,6 +235,20 @@ class BookRoomHandler(MessageHandler):
         self, root: Path, scope: RoomScope, request: BookRoomRequest, rooms: BookRoomService
     ) -> dict[str, Any]:
         rounds = await asyncio.to_thread(BookRoundService, root)
+        if request.action == "retry_source_cleanup":
+            from backend.services.book_world.lifecycle import BookLifecycleService
+
+            snapshot = await asyncio.to_thread(rooms.get_room, scope)
+            if not any(
+                source["book_id"] == request.source_book_id and source["status"] == "source_removed"
+                for source in snapshot["sources"]
+            ):
+                raise BookWorldError(
+                    "invalid_scope", "Cleanup must refer to a removed source bound to this room"
+                )
+            assert request.source_book_id is not None
+            lifecycle = await asyncio.to_thread(BookLifecycleService, root)
+            return await asyncio.to_thread(lifecycle.purge, request.source_book_id)
         if request.action == "add_members":
             assert request.characters
             selections = [
@@ -329,6 +369,18 @@ class BookRoomHandler(MessageHandler):
             return result
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        if self._stopping:
+            await self.send_response(websocket, WSMessage(type=MessageType.ERROR, request_id=message.request_id, data={"code": "service_stopping", "error": "Service is shutting down"}))
+            return
+        finished = asyncio.get_running_loop().create_future()
+        self._inflight.add(finished)
+        try:
+            await self._handle_active(websocket, message)
+        finally:
+            finished.set_result(None)
+            self._inflight.discard(finished)
+
+    async def _handle_active(self, websocket: WebSocket, message: WSMessage) -> None:
         root = Path(get_workspace_path()).resolve()
         try:
             request = BookRoomRequest.model_validate(message.data)

@@ -18,17 +18,57 @@ from backend.utils.helpers import get_workspace_path
 class LibraryHandler(MessageHandler):
     """Handle all library-related WebSocket messages."""
 
+    _background_jobs: set[asyncio.Future] = set()
+    _inflight: set[asyncio.Future] = set()
+    _stopping = False
+
+    @classmethod
+    def startup(cls) -> None:
+        cls._stopping = False
+
+    @classmethod
+    def _process_pdf(cls, engine: LibraryEngine, item_id: int, path: Path) -> None:
+        task = asyncio.get_running_loop().run_in_executor(
+            None, engine._process_pdf_background, item_id, path
+        )
+        cls._background_jobs.add(task)
+        task.add_done_callback(cls._background_jobs.discard)
+
+    @classmethod
+    async def shutdown(cls) -> None:
+        cls._stopping = True
+        await asyncio.gather(*cls._inflight, return_exceptions=True)
+        # Cancelling a Future cannot stop its executor thread. Let already
+        # accepted extraction finish before closing its database connection.
+        await asyncio.gather(*cls._background_jobs, return_exceptions=True)
+        cls._background_jobs.clear()
+        for engine in LibraryEngine._instances.values():
+            engine.db.close()
+        LibraryEngine._instances.clear()
+
     def __init__(self, bus, workspace_root=None):
         super().__init__(bus)
         self.engine = LibraryEngine(str(workspace_root or get_workspace_path()))
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
-        root = Path(get_workspace_path()).resolve()
-        await asyncio.to_thread(
-            run_knowledge_index_migrations, root / "knowledge" / ".knowledge_index.db"
-        )
-        scoped = LibraryHandler(self.bus, workspace_root=root)
-        await scoped._dispatch(websocket, message)
+        if self._stopping:
+            await self._send_error(websocket, message.request_id, "Service is shutting down")
+            return
+        finished = asyncio.get_running_loop().create_future()
+        self._inflight.add(finished)
+        try:
+            root = Path(get_workspace_path()).resolve()
+            await asyncio.to_thread(
+                run_knowledge_index_migrations, root / "knowledge" / ".knowledge_index.db"
+            )
+            if self._stopping:
+                await self._send_error(websocket, message.request_id, "Service is shutting down")
+                return
+            scoped = LibraryHandler(self.bus, workspace_root=root)
+            await scoped._dispatch(websocket, message)
+        finally:
+            finished.set_result(None)
+            self._inflight.discard(finished)
 
     async def _dispatch(self, websocket: WebSocket, message: WSMessage) -> None:
         handler_map = {
@@ -107,6 +147,7 @@ class LibraryHandler(MessageHandler):
             MessageType.LIBRARY_LIST_RESULT,
             {
                 "items": items,
+                "workspace_id": workspace_identity(self.engine.workspace_root),
                 "pagination": {"total": total, "limit": limit, "offset": offset},
             },
         )
@@ -197,8 +238,7 @@ class LibraryHandler(MessageHandler):
             return
 
         # Process PDF in background: copy, hash, extract title, chunks
-        loop = asyncio.get_running_loop()
-        loop.run_in_executor(None, self.engine._process_pdf_background, item["id"], pdf_path)
+        self._process_pdf(self.engine, item["id"], pdf_path)
 
         await self._send_success(
             websocket, message, MessageType.LIBRARY_CREATE_RESULT, {"item": item}
@@ -218,14 +258,18 @@ class LibraryHandler(MessageHandler):
     async def _handle_delete(self, websocket: WebSocket, message: WSMessage) -> None:
         item_ids = message.data.get("item_ids")
         item_id = message.data.get("item_id")
+        expected_workspace=message.data.get('workspace_id')
+        if expected_workspace is not None and expected_workspace!=workspace_identity(self.engine.workspace_root):
+            await self._send_error(websocket,message.request_id,'Workspace changed; reload before deleting this item')
+            return
 
         if item_ids and isinstance(item_ids, list):
-            result = self.engine.delete_items(item_ids)
+            result = await asyncio.to_thread(self.engine.delete_items,item_ids)
             await self._send_success(
                 websocket, message, MessageType.LIBRARY_DELETE_RESULT, {"success": True, **result}
             )
         elif item_id:
-            self.engine.delete_item(item_id)
+            await asyncio.to_thread(self.engine.delete_item,item_id)
             await self._send_success(
                 websocket, message, MessageType.LIBRARY_DELETE_RESULT, {"success": True}
             )
@@ -623,8 +667,7 @@ class LibraryHandler(MessageHandler):
             )
 
             # Process PDF in background: copy, hash, extract title, chunks
-            loop = asyncio.get_running_loop()
-            loop.run_in_executor(None, self.engine._process_pdf_background, item["id"], pdf_path)
+            self._process_pdf(self.engine, item["id"], pdf_path)
 
             await self._send_success(
                 websocket, message, MessageType.LIBRARY_IMPORT_ARXIV_RESULT, {"item": item}

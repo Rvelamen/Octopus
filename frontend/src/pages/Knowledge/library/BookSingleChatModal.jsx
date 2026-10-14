@@ -66,6 +66,7 @@ export default function BookSingleChatModal({ detail, sendWSMessage, onClose, gr
     {chat.room && !chat.models.length && <Alert type="warning" title={t('bookRoom.noModels')} />}
     <Select aria-label={t('bookRoom.model')} placeholder={t('bookRoom.model')} value={chat.modelKey} onChange={chat.setModelKey} disabled={chat.busy || active} style={{ width: '100%', margin: '10px 0' }} options={chat.models.map((entry) => ({ value: `${entry.provider_id}:${entry.model_record_id}`, label: entry.label }))} />
     <small>{t('bookRoom.modelHint')}</small>
+    {chat.room?.sources.filter(source => source.status !== 'active').map(source => <Alert key={source.book_id} type="warning" title={`${source.identity.book_title} · ${t('bookRoom.sourceUnavailable')}`} action={source.cleanup_status === 'failed' ? <Button size="small" disabled={chat.busy} onClick={() => chat.act('retry_source_cleanup', null, { source_book_id: source.book_id })}>{t('bookRoom.retryCleanup')}</Button> : null} />)}
     {group && <section aria-label={t('bookRoom.members')} style={{ padding: '10px 0' }}>
       <strong>{t('bookRoom.members')}</strong>
       {chat.room?.members.map((member) => <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '8px 0' }}>
@@ -87,6 +88,7 @@ export default function BookSingleChatModal({ detail, sendWSMessage, onClose, gr
       {!chat.messages.length && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('bookRoom.empty')} />}
       {chat.messages.map((message) => <article key={message.id} id={`book-room-message-${message.id}`} style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
         <strong>{speakerLabel(message)}</strong>
+        {chat.room?.members.find((member) => member.id === message.speaker_member_id)?.removed_reason === 'source_removed' && <Tag>{t('bookRoom.deletedSource')}</Tag>}
         {group && message.reply_to_id && <div><Button type="link" size="small" onClick={() => document.getElementById(`book-room-message-${message.reply_to_id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}>{t('bookRoom.replyTo', { name: chat.messages.find((entry) => entry.id === message.reply_to_id) ? speakerLabel(chat.messages.find((entry) => entry.id === message.reply_to_id)) : message.reply_to_id.slice(0, 6) })}</Button></div>}
         <p style={{ whiteSpace: 'pre-wrap', margin: '6px 0' }}>{message.content}</p>
         {message.refs.length > 0 && <Button type="link" size="small" onClick={() => openEvidence(message.id)}>{t('bookRoom.evidence')}</Button>}

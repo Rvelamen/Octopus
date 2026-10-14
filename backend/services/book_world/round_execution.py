@@ -161,8 +161,9 @@ class RoundExecution:
                 or row["execution_window"] != lease.execution_window
                 or row["lease_generation"] != lease.generation + 1
                 or row["lease_owner"] is not None
-                or row["status"] not in ("queued", "paused", "completed", "cancelled")
-                or (row["status"] == "paused" and not cancelled)
+                or row["status"]
+                not in ("queued", "paused", "interrupted", "completed", "cancelled")
+                or (row["status"] in ("paused", "interrupted") and not cancelled)
             ):
                 return
             try:

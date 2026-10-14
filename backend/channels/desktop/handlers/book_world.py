@@ -31,6 +31,33 @@ class BookWorldHandler(MessageHandler):
     _revision_requests: set[asyncio.Task] = set()
     _revision_slots: dict[tuple[Any, str], asyncio.Semaphore] = {}
     _expression_controls: dict[tuple[Any, str, str], asyncio.Lock] = {}
+    _worker_roots: dict[str, Path] = {}
+    _inflight: set[asyncio.Future] = set()
+    _stopping = False
+
+    @classmethod
+    def startup(cls) -> None:
+        cls._stopping = False
+
+    @classmethod
+    async def shutdown(cls) -> None:
+        cls._stopping = True
+        await asyncio.gather(*cls._inflight, return_exceptions=True)
+        tasks = [*cls._build_tasks.values(), *cls._revision_requests]
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        from backend.services.book_world.lifecycle import BookLifecycleService
+
+        for root in cls._worker_roots.values():
+            if not (root / "knowledge/.knowledge_index.db").exists():
+                continue
+            lifecycle = await asyncio.to_thread(BookLifecycleService, root)
+            await asyncio.to_thread(lifecycle.interrupt_builds)
+        cls._build_tasks.clear()
+        cls._revision_requests.clear()
+        cls._worker_roots.clear()
 
     @classmethod
     def _expression_lock(cls, root: Path, set_id: str) -> asyncio.Lock:
@@ -54,6 +81,7 @@ class BookWorldHandler(MessageHandler):
             f"expression:{build_id}" if phase == "expression" else build_id,
         )
         task = cls._build_tasks.get(key)
+        cls._worker_roots[key[0]] = root
         if task is not None and not task.done():
             return
 
@@ -375,6 +403,18 @@ class BookWorldHandler(MessageHandler):
         }
 
     async def handle(self, websocket: WebSocket, message: WSMessage) -> None:
+        if self._stopping:
+            await self.send_response(websocket, WSMessage(type=MessageType.ERROR, request_id=message.request_id, data={"code": "service_stopping", "error": "Service is shutting down"}))
+            return
+        finished = asyncio.get_running_loop().create_future()
+        self._inflight.add(finished)
+        try:
+            await self._handle_active(websocket, message)
+        finally:
+            finished.set_result(None)
+            self._inflight.discard(finished)
+
+    async def _handle_active(self, websocket: WebSocket, message: WSMessage) -> None:
         try:
             request = BookWorldRequest.model_validate(message.data)
         except ValidationError as error:
@@ -414,6 +454,7 @@ class BookWorldHandler(MessageHandler):
                     await self._respond(websocket, message, root, request)
 
             task = asyncio.create_task(execute_revision())
+            self._worker_roots[workspace_identity(root)] = root
             self._revision_requests.add(task)
 
             def finished(completed: asyncio.Task) -> None:

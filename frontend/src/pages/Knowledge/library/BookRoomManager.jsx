@@ -23,6 +23,7 @@ export default function BookRoomManager({ sendWSMessage, onClose }) {
   const generation = useRef(0);
   const listRevision = useRef(0);
   const pendingCreation = useRef(null);
+  const workspaceRef = useRef(null);
 
   const request = useCallback(async (action, data = {}) => {
     const response = await sendWSMessage('book_room', { action, ...data }, 120000);
@@ -37,6 +38,11 @@ export default function BookRoomManager({ sendWSMessage, onClose }) {
       const [list, characters] = await Promise.all([request('list_rooms', { limit: 25 }), request('list_room_characters', { limit: 100 })]);
       if (current !== generation.current || sequence !== listRevision.current) return;
       if (list.workspace_id !== characters.workspace_id) throw new Error(t('bookRoom.workspaceChanged'));
+      if (workspaceRef.current && workspaceRef.current !== list.workspace_id) {
+        setOpened(null); setAdding(null); setChoosing(false); setSelected([]);
+        pendingCreation.current = null;
+      }
+      workspaceRef.current = list.workspace_id;
       setWorkspace(list.workspace_id); setRooms(list.rooms); setRoomCursor(list.next_offset);
       setCatalog(characters.characters); setCatalogCursor(characters.next_offset);
     } catch (failure) { if (current === generation.current && sequence === listRevision.current) throw failure; }
@@ -93,7 +99,7 @@ export default function BookRoomManager({ sendWSMessage, onClose }) {
       {!rooms.length && <Empty description={t('bookRoom.noRooms')} />}
       {rooms.map((room) => <article key={room.room_id} style={{ padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
         <strong>{room.title}</strong> <Tag>{room.members.filter((member) => member.active).length}</Tag>
-        <p>{room.sources.map((source) => `${source.identity.book_title} · ${source.build_id.slice(0, 8)}`).join(' / ')}</p>
+        <p>{room.sources.map((source) => `${source.identity.book_title} · ${source.status !== 'active' ? t('bookRoom.deletedSource') : source.is_latest_version ? t('bookRoom.latestVersion') : t('bookRoom.fixedOldVersion')} · ${source.build_id.slice(0, 8)}`).join(' / ')}</p>
         <Button onClick={() => setOpened(room)}>{t('bookRoom.openRoom')}</Button>
       </article>)}
       {roomCursor !== null && <Button disabled={busy} onClick={() => loadMore('rooms')}>{t('bookRoom.moreRooms')}</Button>}

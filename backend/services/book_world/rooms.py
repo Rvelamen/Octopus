@@ -242,10 +242,17 @@ class BookRoomService:
                         "source_version_id": source["source_version_id"],
                         "build_id": source["build_id"],
                         "status": source["status"],
+                        "cleanup_status": source["cleanup_status"],
+                        "is_latest_version": source["latest_source_id"]
+                        == source["source_version_id"]
+                        and (
+                            source["head_build_id"] is None
+                            or source["head_build_id"] == source["build_id"]
+                        ),
                         "identity": json.loads(source["source_snapshot_json"]),
                     }
                     for source in db.execute(
-                        "SELECT * FROM book_room_sources WHERE room_id=? ORDER BY created_at,rowid",
+                        "SELECT rs.*,p.status AS cleanup_status,(SELECT v.id FROM book_source_versions v WHERE v.book_id=rs.book_id AND v.lifecycle_state='available' ORDER BY v.created_at DESC,v.rowid DESC LIMIT 1) AS latest_source_id,(SELECT h.build_id FROM book_revision_heads h WHERE h.book_id=rs.book_id AND h.source_version_id=rs.source_version_id) AS head_build_id FROM book_room_sources rs LEFT JOIN book_source_purges p ON p.book_id=rs.book_id WHERE rs.room_id=? ORDER BY rs.created_at,rs.rowid",
                         (scope.room_id,),
                     )
                 ],

@@ -266,6 +266,16 @@ class BookChatWorker:
         except BookWorldError as error:
             if error.code == "stale_round":
                 await asyncio.to_thread(self.execution.checkpoint_revoked, lease, elapsed)
+                remaining = await asyncio.to_thread(self.rounds.get_round, scope, round_id)
+                revoked = next(
+                    (slot for slot in remaining["slots"] if slot["id"] == lease.slot_id), None
+                )
+                if (
+                    remaining["status"] == "queued"
+                    and revoked
+                    and revoked.get("skip_reason") == "source_unavailable"
+                ):
+                    return True
             else:
                 await asyncio.to_thread(self.execution.stop, lease, error.code, elapsed)
                 if error.code in (
@@ -286,4 +296,20 @@ class BookChatWorker:
             ticker.cancel()
             with suppress(asyncio.CancelledError):
                 await ticker
+        # Deletion can race any provider outcome, including a timeout or transport
+        # failure. Only source revocation hands off automatically in this window.
+        try:
+            remaining = await asyncio.to_thread(self.rounds.get_round, scope, round_id)
+            revoked = next(
+                (slot for slot in remaining["slots"] if slot["id"] == lease.slot_id), None
+            )
+            if (
+                remaining["status"] == "queued"
+                and revoked
+                and revoked.get("skip_reason") == "source_unavailable"
+            ):
+                await asyncio.to_thread(self.execution.checkpoint_revoked, lease, elapsed)
+                return True
+        except BookWorldError:
+            pass
         return False

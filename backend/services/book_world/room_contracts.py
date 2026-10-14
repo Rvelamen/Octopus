@@ -32,6 +32,7 @@ class BookRoomRequest(StrictModel):
         "create_group_room",
         "add_members",
         "set_member",
+        "retry_source_cleanup",
     ]
     workspace_id: str | None = Field(default=None, min_length=1, max_length=100)
     item_id: int | None = Field(default=None, ge=1)
@@ -52,6 +53,7 @@ class BookRoomRequest(StrictModel):
         default=None, min_length=1, max_length=100
     )
     member_id: str | None = Field(default=None, min_length=1, max_length=100)
+    source_book_id: str | None = Field(default=None, min_length=1, max_length=100)
     active: bool | None = None
     speaking_mode: Literal["auto", "mention_only", "muted"] | None = None
     mode: Literal["directed", "natural", "all"] = "directed"
@@ -63,6 +65,8 @@ class BookRoomRequest(StrictModel):
 
     @model_validator(mode="after")
     def required(self) -> "BookRoomRequest":
+        if self.action == "retry_source_cleanup" and self.source_book_id is None:
+            raise ValueError("Choose the source book whose cleanup failed")
         listings = ("list_rooms", "list_chat_models", "list_room_characters")
         if self.action not in listings and self.workspace_id is None:
             raise ValueError("Workspace identity is required")

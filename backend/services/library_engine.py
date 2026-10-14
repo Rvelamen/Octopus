@@ -549,34 +549,42 @@ class LibraryEngine:
 
     def delete_item(self, item_id: int) -> bool:
         """Delete item, its directory, and related knowledge graph nodes."""
-        from backend.services.book_world.storage import disable_item_sources
+        from backend.services.book_world.storage import connect, disable_item_sources, workspace_identity
 
-        # Get library_path before deleting the DB record
-        row = self.db.execute(
-            "SELECT library_path FROM library_items WHERE id = ?", (item_id,)
-        ).fetchone()
-        library_path = row["library_path"] if row else None
+        # Deletion runs in a worker thread. Its transaction must not share the
+        # singleton connection with metadata/import requests on the event loop.
+        with connect(self.db_path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                "SELECT library_path FROM library_items WHERE id=?", (item_id,)
+            ).fetchone()
+            library_path = row["library_path"] if row else None
+            item_dir = (self.workspace_root / library_path).resolve() if library_path else None
+            parent = self.library_dir.resolve()
+            if item_dir and (item_dir == parent or not item_dir.is_relative_to(parent)):
+                raise ValueError("Library item directory is outside the workspace library")
+            disable_item_sources(db, item_id, workspace_id=workspace_identity(self.workspace_root))
+            book = (
+                db.execute("SELECT id FROM book_books WHERE library_item_id=?", (item_id,)).fetchone()
+                if db.execute("SELECT 1 FROM sqlite_master WHERE name='book_source_purges'").fetchone()
+                else None
+            )
+        if book is not None:
+            from backend.services.book_world.lifecycle import BookLifecycleService
 
-        item_dir = self._item_dir(item_id)
-        if item_dir and not item_dir.resolve().is_relative_to(self.library_dir.resolve()):
-            raise ValueError("Library item directory is outside the workspace library")
-        with self.db:
-            disable_item_sources(self.db, item_id)
+            BookLifecycleService(self.workspace_root).purge(book["id"])
+            return True
         if item_dir and item_dir.exists():
             import shutil
 
             shutil.rmtree(item_dir)
 
-        self.db.execute("DELETE FROM library_items WHERE id = ?", (item_id,))
-
-        # Clean up library note index for this item's notes
-        if library_path:
-            prefix = f"{library_path}/%"
-            self.db.execute("DELETE FROM library_notes WHERE path LIKE ?", (prefix,))
-            # Also clean up legacy knowledge_nodes entries (migration safety)
-            self.db.execute("DELETE FROM knowledge_nodes WHERE path LIKE ?", (prefix,))
-
-        self.db.commit()
+        with connect(self.db_path) as db:
+            db.execute("DELETE FROM library_items WHERE id=?", (item_id,))
+            if library_path:
+                prefix = library_path.replace("\\", "/") + "/"
+                db.execute("DELETE FROM library_notes WHERE instr(replace(path,char(92),'/'),?)=1", (prefix,))
+                db.execute("DELETE FROM knowledge_nodes WHERE instr(replace(path,char(92),'/'),?)=1", (prefix,))
         return True
 
     def delete_items(self, item_ids: list[int]) -> dict:
