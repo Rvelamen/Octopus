@@ -1,0 +1,712 @@
+{
+  "scope": "Frozen failed v4 excerpt inputs; diagnostic of detailed field feedback, not wired production or a new build",
+  "parent_budget_record": "real-model-persona-intent-v4-01.json",
+  "parent_calls": 4,
+  "combined_ceiling": 8,
+  "native_call_ceiling": 4,
+  "actual_native_calls": 3,
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 4000,
+    "unit_segment_limit": 12,
+    "max_tokens": 8192,
+    "call_timeout_seconds": 180,
+    "prompt_version": "persona-extract-v4",
+    "policy_version": "canonical-persona-v3",
+    "review_prompt_version": "persona-review-v4"
+  },
+  "cases": [
+    {
+      "unit_key": "0",
+      "feedback": "Invalid persona fields: claims.2 [value_error] Value error, Facts have no owner; personal claims must have an owner; claims.4.approved_excerpt [extra_forbidden] Extra inputs are not permitted",
+      "calls": [
+        {
+          "phase": "extract",
+          "input": {
+            "characters": [
+              {
+                "agent_status": "candidate",
+                "aliases": [
+                  "二将",
+                  "千里眼"
+                ],
+                "entity_kind": "person",
+                "id": "7d56e328-f5ad-48ba-ac94-318042a60376",
+                "name": "千里眼",
+                "presence": "active"
+              },
+              {
+                "agent_status": "candidate",
+                "aliases": [
+                  "玉帝",
+                  "玉皇大天尊玄穹高上帝"
+                ],
+                "entity_kind": "person",
+                "id": "87c9d564-c2e2-402a-a149-d1bfcf903663",
+                "name": "玉皇大天尊玄穹高上帝",
+                "presence": "active"
+              },
+              {
+                "agent_status": "candidate",
+                "aliases": [
+                  "石猴",
+                  "那猴"
+                ],
+                "entity_kind": "person",
+                "id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                "name": "石猴",
+                "presence": "active"
+              },
+              {
+                "agent_status": "candidate",
+                "aliases": [
+                  "顺风耳"
+                ],
+                "entity_kind": "person",
+                "id": "16d0d61f-98b9-4e4b-a8c6-adcc9390c064",
+                "name": "顺风耳",
+                "presence": "active"
+              }
+            ],
+            "correction_hints": [],
+            "known_life_states": {},
+            "phase": "extract",
+            "previous_error": "Invalid persona fields: claims.2 [value_error] Value error, Facts have no owner; personal claims must have an owner; claims.4.approved_excerpt [extra_forbidden] Extra inputs are not permitted",
+            "prior_claims": [],
+            "scene_id": "1de0b1a5-3b1a-48ea-9353-ac2c11c47bb3",
+            "segments": [
+              {
+                "id": "655edb81-d520-4041-8848-022283505355",
+                "ordinal": 0,
+                "text": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”"
+              }
+            ],
+            "unit_key": "0"
+          },
+          "input_sha256": "644a21c848c9e08fc94220c31186a05142e4d4268424e02c0c5d02ea06fba0aa",
+          "status": "completed",
+          "output": "```json\n{\n  \"claims\": [\n    {\n      \"local_key\": \"stone_monkey_born_and_bows\",\n      \"kind\": \"episode\",\n      \"owner_character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n      \"proposition\": \"石猴由花果山仙石产卵见风化成，出生后即学爬学走并拜四方。\",\n      \"truth_state\": \"true\",\n      \"interpretation_level\": \"explicit\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 0,\n          \"local_end\": 0,\n          \"quote\": \"石猴五官俱备四肢皆全。便就学爬学走拜了四方。\",\n          \"offset_resolution\": \"unique_quote\"\n        },\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 0,\n          \"local_end\": 0,\n          \"quote\": \"石产一卵见风化一石猴在那里拜四方\",\n          \"offset_resolution\": \"unique_quote\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"石猴五官俱备四肢皆全。便就学爬学走拜了四方。\",\n            \"offset_resolution\": \"unique_quote\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"石猴五官俱备四肢皆全\",\n            \"offset_resolution\": \"unique_quote\"\n          }\n        }\n      ]\n    },\n    {\n      \"local_key\": \"stone_monkey_eyes_golden_light\",\n      \"kind\": \"episode\",\n      \"owner_character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n      \"proposition\": \"石猴目运两道金光射冲斗府，惊动天庭；服饵水食之后金光将潜息。\",\n      \"truth_state\": \"true\",\n      \"interpretation_level\": \"explicit\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 0,\n          \"local_end\": 0,\n          \"quote\": \"目运两道金光射冲斗府。\",\n          \"offset_resolution\": \"unique_quote\"\n        },\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 0,\n          \"local_end\": 0,\n          \"quote\": \"如今服饵水食金光将潜息矣。\",\n          \"offset_resolution\": \"unique_quote\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"目运两道金光射冲斗府。\",\n            \"offset_resolution\": \"unique_quote\"\n          }\n        },\n        {\n          \"character_id\": \"87c9d564-c2e2-402a-a149-d1bfcf903663\",\n          \"route\": \"told\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"眼运金光射冲斗府。如今服饵水食金光将潜息矣。\",\n            \"offset_resolution\": \"unique_quote\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿\",\n            \"offset_resolution\": \"unique_quote\"\n          }\n        }\n      ]\n    },\n    {\n      \"local_key\": \"yudi_orders_watch\",\n      \"kind\": \"episode\",\n      \"owner_character_id\": \"87c9d564-c2e2-402a-a149-d1bfcf903663\",\n      \"proposition\": \"玉帝见金光焰焰，即命千里眼、顺风耳开南天门观看。\",\n      \"truth_state\": \"true\",\n      \"interpretation_level\": \"explicit\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 0,\n          \"local_end\": 0,\n          \"quote\": \"见有金光焰焰即命千里眼、顺风耳开南天门观看。\",\n          \"offset_resolution\": \"unique_quote\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"87c9d564-c2e2-402a-a149-d1bfcf903663\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"见有金光焰焰即命千里眼、顺风耳开南天门观看。\",\n            \"offset_resolution\": \"unique_quote\"\n          }\n        },\n        {\n          \"character_id\": \"7d56e328-f5ad-48ba-ac94-318042a60376\",\n          \"route\": \"told\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"即命千里眼、顺风耳开南天门观看\",\n            \"offset_resolution\": \"unique_quote\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"即命千里眼、顺风耳开南天门观看\",\n            \"offset_resolution\": \"unique_quote\"\n          }\n        },\n        {\n          \"character_id\": \"16d0d61f-98b9-4e4b-a8c6-adcc9390c064\",\n          \"route\": \"told\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"即命千里眼、顺风耳开南天门观看\",\n            \"offset_resolution\": \"unique_quote\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"即命千里眼、顺风耳开南天门观看\",\n            \"offset_resolution\": \"unique_quote\"\n          }\n        }\n      ]\n    },\n    {\n      \"local_key\": \"qianliyan_shunfenger_report\",\n      \"kind\": \"episode\",\n      \"owner_character_id\": \"7d56e328-f5ad-48ba-ac94-318042a60376\",\n      \"proposition\": \"千里眼与顺风耳奉旨出门外观听，看得真听得明，随后回报金光来源乃花果山仙石所产石猴。\",\n      \"truth_state\": \"true\",\n      \"interpretation_level\": \"explicit\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 0,\n          \"local_end\": 0,\n          \"quote\": \"二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”\",\n          \"offset_resolution\": \"unique_quote\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"7d56e328-f5ad-48ba-ac94-318042a60376\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"二将果奉旨出门外看的真听的明。\",\n            \"offset_resolution\": \"unique_quote\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"即命千里眼、顺风耳开南天门观看\",\n            \"offset_resolution\": \"unique_quote\"\n          }\n        },\n        {\n          \"character_id\": \"16d0d61f-98b9-4e4b-a8c6-adcc9390c064\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"二将果奉旨出门外看的真听的明。\",\n            \"offset_resolution\": \"unique_quote\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"即命千里眼、顺风耳开南天门观看\",\n            \"offset_resolution\": \"unique_quote\"\n          }\n        },\n        {\n          \"character_id\": \"87c9d564-c2e2-402a-a149-d1bfcf903663\",\n          \"route\": \"told\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界\",\n            \"offset_resolution\": \"unique_quote\"\n          }\n        }\n      ],\n      \"approved_excerpt\": \"二将果奉旨出门外看的真听的明。\"\n    },\n    {\n      \"local_key\": \"yudi_merciful_attitude\",\n      \"kind\": \"trait\",\n      \"owner_character_id\": \"87c9d564-c2e2-402a-a149-d1bfcf903663\",\n      \"proposition\": \"玉帝闻报后垂赐恩慈，认为下方之物乃天地精华所生不足为异，表现出宽容不究的态度。\",\n      \"truth_state\": \"true\",\n      \"interpretation_level\": \"explicit\",\n      \"slot_key\": \"trait:宽厚容物\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 0,\n          \"local_end\": 0,\n          \"quote\": \"玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”\",\n          \"offset_resolution\": \"unique_quote\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"87c9d564-c2e2-402a-a149-d1bfcf903663\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”\",\n            \"offset_resolution\": \"unique_quote\"\n          }\n        },\n        {\n          \"character_id\": \"7d56e328-f5ad-48ba-ac94-318042a60376\",\n          \"route\": \"observed\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”\",\n            \"offset_resolution\": \"unique_quote\"\n          }\n        },\n        {\n          \"character_id\": \"16d0d61f-98b9-4e4b-a8c6-adcc9390c064\",\n          \"route\": \"observed\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”\",\n            \"offset_resolution\": \"unique_quote\"\n          }\n        }\n      ],\n      \"approved_excerpt\": \"下方之物乃天地精华所生不足为异。\"\n    },\n    {\n      \"local_key\": \"yudi_belief_heaven_earth_essence\",\n      \"kind\": \"belief\",\n      \"owner_character_id\": \"87c9d564-c2e2-402a-a149-d1bfcf903663\",\n      \"proposition\": \"玉帝认为下方石猴是天地精华所生，不足为异。\",\n      \"truth_state\": \"unknown\",\n      \"interpretation_level\": \"explicit\",\n      \"slot_key\": \"belief:天地精华所生不足为异\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 0,\n          \"local_end\": 0,\n          \"quote\": \"下方之物乃天地精华所生不足为异\",\n          \"offset_resolution\": \"unique_quote\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"87c9d564-c2e2-402a-a149-d1bfcf903663\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 0,\n            \"quote\": \"玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”\",\n            \"offset_resolution\": \"unique_quote\"\n          }\n        }\n      ]\n    }\n  ]\n}\n```",
+          "finish_reason": "end_turn",
+          "usage": {
+            "prompt_tokens": 2104,
+            "completion_tokens": 3477,
+            "total_tokens": 5581,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 0
+          },
+          "elapsed_seconds": 51.922
+        }
+      ],
+      "error_type": "ValidationError",
+      "error": "2 validation errors for PersonaBatch\nclaims.3.approved_excerpt\n  Extra inputs are not permitted [type=extra_forbidden, input_value='二将果奉旨出门外看的真听的明。', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden\nclaims.4.approved_excerpt\n  Extra inputs are not permitted [type=extra_forbidden, input_value='下方之物乃天地精华所生不足为异。', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden"
+    },
+    {
+      "unit_key": "1",
+      "feedback": "Acquisition for 石猴 needs a present person and a literal name in acquisition or identity_evidence",
+      "calls": [
+        {
+          "phase": "extract",
+          "input": {
+            "characters": [
+              {
+                "agent_status": "candidate",
+                "aliases": [
+                  "石猴",
+                  "那猴"
+                ],
+                "entity_kind": "person",
+                "id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                "name": "石猴",
+                "presence": "active"
+              }
+            ],
+            "correction_hints": [],
+            "known_life_states": {},
+            "phase": "extract",
+            "previous_error": "Acquisition for 石猴 needs a present person and a literal name in acquisition or identity_evidence",
+            "prior_claims": [],
+            "scene_id": "863c5aa6-64c4-4b50-921a-2614bb4586e4",
+            "segments": [
+              {
+                "id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                "ordinal": 1,
+                "text": "那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。真是“山中无甲子寒尽不知年。”一朝天气炎热与群猴避暑都在松阴之下顽耍。你看他一个个："
+              },
+              {
+                "id": "6df20f9a-caa4-4bc1-a3c1-228acbbba777",
+                "ordinal": 2,
+                "text": "跳树攀枝采花觅果；抛弹子邷么儿；跑沙窝砌宝塔；赶蜻蜓扑八蜡；参老天拜菩萨；扯葛藤编草帓；捉虱子咬又掐；理毛衣剔指甲；挨的挨擦的擦；推的推压的压；扯的扯拉的拉青松林下任他顽绿水涧边随洗濯。一群猴子耍了一会却去那山涧中洗澡。见那股涧水奔流真个似滚瓜涌溅。古云：“禽有禽言兽有兽语。”众猴都道：“这股水不知是那里的水。我们今日赶闲无事顺涧边往上溜头寻看源流耍子去耶！”喊一声都拖男挈女呼弟呼兄一齐跑来顺涧爬山直至源流之处乃是一股瀑布飞泉。但见那："
+              },
+              {
+                "id": "e314cd1e-12ef-4ad2-8a4d-a18be9f4d8fd",
+                "ordinal": 3,
+                "text": "一派白虹起千寻雪浪飞；海风吹不断江月照还依。"
+              },
+              {
+                "id": "d2da76d2-6d5a-4d6c-ad45-3b7b4b6e35bd",
+                "ordinal": 4,
+                "text": "冷气分青嶂馀流润翠微；潺湲名瀑布真似挂帘帷。"
+              },
+              {
+                "id": "0829663f-3552-45e5-8332-999161919caf",
+                "ordinal": 5,
+                "text": "众猴拍手称扬道：“好水！好水！原来此处远通山脚之下直接大海之波。”又道：“那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。”连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”好猴！也是他："
+              },
+              {
+                "id": "80d4e374-f15c-477f-9f48-decad52d0e14",
+                "ordinal": 6,
+                "text": "今日芳名显时来大运通；有缘居此地王遣入仙宫。"
+              },
+              {
+                "id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                "ordinal": 7,
+                "text": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。桥下之水冲贯于石窍之间倒挂流出去遮闭了桥门。却又欠身上桥头再走再看却似有人家住处一般真个好所在。但见那："
+              },
+              {
+                "id": "791b6395-87b7-4963-84c6-7e99d916ad74",
+                "ordinal": 8,
+                "text": "翠藓堆蓝白云浮玉光摇片片烟霞。虚窗静室滑凳板生花。乳窟龙珠倚挂萦回满地奇葩。锅灶傍崖存火迹樽罍靠案见肴渣。石座石床真可爱石盆石碗更堪夸。又见那一竿两竿修竹三点五点梅花。"
+              },
+              {
+                "id": "e6417e4b-f3b5-4c39-884b-61dc755651f4",
+                "ordinal": 9,
+                "text": "几树青松常带雨浑然相个人家。"
+              },
+              {
+                "id": "9fa27dfd-c5d7-4665-8d6c-c231ef7b2aaf",
+                "ordinal": 10,
+                "text": "看罢多时跳过桥中间"
+              }
+            ],
+            "unit_key": "1"
+          },
+          "input_sha256": "cd99d67dbdac4b71079e3ccdc6121b6b6b90d33a03c71e6cbd22527b8a2a360d",
+          "status": "completed",
+          "output": "```json\n{\n  \"claims\": [\n    {\n      \"local_key\": \"shihou_episode_volunteer_enter_falls\",\n      \"kind\": \"episode\",\n      \"owner_character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n      \"proposition\": \"众猴提出钻入瀑布寻源者拜为王并连呼三声后，石猴从丛杂中跳出，应声高喊愿进入瀑布。\",\n      \"truth_state\": \"true\",\n      \"interpretation_level\": \"explicit\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"0829663f-3552-45e5-8332-999161919caf\",\n          \"local_start\": 54,\n          \"local_end\": 94,\n          \"quote\": \"连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”\",\n          \"offset_resolution\": \"model\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"0829663f-3552-45e5-8332-999161919caf\",\n            \"local_start\": 54,\n            \"local_end\": 94,\n            \"quote\": \"连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”\",\n            \"offset_resolution\": \"model\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"0829663f-3552-45e5-8332-999161919caf\",\n            \"local_start\": 69,\n            \"local_end\": 73,\n            \"quote\": \"一名石猴\",\n            \"offset_resolution\": \"model\"\n          },\n          \"approved_excerpt\": \"连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”\",\n          \"disclosure\": \"public\"\n        }\n      ]\n    },\n    {\n      \"local_key\": \"shihou_trait_bold_initiative\",\n      \"kind\": \"trait\",\n      \"owner_character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n      \"proposition\": \"石猴在众猴面前主动响应、当众表示愿意进入未知的瀑布，表现出敢于主动冒险的性格倾向。\",\n      \"truth_state\": \"true\",\n      \"interpretation_level\": \"supported\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"0829663f-3552-45e5-8332-999161919caf\",\n          \"local_start\": 54,\n          \"local_end\": 94,\n          \"quote\": \"连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”\",\n          \"offset_resolution\": \"model\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"0829663f-3552-45e5-8332-999161919caf\",\n            \"local_start\": 54,\n            \"local_end\": 94,\n            \"quote\": \"连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”\",\n            \"offset_resolution\": \"model\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"0829663f-3552-45e5-8332-999161919caf\",\n            \"local_start\": 69,\n            \"local_end\": 73,\n            \"quote\": \"一名石猴\",\n            \"offset_resolution\": \"model\"\n          }\n        }\n      ],\n      \"slot_key\": \"trait:胆识主动\"\n    },\n    {\n      \"local_key\": \"shihou_episode_jump_into_falls\",\n      \"kind\": \"episode\",\n      \"owner_character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n      \"proposition\": \"石猴瞑目蹲身纵身跳入瀑布泉中，发现里面无水无波，是一座铁板桥，并观察到桥后有似人家住处般的所在。\",\n      \"truth_state\": \"true\",\n      \"interpretation_level\": \"explicit\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"a0155270-18ce-4461-a349-5f96a43d5226\",\n          \"local_start\": 0,\n          \"local_end\": 76,\n          \"quote\": \"你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。\",\n          \"offset_resolution\": \"model\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"a0155270-18ce-4461-a349-5f96a43d5226\",\n            \"local_start\": 0,\n            \"local_end\": 76,\n            \"quote\": \"你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。\",\n            \"offset_resolution\": \"model\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"0829663f-3552-45e5-8332-999161919caf\",\n            \"local_start\": 69,\n            \"local_end\": 73,\n            \"quote\": \"一名石猴\",\n            \"offset_resolution\": \"model\"\n          }\n        }\n      ]\n    },\n    {\n      \"local_key\": \"shihou_episode_mountain_life\",\n      \"kind\": \"episode\",\n      \"owner_character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n      \"proposition\": \"石猴在山中行走跳跃，食草木、饮涧泉、采山花、觅树果，与狼虫虎豹獐鹿猕猿为伴为群为友为亲，夜宿石崖之下、朝游峰洞之中。\",\n      \"truth_state\": \"true\",\n      \"interpretation_level\": \"explicit\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"7e17743a-9846-4408-a0ba-b0164e298b5e\",\n          \"local_start\": 0,\n          \"local_end\": 64,\n          \"quote\": \"那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。\",\n          \"offset_resolution\": \"model\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"7e17743a-9846-4408-a0ba-b0164e298b5e\",\n            \"local_start\": 0,\n            \"local_end\": 64,\n            \"quote\": \"那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。\",\n            \"offset_resolution\": \"model\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"0829663f-3552-45e5-8332-999161919caf\",\n            \"local_start\": 69,\n            \"local_end\": 73,\n            \"quote\": \"一名石猴\",\n            \"offset_resolution\": \"model\"\n          }\n        }\n      ]\n    }\n  ]\n}\n```",
+          "finish_reason": "end_turn",
+          "usage": {
+            "prompt_tokens": 1360,
+            "completion_tokens": 1921,
+            "total_tokens": 3281,
+            "cache_read_input_tokens": 1280,
+            "cache_creation_input_tokens": 0
+          },
+          "elapsed_seconds": 40.563
+        },
+        {
+          "phase": "review",
+          "input": {
+            "characters": [
+              {
+                "agent_status": "candidate",
+                "aliases": [
+                  "石猴",
+                  "那猴"
+                ],
+                "entity_kind": "person",
+                "id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                "name": "石猴",
+                "presence": "active"
+              }
+            ],
+            "correction_hints": [],
+            "known_life_states": {},
+            "phase": "review",
+            "previous_error": "Acquisition for 石猴 needs a present person and a literal name in acquisition or identity_evidence",
+            "prior_claims": [],
+            "scene_id": "863c5aa6-64c4-4b50-921a-2614bb4586e4",
+            "segments": [
+              {
+                "id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                "ordinal": 1,
+                "text": "那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。真是“山中无甲子寒尽不知年。”一朝天气炎热与群猴避暑都在松阴之下顽耍。你看他一个个："
+              },
+              {
+                "id": "6df20f9a-caa4-4bc1-a3c1-228acbbba777",
+                "ordinal": 2,
+                "text": "跳树攀枝采花觅果；抛弹子邷么儿；跑沙窝砌宝塔；赶蜻蜓扑八蜡；参老天拜菩萨；扯葛藤编草帓；捉虱子咬又掐；理毛衣剔指甲；挨的挨擦的擦；推的推压的压；扯的扯拉的拉青松林下任他顽绿水涧边随洗濯。一群猴子耍了一会却去那山涧中洗澡。见那股涧水奔流真个似滚瓜涌溅。古云：“禽有禽言兽有兽语。”众猴都道：“这股水不知是那里的水。我们今日赶闲无事顺涧边往上溜头寻看源流耍子去耶！”喊一声都拖男挈女呼弟呼兄一齐跑来顺涧爬山直至源流之处乃是一股瀑布飞泉。但见那："
+              },
+              {
+                "id": "e314cd1e-12ef-4ad2-8a4d-a18be9f4d8fd",
+                "ordinal": 3,
+                "text": "一派白虹起千寻雪浪飞；海风吹不断江月照还依。"
+              },
+              {
+                "id": "d2da76d2-6d5a-4d6c-ad45-3b7b4b6e35bd",
+                "ordinal": 4,
+                "text": "冷气分青嶂馀流润翠微；潺湲名瀑布真似挂帘帷。"
+              },
+              {
+                "id": "0829663f-3552-45e5-8332-999161919caf",
+                "ordinal": 5,
+                "text": "众猴拍手称扬道：“好水！好水！原来此处远通山脚之下直接大海之波。”又道：“那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。”连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”好猴！也是他："
+              },
+              {
+                "id": "80d4e374-f15c-477f-9f48-decad52d0e14",
+                "ordinal": 6,
+                "text": "今日芳名显时来大运通；有缘居此地王遣入仙宫。"
+              },
+              {
+                "id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                "ordinal": 7,
+                "text": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。桥下之水冲贯于石窍之间倒挂流出去遮闭了桥门。却又欠身上桥头再走再看却似有人家住处一般真个好所在。但见那："
+              },
+              {
+                "id": "791b6395-87b7-4963-84c6-7e99d916ad74",
+                "ordinal": 8,
+                "text": "翠藓堆蓝白云浮玉光摇片片烟霞。虚窗静室滑凳板生花。乳窟龙珠倚挂萦回满地奇葩。锅灶傍崖存火迹樽罍靠案见肴渣。石座石床真可爱石盆石碗更堪夸。又见那一竿两竿修竹三点五点梅花。"
+              },
+              {
+                "id": "e6417e4b-f3b5-4c39-884b-61dc755651f4",
+                "ordinal": 9,
+                "text": "几树青松常带雨浑然相个人家。"
+              },
+              {
+                "id": "9fa27dfd-c5d7-4665-8d6c-c231ef7b2aaf",
+                "ordinal": 10,
+                "text": "看罢多时跳过桥中间"
+              }
+            ],
+            "unit_key": "1",
+            "proposals": {
+              "claims": [
+                {
+                  "local_key": "shihou_episode_volunteer_enter_falls",
+                  "kind": "episode",
+                  "owner_character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                  "proposition": "众猴提出钻入瀑布寻源者拜为王并连呼三声后，石猴从丛杂中跳出，应声高喊愿进入瀑布。",
+                  "truth_state": "true",
+                  "evidence": [
+                    {
+                      "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                      "local_start": 67,
+                      "local_end": 99,
+                      "quote": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                      "offset_resolution": "unique_quote"
+                    }
+                  ],
+                  "access": [
+                    {
+                      "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                      "route": "firsthand",
+                      "acquisition": {
+                        "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                        "local_start": 67,
+                        "local_end": 99,
+                        "quote": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                        "offset_resolution": "unique_quote"
+                      },
+                      "identity_evidence": {
+                        "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                        "local_start": 79,
+                        "local_end": 83,
+                        "quote": "一名石猴",
+                        "offset_resolution": "unique_quote"
+                      },
+                      "approved_excerpt": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                      "disclosure": "public"
+                    }
+                  ]
+                },
+                {
+                  "local_key": "shihou_trait_bold_initiative",
+                  "kind": "trait",
+                  "owner_character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                  "proposition": "石猴在众猴面前主动响应、当众表示愿意进入未知的瀑布，表现出敢于主动冒险的性格倾向。",
+                  "truth_state": "true",
+                  "interpretation_level": "supported",
+                  "evidence": [
+                    {
+                      "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                      "local_start": 67,
+                      "local_end": 99,
+                      "quote": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                      "offset_resolution": "unique_quote"
+                    }
+                  ],
+                  "access": [
+                    {
+                      "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                      "route": "firsthand",
+                      "acquisition": {
+                        "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                        "local_start": 67,
+                        "local_end": 99,
+                        "quote": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                        "offset_resolution": "unique_quote"
+                      },
+                      "identity_evidence": {
+                        "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                        "local_start": 79,
+                        "local_end": 83,
+                        "quote": "一名石猴",
+                        "offset_resolution": "unique_quote"
+                      }
+                    }
+                  ],
+                  "slot_key": "trait:胆识主动"
+                },
+                {
+                  "local_key": "shihou_episode_jump_into_falls",
+                  "kind": "episode",
+                  "owner_character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                  "proposition": "石猴瞑目蹲身纵身跳入瀑布泉中，发现里面无水无波，是一座铁板桥，并观察到桥后有似人家住处般的所在。",
+                  "truth_state": "true",
+                  "evidence": [
+                    {
+                      "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                      "local_start": 0,
+                      "local_end": 62,
+                      "quote": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。",
+                      "offset_resolution": "unique_quote"
+                    }
+                  ],
+                  "access": [
+                    {
+                      "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                      "route": "firsthand",
+                      "acquisition": {
+                        "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                        "local_start": 0,
+                        "local_end": 62,
+                        "quote": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。",
+                        "offset_resolution": "unique_quote"
+                      },
+                      "identity_evidence": {
+                        "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                        "local_start": 79,
+                        "local_end": 83,
+                        "quote": "一名石猴",
+                        "offset_resolution": "unique_quote"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "local_key": "shihou_episode_mountain_life",
+                  "kind": "episode",
+                  "owner_character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                  "proposition": "石猴在山中行走跳跃，食草木、饮涧泉、采山花、觅树果，与狼虫虎豹獐鹿猕猿为伴为群为友为亲，夜宿石崖之下、朝游峰洞之中。",
+                  "truth_state": "true",
+                  "evidence": [
+                    {
+                      "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                      "local_start": 0,
+                      "local_end": 55,
+                      "quote": "那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。",
+                      "offset_resolution": "unique_quote"
+                    }
+                  ],
+                  "access": [
+                    {
+                      "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                      "route": "firsthand",
+                      "acquisition": {
+                        "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                        "local_start": 0,
+                        "local_end": 55,
+                        "quote": "那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。",
+                        "offset_resolution": "unique_quote"
+                      },
+                      "identity_evidence": {
+                        "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                        "local_start": 79,
+                        "local_end": 83,
+                        "quote": "一名石猴",
+                        "offset_resolution": "unique_quote"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "input_sha256": "e23422362ea6d070dd3eaa64a6a20ff40cb5656aa625c7606f471e31d6363349",
+          "status": "completed",
+          "output": "```json\n{\"identities\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"confirmed\":true}],\"claims\":[{\"local_key\":\"shihou_episode_volunteer_enter_falls\",\"supported\":true,\"identity_consistent\":true,\"reason\":\"原文明确众猴连呼三声后石猴跳出应声高喊“我进去”，命题仅主张表示愿进入，未夹带完成动作，与引文一致。\",\"temporal_state\":\"current\",\"baseline_supported\":false,\"correction_supported\":false,\"access\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"authorized\":true,\"excerpt_safe\":true}]},{\"local_key\":\"shihou_trait_bold_initiative\",\"supported\":true,\"identity_consistent\":true,\"reason\":\"命题保守表述为主动响应、当众表示愿意进入未知瀑布，属由表示愿意得到的胆识主动推断，未夹带未证明的完成事件或认识变化。\",\"temporal_state\":\"current\",\"baseline_supported\":true,\"correction_supported\":false,\"access\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"authorized\":true,\"excerpt_safe\":true}]},{\"local_key\":\"shihou_episode_jump_into_falls\",\"supported\":true,\"identity_consistent\":true,\"reason\":\"原文明确“将身一纵径跳入瀑布泉中”，并见其内无水无波、一座铁板桥，后文“却似有人家住处一般”支持桥后似人家住处的观察；各行为与结果均有据。\",\"temporal_state\":\"current\",\"baseline_supported\":false,\"correction_supported\":false,\"access\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"authorized\":true,\"excerpt_safe\":true}]},{\"local_key\":\"shihou_episode_mountain_life\",\"supported\":true,\"identity_consistent\":true,\"reason\":\"首段逐句支持行走跳跃、食草木饮涧泉采山花觅树果、与狼虫虎豹獐鹿猕猿为伴为群为友为亲、夜宿石崖朝游峰洞；“那猴”与石猴为同一角色别名，身份一致。\",\"temporal_state\":\"current\",\"baseline_supported\":false,\"correction_supported\":false,\"access\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"authorized\":true,\"excerpt_safe\":true}]}],\"life_events\":[]}\n```",
+          "finish_reason": "end_turn",
+          "usage": {
+            "prompt_tokens": 4360,
+            "completion_tokens": 691,
+            "total_tokens": 5051,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 0
+          },
+          "elapsed_seconds": 18.422
+        }
+      ],
+      "structural_pass": true,
+      "review_contract_pass": true,
+      "review": {
+        "identities": [
+          {
+            "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+            "confirmed": true
+          }
+        ],
+        "claims": [
+          {
+            "local_key": "shihou_episode_volunteer_enter_falls",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "原文明确众猴连呼三声后石猴跳出应声高喊“我进去”，命题仅主张表示愿进入，未夹带完成动作，与引文一致。",
+            "temporal_state": "current",
+            "baseline_supported": false,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          },
+          {
+            "local_key": "shihou_trait_bold_initiative",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "命题保守表述为主动响应、当众表示愿意进入未知瀑布，属由表示愿意得到的胆识主动推断，未夹带未证明的完成事件或认识变化。",
+            "temporal_state": "current",
+            "baseline_supported": true,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          },
+          {
+            "local_key": "shihou_episode_jump_into_falls",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "原文明确“将身一纵径跳入瀑布泉中”，并见其内无水无波、一座铁板桥，后文“却似有人家住处一般”支持桥后似人家住处的观察；各行为与结果均有据。",
+            "temporal_state": "current",
+            "baseline_supported": false,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          },
+          {
+            "local_key": "shihou_episode_mountain_life",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "首段逐句支持行走跳跃、食草木饮涧泉采山花觅树果、与狼虫虎豹獐鹿猕猿为伴为群为友为亲、夜宿石崖朝游峰洞；“那猴”与石猴为同一角色别名，身份一致。",
+            "temporal_state": "current",
+            "baseline_supported": false,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          }
+        ],
+        "life_events": []
+      },
+      "proposals": {
+        "claims": [
+          {
+            "local_key": "shihou_episode_volunteer_enter_falls",
+            "kind": "episode",
+            "owner_character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+            "proposition": "众猴提出钻入瀑布寻源者拜为王并连呼三声后，石猴从丛杂中跳出，应声高喊愿进入瀑布。",
+            "truth_state": "true",
+            "interpretation_level": "explicit",
+            "evidence": [
+              {
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "local_start": 67,
+                "local_end": 99,
+                "quote": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                "offset_resolution": "unique_quote"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                "route": "firsthand",
+                "acquisition": {
+                  "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                  "local_start": 67,
+                  "local_end": 99,
+                  "quote": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                  "offset_resolution": "unique_quote"
+                },
+                "identity_evidence": {
+                  "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                  "local_start": 79,
+                  "local_end": 83,
+                  "quote": "一名石猴",
+                  "offset_resolution": "unique_quote"
+                },
+                "approved_excerpt": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                "disclosure": "public"
+              }
+            ],
+            "slot_key": null,
+            "supersedes_claim_id": null,
+            "supersedes_local_key": null
+          },
+          {
+            "local_key": "shihou_trait_bold_initiative",
+            "kind": "trait",
+            "owner_character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+            "proposition": "石猴在众猴面前主动响应、当众表示愿意进入未知的瀑布，表现出敢于主动冒险的性格倾向。",
+            "truth_state": "true",
+            "interpretation_level": "supported",
+            "evidence": [
+              {
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "local_start": 67,
+                "local_end": 99,
+                "quote": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                "offset_resolution": "unique_quote"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                "route": "firsthand",
+                "acquisition": {
+                  "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                  "local_start": 67,
+                  "local_end": 99,
+                  "quote": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                  "offset_resolution": "unique_quote"
+                },
+                "identity_evidence": {
+                  "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                  "local_start": 79,
+                  "local_end": 83,
+                  "quote": "一名石猴",
+                  "offset_resolution": "unique_quote"
+                },
+                "approved_excerpt": "",
+                "disclosure": "private"
+              }
+            ],
+            "slot_key": "trait:胆识主动",
+            "supersedes_claim_id": null,
+            "supersedes_local_key": null
+          },
+          {
+            "local_key": "shihou_episode_jump_into_falls",
+            "kind": "episode",
+            "owner_character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+            "proposition": "石猴瞑目蹲身纵身跳入瀑布泉中，发现里面无水无波，是一座铁板桥，并观察到桥后有似人家住处般的所在。",
+            "truth_state": "true",
+            "interpretation_level": "explicit",
+            "evidence": [
+              {
+                "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                "local_start": 0,
+                "local_end": 62,
+                "quote": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。",
+                "offset_resolution": "unique_quote"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                "route": "firsthand",
+                "acquisition": {
+                  "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                  "local_start": 0,
+                  "local_end": 62,
+                  "quote": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。",
+                  "offset_resolution": "unique_quote"
+                },
+                "identity_evidence": {
+                  "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                  "local_start": 79,
+                  "local_end": 83,
+                  "quote": "一名石猴",
+                  "offset_resolution": "unique_quote"
+                },
+                "approved_excerpt": "",
+                "disclosure": "private"
+              }
+            ],
+            "slot_key": null,
+            "supersedes_claim_id": null,
+            "supersedes_local_key": null
+          },
+          {
+            "local_key": "shihou_episode_mountain_life",
+            "kind": "episode",
+            "owner_character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+            "proposition": "石猴在山中行走跳跃，食草木、饮涧泉、采山花、觅树果，与狼虫虎豹獐鹿猕猿为伴为群为友为亲，夜宿石崖之下、朝游峰洞之中。",
+            "truth_state": "true",
+            "interpretation_level": "explicit",
+            "evidence": [
+              {
+                "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                "local_start": 0,
+                "local_end": 55,
+                "quote": "那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。",
+                "offset_resolution": "unique_quote"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                "route": "firsthand",
+                "acquisition": {
+                  "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                  "local_start": 0,
+                  "local_end": 55,
+                  "quote": "那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。",
+                  "offset_resolution": "unique_quote"
+                },
+                "identity_evidence": {
+                  "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                  "local_start": 79,
+                  "local_end": 83,
+                  "quote": "一名石猴",
+                  "offset_resolution": "unique_quote"
+                },
+                "approved_excerpt": "",
+                "disclosure": "private"
+              }
+            ],
+            "slot_key": null,
+            "supersedes_claim_id": null,
+            "supersedes_local_key": null
+          }
+        ]
+      }
+    }
+  ],
+  "quality_pass": false,
+  "publication": false,
+  "terminal": true,
+  "combined_native_calls": 7
+}

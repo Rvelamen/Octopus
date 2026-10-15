@@ -1,0 +1,67 @@
+{
+  "scope": "Production panels and actual saved corpus records over the read-only WS helper; not full Electron acceptance or model quality",
+  "records": [
+    {
+      "book": "西游记",
+      "url": "http://127.0.0.1:3031/tmp/book-build-current-qa.html",
+      "checkpoint_text": "Checkpoints 4 / 411 · Covered 37 / 3311 segments",
+      "current_failure_visible": true,
+      "body_sha256": "540551b7934ec5cbd1c12dab072a5615f9ff177d810053ca3746f638e3d64e41"
+    },
+    {
+      "book": "红楼梦",
+      "url": "http://127.0.0.1:3031/tmp/book-build-current-qa.html",
+      "checkpoint_text": "Checkpoints 6 / 581 · Covered 44 / 2665 segments",
+      "current_failure_visible": true,
+      "body_sha256": "d78f734f1867ac6680738124c75352822b5d86adf43fd97cb04989627f505bc2"
+    }
+  ],
+  "source_navigation_observed": "Red candidate East Lu Kong Meixi -> Original location -> Read TXT source, original line26 highlighted",
+  "request_counts": [
+    {
+      "type": "book_world",
+      "action": "get_auto_import",
+      "count": 256
+    },
+    {
+      "type": "book_world",
+      "action": "get_build",
+      "count": 249
+    },
+    {
+      "type": "book_world",
+      "action": "get_source",
+      "count": 3
+    },
+    {
+      "type": "book_world",
+      "action": "list_characters",
+      "count": 249
+    },
+    {
+      "type": "book_world",
+      "action": "list_segments",
+      "count": 3
+    },
+    {
+      "type": "book_world",
+      "action": "read_source",
+      "count": 1
+    },
+    {
+      "type": "book_world",
+      "action": "resolve_evidence",
+      "count": 1
+    },
+    {
+      "type": "get_config",
+      "action": null,
+      "count": 1
+    }
+  ],
+  "only_read_routes": true,
+  "route_audit_sha256": "782d7a3eda46aebc23240c55cee6358ab884d688ec747194b0115fce209a6d5e",
+  "native_calls_outside_bounded_harness": 0,
+  "call_evidence": "full-book-v16-unit-01-progress.json:15; cumulative jobs=8/13, matching prior3+current5 and prior3+current10",
+  "limitation": "Before-fix UI exposed stale error during retry; the fix is covered by service regression, current saved failures remain real"
+}

@@ -272,6 +272,13 @@ async def test_grouped_worker_structure_retry_is_precise_bounded_and_atomic(
             seen.append(data)
             if len(seen) == 2:
                 assert "repeated scene 0" in data["previous_error"]
+                assert data["phase"] == "discovery_unit_mentions"
+                mention = {"n": "人物甲", "e": 0, "at": "active"}
+                if always_invalid:
+                    mention["o"] = 999
+                return LLMResponse(
+                    content=json.dumps({"people": [{"identity": "new", "mentions": [mention]}]})
+                )
             a = {"scene": 0, "n": "人物甲", "e": 0, "at": "active"}
             return LLMResponse(
                 content=json.dumps(

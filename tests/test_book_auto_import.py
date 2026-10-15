@@ -76,6 +76,36 @@ def test_original_extraction_budget_survives_lower_default_output_preference(mon
 
 
 @pytest.mark.asyncio
+async def test_retry_clears_current_child_failure_without_changing_build_or_call_history(book_library):
+    from backend.core.providers.base import LLMResponse
+    from backend.services.book_world.automatic import AutoImportService
+
+    item_id = ready_automatic_item(book_library, "retry-clears-failure")
+    config = DiscoveryConfig(provider_id=1, model="fixture", unit_char_limit=4000)
+
+    class Invalid:
+        async def chat(self, messages, **kwargs):
+            return LLMResponse(content="{")
+
+    service = AutoImportService(
+        book_library.workspace_root,
+        resolve_model=lambda **kwargs: DiscoveryModel(Invalid(), kwargs.get("original_config", config)),
+    )
+    job = service.scan()[0]
+    await service.run(job["job_id"])
+    failed = service.get_job(item_id)
+    build_id = failed["discovery_build_id"]
+    before = service.discovery.get_build(item_id, build_id)
+    assert failed["status"] == before["status"] == "failed" and before["error_detail"]
+    retried = service.control(item_id, failed["job_id"], "retry")
+    after = service.discovery.get_build(item_id, build_id)
+    assert retried["discovery_build_id"] == build_id and after["status"] == "queued"
+    assert after["error_code"] is None and after["error_detail"] is None
+    assert retried["actual_calls"] == failed["actual_calls"] == 2
+    assert after["completed_units"] == before["completed_units"]
+
+
+@pytest.mark.asyncio
 async def test_cancel_during_initial_scan_preserves_cancelled_generation(book_library):
     from backend.services.book_world.automatic import AutoImportService
 

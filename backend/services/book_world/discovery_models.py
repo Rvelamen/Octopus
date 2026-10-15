@@ -8,6 +8,10 @@ PROMPT_VERSION = "character-discovery-v12"
 POLICY_VERSION = "candidate-identity-v2"
 
 
+class DiscoveryCoverageError(ValueError):
+    """Structured scenes do not cover the immutable input exactly once."""
+
+
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True, frozen=True)
 

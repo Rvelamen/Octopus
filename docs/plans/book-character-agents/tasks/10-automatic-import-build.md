@@ -45,6 +45,8 @@
 
 ## 完成记录
 
+2026-10-15 实际同B重试发现旧错误字段残留：已在同事务撤销租约后，仅清空重新queued的当前同书/同来源子构建错误；检查点、B和调用累计保留，取消与已发布版本不变。服务回归修前复现，修后自动构建模块9项通过，两轴审查无阻塞。真实同B窗口检查点与来源UI操作详见[修复记录](../validation/2026-10-15-unit-discovery-repair-validation.md)，不计全书质量完成。
+
 迁移 26、意图补偿扫描、固定配置三阶段、取消/恢复代数、独立表达及版本重建、导入选项和进度面板已交付。八项新行为测试、完整项目 199 通过/13 既有环境跳过、42 文件 Mypy、Ruff、相关组件 ESLint、构建与实际 REST/WS/浏览器链路通过；三个复核 P2 已修复。两部全书真实构建持续运行，保留引文歧义/截断失败，未宣称全书人格或聊天质量通过。详见[阶段记录](../validation/2026-10-14-automatic-import-validation.md)。
 
 设计约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，代码接入点和执行顺序见[实施计划](F:/god/project/Octopus/docs/plans/book-character-agents/implementation-plan.md)。

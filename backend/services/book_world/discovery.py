@@ -17,6 +17,7 @@ from .discovery_inline import INLINE_PROMPT, INLINE_VERSION, InlineDiscovery, as
 from .discovery_models import (
     DISCOVERY_PROMPTS,
     DiscoveryConfig,
+    DiscoveryCoverageError,
     DiscoveryResult,
     DiscoverySpan,
     StrictModel,
@@ -47,6 +48,16 @@ from .discovery_selection import (
     prepare_selection,
     selection_input,
 )
+from .discovery_unit_repair import (
+    UNIT_PROMPT,
+    UNIT_PROTOCOL,
+    UNIT_REPAIR_VERSIONS,
+    UnitDiscovery,
+    apply_unit_repair,
+    can_repair_unit,
+    prepare_unit_repair,
+    unit_repair_input,
+)
 from .discovery_window_repair import (
     WINDOW_REPAIR_PROMPT,
     WindowRepairs,
@@ -55,7 +66,7 @@ from .discovery_window_repair import (
     window_repair_input,
 )
 from .source import BookSourceService, BookWorldError
-from .storage import connect
+from .storage import connect, workspace_identity
 
 
 def _now(seconds: int = 0) -> str:
@@ -494,7 +505,7 @@ class BookDiscoveryService:
         result = DiscoveryResult.model_validate_json(stripped)
         flattened = [segment for scene in result.scenes for segment in scene.segment_ids]
         if flattened != [row["id"] for row in data["segments"]]:
-            raise ValueError("Scenes must cover every input segment once, in order")
+            raise DiscoveryCoverageError("Scenes must cover every input segment once, in order")
         rows = {row["id"]: row["text"] for row in data["segments"]}
         known = {candidate["id"]: candidate for candidate in data["known_characters"]}
 
@@ -684,10 +695,33 @@ class BookDiscoveryService:
                 "segment_ids": [row["id"] for row in data["segments"]],
                 "result": result.model_dump(),
             }
+            if (data.get("repair_packet") or {}).get("selection_protocol") == UNIT_PROTOCOL:
+                payload["repair_provenance"] = data["repair_packet"]
             db.execute(
                 "UPDATE book_build_steps SET status='validated',result_json=? WHERE build_id=? AND unit_key=? AND lease_generation=?",
                 (_json(payload), build_id, data["unit_key"], generation),
             )
+
+    def _repair_scope(self, build_id: str, owner: str, generation: int, data: dict) -> dict:
+        with connect(self.db_path) as db:
+            db.execute("BEGIN")
+            build = self._fence(db, build_id, owner, generation)
+            step = db.execute(
+                "SELECT input_hash,lease_generation,status FROM book_build_steps "
+                "WHERE book_id=? AND source_version_id=? AND build_id=? "
+                "AND stage='discovery' AND unit_key=?",
+                (build["book_id"], build["source_version_id"], build_id, data["unit_key"]),
+            ).fetchone()
+            if (
+                step is None or step["lease_generation"] != generation
+                or step["status"] != "running" or step["input_hash"] != _hash(data["segments"])
+            ):
+                raise BookWorldError("repair_scope_changed", "Unit repair no longer matches the claimed source checkpoint")
+            return {
+                "workspace_id": workspace_identity(self.root),
+                "book_id": build["book_id"], "source_version_id": build["source_version_id"],
+                "build_id": build_id, "unit_key": data["unit_key"], "input_hash": step["input_hash"],
+            }
 
     def _failed_attempt(
         self,
@@ -742,8 +776,19 @@ class BookDiscoveryService:
                 repair_protocol = (data.get("repair_packet") or {}).get("selection_protocol")
                 selected = repair_protocol == "source-choices-v1"
                 windowed = repair_protocol == "source-windows-v1"
+                unit_repair = repair_protocol == UNIT_PROTOCOL
+                unit_scope: dict[str, Any] = {}
                 numbered = prepare_numbered(data) if config.prompt_version in (*NUMBERED_VERSIONS, INLINE_VERSION, GROUPED_VERSION) and not data.get("repair_packet") else None
-                if numbered is not None:
+                if unit_repair:
+                    if config.prompt_version not in UNIT_REPAIR_VERSIONS:
+                        raise BookWorldError("repair_scope_changed", "Unit repair is unavailable for this saved strategy")
+                    unit_scope = await asyncio.to_thread(self._repair_scope, build_id, owner, generation, data)
+                    try:
+                        model_input = unit_repair_input(data["repair_packet"], data, unit_scope)
+                    except ValueError:
+                        raise BookWorldError("repair_scope_changed", "Saved unit repair does not match this source and build") from None
+                    system_prompt = UNIT_PROMPT + _json(UnitDiscovery.model_json_schema())
+                elif numbered is not None:
                     schema: type[StrictModel]
                     if config.prompt_version == GROUPED_VERSION:
                         numbered_prompt, schema = GROUPED_PROMPT, GroupedDiscovery
@@ -788,6 +833,8 @@ class BookDiscoveryService:
                     },
                 ]
                 raw_for_repair = None
+                wire_raw = None
+                wire_failed = False
                 try:
                     options: dict[str, Any] = {
                         "model": config.model,
@@ -803,16 +850,23 @@ class BookDiscoveryService:
                     if response.finish_reason not in ("stop", "end_turn") or response.tool_calls:
                         raise ValueError("Discovery response is truncated or requests a tool")
                     raw_for_repair = response.content or ""
+                    wire_raw = raw_for_repair
                     if numbered is not None:
-                        if config.prompt_version == GROUPED_VERSION:
-                            expanded = assemble_grouped(raw_for_repair, numbered)
-                        elif config.prompt_version == INLINE_VERSION:
-                            expanded = assemble_inline(raw_for_repair, numbered)
-                        else:
-                            expanded = assemble_numbered(raw_for_repair, numbered, allow_implicit_name=config.prompt_version == NUMBERED_LATEST_VERSION)
+                        try:
+                            if config.prompt_version == GROUPED_VERSION:
+                                expanded = assemble_grouped(raw_for_repair, numbered)
+                            elif config.prompt_version == INLINE_VERSION:
+                                expanded = assemble_inline(raw_for_repair, numbered)
+                            else:
+                                expanded = assemble_numbered(raw_for_repair, numbered, allow_implicit_name=config.prompt_version == NUMBERED_LATEST_VERSION)
+                        except ValueError:
+                            wire_failed = True
+                            raise
                         raw_for_repair = _json(expanded)
                     result = (
-                        apply_window_repair(
+                        apply_unit_repair(raw_for_repair, data["repair_packet"], data, unit_scope, self._validate_result)
+                        if unit_repair
+                        else apply_window_repair(
                             raw_for_repair, data["repair_packet"], data, self._validate_result
                         )
                         if windowed
@@ -884,6 +938,17 @@ class BookDiscoveryService:
                             if selection is None and config.prompt_version in (NUMBERED_LATEST_VERSION, INLINE_VERSION, GROUPED_VERSION):
                                 selection = await asyncio.to_thread(prepare_window_repair, packet, data)
                             packet = selection
+                    if (
+                        config.prompt_version in UNIT_REPAIR_VERSIONS
+                        and packet is None and not data.get("repair_packet")
+                        and isinstance(error, ValueError)
+                        and can_repair_unit(error, wire_failed, wire_raw)
+                    ):
+                        scope = await asyncio.to_thread(self._repair_scope, build_id, owner, generation, data)
+                        packet = await asyncio.to_thread(
+                            prepare_unit_repair, data, scope, detail,
+                            hashlib.sha256((wire_raw or "").encode()).hexdigest(),
+                        )
                     await asyncio.to_thread(
                         self._failed_attempt,
                         build_id,

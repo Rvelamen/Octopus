@@ -235,6 +235,10 @@ class AutoImportService:
             )
             if not cancel:
                 db.execute(
+                    "UPDATE book_builds SET error_code=NULL,error_detail=NULL WHERE book_id=? AND source_version_id=? AND id=? AND lifecycle_state='active' AND status='queued'",
+                    (row["book_id"], row["source_version_id"], build_id),
+                )
+                db.execute(
                     "UPDATE book_build_steps SET status='pending',attempts=0 WHERE book_id=? AND source_version_id=? AND build_id=? AND status IN ('running','failed')",
                     (row["book_id"], row["source_version_id"], build_id),
                 )

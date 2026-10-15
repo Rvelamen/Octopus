@@ -1,0 +1,27 @@
+{
+  "scope": "Read-only native checkpoint audit; no quality or persona publication claim",
+  "records": [
+    {
+      "item_id": 2,
+      "status": "validated",
+      "provenance": {
+        "anchors_hash": "dd30865b30285dc6dea6e70b2e63fc0ceade47024c58b544ead1359cedfb362b",
+        "catalog_hash": "eb564b2ab30b3334eca3f820b411ceb0c00e93ab85377541032cd92720b47217",
+        "reason": "Person 11 scene 2: evidence outside scene",
+        "rejected_output_hash": "454c99d83f387b3197dd0d02c6d11c9a8a6278ace74ebb6952cfd8df532c4a33",
+        "scope": {
+          "book_id": "79e0fbfd-1ce5-4ec9-a690-f7e51e4eb9eb",
+          "build_id": "5e0c333f-0c01-4b9f-ab28-0d4642900c52",
+          "input_hash": "c963201560880f9fc7f3a5afb223be7b361211bcaeb219c67e71dde54ae0adaa",
+          "source_version_id": "5a25df59-9904-46f8-ada6-cc7acd70da50",
+          "unit_key": "2",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "selection_protocol": "source-unit-mentions-v1"
+      },
+      "segment_count": 6,
+      "source_coverage_exact": true,
+      "expanded_result_sha256": "636f0886e6716ec6022436179b8fc9ccbfc9a238fc18952b1d20fc43d788c347"
+    }
+  ]
+}

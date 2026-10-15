@@ -43,6 +43,8 @@
 
 ## 完成记录
 
+2026-10-15 冻结v4失败输入的详细字段反馈诊断实际3次，沿用原8次提取预算后累计7/8：一单元提取/审查契约通过，另一单元仍把approved_excerpt放到claim顶层而拒绝。没有接入生产、创建新B或发布基线；原v3/v4提示不变，不能据此计全书人格或有效A/B，见[同B修复阶段记录](../validation/2026-10-15-unit-discovery-repair-validation.md)与[原始结果](../validation/real-model-persona-v4-feedback-v1.json)。
+
 新增工作区迁移 16（迁移前备份）、BookPersonaService、严格提案/审查协议、发布与冻结、读者档案 Modal 和原文定位。T03 从已完成候选创建同来源子构建，复制场景/人物关联并保留 lineage，旧候选版本不改；来源、提取模型、提示词和策略进入新指纹。
 
 17 项阶段回归覆盖秘密与私有人格、伪造/跨身份、错误信念修正、历史/冲突基线、跨单元死亡与复活倒叙、取消迟到结果、发布回滚、来源损坏、冻结、幂等与部分进度。真实 k3 在既有《西游记》摘录上发布 1 个 ready、3 个 sparse，2 个群体待复核，正确 partial_published；这不代表全书人格/知情评测完成。[阶段验证](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-persona-validation.md)。

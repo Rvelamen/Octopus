@@ -1,0 +1,47 @@
+{
+  "reason": "Diagnosed v16 source/anchor index confusion; scoped second-attempt unit mentions now installed",
+  "records": [
+    {
+      "item_id": 1,
+      "job_id": "c993dae7-5644-472e-9032-167d9d4b6359",
+      "build_id": "ce1089d1-e62e-436a-925c-edb1ce12b085",
+      "before": {
+        "status": "failed",
+        "stage": "character_discovery",
+        "completed_units": 1,
+        "processed_segments": 1,
+        "error_detail": "Discovery unit 1 failed twice: Scene 6 uses an unoffered segment"
+      },
+      "accepted_before": {
+        "count": 1,
+        "sha256": "6f39c0b8e2f5ccd921b84e23c02cbc637b75a27ce3a112a50be90236e31ff199"
+      },
+      "accepted_after": {
+        "count": 1,
+        "sha256": "6f39c0b8e2f5ccd921b84e23c02cbc637b75a27ce3a112a50be90236e31ff199"
+      },
+      "after_status": "queued"
+    },
+    {
+      "item_id": 2,
+      "job_id": "abcd7f05-d283-45a7-869f-ce5a6c7e97c9",
+      "build_id": "5e0c333f-0c01-4b9f-ab28-0d4642900c52",
+      "before": {
+        "status": "failed",
+        "stage": "character_discovery",
+        "completed_units": 1,
+        "processed_segments": 1,
+        "error_detail": "Discovery unit 1 failed twice: Scene 7 uses an unoffered segment"
+      },
+      "accepted_before": {
+        "count": 1,
+        "sha256": "626f870afb7f0fb5ccf4ff523ee03bdcfdce407f6a51be433de158c105b88280"
+      },
+      "accepted_after": {
+        "count": 1,
+        "sha256": "626f870afb7f0fb5ccf4ff523ee03bdcfdce407f6a51be433de158c105b88280"
+      },
+      "after_status": "queued"
+    }
+  ]
+}
