@@ -231,11 +231,18 @@ class BookDiscoveryService:
                 "SELECT result_json FROM book_build_steps WHERE build_id=? AND stage='publication' AND unit_key='summary'",
                 (build_id,),
             ).fetchone()
+            history = db.execute(
+                "SELECT id FROM book_builds WHERE book_id=? AND source_version_id=? "
+                "AND stage='persona_published' AND status IN ('published','partial_published') "
+                "AND lifecycle_state='active' ORDER BY created_at DESC,rowid DESC LIMIT 1",
+                (row["book_id"], row["source_version_id"]),
+            ).fetchone()
             return {
                 "build_id": row["id"],
                 "book_id": row["book_id"],
                 "source_version_id": row["source_version_id"],
                 "parent_build_id": row["parent_build_id"],
+                "history_build_id": history["id"] if history else None,
                 "status": row["status"],
                 "stage": row["stage"],
                 "total_units": sum(counts.values()),

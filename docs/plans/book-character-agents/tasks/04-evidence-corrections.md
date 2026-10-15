@@ -45,3 +45,5 @@
 
 设计约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，代码接入点和执行顺序见[实施计划](F:/god/project/Octopus/docs/plans/book-character-agents/implementation-plan.md)。
 
+2026-10-15 修复实际新档案失败后旧已发布版本入口消失的问题：构建查询返回同书同来源的有效历史锚点；当前失败继续可见，界面可切回旧档案，审计仅与选中版本匹配时展示。4项新增回归先失败后通过，修订模块18项通过；完整项目464通过、限定55文件Mypy、Ruff、前端类型/构建与相关ESLint通过。实际WS/组件中已往返失败/已发布版本、打开旧档案并核对跨书清空及旧Agent哈希不变，模型调用0，见[历史入口验证](../validation/2026-10-15-history-anchor-validation.md)。本次未扩大任何草稿的编辑或发布权限。
+

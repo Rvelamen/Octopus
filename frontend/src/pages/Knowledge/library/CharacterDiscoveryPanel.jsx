@@ -31,6 +31,7 @@ export default function CharacterDiscoveryPanel({ source, request, onLocate, sen
     const catalog = data.build_id ? await request('list_characters', { build_id: data.build_id, offset: page, limit: 25 }) : null;
     let history = null;
     if (data.stage === 'persona_published' && ['published', 'partial_published'].includes(data.status)) history = await request('get_revision_context', { build_id: data.build_id });
+    else if (data.history_build_id) history = await request('get_revision_context', { build_id: data.history_build_id });
     else if (data.stage === 'persona_extract' && data.parent_build_id) {
       const parent = await request('get_build', { build_id: data.parent_build_id });
       if (['published', 'partial_published'].includes(parent.status)) history = await request('get_revision_context', { build_id: parent.build_id });
@@ -108,7 +109,7 @@ export default function CharacterDiscoveryPanel({ source, request, onLocate, sen
       <Select aria-label={t('bookWorld.buildHistory')} style={{ width: '100%' }} value={build?.build_id} disabled={busy}
         onChange={(id) => { detailRevision.current += 1; setDetail(null); setCorrecting(false); refresh(id).catch((failure) => setError(failure.message)); }}
         options={context.versions.map((entry) => ({ value: entry.id, label: `${entry.id.slice(0, 8)} · ${t(`bookWorld.buildStatus.${entry.status}`)} · ${entry.created_at}` }))} />
-      {context.changes.length > 0 && <details><summary>{t('bookWorld.revisionChanges')}</summary>
+      {context.build_id === build?.build_id && context.changes.length > 0 && <details><summary>{t('bookWorld.revisionChanges')}</summary>
         <ul>{context.changes.map((change, index) => <li key={index}>{change.original_name} · {t(`bookWorld.revisionOp.${change.operation}`)} → {change.target_name || change.value}
           <blockquote>{change.evidence.quote}</blockquote></li>)}</ul></details>}
     </div>}

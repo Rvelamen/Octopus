@@ -624,3 +624,61 @@ async def test_ownership_revision_requires_verified_reextraction(book_library, m
         assert result["status"] == "failed"
         assert result["error_code"] == "revision_unresolved"
         assert service.get_context(item, base)["head_build_id"] == base
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("state", ["queued", "failed", "cancelled"])
+async def test_unpublished_rebuild_keeps_published_history_without_hiding_current_state(
+    book_library, state
+):
+    item, base, config = await published(book_library)
+    service = BookPersonaService(book_library.workspace_root)
+    old = service.discovery.get_build(item, base)
+    new_config = config.model_copy(
+        update={
+            "prompt_version": "persona-extract-v4",
+            "review_prompt_version": "persona-review-v4",
+        }
+    )
+    child = service.request_build(item, old["parent_build_id"], new_config)
+    if state == "cancelled":
+        service.control(item, child["build_id"], "cancel")
+    elif state == "failed":
+
+        class Invalid:
+            async def chat(self, messages, **kwargs):
+                return LLMResponse(content="{")
+
+        await service.run(child["build_id"], Invalid(), new_config)
+    selected = service.discovery.get_build(item, source_version_id=old["source_version_id"])
+    assert selected["build_id"] == child["build_id"] and selected["status"] == state
+    assert selected["history_build_id"] == base
+    context = BookRevisionService(book_library.workspace_root).get_context(
+        item, selected["history_build_id"]
+    )
+    assert context["head_build_id"] == base
+    assert child["build_id"] in {version["id"] for version in context["versions"]}
+    assert service.discovery.get_build(item, base)["status"] == "published"
+
+
+@pytest.mark.asyncio
+async def test_published_history_lookup_never_crosses_book_or_source(book_library):
+    from backend.services.book_world.discovery import DiscoveryConfig
+
+    item, base, config = await published(book_library)
+    service = BookPersonaService(book_library.workspace_root)
+    old = service.discovery.get_build(item, base)
+    other, discovery = await discovered(book_library)
+    assert other != item
+    assert service.discovery.get_build(other, discovery)["history_build_id"] is None
+    with pytest.raises(BookWorldError):
+        service.discovery.get_build(other, base)
+    path = book_library.workspace_root / "replacement-version.txt"
+    path.write_bytes("人物甲说：这是独立的新来源。".encode())
+    book_library.import_text_attachment(item, path)
+    source = service.source.prepare_source(item)
+    assert source["source_version_id"] != old["source_version_id"]
+    new = service.discovery.create_build(
+        item, source["source_version_id"], DiscoveryConfig(provider_id=1, model="fixture")
+    )
+    assert new["history_build_id"] is None
