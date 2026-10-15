@@ -1,0 +1,528 @@
+{
+  "date": "2026-10-15",
+  "scope": "Existing Stone excerpt only, new immutable persona child from original discovery; not a controlled comparison with revised identity graph, no full-book or blind-quality claim",
+  "native_call_ceiling": 8,
+  "actual_native_calls": 5,
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 8192,
+    "call_timeout_seconds": 180,
+    "prompt_version": "persona-extract-v5",
+    "policy_version": "canonical-persona-v3",
+    "review_prompt_version": "persona-review-v4"
+  },
+  "old_build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+  "discovery_parent_id": "e6849fdb-7258-423d-bc1f-068b63b18467",
+  "ancestor_lineage": [
+    {
+      "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+      "parent_build_id": "3fb0030b-c7f5-428f-8b70-e6a5b2254af7",
+      "stage": "persona_published",
+      "status": "partial_published",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f"
+    },
+    {
+      "build_id": "3fb0030b-c7f5-428f-8b70-e6a5b2254af7",
+      "parent_build_id": "85b07c37-99fd-4eed-a54c-bfec3531f49f",
+      "stage": "persona_published",
+      "status": "partial_published",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f"
+    },
+    {
+      "build_id": "85b07c37-99fd-4eed-a54c-bfec3531f49f",
+      "parent_build_id": "e6849fdb-7258-423d-bc1f-068b63b18467",
+      "stage": "persona_published",
+      "status": "partial_published",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f"
+    },
+    {
+      "build_id": "e6849fdb-7258-423d-bc1f-068b63b18467",
+      "parent_build_id": null,
+      "stage": "discovery_complete",
+      "status": "queued",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f"
+    }
+  ],
+  "new_build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+  "old_agent_sha256_before": "968bfdbb2c861105c18ac18e6388d020ad0e7f3d1eebea863a33011e01ac44fb",
+  "prompt_sha256": {
+    "extract": "1d396775e689a5fa6c0b871da645faeedf56e742f795f27285b0648060eaea44",
+    "review": "4e4127cf1cefc0ed72111a266c9460a3a6719b5b830c66781f5374f244bf3c8f"
+  },
+  "runtime_sha256": {
+    "persona.py": "9178c0c0391683db84f601f67732dd136bcc37fe1577904f7283777f22268c73",
+    "persona_models.py": "7763114bb9504e84842b789498721ec29c48daebda13133e5c0c2ab422ab5156",
+    "persona_validation.py": "b0ccb6482be0c5bd3b62a2bec3131c9d2328af3cb0e72a13dfcb52dbf08711ff",
+    "persona_publication.py": "7f860c7a0f5adeae42672a6fff14aa2d50b1bd5267127d6f10ba82102b93a13c"
+  },
+  "calls": [
+    {
+      "phase": "extract",
+      "unit_key": "0",
+      "status": "completed",
+      "input_sha256": "5d3b4207d7305c51d74adf07033566ef31bff35c33536bc1566c4f2f901297dd",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1541,
+        "completion_tokens": 2877,
+        "total_tokens": 4418,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 63.797
+    },
+    {
+      "phase": "extract",
+      "unit_key": "0",
+      "status": "completed",
+      "input_sha256": "9b36c34e05077f4037bc1ce9b590fe94312fb00062306c5f7cc4aac0af1fdd5d",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 277,
+        "completion_tokens": 2069,
+        "total_tokens": 2346,
+        "cache_read_input_tokens": 1792,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 54.421
+    },
+    {
+      "phase": "review",
+      "unit_key": "0",
+      "status": "completed",
+      "input_sha256": "30a7efa763fdc4a73a0729df1d451ac003bb153e708e9ed0a4d0e0564a6e5229",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 2380,
+        "completion_tokens": 1064,
+        "total_tokens": 3444,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 18.968
+    },
+    {
+      "phase": "extract",
+      "unit_key": "1",
+      "status": "completed",
+      "input_sha256": "bf91c2e642c4e73d17f0ecb6abcaa65dd39aa907eb09416c090f26d38b28baaa",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1064,
+        "completion_tokens": 848,
+        "total_tokens": 1912,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 24.813
+    },
+    {
+      "phase": "review",
+      "unit_key": "1",
+      "status": "completed",
+      "input_sha256": "a655cbfd3abccaa3add0af27d1814c0cc4d8d2888684c70d1516f3b3b2f8810b",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1908,
+        "completion_tokens": 488,
+        "total_tokens": 2396,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 13.828
+    }
+  ],
+  "quality_pass": false,
+  "build": {
+    "build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+    "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+    "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+    "parent_build_id": "e6849fdb-7258-423d-bc1f-068b63b18467",
+    "history_build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+    "status": "partial_published",
+    "stage": "persona_published",
+    "total_units": 2,
+    "completed_units": 2,
+    "failed_units": 0,
+    "processed_segments": 11,
+    "total_segments": 11,
+    "error_code": "partial_build",
+    "error_detail": "Some identities, evidence units or baseline slots remain unresolved",
+    "can_resume": false,
+    "config": {
+      "call_timeout_seconds": 180,
+      "max_tokens": 8192,
+      "model": "k3",
+      "policy_version": "canonical-persona-v3",
+      "prompt_version": "persona-extract-v5",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "persona-review-v4",
+      "unit_char_limit": 8000,
+      "unit_segment_limit": 12
+    },
+    "publication_report": {
+      "baseline_conflicts": 0,
+      "failed_units": [],
+      "published_characters": 4,
+      "rejected_claims": 1,
+      "unresolved_characters": 2
+    }
+  },
+  "characters": [
+    {
+      "build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+      "character_id": "1aa6d07a-44c1-45ae-8617-7a2cbbcd9714",
+      "agent_status": "needs_review",
+      "public": {
+        "entity_kind": "group",
+        "identity_state": "needs_review",
+        "name": "仙卿"
+      },
+      "reader": {
+        "claims": [],
+        "baseline": {},
+        "extensions": []
+      },
+      "published": true
+    },
+    {
+      "build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+      "character_id": "e14e8fcd-b668-4016-b00f-75584c6cd79a",
+      "agent_status": "needs_review",
+      "public": {
+        "entity_kind": "group",
+        "identity_state": "needs_review",
+        "name": "众猴"
+      },
+      "reader": {
+        "claims": [],
+        "baseline": {},
+        "extensions": []
+      },
+      "published": true
+    },
+    {
+      "build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+      "character_id": "278802e9-1374-48db-9d8b-12f76830b391",
+      "agent_status": "sparse",
+      "public": {
+        "entity_kind": "person",
+        "identity_state": "verified",
+        "name": "千里眼"
+      },
+      "reader": {
+        "claims": [],
+        "baseline": {},
+        "extensions": []
+      },
+      "published": true
+    },
+    {
+      "build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+      "character_id": "b63c7bd3-f341-4f11-bd59-c99e56d61535",
+      "agent_status": "sparse",
+      "public": {
+        "entity_kind": "person",
+        "identity_state": "verified",
+        "name": "玉皇大天尊玄穹高上帝"
+      },
+      "reader": {
+        "claims": [
+          {
+            "id": "04bd7f21-7620-4306-8ab4-7653bb67b4a9",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+            "kind": "belief",
+            "owner_character_id": "b63c7bd3-f341-4f11-bd59-c99e56d61535",
+            "proposition": "玉帝认为下方之物是天地精华所生，不足为异。",
+            "truth_state": "unknown",
+            "interpretation_level": "explicit",
+            "support_state": "accepted",
+            "scene_id": "fbf090e6-7558-484f-8c4b-627a53ddba57",
+            "supersedes_claim_id": null,
+            "search_terms": "玉帝认为下方之物是天地精华所生，不足为异。",
+            "evidence": [
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 184,
+                "local_end": 210,
+                "quote_text": "玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 184,
+                "local_end": 210,
+                "quote_text": "玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”",
+                "support_state": "accepted"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "b63c7bd3-f341-4f11-bd59-c99e56d61535",
+                "route": "firsthand",
+                "access_state": "accepted"
+              }
+            ]
+          },
+          {
+            "id": "d34163ae-41e5-4637-8e40-d05796a6680f",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+            "kind": "relation",
+            "owner_character_id": "b63c7bd3-f341-4f11-bd59-c99e56d61535",
+            "proposition": "玉帝对千里眼、顺风耳有直接下令的关系：因金光焰焰而命二将开南天门观看。",
+            "truth_state": "true",
+            "interpretation_level": "explicit",
+            "support_state": "accepted",
+            "scene_id": "fbf090e6-7558-484f-8c4b-627a53ddba57",
+            "supersedes_claim_id": null,
+            "search_terms": "玉帝对千里眼、顺风耳有直接下令的关系：因金光焰焰而命二将开南天门观看。",
+            "evidence": [
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 43,
+                "local_end": 89,
+                "quote_text": "玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 43,
+                "local_end": 89,
+                "quote_text": "玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 33,
+                "local_end": 53,
+                "quote_text": "惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝",
+                "support_state": "accepted"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "b63c7bd3-f341-4f11-bd59-c99e56d61535",
+                "route": "firsthand",
+                "access_state": "accepted"
+              }
+            ]
+          }
+        ],
+        "baseline": {
+          "belief:天地精华所生不足为异": {
+            "claim_id": "04bd7f21-7620-4306-8ab4-7653bb67b4a9",
+            "proposition": "玉帝认为下方之物是天地精华所生，不足为异。",
+            "kind": "belief",
+            "evidence": [
+              {
+                "evidence_id": "072674d5-3659-489c-a107-f3ea3302369d",
+                "approved_excerpt": "下方之物乃天地精华所生不足为异。"
+              }
+            ]
+          },
+          "relation:玉帝命千里眼顺风耳观看": {
+            "claim_id": "d34163ae-41e5-4637-8e40-d05796a6680f",
+            "proposition": "玉帝对千里眼、顺风耳有直接下令的关系：因金光焰焰而命二将开南天门观看。",
+            "kind": "relation",
+            "evidence": [
+              {
+                "evidence_id": "9b222ad8-9717-48bd-822c-8f88135d01f5",
+                "approved_excerpt": "即命千里眼、顺风耳开南天门观看。"
+              }
+            ]
+          }
+        },
+        "extensions": []
+      },
+      "published": true
+    },
+    {
+      "build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+      "character_id": "2c2d4b5d-a9e2-4378-a1fd-27021e7ca347",
+      "agent_status": "sparse",
+      "public": {
+        "entity_kind": "person",
+        "identity_state": "verified",
+        "name": "石猴"
+      },
+      "reader": {
+        "claims": [
+          {
+            "id": "daabc31e-294b-4694-bec7-8c57bf87cacd",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+            "kind": "episode",
+            "owner_character_id": "2c2d4b5d-a9e2-4378-a1fd-27021e7ca347",
+            "proposition": "石猴由仙石产卵见风化成，出生后就学爬学走、拜四方，并眼运金光射冲斗府。",
+            "truth_state": "true",
+            "interpretation_level": "explicit",
+            "support_state": "rejected",
+            "scene_id": "fbf090e6-7558-484f-8c4b-627a53ddba57",
+            "supersedes_claim_id": null,
+            "search_terms": "石猴由仙石产卵见风化成，出生后就学爬学走、拜四方，并眼运金光射冲斗府。",
+            "evidence": [
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 0,
+                "local_end": 33,
+                "quote_text": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。",
+                "support_state": "rejected"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 0,
+                "local_end": 33,
+                "quote_text": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。",
+                "support_state": "rejected"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "2c2d4b5d-a9e2-4378-a1fd-27021e7ca347",
+                "route": "firsthand",
+                "access_state": "revoked"
+              }
+            ]
+          },
+          {
+            "id": "3723adef-2574-440b-8da7-88de492d30a0",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+            "kind": "episode",
+            "owner_character_id": "2c2d4b5d-a9e2-4378-a1fd-27021e7ca347",
+            "proposition": "石猴应声高叫\"我进去\"后，瞑目蹲身纵身跳入瀑布泉中，发现里面无水无波、有一架铁板桥，桥头那边像有人家住处，有锅灶火迹、石座石床等陈设。",
+            "truth_state": "true",
+            "interpretation_level": "explicit",
+            "support_state": "accepted",
+            "scene_id": "b8274624-d803-44a7-8bcd-e4e0ae99a131",
+            "supersedes_claim_id": null,
+            "search_terms": "石猴应声高叫\"我进去\"后，瞑目蹲身纵身跳入瀑布泉中，发现里面无水无波、有一架铁板桥，桥头那边像有人家住处，有锅灶火迹、石座石床等陈设。",
+            "evidence": [
+              {
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "local_start": 0,
+                "local_end": 99,
+                "quote_text": "众猴拍手称扬道：“好水！好水！原来此处远通山脚之下直接大海之波。”又道：“那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。”连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                "local_start": 0,
+                "local_end": 62,
+                "quote_text": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                "local_start": 0,
+                "local_end": 62,
+                "quote_text": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "local_start": 67,
+                "local_end": 99,
+                "quote_text": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                "support_state": "accepted"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "2c2d4b5d-a9e2-4378-a1fd-27021e7ca347",
+                "route": "firsthand",
+                "access_state": "accepted"
+              }
+            ]
+          },
+          {
+            "id": "3dab26df-e9bb-4574-a060-02315fc697a4",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+            "kind": "trait",
+            "owner_character_id": "2c2d4b5d-a9e2-4378-a1fd-27021e7ca347",
+            "proposition": "石猴在众猴连呼三声询问谁有本事钻进瀑布寻源头时，主动跳出丛杂中应声表示愿意进入，表现出主动、有胆识的特点。",
+            "truth_state": "true",
+            "interpretation_level": "explicit",
+            "support_state": "accepted",
+            "scene_id": "b8274624-d803-44a7-8bcd-e4e0ae99a131",
+            "supersedes_claim_id": null,
+            "search_terms": "石猴在众猴连呼三声询问谁有本事钻进瀑布寻源头时，主动跳出丛杂中应声表示愿意进入，表现出主动、有胆识的特点。",
+            "evidence": [
+              {
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "local_start": 67,
+                "local_end": 99,
+                "quote_text": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "local_start": 67,
+                "local_end": 99,
+                "quote_text": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                "support_state": "accepted"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "2c2d4b5d-a9e2-4378-a1fd-27021e7ca347",
+                "route": "firsthand",
+                "access_state": "accepted"
+              }
+            ]
+          }
+        ],
+        "baseline": {
+          "trait:主动胆识": {
+            "claim_id": "3dab26df-e9bb-4574-a060-02315fc697a4",
+            "proposition": "石猴在众猴连呼三声询问谁有本事钻进瀑布寻源头时，主动跳出丛杂中应声表示愿意进入，表现出主动、有胆识的特点。",
+            "kind": "trait",
+            "evidence": [
+              {
+                "evidence_id": "fa91dade-9bc0-4269-a21e-66d59f0f078c",
+                "approved_excerpt": "我进去！我进去！"
+              }
+            ]
+          }
+        },
+        "extensions": []
+      },
+      "published": true
+    },
+    {
+      "build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+      "character_id": "dcf47775-4118-44bd-8dec-372cc417409a",
+      "agent_status": "sparse",
+      "public": {
+        "entity_kind": "person",
+        "identity_state": "verified",
+        "name": "顺风耳"
+      },
+      "reader": {
+        "claims": [],
+        "baseline": {},
+        "extensions": []
+      },
+      "published": true
+    }
+  ],
+  "old_agent_sha256_after": "968bfdbb2c861105c18ac18e6388d020ad0e7f3d1eebea863a33011e01ac44fb",
+  "old_agent_unchanged": true,
+  "terminal": true
+}

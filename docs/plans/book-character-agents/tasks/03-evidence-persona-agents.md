@@ -43,6 +43,8 @@
 
 ## 完成记录
 
+显式提取v5补齐所有权、approved_excerpt层次及有界分阶段反馈，默认/旧提示保留。41项档案/修订专项及完整项目505项通过，Mypy55与Ruff通过；真实摘录新B 5/8次部分发布4个稀疏个体、2个群体待复核，旧Agent不变。实际归属复核没有额外获知越界，但一条episode的保存引文未覆盖全部内容，不能计引用质量通过；实际档案与新旧版本往返可读。见[字段修复验证](../validation/2026-10-15-persona-structure-validation.md)，不计全书人格或严格A/B。
+
 2026-10-15 冻结v4失败输入的详细字段反馈诊断实际3次，沿用原8次提取预算后累计7/8：一单元提取/审查契约通过，另一单元仍把approved_excerpt放到claim顶层而拒绝。没有接入生产、创建新B或发布基线；原v3/v4提示不变，不能据此计全书人格或有效A/B，见[同B修复阶段记录](../validation/2026-10-15-unit-discovery-repair-validation.md)与[原始结果](../validation/real-model-persona-v4-feedback-v1.json)。
 
 新增工作区迁移 16（迁移前备份）、BookPersonaService、严格提案/审查协议、发布与冻结、读者档案 Modal 和原文定位。T03 从已完成候选创建同来源子构建，复制场景/人物关联并保留 lineage，旧候选版本不改；来源、提取模型、提示词和策略进入新指纹。

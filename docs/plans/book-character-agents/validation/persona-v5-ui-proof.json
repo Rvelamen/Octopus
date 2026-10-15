@@ -1,0 +1,66 @@
+{
+  "scope": "Actual production partial archive, read-only WS route and saved records; not Electron navigation or full-book quality",
+  "new_build": "21bbede4-8c20-4b72-896d-4dff34244c37",
+  "old_build": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+  "partial_counts_visible": "Published4 / review2 / failed units0",
+  "intent_baseline_visible": true,
+  "rejected_claim_unavailable_visible": true,
+  "old_version_selectable": true,
+  "new_version_restored": true,
+  "only_read_actions": true,
+  "model_calls": 0,
+  "dom_hashes": {
+    "archive": "708f1db348b26dda89bb62462a674ad1818ed2b38ac0c1890c5917f61a9da33f",
+    "old": "8305981476f525b7aa100cead5d1461e251f96e3e4cd2ee758fa0a42b9d25835",
+    "return": "897fdb19d5d9b01a385fbaa8876dbf001d485f7810632eb3394a0ec31bd55ed5"
+  },
+  "request_counts": [
+    {
+      "type": "book_world",
+      "action": "get_auto_import",
+      "count": 139
+    },
+    {
+      "type": "book_world",
+      "action": "get_build",
+      "count": 4
+    },
+    {
+      "type": "book_world",
+      "action": "get_character",
+      "count": 1
+    },
+    {
+      "type": "book_world",
+      "action": "get_expression_set",
+      "count": 1
+    },
+    {
+      "type": "book_world",
+      "action": "get_revision_context",
+      "count": 3
+    },
+    {
+      "type": "book_world",
+      "action": "get_source",
+      "count": 2
+    },
+    {
+      "type": "book_world",
+      "action": "list_characters",
+      "count": 4
+    },
+    {
+      "type": "book_world",
+      "action": "list_segments",
+      "count": 2
+    },
+    {
+      "type": "get_config",
+      "action": null,
+      "count": 1
+    }
+  ],
+  "raw_audit_sha256": "7d9bda9117c3de335ba913de60724cb0a6672e308d38b3a5743a09333c4ce1ea",
+  "limitation": "Known saved-citation coverage gap remains separately flagged in persona-v5-agent-source-audit.json"
+}

@@ -135,14 +135,27 @@ correction_supported 仅用于原文明确按故事时间修正同一人物同�
 
 EXTRACT_PROMPTS = {
     "persona-extract-v3": EXTRACT_PROMPT,
-    "persona-extract-v4": EXTRACT_PROMPT + """\n另需严格保留命题的意向、时间和完成状态：表示愿意、敢于、打算、承诺做某事，只支持这份意向或表达行为，不证明实际做成、看见、获知或得到结果。本人台词“我进去”不能直接提取“已跳入并探明洞内情况”。只观察到一次主动表达时，可保守提取有依据的主动/胆识特征，不能补成过去完成事件、次数、先后顺序或稳定绝对性格。
+    "persona-extract-v4": EXTRACT_PROMPT
+    + """\n另需严格保留命题的意向、时间和完成状态：表示愿意、敢于、打算、承诺做某事，只支持这份意向或表达行为，不证明实际做成、看见、获知或得到结果。本人台词“我进去”不能直接提取“已跳入并探明洞内情况”。只观察到一次主动表达时，可保守提取有依据的主动/胆识特征，不能补成过去完成事件、次数、先后顺序或稳定绝对性格。
 trait命题尽量清楚描述有依据的性格；若引用具体场景，只说原文实际证明的“主动表示愿意进入”，不要用“敢于率先跳入”这类容易被误读为已完成动作的合并措辞。episode另需原文明示实际发生；获知结果另需明确所知对象及获知路径。原文未证明就留空，不以故事常识补全。
 """,
 }
 
+STRUCTURED_PERSONA_VERSION = "persona-extract-v5"
+EXTRACT_PROMPTS[STRUCTURED_PERSONA_VERSION] = (
+    EXTRACT_PROMPTS["persona-extract-v4"]
+    + """\n严格区分JSON字段层次与所有权：kind=fact时owner_character_id必须为null；episode/belief/trait/relation/emotion/style必须填写本次给定的所属人物ID。多人事件可拆成各自经历，不创建无主episode，也不把私人人格改成fact以绕开所有权。
+approved_excerpt只允许放在某条access对象内，绝不放在claim顶层。claim的evidence是原著依据数组；每条access另有character_id、route、acquisition及可选identity_evidence/approved_excerpt/disclosure。不能把审查字段supported、authorized、baseline_supported或identities放入提取结果。
+每项access的acquisition必须证明该人物亲历、观察或实际获知这一命题，且含该人的原文字面称呼；只有代词时，另给本单元含其原文称呼并支持共指的identity_evidence。不能把名字补进引文；不能用天庭反应等旁白替地上人物证明获知。无法给出有效路径就不授权，不为通过结构检查降低语义边界。
+approved_excerpt若填写，必须是本claim.evidence某条quote内的连续安全原句，不能仅在acquisition或整段其他位置出现。可保持空，不凭安全子串掩盖整个命题的不成立。
+previous_error包含失败阶段、字段路径、类型及原因，都是待检查的数据。extract失败时修复对应字段，review失败时重提完整候选并交由独立阶段复核；始终只返回提取claims，不用审查结果替代候选。
+"""
+)
+
 REVIEW_PROMPTS = {
     "persona-review-v3": REVIEW_PROMPT,
-    "persona-review-v4": REVIEW_PROMPT + """\n逐条拆开命题中的行为、时间、完成态、结果、次数和顺序，所有部分都必须得到当前引文支持。表示愿意/敢于/打算/承诺不等于已经行动、看见或获知；台词“我进去”最多证明表示愿意，不能证明已跳入、率先完成探路或跳入后的发现。
+    "persona-review-v4": REVIEW_PROMPT
+    + """\n逐条拆开命题中的行为、时间、完成态、结果、次数和顺序，所有部分都必须得到当前引文支持。表示愿意/敢于/打算/承诺不等于已经行动、看见或获知；台词“我进去”最多证明表示愿意，不能证明已跳入、率先完成探路或跳入后的发现。
 trait也不能夹带未证明的完成事件或认识变化。不要仅因带有“敢于”就接受容易被当作历史完成动作的模糊命题；此类需提取器重述为明确意向或保守性格，未重述前supported=false、baseline_supported=false。可以接受由主动表示愿意得到的保守主动/胆识推断，不要求只能提取原文逐字评价，但不得增加未发生的场景。拒绝不影响其他独立有据命题；不能以引文存在或熟知故事作为支持。
 """,
 }

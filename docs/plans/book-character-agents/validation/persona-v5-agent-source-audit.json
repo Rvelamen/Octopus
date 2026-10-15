@@ -1,0 +1,59 @@
+{
+  "scope": "Root and independent Spec-review Agent inspection of actual excerpt records, not human blind review",
+  "quality_pass": false,
+  "full_book": false,
+  "build_id": "21bbede4-8c20-4b72-896d-4dff34244c37",
+  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+  "old_agent_unchanged": true,
+  "native_trace_sha256": "5692c7d580fd03960e63106119b44f480590bf2b7e5fdba7a675d7256829be81",
+  "profiles": [
+    {
+      "name": "仙卿",
+      "status": "needs_review"
+    },
+    {
+      "name": "众猴",
+      "status": "needs_review"
+    },
+    {
+      "name": "千里眼",
+      "status": "sparse"
+    },
+    {
+      "name": "玉皇大天尊玄穹高上帝",
+      "status": "sparse"
+    },
+    {
+      "name": "石猴",
+      "status": "sparse"
+    },
+    {
+      "name": "顺风耳",
+      "status": "sparse"
+    }
+  ],
+  "findings": [
+    {
+      "severity": "unresolved_citation_coverage",
+      "claim_id": "3723adef-2574-440b-8da7-88de492d30a0",
+      "proposition": "石猴应声高叫\"我进去\"后，瞑目蹲身纵身跳入瀑布泉中，发现里面无水无波、有一架铁板桥，桥头那边像有人家住处，有锅灶火迹、石座石床等陈设。",
+      "source_support": "Current same-unit input supports the observed interior, not outside-book invention",
+      "saved_evidence_support": "Stored quote spans omit the interior details and approved excerpt is only the voluntary declaration",
+      "terms_present_in_input_but_missing_from_saved_quotes": [
+        "锅灶",
+        "火迹",
+        "石座",
+        "石床",
+        "却似有人家住处"
+      ],
+      "action": "Require semantic review of all clauses against the actual saved claim evidence; correct in a new immutable build before calling citation quality accepted"
+    }
+  ],
+  "permission_checks": {
+    "stone_birth_composite_rejected_and_revoked": true,
+    "heaven_facts_not_granted_to_stone": true,
+    "groups_remain_needs_review": true,
+    "stone_intent_trait_supported": true
+  },
+  "limitation": "No new chat matrix, no corrected identity graph comparison, no full-book or 84-case acceptance"
+}

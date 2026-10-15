@@ -16,6 +16,7 @@ from .persona_models import (
     EXTRACT_PROMPTS,
     REVIEW_PROMPT,
     REVIEW_PROMPTS,
+    STRUCTURED_PERSONA_VERSION,
     PersonaBatch,
     PersonaConfig,
     PersonaReview,
@@ -26,6 +27,22 @@ from .persona_validation import apply_life_events, validate_batch, validate_revi
 from .revision_storage import correction_hints
 from .source import BookWorldError
 from .storage import connect
+
+
+def _persona_error_detail(error: ValueError | TimeoutError, phase: str) -> str:
+    if isinstance(error, ValidationError):
+        issues = error.errors(include_input=False, include_context=False)[:6]
+        detail = f"Invalid persona {phase} fields: " + "; ".join(
+            ".".join(map(str, issue["loc"]))[:80] + f" [{issue['type']}]: " + issue["msg"][:130]
+            for issue in issues
+        )
+    else:
+        detail = (
+            f"Persona {phase} model timed out"
+            if isinstance(error, TimeoutError)
+            else f"Persona {phase}: {error}"
+        )
+    return detail[:300]
 
 
 class BookPersonaService:
@@ -676,8 +693,14 @@ class BookPersonaService:
                 if data is None:
                     return
                 try:
+                    failed_phase = "extract"
                     batch = validate_batch(
-                        await call(EXTRACT_PROMPTS.get(config.prompt_version, EXTRACT_PROMPT), PersonaBatch.model_json_schema(), data), data
+                        await call(
+                            EXTRACT_PROMPTS.get(config.prompt_version, EXTRACT_PROMPT),
+                            PersonaBatch.model_json_schema(),
+                            data,
+                        ),
+                        data,
                     )
                     checked = {
                         **data,
@@ -689,6 +712,7 @@ class BookPersonaService:
                             ]
                         },
                     }
+                    failed_phase = "review"
                     review = validate_review(
                         await call(
                             REVIEW_PROMPTS.get(config.review_prompt_version, REVIEW_PROMPT),
@@ -706,19 +730,22 @@ class BookPersonaService:
                         self._save, build_id, owner, generation, data, batch, review
                     )
                 except (ValueError, TimeoutError) as error:
-                    detail = (
-                        "Invalid persona fields: "
-                        + ",".join(
-                            ".".join(map(str, issue["loc"]))
-                            for issue in error.errors(include_input=False, include_context=False)[
-                                :6
-                            ]
+                    if config.prompt_version == STRUCTURED_PERSONA_VERSION:
+                        detail = _persona_error_detail(error, failed_phase)
+                    else:
+                        detail = (
+                            "Invalid persona fields: "
+                            + ",".join(
+                                ".".join(map(str, issue["loc"]))
+                                for issue in error.errors(include_input=False, include_context=False)[
+                                    :6
+                                ]
+                            )
+                            if isinstance(error, ValidationError)
+                            else "Persona model timed out"
+                            if isinstance(error, TimeoutError)
+                            else str(error)
                         )
-                        if isinstance(error, ValidationError)
-                        else "Persona model timed out"
-                        if isinstance(error, TimeoutError)
-                        else str(error)
-                    )
                     await asyncio.to_thread(
                         self._attempt_failed, build_id, owner, generation, data["unit_key"], detail
                     )
