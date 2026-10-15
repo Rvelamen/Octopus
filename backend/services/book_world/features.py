@@ -61,7 +61,7 @@ async def recover_disabled_workspace(root) -> None:
 
 def require_world_action(action: str) -> None:
     features = get_features()
-    if action in ("retry_auto_import", "restart_auto_import"):
+    if action in ("retry_auto_import", "restart_auto_import", "continue_auto_import"):
         features.require("automatic_import")
     elif action in (
         "start_discovery", "retry_build", "resume_build", "start_persona", "create_revision",

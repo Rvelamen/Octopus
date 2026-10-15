@@ -120,6 +120,7 @@ export default function CharacterDiscoveryPanel({ source, request, onLocate, sen
       {build.publication_report && <Alert type={build.status === 'partial_published' ? 'warning' : 'success'} showIcon title={t('bookWorld.publicationCoverage', { published: build.publication_report.published_characters, unresolved: build.publication_report.unresolved_characters, failed: build.publication_report.failed_units.length, conflicts: build.publication_report.baseline_conflicts })} style={{ marginTop: 8 }} />}
       <Progress size="small" percent={build.total_units ? Math.round(100 * build.completed_units / build.total_units) : 0} status={build.status === 'failed' ? 'exception' : active ? 'active' : 'normal'} />
       {build.error_detail && <Alert type="warning" showIcon title={build.error_detail} style={{ marginBottom: 8 }} />}
+      {build.stage === 'character_discovery' && build.failed_units > 0 && <Alert type="warning" showIcon title={t('bookWorld.discoveryFailedUnits', { count: build.failed_units })} style={{ marginBottom: 8 }} />}
       <p style={{ fontSize: 12 }}>{t('bookWorld.candidateCount', { count: total })}</p>
       <ul style={{ listStyle: 'none', padding: 0, maxHeight: 360, overflowY: 'auto' }}>
         {characters.map((character) => <li key={character.id} style={{ borderBottom: '1px solid var(--border)', padding: '8px 0', fontSize: 12 }}>

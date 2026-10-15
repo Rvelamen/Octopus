@@ -37,6 +37,7 @@ class BookWorldRequest(BaseModel):
         "get_auto_import",
         "cancel_auto_import",
         "retry_auto_import",
+        "continue_auto_import",
         "restart_auto_import",
     ]
     item_id: int = Field(strict=True, gt=0)
@@ -75,7 +76,7 @@ class BookWorldRequest(BaseModel):
 
     @model_validator(mode="after")
     def required_source_identity(self) -> "BookWorldRequest":
-        if self.action in ("cancel_auto_import", "retry_auto_import", "restart_auto_import") and (
+        if self.action in ("cancel_auto_import", "retry_auto_import", "restart_auto_import", "continue_auto_import") and (
             self.workspace_id is None or self.automatic_job_id is None
         ):
             raise ValueError("Automatic controls require workspace and current pipeline identity")

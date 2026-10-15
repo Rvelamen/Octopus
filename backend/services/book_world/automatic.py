@@ -29,6 +29,17 @@ class AutoImportService:
         self.workspace_id = workspace_identity(self.root)
         self.resolve_model = resolve_model
 
+    @staticmethod
+    def _pending_discovery_units(db, row) -> int:
+        if row is None or not row["discovery_build_id"]:
+            return 0
+        return int(
+            db.execute(
+                "SELECT COUNT(*) FROM book_build_steps x JOIN book_builds b ON b.book_id=x.book_id AND b.source_version_id=x.source_version_id AND b.id=x.build_id JOIN book_source_versions s ON s.book_id=b.book_id AND s.id=b.source_version_id JOIN book_books k ON k.id=b.book_id WHERE x.book_id=? AND x.source_version_id=? AND x.build_id=? AND x.stage='discovery' AND x.status<>'validated' AND x.attempts<2 AND b.lifecycle_state='active' AND s.lifecycle_state='available' AND k.lifecycle_state='active' AND k.library_item_id=?",
+                (row["book_id"], row["source_version_id"], row["discovery_build_id"], row["library_item_id"]),
+            ).fetchone()[0]
+        )
+
     def get_job(self, item_id: int) -> dict | None:
         with connect(self.db_path) as db:
             row = db.execute(
@@ -53,10 +64,12 @@ class AutoImportService:
                 if row
                 else []
             )
+            pending = self._pending_discovery_units(db, row)
         if row is None:
             return None
         return {
             "job_id": row["id"],
+            "pending_discovery_units": pending,
             "workspace_id": self.workspace_id,
             **{
                 key: row[key]
@@ -219,7 +232,7 @@ class AutoImportService:
             )
 
     @staticmethod
-    def _revoke_children(db, row, *, cancel: bool) -> None:
+    def _revoke_children(db, row, *, cancel: bool, retry_failed: bool = True) -> None:
         for build_id in (row["discovery_build_id"], row["persona_build_id"]):
             if not build_id:
                 continue
@@ -238,10 +251,16 @@ class AutoImportService:
                     "UPDATE book_builds SET error_code=NULL,error_detail=NULL WHERE book_id=? AND source_version_id=? AND id=? AND lifecycle_state='active' AND status='queued'",
                     (row["book_id"], row["source_version_id"], build_id),
                 )
-                db.execute(
-                    "UPDATE book_build_steps SET status='pending',attempts=0 WHERE book_id=? AND source_version_id=? AND build_id=? AND status IN ('running','failed')",
-                    (row["book_id"], row["source_version_id"], build_id),
-                )
+                if retry_failed:
+                    db.execute(
+                        "UPDATE book_build_steps SET status='pending',attempts=0 WHERE book_id=? AND source_version_id=? AND build_id=? AND status IN ('running','failed')",
+                        (row["book_id"], row["source_version_id"], build_id),
+                    )
+                else:
+                    db.execute(
+                        "UPDATE book_build_steps SET status=CASE WHEN attempts>=2 THEN 'failed' ELSE 'pending' END WHERE book_id=? AND source_version_id=? AND build_id=? AND status='running'",
+                        (row["book_id"], row["source_version_id"], build_id),
+                    )
         for entry in json.loads(row["expression_sets_json"]):
             expression = db.execute(
                 "SELECT progress_json,status FROM book_expression_sets WHERE book_id=? AND source_version_id=? AND build_id=? AND character_id=? AND id=? AND lifecycle_state='active'",
@@ -258,8 +277,10 @@ class AutoImportService:
             progress = json.loads(expression["progress_json"])
             if not cancel:
                 for unit in progress:
-                    if unit["status"] != "validated":
+                    if retry_failed and unit["status"] != "validated":
                         unit.update(status="pending", attempts=0)
+                    elif not retry_failed and unit["status"] == "running":
+                        unit["status"] = "failed" if unit["attempts"] >= 2 else "pending"
             db.execute(
                 "UPDATE book_expression_sets SET status=?,cancel_requested=?,lease_generation=lease_generation+1,lease_owner=NULL,lease_expires_at=NULL,progress_json=?,window_calls=0 WHERE id=?",
                 (
@@ -271,8 +292,8 @@ class AutoImportService:
             )
 
     def control(self, item_id: int, job_id: str, action: str) -> dict:
-        if action not in ("cancel", "retry", "restart"):
-            raise BookWorldError("invalid_request", "Choose cancellation or explicit retry")
+        if action not in ("cancel", "retry", "restart", "continue"):
+            raise BookWorldError("invalid_request", "Choose cancel, continue, retry or restart")
         with connect(self.db_path) as db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute(
@@ -282,10 +303,14 @@ class AutoImportService:
             item = self.discovery.source._item(db, item_id)
             if row is None:
                 raise BookWorldError("automatic_unavailable", "Reload the current import pipeline")
-            if action == "retry" and row["status"] in ("queued", "running", "completed"):
+            if action in ("retry", "continue") and row["status"] in ("queued", "running", "completed"):
                 raise BookWorldError(
                     "invalid_automatic_state", "This pipeline is active or already completed"
                 )
+            if action == "continue" and (
+                row["phase"] != "discovery" or not self._pending_discovery_units(db, row)
+            ):
+                raise BookWorldError("invalid_automatic_state", "This pipeline has no unprocessed discovery units")
             metadata = json.loads(item["metadata_json"] or "{}")
             metadata["book_world"] = {"kind": "novel", "automatic": action != "cancel"}
             db.execute(
@@ -302,9 +327,9 @@ class AutoImportService:
                     (str(uuid4()), item_id),
                 )
             else:
-                if row["source_version_id"] and action == "retry":
+                if row["source_version_id"] and action in ("retry", "continue"):
                     self.discovery.source._source(db, item_id, row["source_version_id"])
-                self._revoke_children(db, row, cancel=action == "cancel")
+                self._revoke_children(db, row, cancel=action == "cancel", retry_failed=action == "retry")
                 db.execute(
                     "UPDATE book_auto_imports SET status=?,generation=generation+1,error_code=NULL,error_detail=NULL WHERE id=?",
                     (
@@ -333,7 +358,7 @@ class AutoImportService:
                     "SELECT metadata_json FROM library_items WHERE id=?", (row["library_item_id"],)
                 ).fetchone()
                 allowed = item is not None and automatic_intent(json.loads(item[0] or "{}"))
-                self._revoke_children(db, row, cancel=not allowed)
+                self._revoke_children(db, row, cancel=not allowed, retry_failed=False)
                 db.execute(
                     "UPDATE book_auto_imports SET status=?,generation=generation+1,error_code=NULL,error_detail=NULL WHERE id=?",
                     ("queued" if allowed else "cancelled", row["id"]),

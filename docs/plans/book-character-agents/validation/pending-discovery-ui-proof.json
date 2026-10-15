@@ -1,0 +1,73 @@
+{
+  "scope": "Actual production panels and WS continue control, queue-only scheduler adapter, followed by separately budgeted native service worker",
+  "records": [
+    {
+      "book": "xiyou",
+      "checkpoint_text": "Checkpoints 4 / 411 · Covered 37 / 3311 segments",
+      "queued_and_retained_failure_visible": true,
+      "body_sha256": "d3b3c52e20de9c11f4b250a129edd9dd5fadf59749193cb6fdf8aa3178dfbd05"
+    },
+    {
+      "book": "red",
+      "checkpoint_text": "Checkpoints 6 / 581 · Covered 44 / 2665 segments",
+      "queued_and_retained_failure_visible": true,
+      "body_sha256": "7eb23f910f44ea4ff878e281b31628d8c6c318a50f3cab47cc530b16c482feb8"
+    }
+  ],
+  "controls": [
+    {
+      "type": "book_world",
+      "action": "continue_auto_import",
+      "item_id": 1,
+      "job_id": "c993dae7-5644-472e-9032-167d9d4b6359"
+    },
+    {
+      "type": "book_world",
+      "action": "continue_auto_import",
+      "item_id": 2,
+      "job_id": "abcd7f05-d283-45a7-869f-ce5a6c7e97c9"
+    }
+  ],
+  "queue_handoffs": 2,
+  "model_calls_during_ui": 0,
+  "read_actions_and_two_continue_controls_only": true,
+  "request_counts": [
+    {
+      "type": "book_world",
+      "action": "continue_auto_import",
+      "count": 2
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import",
+      "count": 37
+    },
+    {
+      "type": "book_world",
+      "action": "get_build",
+      "count": 4
+    },
+    {
+      "type": "book_world",
+      "action": "get_source",
+      "count": 2
+    },
+    {
+      "type": "book_world",
+      "action": "list_characters",
+      "count": 4
+    },
+    {
+      "type": "book_world",
+      "action": "list_segments",
+      "count": 2
+    },
+    {
+      "type": "get_config",
+      "action": null,
+      "count": 1
+    }
+  ],
+  "raw_audit_sha256": "a3b1e8e794318a1e3b669dad5aebeef0ff9df5b72f85437ab88311ace21ddc63",
+  "limitation": "No full Electron claim. Character panel was explicitly refreshed after queueing; native execution uses full-book-v16-pending-01-progress.json, no unbounded AutoImportRunner was started by QA."
+}

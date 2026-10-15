@@ -482,6 +482,7 @@ class BookWorldHandler(MessageHandler):
                 "get_auto_import",
                 "cancel_auto_import",
                 "retry_auto_import",
+                "continue_auto_import",
                 "restart_auto_import",
             ):
                 from backend.services.book_world.automatic import AutoImportService
@@ -511,6 +512,8 @@ class BookWorldHandler(MessageHandler):
                             if request.action == "cancel_auto_import"
                             else "restart"
                             if request.action == "restart_auto_import"
+                            else "continue"
+                            if request.action == "continue_auto_import"
                             else "retry",
                         )
                         await AutoImportRunner.stop_job(root, request.automatic_job_id)

@@ -1,0 +1,41 @@
+{
+  "scope": "Actual same-B window retention and persisted two-attempt audit, no persona or quality claim",
+  "all_pass": true,
+  "records": [
+    {
+      "book": "西游记",
+      "build_id": "ce1089d1-e62e-436a-925c-edb1ce12b085",
+      "old_validated_unchanged": 4,
+      "old_failed_unchanged": 1,
+      "old_failed_units_not_called": [
+        "4"
+      ],
+      "new_native_calls": 12,
+      "maximum_persisted_attempts": 2,
+      "validated_units": 9,
+      "failed_units": 3,
+      "exhausted_units": 2,
+      "retryable_failed_units": 1,
+      "pending_units": 400,
+      "job_status": "queued"
+    },
+    {
+      "book": "红楼梦",
+      "build_id": "5e0c333f-0c01-4b9f-ab28-0d4642900c52",
+      "old_validated_unchanged": 6,
+      "old_failed_unchanged": 1,
+      "old_failed_units_not_called": [
+        "6"
+      ],
+      "new_native_calls": 12,
+      "maximum_persisted_attempts": 2,
+      "validated_units": 11,
+      "failed_units": 4,
+      "exhausted_units": 3,
+      "retryable_failed_units": 1,
+      "pending_units": 567,
+      "job_status": "queued"
+    }
+  ],
+  "quality_pass": false
+}

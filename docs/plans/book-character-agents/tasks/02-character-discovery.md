@@ -39,6 +39,8 @@
 
 ## 完成记录
 
+2026-10-15 修复首个双失败阻断独立后续单元的问题：保留失败和两次尝试，继续其他未处理内容，尾部仍有失败就不进入discovery_complete/T03。恢复不复位耗尽次数，显式重试保留原成功检查点。相关36项与完整项目513项通过，两轴审查、限定Mypy55、Ruff、前端类型/Lint/构建通过。真实两书同B继续按钮及哈希不变验收通过；有界全来源窗口的终态与质量限制见[后续扫描验证](../validation/2026-10-15-discovery-pending-validation.md)，不计全书人物质量。
+
 新增工作区迁移 15 与七张构建/候选关系表；首次迁移保留 pre-discovery-v15 备份。BookDiscoveryService 提供有限分批、原子检查点、租约 fencing、重复复用、取消、失败重试及过期租约恢复。书目来源面板内新增人物候选、进度、分页和原文定位。
 
 17 项 T02 行为回归覆盖并发复用、同单元身份复用、歧义、伪造/重复引文、取消立即重试、删除迟到结果、持久恢复、模型缺失、适配参数和迁移备份。Mypy/Ruff、完整项目测试和前端构建结果见[验证记录](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-discovery-validation.md)。

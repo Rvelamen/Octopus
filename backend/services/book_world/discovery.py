@@ -407,26 +407,33 @@ class BookDiscoveryService:
         with connect(self.db_path) as db:
             db.execute("BEGIN IMMEDIATE")
             build = self._fence(db, build_id, owner, generation)
+            db.execute(
+                "UPDATE book_build_steps SET status='failed' WHERE build_id=? AND status IN ('pending','running') AND attempts>=2",
+                (build_id,),
+            )
             step = db.execute(
-                "SELECT * FROM book_build_steps WHERE build_id=? AND status<>'validated' "
+                "SELECT * FROM book_build_steps WHERE build_id=? AND status<>'validated' AND attempts<2 "
                 "ORDER BY CAST(unit_key AS INTEGER) LIMIT 1",
                 (build_id,),
             ).fetchone()
             if step is None:
-                db.execute(
-                    "UPDATE book_builds SET status='queued',stage='discovery_complete',lease_owner=NULL,"
-                    "lease_expires_at=NULL WHERE id=?",
+                failed = db.execute(
+                    "SELECT unit_key,result_json FROM book_build_steps WHERE build_id=? AND status='failed' ORDER BY CAST(unit_key AS INTEGER) LIMIT 1",
                     (build_id,),
-                )
+                ).fetchone()
+                if failed is not None:
+                    previous_error = json.loads(failed["result_json"]).get("error") or "Unfinished attempt; explicit retry required"
+                    db.execute(
+                        "UPDATE book_builds SET status='failed',error_code='discovery_failed',error_detail=?,lease_owner=NULL,lease_expires_at=NULL WHERE id=?",
+                        (f"Discovery unit {failed['unit_key']} failed twice: {previous_error}", build_id),
+                    )
+                else:
+                    db.execute(
+                        "UPDATE book_builds SET status='queued',stage='discovery_complete',lease_owner=NULL,"
+                        "lease_expires_at=NULL WHERE id=?",
+                        (build_id,),
+                    )
                 return None
-            if step["attempts"] >= 2:
-                previous_error = (
-                    json.loads(step["result_json"]).get("error") or "Invalid model result"
-                )
-                raise BookWorldError(
-                    "discovery_failed",
-                    f"Discovery unit {step['unit_key']} failed twice: {previous_error}",
-                )
             ids = json.loads(step["result_json"])["segment_ids"]
             rows = db.execute(
                 "SELECT id,text,ordinal FROM book_segments WHERE book_id=? AND source_version_id=? "

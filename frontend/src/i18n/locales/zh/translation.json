@@ -28,7 +28,7 @@
     "closeHistory": "退出历史查看",
     "latest": "跳到最新消息"
   },
-  "bookAuto": {"title": "自动人物构建", "kind": "资料类型", "kindOptions": {"document": "其他资料", "novel": "小说"}, "enable": "自动发现并构建人物", "importHint": "先准备全书来源，再发现人物、发布经审查的原著档案；表达素材独立生成，证据不足保持未知。", "waitingIntent": "导入意图已保存，等待附件就绪或补排队。", "calls": "已启动模型请求：{{count}} 次", "canonAvailable": "原著构建已可用，表达失败不撤销原著档案", "expressions": "独立表达任务：{{count}} 项", "cancel": "取消自动构建", "retry": "重试 / 继续流程", "phase": {"source": "准备来源", "discovery": "发现人物", "persona": "提取与审查原著", "expression": "生成表达素材", "complete": "阶段已结束"}, "status": {"waiting_attachment": "等待附件", "queued": "待运行", "running": "构建中", "blocked_config": "需要配置模型", "needs_ocr": "需要 OCR", "failed": "失败", "interrupted": "已中断", "cancelled": "已取消", "completed": "完成", "partial": "原著可用，表达未全部完成"}, "error": {"blocked_config": "请在设置中配置可用的原著提取模型后重试。", "config_changed": "请恢复本流程最初的模型与策略配置后继续。", "attachment_failed": "附件处理失败，请先重试附件处理。", "needs_ocr": "请完成 OCR 或更换为可读 PDF/TXT。", "expression_incomplete": "原著仍可用于受限聊天，请分别检查和继续表达任务。"}, "noExpressionEvidence": "暂无已审查表达素材，原著档案仍可单独使用", "materials": "已审查素材：{{count}} 项", "newVersion": "按当前配置构建新版本", "expressionStatus": {"queued": "待生成", "running": "生成中", "ready": "就绪", "partial": "部分完成", "paused": "已暂停", "failed": "失败", "cancelled": "已取消"}},
+  "bookAuto": {"title": "自动人物构建", "kind": "资料类型", "kindOptions": {"document": "其他资料", "novel": "小说"}, "enable": "自动发现并构建人物", "importHint": "先准备全书来源，再发现人物、发布经审查的原著档案；表达素材独立生成，证据不足保持未知。", "waitingIntent": "导入意图已保存，等待附件就绪或补排队。", "calls": "已启动模型请求：{{count}} 次", "canonAvailable": "原著构建已可用，表达失败不撤销原著档案", "expressions": "独立表达任务：{{count}} 项", "cancel": "取消自动构建", "retry": "重试 / 继续流程", "continuePending": "继续未处理单元（{{count}}）", "phase": {"source": "准备来源", "discovery": "发现人物", "persona": "提取与审查原著", "expression": "生成表达素材", "complete": "阶段已结束"}, "status": {"waiting_attachment": "等待附件", "queued": "待运行", "running": "构建中", "blocked_config": "需要配置模型", "needs_ocr": "需要 OCR", "failed": "失败", "interrupted": "已中断", "cancelled": "已取消", "completed": "完成", "partial": "原著可用，表达未全部完成"}, "error": {"blocked_config": "请在设置中配置可用的原著提取模型后重试。", "config_changed": "请恢复本流程最初的模型与策略配置后继续。", "attachment_failed": "附件处理失败，请先重试附件处理。", "needs_ocr": "请完成 OCR 或更换为可读 PDF/TXT。", "expression_incomplete": "原著仍可用于受限聊天，请分别检查和继续表达任务。"}, "noExpressionEvidence": "暂无已审查表达素材，原著档案仍可单独使用", "materials": "已审查素材：{{count}} 项", "newVersion": "按当前配置构建新版本", "expressionStatus": {"queued": "待生成", "running": "生成中", "ready": "就绪", "partial": "部分完成", "paused": "已暂停", "failed": "失败", "cancelled": "已取消"}},
   "bookRoom": {
     "retryCleanup": "重试来源清理",
     "deletedSource": "来源已删除",
@@ -109,6 +109,7 @@
     "discoveryComplete": "人物发现完成",
     "buildProgress": "检查点 {{completed}} / {{total}} · 已覆盖 {{processed}} / {{segments}} 片段",
     "candidateCount": "共 {{count}} 位候选",
+    "discoveryFailedUnits": "保留 {{count}} 个失败单元，未计入已完成检查点。",
     "ambiguousAlias": "称呼待消歧",
     "candidateEvidence": "原文依据",
     "previousCharacters": "上一页",

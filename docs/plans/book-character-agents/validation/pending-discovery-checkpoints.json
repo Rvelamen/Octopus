@@ -1,0 +1,189 @@
+{
+  "scope": "Actual same-B source checkpoint invariants around continue-only UI control, no model work in this proof",
+  "before": [
+    {
+      "item_id": 1,
+      "job_id": "c993dae7-5644-472e-9032-167d9d4b6359",
+      "build_id": "ce1089d1-e62e-436a-925c-edb1ce12b085",
+      "status": "failed",
+      "generation": 3,
+      "actual_calls": 8,
+      "validated": [
+        {
+          "unit_key": "0",
+          "input_hash": "b03ea1a020403c052eb2a80a8c5e75e8ef44b220d226894448c8a7d536d353f6",
+          "result_sha256": "12060d3c205bfb92e65b0665e1ecedce6b8f1c80da84c116ed7496ba190cdbbd"
+        },
+        {
+          "unit_key": "1",
+          "input_hash": "f2fd3ffd893dd453dbda95341e7a04216150fe2f887d3a69a16baacf35103f87",
+          "result_sha256": "f5df6ef54ba4f4a086c9d00dc3f4da7031054d59904c39e30968514ef26e95e3"
+        },
+        {
+          "unit_key": "2",
+          "input_hash": "7b4b82f45b4e927e3a5b0d48e99aaebd15eaf8fcec0589117850dd66499629ad",
+          "result_sha256": "fb5cdc0ce879c051eae3697f80521371a1ca1b4d538c4b19669afa30c5c2a8c0"
+        },
+        {
+          "unit_key": "3",
+          "input_hash": "573bd7b31a5dd4530f85d69fd43dbc838f243d4dd5205cbe9193a0d7ad9a8396",
+          "result_sha256": "fd46a38de68b88e3048254e5549c4d38ec2c74030f23d401b6dc1e502ea6d9de"
+        }
+      ],
+      "failed": [
+        {
+          "unit_key": "4",
+          "input_hash": "1548e5572870a5a1bd53d5a88543aca66a4a3a091df341a303a0014484e07183",
+          "status": "failed",
+          "attempts": 2,
+          "result_sha256": "14fd5a5d54e8117d7f22c3a89a1759f910dba31efc7c1255ceeb4be7fc1c542f"
+        }
+      ],
+      "pending": 406
+    },
+    {
+      "item_id": 2,
+      "job_id": "abcd7f05-d283-45a7-869f-ce5a6c7e97c9",
+      "build_id": "5e0c333f-0c01-4b9f-ab28-0d4642900c52",
+      "status": "failed",
+      "generation": 3,
+      "actual_calls": 13,
+      "validated": [
+        {
+          "unit_key": "0",
+          "input_hash": "d5c3dce254a934edf2518406876b2a8c892364634e9261fbd4820103ccd9fd0f",
+          "result_sha256": "7829670aeb62c8cc20e1839616ab4c1d582c422fe0f20ec2c83c5c5deac003ba"
+        },
+        {
+          "unit_key": "1",
+          "input_hash": "9045f151051e75db1b754b17773bf8b8b1bff12e4257a78ee5b3261245830c5f",
+          "result_sha256": "4580906b15b02eb0ff2dfc5e89005212fb38fdd52019b913d15d165c58a79ce7"
+        },
+        {
+          "unit_key": "2",
+          "input_hash": "c963201560880f9fc7f3a5afb223be7b361211bcaeb219c67e71dde54ae0adaa",
+          "result_sha256": "21c8e70e00ddc5021eea5daa5a5373400c0bfb19ac757c5d4bbebc81690eacfe"
+        },
+        {
+          "unit_key": "3",
+          "input_hash": "8e783ff1de50862f78d73d1a22aaa1f78e8161591f85773d7941a24fce5247ae",
+          "result_sha256": "0886b63e7ea21bfe5a7af91bbf002eb002a8d90aa7b69b921e88b9cefb77e6e5"
+        },
+        {
+          "unit_key": "4",
+          "input_hash": "8231056c8d8bde357b89dd3fe04a126179b7205118b119aebcc945b8dd63fbc4",
+          "result_sha256": "cc3de53de9598386e64222059d6189dbc4c5b3b5841ce6a69754fc7cc99f7dd6"
+        },
+        {
+          "unit_key": "5",
+          "input_hash": "c70cc597be6f4cb783bef3f6414b31925a59bf5a461df14c72388bc63beb57c4",
+          "result_sha256": "64aaf9416de76b299a335ba222d7be355481b315f9339c1c5ae1463809433146"
+        }
+      ],
+      "failed": [
+        {
+          "unit_key": "6",
+          "input_hash": "1f5ab6b3d576770f62b8ef838cc61e6450c97ede88b700fd2fdf51e8be779b84",
+          "status": "failed",
+          "attempts": 2,
+          "result_sha256": "18a3552bff16eebc75b2a3f8e2a38a6efe7b22eb77107149d73b1183decfbcad"
+        }
+      ],
+      "pending": 574
+    }
+  ],
+  "after": [
+    {
+      "item_id": 1,
+      "job_id": "c993dae7-5644-472e-9032-167d9d4b6359",
+      "build_id": "ce1089d1-e62e-436a-925c-edb1ce12b085",
+      "status": "queued",
+      "generation": 4,
+      "actual_calls": 8,
+      "validated": [
+        {
+          "unit_key": "0",
+          "input_hash": "b03ea1a020403c052eb2a80a8c5e75e8ef44b220d226894448c8a7d536d353f6",
+          "result_sha256": "12060d3c205bfb92e65b0665e1ecedce6b8f1c80da84c116ed7496ba190cdbbd"
+        },
+        {
+          "unit_key": "1",
+          "input_hash": "f2fd3ffd893dd453dbda95341e7a04216150fe2f887d3a69a16baacf35103f87",
+          "result_sha256": "f5df6ef54ba4f4a086c9d00dc3f4da7031054d59904c39e30968514ef26e95e3"
+        },
+        {
+          "unit_key": "2",
+          "input_hash": "7b4b82f45b4e927e3a5b0d48e99aaebd15eaf8fcec0589117850dd66499629ad",
+          "result_sha256": "fb5cdc0ce879c051eae3697f80521371a1ca1b4d538c4b19669afa30c5c2a8c0"
+        },
+        {
+          "unit_key": "3",
+          "input_hash": "573bd7b31a5dd4530f85d69fd43dbc838f243d4dd5205cbe9193a0d7ad9a8396",
+          "result_sha256": "fd46a38de68b88e3048254e5549c4d38ec2c74030f23d401b6dc1e502ea6d9de"
+        }
+      ],
+      "failed": [
+        {
+          "unit_key": "4",
+          "input_hash": "1548e5572870a5a1bd53d5a88543aca66a4a3a091df341a303a0014484e07183",
+          "status": "failed",
+          "attempts": 2,
+          "result_sha256": "14fd5a5d54e8117d7f22c3a89a1759f910dba31efc7c1255ceeb4be7fc1c542f"
+        }
+      ],
+      "pending": 406
+    },
+    {
+      "item_id": 2,
+      "job_id": "abcd7f05-d283-45a7-869f-ce5a6c7e97c9",
+      "build_id": "5e0c333f-0c01-4b9f-ab28-0d4642900c52",
+      "status": "queued",
+      "generation": 4,
+      "actual_calls": 13,
+      "validated": [
+        {
+          "unit_key": "0",
+          "input_hash": "d5c3dce254a934edf2518406876b2a8c892364634e9261fbd4820103ccd9fd0f",
+          "result_sha256": "7829670aeb62c8cc20e1839616ab4c1d582c422fe0f20ec2c83c5c5deac003ba"
+        },
+        {
+          "unit_key": "1",
+          "input_hash": "9045f151051e75db1b754b17773bf8b8b1bff12e4257a78ee5b3261245830c5f",
+          "result_sha256": "4580906b15b02eb0ff2dfc5e89005212fb38fdd52019b913d15d165c58a79ce7"
+        },
+        {
+          "unit_key": "2",
+          "input_hash": "c963201560880f9fc7f3a5afb223be7b361211bcaeb219c67e71dde54ae0adaa",
+          "result_sha256": "21c8e70e00ddc5021eea5daa5a5373400c0bfb19ac757c5d4bbebc81690eacfe"
+        },
+        {
+          "unit_key": "3",
+          "input_hash": "8e783ff1de50862f78d73d1a22aaa1f78e8161591f85773d7941a24fce5247ae",
+          "result_sha256": "0886b63e7ea21bfe5a7af91bbf002eb002a8d90aa7b69b921e88b9cefb77e6e5"
+        },
+        {
+          "unit_key": "4",
+          "input_hash": "8231056c8d8bde357b89dd3fe04a126179b7205118b119aebcc945b8dd63fbc4",
+          "result_sha256": "cc3de53de9598386e64222059d6189dbc4c5b3b5841ce6a69754fc7cc99f7dd6"
+        },
+        {
+          "unit_key": "5",
+          "input_hash": "c70cc597be6f4cb783bef3f6414b31925a59bf5a461df14c72388bc63beb57c4",
+          "result_sha256": "64aaf9416de76b299a335ba222d7be355481b315f9339c1c5ae1463809433146"
+        }
+      ],
+      "failed": [
+        {
+          "unit_key": "6",
+          "input_hash": "1f5ab6b3d576770f62b8ef838cc61e6450c97ede88b700fd2fdf51e8be779b84",
+          "status": "failed",
+          "attempts": 2,
+          "result_sha256": "18a3552bff16eebc75b2a3f8e2a38a6efe7b22eb77107149d73b1183decfbcad"
+        }
+      ],
+      "pending": 574
+    }
+  ],
+  "unchanged_accepted_and_exhausted": true,
+  "extra_model_calls": 0
+}
