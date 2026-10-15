@@ -1,0 +1,62 @@
+{
+  "scope": "Two fixed full-source failed units only; native v13 contract probe, not complete book/persona acceptance",
+  "budget": 2,
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 2000,
+    "unit_segment_limit": 12,
+    "max_tokens": 8192,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-discovery-v13",
+    "policy_version": "candidate-identity-v2"
+  },
+  "calls": [
+    {
+      "book": "西游记",
+      "unit_key": "17",
+      "status": "completed",
+      "input_sha256": "f1f01e042acfb432b3994762c0b500ca9655a76be3c830be49cc33477eb056d0",
+      "input_bytes": 7265,
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 3283,
+        "completion_tokens": 2661,
+        "total_tokens": 5944,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "output_bytes": 4245,
+      "valid": false,
+      "error_type": "ValueError",
+      "error": "Existing identity has no unambiguous matching alias",
+      "elapsed_seconds": 50.766
+    },
+    {
+      "book": "红楼梦",
+      "unit_key": "13",
+      "status": "completed",
+      "input_sha256": "57525398fb4181f10c7451204bec662ba827e3a7d5199cc99e06c56a1e082d4d",
+      "input_bytes": 5428,
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1717,
+        "completion_tokens": 1849,
+        "total_tokens": 3566,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "output_bytes": 1318,
+      "valid": false,
+      "error_type": "ValueError",
+      "error": "Existing identity has no unambiguous matching alias",
+      "elapsed_seconds": 46.328
+    }
+  ],
+  "publication": false,
+  "quality_pass": false,
+  "actual_calls": 2,
+  "terminal": true
+}

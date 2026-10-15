@@ -20,6 +20,13 @@ from .discovery_models import (
     discovery_model_input,
     validate_local_identities,
 )
+from .discovery_numbered import (
+    NUMBERED_PROMPT,
+    NUMBERED_VERSION,
+    NumberedDiscovery,
+    assemble_numbered,
+    prepare_numbered,
+)
 from .discovery_repair import (
     REPAIR_PROMPT,
     REPAIR_V9_PROMPT,
@@ -447,6 +454,7 @@ class BookDiscoveryService:
                 "character-discovery-v10",
                 "character-discovery-v11",
                 "character-discovery-v12",
+                NUMBERED_VERSION,
             ):
                 result["repair_packet"] = (
                     json.loads(step["result_json"]).get("repair_packet")
@@ -715,14 +723,18 @@ class BookDiscoveryService:
                     if data.get("repair_packet")
                     else False
                 )
-                if selected:
+                numbered = prepare_numbered(data) if config.prompt_version == NUMBERED_VERSION and not data.get("repair_packet") else None
+                if numbered is not None:
+                    system_prompt = NUMBERED_PROMPT + _json(NumberedDiscovery.model_json_schema())
+                    model_input = numbered["input"]
+                elif selected:
                     system_prompt = SELECTION_PROMPT + _json(SelectedRepairs.model_json_schema())
                     model_input = selection_input(data["repair_packet"])
                 else:
                     repair_prompt = (
                         REPAIR_V10_PROMPT
                         if config.prompt_version
-                        in ("character-discovery-v10", "character-discovery-v11")
+                        in ("character-discovery-v10", "character-discovery-v11", "character-discovery-v12", NUMBERED_VERSION)
                         else REPAIR_V9_PROMPT
                         if config.prompt_version == "character-discovery-v9"
                         else REPAIR_PROMPT
@@ -759,6 +771,8 @@ class BookDiscoveryService:
                     if response.finish_reason not in ("stop", "end_turn") or response.tool_calls:
                         raise ValueError("Discovery response is truncated or requests a tool")
                     raw_for_repair = response.content or ""
+                    if numbered is not None:
+                        raw_for_repair = _json(assemble_numbered(raw_for_repair, numbered))
                     result = (
                         apply_selection(
                             raw_for_repair, data["repair_packet"], data, self._validate_result
@@ -796,6 +810,7 @@ class BookDiscoveryService:
                             "character-discovery-v10",
                             "character-discovery-v11",
                             "character-discovery-v12",
+                            NUMBERED_VERSION,
                         )
                         and raw_for_repair
                         and not data.get("repair_packet")
@@ -811,12 +826,13 @@ class BookDiscoveryService:
                                 "character-discovery-v10",
                                 "character-discovery-v11",
                                 "character-discovery-v12",
+                                NUMBERED_VERSION,
                             ),
-                            allow_binding_split=config.prompt_version == "character-discovery-v12",
+                            allow_binding_split=config.prompt_version in ("character-discovery-v12", NUMBERED_VERSION),
                         )
                         if (
                             packet is not None
-                            and config.prompt_version == "character-discovery-v12"
+                            and config.prompt_version in ("character-discovery-v12", NUMBERED_VERSION)
                         ):
                             packet = await asyncio.to_thread(prepare_selection, packet, data)
                     await asyncio.to_thread(
@@ -834,6 +850,7 @@ class BookDiscoveryService:
                             "character-discovery-v10",
                             "character-discovery-v11",
                             "character-discovery-v12",
+                            NUMBERED_VERSION,
                         ),
                     )
         except BookWorldError as error:
