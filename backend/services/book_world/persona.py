@@ -13,7 +13,9 @@ from .discovery import BookDiscoveryService, _hash, _json, _now
 from .identity_graph import clone_graph
 from .persona_models import (
     EXTRACT_PROMPT,
+    EXTRACT_PROMPTS,
     REVIEW_PROMPT,
+    REVIEW_PROMPTS,
     PersonaBatch,
     PersonaConfig,
     PersonaReview,
@@ -675,7 +677,7 @@ class BookPersonaService:
                     return
                 try:
                     batch = validate_batch(
-                        await call(EXTRACT_PROMPT, PersonaBatch.model_json_schema(), data), data
+                        await call(EXTRACT_PROMPTS.get(config.prompt_version, EXTRACT_PROMPT), PersonaBatch.model_json_schema(), data), data
                     )
                     checked = {
                         **data,
@@ -689,7 +691,7 @@ class BookPersonaService:
                     }
                     review = validate_review(
                         await call(
-                            REVIEW_PROMPT,
+                            REVIEW_PROMPTS.get(config.review_prompt_version, REVIEW_PROMPT),
                             (
                                 RevisedPersonaReview
                                 if data.get("correction_hints")

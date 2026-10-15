@@ -51,3 +51,5 @@
 
 设计约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，代码接入点和执行顺序见[实施计划](F:/god/project/Octopus/docs/plans/book-character-agents/implementation-plan.md)。
 
+2026-10-15 增加显式v4提取/审查提示及按保存配置分派，区分主动意向和已完成行为；默认v3、旧提示与旧基线保持。两项公共服务回归验证独立子构建和旧版恢复。真实新档案8次上限、实际4次提取均失败，未进入独立审查或发布；另2次固定审查分别拒绝未获知的天庭评价、接受明确意向，只有局部语义证据。运行不是同修订身份图的受控对照，旧Agent哈希不变，见[完整失败与限制](../validation/2026-10-15-grouped-discovery-persona-validation.md)。档案质量和T12仍未通过。
+

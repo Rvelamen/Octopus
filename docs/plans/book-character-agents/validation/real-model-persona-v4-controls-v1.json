@@ -1,0 +1,329 @@
+{
+  "scope": "Two controlled propositions on actual excerpt inputs, real semantic review only; no generation/publication/full-book/persona-quality claim",
+  "native_call_ceiling": 2,
+  "actual_native_calls": 2,
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 4000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "persona-extract-v3",
+    "policy_version": "canonical-persona-v3",
+    "review_prompt_version": "persona-review-v4"
+  },
+  "cases": [
+    {
+      "case": "unheard-heaven",
+      "expected_supported": false,
+      "input": {
+        "characters": [
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "二将",
+              "千里眼"
+            ],
+            "entity_kind": "person",
+            "id": "7d56e328-f5ad-48ba-ac94-318042a60376",
+            "name": "千里眼",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "玉帝",
+              "玉皇大天尊玄穹高上帝"
+            ],
+            "entity_kind": "person",
+            "id": "87c9d564-c2e2-402a-a149-d1bfcf903663",
+            "name": "玉皇大天尊玄穹高上帝",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "石猴",
+              "那猴"
+            ],
+            "entity_kind": "person",
+            "id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+            "name": "石猴",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "顺风耳"
+            ],
+            "entity_kind": "person",
+            "id": "16d0d61f-98b9-4e4b-a8c6-adcc9390c064",
+            "name": "顺风耳",
+            "presence": "active"
+          }
+        ],
+        "correction_hints": [],
+        "known_life_states": {},
+        "phase": "review",
+        "previous_error": null,
+        "prior_claims": [],
+        "scene_id": "1de0b1a5-3b1a-48ea-9353-ac2c11c47bb3",
+        "segments": [
+          {
+            "id": "655edb81-d520-4041-8848-022283505355",
+            "ordinal": 0,
+            "text": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”"
+          }
+        ],
+        "unit_key": "0",
+        "proposals": {
+          "claims": [
+            {
+              "local_key": "unheard-heaven",
+              "kind": "episode",
+              "owner_character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+              "proposition": "石猴知道玉帝如何评价自己的金光。",
+              "truth_state": "true",
+              "interpretation_level": "supported",
+              "evidence": [
+                {
+                  "segment_id": "655edb81-d520-4041-8848-022283505355",
+                  "local_start": 0,
+                  "local_end": 210,
+                  "quote": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”"
+                }
+              ],
+              "access": [
+                {
+                  "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                  "route": "firsthand",
+                  "acquisition": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 0,
+                    "local_end": 210,
+                    "quote": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "status": "completed",
+      "output": "{\"identities\": [{\"character_id\": \"7d56e328-f5ad-48ba-ac94-318042a60376\", \"confirmed\": true}, {\"character_id\": \"87c9d564-c2e2-402a-a149-d1bfcf903663\", \"confirmed\": true}, {\"character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\", \"confirmed\": true}, {\"character_id\": \"16d0d61f-98b9-4e4b-a8c6-adcc9390c064\", \"confirmed\": true}], \"claims\": [{\"local_key\": \"unheard-heaven\", \"supported\": false, \"identity_consistent\": true, \"reason\": \"原文只写玉帝在天宫垂恩评论，千里眼顺风耳回禀；没有任何内容表明石猴在场、观察到或被告知玉帝的评价。firsthand路线不成立，读者知道不等于石猴知道。\", \"temporal_state\": \"uncertain\", \"baseline_supported\": false, \"correction_supported\": false, \"access\": [{\"character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\", \"authorized\": false, \"excerpt_safe\": false}]}], \"life_events\": []}",
+      "usage": {
+        "prompt_tokens": 2710,
+        "completion_tokens": 350,
+        "total_tokens": 3060,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "review": {
+        "identities": [
+          {
+            "character_id": "7d56e328-f5ad-48ba-ac94-318042a60376",
+            "confirmed": true
+          },
+          {
+            "character_id": "87c9d564-c2e2-402a-a149-d1bfcf903663",
+            "confirmed": true
+          },
+          {
+            "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+            "confirmed": true
+          },
+          {
+            "character_id": "16d0d61f-98b9-4e4b-a8c6-adcc9390c064",
+            "confirmed": true
+          }
+        ],
+        "claims": [
+          {
+            "local_key": "unheard-heaven",
+            "supported": false,
+            "identity_consistent": true,
+            "reason": "原文只写玉帝在天宫垂恩评论，千里眼顺风耳回禀；没有任何内容表明石猴在场、观察到或被告知玉帝的评价。firsthand路线不成立，读者知道不等于石猴知道。",
+            "temporal_state": "uncertain",
+            "baseline_supported": false,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                "authorized": false,
+                "excerpt_safe": false,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          }
+        ],
+        "life_events": []
+      },
+      "matches_expected": true,
+      "elapsed_seconds": 17.015
+    },
+    {
+      "case": "volunteered-intention",
+      "expected_supported": true,
+      "input": {
+        "characters": [
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "石猴",
+              "那猴"
+            ],
+            "entity_kind": "person",
+            "id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+            "name": "石猴",
+            "presence": "active"
+          }
+        ],
+        "correction_hints": [],
+        "known_life_states": {},
+        "phase": "review",
+        "previous_error": null,
+        "prior_claims": [],
+        "scene_id": "863c5aa6-64c4-4b50-921a-2614bb4586e4",
+        "segments": [
+          {
+            "id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "ordinal": 1,
+            "text": "那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。真是“山中无甲子寒尽不知年。”一朝天气炎热与群猴避暑都在松阴之下顽耍。你看他一个个："
+          },
+          {
+            "id": "6df20f9a-caa4-4bc1-a3c1-228acbbba777",
+            "ordinal": 2,
+            "text": "跳树攀枝采花觅果；抛弹子邷么儿；跑沙窝砌宝塔；赶蜻蜓扑八蜡；参老天拜菩萨；扯葛藤编草帓；捉虱子咬又掐；理毛衣剔指甲；挨的挨擦的擦；推的推压的压；扯的扯拉的拉青松林下任他顽绿水涧边随洗濯。一群猴子耍了一会却去那山涧中洗澡。见那股涧水奔流真个似滚瓜涌溅。古云：“禽有禽言兽有兽语。”众猴都道：“这股水不知是那里的水。我们今日赶闲无事顺涧边往上溜头寻看源流耍子去耶！”喊一声都拖男挈女呼弟呼兄一齐跑来顺涧爬山直至源流之处乃是一股瀑布飞泉。但见那："
+          },
+          {
+            "id": "e314cd1e-12ef-4ad2-8a4d-a18be9f4d8fd",
+            "ordinal": 3,
+            "text": "一派白虹起千寻雪浪飞；海风吹不断江月照还依。"
+          },
+          {
+            "id": "d2da76d2-6d5a-4d6c-ad45-3b7b4b6e35bd",
+            "ordinal": 4,
+            "text": "冷气分青嶂馀流润翠微；潺湲名瀑布真似挂帘帷。"
+          },
+          {
+            "id": "0829663f-3552-45e5-8332-999161919caf",
+            "ordinal": 5,
+            "text": "众猴拍手称扬道：“好水！好水！原来此处远通山脚之下直接大海之波。”又道：“那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。”连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”好猴！也是他："
+          },
+          {
+            "id": "80d4e374-f15c-477f-9f48-decad52d0e14",
+            "ordinal": 6,
+            "text": "今日芳名显时来大运通；有缘居此地王遣入仙宫。"
+          },
+          {
+            "id": "a0155270-18ce-4461-a349-5f96a43d5226",
+            "ordinal": 7,
+            "text": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。桥下之水冲贯于石窍之间倒挂流出去遮闭了桥门。却又欠身上桥头再走再看却似有人家住处一般真个好所在。但见那："
+          },
+          {
+            "id": "791b6395-87b7-4963-84c6-7e99d916ad74",
+            "ordinal": 8,
+            "text": "翠藓堆蓝白云浮玉光摇片片烟霞。虚窗静室滑凳板生花。乳窟龙珠倚挂萦回满地奇葩。锅灶傍崖存火迹樽罍靠案见肴渣。石座石床真可爱石盆石碗更堪夸。又见那一竿两竿修竹三点五点梅花。"
+          },
+          {
+            "id": "e6417e4b-f3b5-4c39-884b-61dc755651f4",
+            "ordinal": 9,
+            "text": "几树青松常带雨浑然相个人家。"
+          },
+          {
+            "id": "9fa27dfd-c5d7-4665-8d6c-c231ef7b2aaf",
+            "ordinal": 10,
+            "text": "看罢多时跳过桥中间"
+          }
+        ],
+        "unit_key": "1",
+        "proposals": {
+          "claims": [
+            {
+              "local_key": "volunteered-intention",
+              "kind": "trait",
+              "owner_character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+              "proposition": "石猴主动表示愿意进入瀑布泉，表现出胆大主动。",
+              "truth_state": "true",
+              "interpretation_level": "supported",
+              "evidence": [
+                {
+                  "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                  "local_start": 0,
+                  "local_end": 106,
+                  "quote": "众猴拍手称扬道：“好水！好水！原来此处远通山脚之下直接大海之波。”又道：“那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。”连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”好猴！也是他："
+                }
+              ],
+              "access": [
+                {
+                  "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                  "route": "firsthand",
+                  "acquisition": {
+                    "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                    "local_start": 0,
+                    "local_end": 106,
+                    "quote": "众猴拍手称扬道：“好水！好水！原来此处远通山脚之下直接大海之波。”又道：“那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。”连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”好猴！也是他："
+                  }
+                }
+              ],
+              "slot_key": "trait:胆识"
+            }
+          ]
+        }
+      },
+      "status": "completed",
+      "output": "{\"identities\": [{\"character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\", \"confirmed\": true}], \"claims\": [{\"local_key\": \"volunteered-intention\", \"supported\": true, \"identity_consistent\": true, \"reason\": \"原文“跳出一名石猴应声高叫道：‘我进去！我进去！’”明确支持石猴主动表示愿意进入瀑布泉，可保守推断其胆大主动；命题限定为意愿与性格，未夹带跳入后的完成事件。\", \"temporal_state\": \"current\", \"baseline_supported\": true, \"correction_supported\": false, \"access\": [{\"character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\", \"authorized\": true, \"excerpt_safe\": true}]}], \"life_events\": []}",
+      "usage": {
+        "prompt_tokens": 1582,
+        "completion_tokens": 234,
+        "total_tokens": 1816,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "review": {
+        "identities": [
+          {
+            "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+            "confirmed": true
+          }
+        ],
+        "claims": [
+          {
+            "local_key": "volunteered-intention",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "原文“跳出一名石猴应声高叫道：‘我进去！我进去！’”明确支持石猴主动表示愿意进入瀑布泉，可保守推断其胆大主动；命题限定为意愿与性格，未夹带跳入后的完成事件。",
+            "temporal_state": "current",
+            "baseline_supported": true,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          }
+        ],
+        "life_events": []
+      },
+      "matches_expected": true,
+      "elapsed_seconds": 6.094
+    }
+  ],
+  "quality_pass": false,
+  "publication": false,
+  "terminal": true
+}

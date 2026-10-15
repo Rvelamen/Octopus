@@ -53,3 +53,5 @@
 
 设计约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，代码接入点和执行顺序见[实施计划](F:/god/project/Octopus/docs/plans/book-character-agents/implementation-plan.md)。
 
+2026-10-15 接通显式v16嵌套身份/出场格式，30项边界与公共工作器回归通过，原完整校验、有限修复及迟到结果栅栏保持。新独立全书窗口24次上限、实际6次，两书均只完成标题单元后因片段编号错误失败，不计完整人物发现；默认v14和旧检查点保留。后续未接入的原文提及列表两份冻结输入展开及全部44条引用复查通过，下一步作为完整单元第二次修复协议接入同B，不能把原型当全书质量。真实结果及限制见[嵌套发现/档案记录](../validation/2026-10-15-grouped-discovery-persona-validation.md)。
+

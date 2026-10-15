@@ -1,0 +1,605 @@
+{
+  "date": "2026-10-15",
+  "scope": "Existing Stone excerpt only, new immutable persona child from original discovery; not a controlled comparison with revised identity graph, no full-book or blind-quality claim",
+  "native_call_ceiling": 8,
+  "actual_native_calls": 4,
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 8192,
+    "call_timeout_seconds": 180,
+    "prompt_version": "persona-extract-v4",
+    "policy_version": "canonical-persona-v3",
+    "review_prompt_version": "persona-review-v4"
+  },
+  "old_build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+  "discovery_parent_id": "e6849fdb-7258-423d-bc1f-068b63b18467",
+  "ancestor_lineage": [
+    {
+      "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+      "parent_build_id": "3fb0030b-c7f5-428f-8b70-e6a5b2254af7",
+      "stage": "persona_published",
+      "status": "partial_published",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f"
+    },
+    {
+      "build_id": "3fb0030b-c7f5-428f-8b70-e6a5b2254af7",
+      "parent_build_id": "85b07c37-99fd-4eed-a54c-bfec3531f49f",
+      "stage": "persona_published",
+      "status": "partial_published",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f"
+    },
+    {
+      "build_id": "85b07c37-99fd-4eed-a54c-bfec3531f49f",
+      "parent_build_id": "e6849fdb-7258-423d-bc1f-068b63b18467",
+      "stage": "persona_published",
+      "status": "partial_published",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f"
+    },
+    {
+      "build_id": "e6849fdb-7258-423d-bc1f-068b63b18467",
+      "parent_build_id": null,
+      "stage": "discovery_complete",
+      "status": "queued",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f"
+    }
+  ],
+  "new_build_id": "3725d82c-9be5-4350-b020-5e66c584b2e1",
+  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+  "old_agent_sha256_before": "968bfdbb2c861105c18ac18e6388d020ad0e7f3d1eebea863a33011e01ac44fb",
+  "prompt_sha256": {
+    "extract": "509cee01230e5c4161b1cd692a00fae757dbfb3e425910d3c63e098cd3d208cb",
+    "review": "4e4127cf1cefc0ed72111a266c9460a3a6719b5b830c66781f5374f244bf3c8f"
+  },
+  "runtime_sha256": {
+    "persona.py": "553fc01599db8d8a308696c94d447c2bda3edd0a585c25ed8dfaccb3b33133ef",
+    "persona_models.py": "a008c605a4b065d19fa499558215682af557885a4f2566bf04f96c9805749555",
+    "persona_validation.py": "b0ccb6482be0c5bd3b62a2bec3131c9d2328af3cb0e72a13dfcb52dbf08711ff",
+    "persona_publication.py": "7f860c7a0f5adeae42672a6fff14aa2d50b1bd5267127d6f10ba82102b93a13c"
+  },
+  "calls": [
+    {
+      "phase": "extract",
+      "unit_key": "0",
+      "status": "completed",
+      "input_sha256": "953204c42ef122f9b405d057ba65e94d9c41d0cd34c328d50e0e8eb5597a35b2",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1756,
+        "completion_tokens": 2774,
+        "total_tokens": 4530,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 83.937
+    },
+    {
+      "phase": "extract",
+      "unit_key": "0",
+      "status": "completed",
+      "input_sha256": "fff4b93098e37105d119e51edc5b86562d0c5c726cfb298e473218d899dfd252",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 494,
+        "completion_tokens": 2418,
+        "total_tokens": 2912,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 42.922
+    },
+    {
+      "phase": "extract",
+      "unit_key": "1",
+      "status": "completed",
+      "input_sha256": "9c29ad6c104cc9da6b4839461b6d2ac614910ee935385c1c3b556eee37612b05",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1020,
+        "completion_tokens": 1255,
+        "total_tokens": 2275,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 25.641
+    },
+    {
+      "phase": "extract",
+      "unit_key": "1",
+      "status": "completed",
+      "input_sha256": "2747f7851b1c3a5f5654313889326cfe22e98cd4bce1f9087ddbbe6a9e7fcbe0",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1026,
+        "completion_tokens": 1572,
+        "total_tokens": 2598,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 40.453
+    }
+  ],
+  "quality_pass": false,
+  "build": {
+    "build_id": "3725d82c-9be5-4350-b020-5e66c584b2e1",
+    "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+    "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+    "parent_build_id": "e6849fdb-7258-423d-bc1f-068b63b18467",
+    "status": "failed",
+    "stage": "persona_extract",
+    "total_units": 2,
+    "completed_units": 0,
+    "failed_units": 2,
+    "processed_segments": 0,
+    "total_segments": 11,
+    "error_code": "no_publishable_characters",
+    "error_detail": "No independently verified person can be published",
+    "can_resume": false,
+    "config": {
+      "call_timeout_seconds": 180,
+      "max_tokens": 8192,
+      "model": "k3",
+      "policy_version": "canonical-persona-v3",
+      "prompt_version": "persona-extract-v4",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "persona-review-v4",
+      "unit_char_limit": 8000,
+      "unit_segment_limit": 12
+    },
+    "publication_report": null
+  },
+  "characters": [
+    {
+      "build_id": "3725d82c-9be5-4350-b020-5e66c584b2e1",
+      "character_id": "b738413b-2155-4286-9002-f3be896d44af",
+      "agent_status": "needs_review",
+      "public": {
+        "anonymous": false,
+        "entity_kind": "group",
+        "identity_state": "candidate"
+      },
+      "reader": {
+        "claims": [],
+        "baseline": {},
+        "extensions": []
+      },
+      "published": false
+    },
+    {
+      "build_id": "3725d82c-9be5-4350-b020-5e66c584b2e1",
+      "character_id": "242a8869-5f00-41cd-bcf7-3496947f90e4",
+      "agent_status": "needs_review",
+      "public": {
+        "anonymous": false,
+        "entity_kind": "group",
+        "identity_state": "candidate"
+      },
+      "reader": {
+        "claims": [],
+        "baseline": {},
+        "extensions": []
+      },
+      "published": false
+    },
+    {
+      "build_id": "3725d82c-9be5-4350-b020-5e66c584b2e1",
+      "character_id": "7d56e328-f5ad-48ba-ac94-318042a60376",
+      "agent_status": "candidate",
+      "public": {
+        "anonymous": false,
+        "entity_kind": "person",
+        "identity_state": "candidate"
+      },
+      "reader": {
+        "claims": [],
+        "baseline": {},
+        "extensions": []
+      },
+      "published": false
+    },
+    {
+      "build_id": "3725d82c-9be5-4350-b020-5e66c584b2e1",
+      "character_id": "87c9d564-c2e2-402a-a149-d1bfcf903663",
+      "agent_status": "candidate",
+      "public": {
+        "anonymous": false,
+        "entity_kind": "person",
+        "identity_state": "candidate"
+      },
+      "reader": {
+        "claims": [],
+        "baseline": {},
+        "extensions": []
+      },
+      "published": false
+    },
+    {
+      "build_id": "3725d82c-9be5-4350-b020-5e66c584b2e1",
+      "character_id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+      "agent_status": "candidate",
+      "public": {
+        "anonymous": false,
+        "entity_kind": "person",
+        "identity_state": "candidate"
+      },
+      "reader": {
+        "claims": [],
+        "baseline": {},
+        "extensions": []
+      },
+      "published": false
+    },
+    {
+      "build_id": "3725d82c-9be5-4350-b020-5e66c584b2e1",
+      "character_id": "16d0d61f-98b9-4e4b-a8c6-adcc9390c064",
+      "agent_status": "candidate",
+      "public": {
+        "anonymous": false,
+        "entity_kind": "person",
+        "identity_state": "candidate"
+      },
+      "reader": {
+        "claims": [],
+        "baseline": {},
+        "extensions": []
+      },
+      "published": false
+    }
+  ],
+  "old_agent_sha256_after": "968bfdbb2c861105c18ac18e6388d020ad0e7f3d1eebea863a33011e01ac44fb",
+  "old_agent_unchanged": true,
+  "terminal": true,
+  "unit_failures": [
+    {
+      "unit_key": "0",
+      "status": "failed",
+      "attempts": 2,
+      "error": "Invalid persona fields: claims.2,claims.4.approved_excerpt"
+    },
+    {
+      "unit_key": "1",
+      "status": "failed",
+      "attempts": 2,
+      "error": "Acquisition for 石猴 needs a present person and a literal name in acquisition or identity_evidence"
+    }
+  ],
+  "native_trace": [
+    {
+      "input": {
+        "characters": [
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "二将",
+              "千里眼"
+            ],
+            "entity_kind": "person",
+            "id": "7d56e328-f5ad-48ba-ac94-318042a60376",
+            "name": "千里眼",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "玉帝",
+              "玉皇大天尊玄穹高上帝"
+            ],
+            "entity_kind": "person",
+            "id": "87c9d564-c2e2-402a-a149-d1bfcf903663",
+            "name": "玉皇大天尊玄穹高上帝",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "石猴",
+              "那猴"
+            ],
+            "entity_kind": "person",
+            "id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+            "name": "石猴",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "顺风耳"
+            ],
+            "entity_kind": "person",
+            "id": "16d0d61f-98b9-4e4b-a8c6-adcc9390c064",
+            "name": "顺风耳",
+            "presence": "active"
+          }
+        ],
+        "correction_hints": [],
+        "known_life_states": {},
+        "phase": "extract",
+        "previous_error": null,
+        "prior_claims": [],
+        "scene_id": "1de0b1a5-3b1a-48ea-9353-ac2c11c47bb3",
+        "segments": [
+          {
+            "id": "655edb81-d520-4041-8848-022283505355",
+            "ordinal": 0,
+            "text": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”"
+          }
+        ],
+        "unit_key": "0"
+      },
+      "status": "completed",
+      "output": "```json\n{\"claims\":[{\"local_key\":\"shihou_born\",\"kind\":\"episode\",\"owner_character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"proposition\":\"石猴出生后五官俱备四肢皆全，随即学爬学走并拜了四方。\",\"evidence\":[{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":0,\"local_end\":22,\"quote\":\"石猴五官俱备四肢皆全。便就学爬学走拜了四方。\"}],\"access\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"route\":\"firsthand\",\"acquisition\":{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":0,\"local_end\":22,\"quote\":\"石猴五官俱备四肢皆全。便就学爬学走拜了四方。\"}}]},{\"local_key\":\"shihou_golden_light\",\"kind\":\"episode\",\"owner_character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"proposition\":\"石猴目中运出两道金光，射冲斗府，惊动了天庭；千里眼顺风耳回报称如今服饵水食，金光将潜息。\",\"evidence\":[{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":22,\"local_end\":33,\"quote\":\"目运两道金光射冲斗府。\"},{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":161,\"local_end\":183,\"quote\":\"眼运金光射冲斗府。如今服饵水食金光将潜息矣。\"}],\"access\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"route\":\"firsthand\",\"acquisition\":{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":22,\"local_end\":33,\"quote\":\"目运两道金光射冲斗府。\"}}]},{\"local_key\":\"yudi_orders_watch\",\"kind\":\"episode\",\"owner_character_id\":\"87c9d564-c2e2-402a-a149-d1bfcf903663\",\"proposition\":\"玉帝见金光焰焰，即命千里眼、顺风耳开南天门观看。\",\"evidence\":[{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":67,\"local_end\":89,\"quote\":\"见有金光焰焰即命千里眼、顺风耳开南天门观看。\"}],\"access\":[{\"character_id\":\"87c9d564-c2e2-402a-a149-d1bfcf903663\",\"route\":\"firsthand\",\"acquisition\":{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":67,\"local_end\":89,\"quote\":\"见有金光焰焰即命千里眼、顺风耳开南天门观看。\"}}]},{\"local_key\":\"yudi_belief_not_strange\",\"kind\":\"belief\",\"owner_character_id\":\"87c9d564-c2e2-402a-a149-d1bfcf903663\",\"proposition\":\"玉帝认为下方之物乃天地精华所生，不足为异，对石猴金光之事持宽容态度。\",\"slot_key\":\"belief:对下方异象的态度\",\"evidence\":[{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":184,\"local_end\":210,\"quote\":\"玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”\"}],\"access\":[{\"character_id\":\"87c9d564-c2e2-402a-a149-d1bfcf903663\",\"route\":\"firsthand\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":184,\"local_end\":210,\"quote\":\"玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”\"},\"approved_excerpt\":\"下方之物乃天地精华所生不足为异。\"}]},{\"local_key\":\"qianliyan_watch_report\",\"kind\":\"episode\",\"owner_character_id\":\"7d56e328-f5ad-48ba-ac94-318042a60376\",\"proposition\":\"千里眼奉旨开南天门观看，看得真，并回报金光之处乃花果山仙石所产石猴拜四方、眼运金光之事。\",\"evidence\":[{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":89,\"local_end\":110,\"quote\":\"二将果奉旨出门外看的真听的明。须臾回报道：\"},{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":110,\"local_end\":183,\"quote\":\"“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”\"}],\"access\":[{\"character_id\":\"7d56e328-f5ad-48ba-ac94-318042a60376\",\"route\":\"firsthand\",\"acquisition\":{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":89,\"local_end\":110,\"quote\":\"二将果奉旨出门外看的真听的明。须臾回报道：\"},\"identity_evidence\":{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":73,\"local_end\":88,\"quote\":\"即命千里眼、顺风耳开南天门观看\"}}]},{\"local_key\":\"shunfenger_listen_report\",\"kind\":\"episode\",\"owner_character_id\":\"16d0d61f-98b9-4e4b-a8c6-adcc9390c064\",\"proposition\":\"顺风耳奉旨开南天门观听，听得明，并与千里眼一同回报石猴情形。\",\"evidence\":[{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":89,\"local_end\":110,\"quote\":\"二将果奉旨出门外看的真听的明。须臾回报道：\"}],\"access\":[{\"character_id\":\"16d0d61f-98b9-4e4b-a8c6-adcc9390c064\",\"route\":\"firsthand\",\"acquisition\":{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":89,\"local_end\":110,\"quote\":\"二将果奉旨出门外看的真听的明。须臾回报道：\"},\"identity_evidence\":{\"segment_id\":\"655edb81-d520-4041-8848-022283505355\",\"local_start\":73,\"local_end\":88,\"quote\":\"即命千里眼、顺风耳开南天门观看\"}}]}]}\n```"
+    },
+    {
+      "input": {
+        "characters": [
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "二将",
+              "千里眼"
+            ],
+            "entity_kind": "person",
+            "id": "7d56e328-f5ad-48ba-ac94-318042a60376",
+            "name": "千里眼",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "玉帝",
+              "玉皇大天尊玄穹高上帝"
+            ],
+            "entity_kind": "person",
+            "id": "87c9d564-c2e2-402a-a149-d1bfcf903663",
+            "name": "玉皇大天尊玄穹高上帝",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "石猴",
+              "那猴"
+            ],
+            "entity_kind": "person",
+            "id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+            "name": "石猴",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "顺风耳"
+            ],
+            "entity_kind": "person",
+            "id": "16d0d61f-98b9-4e4b-a8c6-adcc9390c064",
+            "name": "顺风耳",
+            "presence": "active"
+          }
+        ],
+        "correction_hints": [],
+        "known_life_states": {},
+        "phase": "extract",
+        "previous_error": "Acquisition for 石猴 needs a present person and a literal name in acquisition or identity_evidence",
+        "prior_claims": [],
+        "scene_id": "1de0b1a5-3b1a-48ea-9353-ac2c11c47bb3",
+        "segments": [
+          {
+            "id": "655edb81-d520-4041-8848-022283505355",
+            "ordinal": 0,
+            "text": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”"
+          }
+        ],
+        "unit_key": "0"
+      },
+      "status": "completed",
+      "output": "```json\n{\n  \"claims\": [\n    {\n      \"local_key\": \"shihou_birth_episode\",\n      \"kind\": \"episode\",\n      \"proposition\": \"石猴由花果山仙石所产石卵见风化成，出生后五官俱备、四肢皆全，随即学爬学走并拜了四方。\",\n      \"owner_character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 0,\n          \"local_end\": 34,\n          \"quote\": \"石猴五官俱备四肢皆全。便就学爬学走拜了四方。\"\n        },\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 106,\n          \"local_end\": 160,\n          \"quote\": \"乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 34,\n            \"quote\": \"石猴五官俱备四肢皆全。便就学爬学走拜了四方。\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 2,\n            \"quote\": \"石猴\"\n          },\n          \"disclosure\": \"private\"\n        }\n      ]\n    },\n    {\n      \"local_key\": \"shihou_golden_light\",\n      \"kind\": \"episode\",\n      \"proposition\": \"石猴目运两道金光射冲斗府，惊动天庭；服饵水食后金光将潜息。\",\n      \"owner_character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 35,\n          \"local_end\": 51,\n          \"quote\": \"目运两道金光射冲斗府。\"\n        },\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 160,\n          \"local_end\": 175,\n          \"quote\": \"如今服饵水食金光将潜息矣。\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 35,\n            \"local_end\": 51,\n            \"quote\": \"目运两道金光射冲斗府。\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 0,\n            \"local_end\": 2,\n            \"quote\": \"石猴\"\n          },\n          \"disclosure\": \"private\"\n        }\n      ]\n    },\n    {\n      \"local_key\": \"qianli_shunfeng_report\",\n      \"kind\": \"episode\",\n      \"proposition\": \"千里眼、顺风耳奉旨开南天门观看，看真听明后回报金光之处乃是花果山仙石所化石猴拜四方、眼运金光之事。\",\n      \"owner_character_id\": null,\n      \"evidence\": [\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 76,\n          \"local_end\": 104,\n          \"quote\": \"二将果奉旨出门外看的真听的明。须臾回报道：\"\n        },\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 104,\n          \"local_end\": 175,\n          \"quote\": \"“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"7d56e328-f5ad-48ba-ac94-318042a60376\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 76,\n            \"local_end\": 104,\n            \"quote\": \"二将果奉旨出门外看的真听的明。须臾回报道：\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 66,\n            \"local_end\": 74,\n            \"quote\": \"千里眼、顺风耳\"\n          },\n          \"disclosure\": \"public\"\n        },\n        {\n          \"character_id\": \"16d0d61f-98b9-4e4b-a8c6-adcc9390c064\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 76,\n            \"local_end\": 104,\n            \"quote\": \"二将果奉旨出门外看的真听的明。须臾回报道：\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 66,\n            \"local_end\": 74,\n            \"quote\": \"千里眼、顺风耳\"\n          },\n          \"disclosure\": \"public\"\n        }\n      ]\n    },\n    {\n      \"local_key\": \"yudi_order_watch\",\n      \"kind\": \"episode\",\n      \"proposition\": \"玉皇大天尊玄穹高上帝见金光焰焰，即命千里眼、顺风耳开南天门观看。\",\n      \"owner_character_id\": \"87c9d564-c2e2-402a-a149-d1bfcf903663\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 51,\n          \"local_end\": 76,\n          \"quote\": \"惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"87c9d564-c2e2-402a-a149-d1bfcf903663\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 51,\n            \"local_end\": 76,\n            \"quote\": \"惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。\"\n          },\n          \"disclosure\": \"public\"\n        }\n      ]\n    },\n    {\n      \"local_key\": \"yudi_belief_benign\",\n      \"kind\": \"belief\",\n      \"proposition\": \"玉帝认为下方之物乃天地精华所生，不足为异，并对石猴降生之事垂赐恩慈。\",\n      \"owner_character_id\": \"87c9d564-c2e2-402a-a149-d1bfcf903663\",\n      \"slot_key\": \"belief:天地精华所生之物不足为异\",\n      \"evidence\": [\n        {\n          \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n          \"local_start\": 175,\n          \"local_end\": 197,\n          \"quote\": \"玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”\"\n        }\n      ],\n      \"access\": [\n        {\n          \"character_id\": \"87c9d564-c2e2-402a-a149-d1bfcf903663\",\n          \"route\": \"firsthand\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 175,\n            \"local_end\": 197,\n            \"quote\": \"玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”\"\n          },\n          \"disclosure\": \"public\"\n        },\n        {\n          \"character_id\": \"7d56e328-f5ad-48ba-ac94-318042a60376\",\n          \"route\": \"observed\",\n          \"acquisition\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 175,\n            \"local_end\": 197,\n            \"quote\": \"玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”\"\n          },\n          \"identity_evidence\": {\n            \"segment_id\": \"655edb81-d520-4041-8848-022283505355\",\n            \"local_start\": 66,\n            \"local_end\": 74,\n            \"quote\": \"千里眼、顺风耳\"\n          },\n          \"disclosure\": \"public\"\n        }\n      ],\n      \"approved_excerpt\": \"玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”\"\n    }\n  ]\n}\n```"
+    },
+    {
+      "input": {
+        "characters": [
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "石猴",
+              "那猴"
+            ],
+            "entity_kind": "person",
+            "id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+            "name": "石猴",
+            "presence": "active"
+          }
+        ],
+        "correction_hints": [],
+        "known_life_states": {},
+        "phase": "extract",
+        "previous_error": null,
+        "prior_claims": [],
+        "scene_id": "863c5aa6-64c4-4b50-921a-2614bb4586e4",
+        "segments": [
+          {
+            "id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "ordinal": 1,
+            "text": "那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。真是“山中无甲子寒尽不知年。”一朝天气炎热与群猴避暑都在松阴之下顽耍。你看他一个个："
+          },
+          {
+            "id": "6df20f9a-caa4-4bc1-a3c1-228acbbba777",
+            "ordinal": 2,
+            "text": "跳树攀枝采花觅果；抛弹子邷么儿；跑沙窝砌宝塔；赶蜻蜓扑八蜡；参老天拜菩萨；扯葛藤编草帓；捉虱子咬又掐；理毛衣剔指甲；挨的挨擦的擦；推的推压的压；扯的扯拉的拉青松林下任他顽绿水涧边随洗濯。一群猴子耍了一会却去那山涧中洗澡。见那股涧水奔流真个似滚瓜涌溅。古云：“禽有禽言兽有兽语。”众猴都道：“这股水不知是那里的水。我们今日赶闲无事顺涧边往上溜头寻看源流耍子去耶！”喊一声都拖男挈女呼弟呼兄一齐跑来顺涧爬山直至源流之处乃是一股瀑布飞泉。但见那："
+          },
+          {
+            "id": "e314cd1e-12ef-4ad2-8a4d-a18be9f4d8fd",
+            "ordinal": 3,
+            "text": "一派白虹起千寻雪浪飞；海风吹不断江月照还依。"
+          },
+          {
+            "id": "d2da76d2-6d5a-4d6c-ad45-3b7b4b6e35bd",
+            "ordinal": 4,
+            "text": "冷气分青嶂馀流润翠微；潺湲名瀑布真似挂帘帷。"
+          },
+          {
+            "id": "0829663f-3552-45e5-8332-999161919caf",
+            "ordinal": 5,
+            "text": "众猴拍手称扬道：“好水！好水！原来此处远通山脚之下直接大海之波。”又道：“那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。”连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”好猴！也是他："
+          },
+          {
+            "id": "80d4e374-f15c-477f-9f48-decad52d0e14",
+            "ordinal": 6,
+            "text": "今日芳名显时来大运通；有缘居此地王遣入仙宫。"
+          },
+          {
+            "id": "a0155270-18ce-4461-a349-5f96a43d5226",
+            "ordinal": 7,
+            "text": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。桥下之水冲贯于石窍之间倒挂流出去遮闭了桥门。却又欠身上桥头再走再看却似有人家住处一般真个好所在。但见那："
+          },
+          {
+            "id": "791b6395-87b7-4963-84c6-7e99d916ad74",
+            "ordinal": 8,
+            "text": "翠藓堆蓝白云浮玉光摇片片烟霞。虚窗静室滑凳板生花。乳窟龙珠倚挂萦回满地奇葩。锅灶傍崖存火迹樽罍靠案见肴渣。石座石床真可爱石盆石碗更堪夸。又见那一竿两竿修竹三点五点梅花。"
+          },
+          {
+            "id": "e6417e4b-f3b5-4c39-884b-61dc755651f4",
+            "ordinal": 9,
+            "text": "几树青松常带雨浑然相个人家。"
+          },
+          {
+            "id": "9fa27dfd-c5d7-4665-8d6c-c231ef7b2aaf",
+            "ordinal": 10,
+            "text": "看罢多时跳过桥中间"
+          }
+        ],
+        "unit_key": "1"
+      },
+      "status": "completed",
+      "output": "```json\n{\"claims\":[{\"local_key\":\"stone_monkey_volunteers_enter\",\"kind\":\"trait\",\"owner_character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"proposition\":\"石猴有胆识且主动：在群猴连呼三声无人应答后，他从丛杂中跳出，应声高叫\\\"我进去！我进去！\\\"，主动表示愿意进入瀑布寻源头。\",\"slot_key\":\"trait:胆识与主动\",\"truth_state\":\"true\",\"evidence\":[{\"segment_id\":\"0829663f-3552-45e5-8332-999161919caf\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”\"}],\"access\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"route\":\"firsthand\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"0829663f-3552-45e5-8332-999161919caf\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”\"},\"approved_excerpt\":\"连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”\"}]},{\"local_key\":\"stone_monkey_enters_falls\",\"kind\":\"episode\",\"owner_character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"proposition\":\"石猴瞑目蹲身纵身跳入瀑布泉中，发现里面无水无波，有一座铁板桥，桥下之水冲贯石窍遮闭桥门，桥头那边似有人家住处。\",\"truth_state\":\"true\",\"evidence\":[{\"segment_id\":\"a0155270-18ce-4461-a349-5f96a43d5226\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。\"}],\"access\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"route\":\"firsthand\",\"disclosure\":\"private\",\"acquisition\":{\"segment_id\":\"a0155270-18ce-4461-a349-5f96a43d5226\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。\"}}]},{\"local_key\":\"monkeys_kingship_pact\",\"kind\":\"fact\",\"owner_character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"proposition\":\"群猴当众约定：有本事钻进瀑布寻出源头而不伤身体者，众猴即拜他为王。\",\"truth_state\":\"true\",\"evidence\":[{\"segment_id\":\"0829663f-3552-45e5-8332-999161919caf\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。\"}],\"access\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"route\":\"observed\",\"disclosure\":\"public\",\"acquisition\":{\"segment_id\":\"0829663f-3552-45e5-8332-999161919caf\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"众猴拍手称扬道：“好水！好水！原来此处远通山脚之下直接大海之波。”又道：“那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。”\"},\"identity_evidence\":{\"segment_id\":\"0829663f-3552-45e5-8332-999161919caf\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”\"},\"approved_excerpt\":\"那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。\"}]}]}\n```"
+    },
+    {
+      "input": {
+        "characters": [
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "石猴",
+              "那猴"
+            ],
+            "entity_kind": "person",
+            "id": "c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47",
+            "name": "石猴",
+            "presence": "active"
+          }
+        ],
+        "correction_hints": [],
+        "known_life_states": {},
+        "phase": "extract",
+        "previous_error": "Invalid persona fields: claims.2",
+        "prior_claims": [],
+        "scene_id": "863c5aa6-64c4-4b50-921a-2614bb4586e4",
+        "segments": [
+          {
+            "id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "ordinal": 1,
+            "text": "那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。真是“山中无甲子寒尽不知年。”一朝天气炎热与群猴避暑都在松阴之下顽耍。你看他一个个："
+          },
+          {
+            "id": "6df20f9a-caa4-4bc1-a3c1-228acbbba777",
+            "ordinal": 2,
+            "text": "跳树攀枝采花觅果；抛弹子邷么儿；跑沙窝砌宝塔；赶蜻蜓扑八蜡；参老天拜菩萨；扯葛藤编草帓；捉虱子咬又掐；理毛衣剔指甲；挨的挨擦的擦；推的推压的压；扯的扯拉的拉青松林下任他顽绿水涧边随洗濯。一群猴子耍了一会却去那山涧中洗澡。见那股涧水奔流真个似滚瓜涌溅。古云：“禽有禽言兽有兽语。”众猴都道：“这股水不知是那里的水。我们今日赶闲无事顺涧边往上溜头寻看源流耍子去耶！”喊一声都拖男挈女呼弟呼兄一齐跑来顺涧爬山直至源流之处乃是一股瀑布飞泉。但见那："
+          },
+          {
+            "id": "e314cd1e-12ef-4ad2-8a4d-a18be9f4d8fd",
+            "ordinal": 3,
+            "text": "一派白虹起千寻雪浪飞；海风吹不断江月照还依。"
+          },
+          {
+            "id": "d2da76d2-6d5a-4d6c-ad45-3b7b4b6e35bd",
+            "ordinal": 4,
+            "text": "冷气分青嶂馀流润翠微；潺湲名瀑布真似挂帘帷。"
+          },
+          {
+            "id": "0829663f-3552-45e5-8332-999161919caf",
+            "ordinal": 5,
+            "text": "众猴拍手称扬道：“好水！好水！原来此处远通山脚之下直接大海之波。”又道：“那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。”连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”好猴！也是他："
+          },
+          {
+            "id": "80d4e374-f15c-477f-9f48-decad52d0e14",
+            "ordinal": 6,
+            "text": "今日芳名显时来大运通；有缘居此地王遣入仙宫。"
+          },
+          {
+            "id": "a0155270-18ce-4461-a349-5f96a43d5226",
+            "ordinal": 7,
+            "text": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。桥下之水冲贯于石窍之间倒挂流出去遮闭了桥门。却又欠身上桥头再走再看却似有人家住处一般真个好所在。但见那："
+          },
+          {
+            "id": "791b6395-87b7-4963-84c6-7e99d916ad74",
+            "ordinal": 8,
+            "text": "翠藓堆蓝白云浮玉光摇片片烟霞。虚窗静室滑凳板生花。乳窟龙珠倚挂萦回满地奇葩。锅灶傍崖存火迹樽罍靠案见肴渣。石座石床真可爱石盆石碗更堪夸。又见那一竿两竿修竹三点五点梅花。"
+          },
+          {
+            "id": "e6417e4b-f3b5-4c39-884b-61dc755651f4",
+            "ordinal": 9,
+            "text": "几树青松常带雨浑然相个人家。"
+          },
+          {
+            "id": "9fa27dfd-c5d7-4665-8d6c-c231ef7b2aaf",
+            "ordinal": 10,
+            "text": "看罢多时跳过桥中间"
+          }
+        ],
+        "unit_key": "1"
+      },
+      "status": "completed",
+      "output": "{\"claims\":[{\"local_key\":\"ep1\",\"kind\":\"episode\",\"proposition\":\"众猴约定钻进瀑布寻源者拜为王，连呼三声后，石猴从丛杂中跳出应声高叫“我进去！我进去！”。\",\"owner_character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"evidence\":[{\"segment_id\":\"0829663f-3552-45e5-8332-999161919caf\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”\"}],\"access\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"route\":\"firsthand\",\"acquisition\":{\"segment_id\":\"0829663f-3552-45e5-8332-999161919caf\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”\"},\"disclosure\":\"private\"}],\"interpretation_level\":\"explicit\",\"truth_state\":\"true\"},{\"local_key\":\"ep2\",\"kind\":\"episode\",\"proposition\":\"石猴瞑目蹲身跳入瀑布泉中，发现里面无水无波，有一座铁板桥，桥那头似有人家住处。\",\"owner_character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"evidence\":[{\"segment_id\":\"a0155270-18ce-4461-a349-5f96a43d5226\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。\"}],\"access\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"route\":\"firsthand\",\"acquisition\":{\"segment_id\":\"a0155270-18ce-4461-a349-5f96a43d5226\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁\"},\"disclosure\":\"private\"}],\"interpretation_level\":\"explicit\",\"truth_state\":\"true\"},{\"local_key\":\"ep3\",\"kind\":\"episode\",\"proposition\":\"石猴欠身走上桥头再看，见桥那边翠藓白云、虚窗静室、锅灶石座石床，并修竹梅花青松，像一处人家。\",\"owner_character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"evidence\":[{\"segment_id\":\"a0155270-18ce-4461-a349-5f96a43d5226\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"却又欠身上桥头再走再看却似有人家住处一般真个好所在\"},{\"segment_id\":\"791b6395-87b7-4963-84c6-7e99d916ad74\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"锅灶傍崖存火迹樽罍靠案见肴渣。石座石床真可爱石盆石碗更堪夸。\"}],\"access\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"route\":\"firsthand\",\"acquisition\":{\"segment_id\":\"a0155270-18ce-4461-a349-5f96a43d5226\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"却又欠身上桥头再走再看却似有人家住处一般真个好所在\"},\"disclosure\":\"private\"}],\"interpretation_level\":\"explicit\",\"truth_state\":\"true\"},{\"local_key\":\"trait1\",\"kind\":\"trait\",\"slot_key\":\"trait:胆识主动\",\"proposition\":\"石猴在众猴悬赏寻源、无人应声之际，主动跳出高声表示愿意进入瀑布，表现出争先与胆识。\",\"owner_character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"evidence\":[{\"segment_id\":\"0829663f-3552-45e5-8332-999161919caf\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"“那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。”连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”\"}],\"access\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"route\":\"firsthand\",\"acquisition\":{\"segment_id\":\"0829663f-3552-45e5-8332-999161919caf\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”\"},\"disclosure\":\"private\"}],\"interpretation_level\":\"supported\"},{\"local_key\":\"ep4\",\"kind\":\"episode\",\"proposition\":\"石猴在山中行走跳跃，食草木、饮涧泉、采山花、觅树果，与狼虫虎豹獐鹿猕猿为伴，夜宿石崖、朝游峰洞。\",\"owner_character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"evidence\":[{\"segment_id\":\"7e17743a-9846-4408-a0ba-b0164e298b5e\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。\"}],\"access\":[{\"character_id\":\"c2ea80e6-fbe0-4f0d-aac2-9f0103e64e47\",\"route\":\"firsthand\",\"acquisition\":{\"segment_id\":\"7e17743a-9846-4408-a0ba-b0164e298b5e\",\"local_start\":0,\"local_end\":0,\"offset_resolution\":\"unique_quote\",\"quote\":\"那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果\"},\"disclosure\":\"private\"}],\"interpretation_level\":\"explicit\",\"truth_state\":\"true\"}]}"
+    }
+  ],
+  "post_run_validation_diagnostics": [
+    {
+      "unit_key": "0",
+      "error": "Acquisition for 石猴 needs a present person and a literal name in acquisition or identity_evidence"
+    },
+    {
+      "unit_key": "0",
+      "error": [
+        {
+          "type": "value_error",
+          "loc": [
+            "claims",
+            2
+          ],
+          "msg": "Value error, Facts have no owner; personal claims must have an owner"
+        },
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "claims",
+            4,
+            "approved_excerpt"
+          ],
+          "msg": "Extra inputs are not permitted"
+        }
+      ]
+    },
+    {
+      "unit_key": "1",
+      "error": [
+        {
+          "type": "value_error",
+          "loc": [
+            "claims",
+            2
+          ],
+          "msg": "Value error, Facts have no owner; personal claims must have an owner"
+        }
+      ]
+    },
+    {
+      "unit_key": "1",
+      "error": "Acquisition for 石猴 needs a present person and a literal name in acquisition or identity_evidence"
+    }
+  ]
+}
