@@ -1,0 +1,13 @@
+{
+  "scope": "Read-only local provider adaptation, no HTTP or model call; excludes remote gateway internals",
+  "native_calls": 0,
+  "provider_class": "AnthropicProvider",
+  "system_content_preserved_exactly": true,
+  "user_payload_preserved_exactly": true,
+  "system_sha256": "a459625e283efabd80ec6771a55859a6ae5371b1b8e0a70f62590f0a452bc1da",
+  "payload_sha256": "b18d4d9078c2252dacbc3b0774b88959446c325fcb500f6cccfffcb4631b1845",
+  "adapter_source_sha256": "3a1b99983eed57a62b1e28486b4af9f787857a2ccd8b1699d613913c135ee1f3",
+  "temperature": "chat accepts requested temperature but does not include it in SDK kwargs; uncontrolled sampling, no seed or exact determinism claim",
+  "effort": "low passed as output_config.effort in actual provider source",
+  "quality_pass": false
+}

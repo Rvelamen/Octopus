@@ -1,0 +1,44 @@
+{
+  "scope": "Root read-only audit of an unwired four-call protocol prototype; target outcomes do not assess every other recipient or establish quality",
+  "native_calls": 0,
+  "raw_record": "real-model-persona-acquisition-controls-v4.json",
+  "cases": [
+    {
+      "case": "full_native_batch",
+      "target_only_matches_expected": true,
+      "input_literal_contract_valid": true,
+      "resolvable_output_knowledge_quotes": 8
+    },
+    {
+      "case": "compound_scouts",
+      "target_only_matches_expected": true,
+      "input_literal_contract_valid": true,
+      "resolvable_output_knowledge_quotes": 5
+    },
+    {
+      "case": "narrow_own_action",
+      "target_only_matches_expected": true,
+      "input_literal_contract_valid": true,
+      "resolvable_output_knowledge_quotes": 1
+    },
+    {
+      "case": "narrow_command",
+      "target_only_matches_expected": true,
+      "input_literal_contract_valid": true,
+      "resolvable_output_knowledge_quotes": 5
+    }
+  ],
+  "residual_findings": [
+    {
+      "case": "full_native_batch",
+      "local_keys": [
+        "qianliyan_observe_report",
+        "shunfengger_observe_report"
+      ],
+      "reason": "Prototype still assigns individual look/hear from collective observation and reports, marks whole and safe; individual sensory distribution remains unproven. Do not treat all target matches as complete batch acceptance."
+    }
+  ],
+  "retained_native_disagreements": true,
+  "quality_pass": false,
+  "recommended_next_step": "Version a separate per-recipient knowledge/evidence review and preserve all vetoes; diagnose individual sensory allocation and new native builds before using a fixture for chat. No default promotion based on these four cases."
+}

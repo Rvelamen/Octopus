@@ -41,14 +41,16 @@ def resolve_span(span: DiscoverySpan, rows: dict[str, str]) -> DiscoverySpan:
     )
 
 
-def validate_batch(raw: str, data: dict[str, Any]) -> PersonaBatch:
+def validate_batch(
+    raw: str, data: dict[str, Any], *, require_explicit_excerpt: bool = False
+) -> PersonaBatch:
     batch = PersonaBatch.model_validate_json(parse_json(raw))
     rows = {row["id"]: row["text"] for row in data["segments"]}
     people = {person["id"]: person for person in data["characters"]}
     keys: set[str] = set()
     normalized: list[ClaimProposal] = []
     previous = {claim["id"]: claim for claim in data["prior_claims"]}
-    for claim in batch.claims:
+    for claim_index, claim in enumerate(batch.claims):
         if claim.local_key in keys or not claim.proposition.strip():
             raise ValueError("Duplicate claim key or empty proposition")
         keys.add(claim.local_key)
@@ -77,7 +79,12 @@ def validate_batch(raw: str, data: dict[str, Any]) -> PersonaBatch:
         evidence = [resolve_span(span, rows) for span in claim.evidence]
         access = []
         granted: set[str] = set()
-        for grant in claim.access:
+        for grant_index, grant in enumerate(claim.access):
+            if require_explicit_excerpt and "approved_excerpt" not in grant.model_fields_set:
+                raise ValueError(
+                    f"claims.{claim_index}.access.{grant_index}.approved_excerpt is required; "
+                    "choose a safe claim evidence excerpt or explicitly use an empty string"
+                )
             if grant.character_id not in people or grant.character_id in granted:
                 raise ValueError("Foreign or duplicate access identity")
             granted.add(grant.character_id)

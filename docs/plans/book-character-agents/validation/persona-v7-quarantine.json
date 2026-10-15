@@ -1,0 +1,19 @@
+{
+  "scope": "Task-owned non-full-book experimental build only; runtime availability revoked after Agent semantic audit, not a migration or a quality acceptance test",
+  "build_id": "0874cf4b-6cac-4309-9f6c-adf7551c7396",
+  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+  "original_publication_status_preserved": "partial_published",
+  "lifecycle_state": "unavailable",
+  "reason": "Batched review accepted an unproven remote effect as firsthand knowledge; group sensory allocation also requires audit",
+  "room_members_before": 0,
+  "canonical_claim_rows_unchanged": true,
+  "claims_sha256": "ae5de5e4396ddc4d2a6c2e52478edb1780b583120aff4025e97983e69ed059d0",
+  "previous_v5_unchanged": true,
+  "head_restored_to_previous_with_new_revision": true,
+  "runtime_denials": {
+    "definition": "build_unavailable",
+    "knowledge_binding": "build_unavailable"
+  },
+  "native_calls": 0,
+  "quality_pass": false
+}

@@ -1,6 +1,6 @@
 """Strict evidence proposals and a separate semantic/acquisition review contract."""
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import Field, model_validator
 
@@ -161,6 +161,26 @@ EXTRACT_PROMPTS[EVIDENCE_PERSONA_VERSION] = (
 """
 )
 
+SCOPED_PERSONA_VERSION = "persona-extract-v7"
+EXTRACT_PROMPTS[SCOPED_PERSONA_VERSION] = (
+    EXTRACT_PROMPTS[EVIDENCE_PERSONA_VERSION]
+    + """\n每项尽量只陈述一个独立事件或保守特征，先删去保存引文没有证明的先后、完成、因果、数量和否定条件，再逐人检查整个命题是否都能获知。世界事实有原文，不等于每个在场者知道全部细节；收到命令不证明知道命令者先前的心理、聚集过程或原因。只知道其中一部分时，拆成完整可知的窄化命题，不能授权整个复合事实。
+本人做动作不证明知道远端效果或传播终点，也不证明别人的反应。不得从名字、预训练能力或熟知故事推断分工；集体看听未逐人分配时，不自动给每个人完整的全部感官经历。不能把“上桥头”补成“过桥后”，也不能把原文未穷尽的沉默写成“无人应答”。
+本版本每条access必须显式填写approved_excerpt：选择本claim.evidence内连续、对该人物安全的原句；如果没有能安全引用的内容，明确给空字符串，不能省略该字段。空串不等于已有可用引用，不得为填字段自动复制含旁白或他人秘密的整段。获知命题、命题支持和摘录安全是三项独立检查，任何一项不能替代另一项。
+"""
+)
+
+
+def persona_batch_schema(prompt_version: str) -> dict[str, Any]:
+    """A new version requires a choice while old saved contracts retain defaults."""
+    schema: dict[str, Any] = PersonaBatch.model_json_schema()
+    if prompt_version == SCOPED_PERSONA_VERSION:
+        access = schema["$defs"]["AccessProposal"]
+        access["required"].append("approved_excerpt")
+        access["properties"]["approved_excerpt"].pop("default", None)
+    return schema
+
+
 REVIEW_PROMPTS = {
     "persona-review-v3": REVIEW_PROMPT,
     "persona-review-v4": REVIEW_PROMPT
@@ -172,4 +192,11 @@ trait也不能夹带未证明的完成事件或认识变化。不要仅因带有
 REVIEW_PROMPTS["persona-review-v5"] = (
     REVIEW_PROMPTS["persona-review-v4"]
     + """\n另外逐项检查保存引文覆盖：supported只能由本条提案的claim.evidence逐字引文集合完整支持。按命题拆开人物、动作、时间、完成态、数量与结果，任何子句缺引文就supported=false。即使segments其他未引用段落有该内容，也不能借整批上下文补成本条证据。acquisition/identity_evidence只证明获知及共指，不能替代缺少的命题引文。不得把完整段落中的未引用部分当作已保存引用。独立核对获知和安全摘录；拒绝一条不影响另一条独立有据命题。"""
+)
+
+REVIEW_PROMPTS["persona-review-v6"] = (
+    REVIEW_PROMPTS["persona-review-v5"]
+    + """\n再按子句分别核对命题支持与本人获知，不能用一个真旗标代替另一项检查。本人做过动作，不等于知道动作在远端的效果、传播终点、别人反应或原因；这部分需本人明确观察或实际被告知的原文，旁白和读者视角不能授权。只知部分就不授权整个复合命题，不能靠一个安全子串掩盖其他未获知子句。
+严格按保存引文检查动作完成态和先后顺序：上桥头不证明已经过桥，先看后行动不能倒置；仅相同地点和名词不足以支持整个命题。identity_evidence只证明共指，不能补命题内容。不得从名字推测能力、分工、背景或用预训练故事常识授权或反证；原文不能逐人分配的集体描写保持未知，也不得编造原文明示了某种分工的理由。
+独立检查approved_excerpt是否确实可供该人引用，并说明它支持的有据部分；空串没有实际可用引用，不能仅因空串不含秘密便认为完整命题有引用支持。必要证据或获知不确定时supported/authorized分别false，保留独立有据的窄化命题。"""
 )

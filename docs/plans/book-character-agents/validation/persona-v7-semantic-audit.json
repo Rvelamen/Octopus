@@ -1,0 +1,56 @@
+{
+  "scope": "Agent source audit of actual failed v7 excerpt, not human blind review or full-book quality",
+  "build_id": "0874cf4b-6cac-4309-9f6c-adf7551c7396",
+  "native_build_calls": 4,
+  "strict_excerpt_contract_checks": [
+    {
+      "unit": "0",
+      "claims": 5,
+      "grants": 5,
+      "explicit_nonempty_excerpts": 5
+    },
+    {
+      "unit": "1",
+      "claims": 4,
+      "grants": 4,
+      "explicit_nonempty_excerpts": 4
+    }
+  ],
+  "old_agent_unchanged": true,
+  "previous_v5_unchanged": true,
+  "previous_v6_remains_quarantined": true,
+  "findings": [
+    {
+      "unit": "0",
+      "key": "shihou_birth_goldenlight",
+      "category": "personal_acquisition_and_excerpt_safety",
+      "reason": "射冲斗府是远端终点，无本人观察或获告；事实 supported 可成立，但整条 firsthand 和包含该子句的 approved_excerpt 不成立。"
+    },
+    {
+      "unit": "0",
+      "key": "qianliyan_observe_report",
+      "category": "unproven_individual_sensory_allocation",
+      "reason": "集体观听报告有据；原文没有逐人分配千里眼看得真，完整个人firsthand仍未证实。"
+    },
+    {
+      "unit": "0",
+      "key": "shunfengger_observe_report",
+      "category": "unproven_individual_sensory_allocation",
+      "reason": "同上，按名字不能分配顺风耳听得明。"
+    },
+    {
+      "unit": "1",
+      "key": "shihou_trait_proactive",
+      "category": "saved_quote_coverage",
+      "reason": "命题含众猴询问谁敢钻入瀑布时，本条保存引文只从连呼三声起，实际询问句仅在未引用上下文；主动意向本身可有据推断。"
+    },
+    {
+      "unit": "1",
+      "key": "shihou_volunteer_enter",
+      "category": "saved_quote_coverage",
+      "reason": "保存引文包含询问、寻源和应声意向，但瀑布名称仅在未引用前文；严格的本条引文覆盖还需补该位置或删地点限定。这不是书外补全。"
+    }
+  ],
+  "quarantine_record": "persona-v7-quarantine.json",
+  "quality_pass": false
+}

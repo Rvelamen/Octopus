@@ -1,0 +1,904 @@
+{
+  "scope": "Four fixed diagnosis calls only, same failed v7 singleton/batch compared; no new runtime build, no publication, no broad quality or causal conclusion",
+  "parent_budget_record": "real-model-persona-scope-v7-01.json",
+  "parent_calls": 4,
+  "combined_ceiling": 8,
+  "native_call_ceiling": 4,
+  "actual_native_calls": 4,
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 4000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "persona-extract-v3",
+    "policy_version": "canonical-persona-v3",
+    "review_prompt_version": "persona-review-v3"
+  },
+  "prompt_sha256": "34c3a3b8e7c9fab575277aa53b7c4268ceffd3bcb6a2e5b10f304dc90c471a82",
+  "cases": [
+    {
+      "case": "same_remote_singleton",
+      "input": {
+        "characters": [
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "二将",
+              "千里眼"
+            ],
+            "entity_kind": "person",
+            "id": "66cdb6a8-c502-4853-9a98-ddeeb0cb2e6c",
+            "name": "千里眼",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "玉帝",
+              "玉皇大天尊玄穹高上帝"
+            ],
+            "entity_kind": "person",
+            "id": "ff905e77-6fc5-4ad8-b9eb-f903aba126d5",
+            "name": "玉皇大天尊玄穹高上帝",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "石猴",
+              "那猴"
+            ],
+            "entity_kind": "person",
+            "id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+            "name": "石猴",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "顺风耳"
+            ],
+            "entity_kind": "person",
+            "id": "3adc20e7-e924-4d0e-84f2-7152c70498bf",
+            "name": "顺风耳",
+            "presence": "active"
+          }
+        ],
+        "correction_hints": [],
+        "known_life_states": {},
+        "phase": "review",
+        "previous_error": null,
+        "prior_claims": [],
+        "scene_id": "3060530c-f130-4cc2-95e4-7815bc9de96e",
+        "segments": [
+          {
+            "id": "655edb81-d520-4041-8848-022283505355",
+            "ordinal": 0,
+            "text": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”"
+          }
+        ],
+        "unit_key": "0",
+        "proposals": {
+          "claims": [
+            {
+              "local_key": "shihou_birth_goldenlight",
+              "kind": "episode",
+              "owner_character_id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+              "proposition": "石猴出生后五官俱备四肢皆全，学爬学走拜了四方，目中运出两道金光射冲斗府。",
+              "truth_state": "true",
+              "evidence": [
+                {
+                  "segment_id": "655edb81-d520-4041-8848-022283505355",
+                  "local_start": 0,
+                  "local_end": 33,
+                  "quote": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。"
+                }
+              ],
+              "access": [
+                {
+                  "character_id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+                  "route": "firsthand",
+                  "acquisition": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 0,
+                    "local_end": 33,
+                    "quote": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。"
+                  },
+                  "approved_excerpt": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected_target_authorized": false,
+      "status": "completed",
+      "output": "```json\n{\n  \"identities\": [\n    {\"character_id\": \"66cdb6a8-c502-4853-9a98-ddeeb0cb2e6c\", \"confirmed\": true},\n    {\"character_id\": \"ff905e77-6fc5-4ad8-b9eb-f903aba126d5\", \"confirmed\": true},\n    {\"character_id\": \"3895867b-e993-423a-8bb4-25eb3bfb7423\", \"confirmed\": true},\n    {\"character_id\": \"3adc20e7-e924-4d0e-84f2-7152c70498bf\", \"confirmed\": true}\n  ],\n  \"claims\": [\n    {\n      \"local_key\": \"shihou_birth_goldenlight\",\n      \"supported\": true,\n      \"identity_consistent\": true,\n      \"reason\": \"引文逐字支持命题全部子句：五官四肢俱备、学爬学走、拜四方、目运两道金光射冲斗府，均为石猴出生后完成动作，归属石猴一致。\",\n      \"temporal_state\": \"current\",\n      \"baseline_supported\": true,\n      \"correction_supported\": false,\n      \"access\": [\n        {\n          \"character_id\": \"3895867b-e993-423a-8bb4-25eb3bfb7423\",\n          \"authorized\": true,\n          \"excerpt_safe\": true\n        }\n      ]\n    }\n  ],\n  \"life_events\": []\n}\n```",
+      "usage": {
+        "prompt_tokens": 1029,
+        "completion_tokens": 362,
+        "total_tokens": 1391,
+        "cache_read_input_tokens": 1792,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "review": {
+        "identities": [
+          {
+            "character_id": "66cdb6a8-c502-4853-9a98-ddeeb0cb2e6c",
+            "confirmed": true
+          },
+          {
+            "character_id": "ff905e77-6fc5-4ad8-b9eb-f903aba126d5",
+            "confirmed": true
+          },
+          {
+            "character_id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+            "confirmed": true
+          },
+          {
+            "character_id": "3adc20e7-e924-4d0e-84f2-7152c70498bf",
+            "confirmed": true
+          }
+        ],
+        "claims": [
+          {
+            "local_key": "shihou_birth_goldenlight",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "引文逐字支持命题全部子句：五官四肢俱备、学爬学走、拜四方、目运两道金光射冲斗府，均为石猴出生后完成动作，归属石猴一致。",
+            "temporal_state": "current",
+            "baseline_supported": true,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          }
+        ],
+        "life_events": []
+      },
+      "target_authorized": true,
+      "matches_expected": false,
+      "elapsed_seconds": 12.313
+    },
+    {
+      "case": "same_batch_repeat",
+      "input": {
+        "characters": [
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "二将",
+              "千里眼"
+            ],
+            "entity_kind": "person",
+            "id": "66cdb6a8-c502-4853-9a98-ddeeb0cb2e6c",
+            "name": "千里眼",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "玉帝",
+              "玉皇大天尊玄穹高上帝"
+            ],
+            "entity_kind": "person",
+            "id": "ff905e77-6fc5-4ad8-b9eb-f903aba126d5",
+            "name": "玉皇大天尊玄穹高上帝",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "石猴",
+              "那猴"
+            ],
+            "entity_kind": "person",
+            "id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+            "name": "石猴",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "顺风耳"
+            ],
+            "entity_kind": "person",
+            "id": "3adc20e7-e924-4d0e-84f2-7152c70498bf",
+            "name": "顺风耳",
+            "presence": "active"
+          }
+        ],
+        "correction_hints": [],
+        "known_life_states": {},
+        "phase": "review",
+        "previous_error": null,
+        "prior_claims": [],
+        "scene_id": "3060530c-f130-4cc2-95e4-7815bc9de96e",
+        "segments": [
+          {
+            "id": "655edb81-d520-4041-8848-022283505355",
+            "ordinal": 0,
+            "text": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”"
+          }
+        ],
+        "unit_key": "0",
+        "proposals": {
+          "claims": [
+            {
+              "local_key": "shihou_birth_goldenlight",
+              "kind": "episode",
+              "owner_character_id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+              "proposition": "石猴出生后五官俱备四肢皆全，学爬学走拜了四方，目中运出两道金光射冲斗府。",
+              "truth_state": "true",
+              "evidence": [
+                {
+                  "segment_id": "655edb81-d520-4041-8848-022283505355",
+                  "local_start": 0,
+                  "local_end": 33,
+                  "quote": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。"
+                }
+              ],
+              "access": [
+                {
+                  "character_id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+                  "route": "firsthand",
+                  "acquisition": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 0,
+                    "local_end": 33,
+                    "quote": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。"
+                  },
+                  "approved_excerpt": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。"
+                }
+              ]
+            },
+            {
+              "local_key": "qianliyan_observe_report",
+              "kind": "episode",
+              "owner_character_id": "66cdb6a8-c502-4853-9a98-ddeeb0cb2e6c",
+              "proposition": "千里眼奉旨与顺风耳开南天门观看，看得真后回报道：金光之处乃东胜神洲海傲来小国花果山，山上仙石产一石猴拜四方、眼运金光，如今服饵水食金光将潜息。",
+              "truth_state": "true",
+              "evidence": [
+                {
+                  "segment_id": "655edb81-d520-4041-8848-022283505355",
+                  "local_start": 73,
+                  "local_end": 88,
+                  "quote": "即命千里眼、顺风耳开南天门观看"
+                },
+                {
+                  "segment_id": "655edb81-d520-4041-8848-022283505355",
+                  "local_start": 89,
+                  "local_end": 109,
+                  "quote": "二将果奉旨出门外看的真听的明。须臾回报道"
+                },
+                {
+                  "segment_id": "655edb81-d520-4041-8848-022283505355",
+                  "local_start": 111,
+                  "local_end": 183,
+                  "quote": "臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。"
+                }
+              ],
+              "access": [
+                {
+                  "character_id": "66cdb6a8-c502-4853-9a98-ddeeb0cb2e6c",
+                  "route": "firsthand",
+                  "acquisition": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 89,
+                    "local_end": 109,
+                    "quote": "二将果奉旨出门外看的真听的明。须臾回报道"
+                  },
+                  "identity_evidence": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 73,
+                    "local_end": 88,
+                    "quote": "即命千里眼、顺风耳开南天门观看"
+                  },
+                  "approved_excerpt": "臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。",
+                  "disclosure": "public"
+                }
+              ]
+            },
+            {
+              "local_key": "shunfengger_observe_report",
+              "kind": "episode",
+              "owner_character_id": "3adc20e7-e924-4d0e-84f2-7152c70498bf",
+              "proposition": "顺风耳奉旨与千里眼开南天门观看，听得明后一同回报道金光之处的情形。",
+              "truth_state": "true",
+              "evidence": [
+                {
+                  "segment_id": "655edb81-d520-4041-8848-022283505355",
+                  "local_start": 73,
+                  "local_end": 88,
+                  "quote": "即命千里眼、顺风耳开南天门观看"
+                },
+                {
+                  "segment_id": "655edb81-d520-4041-8848-022283505355",
+                  "local_start": 89,
+                  "local_end": 109,
+                  "quote": "二将果奉旨出门外看的真听的明。须臾回报道"
+                }
+              ],
+              "access": [
+                {
+                  "character_id": "3adc20e7-e924-4d0e-84f2-7152c70498bf",
+                  "route": "firsthand",
+                  "acquisition": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 89,
+                    "local_end": 109,
+                    "quote": "二将果奉旨出门外看的真听的明。须臾回报道"
+                  },
+                  "identity_evidence": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 73,
+                    "local_end": 88,
+                    "quote": "即命千里眼、顺风耳开南天门观看"
+                  },
+                  "approved_excerpt": "二将果奉旨出门外看的真听的明。须臾回报道",
+                  "disclosure": "public"
+                }
+              ]
+            },
+            {
+              "local_key": "yudi_order_observe",
+              "kind": "episode",
+              "owner_character_id": "ff905e77-6fc5-4ad8-b9eb-f903aba126d5",
+              "proposition": "玉皇大天尊玄穹高上帝见金光焰焰，即命千里眼、顺风耳开南天门观看。",
+              "truth_state": "true",
+              "evidence": [
+                {
+                  "segment_id": "655edb81-d520-4041-8848-022283505355",
+                  "local_start": 33,
+                  "local_end": 88,
+                  "quote": "惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看"
+                }
+              ],
+              "access": [
+                {
+                  "character_id": "ff905e77-6fc5-4ad8-b9eb-f903aba126d5",
+                  "route": "firsthand",
+                  "acquisition": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 43,
+                    "local_end": 88,
+                    "quote": "玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看"
+                  },
+                  "approved_excerpt": "玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看"
+                }
+              ]
+            },
+            {
+              "local_key": "yudi_belief_not_strange",
+              "kind": "belief",
+              "owner_character_id": "ff905e77-6fc5-4ad8-b9eb-f903aba126d5",
+              "proposition": "玉帝认为下方之物乃天地精华所生，不足为异。",
+              "evidence": [
+                {
+                  "segment_id": "655edb81-d520-4041-8848-022283505355",
+                  "local_start": 184,
+                  "local_end": 209,
+                  "quote": "玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。"
+                }
+              ],
+              "access": [
+                {
+                  "character_id": "ff905e77-6fc5-4ad8-b9eb-f903aba126d5",
+                  "route": "firsthand",
+                  "acquisition": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 184,
+                    "local_end": 209,
+                    "quote": "玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。"
+                  },
+                  "approved_excerpt": "下方之物乃天地精华所生不足为异",
+                  "disclosure": "public"
+                }
+              ],
+              "slot_key": "belief:天地所生之物"
+            }
+          ]
+        }
+      },
+      "expected_target_authorized": false,
+      "status": "completed",
+      "output": "```json\n{\n  \"identities\": [\n    {\"character_id\": \"66cdb6a8-c502-4853-9a98-ddeeb0cb2e6c\", \"confirmed\": true},\n    {\"character_id\": \"ff905e77-6fc5-4ad8-b9eb-f903aba126d5\", \"confirmed\": true},\n    {\"character_id\": \"3895867b-e993-423a-8bb4-25eb3bfb7423\", \"confirmed\": true},\n    {\"character_id\": \"3adc20e7-e924-4d0e-84f2-7152c70498bf\", \"confirmed\": true}\n  ],\n  \"claims\": [\n    {\n      \"local_key\": \"shihou_birth_goldenlight\",\n      \"supported\": true,\n      \"identity_consistent\": true,\n      \"reason\": \"引文逐字覆盖石猴五官四肢、学爬学走拜四方、目运金光射冲斗府，完成态明确；本人亲历，excerpt安全。\",\n      \"temporal_state\": \"current\",\n      \"access\": [\n        {\n          \"character_id\": \"3895867b-e993-423a-8bb4-25eb3bfb7423\",\n          \"authorized\": true,\n          \"excerpt_safe\": true\n        }\n      ]\n    },\n    {\n      \"local_key\": \"qianliyan_observe_report\",\n      \"supported\": true,\n      \"identity_consistent\": true,\n      \"reason\": \"三段引文合起来覆盖奉旨、看得真、回报及其全部内容；千里眼本人观察并回报，firsthand成立，excerpt为回报原文且安全。\",\n      \"temporal_state\": \"current\",\n      \"access\": [\n        {\n          \"character_id\": \"66cdb6a8-c502-4853-9a98-ddeeb0cb2e6c\",\n          \"authorized\": true,\n          \"excerpt_safe\": true\n        }\n      ]\n    },\n    {\n      \"local_key\": \"shunfengger_observe_report\",\n      \"supported\": true,\n      \"identity_consistent\": true,\n      \"reason\": \"引文明示顺风耳同受命且'二将果奉旨出门外看的真听的明。须臾回报道'，集体动作明确包含顺风耳；命题仅主张观看、听得明、一同回报，未越界。\",\n      \"temporal_state\": \"current\",\n      \"access\": [\n        {\n          \"character_id\": \"3adc20e7-e924-4d0e-84f2-7152c70498bf\",\n          \"authorized\": true,\n          \"excerpt_safe\": true\n        }\n      ]\n    },\n    {\n      \"local_key\": \"yudi_order_observe\",\n      \"supported\": true,\n      \"identity_consistent\": true,\n      \"reason\": \"引文覆盖玉帝见金光焰焰并即命二将观看，本人下令，firsthand成立，excerpt安全。\",\n      \"temporal_state\": \"current\",\n      \"access\": [\n        {\n          \"character_id\": \"ff905e77-6fc5-4ad8-b9eb-f903aba126d5\",\n          \"authorized\": true,\n          \"excerpt_safe\": true\n        }\n      ]\n    },\n    {\n      \"local_key\": \"yudi_belief_not_strange\",\n      \"supported\": true,\n      \"identity_consistent\": true,\n      \"reason\": \"玉帝亲口曰'下方之物乃天地精华所生不足为异'，明确支持该信念槽位；excerpt为本人言论安全。\",\n      \"temporal_state\": \"current\",\n      \"baseline_supported\": true,\n      \"access\": [\n        {\n          \"character_id\": \"ff905e77-6fc5-4ad8-b9eb-f903aba126d5\",\n          \"authorized\": true,\n          \"excerpt_safe\": true\n        }\n      ]\n    }\n  ],\n  \"life_events\": []\n}\n```",
+      "usage": {
+        "prompt_tokens": 1790,
+        "completion_tokens": 951,
+        "total_tokens": 2741,
+        "cache_read_input_tokens": 2560,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "review": {
+        "identities": [
+          {
+            "character_id": "66cdb6a8-c502-4853-9a98-ddeeb0cb2e6c",
+            "confirmed": true
+          },
+          {
+            "character_id": "ff905e77-6fc5-4ad8-b9eb-f903aba126d5",
+            "confirmed": true
+          },
+          {
+            "character_id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+            "confirmed": true
+          },
+          {
+            "character_id": "3adc20e7-e924-4d0e-84f2-7152c70498bf",
+            "confirmed": true
+          }
+        ],
+        "claims": [
+          {
+            "local_key": "shihou_birth_goldenlight",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "引文逐字覆盖石猴五官四肢、学爬学走拜四方、目运金光射冲斗府，完成态明确；本人亲历，excerpt安全。",
+            "temporal_state": "current",
+            "baseline_supported": false,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          },
+          {
+            "local_key": "qianliyan_observe_report",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "三段引文合起来覆盖奉旨、看得真、回报及其全部内容；千里眼本人观察并回报，firsthand成立，excerpt为回报原文且安全。",
+            "temporal_state": "current",
+            "baseline_supported": false,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "66cdb6a8-c502-4853-9a98-ddeeb0cb2e6c",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          },
+          {
+            "local_key": "shunfengger_observe_report",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "引文明示顺风耳同受命且'二将果奉旨出门外看的真听的明。须臾回报道'，集体动作明确包含顺风耳；命题仅主张观看、听得明、一同回报，未越界。",
+            "temporal_state": "current",
+            "baseline_supported": false,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "3adc20e7-e924-4d0e-84f2-7152c70498bf",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          },
+          {
+            "local_key": "yudi_order_observe",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "引文覆盖玉帝见金光焰焰并即命二将观看，本人下令，firsthand成立，excerpt安全。",
+            "temporal_state": "current",
+            "baseline_supported": false,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "ff905e77-6fc5-4ad8-b9eb-f903aba126d5",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          },
+          {
+            "local_key": "yudi_belief_not_strange",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "玉帝亲口曰'下方之物乃天地精华所生不足为异'，明确支持该信念槽位；excerpt为本人言论安全。",
+            "temporal_state": "current",
+            "baseline_supported": true,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "ff905e77-6fc5-4ad8-b9eb-f903aba126d5",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          }
+        ],
+        "life_events": []
+      },
+      "target_authorized": true,
+      "matches_expected": false,
+      "elapsed_seconds": 22.75
+    },
+    {
+      "case": "compound_scout_acquisition",
+      "input": {
+        "characters": [
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "二将",
+              "千里眼"
+            ],
+            "entity_kind": "person",
+            "id": "feabfaa1-0198-4129-abfc-b7267c156e37",
+            "name": "千里眼",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "玉帝",
+              "玉皇大天尊玄穹高上帝"
+            ],
+            "entity_kind": "person",
+            "id": "ee69744e-01df-48b9-9acb-67dfa6f0d4ae",
+            "name": "玉皇大天尊玄穹高上帝",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "石猴",
+              "那猴"
+            ],
+            "entity_kind": "person",
+            "id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+            "name": "石猴",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "顺风耳"
+            ],
+            "entity_kind": "person",
+            "id": "61b69929-c827-43c5-a4ef-47d88c3616de",
+            "name": "顺风耳",
+            "presence": "active"
+          }
+        ],
+        "correction_hints": [],
+        "known_life_states": {},
+        "phase": "review",
+        "previous_error": null,
+        "prior_claims": [],
+        "scene_id": "6867fb8b-6d82-402d-aaa0-c888728180d1",
+        "segments": [
+          {
+            "id": "655edb81-d520-4041-8848-022283505355",
+            "ordinal": 0,
+            "text": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”"
+          }
+        ],
+        "unit_key": "0",
+        "proposals": {
+          "claims": [
+            {
+              "local_key": "f1_yudi_orders_scouts",
+              "kind": "fact",
+              "proposition": "金光惊动玉皇大天尊玄穹高上帝，他聚集仙卿，即命千里眼、顺风耳开南天门观看。",
+              "truth_state": "true",
+              "evidence": [
+                {
+                  "segment_id": "655edb81-d520-4041-8848-022283505355",
+                  "local_start": 33,
+                  "local_end": 89,
+                  "quote": "惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。"
+                }
+              ],
+              "access": [
+                {
+                  "character_id": "ee69744e-01df-48b9-9acb-67dfa6f0d4ae",
+                  "route": "firsthand",
+                  "acquisition": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 33,
+                    "local_end": 89,
+                    "quote": "惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。"
+                  },
+                  "disclosure": "public"
+                },
+                {
+                  "character_id": "feabfaa1-0198-4129-abfc-b7267c156e37",
+                  "route": "told",
+                  "acquisition": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 73,
+                    "local_end": 89,
+                    "quote": "即命千里眼、顺风耳开南天门观看。"
+                  },
+                  "disclosure": "public"
+                },
+                {
+                  "character_id": "61b69929-c827-43c5-a4ef-47d88c3616de",
+                  "route": "told",
+                  "acquisition": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 73,
+                    "local_end": 89,
+                    "quote": "即命千里眼、顺风耳开南天门观看。"
+                  },
+                  "disclosure": "public"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected_target_authorized": false,
+      "status": "completed",
+      "output": "```json\n{\n  \"identities\": [\n    {\"character_id\": \"feabfaa1-0198-4129-abfc-b7267c156e37\", \"confirmed\": true},\n    {\"character_id\": \"ee69744e-01df-48b9-9acb-67dfa6f0d4ae\", \"confirmed\": true},\n    {\"character_id\": \"a3e856bb-b43f-4f5a-929a-f0189333cd6e\", \"confirmed\": true},\n    {\"character_id\": \"61b69929-c827-43c5-a4ef-47d88c3616de\", \"confirmed\": true}\n  ],\n  \"claims\": [\n    {\n      \"local_key\": \"f1_yudi_orders_scouts\",\n      \"supported\": true,\n      \"identity_consistent\": true,\n      \"reason\": \"引文逐字支持金光惊动玉帝、聚集仙卿、即命千里眼顺风耳开南天门观看，人物归属一致，时间顺序正确。\",\n      \"temporal_state\": \"current\",\n      \"baseline_supported\": true,\n      \"correction_supported\": false,\n      \"access\": [\n        {\n          \"character_id\": \"ee69744e-01df-48b9-9acb-67dfa6f0d4ae\",\n          \"authorized\": true,\n          \"excerpt_safe\": true,\n          \"before_death\": false,\n          \"after_resurrection\": false\n        },\n        {\n          \"character_id\": \"feabfaa1-0198-4129-abfc-b7267c156e37\",\n          \"authorized\": true,\n          \"excerpt_safe\": true,\n          \"before_death\": false,\n          \"after_resurrection\": false\n        },\n        {\n          \"character_id\": \"61b69929-c827-43c5-a4ef-47d88c3616de\",\n          \"authorized\": true,\n          \"excerpt_safe\": true,\n          \"before_death\": false,\n          \"after_resurrection\": false\n        }\n      ]\n    }\n  ],\n  \"life_events\": []\n}\n```",
+      "usage": {
+        "prompt_tokens": 692,
+        "completion_tokens": 506,
+        "total_tokens": 1198,
+        "cache_read_input_tokens": 2304,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "review": {
+        "identities": [
+          {
+            "character_id": "feabfaa1-0198-4129-abfc-b7267c156e37",
+            "confirmed": true
+          },
+          {
+            "character_id": "ee69744e-01df-48b9-9acb-67dfa6f0d4ae",
+            "confirmed": true
+          },
+          {
+            "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+            "confirmed": true
+          },
+          {
+            "character_id": "61b69929-c827-43c5-a4ef-47d88c3616de",
+            "confirmed": true
+          }
+        ],
+        "claims": [
+          {
+            "local_key": "f1_yudi_orders_scouts",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "引文逐字支持金光惊动玉帝、聚集仙卿、即命千里眼顺风耳开南天门观看，人物归属一致，时间顺序正确。",
+            "temporal_state": "current",
+            "baseline_supported": true,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "ee69744e-01df-48b9-9acb-67dfa6f0d4ae",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              },
+              {
+                "character_id": "feabfaa1-0198-4129-abfc-b7267c156e37",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              },
+              {
+                "character_id": "61b69929-c827-43c5-a4ef-47d88c3616de",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          }
+        ],
+        "life_events": []
+      },
+      "target_authorized": true,
+      "matches_expected": false,
+      "elapsed_seconds": 11.093
+    },
+    {
+      "case": "narrow_own_action",
+      "input": {
+        "characters": [
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "二将",
+              "千里眼"
+            ],
+            "entity_kind": "person",
+            "id": "66cdb6a8-c502-4853-9a98-ddeeb0cb2e6c",
+            "name": "千里眼",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "玉帝",
+              "玉皇大天尊玄穹高上帝"
+            ],
+            "entity_kind": "person",
+            "id": "ff905e77-6fc5-4ad8-b9eb-f903aba126d5",
+            "name": "玉皇大天尊玄穹高上帝",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "石猴",
+              "那猴"
+            ],
+            "entity_kind": "person",
+            "id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+            "name": "石猴",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "顺风耳"
+            ],
+            "entity_kind": "person",
+            "id": "3adc20e7-e924-4d0e-84f2-7152c70498bf",
+            "name": "顺风耳",
+            "presence": "active"
+          }
+        ],
+        "correction_hints": [],
+        "known_life_states": {},
+        "phase": "review",
+        "previous_error": null,
+        "prior_claims": [],
+        "scene_id": "3060530c-f130-4cc2-95e4-7815bc9de96e",
+        "segments": [
+          {
+            "id": "655edb81-d520-4041-8848-022283505355",
+            "ordinal": 0,
+            "text": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”"
+          }
+        ],
+        "unit_key": "0",
+        "proposals": {
+          "claims": [
+            {
+              "local_key": "shihou_birth_goldenlight",
+              "kind": "episode",
+              "owner_character_id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+              "proposition": "石猴学爬学走，并拜了四方。",
+              "truth_state": "true",
+              "evidence": [
+                {
+                  "segment_id": "655edb81-d520-4041-8848-022283505355",
+                  "local_start": 0,
+                  "local_end": 33,
+                  "quote": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。"
+                }
+              ],
+              "access": [
+                {
+                  "character_id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+                  "route": "firsthand",
+                  "acquisition": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 0,
+                    "local_end": 33,
+                    "quote": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。"
+                  },
+                  "approved_excerpt": "便就学爬学走拜了四方。"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected_target_authorized": true,
+      "status": "completed",
+      "output": "{\"identities\": [{\"character_id\": \"3895867b-e993-423a-8bb4-25eb3bfb7423\", \"confirmed\": true}, {\"character_id\": \"ff905e77-6fc5-4ad8-b9eb-f903aba126d5\", \"confirmed\": true}, {\"character_id\": \"66cdb6a8-c502-4853-9a98-ddeeb0cb2e6c\", \"confirmed\": true}, {\"character_id\": \"3adc20e7-e924-4d0e-84f2-7152c70498bf\", \"confirmed\": true}], \"claims\": [{\"local_key\": \"shihou_birth_goldenlight\", \"supported\": true, \"identity_consistent\": true, \"reason\": \"引文“便就学爬学走拜了四方”逐字支持石猴学爬学走并拜四方，人物归属一致。石猴本人亲历自身动作，firsthand获知成立；approved_excerpt“便就学爬学走拜了四方。”为其自身行为，不含他人秘密，安全。\", \"temporal_state\": \"current\", \"baseline_supported\": true, \"correction_supported\": false, \"access\": [{\"character_id\": \"3895867b-e993-423a-8bb4-25eb3bfb7423\", \"authorized\": true, \"excerpt_safe\": true}]}], \"life_events\": []}",
+      "usage": {
+        "prompt_tokens": 227,
+        "completion_tokens": 353,
+        "total_tokens": 580,
+        "cache_read_input_tokens": 2560,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "review": {
+        "identities": [
+          {
+            "character_id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+            "confirmed": true
+          },
+          {
+            "character_id": "ff905e77-6fc5-4ad8-b9eb-f903aba126d5",
+            "confirmed": true
+          },
+          {
+            "character_id": "66cdb6a8-c502-4853-9a98-ddeeb0cb2e6c",
+            "confirmed": true
+          },
+          {
+            "character_id": "3adc20e7-e924-4d0e-84f2-7152c70498bf",
+            "confirmed": true
+          }
+        ],
+        "claims": [
+          {
+            "local_key": "shihou_birth_goldenlight",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "引文“便就学爬学走拜了四方”逐字支持石猴学爬学走并拜四方，人物归属一致。石猴本人亲历自身动作，firsthand获知成立；approved_excerpt“便就学爬学走拜了四方。”为其自身行为，不含他人秘密，安全。",
+            "temporal_state": "current",
+            "baseline_supported": true,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "3895867b-e993-423a-8bb4-25eb3bfb7423",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          }
+        ],
+        "life_events": []
+      },
+      "target_authorized": true,
+      "matches_expected": true,
+      "elapsed_seconds": 10.203
+    }
+  ],
+  "quality_pass": false,
+  "publication": false,
+  "terminal": true,
+  "combined_native_calls": 8
+}

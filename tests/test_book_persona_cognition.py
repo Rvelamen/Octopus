@@ -22,8 +22,10 @@ def test_saved_strategy_values_and_calibrated_review_match_frozen_native_records
     controls = json.loads(
         (base / "real-model-persona-evidence-controls-v1.json").read_text(encoding="utf-8")
     )
+
     def digest(text):
         return hashlib.sha256(text.encode()).hexdigest()
+
     assert digest(EXTRACT_PROMPTS["persona-extract-v5"]) == saved["prompt_sha256"]["extract"]
     assert digest(REVIEW_PROMPTS["persona-review-v4"]) == saved["prompt_sha256"]["review"]
     assert digest(REVIEW_PROMPTS["persona-review-v5"]) == controls["prompt_sha256"]
@@ -246,3 +248,105 @@ async def test_v6_review_verdict_controls_projection_even_when_full_input_has_mo
     claims = service.get_character(item, build["build_id"], person["id"])["reader"]["claims"]
     assert claims[0]["support_state"] == ("accepted" if complete_quotes else "rejected")
     assert claims[0]["access"][0]["access_state"] == ("accepted" if complete_quotes else "revoked")
+
+
+def test_v7_requires_deliberate_excerpt_without_mutating_legacy_schema():
+    from backend.services.book_world.persona_models import PersonaBatch, persona_batch_schema
+
+    original = PersonaBatch.model_json_schema()
+    strict = persona_batch_schema("persona-extract-v7")
+    access = strict["$defs"]["AccessProposal"]
+    assert "approved_excerpt" in access["required"]
+    assert "default" not in access["properties"]["approved_excerpt"]
+    for version in ("persona-extract-v3", "persona-extract-v5", "persona-extract-v6"):
+        assert persona_batch_schema(version) == original
+    strict["$defs"]["AccessProposal"]["required"].clear()
+    assert PersonaBatch.model_json_schema() == original
+
+
+def test_v7_review_preserves_exact_fixed_control_prompt_and_old_versions():
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    controls = json.loads(
+        (base / "real-model-persona-scope-controls-v2.json").read_text(encoding="utf-8")
+    )
+    assert (
+        hashlib.sha256(REVIEW_PROMPTS["persona-review-v6"].encode()).hexdigest()
+        == controls["prompt_sha256"]
+    )
+    saved = json.loads(
+        (base / "real-model-persona-evidence-v6-01.json").read_text(encoding="utf-8")
+    )
+    assert (
+        hashlib.sha256(EXTRACT_PROMPTS["persona-extract-v6"].encode()).hexdigest()
+        == saved["prompt_sha256"]["extract"]
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "omission,empty", [("never", False), ("never", True), ("first", False), ("always", False)]
+)
+async def test_v7_excerpt_choice_is_enforced_before_review_with_only_one_retry(
+    book_library, omission, empty
+):
+    from backend.core.providers.base import LLMResponse
+
+    item, parent = await discovered(book_library)
+    service = BookPersonaService(book_library.workspace_root)
+    config = PersonaConfig(
+        provider_id=1,
+        model="fixture",
+        unit_char_limit=4000,
+        prompt_version="persona-extract-v7",
+        review_prompt_version="persona-review-v6",
+    )
+    build = service.request_build(item, parent, config)
+    seen = []
+
+    class Provider(PersonaProvider):
+        async def chat(self, messages, **kwargs):
+            data = json.loads(messages[-1]["content"])
+            seen.append(data["phase"])
+            value = json.loads((await super().chat(messages, **kwargs)).content)
+            if data["phase"] == "extract":
+                if seen.count("extract") == 2:
+                    assert "extract" in data["previous_error"]
+                    assert "claims.0.access.0.approved_excerpt" in data["previous_error"]
+                if omission == "always" or (omission == "first" and seen.count("extract") == 1):
+                    pass
+                else:
+                    claim = value["claims"][0]
+                    claim["access"][0]["approved_excerpt"] = (
+                        "" if empty else claim["evidence"][0]["quote"]
+                    )
+            return LLMResponse(content=json.dumps(value))
+
+    await service.run(build["build_id"], Provider(), config)
+    state = service.discovery.get_build(item, build["build_id"])
+    with connect(service.db_path) as db:
+        step = db.execute(
+            "SELECT * FROM book_build_steps WHERE build_id=? AND stage='evidence'",
+            (build["build_id"],),
+        ).fetchone()
+        if omission == "always":
+            assert seen == ["extract", "extract"] and step["attempts"] == 2
+            assert step["status"] == "failed" and state["failed_units"] == 1
+            assert (
+                db.execute(
+                    "SELECT COUNT(*) FROM book_claims WHERE build_id=?", (build["build_id"],)
+                ).fetchone()[0]
+                == 0
+            )
+        else:
+            assert seen == (
+                ["extract", "extract", "review"] if omission == "first" else ["extract", "review"]
+            )
+            assert state["failed_units"] == 0 and step["status"] == "validated"
+            excerpts = [
+                r[0]
+                for r in db.execute(
+                    "SELECT approved_excerpt FROM book_access_evidence WHERE build_id=?",
+                    (build["build_id"],),
+                )
+            ]
+            assert excerpts == ([""] if empty else ["人物甲说：我最看重诚信。"])

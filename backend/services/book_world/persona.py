@@ -17,11 +17,13 @@ from .persona_models import (
     EXTRACT_PROMPTS,
     REVIEW_PROMPT,
     REVIEW_PROMPTS,
+    SCOPED_PERSONA_VERSION,
     STRUCTURED_PERSONA_VERSION,
     PersonaBatch,
     PersonaConfig,
     PersonaReview,
     RevisedPersonaReview,
+    persona_batch_schema,
 )
 from .persona_publication import publish_personas
 from .persona_validation import apply_life_events, validate_batch, validate_review
@@ -698,10 +700,11 @@ class BookPersonaService:
                     batch = validate_batch(
                         await call(
                             EXTRACT_PROMPTS.get(config.prompt_version, EXTRACT_PROMPT),
-                            PersonaBatch.model_json_schema(),
+                            persona_batch_schema(config.prompt_version),
                             data,
                         ),
                         data,
+                        require_explicit_excerpt=config.prompt_version == SCOPED_PERSONA_VERSION,
                     )
                     checked = {
                         **data,
@@ -734,6 +737,7 @@ class BookPersonaService:
                     if config.prompt_version in (
                         STRUCTURED_PERSONA_VERSION,
                         EVIDENCE_PERSONA_VERSION,
+                        SCOPED_PERSONA_VERSION,
                     ):
                         detail = _persona_error_detail(error, failed_phase)
                     else:
