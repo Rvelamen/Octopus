@@ -109,7 +109,7 @@ def resolve_discovery_model(
         provider_signature=signature,
         unit_char_limit=input_budget,
         max_tokens=max_tokens,
-        prompt_version="character-discovery-v13",
+        prompt_version="character-discovery-v14",
     )
     if original_config is not None:
         if (

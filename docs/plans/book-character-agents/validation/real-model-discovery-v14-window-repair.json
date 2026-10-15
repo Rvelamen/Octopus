@@ -1,0 +1,99 @@
+{
+  "date": "2026-10-15",
+  "scope": "Two fixed captured full-source failed replies; native bounded repair only, no checkpoint or persona publication",
+  "budget": 2,
+  "calls": [
+    {
+      "book": "西游记",
+      "unit_key": "10",
+      "targets": 7,
+      "input_sha256": "e0e60a65a87cea9b941b373630c28615384aceded746cc7cd9aaa174dff88cb8",
+      "input_bytes": 3555,
+      "status": "completed",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1907,
+        "completion_tokens": 1427,
+        "total_tokens": 3334,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "valid": true,
+      "corrected": [
+        {
+          "name": "悟空",
+          "identity": "uncertain"
+        },
+        {
+          "name": "未具名人物",
+          "identity": "uncertain"
+        },
+        {
+          "name": "未具名人物",
+          "identity": "uncertain"
+        },
+        {
+          "name": "未具名人物",
+          "identity": "uncertain"
+        },
+        {
+          "name": "猴王",
+          "identity": "uncertain"
+        },
+        {
+          "name": "悟空",
+          "identity": "uncertain"
+        },
+        {
+          "name": "未具名人物",
+          "identity": "uncertain"
+        }
+      ],
+      "elapsed_seconds": 43.907
+    },
+    {
+      "book": "红楼梦",
+      "unit_key": "2",
+      "targets": 2,
+      "input_sha256": "6787c5b31324488d61b5c6d5f0f0e366a4b7fcc24bc795a23aba110887c2fae7",
+      "input_bytes": 1321,
+      "status": "completed",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 517,
+        "completion_tokens": 489,
+        "total_tokens": 1006,
+        "cache_read_input_tokens": 768,
+        "cache_creation_input_tokens": 0
+      },
+      "valid": true,
+      "corrected": [
+        {
+          "name": "石",
+          "identity": "uncertain"
+        },
+        {
+          "name": "甄士隐",
+          "identity": "existing"
+        }
+      ],
+      "elapsed_seconds": 16.422
+    }
+  ],
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 2000,
+    "unit_segment_limit": 12,
+    "max_tokens": 8192,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-discovery-v14",
+    "policy_version": "candidate-identity-v2"
+  },
+  "quality_pass": false,
+  "publication": false,
+  "actual_calls": 2,
+  "terminal": true
+}

@@ -21,8 +21,10 @@ from .discovery_models import (
     validate_local_identities,
 )
 from .discovery_numbered import (
+    NUMBERED_LATEST_PROMPT,
+    NUMBERED_LATEST_VERSION,
     NUMBERED_PROMPT,
-    NUMBERED_VERSION,
+    NUMBERED_VERSIONS,
     NumberedDiscovery,
     assemble_numbered,
     prepare_numbered,
@@ -41,6 +43,13 @@ from .discovery_selection import (
     apply_selection,
     prepare_selection,
     selection_input,
+)
+from .discovery_window_repair import (
+    WINDOW_REPAIR_PROMPT,
+    WindowRepairs,
+    apply_window_repair,
+    prepare_window_repair,
+    window_repair_input,
 )
 from .source import BookSourceService, BookWorldError
 from .storage import connect
@@ -454,7 +463,7 @@ class BookDiscoveryService:
                 "character-discovery-v10",
                 "character-discovery-v11",
                 "character-discovery-v12",
-                NUMBERED_VERSION,
+                *NUMBERED_VERSIONS,
             ):
                 result["repair_packet"] = (
                     json.loads(step["result_json"]).get("repair_packet")
@@ -718,15 +727,17 @@ class BookDiscoveryService:
                 data = await asyncio.to_thread(self._input, build_id, owner, generation, config)
                 if data is None:
                     return
-                selected = (
-                    bool(data.get("repair_packet", {}).get("selection_protocol"))
-                    if data.get("repair_packet")
-                    else False
-                )
-                numbered = prepare_numbered(data) if config.prompt_version == NUMBERED_VERSION and not data.get("repair_packet") else None
+                repair_protocol = (data.get("repair_packet") or {}).get("selection_protocol")
+                selected = repair_protocol == "source-choices-v1"
+                windowed = repair_protocol == "source-windows-v1"
+                numbered = prepare_numbered(data) if config.prompt_version in NUMBERED_VERSIONS and not data.get("repair_packet") else None
                 if numbered is not None:
-                    system_prompt = NUMBERED_PROMPT + _json(NumberedDiscovery.model_json_schema())
+                    numbered_prompt = NUMBERED_LATEST_PROMPT if config.prompt_version == NUMBERED_LATEST_VERSION else NUMBERED_PROMPT
+                    system_prompt = numbered_prompt + _json(NumberedDiscovery.model_json_schema())
                     model_input = numbered["input"]
+                elif windowed:
+                    system_prompt = WINDOW_REPAIR_PROMPT + _json(WindowRepairs.model_json_schema())
+                    model_input = window_repair_input(data["repair_packet"])
                 elif selected:
                     system_prompt = SELECTION_PROMPT + _json(SelectedRepairs.model_json_schema())
                     model_input = selection_input(data["repair_packet"])
@@ -734,7 +745,7 @@ class BookDiscoveryService:
                     repair_prompt = (
                         REPAIR_V10_PROMPT
                         if config.prompt_version
-                        in ("character-discovery-v10", "character-discovery-v11", "character-discovery-v12", NUMBERED_VERSION)
+                        in ("character-discovery-v10", "character-discovery-v11", "character-discovery-v12", *NUMBERED_VERSIONS)
                         else REPAIR_V9_PROMPT
                         if config.prompt_version == "character-discovery-v9"
                         else REPAIR_PROMPT
@@ -772,9 +783,16 @@ class BookDiscoveryService:
                         raise ValueError("Discovery response is truncated or requests a tool")
                     raw_for_repair = response.content or ""
                     if numbered is not None:
-                        raw_for_repair = _json(assemble_numbered(raw_for_repair, numbered))
+                        raw_for_repair = _json(assemble_numbered(
+                            raw_for_repair, numbered,
+                            allow_implicit_name=config.prompt_version == NUMBERED_LATEST_VERSION,
+                        ))
                     result = (
-                        apply_selection(
+                        apply_window_repair(
+                            raw_for_repair, data["repair_packet"], data, self._validate_result
+                        )
+                        if windowed
+                        else apply_selection(
                             raw_for_repair, data["repair_packet"], data, self._validate_result
                         )
                         if selected
@@ -810,7 +828,7 @@ class BookDiscoveryService:
                             "character-discovery-v10",
                             "character-discovery-v11",
                             "character-discovery-v12",
-                            NUMBERED_VERSION,
+                            *NUMBERED_VERSIONS,
                         )
                         and raw_for_repair
                         and not data.get("repair_packet")
@@ -826,15 +844,18 @@ class BookDiscoveryService:
                                 "character-discovery-v10",
                                 "character-discovery-v11",
                                 "character-discovery-v12",
-                                NUMBERED_VERSION,
+                                *NUMBERED_VERSIONS,
                             ),
-                            allow_binding_split=config.prompt_version in ("character-discovery-v12", NUMBERED_VERSION),
+                            allow_binding_split=config.prompt_version in ("character-discovery-v12", *NUMBERED_VERSIONS),
                         )
                         if (
                             packet is not None
-                            and config.prompt_version in ("character-discovery-v12", NUMBERED_VERSION)
+                            and config.prompt_version in ("character-discovery-v12", *NUMBERED_VERSIONS)
                         ):
-                            packet = await asyncio.to_thread(prepare_selection, packet, data)
+                            selection = await asyncio.to_thread(prepare_selection, packet, data)
+                            if selection is None and config.prompt_version == NUMBERED_LATEST_VERSION:
+                                selection = await asyncio.to_thread(prepare_window_repair, packet, data)
+                            packet = selection
                     await asyncio.to_thread(
                         self._failed_attempt,
                         build_id,
@@ -850,7 +871,7 @@ class BookDiscoveryService:
                             "character-discovery-v10",
                             "character-discovery-v11",
                             "character-discovery-v12",
-                            NUMBERED_VERSION,
+                            *NUMBERED_VERSIONS,
                         ),
                     )
         except BookWorldError as error:

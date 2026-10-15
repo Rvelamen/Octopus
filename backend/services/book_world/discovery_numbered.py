@@ -9,6 +9,8 @@ from .discovery_models import StrictModel, discovery_model_input
 from .persona_validation import parse_json
 
 NUMBERED_VERSION = "character-discovery-v13"
+NUMBERED_LATEST_VERSION = "character-discovery-v14"
+NUMBERED_VERSIONS = (NUMBERED_VERSION, NUMBERED_LATEST_VERSION)
 WINDOW_SIZE = 384
 WINDOW_OVERLAP = 80
 
@@ -66,6 +68,11 @@ active=实际行动/发言，silent=实际在场，referenced=仅提及，uncert
 身份和在场均待独立原著审查，此阶段不生成知识或可聊天Agent。返回严格JSON，遵循schema：
 """
 
+NUMBERED_LATEST_PROMPT = NUMBERED_PROMPT.replace(
+    "n与kn只能给一个。",
+    "n与kn只能给一个。若两者都省略，服务器仅在e窗口内恰好有该k的一个已给称呼时还原；多个或没有则拒绝，不默认选择第一个。",
+)
+
 
 def prepare_numbered(data: dict) -> dict:
     original = copy.deepcopy(data)
@@ -95,7 +102,30 @@ def prepare_numbered(data: dict) -> dict:
     return {"input": payload, "original": original, "catalog": catalog, "anchors": anchors}
 
 
-def assemble_numbered(raw: str, packet: dict) -> dict:
+def numbered_span(anchor: dict, label: str | None = None, occurrence: int | None = None) -> dict:
+    value: dict = copy.deepcopy(anchor["span"])
+    position = None
+    if occurrence is not None:
+        if not label:
+            raise ValueError("Occurrence number requires a literal label")
+        positions = []
+        found = value["quote"].find(label)
+        while found >= 0:
+            positions.append(found)
+            found = value["quote"].find(label, found + len(label))
+        if occurrence >= len(positions):
+            raise ValueError("Literal occurrence number was not offered")
+        position = positions[occurrence]
+    elif label and value["quote"].count(label) == 1:
+        position = value["quote"].index(label)
+    if position is not None and label is not None:
+        start = max(0, position - 12)
+        end = min(len(value["quote"]), position + len(label) + 12)
+        value.update(local_start=value["local_start"] + start, local_end=value["local_start"] + end, quote=value["quote"][start:end])
+    return value
+
+
+def assemble_numbered(raw: str, packet: dict, *, allow_implicit_name: bool = False) -> dict:
     response = NumberedDiscovery.model_validate_json(parse_json(raw))
     people = {person.person_index: person for person in response.people}
     if len(people) != len(response.people):
@@ -110,26 +140,7 @@ def assemble_numbered(raw: str, packet: dict) -> dict:
     def span(index: int, label: str | None = None, occurrence: int | None = None) -> dict:
         if index >= len(packet["anchors"]):
             raise ValueError("Source anchor number was not offered")
-        value: dict = copy.deepcopy(packet["anchors"][index]["span"])
-        position = None
-        if occurrence is not None:
-            if not label:
-                raise ValueError("Occurrence number requires a literal label")
-            positions = []
-            found = value["quote"].find(label)
-            while found >= 0:
-                positions.append(found)
-                found = value["quote"].find(label, found + len(label))
-            if occurrence >= len(positions):
-                raise ValueError("Literal occurrence number was not offered")
-            position = positions[occurrence]
-        elif label and value["quote"].count(label) == 1:
-            position = value["quote"].index(label)
-        if position is not None and label is not None:
-            start = max(0, position - 12)
-            end = min(len(value["quote"]), position + len(label) + 12)
-            value.update(local_start=value["local_start"] + start, local_end=value["local_start"] + end, quote=value["quote"][start:end])
-        return value
+        return numbered_span(packet["anchors"][index], label, occurrence)
 
     scenes = []
     for scene in response.scenes:
@@ -153,6 +164,12 @@ def assemble_numbered(raw: str, packet: dict) -> dict:
                     name = aliases[appearance.known_name_index]["alias"]
                 elif appearance.name is not None:
                     name = appearance.name
+                elif allow_implicit_name:
+                    proof = span(appearance.anchor_index)
+                    labels = {alias["alias"] for alias in aliases if alias["alias"] in proof["quote"]}
+                    if len(labels) != 1:
+                        raise ValueError("Missing name selector has no unique offered literal in this window")
+                    name = labels.pop()
                 else:
                     raise ValueError("Existing appearance requires a current literal label")
             else:

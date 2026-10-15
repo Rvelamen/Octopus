@@ -1,0 +1,180 @@
+{
+  "requests": [
+    {
+      "type": "get_config",
+      "action": null
+    },
+    {
+      "type": "get_config",
+      "action": null
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_source"
+    },
+    {
+      "type": "book_world",
+      "action": "list_segments"
+    },
+    {
+      "type": "book_world",
+      "action": "get_build"
+    },
+    {
+      "type": "book_world",
+      "action": "list_characters"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "resolve_evidence"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "read_source"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_source"
+    },
+    {
+      "type": "book_world",
+      "action": "list_segments"
+    },
+    {
+      "type": "book_world",
+      "action": "get_build"
+    },
+    {
+      "type": "book_world",
+      "action": "list_characters"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    },
+    {
+      "type": "book_world",
+      "action": "get_auto_import"
+    }
+  ],
+  "model_calls": 0,
+  "allowed_actions": [
+    "get_auto_import",
+    "get_build",
+    "get_character",
+    "get_revision_context",
+    "get_source",
+    "list_characters",
+    "list_segments",
+    "read_source",
+    "resolve_evidence"
+  ]
+}

@@ -47,5 +47,7 @@
 
 2026-10-14 补齐 v12 不确定身份冲突的有限定点修复：新键/空旧ID/待复核约束、原文编号、完整校验和迟到结果栅栏保持；两份原生失败修复通过仅是契约证据。完整项目313通过/13既有环境跳过，新增身份/旧策略三例另跑通过，真实全书仍未完成。见[身份冲突修复验证](../validation/2026-10-14-binding-repair-validation.md)。
 
+2026-10-15 新增 v13 原文编号发现及 v14 失败条目的场景窗口修复，原存储/协议/界面与完整授权校验保持。有限修复两份真实失败输入通过，不代表全书人物质量；v14首个全来源窗口仍失败，继续保留诊断和检查点。专项85项、限定范围Mypy52文件、Ruff、前端类型/构建及实际失败/原文组件操作通过，完整项目终态见[窗口修复验证](../validation/2026-10-15-window-repair-validation.md)。
+
 设计约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，代码接入点和执行顺序见[实施计划](F:/god/project/Octopus/docs/plans/book-character-agents/implementation-plan.md)。
 
