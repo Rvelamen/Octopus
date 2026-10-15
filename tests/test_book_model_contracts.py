@@ -16,6 +16,48 @@ from backend.services.book_world.rounds import BookRoundService
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("version", ["character-chat-v13", "character-chat-v14"])
+async def test_current_repair_feedback_covers_missing_refs_and_scoped_inference_before_publication(book_library, version):
+    actor = (await style_character(book_library))[3]
+    rooms = BookRoomService(book_library.workspace_root)
+    room = rooms.create_single_room(actor, client_room_id="v13-inference-repair")
+    scope = rooms.bind_room(room["room_id"], 1)
+    config = CharacterChatConfig(provider_id=1, model="fixture", prompt_version=version, review_prompt_version="character-chat-review-v9")
+    rounds = BookRoundService(book_library.workspace_root)
+    turn = rounds.submit(scope, "hypothetical", "假设我想慢慢讲，你会怎样回应？", config, time_limit_seconds=60)
+    calls = []
+    published = "如果你想慢慢说，我会耐心听你讲。"
+
+    class Repair:
+        async def chat(self, messages, **kwargs):
+            data = json.loads(messages[-1]["content"])
+            calls.append(data)
+            proof = next(iter(data["context"]["baseline"].values()))
+            if len(calls) == 1:
+                assert data["phase"] == "generate"
+                reply = {"content":published+"这只是本次设想。", "dialogue_action":"answer", "claims":[{"text":published,"origin":"inference"},{"text":"这只是本次设想。","origin":"inference"}]}
+            elif len(calls) == 2:
+                assert data["phase"] == "generate"
+                feedback = data["feedback"]
+                assert all(word in feedback for word in ("claims.0", "claims.1", "inference", "refs", "conversation"))
+                assert "input_value" not in feedback
+                assert not [m for m in rooms.read_messages(scope)["messages"] if m["speaker_type"] == "character"]
+                reply = {"content":published,"dialogue_action":"answer","action_basis_claim_ids":[proof["claim_id"]],"claims":[{"text":published,"origin":"inference","refs":[{"claim_id":proof["claim_id"],"evidence_id":proof["evidence_id"]}]}]}
+            else:
+                assert data["phase"] == "review"
+                assert "claims" not in data["candidate"]
+                assert data["review_claims"][0]["ordinal"] == 0
+                reply = {**empty_review(), "claims":[{"ordinal":0,"supported":True,"origin_correct":True,"references_complete":True}]}
+            return LLMResponse(content=json.dumps(reply,ensure_ascii=False))
+
+    await BookChatWorker(book_library.workspace_root).run(scope, turn["round_id"], Repair(), config)
+    assert [call["phase"] for call in calls] == ["generate", "generate", "review"]
+    assert rounds.get_round(scope, turn["round_id"])["status"] == "completed"
+    replies = [m for m in rooms.read_messages(scope)["messages"] if m["speaker_type"] == "character"]
+    assert len(replies) == 1 and replies[0]["content"] == published
+
+
+@pytest.mark.asyncio
 async def test_model_context_uses_current_literal_alias_without_renaming_canonical_candidate(
     book_library,
 ):
@@ -73,6 +115,37 @@ async def test_model_context_uses_current_literal_alias_without_renaming_canonic
     assert len(people[0]["appearances"]) == 2
     assert len(seen) == 2
     assert seen[1]["known_characters"][0]["name"] == "猴王"
+
+
+@pytest.mark.asyncio
+async def test_nonbelief_reference_feedback_explains_the_actual_kind_and_repairs_the_label(book_library):
+    actor = (await style_character(book_library))[3]
+    rooms = BookRoomService(book_library.workspace_root)
+    room = rooms.create_single_room(actor, client_room_id="source-kind-feedback")
+    scope = rooms.bind_room(room["room_id"], 1)
+    config = CharacterChatConfig(provider_id=1, model="fixture", prompt_version="character-chat-v14", review_prompt_version="character-chat-review-v9")
+    rounds = BookRoundService(book_library.workspace_root)
+    turn = rounds.submit(scope, "style", "请说说你的说话方式。", config, time_limit_seconds=60)
+    calls = []
+    body = "我说话平和简短。"
+
+    class Repair:
+        async def chat(self, messages, **kwargs):
+            data = json.loads(messages[-1]["content"])
+            calls.append(data)
+            proof = next(iter(data["context"]["baseline"].values()))
+            if data["phase"] == "generate":
+                if len(calls) == 2:
+                    assert all(word in data["feedback"] for word in ("kind=style", "canon", "inference", "character_belief"))
+                reply = {"content":body,"dialogue_action":"answer","claims":[{"text":body,"origin":"character_belief" if len(calls)==1 else "canon","refs":[{"claim_id":proof["claim_id"],"evidence_id":proof["evidence_id"]}]}]}
+            else:
+                reply = {**empty_review(),"claims":[{"ordinal":0,"supported":True,"origin_correct":True,"references_complete":True}]}
+            return LLMResponse(content=json.dumps(reply,ensure_ascii=False))
+
+    await BookChatWorker(book_library.workspace_root).run(scope, turn["round_id"], Repair(), config)
+    assert [call["phase"] for call in calls] == ["generate", "generate", "review"]
+    assert rounds.get_round(scope, turn["round_id"])["status"] == "completed"
+    assert [m["content"] for m in rooms.read_messages(scope)["messages"] if m["speaker_type"]=="character"] == [body]
 
 
 @pytest.mark.asyncio
@@ -146,7 +219,8 @@ async def test_versioned_review_receives_explicit_assertion_indices_and_publishe
     ("我说你从未见过电灯，这句话不成立。", "你说我从未见过电灯", False),
     ("我说你从未见过电灯。刚才这句话不成立。", "你说我从未见过电灯", False),
 ])
-async def test_unquoted_user_denial_remains_hearsay_only_when_the_public_source_matches(book_library, question, denial, faithful):
+@pytest.mark.parametrize("version", ["character-chat-v12", "character-chat-v13", "character-chat-v14"])
+async def test_unquoted_user_denial_remains_hearsay_only_when_the_public_source_matches(book_library, question, denial, faithful, version):
     from backend.services.book_world.chat_validation import validate_candidate
     from backend.services.book_world.context import CharacterContextBuilder
     from backend.services.book_world.discovery import _json
@@ -155,7 +229,7 @@ async def test_unquoted_user_denial_remains_hearsay_only_when_the_public_source_
     rooms = BookRoomService(book_library.workspace_root)
     room = rooms.create_single_room(actor, client_room_id="attributed-denial")
     scope = rooms.bind_room(room["room_id"], 1)
-    config = CharacterChatConfig(provider_id=1, model="fixture", prompt_version="character-chat-v12")
+    config = CharacterChatConfig(provider_id=1, model="fixture", prompt_version=version)
     turn = BookRoundService(book_library.workspace_root).submit(scope, "attributed", question, config, time_limit_seconds=60)
     context = CharacterContextBuilder(book_library.workspace_root).compose(scope, turn["round_id"], room["members"][0]["id"])
     content = denial + "；我无法确认。"
@@ -350,7 +424,7 @@ async def test_unlisted_body_and_certain_inference_cannot_hide_behind_an_approve
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("version", ["character-chat-v10", "character-chat-v11", "character-chat-v12"])
+@pytest.mark.parametrize("version", ["character-chat-v10", "character-chat-v11", "character-chat-v12", "character-chat-v13", "character-chat-v14"])
 async def test_negative_experience_needs_explicit_canonical_support_in_every_origin(book_library, version):
     from dataclasses import replace
 
@@ -380,7 +454,7 @@ async def test_negative_experience_needs_explicit_canonical_support_in_every_ori
         "我还没细看。",
         "我从未听说电灯。",
     ]
-    if version == "character-chat-v12":
+    if version in ("character-chat-v12", "character-chat-v13", "character-chat-v14"):
         denials.extend(["这话是你告诉我的，不是我自己见过的。", "并不是我亲历过的事。"])
     for denied in denials:
         for origin in ["canon", "inference", "room_hearsay", "conversation"]:
@@ -445,7 +519,7 @@ async def test_negative_experience_needs_explicit_canonical_support_in_every_ori
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "version", ["character-chat-v6", "character-chat-v7", "character-chat-v8", "character-chat-v9", "character-chat-v10", "character-chat-v11", "character-chat-v12"]
+    "version", ["character-chat-v6", "character-chat-v7", "character-chat-v8", "character-chat-v9", "character-chat-v10", "character-chat-v11", "character-chat-v12", "character-chat-v13", "character-chat-v14"]
 )
 async def test_silence_remains_valid_for_all_newer_chat_policies(book_library, version):
     from backend.services.book_world.chat_validation import validate_candidate
@@ -557,7 +631,7 @@ async def test_full_body_guard_prevents_publishing_unlisted_fact_despite_positiv
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("review_version", ["character-chat-review-v5", "character-chat-review-v6", "character-chat-review-v7", "character-chat-review-v8"])
+@pytest.mark.parametrize("review_version", ["character-chat-review-v5", "character-chat-review-v6", "character-chat-review-v7", "character-chat-review-v8", "character-chat-review-v9"])
 async def test_compact_review_budget_keeps_claim_sources_and_generation_context_intact(
     book_library,
     review_version,

@@ -9,6 +9,8 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
+from pydantic import ValidationError
+
 from .chat_models import GENERATE_PROMPTS, REVIEW_PROMPTS, UNKNOWN_REPLY, ChatCandidate, ChatReview
 from .chat_validation import (
     ReviewContractError,
@@ -29,6 +31,19 @@ from .room_models import CharacterChatConfig, RoomScope
 from .round_execution import RoundExecution
 from .rounds import BookRoundService
 from .source import BookWorldError
+
+
+def _generation_error_fields(error: ValueError) -> str:
+    if not isinstance(error, ValidationError):
+        return str(error)[:300]
+    issues = error.errors(include_input=False, include_context=False)
+    fields: list[dict[str, str]] = []
+    for issue in issues[:6]:
+        entry = {"path": ".".join(map(str, issue["loc"]))[:120], "error": issue["msg"][:120]}
+        if len(_json([*fields, entry])) > 900:
+            break
+        fields.append(entry)
+    return _json({"fields": fields, "omitted": len(issues) - len(fields)})
 
 
 class BookChatWorker:
@@ -127,6 +142,7 @@ class BookChatWorker:
                     "character-chat-review-v6",
                     "character-chat-review-v7",
                     "character-chat-review-v8",
+                    "character-chat-review-v9",
                 ):
                     payload["review_claims"] = [
                         {"ordinal": index, "assertion": assertion}
@@ -137,6 +153,7 @@ class BookChatWorker:
                     "character-chat-review-v6",
                     "character-chat-review-v7",
                     "character-chat-review-v8",
+                    "character-chat-review-v9",
                 )
                 omitted_history = omitted_memory = omitted_expressions = 0
                 if compact_review:
@@ -335,6 +352,7 @@ class BookChatWorker:
                         "character-chat-review-v6",
                         "character-chat-review-v7",
                         "character-chat-review-v8",
+                        "character-chat-review-v9",
                     ):
                         review_feedback = (
                             str(error)
@@ -349,12 +367,16 @@ class BookChatWorker:
                         "character-chat-v10",
                         "character-chat-v11",
                         "character-chat-v12",
+                        "character-chat-v13",
+                        "character-chat-v14",
                     ):
                         feedback = (
-                            str(error)[:300]
+                            (_generation_error_fields(error) if lease.config.prompt_version in ("character-chat-v13", "character-chat-v14") else str(error)[:300])
                             + ". Cover complete sentences as claims; preserve only supported content. "
                             + feedback
                         )
+                    if lease.config.prompt_version in ("character-chat-v13", "character-chat-v14"):
+                        feedback += " Each inference.text must contain its own explicit hypothetical marker and valid refs. A meta-only statement about this being a hypothetical is conversation. Answer supported conditional choices directly; do not add historical completion, discovery or recognition changes from a trait or an intention."
                     if isinstance(error, SemanticReviewError) or (
                         type(error) is ValueError and str(error).startswith("Independent")
                     ):
@@ -365,6 +387,7 @@ class BookChatWorker:
                             "character-chat-review-v6",
                             "character-chat-review-v7",
                             "character-chat-review-v8",
+                            "character-chat-review-v9",
                         )
                         and isinstance(error, SemanticReviewError)
                     ):

@@ -1,0 +1,177 @@
+{
+  "date": "2026-10-15",
+  "scope": "Controlled positive subset of a native candidate, reviewed by the real model; no fresh reply generation, publication, full-book or blind-quality claim",
+  "native_call_ceiling": 1,
+  "prior_t17_native_calls": 27,
+  "aggregate_t17_ceiling": 32,
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-chat-v13",
+    "policy_version": "bounded-room-v1",
+    "model_record_id": 337,
+    "review_prompt_version": "character-chat-review-v9",
+    "context_window": 1000000,
+    "max_input_tokens": 24000,
+    "expression_enabled": false,
+    "memory_policy_version": "typed-room-memory-v1",
+    "memory_prompt_version": "room-memory-v2",
+    "expression_selection_version": "expression-selection-v2",
+    "expression_sets": {}
+  },
+  "input": {
+    "candidate": {
+      "action_basis_claim_ids": [
+        "6742efce-da5c-4892-ac66-0d6c3de1b76f"
+      ],
+      "content": "若同伴们要探一条陌生小路，我多半会先上前试探。",
+      "dialogue_action": "answer",
+      "ephemeral_emotion": null
+    },
+    "context": {
+      "baseline": {
+        "relation:山中群兽与群猴": {
+          "approved_excerpt": "",
+          "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+          "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+          "kind": "relation",
+          "local_end": 55,
+          "local_start": 0,
+          "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+          "route": "firsthand",
+          "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+          "temporal_state": "current"
+        },
+        "trait:胆识": {
+          "approved_excerpt": "",
+          "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+          "kind": "trait",
+          "local_end": 99,
+          "local_start": 67,
+          "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+          "route": "firsthand",
+          "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+          "temporal_state": "current"
+        }
+      },
+      "character_scope": {
+        "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+        "knowledge_policy_version": "canonical-perspective-v1",
+        "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+        "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+      },
+      "context_policy": "actor-context-v1",
+      "current_message": {
+        "content": "假设同伴们要探索一条陌生的小路，你会先试探还是等别人先走？请直接谈本次假设中的选择，用你已有依据的性格说明理由，别补出原著里某人站在哪里观看的情节。",
+        "id": "c096a09d-cbfb-4bf3-80ae-02e52e179921",
+        "identity": {},
+        "seq": 1,
+        "speaker_member_id": null,
+        "speaker_type": "user"
+      },
+      "discussion": {
+        "goal": null,
+        "mode": "free",
+        "revision": 0,
+        "speaker_request": {
+          "mode": "directed",
+          "selection_policy": "public-room-selection-v1",
+          "target_member_ids": [
+            "16b2faaf-026c-4475-bd55-2498e7a6f27f"
+          ]
+        },
+        "topic": null
+      },
+      "expressions": {
+        "examples": [],
+        "rules": []
+      },
+      "identity": {
+        "book_title": "西游记 · 石猴发现联调样本（非全书）",
+        "name": "石猴"
+      },
+      "knowledge": {
+        "items": [],
+        "query": "一条陌 中的选 人先走 们要探 会先试 伴们要 你会先 你已有 依据的 假设中 假设同 先试探 别人先 别补出 同伴们 已有依 性格说 据的性 探索一 探还是 接谈本 明理由 是等别 有依据 本次假 条陌生 某人站 格说明 次假设 生的小 用你已 的小路",
+        "status": "unknown"
+      },
+      "room": {
+        "epoch": 1,
+        "policy_version": "bounded-room-v1",
+        "room_id": "732e12a3-8df1-4a76-a396-d1597c79fee7",
+        "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+      },
+      "room_history": [],
+      "room_memory": {
+        "items": [],
+        "through_seq": 0
+      },
+      "room_state": null
+    },
+    "feedback": null,
+    "phase": "review",
+    "review_claims": [
+      {
+        "ordinal": 0,
+        "assertion": {
+          "message_ids": [],
+          "origin": "inference",
+          "refs": [
+            {
+              "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+              "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547"
+            }
+          ],
+          "text": "若同伴们要探一条陌生小路，我多半会先上前试探。"
+        }
+      }
+    ]
+  },
+  "input_sha256": "fd5fb910fc7a82eae9daa991d86b9561b036358d5aadaf46d9dad6da7f963e30",
+  "review_prompt_sha256": "91ebcd2c1b193ab27b7350f12d21f0c7fd9bafd1615abc5c806c10fbc85a439e",
+  "expected_supported": true,
+  "publication": false,
+  "quality_pass": false,
+  "status": "completed",
+  "usage": {
+    "prompt_tokens": 1850,
+    "completion_tokens": 164,
+    "total_tokens": 2014,
+    "cache_read_input_tokens": 1024,
+    "cache_creation_input_tokens": 0
+  },
+  "finish_reason": "end_turn",
+  "review": {
+    "supported": true,
+    "facts_complete": true,
+    "persona_consistent": true,
+    "action_supported": true,
+    "emotion_supported": true,
+    "attribution_correct": true,
+    "unlisted_assertions": [],
+    "claims": [
+      {
+        "ordinal": 0,
+        "supported": true,
+        "origin_correct": true,
+        "references_complete": true
+      }
+    ],
+    "reason": "内容是对新情境的条件性选择，仅断言自己会先试探陌生小路，由已给胆识特质（勇敢果断、敢于率先跳入瀑布泉中探险）直接支持，符合用户要求直接谈假设选择。无未列出的事实、无冒充亲历、无他人位置或原著情节补造。"
+  },
+  "matches_expected": true,
+  "elapsed_seconds": 6.062,
+  "actual_native_calls": 1,
+  "aggregate_t17_native_calls": 28,
+  "terminal": true
+}

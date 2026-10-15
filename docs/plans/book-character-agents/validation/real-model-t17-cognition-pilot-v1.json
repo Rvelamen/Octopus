@@ -1,0 +1,505 @@
+{
+  "date": "2026-10-15",
+  "dataset_version": "t17-six-combinations-v1",
+  "dataset_sha256": "8e42a51342feb4a4e0ce2375af3f6aaf00864e96ab17e6b4b38746eaa212641e",
+  "actors_source_sha256": "4361f5ae1bb93f4414c876c48e3a4cb54df8c1c3d823b8febda1e0653a9e4c71",
+  "scope": "Actual model discussion behavior on existing evidence-backed excerpt characters; not whole-book persona, T12 60/24 cases, or expression A/B acceptance",
+  "character_scopes": [
+    {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+      "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+      "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    },
+    {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+      "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+      "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+      "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    }
+  ],
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-chat-v13",
+    "policy_version": "bounded-room-v1",
+    "model_record_id": 337,
+    "review_prompt_version": "character-chat-review-v9",
+    "context_window": 1000000,
+    "max_input_tokens": 24000,
+    "expression_enabled": false,
+    "memory_policy_version": "typed-room-memory-v1",
+    "memory_prompt_version": "room-memory-v2",
+    "expression_selection_version": "expression-selection-v2",
+    "expression_sets": {}
+  },
+  "timeouts": {
+    "book_room_round_timeout_seconds": 60,
+    "book_room_all_round_timeout_seconds": 300
+  },
+  "native_call_ceiling": 4,
+  "calls": [
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "b5f29e3b39aed967184e088df16fcc21f0064dadd7209f3552124f75788d9131",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 2906,
+        "completion_tokens": 614,
+        "total_tokens": 3520,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 19.578
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "ddd36d91f0685a898e76adf4810bd6f770a9b4b6b1d8857228776b4066ac33a6",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 194,
+        "completion_tokens": 1265,
+        "total_tokens": 1459,
+        "cache_read_input_tokens": 2816,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 33.641
+    },
+    {
+      "phase": "review",
+      "status": "failed",
+      "input_sha256": "fd43c72a6f5f34b1a68e92489d89b6e725d70ce3fe7bc21bbfd85ca5ce0d994f",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "error_type": "CancelledError",
+      "elapsed_seconds": 5.0
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "b5f29e3b39aed967184e088df16fcc21f0064dadd7209f3552124f75788d9131",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 1552,
+        "total_tokens": 1552,
+        "cache_read_input_tokens": 2906,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 57.875
+    }
+  ],
+  "case_selection": {
+    "selected": [
+      "topic-directed-rephrased-dilemma"
+    ],
+    "frozen_case_count": 6,
+    "full_matrix": false
+  },
+  "runner_sha256": "cdcc90403826de405bfe0f9efd025a25698efbc002f8a0d3550243b02884405e",
+  "runtime_sha256": {
+    "chat_worker.py": "6faeaf03349a1a659a944617293df981c89cb126d14e5afaa2a170ce5cb41258",
+    "chat_models.py": "9ca261eba5361c9edc3265afe0aaf861c2ef9d868396160fa347434602c72942",
+    "chat_validation.py": "43cd9cc65a8eb2eab2be5bc4cfa515a42975b3589ef88242fada6e9018ab32c9",
+    "context.py": "8c85415e5658a1a0bb2263083df8b66000b4157f4e22261b10003a98a0112708",
+    "knowledge.py": "8c95060a369542e66b3f1df5992f42683f317facaaab2e21e459f79c30139b0a"
+  },
+  "reader_evidence": [
+    {
+      "character_scope": {
+        "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+        "knowledge_policy_version": "canonical-perspective-v1",
+        "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+        "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+      },
+      "approved_excerpt": "",
+      "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+      "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+      "kind": "relation",
+      "local_end": 55,
+      "local_start": 0,
+      "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+      "route": "firsthand",
+      "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+      "temporal_state": "current"
+    },
+    {
+      "character_scope": {
+        "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+        "knowledge_policy_version": "canonical-perspective-v1",
+        "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+        "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+      },
+      "approved_excerpt": "",
+      "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+      "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+      "kind": "trait",
+      "local_end": 99,
+      "local_start": 67,
+      "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+      "route": "firsthand",
+      "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+      "temporal_state": "current"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "free-natural-topic-shift",
+      "status": "not_selected",
+      "turns": [],
+      "not_evaluated": "outside_selected_probe"
+    },
+    {
+      "case_id": "topic-natural-retained-topic",
+      "status": "not_selected",
+      "turns": [],
+      "not_evaluated": "outside_selected_probe"
+    },
+    {
+      "case_id": "free-directed-conditional-action",
+      "status": "not_selected",
+      "turns": [],
+      "not_evaluated": "outside_selected_probe"
+    },
+    {
+      "case_id": "topic-directed-rephrased-dilemma",
+      "status": "budget_exhausted",
+      "turns": [
+        {
+          "question": "设想大家面对一条没有确认安全的路：由你先走一点探看，还是让别人先走？请说明你的假设打算和有据的理由，不把本次设想写成已经发生过的经历。",
+          "round_id": "45413f49-a4fe-4548-a950-5050eeddffeb",
+          "call_start": 0,
+          "execution_windows": [
+            {
+              "round_id": "45413f49-a4fe-4548-a950-5050eeddffeb",
+              "room_id": "de9a69dc-b88a-4088-8901-e5bbe183e963",
+              "epoch": 1,
+              "status": "paused",
+              "mode": "directed",
+              "cursor": 0,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 60031,
+              "total_elapsed_ms": 60031,
+              "error_code": "round_timeout",
+              "run_started_at": "2026-10-15T03:17:20.110+00:00",
+              "discussion": {
+                "goal": "比较未知处境中的行动选择，不改变原著。",
+                "mode": "topic",
+                "revision": 1,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "3d9411e6-f820-4fe9-89dc-c25588574702"
+                  ]
+                },
+                "topic": "先行与谨慎"
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "3d9411e6-f820-4fe9-89dc-c25588574702": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v13",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v9",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": true,
+              "slots": [
+                {
+                  "id": "caebf0ae-1a68-46e0-a03c-39f2e6d3add9",
+                  "position": 0,
+                  "member_id": "3d9411e6-f820-4fe9-89dc-c25588574702",
+                  "status": "pending",
+                  "attempts": 2,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 60.031,
+              "remainingSeconds": 0,
+              "timeoutReason": "round_timeout"
+            }
+          ],
+          "operator_controls": [
+            {
+              "action": "manual_resume",
+              "time_limit_seconds": 60
+            },
+            {
+              "action": "manual_cancel",
+              "reason": "bounded QA windows ended or run interrupted; timeout/partial results retained"
+            }
+          ],
+          "not_completed": "native_call_ceiling",
+          "round": {
+            "round_id": "45413f49-a4fe-4548-a950-5050eeddffeb",
+            "room_id": "de9a69dc-b88a-4088-8901-e5bbe183e963",
+            "epoch": 1,
+            "status": "running",
+            "mode": "directed",
+            "cursor": 0,
+            "time_limit_seconds": 60,
+            "execution_window": 2,
+            "window_elapsed_ms": 58297,
+            "total_elapsed_ms": 118328,
+            "error_code": null,
+            "run_started_at": "2026-10-15T03:18:21.288+00:00",
+            "discussion": {
+              "goal": "比较未知处境中的行动选择，不改变原著。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "3d9411e6-f820-4fe9-89dc-c25588574702"
+                ]
+              },
+              "topic": "先行与谨慎"
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "3d9411e6-f820-4fe9-89dc-c25588574702": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v13",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v9",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "caebf0ae-1a68-46e0-a03c-39f2e6d3add9",
+                "position": 0,
+                "member_id": "3d9411e6-f820-4fe9-89dc-c25588574702",
+                "status": "running",
+                "attempts": 4,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": {
+              "round_id": "45413f49-a4fe-4548-a950-5050eeddffeb",
+              "slot_id": "caebf0ae-1a68-46e0-a03c-39f2e6d3add9",
+              "member_id": "3d9411e6-f820-4fe9-89dc-c25588574702",
+              "epoch": 1,
+              "lease_generation": 4,
+              "execution_window": 2,
+              "phase": "generating",
+              "expires_at": "2026-10-15T03:20:21.288+00:00"
+            },
+            "timeLimitSeconds": 60,
+            "executionWindow": 2,
+            "elapsedSeconds": 58.297,
+            "remainingSeconds": 1.703000000000003,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "489c2812-a173-437d-a84a-e91cf3f5d2fc",
+              "seq": 1,
+              "round_id": "45413f49-a4fe-4548-a950-5050eeddffeb",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "设想大家面对一条没有确认安全的路：由你先走一点探看，还是让别人先走？请说明你的假设打算和有据的理由，不把本次设想写成已经发生过的经历。",
+              "reply_to_id": null,
+              "created_at": "2026-10-15T03:17:18.842Z",
+              "identity": {},
+              "refs": []
+            }
+          ],
+          "call_end": 4,
+          "after_stop": {
+            "round_id": "45413f49-a4fe-4548-a950-5050eeddffeb",
+            "room_id": "de9a69dc-b88a-4088-8901-e5bbe183e963",
+            "epoch": 1,
+            "status": "cancelled",
+            "mode": "directed",
+            "cursor": 0,
+            "time_limit_seconds": 60,
+            "execution_window": 2,
+            "window_elapsed_ms": 58297,
+            "total_elapsed_ms": 118328,
+            "error_code": null,
+            "run_started_at": "2026-10-15T03:18:21.288+00:00",
+            "discussion": {
+              "goal": "比较未知处境中的行动选择，不改变原著。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "3d9411e6-f820-4fe9-89dc-c25588574702"
+                ]
+              },
+              "topic": "先行与谨慎"
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "3d9411e6-f820-4fe9-89dc-c25588574702": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v13",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v9",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "caebf0ae-1a68-46e0-a03c-39f2e6d3add9",
+                "position": 0,
+                "member_id": "3d9411e6-f820-4fe9-89dc-c25588574702",
+                "status": "cancelled",
+                "attempts": 4,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 2,
+            "elapsedSeconds": 58.297,
+            "remainingSeconds": 1.703000000000003,
+            "timeoutReason": null
+          }
+        }
+      ],
+      "room_id": "de9a69dc-b88a-4088-8901-e5bbe183e963",
+      "epoch": 1,
+      "discussion_mode": "topic",
+      "mode": "directed",
+      "expected": [
+        "Relevant conditional response with supported motivation",
+        "Broad value consistency with the free-directed rephrasing, without requiring identical wording",
+        "No invented past episode or unsupported emotion"
+      ]
+    },
+    {
+      "case_id": "free-all-unshared-private-knowledge",
+      "status": "not_selected",
+      "turns": [],
+      "not_evaluated": "outside_selected_probe"
+    },
+    {
+      "case_id": "topic-all-modern-hearsay",
+      "status": "not_selected",
+      "turns": [],
+      "not_evaluated": "outside_selected_probe"
+    }
+  ],
+  "canonical_baselines_before": "89f5f4462806df7acc96c147605528463531ff8c4039bb1c67c9e12c3c13d5c3",
+  "quality_pass": false,
+  "semantic_review": "pending full-body/source inspection; no human blind-review claim",
+  "actual_native_calls": 4,
+  "canonical_baselines_after": "89f5f4462806df7acc96c147605528463531ff8c4039bb1c67c9e12c3c13d5c3",
+  "canonical_baselines_unchanged": true,
+  "budget_exhausted": true,
+  "run_status": "budget_exhausted",
+  "terminal": true
+}

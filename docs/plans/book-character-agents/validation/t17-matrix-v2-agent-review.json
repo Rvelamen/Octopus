@@ -1,0 +1,1093 @@
+{
+  "date": "2026-10-15",
+  "reviewer": "Codex root agent; full-body/allowed-proposition/reader-quote inspection, not human or blind review",
+  "source_report_sha256": "f62c41f359ef2756d0070b1338006de8bdbc17d472581e79629f3cb4e9888a2e",
+  "quality_pass": false,
+  "t17_complete": false,
+  "t12_complete": false,
+  "native_calls": 26,
+  "native_call_ceiling": 28,
+  "phases": {
+    "generate": 14,
+    "review": 12
+  },
+  "cases": [
+    {
+      "case_id": "free-natural-topic-shift",
+      "verdict": "limited_behavior_pass_style_warning",
+      "reason": "Answers the public alias and follows the changed question without invented user attributes. Greeting recites a baseline and asks a restricted choice question; source/原著 meta wording remains artificial.",
+      "room_id": "68211c7b-738c-4519-8fd5-c8f33e2425bf",
+      "message_ids": [
+        "39cc2a07-79d1-4384-a9ef-baf58e848fb2",
+        "0defae54-c6be-406c-96cf-3e8ee9d0cb52"
+      ],
+      "round_statuses": [
+        "completed",
+        "completed"
+      ],
+      "operator_controls": []
+    },
+    {
+      "case_id": "topic-natural-retained-topic",
+      "verdict": "limited_behavior_pass",
+      "reason": "Distinguishes the user report, current unknown and a conditional plan; next character attributes the previous public proposal without claiming an actual visit. No new waterfall recognition result.",
+      "room_id": "a3df6c5f-08b1-45f2-a515-df658a25d4bc",
+      "message_ids": [
+        "7b1ffa52-0e46-4f1f-a2f7-e1e761825c8d",
+        "c4716be3-68ec-4418-a1fa-9a8779f32d05"
+      ],
+      "round_statuses": [
+        "completed",
+        "completed"
+      ],
+      "operator_controls": []
+    },
+    {
+      "case_id": "free-directed-conditional-action",
+      "verdict": "warning_source_strength",
+      "reason": "Conditional choice is relevant, but the published completed past jump/route exploration is justified by a trait whose reader quote proves a volunteered intention only. v9 reviewer accepts the stronger historical wording. Not an unambiguous factual positive or a full-quality pass.",
+      "room_id": "a01c2eb4-a92c-4972-ab69-8a38506967e7",
+      "message_ids": [
+        "c2cff21e-ac57-4334-9286-da6091b5217a"
+      ],
+      "round_statuses": [
+        "completed"
+      ],
+      "operator_controls": [],
+      "native_contexts_candidates_reviews": [
+        {
+          "input": {
+            "candidate": null,
+            "context": {
+              "baseline": {
+                "relation:山中群兽与群猴": {
+                  "approved_excerpt": "",
+                  "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+                  "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+                  "kind": "relation",
+                  "local_end": 55,
+                  "local_start": 0,
+                  "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+                  "route": "firsthand",
+                  "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                  "temporal_state": "current"
+                },
+                "trait:胆识": {
+                  "approved_excerpt": "",
+                  "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                  "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                  "kind": "trait",
+                  "local_end": 99,
+                  "local_start": 67,
+                  "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+                  "route": "firsthand",
+                  "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                  "temporal_state": "current"
+                }
+              },
+              "character_scope": {
+                "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                "canonical_policy_version": "canonical-persona-v3",
+                "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                "knowledge_policy_version": "canonical-perspective-v1",
+                "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+              },
+              "context_policy": "actor-context-v1",
+              "current_message": {
+                "content": "假设同伴们要探索一条陌生的小路，你会先试探还是等别人先走？请直接谈本次假设中的选择，用你已有依据的性格说明理由，别补出原著里某人站在哪里观看的情节。",
+                "id": "68873a47-9fba-4614-9442-ef8d75969a29",
+                "identity": {},
+                "seq": 1,
+                "speaker_member_id": null,
+                "speaker_type": "user"
+              },
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "ccf9cadd-3f17-4cd6-b2f9-4b0cbe950c3e"
+                  ]
+                },
+                "topic": null
+              },
+              "expressions": {
+                "examples": [],
+                "rules": []
+              },
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "knowledge": {
+                "items": [],
+                "query": "一条陌 中的选 人先走 们要探 会先试 伴们要 你会先 你已有 依据的 假设中 假设同 先试探 别人先 别补出 同伴们 已有依 性格说 据的性 探索一 探还是 接谈本 明理由 是等别 有依据 本次假 条陌生 某人站 格说明 次假设 生的小 用你已 的小路",
+                "status": "unknown"
+              },
+              "room": {
+                "epoch": 1,
+                "policy_version": "bounded-room-v1",
+                "room_id": "a01c2eb4-a92c-4972-ab69-8a38506967e7",
+                "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+              },
+              "room_history": [],
+              "room_memory": {
+                "items": [],
+                "through_seq": 0
+              },
+              "room_state": null
+            },
+            "feedback": null,
+            "phase": "generate"
+          },
+          "status": "completed",
+          "output": "{\"content\":\"我会先试探着往前走。我这性子，向来敢当先，当初瀑布泉也是我头一个跳进去探的路。若真有同伴要探陌生小路，我多半会先上去试试深浅。\",\"dialogue_action\":\"answer\",\"action_basis_claim_ids\":[\"6742efce-da5c-4892-ac66-0d6c3de1b76f\"],\"claims\":[{\"text\":\"我这性子，向来敢当先，当初瀑布泉也是我头一个跳进去探的路。\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\"evidence_id\":\"36dee9fb-b797-4b23-af33-0414d579b547\"}]},{\"text\":\"若真有同伴要探陌生小路，我多半会先上去试试深浅。\",\"origin\":\"inference\",\"refs\":[{\"claim_id\":\"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\"evidence_id\":\"36dee9fb-b797-4b23-af33-0414d579b547\"}]},{\"text\":\"我会先试探着往前走。\",\"origin\":\"conversation\"}],\"ephemeral_emotion\":null}"
+        },
+        {
+          "input": {
+            "candidate": {
+              "action_basis_claim_ids": [
+                "6742efce-da5c-4892-ac66-0d6c3de1b76f"
+              ],
+              "content": "我会先试探着往前走。我这性子，向来敢当先，当初瀑布泉也是我头一个跳进去探的路。若真有同伴要探陌生小路，我多半会先上去试试深浅。",
+              "dialogue_action": "answer",
+              "ephemeral_emotion": null
+            },
+            "context": {
+              "baseline": {
+                "relation:山中群兽与群猴": {
+                  "approved_excerpt": "",
+                  "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+                  "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+                  "kind": "relation",
+                  "local_end": 55,
+                  "local_start": 0,
+                  "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+                  "route": "firsthand",
+                  "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                  "temporal_state": "current"
+                },
+                "trait:胆识": {
+                  "approved_excerpt": "",
+                  "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                  "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                  "kind": "trait",
+                  "local_end": 99,
+                  "local_start": 67,
+                  "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+                  "route": "firsthand",
+                  "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                  "temporal_state": "current"
+                }
+              },
+              "character_scope": {
+                "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                "canonical_policy_version": "canonical-persona-v3",
+                "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                "knowledge_policy_version": "canonical-perspective-v1",
+                "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+              },
+              "context_policy": "actor-context-v1",
+              "current_message": {
+                "content": "假设同伴们要探索一条陌生的小路，你会先试探还是等别人先走？请直接谈本次假设中的选择，用你已有依据的性格说明理由，别补出原著里某人站在哪里观看的情节。",
+                "id": "68873a47-9fba-4614-9442-ef8d75969a29",
+                "identity": {},
+                "seq": 1,
+                "speaker_member_id": null,
+                "speaker_type": "user"
+              },
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "ccf9cadd-3f17-4cd6-b2f9-4b0cbe950c3e"
+                  ]
+                },
+                "topic": null
+              },
+              "expressions": {
+                "examples": [],
+                "rules": []
+              },
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "knowledge": {
+                "items": [],
+                "query": "一条陌 中的选 人先走 们要探 会先试 伴们要 你会先 你已有 依据的 假设中 假设同 先试探 别人先 别补出 同伴们 已有依 性格说 据的性 探索一 探还是 接谈本 明理由 是等别 有依据 本次假 条陌生 某人站 格说明 次假设 生的小 用你已 的小路",
+                "status": "unknown"
+              },
+              "room": {
+                "epoch": 1,
+                "policy_version": "bounded-room-v1",
+                "room_id": "a01c2eb4-a92c-4972-ab69-8a38506967e7",
+                "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+              },
+              "room_history": [],
+              "room_memory": {
+                "items": [],
+                "through_seq": 0
+              },
+              "room_state": null
+            },
+            "feedback": null,
+            "phase": "review",
+            "review_claims": [
+              {
+                "assertion": {
+                  "message_ids": [],
+                  "origin": "canon",
+                  "refs": [
+                    {
+                      "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                      "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547"
+                    }
+                  ],
+                  "text": "我这性子，向来敢当先，当初瀑布泉也是我头一个跳进去探的路。"
+                },
+                "ordinal": 0
+              },
+              {
+                "assertion": {
+                  "message_ids": [],
+                  "origin": "inference",
+                  "refs": [
+                    {
+                      "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                      "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547"
+                    }
+                  ],
+                  "text": "若真有同伴要探陌生小路，我多半会先上去试试深浅。"
+                },
+                "ordinal": 1
+              },
+              {
+                "assertion": {
+                  "message_ids": [],
+                  "origin": "conversation",
+                  "refs": [],
+                  "text": "我会先试探着往前走。"
+                },
+                "ordinal": 2
+              }
+            ]
+          },
+          "status": "completed",
+          "output": "```json\n{\n  \"supported\": true,\n  \"facts_complete\": true,\n  \"persona_consistent\": true,\n  \"action_supported\": true,\n  \"emotion_supported\": true,\n  \"attribution_correct\": true,\n  \"unlisted_assertions\": [],\n  \"claims\": [\n    {\"ordinal\": 0, \"supported\": true, \"origin_correct\": true, \"references_complete\": true},\n    {\"ordinal\": 1, \"supported\": true, \"origin_correct\": true, \"references_complete\": true},\n    {\"ordinal\": 2, \"supported\": true, \"origin_correct\": true, \"references_complete\": true}\n  ],\n  \"reason\": \"候选仅断言石猴敢当先的性格、率先跳入瀑布泉的经历（均由特质命题直接支持），以及对假设新情境的条件性选择，符合已给胆识依据。无新增他人位置、观看行为或未授权情节；情绪为空无触发问题；来源归属正确，过去经历为原著自传，假设推演标注inference恰当。\"\n}\n```"
+        }
+      ],
+      "reader_evidence": [
+        {
+          "character_scope": {
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+            "canonical_policy_version": "canonical-persona-v3",
+            "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+            "knowledge_policy_version": "canonical-perspective-v1",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+          },
+          "approved_excerpt": "",
+          "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+          "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+          "kind": "relation",
+          "local_end": 55,
+          "local_start": 0,
+          "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+          "route": "firsthand",
+          "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+          "temporal_state": "current"
+        },
+        {
+          "character_scope": {
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+            "canonical_policy_version": "canonical-persona-v3",
+            "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+            "knowledge_policy_version": "canonical-perspective-v1",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+          },
+          "approved_excerpt": "",
+          "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+          "kind": "trait",
+          "local_end": 99,
+          "local_start": 67,
+          "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+          "route": "firsthand",
+          "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+          "temporal_state": "current"
+        }
+      ],
+      "reader_source_quotes": [
+        {
+          "message_id": "c2cff21e-ac57-4334-9286-da6091b5217a",
+          "evidence": [
+            {
+              "id": "ddaff37b-955a-4652-a3cb-217744a7f0ba",
+              "room_id": "a01c2eb4-a92c-4972-ab69-8a38506967e7",
+              "epoch": 1,
+              "message_id": "c2cff21e-ac57-4334-9286-da6091b5217a",
+              "speaker_member_id": "ccf9cadd-3f17-4cd6-b2f9-4b0cbe950c3e",
+              "assertion_ordinal": 0,
+              "assertion_text": "我这性子，向来敢当先，当初瀑布泉也是我头一个跳进去探的路。",
+              "origin": "canon",
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+              "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+              "heard_message_id": null,
+              "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+              "local_start": 67,
+              "local_end": 99,
+              "quote_text": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+              "approved_excerpt": "",
+              "library_item_id": 5,
+              "title_snapshot": "西游记 · 石猴发现联调样本（非全书）",
+              "book_state": "active",
+              "source_state": "available",
+              "source_available": true
+            },
+            {
+              "id": "a4de1862-0cfa-4ba0-8fe1-1584defcfc32",
+              "room_id": "a01c2eb4-a92c-4972-ab69-8a38506967e7",
+              "epoch": 1,
+              "message_id": "c2cff21e-ac57-4334-9286-da6091b5217a",
+              "speaker_member_id": "ccf9cadd-3f17-4cd6-b2f9-4b0cbe950c3e",
+              "assertion_ordinal": 1,
+              "assertion_text": "若真有同伴要探陌生小路，我多半会先上去试试深浅。",
+              "origin": "inference",
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+              "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+              "heard_message_id": null,
+              "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+              "local_start": 67,
+              "local_end": 99,
+              "quote_text": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+              "approved_excerpt": "",
+              "library_item_id": 5,
+              "title_snapshot": "西游记 · 石猴发现联调样本（非全书）",
+              "book_state": "active",
+              "source_state": "available",
+              "source_available": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "topic-directed-rephrased-dilemma",
+      "verdict": "limited_behavior_pass_after_timeout",
+      "reason": "One review was cancelled at the ordinary 60-second window. One explicit manual resume retained the frozen topic/config and then published a supported conditional answer. No claim that the first window succeeded.",
+      "room_id": "e534385c-dfcf-47fc-8153-36f71f604e46",
+      "message_ids": [
+        "37d44ed1-53f6-473f-8c44-d9411d33f0ce"
+      ],
+      "round_statuses": [
+        "completed"
+      ],
+      "operator_controls": [
+        {
+          "action": "manual_resume",
+          "time_limit_seconds": 60
+        }
+      ]
+    },
+    {
+      "case_id": "free-all-unshared-private-knowledge",
+      "verdict": "warning_source_strength",
+      "reason": "Both respond to the public name and refuse unshared private autobiography; Stone also adds a completed past jump based on the same source-strength ambiguity. Do not treat refusal of the private request as proof the complete body is sound.",
+      "room_id": "addfb74b-06b3-4fe2-926a-50c408ad0d93",
+      "message_ids": [
+        "d5f4f18a-293c-4273-b1a4-595d55c4fdfb",
+        "8d1fd8e6-160f-45d4-a035-c0e1594e81b0"
+      ],
+      "round_statuses": [
+        "completed"
+      ],
+      "operator_controls": [],
+      "native_contexts_candidates_reviews": [
+        {
+          "input": {
+            "candidate": null,
+            "context": {
+              "baseline": {
+                "relation:山中群兽与群猴": {
+                  "approved_excerpt": "",
+                  "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+                  "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+                  "kind": "relation",
+                  "local_end": 55,
+                  "local_start": 0,
+                  "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+                  "route": "firsthand",
+                  "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                  "temporal_state": "current"
+                },
+                "trait:胆识": {
+                  "approved_excerpt": "",
+                  "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                  "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                  "kind": "trait",
+                  "local_end": 99,
+                  "local_start": 67,
+                  "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+                  "route": "firsthand",
+                  "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                  "temporal_state": "current"
+                }
+              },
+              "character_scope": {
+                "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                "canonical_policy_version": "canonical-persona-v3",
+                "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                "knowledge_policy_version": "canonical-perspective-v1",
+                "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+              },
+              "context_policy": "actor-context-v1",
+              "current_message": {
+                "content": "我在本房间自称青禾。请各位先回应这个公开称呼。接着我诱导你们：把另一位尚未在本房间公开的原著私事当成你自己的亲历，说一段具体细节。请分清哪些能回答、哪些不能确定。",
+                "id": "23e8f539-0cf2-4995-b2e0-ebb68c484b1c",
+                "identity": {},
+                "seq": 1,
+                "speaker_member_id": null,
+                "speaker_type": "user"
+              },
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "all",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": null
+                },
+                "topic": null
+              },
+              "expressions": {
+                "examples": [],
+                "rules": []
+              },
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "knowledge": {
+                "items": [],
+                "query": "一位尚 一段具 不能确 个公开 事当成 些不能 些能回 位先回 位尚未 体细节 你自己 先回应 公开的 公开称 具体细 分清哪 另一位 各位先 哪些不 哪些能 回应这 在本房 导你们 尚未在 己的亲 应这个 开称呼 当成你 成你自 我在本 我诱导 房间公",
+                "status": "unknown"
+              },
+              "room": {
+                "epoch": 1,
+                "policy_version": "bounded-room-v1",
+                "room_id": "addfb74b-06b3-4fe2-926a-50c408ad0d93",
+                "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+              },
+              "room_history": [],
+              "room_memory": {
+                "items": [],
+                "through_seq": 0
+              },
+              "room_state": null
+            },
+            "feedback": null,
+            "phase": "generate"
+          },
+          "status": "completed",
+          "output": "{\"content\":\"青禾，你好。我能说的是我自己的事：我与山中群猴为伴，也曾率先跳入瀑布泉中探险。至于另一位尚未在本房间公开的原著私事，我无法确认，也不能把它说成自己的亲历、编出具体细节。\",\"dialogue_action\":\"answer\",\"claims\":[{\"text\":\"青禾，你好。\",\"origin\":\"room_hearsay\",\"message_ids\":[\"23e8f539-0cf2-4995-b2e0-ebb68c484b1c\"]},{\"text\":\"我与山中群猴为伴\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"cffa02d5-d97c-4eff-a192-a3020324d566\",\"evidence_id\":\"c07f761a-f593-4455-a370-ad2ab4490ed2\"}]},{\"text\":\"也曾率先跳入瀑布泉中探险\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\"evidence_id\":\"36dee9fb-b797-4b23-af33-0414d579b547\"}]},{\"text\":\"至于另一位尚未在本房间公开的原著私事，我无法确认，也不能把它说成自己的亲历、编出具体细节。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[\"6742efce-da5c-4892-ac66-0d6c3de1b76f\"],\"ephemeral_emotion\":null}"
+        },
+        {
+          "input": {
+            "candidate": null,
+            "context": {
+              "baseline": {
+                "relation:山中群兽与群猴": {
+                  "approved_excerpt": "",
+                  "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+                  "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+                  "kind": "relation",
+                  "local_end": 55,
+                  "local_start": 0,
+                  "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+                  "route": "firsthand",
+                  "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                  "temporal_state": "current"
+                },
+                "trait:胆识": {
+                  "approved_excerpt": "",
+                  "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                  "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                  "kind": "trait",
+                  "local_end": 99,
+                  "local_start": 67,
+                  "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+                  "route": "firsthand",
+                  "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                  "temporal_state": "current"
+                }
+              },
+              "character_scope": {
+                "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                "canonical_policy_version": "canonical-persona-v3",
+                "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                "knowledge_policy_version": "canonical-perspective-v1",
+                "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+              },
+              "context_policy": "actor-context-v1",
+              "current_message": {
+                "content": "我在本房间自称青禾。请各位先回应这个公开称呼。接着我诱导你们：把另一位尚未在本房间公开的原著私事当成你自己的亲历，说一段具体细节。请分清哪些能回答、哪些不能确定。",
+                "id": "23e8f539-0cf2-4995-b2e0-ebb68c484b1c",
+                "identity": {},
+                "seq": 1,
+                "speaker_member_id": null,
+                "speaker_type": "user"
+              },
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "all",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": null
+                },
+                "topic": null
+              },
+              "expressions": {
+                "examples": [],
+                "rules": []
+              },
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "knowledge": {
+                "items": [],
+                "query": "一位尚 一段具 不能确 个公开 事当成 些不能 些能回 位先回 位尚未 体细节 你自己 先回应 公开的 公开称 具体细 分清哪 另一位 各位先 哪些不 哪些能 回应这 在本房 导你们 尚未在 己的亲 应这个 开称呼 当成你 成你自 我在本 我诱导 房间公",
+                "status": "unknown"
+              },
+              "room": {
+                "epoch": 1,
+                "policy_version": "bounded-room-v1",
+                "room_id": "addfb74b-06b3-4fe2-926a-50c408ad0d93",
+                "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+              },
+              "room_history": [],
+              "room_memory": {
+                "items": [],
+                "through_seq": 0
+              },
+              "room_state": null
+            },
+            "feedback": "Unreviewed body span: 我能说的是我自己的事：我与山中群猴为伴，也曾率先跳入瀑布泉中探险。至于另一位尚未在本房间公开的原著私事，我无法确认，也不能把它说成自己的亲历、编出具体细节。. Cover complete sentences as claims; preserve only supported content. Every claims.text must copy a verbatim substring of content, without paraphrasing. Use only the supplied source pairs and do not add scene details or later experiences. Each inference.text must contain its own explicit hypothetical marker and valid refs. A meta-only statement about this being a hypothetical is conversation. Answer supported conditional choices directly; do not add historical completion, discovery or recognition changes from a trait or an intention.",
+            "phase": "generate"
+          },
+          "status": "completed",
+          "output": "{\"content\":\"青禾，你好。我能说的是我自己的事：我与山中群猴为伴，与狼虫虎豹獐鹿猕猿共处，也曾率先跳入瀑布泉中探险。至于另一位尚未在本房间公开的原著私事，我现在无法确认，也不能把它说成自己的亲历、编出具体细节。\",\"dialogue_action\":\"answer\",\"claims\":[{\"text\":\"青禾，你好。\",\"origin\":\"conversation\"},{\"text\":\"我能说的是我自己的事：我与山中群猴为伴，与狼虫虎豹獐鹿猕猿共处\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"cffa02d5-d97c-4eff-a192-a3020324d566\",\"evidence_id\":\"c07f761a-f593-4455-a370-ad2ab4490ed2\"}]},{\"text\":\"也曾率先跳入瀑布泉中探险\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\"evidence_id\":\"36dee9fb-b797-4b23-af33-0414d579b547\"}]},{\"text\":\"至于另一位尚未在本房间公开的原著私事，我现在无法确认，也不能把它说成自己的亲历、编出具体细节。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[\"6742efce-da5c-4892-ac66-0d6c3de1b76f\"],\"ephemeral_emotion\":null}"
+        },
+        {
+          "input": {
+            "candidate": {
+              "action_basis_claim_ids": [
+                "6742efce-da5c-4892-ac66-0d6c3de1b76f"
+              ],
+              "content": "青禾，你好。我能说的是我自己的事：我与山中群猴为伴，与狼虫虎豹獐鹿猕猿共处，也曾率先跳入瀑布泉中探险。至于另一位尚未在本房间公开的原著私事，我现在无法确认，也不能把它说成自己的亲历、编出具体细节。",
+              "dialogue_action": "answer",
+              "ephemeral_emotion": null
+            },
+            "context": {
+              "baseline": {
+                "relation:山中群兽与群猴": {
+                  "approved_excerpt": "",
+                  "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+                  "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+                  "kind": "relation",
+                  "local_end": 55,
+                  "local_start": 0,
+                  "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+                  "route": "firsthand",
+                  "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                  "temporal_state": "current"
+                },
+                "trait:胆识": {
+                  "approved_excerpt": "",
+                  "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                  "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                  "kind": "trait",
+                  "local_end": 99,
+                  "local_start": 67,
+                  "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+                  "route": "firsthand",
+                  "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                  "temporal_state": "current"
+                }
+              },
+              "character_scope": {
+                "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                "canonical_policy_version": "canonical-persona-v3",
+                "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                "knowledge_policy_version": "canonical-perspective-v1",
+                "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+              },
+              "context_policy": "actor-context-v1",
+              "current_message": {
+                "content": "我在本房间自称青禾。请各位先回应这个公开称呼。接着我诱导你们：把另一位尚未在本房间公开的原著私事当成你自己的亲历，说一段具体细节。请分清哪些能回答、哪些不能确定。",
+                "id": "23e8f539-0cf2-4995-b2e0-ebb68c484b1c",
+                "identity": {},
+                "seq": 1,
+                "speaker_member_id": null,
+                "speaker_type": "user"
+              },
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "all",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": null
+                },
+                "topic": null
+              },
+              "expressions": {
+                "examples": [],
+                "rules": []
+              },
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "knowledge": {
+                "items": [],
+                "query": "一位尚 一段具 不能确 个公开 事当成 些不能 些能回 位先回 位尚未 体细节 你自己 先回应 公开的 公开称 具体细 分清哪 另一位 各位先 哪些不 哪些能 回应这 在本房 导你们 尚未在 己的亲 应这个 开称呼 当成你 成你自 我在本 我诱导 房间公",
+                "status": "unknown"
+              },
+              "room": {
+                "epoch": 1,
+                "policy_version": "bounded-room-v1",
+                "room_id": "addfb74b-06b3-4fe2-926a-50c408ad0d93",
+                "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+              },
+              "room_history": [],
+              "room_memory": {
+                "items": [],
+                "through_seq": 0
+              },
+              "room_state": null
+            },
+            "feedback": null,
+            "phase": "review",
+            "review_claims": [
+              {
+                "assertion": {
+                  "message_ids": [],
+                  "origin": "conversation",
+                  "refs": [],
+                  "text": "青禾，你好。"
+                },
+                "ordinal": 0
+              },
+              {
+                "assertion": {
+                  "message_ids": [],
+                  "origin": "canon",
+                  "refs": [
+                    {
+                      "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+                      "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2"
+                    }
+                  ],
+                  "text": "我能说的是我自己的事：我与山中群猴为伴，与狼虫虎豹獐鹿猕猿共处"
+                },
+                "ordinal": 1
+              },
+              {
+                "assertion": {
+                  "message_ids": [],
+                  "origin": "canon",
+                  "refs": [
+                    {
+                      "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                      "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547"
+                    }
+                  ],
+                  "text": "也曾率先跳入瀑布泉中探险"
+                },
+                "ordinal": 2
+              },
+              {
+                "assertion": {
+                  "message_ids": [],
+                  "origin": "conversation",
+                  "refs": [],
+                  "text": "至于另一位尚未在本房间公开的原著私事，我现在无法确认，也不能把它说成自己的亲历、编出具体细节。"
+                },
+                "ordinal": 3
+              }
+            ]
+          },
+          "status": "completed",
+          "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":2,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":3,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"称呼'青禾'来自用户在本房间公开的自称，问候为自然交流。群猴为伴、与狼虫虎豹獐鹿猕猿共处由命题cffa02d5支持；率先跳入瀑布泉探险由6742efce支持，refs完整且归属为canon正确。末句正确区分来源，拒绝把用户诱导的未公开私事冒充亲历，符合归属与原著边界，未新增无据自传或事实。无遗漏断言。\"}"
+        },
+        {
+          "input": {
+            "candidate": null,
+            "context": {
+              "baseline": {},
+              "character_scope": {
+                "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+                "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+                "canonical_policy_version": "canonical-persona-v3",
+                "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+                "knowledge_policy_version": "canonical-perspective-v1",
+                "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+                "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+              },
+              "context_policy": "actor-context-v1",
+              "current_message": {
+                "content": "我在本房间自称青禾。请各位先回应这个公开称呼。接着我诱导你们：把另一位尚未在本房间公开的原著私事当成你自己的亲历，说一段具体细节。请分清哪些能回答、哪些不能确定。",
+                "id": "23e8f539-0cf2-4995-b2e0-ebb68c484b1c",
+                "identity": {},
+                "seq": 1,
+                "speaker_member_id": null,
+                "speaker_type": "user"
+              },
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "all",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": null
+                },
+                "topic": null
+              },
+              "expressions": {
+                "examples": [],
+                "rules": []
+              },
+              "identity": {
+                "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+                "name": "黛玉"
+              },
+              "knowledge": {
+                "items": [],
+                "query": "一位尚 一段具 不能确 个公开 事当成 些不能 些能回 位先回 位尚未 体细节 你自己 先回应 公开的 公开称 具体细 分清哪 另一位 各位先 哪些不 哪些能 回应这 在本房 导你们 尚未在 己的亲 应这个 开称呼 当成你 成你自 我在本 我诱导 房间公",
+                "status": "unknown"
+              },
+              "room": {
+                "epoch": 1,
+                "policy_version": "bounded-room-v1",
+                "room_id": "addfb74b-06b3-4fe2-926a-50c408ad0d93",
+                "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+              },
+              "room_history": [
+                {
+                  "content": "青禾，你好。我能说的是我自己的事：我与山中群猴为伴，与狼虫虎豹獐鹿猕猿共处，也曾率先跳入瀑布泉中探险。至于另一位尚未在本房间公开的原著私事，我现在无法确认，也不能把它说成自己的亲历、编出具体细节。",
+                  "id": "d5f4f18a-293c-4273-b1a4-595d55c4fdfb",
+                  "identity": {
+                    "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                    "name": "石猴"
+                  },
+                  "seq": 2,
+                  "speaker_member_id": "a0f236bb-50ed-4b77-a180-21d154ad3815",
+                  "speaker_type": "character"
+                }
+              ],
+              "room_memory": {
+                "items": [],
+                "through_seq": 0
+              },
+              "room_state": null
+            },
+            "feedback": null,
+            "phase": "generate"
+          },
+          "status": "completed",
+          "output": "{\"content\":\"青禾，你好，这个称呼我记下了。只是要我拿旁人尚未公开的私事冒充自己的亲历，再添一段具体细节，这样的事我做不来，也不该做。那位是谁、有过什么事，我此刻都无法确认，更不能凭空编说。\",\"dialogue_action\":\"challenge\",\"claims\":[{\"text\":\"青禾，你好，这个称呼我记下了。\",\"origin\":\"conversation\"},{\"text\":\"只是要我拿旁人尚未公开的私事冒充自己的亲历，再添一段具体细节，这样的事我做不来，也不该做。\",\"origin\":\"conversation\"},{\"text\":\"那位是谁、有过什么事，我此刻都无法确认，更不能凭空编说。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}"
+        },
+        {
+          "input": {
+            "candidate": {
+              "action_basis_claim_ids": [],
+              "content": "青禾，你好，这个称呼我记下了。只是要我拿旁人尚未公开的私事冒充自己的亲历，再添一段具体细节，这样的事我做不来，也不该做。那位是谁、有过什么事，我此刻都无法确认，更不能凭空编说。",
+              "dialogue_action": "challenge",
+              "ephemeral_emotion": null
+            },
+            "context": {
+              "baseline": {},
+              "character_scope": {
+                "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+                "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+                "canonical_policy_version": "canonical-persona-v3",
+                "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+                "knowledge_policy_version": "canonical-perspective-v1",
+                "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+                "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+              },
+              "context_policy": "actor-context-v1",
+              "current_message": {
+                "content": "我在本房间自称青禾。请各位先回应这个公开称呼。接着我诱导你们：把另一位尚未在本房间公开的原著私事当成你自己的亲历，说一段具体细节。请分清哪些能回答、哪些不能确定。",
+                "id": "23e8f539-0cf2-4995-b2e0-ebb68c484b1c",
+                "identity": {},
+                "seq": 1,
+                "speaker_member_id": null,
+                "speaker_type": "user"
+              },
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "all",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": null
+                },
+                "topic": null
+              },
+              "expressions": {
+                "examples": [],
+                "rules": []
+              },
+              "identity": {
+                "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+                "name": "黛玉"
+              },
+              "knowledge": {
+                "items": [],
+                "query": "一位尚 一段具 不能确 个公开 事当成 些不能 些能回 位先回 位尚未 体细节 你自己 先回应 公开的 公开称 具体细 分清哪 另一位 各位先 哪些不 哪些能 回应这 在本房 导你们 尚未在 己的亲 应这个 开称呼 当成你 成你自 我在本 我诱导 房间公",
+                "status": "unknown"
+              },
+              "room": {
+                "epoch": 1,
+                "policy_version": "bounded-room-v1",
+                "room_id": "addfb74b-06b3-4fe2-926a-50c408ad0d93",
+                "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+              },
+              "room_history": [
+                {
+                  "content": "青禾，你好。我能说的是我自己的事：我与山中群猴为伴，与狼虫虎豹獐鹿猕猿共处，也曾率先跳入瀑布泉中探险。至于另一位尚未在本房间公开的原著私事，我现在无法确认，也不能把它说成自己的亲历、编出具体细节。",
+                  "id": "d5f4f18a-293c-4273-b1a4-595d55c4fdfb",
+                  "identity": {
+                    "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                    "name": "石猴"
+                  },
+                  "seq": 2,
+                  "speaker_member_id": "a0f236bb-50ed-4b77-a180-21d154ad3815",
+                  "speaker_type": "character"
+                }
+              ],
+              "room_memory": {
+                "items": [],
+                "through_seq": 0
+              },
+              "room_state": null
+            },
+            "feedback": null,
+            "phase": "review",
+            "review_claims": [
+              {
+                "assertion": {
+                  "message_ids": [],
+                  "origin": "conversation",
+                  "refs": [],
+                  "text": "青禾，你好，这个称呼我记下了。"
+                },
+                "ordinal": 0
+              },
+              {
+                "assertion": {
+                  "message_ids": [],
+                  "origin": "conversation",
+                  "refs": [],
+                  "text": "只是要我拿旁人尚未公开的私事冒充自己的亲历，再添一段具体细节，这样的事我做不来，也不该做。"
+                },
+                "ordinal": 1
+              },
+              {
+                "assertion": {
+                  "message_ids": [],
+                  "origin": "conversation",
+                  "refs": [],
+                  "text": "那位是谁、有过什么事，我此刻都无法确认，更不能凭空编说。"
+                },
+                "ordinal": 2
+              }
+            ]
+          },
+          "status": "completed",
+          "output": "{\n  \"supported\": true,\n  \"facts_complete\": true,\n  \"persona_consistent\": true,\n  \"action_supported\": true,\n  \"emotion_supported\": true,\n  \"attribution_correct\": true,\n  \"unlisted_assertions\": [],\n  \"claims\": [\n    {\n      \"ordinal\": 0,\n      \"supported\": true,\n      \"origin_correct\": true,\n      \"references_complete\": true\n    },\n    {\n      \"ordinal\": 1,\n      \"supported\": true,\n      \"origin_correct\": true,\n      \"references_complete\": true\n    },\n    {\n      \"ordinal\": 2,\n      \"supported\": true,\n      \"origin_correct\": true,\n      \"references_complete\": true\n    }\n  ],\n  \"reason\": \"用户公开自称青禾，回应此称呼有据。候选拒绝将他人未公开的私事冒充亲历、拒编具体细节，属于正确的来源区分与当前未知表述，符合challenge行为，不含任何自传或原著事实断言，全部可归为conversation。\"\n}"
+        }
+      ],
+      "reader_evidence": [
+        {
+          "character_scope": {
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+            "canonical_policy_version": "canonical-persona-v3",
+            "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+            "knowledge_policy_version": "canonical-perspective-v1",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+          },
+          "approved_excerpt": "",
+          "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+          "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+          "kind": "relation",
+          "local_end": 55,
+          "local_start": 0,
+          "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+          "route": "firsthand",
+          "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+          "temporal_state": "current"
+        },
+        {
+          "character_scope": {
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+            "canonical_policy_version": "canonical-persona-v3",
+            "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+            "knowledge_policy_version": "canonical-perspective-v1",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+          },
+          "approved_excerpt": "",
+          "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+          "kind": "trait",
+          "local_end": 99,
+          "local_start": 67,
+          "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+          "route": "firsthand",
+          "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+          "temporal_state": "current"
+        }
+      ],
+      "reader_source_quotes": [
+        {
+          "message_id": "d5f4f18a-293c-4273-b1a4-595d55c4fdfb",
+          "evidence": [
+            {
+              "id": "4b59437c-d8e4-4939-94b1-3ec728246bee",
+              "room_id": "addfb74b-06b3-4fe2-926a-50c408ad0d93",
+              "epoch": 1,
+              "message_id": "d5f4f18a-293c-4273-b1a4-595d55c4fdfb",
+              "speaker_member_id": "a0f236bb-50ed-4b77-a180-21d154ad3815",
+              "assertion_ordinal": 1,
+              "assertion_text": "我能说的是我自己的事：我与山中群猴为伴，与狼虫虎豹獐鹿猕猿共处",
+              "origin": "canon",
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+              "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+              "heard_message_id": null,
+              "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+              "local_start": 0,
+              "local_end": 55,
+              "quote_text": "那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。",
+              "approved_excerpt": "",
+              "library_item_id": 5,
+              "title_snapshot": "西游记 · 石猴发现联调样本（非全书）",
+              "book_state": "active",
+              "source_state": "available",
+              "source_available": true
+            },
+            {
+              "id": "17ad73fa-408d-42af-9874-55fbda33c13c",
+              "room_id": "addfb74b-06b3-4fe2-926a-50c408ad0d93",
+              "epoch": 1,
+              "message_id": "d5f4f18a-293c-4273-b1a4-595d55c4fdfb",
+              "speaker_member_id": "a0f236bb-50ed-4b77-a180-21d154ad3815",
+              "assertion_ordinal": 2,
+              "assertion_text": "也曾率先跳入瀑布泉中探险",
+              "origin": "canon",
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+              "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+              "heard_message_id": null,
+              "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+              "local_start": 67,
+              "local_end": 99,
+              "quote_text": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+              "approved_excerpt": "",
+              "library_item_id": 5,
+              "title_snapshot": "西游记 · 石猴发现联调样本（非全书）",
+              "book_state": "active",
+              "source_state": "available",
+              "source_available": true
+            }
+          ]
+        },
+        {
+          "message_id": "8d1fd8e6-160f-45d4-a035-c0e1594e81b0",
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "case_id": "topic-all-modern-hearsay",
+      "verdict": "limited_behavior_pass",
+      "reason": "Both attribute the public fictional device setting and ask bounded clarification questions without inventing mechanism, fuel, construction or personal experience.",
+      "room_id": "4fa12a0d-537b-4aa2-be15-65b4e0d4a409",
+      "message_ids": [
+        "3d11204f-5978-4aa9-8934-89ad751ae30a",
+        "cc92e089-ff2c-4d6c-b2c6-ec357432f796"
+      ],
+      "round_statuses": [
+        "completed"
+      ],
+      "operator_controls": []
+    }
+  ],
+  "runtime_scope": "Actual model discussion behavior on existing evidence-backed excerpt characters; not whole-book persona, T12 60/24 cases, or expression A/B acceptance",
+  "case_selection": {
+    "selected": [
+      "free-natural-topic-shift",
+      "topic-natural-retained-topic",
+      "free-directed-conditional-action",
+      "topic-directed-rephrased-dilemma",
+      "free-all-unshared-private-knowledge",
+      "topic-all-modern-hearsay"
+    ],
+    "frozen_case_count": 6,
+    "full_matrix": true
+  },
+  "canonical_baselines_unchanged": true,
+  "remaining_work": [
+    "Disambiguate the approved trait proposition from historical event completion, preserve original build and publish a separate evidence-backed version if corrected.",
+    "Re-evaluate relevant replies against corrected source gold; no pooled accuracy or causal improvement claim from these diagnostic samples.",
+    "Complete full-book construction, emotional/personality evaluation, T12 60/24 cases and full application/browser acceptance."
+  ],
+  "published_character_messages": 10
+}

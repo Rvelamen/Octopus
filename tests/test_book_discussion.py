@@ -378,6 +378,7 @@ async def test_summary_job_ack_and_cancel_do_not_wait_for_provider_and_restart_i
 @pytest.mark.parametrize("defect,expected", [
     ("budget", "ceiling"), ("dataset_budget", "ceiling"), ("coverage", "six"), ("duplicate", "Duplicate case"),
     ("continuations", "continuation policy"), ("existing_output", "already exists"),
+    ("selected_unknown", "Selected case"), ("selected_duplicate", "Selected case"),
 ])
 async def test_acceptance_entry_rejects_invalid_frozen_run_before_model_or_room_work(tmp_path, monkeypatch, defect, expected):
     import importlib.util
@@ -414,7 +415,7 @@ async def test_acceptance_entry_rejects_invalid_frozen_run_before_model_or_room_
     monkeypatch.setattr(module, "resolve_character_chat_model", forbidden)
     monkeypatch.setattr(module, "RoomMembershipService", forbidden)
     with pytest.raises(RuntimeError if defect == "existing_output" else ValueError, match=expected):
-        await module.run(Namespace(workspace=tmp_path / "untouched", dataset=dataset, output=output, call_budget=budget, provider_id=None, model_id=None))
+        await module.run(Namespace(workspace=tmp_path / "untouched", dataset=dataset, output=output, call_budget=budget, provider_id=None, model_id=None, case_id=["foreign-case"] if defect=="selected_unknown" else [data["cases"][0]["case_id"]]*2 if defect=="selected_duplicate" else None))
     assert not (tmp_path / "untouched").exists()
 
 
@@ -484,6 +485,7 @@ async def test_acceptance_entry_ends_its_live_turn_on_budget_or_interruption(boo
     first = report["cases"][0]
     assert report["terminal"] and not report["quality_pass"]
     assert report["canonical_baselines_unchanged"]
+    assert report["runner_sha256"] and len(report["runtime_sha256"]) == 5 and report["reader_evidence"]
     assert report["actual_native_calls"] == len(provider.calls) == 1
     assert first["turns"][0]["after_stop"]["status"] == "cancelled"
     assert first["status"] == ("budget_exhausted" if outcome == "budget" else "interrupted")

@@ -53,5 +53,9 @@
 
 理论映射与完整模式规则见[复核报告](F:/god/project/Octopus/docs/plans/book-character-agents/agent-design-review.md)，权威契约见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，依赖见[实施计划](F:/god/project/Octopus/docs/plans/book-character-agents/implementation-plan.md)。
 
+同日继续修复：新任务生成v14/审查v9区分性格与过去认识变化，补全有界字段反馈，并纠正trait误标belief时的错误提示方向，未放宽原拒绝条件。无历史旁句正例1次审查通过；v13新生成4次仍失败/含超时，原32次窗口用完；独立上限6次的精修窗口实际4次，取得一题条件选择发布及旧漏审固定负例拒绝。完整正文/允许依据由Agent独立复核，旧失败未改写；只读生产圆桌、同消息气泡/右栏和证据操作通过。该结果不代表六组合、全书或人工盲评，本任务质量条款继续未关闭，见[条件推演修复记录](../validation/2026-10-15-cognition-repair-validation.md)。
+
+全六组合随后独立复验26/28次、8次提交、10条人物发布；一轮在60秒超时后显式继续并完成，基线不变。换题/主题保留/公开听说有限通过，但free-directed和free-all各有历史动作的证据强度警告，审查v9未解决，不能仅凭拒绝跨书私事评为合格。本任务仍进行中；完整项目428通过、限定54文件Mypy、Ruff、前端类型/构建通过，见[矩阵v2复核](../validation/2026-10-15-discussion-matrix-v2-validation.md)。
+
 恢复推进后，v7 审查复验阻止“率先进入 ⇒ 群猴观看”的错误推断；v11 原生复验仍暴露“不是我自己见过的”否定经历。最新 v12/v8 增加按版本的否定防线并取得两题有限安全发布，保留格式重写与旧失败。圆桌历史气泡/右栏同消息及原文证据抽屉操作通过；新的转述例外只在完整公开源语境匹配时放行词面检查。范围与最终验证见[细节/否定复验](../validation/2026-10-14-detail-grounding-validation.md)。任务保持进行中，不据这两题关闭合理回应与听说质量条款。
 

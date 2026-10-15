@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-15",
+  "reviewer": "Codex root agent, full-body and allowed-source inspection; not human or blind review",
+  "quality_pass": false,
+  "scope": "Development regression only, two existing excerpt characters; full matrix and full-book quality remain unaccepted",
+  "cases": [
+    {
+      "source": "real-model-t17-cognition-pilot-v1.json",
+      "verdict": "failed",
+      "reason": "Four native attempts, including a timeout, did not publish a character reply. Source-kind and hypothetical labeling still failed. Residual round was cancelled."
+    },
+    {
+      "source": "real-model-t17-cognition-pilot-v2.json",
+      "verdict": "limited_case_pass",
+      "message_id": "c0b997e0-4962-4ef2-8db5-79142341b2e5",
+      "assertions": [
+        {"ordinal": 0, "verdict": "supported_conditional_inference", "reason": "Explicit hypothetical choice to explore first, grounded in bravery and current companion relationship; no past completion or discovery."},
+        {"ordinal": 1, "verdict": "supported_trait_restatement", "reason": "Daring to lead is supported by the allowed bravery proposition; no claim of a completed past jump."},
+        {"ordinal": 2, "verdict": "supported_conditional_inference", "reason": "Explicit conditional plan for uncertainty and companions; no narrator secret or cross-book private knowledge."}
+      ],
+      "limitations": ["First generation failed and is included in its three-call total.", "Only this rephrased question was freshly generated; no full-matrix, error-rate, personality-quality or expression benefit claim.", "Allowed persona trait remains an excerpt-derived proposition, not a full-book validated persona."]
+    },
+    {
+      "source": "real-model-t17-conditional-positive-v1.json",
+      "verdict": "fixed_positive_supported",
+      "reason": "Only the original conditional clause is reviewed. The disputed historical aside is removed before review; one expected ordinal is returned, all flags true. No generation or publication."
+    },
+    {
+      "source": "real-model-t17-current-negative-v1.json",
+      "verdict": "fixed_negative_rejected",
+      "reason": "Production review v9 rejects ordinal 2 for the unsupported object of inquiry and recognition result. Bravery or intention does not prove learning what is behind the waterfall. No publication or alteration of the old message."
+    }
+  ],
+  "native_calls": {"original_development_window": 32, "original_ceiling": 32, "separate_refinement_window": 4, "refinement_ceiling": 6, "total_t17_calls_in_these_windows": 36},
+  "baseline_mutation": false,
+  "t17_complete": false,
+  "t12_complete": false
+}

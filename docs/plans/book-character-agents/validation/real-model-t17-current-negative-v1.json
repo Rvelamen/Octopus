@@ -1,0 +1,221 @@
+{
+  "scope": "Frozen regression review only, no generation or publication; development diagnostic, not blind/full-book quality",
+  "native_call_ceiling": 1,
+  "refinement_window_ceiling": 6,
+  "refinement_window_prior_calls": 3,
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-chat-v14",
+    "policy_version": "bounded-room-v1",
+    "model_record_id": 337,
+    "review_prompt_version": "character-chat-review-v9",
+    "context_window": 1000000,
+    "max_input_tokens": 24000,
+    "expression_enabled": false,
+    "memory_policy_version": "typed-room-memory-v1",
+    "memory_prompt_version": "room-memory-v2",
+    "expression_selection_version": "expression-selection-v2",
+    "expression_sets": {}
+  },
+  "input": {
+    "candidate": {
+      "action_basis_claim_ids": [
+        "6742efce-da5c-4892-ac66-0d6c3de1b76f"
+      ],
+      "content": "青禾，你说的是北门可能开着，还没确认——这是你方才说的。门到底开没开，我无法确认。依我看，不如亲自去探一探：当年那瀑布泉后头有没有洞天，也是我跳进去才见分晓的。待谁去看过了，再回来告诉大家，才算数。",
+      "dialogue_action": "answer",
+      "ephemeral_emotion": null
+    },
+    "context": {
+      "baseline": {
+        "relation:山中群兽与群猴": {
+          "approved_excerpt": "",
+          "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+          "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+          "kind": "relation",
+          "local_end": 55,
+          "local_start": 0,
+          "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+          "route": "firsthand",
+          "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+          "temporal_state": "current"
+        },
+        "trait:胆识": {
+          "approved_excerpt": "",
+          "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+          "kind": "trait",
+          "local_end": 99,
+          "local_start": 67,
+          "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+          "route": "firsthand",
+          "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+          "temporal_state": "current"
+        }
+      },
+      "character_scope": {
+        "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+        "knowledge_policy_version": "canonical-perspective-v1",
+        "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+        "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+      },
+      "context_policy": "actor-context-v1",
+      "current_message": {
+        "content": "我在这里自称青禾。我听到一个说法：北门可能开着，但还没有确认。请区分我说过什么与哪些事尚不能确定，并接住前一位已公开的话。",
+        "id": "6ddecd12-82b1-4c9f-a35b-244bfda98b2a",
+        "identity": {},
+        "seq": 1,
+        "speaker_member_id": null,
+        "speaker_type": "user"
+      },
+      "discussion": {
+        "goal": "区分公开说法、猜测与确认，允许不同建议。",
+        "mode": "topic",
+        "revision": 1,
+        "speaker_request": {
+          "mode": "natural",
+          "selection_policy": "public-room-selection-v1",
+          "target_member_ids": null
+        },
+        "topic": "如何核实尚未确认的消息"
+      },
+      "expressions": {
+        "examples": [],
+        "rules": []
+      },
+      "identity": {
+        "book_title": "西游记 · 石猴发现联调样本（非全书）",
+        "name": "石猴"
+      },
+      "knowledge": {
+        "items": [],
+        "query": "一个说 一位已 不同建 不能确 与哪些 与确认 个说法 事尚不 些事尚 但还没 位已公 住前一 允许不 公开的 公开说 分公开 分我说 到一个 前一位 北门可 区分公 区分我 可能开 同建议 听到一 哪些事 在这里 实尚未 尚不能 尚未确 已公开 并接住",
+        "status": "unknown"
+      },
+      "room": {
+        "epoch": 1,
+        "policy_version": "bounded-room-v1",
+        "room_id": "1195330c-3b5c-4b66-8389-8dfb1c96684b",
+        "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+      },
+      "room_history": [],
+      "room_memory": {
+        "items": [],
+        "through_seq": 0
+      },
+      "room_state": null
+    },
+    "feedback": null,
+    "phase": "review",
+    "review_claims": [
+      {
+        "assertion": {
+          "message_ids": [
+            "6ddecd12-82b1-4c9f-a35b-244bfda98b2a"
+          ],
+          "origin": "room_hearsay",
+          "refs": [],
+          "text": "青禾，你说的是北门可能开着，还没确认——这是你方才说的。"
+        },
+        "ordinal": 0
+      },
+      {
+        "assertion": {
+          "message_ids": [],
+          "origin": "conversation",
+          "refs": [],
+          "text": "门到底开没开，我无法确认。"
+        },
+        "ordinal": 1
+      },
+      {
+        "assertion": {
+          "message_ids": [],
+          "origin": "canon",
+          "refs": [
+            {
+              "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+              "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547"
+            }
+          ],
+          "text": "依我看，不如亲自去探一探：当年那瀑布泉后头有没有洞天，也是我跳进去才见分晓的。"
+        },
+        "ordinal": 2
+      },
+      {
+        "assertion": {
+          "message_ids": [],
+          "origin": "conversation",
+          "refs": [],
+          "text": "待谁去看过了，再回来告诉大家，才算数。"
+        },
+        "ordinal": 3
+      }
+    ]
+  },
+  "input_sha256": "7cc2805b06122901aa9ae3118e709e82b72affae334425d656181116281e204e",
+  "review_prompt_sha256": "91ebcd2c1b193ab27b7350f12d21f0c7fd9bafd1615abc5c806c10fbc85a439e",
+  "expected_supported": false,
+  "publication": false,
+  "quality_pass": false,
+  "status": "completed",
+  "usage": {
+    "prompt_tokens": 1534,
+    "completion_tokens": 347,
+    "total_tokens": 1881,
+    "cache_read_input_tokens": 1536,
+    "cache_creation_input_tokens": 0
+  },
+  "finish_reason": "end_turn",
+  "review": {
+    "supported": false,
+    "facts_complete": true,
+    "persona_consistent": true,
+    "action_supported": true,
+    "emotion_supported": true,
+    "attribution_correct": true,
+    "unlisted_assertions": [],
+    "claims": [
+      {
+        "ordinal": 0,
+        "supported": true,
+        "origin_correct": true,
+        "references_complete": true
+      },
+      {
+        "ordinal": 1,
+        "supported": true,
+        "origin_correct": true,
+        "references_complete": true
+      },
+      {
+        "ordinal": 2,
+        "supported": false,
+        "origin_correct": true,
+        "references_complete": false
+      },
+      {
+        "ordinal": 3,
+        "supported": true,
+        "origin_correct": true,
+        "references_complete": true
+      }
+    ],
+    "reason": "第0、1条对用户说法的归属与当前未知表达正确。第3条为新情境下的建议，可由性格支持。但第2条'瀑布泉后头有没有洞天，也是我跳进去才见分晓的'新增了知情对象（是否有洞天）、调查事件与认识结果；所引依据仅支持'敢于率先跳入瀑布泉探险'的胆识，不支持跳入后发现洞天、见分晓的结果，认识变化属无据原著事实，须拒绝。"
+  },
+  "matches_expected": true,
+  "elapsed_seconds": 24.078,
+  "actual_native_calls": 1,
+  "refinement_window_native_calls": 4,
+  "terminal": true
+}

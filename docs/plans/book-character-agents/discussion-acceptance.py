@@ -87,6 +87,14 @@ async def run(options):
         for mode in ("natural", "directed", "all")
     }:
         raise ValueError("Dataset must cover all six independent mode combinations")
+    requested = getattr(options, "case_id", None)
+    selected = requested if requested is not None else [case["case_id"] for case in cases]
+    if (
+        not selected
+        or len(set(selected)) != len(selected)
+        or not set(selected) <= {case["case_id"] for case in cases}
+    ):
+        raise ValueError("Selected case identities must be unique members of the frozen dataset")
     features = get_features()
     features.require("single_chat")
     features.require("group_chat")
@@ -114,14 +122,46 @@ async def run(options):
         "timeouts": model.timeouts.model_dump(),
         "native_call_ceiling": options.call_budget,
         "calls": [],
+        "case_selection": {
+            "selected": selected,
+            "frozen_case_count": len(cases),
+            "full_matrix": len(selected) == len(cases),
+        },
+        "runner_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "runtime_sha256": {
+            name: hashlib.sha256(
+                (
+                    Path(__file__).resolve().parents[3] / "backend/services/book_world" / name
+                ).read_bytes()
+            ).hexdigest()
+            for name in (
+                "chat_worker.py",
+                "chat_models.py",
+                "chat_validation.py",
+                "context.py",
+                "knowledge.py",
+            )
+        },
+        "reader_evidence": [],
         "cases": [
-            {"case_id": case["case_id"], "status": "not_started", "turns": []} for case in cases
+            {
+                "case_id": case["case_id"],
+                "status": "not_started" if case["case_id"] in selected else "not_selected",
+                "turns": [],
+                **(
+                    {}
+                    if case["case_id"] in selected
+                    else {"not_evaluated": "outside_selected_probe"}
+                ),
+            }
+            for case in cases
         ],
         "canonical_baselines_before": baseline(),
         "quality_pass": False,
         "semantic_review": "pending full-body/source inspection; no human blind-review claim",
     }
     raw_calls = []
+    evidence_seen = set()
     output.parent.mkdir(parents=True, exist_ok=True)
     raw_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -137,6 +177,18 @@ async def run(options):
             if len(raw_calls) >= options.call_budget:
                 raise NativeBudgetExhausted()
             data = json.loads(messages[-1]["content"])
+            context = data.get("context", {})
+            character_scope = context.get("character_scope", {})
+            for item in [
+                *context.get("knowledge", {}).get("items", []),
+                *context.get("baseline", {}).values(),
+            ]:
+                if "claim_id" not in item or "evidence_id" not in item:
+                    continue
+                identity = (digest(character_scope), item["claim_id"], item["evidence_id"])
+                if identity not in evidence_seen:
+                    evidence_seen.add(identity)
+                    report["reader_evidence"].append({"character_scope": character_scope, **item})
             record = {
                 "phase": data["phase"],
                 "status": "started",
@@ -177,6 +229,8 @@ async def run(options):
     exhausted = False
     try:
         for spec, case in zip(cases, report["cases"], strict=True):
+            if spec["case_id"] not in selected:
+                continue
             if len(raw_calls) >= options.call_budget:
                 exhausted = True
                 break
@@ -332,6 +386,11 @@ def main():
     parser.add_argument("--call-budget", type=int, default=32)
     parser.add_argument("--provider-id", type=int)
     parser.add_argument("--model-id", type=int)
+    parser.add_argument(
+        "--case-id",
+        action="append",
+        help="Run only named frozen cases; every omitted case remains explicitly unassessed",
+    )
     options = parser.parse_args()
     logger.remove()
     logger.add(sys.stderr, level="ERROR")

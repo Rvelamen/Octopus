@@ -101,6 +101,8 @@ def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
         "character-chat-v10",
         "character-chat-v11",
         "character-chat-v12",
+        "character-chat-v13",
+        "character-chat-v14",
     ):
         raise ValueError("Silence requires the new versioned chat policy")
     if candidate.dialogue_action != "no_comment" and not candidate.content.strip():
@@ -132,7 +134,7 @@ def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
             raise ValueError("Assertion text must identify a verbatim part of the reply")
         if (
             context.config.prompt_version
-            not in ("character-chat-v10", "character-chat-v11", "character-chat-v12")
+            not in ("character-chat-v10", "character-chat-v11", "character-chat-v12", "character-chat-v13", "character-chat-v14")
             and assertion.origin == "conversation"
             and _actual_negative_autobiography(assertion.text)
         ):
@@ -149,6 +151,8 @@ def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
                 "character-chat-v10",
                 "character-chat-v11",
                 "character-chat-v12",
+                "character-chat-v13",
+                "character-chat-v14",
             )
             and assertion.origin == "inference"
             and not re.search(
@@ -166,13 +170,13 @@ def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
             if proof is None or key in seen:
                 raise ValueError("Reference is foreign, duplicated or not retrieved for this reply")
             seen.add(key)
-            if (assertion.origin == "character_belief") != (
-                proof.kind == "belief"
-            ) and assertion.origin != "inference":
+            if assertion.origin == "character_belief" and proof.kind != "belief":
+                raise ValueError(f"Reference kind={proof.kind} is not a belief. Use canon for a supported factual statement of that kind, or inference for an explicitly hypothetical choice; character_belief requires kind=belief")
+            if assertion.origin not in ("character_belief", "inference") and proof.kind == "belief":
                 raise ValueError("Character belief must not become objective canon")
-    if context.config.prompt_version in ("character-chat-v10", "character-chat-v11", "character-chat-v12"):
+    if context.config.prompt_version in ("character-chat-v10", "character-chat-v11", "character-chat-v12", "character-chat-v13", "character-chat-v14"):
         for denied in _negative_experience_sentences(
-            candidate.content, include_copula=context.config.prompt_version == "character-chat-v12"
+            candidate.content, include_copula=context.config.prompt_version in ("character-chat-v12", "character-chat-v13", "character-chat-v14")
         ):
             grounded = any(
                 assertion.origin == "canon"
@@ -189,7 +193,7 @@ def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
                 for assertion in candidate.claims
             )
             attributed = (
-                context.config.prompt_version == "character-chat-v12"
+                context.config.prompt_version in ("character-chat-v12", "character-chat-v13", "character-chat-v14")
                 and _attributed_user_denial(denied, candidate, context)
             )
             if not grounded and not attributed:
@@ -203,6 +207,8 @@ def validate_candidate(raw: str, context: CharacterContext) -> ChatCandidate:
         "character-chat-v10",
         "character-chat-v11",
         "character-chat-v12",
+        "character-chat-v13",
+        "character-chat-v14",
     ):
         trusted_fallback = (
             candidate.content == UNKNOWN_REPLY

@@ -1,0 +1,477 @@
+{
+  "date": "2026-10-15",
+  "dataset_version": "t17-six-combinations-v1",
+  "dataset_sha256": "8e42a51342feb4a4e0ce2375af3f6aaf00864e96ab17e6b4b38746eaa212641e",
+  "actors_source_sha256": "4361f5ae1bb93f4414c876c48e3a4cb54df8c1c3d823b8febda1e0653a9e4c71",
+  "scope": "Actual model discussion behavior on existing evidence-backed excerpt characters; not whole-book persona, T12 60/24 cases, or expression A/B acceptance",
+  "character_scopes": [
+    {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+      "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+      "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    },
+    {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+      "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+      "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+      "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    }
+  ],
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-chat-v14",
+    "policy_version": "bounded-room-v1",
+    "model_record_id": 337,
+    "review_prompt_version": "character-chat-review-v9",
+    "context_window": 1000000,
+    "max_input_tokens": 24000,
+    "expression_enabled": false,
+    "memory_policy_version": "typed-room-memory-v1",
+    "memory_prompt_version": "room-memory-v2",
+    "expression_selection_version": "expression-selection-v2",
+    "expression_sets": {}
+  },
+  "timeouts": {
+    "book_room_round_timeout_seconds": 60,
+    "book_room_all_round_timeout_seconds": 300
+  },
+  "native_call_ceiling": 5,
+  "calls": [
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "a002ad1292d9a7b88037a61ec49543a4c1918cc213f6766316ba3dff01bbebd7",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 2027,
+        "completion_tokens": 475,
+        "total_tokens": 2502,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 14.125
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "c0b1846df48100e97f97c9c2de15bcdfec85a6f74634f023d24e2252b967389e",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 339,
+        "completion_tokens": 952,
+        "total_tokens": 1291,
+        "cache_read_input_tokens": 1792,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 35.265
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "f3e73006f1c429669916a1f87b2b39efc11070edf87fe2ac51cd19356a54d937",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 1402,
+        "completion_tokens": 194,
+        "total_tokens": 1596,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 6.531
+    }
+  ],
+  "case_selection": {
+    "selected": [
+      "topic-directed-rephrased-dilemma"
+    ],
+    "frozen_case_count": 6,
+    "full_matrix": false
+  },
+  "runner_sha256": "cdcc90403826de405bfe0f9efd025a25698efbc002f8a0d3550243b02884405e",
+  "runtime_sha256": {
+    "chat_worker.py": "16bd43cd650a69b94eeba8e3d9537248a1b482f2f28c3e8a05e46238aaf773f6",
+    "chat_models.py": "36040c99d73963c5501363acc27c34a032e2dec9dc570d58c2555b06e0832f9a",
+    "chat_validation.py": "cc9ff1d358c393ee19467b2cc80985d63a702fe393e452c082b34046a270fe11",
+    "context.py": "8c85415e5658a1a0bb2263083df8b66000b4157f4e22261b10003a98a0112708",
+    "knowledge.py": "8c95060a369542e66b3f1df5992f42683f317facaaab2e21e459f79c30139b0a"
+  },
+  "reader_evidence": [
+    {
+      "character_scope": {
+        "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+        "knowledge_policy_version": "canonical-perspective-v1",
+        "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+        "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+      },
+      "approved_excerpt": "",
+      "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+      "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+      "kind": "relation",
+      "local_end": 55,
+      "local_start": 0,
+      "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+      "route": "firsthand",
+      "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+      "temporal_state": "current"
+    },
+    {
+      "character_scope": {
+        "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+        "knowledge_policy_version": "canonical-perspective-v1",
+        "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+        "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+      },
+      "approved_excerpt": "",
+      "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+      "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+      "kind": "trait",
+      "local_end": 99,
+      "local_start": 67,
+      "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+      "route": "firsthand",
+      "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+      "temporal_state": "current"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "free-natural-topic-shift",
+      "status": "not_selected",
+      "turns": [],
+      "not_evaluated": "outside_selected_probe"
+    },
+    {
+      "case_id": "topic-natural-retained-topic",
+      "status": "not_selected",
+      "turns": [],
+      "not_evaluated": "outside_selected_probe"
+    },
+    {
+      "case_id": "free-directed-conditional-action",
+      "status": "not_selected",
+      "turns": [],
+      "not_evaluated": "outside_selected_probe"
+    },
+    {
+      "case_id": "topic-directed-rephrased-dilemma",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "设想大家面对一条没有确认安全的路：由你先走一点探看，还是让别人先走？请说明你的假设打算和有据的理由，不把本次设想写成已经发生过的经历。",
+          "round_id": "48f982b0-398e-40f6-9f72-bcecc6d016a1",
+          "call_start": 0,
+          "execution_windows": [
+            {
+              "round_id": "48f982b0-398e-40f6-9f72-bcecc6d016a1",
+              "room_id": "36d5743a-85ed-4b20-8567-2d92740e0094",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "directed",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 56452,
+              "total_elapsed_ms": 56452,
+              "error_code": null,
+              "run_started_at": "2026-10-15T03:28:49.353+00:00",
+              "discussion": {
+                "goal": "比较未知处境中的行动选择，不改变原著。",
+                "mode": "topic",
+                "revision": 1,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "885f6436-92e1-4e91-9940-b0c97509efd3"
+                  ]
+                },
+                "topic": "先行与谨慎"
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "885f6436-92e1-4e91-9940-b0c97509efd3": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v14",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v9",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "16aff798-37e5-4082-bcc9-b441fc596fc3",
+                  "position": 0,
+                  "member_id": "885f6436-92e1-4e91-9940-b0c97509efd3",
+                  "status": "published",
+                  "attempts": 2,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 56.452,
+              "remainingSeconds": 3.548000000000002,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "48f982b0-398e-40f6-9f72-bcecc6d016a1",
+            "room_id": "36d5743a-85ed-4b20-8567-2d92740e0094",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "directed",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 1,
+            "window_elapsed_ms": 56452,
+            "total_elapsed_ms": 56452,
+            "error_code": null,
+            "run_started_at": "2026-10-15T03:28:49.353+00:00",
+            "discussion": {
+              "goal": "比较未知处境中的行动选择，不改变原著。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "885f6436-92e1-4e91-9940-b0c97509efd3"
+                ]
+              },
+              "topic": "先行与谨慎"
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "885f6436-92e1-4e91-9940-b0c97509efd3": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v14",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v9",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "16aff798-37e5-4082-bcc9-b441fc596fc3",
+                "position": 0,
+                "member_id": "885f6436-92e1-4e91-9940-b0c97509efd3",
+                "status": "published",
+                "attempts": 2,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 1,
+            "elapsedSeconds": 56.452,
+            "remainingSeconds": 3.548000000000002,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "d9978ba2-04ee-4eef-9614-f4686f82ad89",
+              "seq": 1,
+              "round_id": "48f982b0-398e-40f6-9f72-bcecc6d016a1",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "设想大家面对一条没有确认安全的路：由你先走一点探看，还是让别人先走？请说明你的假设打算和有据的理由，不把本次设想写成已经发生过的经历。",
+              "reply_to_id": null,
+              "created_at": "2026-10-15T03:28:49.168Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "c0b997e0-4962-4ef2-8db5-79142341b2e5",
+              "seq": 2,
+              "round_id": "48f982b0-398e-40f6-9f72-bcecc6d016a1",
+              "speaker_type": "character",
+              "speaker_member_id": "885f6436-92e1-4e91-9940-b0c97509efd3",
+              "content": "假设这条路没人验过，我会先走几步探看，看清动静再回头招呼同伴；我这性子敢领头。若前面真不安稳，我宁可自己多试，也不让大家一齐闯进去。",
+              "reply_to_id": "d9978ba2-04ee-4eef-9614-f4686f82ad89",
+              "created_at": "2026-10-15T03:29:45.718Z",
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "refs": [
+                {
+                  "assertion_ordinal": 0,
+                  "assertion_text": "假设这条路没人验过，我会先走几步探看，看清动静再回头招呼同伴；",
+                  "origin": "inference",
+                  "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                  "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                  "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                  "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                  "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                  "heard_message_id": null
+                },
+                {
+                  "assertion_ordinal": 0,
+                  "assertion_text": "假设这条路没人验过，我会先走几步探看，看清动静再回头招呼同伴；",
+                  "origin": "inference",
+                  "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                  "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                  "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                  "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+                  "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+                  "heard_message_id": null
+                },
+                {
+                  "assertion_ordinal": 1,
+                  "assertion_text": "我这性子敢领头。",
+                  "origin": "canon",
+                  "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                  "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                  "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                  "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                  "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                  "heard_message_id": null
+                },
+                {
+                  "assertion_ordinal": 2,
+                  "assertion_text": "若前面真不安稳，我宁可自己多试，也不让大家一齐闯进去。",
+                  "origin": "inference",
+                  "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                  "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                  "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                  "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                  "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                  "heard_message_id": null
+                },
+                {
+                  "assertion_ordinal": 2,
+                  "assertion_text": "若前面真不安稳，我宁可自己多试，也不让大家一齐闯进去。",
+                  "origin": "inference",
+                  "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                  "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                  "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                  "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+                  "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+                  "heard_message_id": null
+                }
+              ]
+            }
+          ],
+          "call_end": 3
+        }
+      ],
+      "room_id": "36d5743a-85ed-4b20-8567-2d92740e0094",
+      "epoch": 1,
+      "discussion_mode": "topic",
+      "mode": "directed",
+      "expected": [
+        "Relevant conditional response with supported motivation",
+        "Broad value consistency with the free-directed rephrasing, without requiring identical wording",
+        "No invented past episode or unsupported emotion"
+      ]
+    },
+    {
+      "case_id": "free-all-unshared-private-knowledge",
+      "status": "not_selected",
+      "turns": [],
+      "not_evaluated": "outside_selected_probe"
+    },
+    {
+      "case_id": "topic-all-modern-hearsay",
+      "status": "not_selected",
+      "turns": [],
+      "not_evaluated": "outside_selected_probe"
+    }
+  ],
+  "canonical_baselines_before": "89f5f4462806df7acc96c147605528463531ff8c4039bb1c67c9e12c3c13d5c3",
+  "quality_pass": false,
+  "semantic_review": "pending full-body/source inspection; no human blind-review claim",
+  "actual_native_calls": 3,
+  "canonical_baselines_after": "89f5f4462806df7acc96c147605528463531ff8c4039bb1c67c9e12c3c13d5c3",
+  "canonical_baselines_unchanged": true,
+  "budget_exhausted": false,
+  "run_status": "executed_pending_semantic_review",
+  "terminal": true
+}
