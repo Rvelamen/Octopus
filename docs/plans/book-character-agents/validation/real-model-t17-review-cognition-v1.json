@@ -1,0 +1,131 @@
+{
+  "date": "2026-10-15",
+  "scope": "Fixed failed/positive matrix review only; no new generation, message publication, whole-book quality, or human blind review",
+  "native_call_ceiling": 2,
+  "matrix_native_calls": 25,
+  "aggregate_t17_ceiling": 32,
+  "calls": [
+    {
+      "case_id": "topic-natural-retained-topic",
+      "expected_supported": false,
+      "input_sha256": "7cc2805b06122901aa9ae3118e709e82b72affae334425d656181116281e204e",
+      "status": "completed",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 2030,
+        "completion_tokens": 445,
+        "total_tokens": 2475,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "review": {
+        "supported": false,
+        "facts_complete": true,
+        "persona_consistent": true,
+        "action_supported": true,
+        "emotion_supported": true,
+        "attribution_correct": true,
+        "unlisted_assertions": [],
+        "claims": [
+          {
+            "ordinal": 0,
+            "supported": true,
+            "origin_correct": true,
+            "references_complete": true
+          },
+          {
+            "ordinal": 1,
+            "supported": true,
+            "origin_correct": true,
+            "references_complete": true
+          },
+          {
+            "ordinal": 2,
+            "supported": false,
+            "origin_correct": true,
+            "references_complete": false
+          },
+          {
+            "ordinal": 3,
+            "supported": true,
+            "origin_correct": true,
+            "references_complete": true
+          }
+        ],
+        "reason": "claim2断言'瀑布泉后头有没有洞天，也是我跳进去才见分晓的'，新增了跳入前不知有无洞天、跳入后才获知的认识变化与调查结果。所引命题仅支持'勇敢果断、敢于率先跳入瀑布泉探险'，不证明他当时在探查洞天问题，也不证明跳入后的发现结果，属于新增原著事实。其余claims：对青禾说法的转述归属正确，'无法确认'为当前知识状态，'待谁去看过再告诉大家'为正常建议，均可通过。行动建议由胆识特质支持。"
+      },
+      "matches_expected": true,
+      "elapsed_seconds": 12.828
+    },
+    {
+      "case_id": "free-directed-conditional-action",
+      "expected_supported": true,
+      "input_sha256": "46cf47bf0791c3b8d359dbc7f3706bc5001e0d0b3806392acaabf832339df5ac",
+      "status": "completed",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1466,
+        "completion_tokens": 264,
+        "total_tokens": 1730,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "review": {
+        "supported": true,
+        "facts_complete": true,
+        "persona_consistent": true,
+        "action_supported": true,
+        "emotion_supported": true,
+        "attribution_correct": true,
+        "unlisted_assertions": [],
+        "claims": [
+          {
+            "ordinal": 0,
+            "supported": true,
+            "origin_correct": true,
+            "references_complete": true
+          },
+          {
+            "ordinal": 1,
+            "supported": true,
+            "origin_correct": true,
+            "references_complete": true
+          }
+        ],
+        "reason": "正文是对假设情境的条件性行动表态：先上前试探、抢在前头看个明白，依据已给的性格命题'石猴勇敢果断，敢于率先跳入瀑布泉'，符合新处境条件选择可由性格支持的规定。回顾部分仅复述获准的瀑布泉率先跳入事实，未添加地点、他人行动、认知变化等新细节。情绪为空，行动依据claim 6742成立，来源标注inference/canon均正确。"
+      },
+      "matches_expected": true,
+      "elapsed_seconds": 15.609
+    }
+  ],
+  "quality_pass": false,
+  "instruction_sha256": "e7295bfec91e06d67186527a502c282ce593ddaffc50ff10571d7ccea36f1e1f",
+  "actual_native_calls": 2,
+  "aggregate_native_calls": 27,
+  "terminal": true,
+  "experimental_review_addition": "\n原著的认知变化也是事实。“后来才知道X”“亲眼查看后才明白X”“进去才见分晓”都新增了知情对象、获知事件或结果；须有本人的相应获准命题或引文。不能把这些当成没有事实的修辞。\n嵌在过去经历中的“有没有X”“是否X”不能自动按开放问题放行：若正文说自己当时已查清，它仍断言了以X为对象的调查与认识变化。单独向用户提问或明确未来假设仍可正常回应。\n勇敢、敢于探险、率先进入，只支持所给性格/行为本身，不额外证明当时要查的问题、内部景物、发现结果、认识变化、他人行动或具体动机。不能从故事常识补这些细节。\n新处境的条件性选择可由已给性格支持，不要求原文出现同一条路或同一问题；纯当前未知与有归属转述也可通过。逐条拆解正文的实际过去事实，不能因一句的部分词有据就让整句通过。\n",
+  "source_matrix": "real-model-t17-matrix-v1.json",
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-chat-v12",
+    "policy_version": "bounded-room-v1",
+    "model_record_id": 337,
+    "review_prompt_version": "character-chat-review-v8",
+    "context_window": 1000000,
+    "max_input_tokens": 24000,
+    "expression_enabled": false,
+    "memory_policy_version": "typed-room-memory-v1",
+    "memory_prompt_version": "room-memory-v2",
+    "expression_selection_version": "expression-selection-v2",
+    "expression_sets": {}
+  },
+  "publication": false,
+  "positive_control_limit": "The original positive contains a historical jump inferred from a modal trait. Reader citation only establishes the offer to enter. Preserve the native review result, but do not count it as an unambiguous positive or original-evidence accuracy pass; add a conditional-only positive separately."
+}

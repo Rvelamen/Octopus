@@ -1,0 +1,918 @@
+{
+  "requests": [
+    {
+      "type": "get_config",
+      "action": null
+    },
+    {
+      "type": "book_room",
+      "action": "list_rooms"
+    },
+    {
+      "type": "book_room",
+      "action": "list_rooms"
+    },
+    {
+      "type": "book_room",
+      "action": "open_room"
+    },
+    {
+      "type": "book_room",
+      "action": "open_room"
+    },
+    {
+      "type": "book_room",
+      "action": "list_chat_models"
+    },
+    {
+      "type": "book_room",
+      "action": "open_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_message_evidence"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    },
+    {
+      "type": "book_room",
+      "action": "get_room"
+    },
+    {
+      "type": "book_room",
+      "action": "get_memory"
+    },
+    {
+      "type": "book_room",
+      "action": "get_summary_job"
+    },
+    {
+      "type": "book_room",
+      "action": "read_messages"
+    },
+    {
+      "type": "book_room",
+      "action": "get_round"
+    }
+  ],
+  "native_calls": 0,
+  "source": "Actual terminal native matrix rooms; no model or write actions permitted"
+}

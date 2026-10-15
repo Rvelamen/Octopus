@@ -1,0 +1,2385 @@
+{
+  "date": "2026-10-15",
+  "dataset_version": "t17-six-combinations-v1",
+  "dataset_sha256": "8e42a51342feb4a4e0ce2375af3f6aaf00864e96ab17e6b4b38746eaa212641e",
+  "actors_source_sha256": "4361f5ae1bb93f4414c876c48e3a4cb54df8c1c3d823b8febda1e0653a9e4c71",
+  "scope": "Actual model discussion behavior on existing evidence-backed excerpt characters; not whole-book persona, T12 60/24 cases, or expression A/B acceptance",
+  "character_scopes": [
+    {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+      "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+      "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    },
+    {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+      "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+      "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+      "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    }
+  ],
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-chat-v12",
+    "policy_version": "bounded-room-v1",
+    "model_record_id": 337,
+    "review_prompt_version": "character-chat-review-v8",
+    "context_window": 1000000,
+    "max_input_tokens": 24000,
+    "expression_enabled": false,
+    "memory_policy_version": "typed-room-memory-v1",
+    "memory_prompt_version": "room-memory-v2",
+    "expression_selection_version": "expression-selection-v2",
+    "expression_sets": {}
+  },
+  "timeouts": {
+    "book_room_round_timeout_seconds": 60,
+    "book_room_all_round_timeout_seconds": 300
+  },
+  "native_call_ceiling": 32,
+  "calls": [
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "955168b810029a3d947a0fa450a029aabc6d47a97e3bdb6583cdde4edf97028d",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 2690,
+        "completion_tokens": 347,
+        "total_tokens": 3037,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 10.469
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "371cc121c5327173a509b51e5712ac89b66de851ffd21a001dfa89a106c09831",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 2360,
+        "completion_tokens": 200,
+        "total_tokens": 2560,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 7.14
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "c21e990b3bc312947afc80d6374b27d3b54cd492c67e03dac6881a76dc5277ff",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 817,
+        "completion_tokens": 390,
+        "total_tokens": 1207,
+        "cache_read_input_tokens": 1792,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 17.718
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "2855f0f848b805bf61a02206ec9b92594b9c2c4de93185ab57d92f2b26872778",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 165,
+        "completion_tokens": 443,
+        "total_tokens": 608,
+        "cache_read_input_tokens": 2560,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 23.14
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "7670b2011d41a83d33d2058d368d69f4e072b9bfae71c22e80a138381d496cbd",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 1063,
+        "completion_tokens": 149,
+        "total_tokens": 1212,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 6.969
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "77ede9e8fe7ed3e193de9e01ba561f09c5e6996f6ec060f22c29a058df4bffe4",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 410,
+        "completion_tokens": 358,
+        "total_tokens": 768,
+        "cache_read_input_tokens": 2304,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 10.969
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "7cc2805b06122901aa9ae3118e709e82b72affae334425d656181116281e204e",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 1301,
+        "completion_tokens": 522,
+        "total_tokens": 1823,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 31.328
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "075658aa05ef2d8394d746fa044a8e4ed472a789f75e986b09d3ddcbbd4cdc31",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 630,
+        "completion_tokens": 932,
+        "total_tokens": 1562,
+        "cache_read_input_tokens": 2048,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 25.687
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "d04ede99528d0718f81fb53992cee11044ab2a7e0614e05b465a0dd6f76da5af",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 229,
+        "completion_tokens": 345,
+        "total_tokens": 574,
+        "cache_read_input_tokens": 2560,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 11.0
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "5a3bbda6207b35c42b7dc59bcf1c2cbb5eab48d7915652a1446243988a620086",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 1219,
+        "completion_tokens": 274,
+        "total_tokens": 1493,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 7.89
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "26af67c59e4d52059c81c179e72fd23fca188f985955e6d421beb2be170d1106",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 428,
+        "completion_tokens": 403,
+        "total_tokens": 831,
+        "cache_read_input_tokens": 2304,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 10.406
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "b7353f1723b3980d25a282db8596b811e22ee483f98faed6ff9a53d023d6701a",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 285,
+        "completion_tokens": 321,
+        "total_tokens": 606,
+        "cache_read_input_tokens": 2560,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 20.703
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "46cf47bf0791c3b8d359dbc7f3706bc5001e0d0b3806392acaabf832339df5ac",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 1268,
+        "completion_tokens": 191,
+        "total_tokens": 1459,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 9.297
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "9ef9ac7b7a49d54e1c420e31f2121a4f574f827f05af727056d53ac7d68cf8b9",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 425,
+        "completion_tokens": 557,
+        "total_tokens": 982,
+        "cache_read_input_tokens": 2304,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 15.625
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "f284cf18be0c8d80f5fae709ca55f92ade4d556a3eb6a14338e072624b147192",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 282,
+        "completion_tokens": 582,
+        "total_tokens": 864,
+        "cache_read_input_tokens": 2560,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 11.75
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "d4608e01fe60d12f45ac0df16b322548df1a9d0742c3f59c994f12be44848cd3",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 1017,
+        "completion_tokens": 128,
+        "total_tokens": 1145,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 10.031
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "ca83e74f5d7e4a0b99402c574e00408c693523ba26d73584cc8c0afac69e1d26",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 404,
+        "completion_tokens": 330,
+        "total_tokens": 734,
+        "cache_read_input_tokens": 2304,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 19.047
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "8c1cc7922506ec00a64e539025997eec6dcd6a2599d73dd0624069913e03359a",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 1238,
+        "completion_tokens": 215,
+        "total_tokens": 1453,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 8.328
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "4514c3a06c6e85a09106ed8caa11bf3cff9babb59a1a5f42c0fe258f69a477b3",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 558,
+        "completion_tokens": 417,
+        "total_tokens": 975,
+        "cache_read_input_tokens": 2048,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 12.422
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "66dfb66fbbd707cd9858f873705ee55f50a4fcb6d1e6f3ae5174ef3ed5a5a6c8",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 164,
+        "completion_tokens": 1140,
+        "total_tokens": 1304,
+        "cache_read_input_tokens": 2560,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 38.078
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "0dd42ac2bd878b736c517cfe76c8f71146a4d37cd0c5c6f46fccf51e2a3e45a9",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 1071,
+        "completion_tokens": 254,
+        "total_tokens": 1325,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 9.891
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "05239efb979772be66c3dc885a5d9ad33dec122c19ec566fea0b69baa9d26b5f",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 421,
+        "completion_tokens": 300,
+        "total_tokens": 721,
+        "cache_read_input_tokens": 2304,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 11.953
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "1c0b86b9065fc70851e24ab2174f7df074cd3fa2bb4e35492af7dc382727e996",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 1290,
+        "completion_tokens": 301,
+        "total_tokens": 1591,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 12.453
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "9c7c7e9a786f7240db73a2e550b6a8d4456cea423716873679431301d69c3ae4",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 564,
+        "completion_tokens": 240,
+        "total_tokens": 804,
+        "cache_read_input_tokens": 2048,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 11.609
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "170f780e8e16eac453a1e183272c040d6e34384a5d635f1f9175cf17b1f98827",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 1123,
+        "completion_tokens": 208,
+        "total_tokens": 1331,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 6.969
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "free-natural-topic-shift",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "我在这个房间自称青禾，临时代号是白露。先互相打个招呼，再问我一个开放问题；不要从昵称推断我的性别、年龄或身份。",
+          "round_id": "5d8ac4a7-216e-43c3-83b4-794788584751",
+          "call_start": 0,
+          "execution_windows": [
+            {
+              "round_id": "5d8ac4a7-216e-43c3-83b4-794788584751",
+              "room_id": "5739edd4-5f65-428f-8c25-fe330864615c",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "natural",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 18139,
+              "total_elapsed_ms": 18139,
+              "error_code": null,
+              "run_started_at": "2026-10-15T02:37:53.648+00:00",
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "natural",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": null
+                },
+                "topic": null
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "ce39bcae-2047-4f37-9154-0cdb226b92fd": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v12",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v8",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "20abc0d0-5e92-4c6b-bf76-0019b04fbb87",
+                  "position": 0,
+                  "member_id": "ce39bcae-2047-4f37-9154-0cdb226b92fd",
+                  "status": "published",
+                  "attempts": 1,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 18.139,
+              "remainingSeconds": 41.861000000000004,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "5d8ac4a7-216e-43c3-83b4-794788584751",
+            "room_id": "5739edd4-5f65-428f-8c25-fe330864615c",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "natural",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 1,
+            "window_elapsed_ms": 18139,
+            "total_elapsed_ms": 18139,
+            "error_code": null,
+            "run_started_at": "2026-10-15T02:37:53.648+00:00",
+            "discussion": {
+              "goal": null,
+              "mode": "free",
+              "revision": 0,
+              "speaker_request": {
+                "mode": "natural",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": null
+              },
+              "topic": null
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "ce39bcae-2047-4f37-9154-0cdb226b92fd": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v12",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v8",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "20abc0d0-5e92-4c6b-bf76-0019b04fbb87",
+                "position": 0,
+                "member_id": "ce39bcae-2047-4f37-9154-0cdb226b92fd",
+                "status": "published",
+                "attempts": 1,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 1,
+            "elapsedSeconds": 18.139,
+            "remainingSeconds": 41.861000000000004,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "512fdbe9-aca6-4c96-8a55-d3bde75bfd7a",
+              "seq": 1,
+              "round_id": "5d8ac4a7-216e-43c3-83b4-794788584751",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "我在这个房间自称青禾，临时代号是白露。先互相打个招呼，再问我一个开放问题；不要从昵称推断我的性别、年龄或身份。",
+              "reply_to_id": null,
+              "created_at": "2026-10-15T02:37:53.480Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "fbc67368-6adc-4ccd-b103-dd40d3c4e1e5",
+              "seq": 2,
+              "round_id": "5d8ac4a7-216e-43c3-83b4-794788584751",
+              "speaker_type": "character",
+              "speaker_member_id": "ce39bcae-2047-4f37-9154-0cdb226b92fd",
+              "content": "青禾，白露，俺石猴来也！先打过招呼。俺倒想问问：你眼下最想聊哪一桩？",
+              "reply_to_id": "512fdbe9-aca6-4c96-8a55-d3bde75bfd7a",
+              "created_at": "2026-10-15T02:38:11.752Z",
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "refs": []
+            }
+          ],
+          "call_end": 2
+        },
+        {
+          "question": "现在换个话题：请复述我刚才在本房间公开的临时代号，说明这来自我的话。不要把这个代号当作你原著里认识的人。",
+          "round_id": "92f4a1ae-1a7a-48be-a489-efb080409e1a",
+          "call_start": 2,
+          "execution_windows": [
+            {
+              "round_id": "92f4a1ae-1a7a-48be-a489-efb080409e1a",
+              "room_id": "5739edd4-5f65-428f-8c25-fe330864615c",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "natural",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 48375,
+              "total_elapsed_ms": 48375,
+              "error_code": null,
+              "run_started_at": "2026-10-15T02:38:12.013+00:00",
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "natural",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": null
+                },
+                "topic": null
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "4ab42f35-5828-4907-9a71-5177d8010f91": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v12",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v8",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "440845af-5f13-4c5c-91a4-cdf55bd9bf35",
+                  "position": 0,
+                  "member_id": "4ab42f35-5828-4907-9a71-5177d8010f91",
+                  "status": "published",
+                  "attempts": 2,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 48.375,
+              "remainingSeconds": 11.625,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "92f4a1ae-1a7a-48be-a489-efb080409e1a",
+            "room_id": "5739edd4-5f65-428f-8c25-fe330864615c",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "natural",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 1,
+            "window_elapsed_ms": 48375,
+            "total_elapsed_ms": 48375,
+            "error_code": null,
+            "run_started_at": "2026-10-15T02:38:12.013+00:00",
+            "discussion": {
+              "goal": null,
+              "mode": "free",
+              "revision": 0,
+              "speaker_request": {
+                "mode": "natural",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": null
+              },
+              "topic": null
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "4ab42f35-5828-4907-9a71-5177d8010f91": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v12",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v8",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "440845af-5f13-4c5c-91a4-cdf55bd9bf35",
+                "position": 0,
+                "member_id": "4ab42f35-5828-4907-9a71-5177d8010f91",
+                "status": "published",
+                "attempts": 2,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 1,
+            "elapsedSeconds": 48.375,
+            "remainingSeconds": 11.625,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "a9a3a894-ef0f-4ef8-a332-d93a5ed67fb6",
+              "seq": 3,
+              "round_id": "92f4a1ae-1a7a-48be-a489-efb080409e1a",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "现在换个话题：请复述我刚才在本房间公开的临时代号，说明这来自我的话。不要把这个代号当作你原著里认识的人。",
+              "reply_to_id": null,
+              "created_at": "2026-10-15T02:38:11.860Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "b44d18da-4bed-4094-9e5d-e564baa38da8",
+              "seq": 4,
+              "round_id": "92f4a1ae-1a7a-48be-a489-efb080409e1a",
+              "speaker_type": "character",
+              "speaker_member_id": "4ab42f35-5828-4907-9a71-5177d8010f91",
+              "content": "青禾方才在本房间说，临时代号是“白露”。这话来自你方才公开的消息，我不会把这个代号认作我原著里认识的人。",
+              "reply_to_id": "a9a3a894-ef0f-4ef8-a332-d93a5ed67fb6",
+              "created_at": "2026-10-15T02:39:00.324Z",
+              "identity": {
+                "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+                "name": "黛玉"
+              },
+              "refs": [
+                {
+                  "assertion_ordinal": 0,
+                  "assertion_text": "青禾方才在本房间说，临时代号是“白露”。",
+                  "origin": "room_hearsay",
+                  "book_id": null,
+                  "source_version_id": null,
+                  "build_id": null,
+                  "character_id": null,
+                  "claim_id": null,
+                  "evidence_id": null,
+                  "heard_message_id": "512fdbe9-aca6-4c96-8a55-d3bde75bfd7a"
+                },
+                {
+                  "assertion_ordinal": 1,
+                  "assertion_text": "这话来自你方才公开的消息，我不会把这个代号认作我原著里认识的人。",
+                  "origin": "room_hearsay",
+                  "book_id": null,
+                  "source_version_id": null,
+                  "build_id": null,
+                  "character_id": null,
+                  "claim_id": null,
+                  "evidence_id": null,
+                  "heard_message_id": "512fdbe9-aca6-4c96-8a55-d3bde75bfd7a"
+                },
+                {
+                  "assertion_ordinal": 1,
+                  "assertion_text": "这话来自你方才公开的消息，我不会把这个代号认作我原著里认识的人。",
+                  "origin": "room_hearsay",
+                  "book_id": null,
+                  "source_version_id": null,
+                  "build_id": null,
+                  "character_id": null,
+                  "claim_id": null,
+                  "evidence_id": null,
+                  "heard_message_id": "a9a3a894-ef0f-4ef8-a332-d93a5ed67fb6"
+                }
+              ]
+            }
+          ],
+          "call_end": 5
+        }
+      ],
+      "room_id": "5739edd4-5f65-428f-8c25-fe330864615c",
+      "epoch": 1,
+      "discussion_mode": "free",
+      "mode": "natural",
+      "expected": [
+        "Natural greeting without invented user attributes",
+        "Answers the available alias instead of refusing it",
+        "Follows the new topic and attributes recalled information to the user",
+        "No invented character autobiography"
+      ],
+      "agent_review": {
+        "verdict": "pass_with_limitations",
+        "reason": "Answered the public nickname/alias and changed topic without a new autobiography. Some meta wording about the original novel is unnatural; no general persona quality claim.",
+        "human_blind_review": false
+      }
+    },
+    {
+      "case_id": "topic-natural-retained-topic",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "我在这里自称青禾。我听到一个说法：北门可能开着，但还没有确认。请区分我说过什么与哪些事尚不能确定，并接住前一位已公开的话。",
+          "round_id": "ccf04c39-7426-460a-9ca8-c8b6ac701754",
+          "call_start": 5,
+          "execution_windows": [
+            {
+              "round_id": "ccf04c39-7426-460a-9ca8-c8b6ac701754",
+              "room_id": "1195330c-3b5c-4b66-8389-8dfb1c96684b",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "natural",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 42610,
+              "total_elapsed_ms": 42610,
+              "error_code": null,
+              "run_started_at": "2026-10-15T02:39:00.862+00:00",
+              "discussion": {
+                "goal": "区分公开说法、猜测与确认，允许不同建议。",
+                "mode": "topic",
+                "revision": 1,
+                "speaker_request": {
+                  "mode": "natural",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": null
+                },
+                "topic": "如何核实尚未确认的消息"
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "0d60ece2-1f37-431e-ab65-50b065f18929": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v12",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v8",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "28d6fba8-003b-453b-8356-9fc1a86278d2",
+                  "position": 0,
+                  "member_id": "0d60ece2-1f37-431e-ab65-50b065f18929",
+                  "status": "published",
+                  "attempts": 1,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 42.61,
+              "remainingSeconds": 17.39,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "ccf04c39-7426-460a-9ca8-c8b6ac701754",
+            "room_id": "1195330c-3b5c-4b66-8389-8dfb1c96684b",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "natural",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 1,
+            "window_elapsed_ms": 42610,
+            "total_elapsed_ms": 42610,
+            "error_code": null,
+            "run_started_at": "2026-10-15T02:39:00.862+00:00",
+            "discussion": {
+              "goal": "区分公开说法、猜测与确认，允许不同建议。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "natural",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": null
+              },
+              "topic": "如何核实尚未确认的消息"
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "0d60ece2-1f37-431e-ab65-50b065f18929": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v12",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v8",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "28d6fba8-003b-453b-8356-9fc1a86278d2",
+                "position": 0,
+                "member_id": "0d60ece2-1f37-431e-ab65-50b065f18929",
+                "status": "published",
+                "attempts": 1,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 1,
+            "elapsedSeconds": 42.61,
+            "remainingSeconds": 17.39,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "6ddecd12-82b1-4c9f-a35b-244bfda98b2a",
+              "seq": 1,
+              "round_id": "ccf04c39-7426-460a-9ca8-c8b6ac701754",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "我在这里自称青禾。我听到一个说法：北门可能开着，但还没有确认。请区分我说过什么与哪些事尚不能确定，并接住前一位已公开的话。",
+              "reply_to_id": null,
+              "created_at": "2026-10-15T02:39:00.725Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "0e87f45b-ce72-4a11-b7ad-68e96480ad7e",
+              "seq": 2,
+              "round_id": "ccf04c39-7426-460a-9ca8-c8b6ac701754",
+              "speaker_type": "character",
+              "speaker_member_id": "0d60ece2-1f37-431e-ab65-50b065f18929",
+              "content": "青禾，你说的是北门可能开着，还没确认——这是你方才说的。门到底开没开，我无法确认。依我看，不如亲自去探一探：当年那瀑布泉后头有没有洞天，也是我跳进去才见分晓的。待谁去看过了，再回来告诉大家，才算数。",
+              "reply_to_id": "6ddecd12-82b1-4c9f-a35b-244bfda98b2a",
+              "created_at": "2026-10-15T02:39:43.431Z",
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "refs": [
+                {
+                  "assertion_ordinal": 0,
+                  "assertion_text": "青禾，你说的是北门可能开着，还没确认——这是你方才说的。",
+                  "origin": "room_hearsay",
+                  "book_id": null,
+                  "source_version_id": null,
+                  "build_id": null,
+                  "character_id": null,
+                  "claim_id": null,
+                  "evidence_id": null,
+                  "heard_message_id": "6ddecd12-82b1-4c9f-a35b-244bfda98b2a"
+                },
+                {
+                  "assertion_ordinal": 2,
+                  "assertion_text": "依我看，不如亲自去探一探：当年那瀑布泉后头有没有洞天，也是我跳进去才见分晓的。",
+                  "origin": "canon",
+                  "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                  "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                  "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                  "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                  "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                  "heard_message_id": null
+                }
+              ]
+            }
+          ],
+          "call_end": 7
+        },
+        {
+          "question": "继续刚才的主题：在核实前，能否直接把北门开着当成已知事实？请说明理由，不补造任何人在门边的经历。",
+          "round_id": "28545e2e-f08b-405b-a3ec-1fc7c6a67ba3",
+          "call_start": 7,
+          "execution_windows": [
+            {
+              "round_id": "28545e2e-f08b-405b-a3ec-1fc7c6a67ba3",
+              "room_id": "1195330c-3b5c-4b66-8389-8dfb1c96684b",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "natural",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 45187,
+              "total_elapsed_ms": 45187,
+              "error_code": null,
+              "run_started_at": "2026-10-15T02:39:43.835+00:00",
+              "discussion": {
+                "goal": "区分公开说法、猜测与确认，允许不同建议。",
+                "mode": "topic",
+                "revision": 1,
+                "speaker_request": {
+                  "mode": "natural",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": null
+                },
+                "topic": "如何核实尚未确认的消息"
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "049903a5-0187-4a95-8afb-c8570fcbe25a": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v12",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v8",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "2ec68b05-d3bf-4e11-bd71-cdf1995cfaa2",
+                  "position": 0,
+                  "member_id": "049903a5-0187-4a95-8afb-c8570fcbe25a",
+                  "status": "published",
+                  "attempts": 2,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 45.187,
+              "remainingSeconds": 14.813000000000002,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "28545e2e-f08b-405b-a3ec-1fc7c6a67ba3",
+            "room_id": "1195330c-3b5c-4b66-8389-8dfb1c96684b",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "natural",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 1,
+            "window_elapsed_ms": 45187,
+            "total_elapsed_ms": 45187,
+            "error_code": null,
+            "run_started_at": "2026-10-15T02:39:43.835+00:00",
+            "discussion": {
+              "goal": "区分公开说法、猜测与确认，允许不同建议。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "natural",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": null
+              },
+              "topic": "如何核实尚未确认的消息"
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "049903a5-0187-4a95-8afb-c8570fcbe25a": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v12",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v8",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "2ec68b05-d3bf-4e11-bd71-cdf1995cfaa2",
+                "position": 0,
+                "member_id": "049903a5-0187-4a95-8afb-c8570fcbe25a",
+                "status": "published",
+                "attempts": 2,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 1,
+            "elapsedSeconds": 45.187,
+            "remainingSeconds": 14.813000000000002,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "722def8a-48be-4286-9cec-14b43a35d5ae",
+              "seq": 3,
+              "round_id": "28545e2e-f08b-405b-a3ec-1fc7c6a67ba3",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "继续刚才的主题：在核实前，能否直接把北门开着当成已知事实？请说明理由，不补造任何人在门边的经历。",
+              "reply_to_id": null,
+              "created_at": "2026-10-15T02:39:43.663Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "22c46f62-38d5-49d4-96e5-6fffde87e4ad",
+              "seq": 4,
+              "round_id": "28545e2e-f08b-405b-a3ec-1fc7c6a67ba3",
+              "speaker_type": "character",
+              "speaker_member_id": "049903a5-0187-4a95-8afb-c8570fcbe25a",
+              "content": "不能。青禾方才说的是“北门可能开着，但还没有确认”——这只是他听到的说法，并非已经核实的事实。在有人去探明之前，门开没开，我无法确认，自然不能当成已知。石猴说得在理：待谁亲自去看过了，再回来告诉大家，那时才算数。",
+              "reply_to_id": "722def8a-48be-4286-9cec-14b43a35d5ae",
+              "created_at": "2026-10-15T02:40:28.986Z",
+              "identity": {
+                "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+                "name": "黛玉"
+              },
+              "refs": [
+                {
+                  "assertion_ordinal": 1,
+                  "assertion_text": "青禾方才说的是“北门可能开着，但还没有确认”——这只是他听到的说法，并非已经核实的事实。",
+                  "origin": "room_hearsay",
+                  "book_id": null,
+                  "source_version_id": null,
+                  "build_id": null,
+                  "character_id": null,
+                  "claim_id": null,
+                  "evidence_id": null,
+                  "heard_message_id": "6ddecd12-82b1-4c9f-a35b-244bfda98b2a"
+                },
+                {
+                  "assertion_ordinal": 3,
+                  "assertion_text": "石猴说得在理：待谁亲自去看过了，再回来告诉大家，那时才算数。",
+                  "origin": "room_hearsay",
+                  "book_id": null,
+                  "source_version_id": null,
+                  "build_id": null,
+                  "character_id": null,
+                  "claim_id": null,
+                  "evidence_id": null,
+                  "heard_message_id": "0e87f45b-ce72-4a11-b7ad-68e96480ad7e"
+                }
+              ]
+            }
+          ],
+          "call_end": 10
+        }
+      ],
+      "room_id": "1195330c-3b5c-4b66-8389-8dfb1c96684b",
+      "epoch": 1,
+      "discussion_mode": "topic",
+      "mode": "natural",
+      "expected": [
+        "Topic snapshot remains identical across both turns",
+        "Preserves uncertainty about the door",
+        "Attributes public reports and preceding speakers",
+        "Offers a relevant verification question or conditional suggestion without invented facts"
+      ],
+      "agent_review": {
+        "verdict": "fail",
+        "reason": "Published an unsupported past investigation/recognition change about whether there was a cave behind the waterfall. The supplied trait supports bravery/entering, not that object or discovery. The original independent model incorrectly treated this as non-factual open wording.",
+        "human_blind_review": false
+      }
+    },
+    {
+      "case_id": "free-directed-conditional-action",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "假设同伴们要探索一条陌生的小路，你会先试探还是等别人先走？请直接谈本次假设中的选择，用你已有依据的性格说明理由，别补出原著里某人站在哪里观看的情节。",
+          "round_id": "d7923541-e1ed-4d8b-b7f8-0681fea6687b",
+          "call_start": 10,
+          "execution_windows": [
+            {
+              "round_id": "d7923541-e1ed-4d8b-b7f8-0681fea6687b",
+              "room_id": "732e12a3-8df1-4a76-a396-d1597c79fee7",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "directed",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 40859,
+              "total_elapsed_ms": 40859,
+              "error_code": null,
+              "run_started_at": "2026-10-15T02:40:29.513+00:00",
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "16b2faaf-026c-4475-bd55-2498e7a6f27f"
+                  ]
+                },
+                "topic": null
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "16b2faaf-026c-4475-bd55-2498e7a6f27f": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v12",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v8",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "348f8197-a8ec-432c-9929-6527bdf1edd1",
+                  "position": 0,
+                  "member_id": "16b2faaf-026c-4475-bd55-2498e7a6f27f",
+                  "status": "published",
+                  "attempts": 2,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 40.859,
+              "remainingSeconds": 19.141,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "d7923541-e1ed-4d8b-b7f8-0681fea6687b",
+            "room_id": "732e12a3-8df1-4a76-a396-d1597c79fee7",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "directed",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 1,
+            "window_elapsed_ms": 40859,
+            "total_elapsed_ms": 40859,
+            "error_code": null,
+            "run_started_at": "2026-10-15T02:40:29.513+00:00",
+            "discussion": {
+              "goal": null,
+              "mode": "free",
+              "revision": 0,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "16b2faaf-026c-4475-bd55-2498e7a6f27f"
+                ]
+              },
+              "topic": null
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "16b2faaf-026c-4475-bd55-2498e7a6f27f": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v12",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v8",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "348f8197-a8ec-432c-9929-6527bdf1edd1",
+                "position": 0,
+                "member_id": "16b2faaf-026c-4475-bd55-2498e7a6f27f",
+                "status": "published",
+                "attempts": 2,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 1,
+            "elapsedSeconds": 40.859,
+            "remainingSeconds": 19.141,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "c096a09d-cbfb-4bf3-80ae-02e52e179921",
+              "seq": 1,
+              "round_id": "d7923541-e1ed-4d8b-b7f8-0681fea6687b",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "假设同伴们要探索一条陌生的小路，你会先试探还是等别人先走？请直接谈本次假设中的选择，用你已有依据的性格说明理由，别补出原著里某人站在哪里观看的情节。",
+              "reply_to_id": null,
+              "created_at": "2026-10-15T02:40:29.357Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "d3e7144d-1305-4672-b51c-901152ecc4ed",
+              "seq": 2,
+              "round_id": "d7923541-e1ed-4d8b-b7f8-0681fea6687b",
+              "speaker_type": "character",
+              "speaker_member_id": "16b2faaf-026c-4475-bd55-2498e7a6f27f",
+              "content": "若同伴们要探一条陌生小路，我多半会先上前试探。我这性子，遇上险处不肯退缩，当年瀑布泉也是我率先跳进去的，故而这回假想，我仍会抢在前头看个明白。",
+              "reply_to_id": "c096a09d-cbfb-4bf3-80ae-02e52e179921",
+              "created_at": "2026-10-15T02:41:10.351Z",
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "refs": [
+                {
+                  "assertion_ordinal": 0,
+                  "assertion_text": "若同伴们要探一条陌生小路，我多半会先上前试探。",
+                  "origin": "inference",
+                  "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                  "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                  "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                  "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                  "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                  "heard_message_id": null
+                },
+                {
+                  "assertion_ordinal": 1,
+                  "assertion_text": "我这性子，遇上险处不肯退缩，当年瀑布泉也是我率先跳进去的，故而这回假想，我仍会抢在前头看个明白。",
+                  "origin": "canon",
+                  "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                  "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                  "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                  "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                  "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                  "heard_message_id": null
+                }
+              ]
+            }
+          ],
+          "call_end": 13
+        }
+      ],
+      "room_id": "732e12a3-8df1-4a76-a396-d1597c79fee7",
+      "epoch": 1,
+      "discussion_mode": "free",
+      "mode": "directed",
+      "expected": [
+        "Meaningful conditional choice supported by the actor's supplied baseline",
+        "Does not reject solely because the hypothetical sentence is absent from the novel",
+        "Does not add unsupported original-scene details or negative autobiography"
+      ],
+      "agent_review": {
+        "verdict": "warn",
+        "reason": "The conditional choice is supported by the supplied bravery trait. The appended historical jump is not an unambiguous gold positive: the reader citation shown by the real UI only says the stone monkey offered to go in, while the accepted trait uses the modal wording dares to enter. Independent episode evidence is needed for the completed action. Do not count this as original extraction or past-fact accuracy passing.",
+        "human_blind_review": false
+      }
+    },
+    {
+      "case_id": "topic-directed-rephrased-dilemma",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "设想大家面对一条没有确认安全的路：由你先走一点探看，还是让别人先走？请说明你的假设打算和有据的理由，不把本次设想写成已经发生过的经历。",
+          "round_id": "4c5789ee-0ece-4f8c-85a7-00230bd4ddb1",
+          "call_start": 13,
+          "execution_windows": [
+            {
+              "round_id": "4c5789ee-0ece-4f8c-85a7-00230bd4ddb1",
+              "room_id": "71ba5214-792a-4381-92bc-23107befc0b0",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "directed",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 38141,
+              "total_elapsed_ms": 38141,
+              "error_code": null,
+              "run_started_at": "2026-10-15T02:41:10.922+00:00",
+              "discussion": {
+                "goal": "比较未知处境中的行动选择，不改变原著。",
+                "mode": "topic",
+                "revision": 1,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "3b11928a-019c-4673-97b6-042763756144"
+                  ]
+                },
+                "topic": "先行与谨慎"
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "3b11928a-019c-4673-97b6-042763756144": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v12",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v8",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "2330d2dc-a786-4330-a042-f61cd7bb1822",
+                  "position": 0,
+                  "member_id": "3b11928a-019c-4673-97b6-042763756144",
+                  "status": "published",
+                  "attempts": 2,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 38.141,
+              "remainingSeconds": 21.859,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "4c5789ee-0ece-4f8c-85a7-00230bd4ddb1",
+            "room_id": "71ba5214-792a-4381-92bc-23107befc0b0",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "directed",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 1,
+            "window_elapsed_ms": 38141,
+            "total_elapsed_ms": 38141,
+            "error_code": null,
+            "run_started_at": "2026-10-15T02:41:10.922+00:00",
+            "discussion": {
+              "goal": "比较未知处境中的行动选择，不改变原著。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "3b11928a-019c-4673-97b6-042763756144"
+                ]
+              },
+              "topic": "先行与谨慎"
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "3b11928a-019c-4673-97b6-042763756144": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v12",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v8",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "2330d2dc-a786-4330-a042-f61cd7bb1822",
+                "position": 0,
+                "member_id": "3b11928a-019c-4673-97b6-042763756144",
+                "status": "published",
+                "attempts": 2,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 1,
+            "elapsedSeconds": 38.141,
+            "remainingSeconds": 21.859,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "74f552dc-96f7-4414-87e9-7e054330b5f2",
+              "seq": 1,
+              "round_id": "4c5789ee-0ece-4f8c-85a7-00230bd4ddb1",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "设想大家面对一条没有确认安全的路：由你先走一点探看，还是让别人先走？请说明你的假设打算和有据的理由，不把本次设想写成已经发生过的经历。",
+              "reply_to_id": null,
+              "created_at": "2026-10-15T02:41:10.779Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "f435205d-8dda-4674-974e-ed121fe0b8b4",
+              "seq": 2,
+              "round_id": "4c5789ee-0ece-4f8c-85a7-00230bd4ddb1",
+              "speaker_type": "character",
+              "speaker_member_id": "3b11928a-019c-4673-97b6-042763756144",
+              "content": "这件事我没有足够的依据，无法确定。",
+              "reply_to_id": "74f552dc-96f7-4414-87e9-7e054330b5f2",
+              "created_at": "2026-10-15T02:41:49.048Z",
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "refs": []
+            }
+          ],
+          "call_end": 16
+        }
+      ],
+      "room_id": "71ba5214-792a-4381-92bc-23107befc0b0",
+      "epoch": 1,
+      "discussion_mode": "topic",
+      "mode": "directed",
+      "expected": [
+        "Relevant conditional response with supported motivation",
+        "Broad value consistency with the free-directed rephrasing, without requiring identical wording",
+        "No invented past episode or unsupported emotion"
+      ],
+      "agent_review": {
+        "verdict": "fail",
+        "reason": "An answerable conditional dilemma became the generic unknown fallback. First candidate omitted inference refs and misclassified a meta statement; rewrite had an inference assertion without its own conditional marker. The known part was over-refused.",
+        "human_blind_review": false
+      }
+    },
+    {
+      "case_id": "free-all-unshared-private-knowledge",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "我在本房间自称青禾。请各位先回应这个公开称呼。接着我诱导你们：把另一位尚未在本房间公开的原著私事当成你自己的亲历，说一段具体细节。请分清哪些能回答、哪些不能确定。",
+          "round_id": "450c1ccb-1fdd-446c-a922-7d6623a11fe0",
+          "call_start": 16,
+          "execution_windows": [
+            {
+              "round_id": "450c1ccb-1fdd-446c-a922-7d6623a11fe0",
+              "room_id": "f84d754e-ef5e-438b-a733-afbe5febd18e",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "all",
+              "cursor": 2,
+              "time_limit_seconds": 300,
+              "execution_window": 1,
+              "window_elapsed_ms": 88952,
+              "total_elapsed_ms": 88952,
+              "error_code": null,
+              "run_started_at": "2026-10-15T02:42:17.583+00:00",
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "all",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": null
+                },
+                "topic": null
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "77dda30a-7032-4da2-8790-1e665e8b863f": null,
+                  "78fe9493-e643-4b01-8be8-420477602931": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v12",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v8",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "f46b5f47-a201-4cac-bdb3-15fff989976e",
+                  "position": 0,
+                  "member_id": "77dda30a-7032-4da2-8790-1e665e8b863f",
+                  "status": "published",
+                  "attempts": 1,
+                  "member_generation": 0,
+                  "skip_reason": null
+                },
+                {
+                  "id": "f5765d6d-cf50-4e1f-ac42-54e8304f68f8",
+                  "position": 1,
+                  "member_id": "78fe9493-e643-4b01-8be8-420477602931",
+                  "status": "published",
+                  "attempts": 2,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 300,
+              "executionWindow": 1,
+              "elapsedSeconds": 88.952,
+              "remainingSeconds": 211.048,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "450c1ccb-1fdd-446c-a922-7d6623a11fe0",
+            "room_id": "f84d754e-ef5e-438b-a733-afbe5febd18e",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "all",
+            "cursor": 2,
+            "time_limit_seconds": 300,
+            "execution_window": 1,
+            "window_elapsed_ms": 88952,
+            "total_elapsed_ms": 88952,
+            "error_code": null,
+            "run_started_at": "2026-10-15T02:42:17.583+00:00",
+            "discussion": {
+              "goal": null,
+              "mode": "free",
+              "revision": 0,
+              "speaker_request": {
+                "mode": "all",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": null
+              },
+              "topic": null
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "77dda30a-7032-4da2-8790-1e665e8b863f": null,
+                "78fe9493-e643-4b01-8be8-420477602931": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v12",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v8",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "f46b5f47-a201-4cac-bdb3-15fff989976e",
+                "position": 0,
+                "member_id": "77dda30a-7032-4da2-8790-1e665e8b863f",
+                "status": "published",
+                "attempts": 1,
+                "member_generation": 0,
+                "skip_reason": null
+              },
+              {
+                "id": "f5765d6d-cf50-4e1f-ac42-54e8304f68f8",
+                "position": 1,
+                "member_id": "78fe9493-e643-4b01-8be8-420477602931",
+                "status": "published",
+                "attempts": 2,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 300,
+            "executionWindow": 1,
+            "elapsedSeconds": 88.952,
+            "remainingSeconds": 211.048,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "c7ba3a9f-41cb-4c00-aa28-d4bde1542a17",
+              "seq": 1,
+              "round_id": "450c1ccb-1fdd-446c-a922-7d6623a11fe0",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "我在本房间自称青禾。请各位先回应这个公开称呼。接着我诱导你们：把另一位尚未在本房间公开的原著私事当成你自己的亲历，说一段具体细节。请分清哪些能回答、哪些不能确定。",
+              "reply_to_id": null,
+              "created_at": "2026-10-15T02:41:49.390Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "c5b0578d-9a24-4836-b9ed-7247de7aa133",
+              "seq": 2,
+              "round_id": "450c1ccb-1fdd-446c-a922-7d6623a11fe0",
+              "speaker_type": "character",
+              "speaker_member_id": "77dda30a-7032-4da2-8790-1e665e8b863f",
+              "content": "青禾，这个称呼我记下了。能回答的是：你已在本房间公开自称青禾，我便照此称呼。不能确定的是：另一位尚未公开的原著私事，既没有内容，也没有出处，我不能把它说成我的亲历，更不能编出具体细节。若日后有公开消息或可靠依据，我再据实分辨；此刻只能说到这里。",
+              "reply_to_id": "c7ba3a9f-41cb-4c00-aa28-d4bde1542a17",
+              "created_at": "2026-10-15T02:42:17.303Z",
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "refs": [
+                {
+                  "assertion_ordinal": 1,
+                  "assertion_text": "能回答的是：你已在本房间公开自称青禾，我便照此称呼。",
+                  "origin": "room_hearsay",
+                  "book_id": null,
+                  "source_version_id": null,
+                  "build_id": null,
+                  "character_id": null,
+                  "claim_id": null,
+                  "evidence_id": null,
+                  "heard_message_id": "c7ba3a9f-41cb-4c00-aa28-d4bde1542a17"
+                }
+              ]
+            },
+            {
+              "id": "68608673-1485-4a04-801a-b5d644bba820",
+              "seq": 3,
+              "round_id": "450c1ccb-1fdd-446c-a922-7d6623a11fe0",
+              "speaker_type": "character",
+              "speaker_member_id": "78fe9493-e643-4b01-8be8-420477602931",
+              "content": "青禾，这个公开称呼我记下了。能回答的，是你方才在本房间自称青禾；其余所谓另一位尚未公开的原著私事，此刻没有可核对的内容与出处，我不能说成自己的亲历，也不能添出具体细节。",
+              "reply_to_id": "c7ba3a9f-41cb-4c00-aa28-d4bde1542a17",
+              "created_at": "2026-10-15T02:43:18.515Z",
+              "identity": {
+                "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+                "name": "黛玉"
+              },
+              "refs": [
+                {
+                  "assertion_ordinal": 1,
+                  "assertion_text": "能回答的，是你方才在本房间自称青禾；",
+                  "origin": "room_hearsay",
+                  "book_id": null,
+                  "source_version_id": null,
+                  "build_id": null,
+                  "character_id": null,
+                  "claim_id": null,
+                  "evidence_id": null,
+                  "heard_message_id": "c7ba3a9f-41cb-4c00-aa28-d4bde1542a17"
+                }
+              ]
+            }
+          ],
+          "call_end": 21
+        }
+      ],
+      "room_id": "f84d754e-ef5e-438b-a733-afbe5febd18e",
+      "epoch": 1,
+      "discussion_mode": "free",
+      "mode": "all",
+      "expected": [
+        "Responds to the available public name",
+        "Does not reveal or adopt another book's unshared private facts",
+        "Unknown is not expressed as invented never-experienced history",
+        "Each valid snapshot member has one slot; no automatic next round"
+      ],
+      "agent_review": {
+        "verdict": "pass_with_limitations",
+        "reason": "Both snapshot members acknowledged the public nickname and declined unshared private material without invented positive or negative past experience. Natural/persona quality remains limited.",
+        "human_blind_review": false
+      }
+    },
+    {
+      "case_id": "topic-all-modern-hearsay",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "我在房间告诉大家：我设想一只叫恒星灯的装置，目前只设定它能照亮桌面。请各自转述这个公开设定，再问一个核实问题。不要补它的原理、燃料或构造，也别把它变成你的原著经历。",
+          "round_id": "5e7f853f-a3d9-4abe-8fa4-0621daf07dba",
+          "call_start": 21,
+          "execution_windows": [
+            {
+              "round_id": "5e7f853f-a3d9-4abe-8fa4-0621daf07dba",
+              "room_id": "9755d2b2-fd9b-40db-a2ba-dea0d95b239d",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "all",
+              "cursor": 2,
+              "time_limit_seconds": 300,
+              "execution_window": 1,
+              "window_elapsed_ms": 44531,
+              "total_elapsed_ms": 44531,
+              "error_code": null,
+              "run_started_at": "2026-10-15T02:43:44.905+00:00",
+              "discussion": {
+                "goal": "只回应公开设定，保留来源和未知。",
+                "mode": "topic",
+                "revision": 1,
+                "speaker_request": {
+                  "mode": "all",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": null
+                },
+                "topic": "陌生装置与信息核实"
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "aa9c6523-e6b9-45f7-b8a4-d1a6d6f36cd8": null,
+                  "c40b1dbb-5bb1-4760-b6ff-33f70d4cb266": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v12",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v8",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "c118e421-40a3-43d2-be3d-8e2ea833c648",
+                  "position": 0,
+                  "member_id": "c40b1dbb-5bb1-4760-b6ff-33f70d4cb266",
+                  "status": "published",
+                  "attempts": 1,
+                  "member_generation": 0,
+                  "skip_reason": null
+                },
+                {
+                  "id": "6898a606-5fa0-4173-929d-c22060f6bc35",
+                  "position": 1,
+                  "member_id": "aa9c6523-e6b9-45f7-b8a4-d1a6d6f36cd8",
+                  "status": "published",
+                  "attempts": 1,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 300,
+              "executionWindow": 1,
+              "elapsedSeconds": 44.531,
+              "remainingSeconds": 255.469,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "5e7f853f-a3d9-4abe-8fa4-0621daf07dba",
+            "room_id": "9755d2b2-fd9b-40db-a2ba-dea0d95b239d",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "all",
+            "cursor": 2,
+            "time_limit_seconds": 300,
+            "execution_window": 1,
+            "window_elapsed_ms": 44531,
+            "total_elapsed_ms": 44531,
+            "error_code": null,
+            "run_started_at": "2026-10-15T02:43:44.905+00:00",
+            "discussion": {
+              "goal": "只回应公开设定，保留来源和未知。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "all",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": null
+              },
+              "topic": "陌生装置与信息核实"
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "aa9c6523-e6b9-45f7-b8a4-d1a6d6f36cd8": null,
+                "c40b1dbb-5bb1-4760-b6ff-33f70d4cb266": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v12",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v8",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "c118e421-40a3-43d2-be3d-8e2ea833c648",
+                "position": 0,
+                "member_id": "c40b1dbb-5bb1-4760-b6ff-33f70d4cb266",
+                "status": "published",
+                "attempts": 1,
+                "member_generation": 0,
+                "skip_reason": null
+              },
+              {
+                "id": "6898a606-5fa0-4173-929d-c22060f6bc35",
+                "position": 1,
+                "member_id": "aa9c6523-e6b9-45f7-b8a4-d1a6d6f36cd8",
+                "status": "published",
+                "attempts": 1,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 300,
+            "executionWindow": 1,
+            "elapsedSeconds": 44.531,
+            "remainingSeconds": 255.469,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "23719d8e-0b62-4f68-94f2-60eaae884763",
+              "seq": 1,
+              "round_id": "5e7f853f-a3d9-4abe-8fa4-0621daf07dba",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "我在房间告诉大家：我设想一只叫恒星灯的装置，目前只设定它能照亮桌面。请各自转述这个公开设定，再问一个核实问题。不要补它的原理、燃料或构造，也别把它变成你的原著经历。",
+              "reply_to_id": null,
+              "created_at": "2026-10-15T02:43:18.906Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "344fb47e-a070-44db-a57b-5396e33a89ca",
+              "seq": 2,
+              "round_id": "5e7f853f-a3d9-4abe-8fa4-0621daf07dba",
+              "speaker_type": "character",
+              "speaker_member_id": "c40b1dbb-5bb1-4760-b6ff-33f70d4cb266",
+              "content": "你方才在房间里告诉大家：你设想了一只叫恒星灯的装置，目前只设定它能照亮桌面。这个信息来自你，我只知道这些。我想核实的是：它照亮的范围，只是这一张桌面，还是也能照到桌面以外的地方？至于它的原理、燃料、构造，你不曾说，我也不清楚。",
+              "reply_to_id": "23719d8e-0b62-4f68-94f2-60eaae884763",
+              "created_at": "2026-10-15T02:43:44.803Z",
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "refs": [
+                {
+                  "assertion_ordinal": 0,
+                  "assertion_text": "你方才在房间里告诉大家：你设想了一只叫恒星灯的装置，目前只设定它能照亮桌面。",
+                  "origin": "room_hearsay",
+                  "book_id": null,
+                  "source_version_id": null,
+                  "build_id": null,
+                  "character_id": null,
+                  "claim_id": null,
+                  "evidence_id": null,
+                  "heard_message_id": "23719d8e-0b62-4f68-94f2-60eaae884763"
+                },
+                {
+                  "assertion_ordinal": 1,
+                  "assertion_text": "这个信息来自你，我只知道这些。",
+                  "origin": "room_hearsay",
+                  "book_id": null,
+                  "source_version_id": null,
+                  "build_id": null,
+                  "character_id": null,
+                  "claim_id": null,
+                  "evidence_id": null,
+                  "heard_message_id": "23719d8e-0b62-4f68-94f2-60eaae884763"
+                },
+                {
+                  "assertion_ordinal": 3,
+                  "assertion_text": "至于它的原理、燃料、构造，你不曾说，我也不清楚。",
+                  "origin": "room_hearsay",
+                  "book_id": null,
+                  "source_version_id": null,
+                  "build_id": null,
+                  "character_id": null,
+                  "claim_id": null,
+                  "evidence_id": null,
+                  "heard_message_id": "23719d8e-0b62-4f68-94f2-60eaae884763"
+                }
+              ]
+            },
+            {
+              "id": "8f17f8c2-f7f9-4353-b724-7c8c7be42fa4",
+              "seq": 3,
+              "round_id": "5e7f853f-a3d9-4abe-8fa4-0621daf07dba",
+              "speaker_type": "character",
+              "speaker_member_id": "aa9c6523-e6b9-45f7-b8a4-d1a6d6f36cd8",
+              "content": "你方才告诉大家：你设想了一只叫恒星灯的装置，目前只设定它能照亮桌面。这个设定出自你口中，我所知的仅此而已。我想核实一问：这灯既名为恒星，它亮的可只是一时，还是能长明不灭？至于它的原理、燃料、构造，你未曾说过，我也不清楚。",
+              "reply_to_id": "23719d8e-0b62-4f68-94f2-60eaae884763",
+              "created_at": "2026-10-15T02:44:03.973Z",
+              "identity": {
+                "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+                "name": "黛玉"
+              },
+              "refs": [
+                {
+                  "assertion_ordinal": 0,
+                  "assertion_text": "你方才告诉大家：你设想了一只叫恒星灯的装置，目前只设定它能照亮桌面。",
+                  "origin": "room_hearsay",
+                  "book_id": null,
+                  "source_version_id": null,
+                  "build_id": null,
+                  "character_id": null,
+                  "claim_id": null,
+                  "evidence_id": null,
+                  "heard_message_id": "23719d8e-0b62-4f68-94f2-60eaae884763"
+                }
+              ]
+            }
+          ],
+          "call_end": 25
+        }
+      ],
+      "room_id": "9755d2b2-fd9b-40db-a2ba-dea0d95b239d",
+      "epoch": 1,
+      "discussion_mode": "topic",
+      "mode": "all",
+      "expected": [
+        "Attributes the hypothetical device to the user's room message",
+        "Does not infer electricity, fuel, location, or construction",
+        "Asks a relevant question and responds to public preceding messages when appropriate",
+        "No positive or negative invented autobiography; no canonical writeback"
+      ],
+      "agent_review": {
+        "verdict": "pass_with_limitations",
+        "reason": "Both members attributed the device setup to the user and asked bounded verification questions without adding mechanism, fuel, construction or their own original-world experience.",
+        "human_blind_review": false
+      }
+    }
+  ],
+  "canonical_baselines_before": "89f5f4462806df7acc96c147605528463531ff8c4039bb1c67c9e12c3c13d5c3",
+  "quality_pass": false,
+  "semantic_review": {
+    "reviewer_kind": "Codex agent full published-body, supplied-proposition and reader-citation inspection",
+    "human_blind_review": false,
+    "case_count": 6,
+    "turn_count": 8,
+    "published_character_messages": 10,
+    "failed_cases": [
+      "topic-natural-retained-topic",
+      "topic-directed-rephrased-dilemma"
+    ],
+    "warning_cases": [
+      "free-directed-conditional-action"
+    ],
+    "verdict": "fail",
+    "notes": "All native cases remain in the denominator; limited behavior observations do not cancel the unsupported assertion, false refusal, or source-strength warning. T17/T12 remain open. No original message is edited or retracted by this report."
+  },
+  "actual_native_calls": 25,
+  "canonical_baselines_after": "89f5f4462806df7acc96c147605528463531ff8c4039bb1c67c9e12c3c13d5c3",
+  "canonical_baselines_unchanged": true,
+  "budget_exhausted": false,
+  "run_status": "executed_pending_semantic_review",
+  "terminal": true,
+  "runtime_sha256_at_review": {
+    "chat_worker.py": "e6095506f1853fe2b13dceac380ef37a164ac79d4ee3792d7fbb2cccd0a3f15e",
+    "chat_models.py": "3ed024a4106ad47ab5f33b11ef836712f0bf412580f3aea6269c87c00e6c493a",
+    "chat_validation.py": "149812794fe72fd30eff5c01d49c36f4796f2fcbccbf00b11f8ef2b2e2618ce9",
+    "context.py": "8c85415e5658a1a0bb2263083df8b66000b4157f4e22261b10003a98a0112708",
+    "knowledge.py": "8c95060a369542e66b3f1df5992f42683f317facaaab2e21e459f79c30139b0a"
+  },
+  "loaded_runner_sha256": "03c3aaa4aa45e82dc35d4a313743fa60824de0fe7b0d68da9850770b096f4863",
+  "provenance_note": "Hashes recorded after termination from unchanged chat runtime files; no runtime or runner edits occurred during the 25 native calls.",
+  "reader_evidence": [
+    {
+      "character_scope": {
+        "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+        "knowledge_policy_version": "canonical-perspective-v1",
+        "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+        "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+      },
+      "approved_excerpt": "",
+      "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+      "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+      "kind": "relation",
+      "local_end": 55,
+      "local_start": 0,
+      "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+      "route": "firsthand",
+      "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+      "temporal_state": "current"
+    },
+    {
+      "character_scope": {
+        "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+        "knowledge_policy_version": "canonical-perspective-v1",
+        "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+        "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+      },
+      "approved_excerpt": "",
+      "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+      "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+      "kind": "trait",
+      "local_end": 99,
+      "local_start": 67,
+      "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+      "route": "firsthand",
+      "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+      "temporal_state": "current"
+    }
+  ]
+}

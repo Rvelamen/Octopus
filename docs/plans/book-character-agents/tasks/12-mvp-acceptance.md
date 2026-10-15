@@ -72,5 +72,7 @@
 
 2026-10-15 汇总当前确定性层：完整项目369通过、13项既有环境跳过，新增发现修复的85项专项在完整结果内，不叠加计数；原结构草案177项与实际服务测试分开记录。限定范围Mypy52文件、Ruff、前端类型/构建及实际全书失败状态/原文组件操作通过。仅据这些证据勾选确定性和保留数据回滚子项；全书自动人物、真实聊天、完整应用操作与60项边界/24项表达仍未验收。证据与实际模型失败见[窗口修复验证](../validation/2026-10-15-window-repair-validation.md)。
 
+同日追加发现诊断和评测入口后，最终完整项目385通过/13既有环境跳过，限定Mypy53文件与Ruff通过。T17六组合原生25次、固定审查2次累计27/32，已保留漏审、误拒及来源强度警告；实际3D历史气泡与右栏同ID/seq/正文、2D切换和证据操作通过。该集尚未完成原著金标准复核，明确是摘录开发诊断，不替代本任务84题、完整应用或全书人格验收，见[六组合记录](../validation/2026-10-15-discussion-matrix-validation.md)。
+
 设计约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，代码接入点和执行顺序见[实施计划](F:/god/project/Octopus/docs/plans/book-character-agents/implementation-plan.md)。
 

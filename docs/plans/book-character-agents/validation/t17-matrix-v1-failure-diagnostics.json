@@ -1,0 +1,734 @@
+{
+  "date": "2026-10-15",
+  "scope": "Captured native failures and supplied contexts; no new model call or publication",
+  "cases": [
+    {
+      "case_id": "topic-natural-retained-topic",
+      "turn_index": 0,
+      "agent_review": {
+        "verdict": "fail",
+        "reason": "Published an unsupported past investigation/recognition change about whether there was a cave behind the waterfall. The supplied trait supports bravery/entering, not that object or discovery. The original independent model incorrectly treated this as non-factual open wording.",
+        "human_blind_review": false
+      },
+      "calls": [
+        {
+          "phase": "generate",
+          "feedback": null,
+          "context": {
+            "baseline": {
+              "relation:山中群兽与群猴": {
+                "approved_excerpt": "",
+                "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+                "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+                "kind": "relation",
+                "local_end": 55,
+                "local_start": 0,
+                "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+                "route": "firsthand",
+                "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                "temporal_state": "current"
+              },
+              "trait:胆识": {
+                "approved_excerpt": "",
+                "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                "kind": "trait",
+                "local_end": 99,
+                "local_start": 67,
+                "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+                "route": "firsthand",
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "temporal_state": "current"
+              }
+            },
+            "character_scope": {
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "canonical_policy_version": "canonical-persona-v3",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "knowledge_policy_version": "canonical-perspective-v1",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "context_policy": "actor-context-v1",
+            "current_message": {
+              "content": "我在这里自称青禾。我听到一个说法：北门可能开着，但还没有确认。请区分我说过什么与哪些事尚不能确定，并接住前一位已公开的话。",
+              "id": "6ddecd12-82b1-4c9f-a35b-244bfda98b2a",
+              "identity": {},
+              "seq": 1,
+              "speaker_member_id": null,
+              "speaker_type": "user"
+            },
+            "discussion": {
+              "goal": "区分公开说法、猜测与确认，允许不同建议。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "natural",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": null
+              },
+              "topic": "如何核实尚未确认的消息"
+            },
+            "expressions": {
+              "examples": [],
+              "rules": []
+            },
+            "identity": {
+              "book_title": "西游记 · 石猴发现联调样本（非全书）",
+              "name": "石猴"
+            },
+            "knowledge": {
+              "items": [],
+              "query": "一个说 一位已 不同建 不能确 与哪些 与确认 个说法 事尚不 些事尚 但还没 位已公 住前一 允许不 公开的 公开说 分公开 分我说 到一个 前一位 北门可 区分公 区分我 可能开 同建议 听到一 哪些事 在这里 实尚未 尚不能 尚未确 已公开 并接住",
+              "status": "unknown"
+            },
+            "room": {
+              "epoch": 1,
+              "policy_version": "bounded-room-v1",
+              "room_id": "1195330c-3b5c-4b66-8389-8dfb1c96684b",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "room_history": [],
+            "room_memory": {
+              "items": [],
+              "through_seq": 0
+            },
+            "room_state": null
+          },
+          "output": "{\"content\":\"青禾，你说的是北门可能开着，还没确认——这是你方才说的。门到底开没开，我无法确认。依我看，不如亲自去探一探：当年那瀑布泉后头有没有洞天，也是我跳进去才见分晓的。待谁去看过了，再回来告诉大家，才算数。\",\"dialogue_action\":\"answer\",\"action_basis_claim_ids\":[\"6742efce-da5c-4892-ac66-0d6c3de1b76f\"],\"claims\":[{\"text\":\"青禾，你说的是北门可能开着，还没确认——这是你方才说的。\",\"origin\":\"room_hearsay\",\"message_ids\":[\"6ddecd12-82b1-4c9f-a35b-244bfda98b2a\"]},{\"text\":\"门到底开没开，我无法确认。\",\"origin\":\"conversation\"},{\"text\":\"依我看，不如亲自去探一探：当年那瀑布泉后头有没有洞天，也是我跳进去才见分晓的。\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\"evidence_id\":\"36dee9fb-b797-4b23-af33-0414d579b547\"}]},{\"text\":\"待谁去看过了，再回来告诉大家，才算数。\",\"origin\":\"conversation\"}],\"ephemeral_emotion\":null}",
+          "status": "completed"
+        },
+        {
+          "phase": "review",
+          "feedback": null,
+          "context": {
+            "baseline": {
+              "relation:山中群兽与群猴": {
+                "approved_excerpt": "",
+                "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+                "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+                "kind": "relation",
+                "local_end": 55,
+                "local_start": 0,
+                "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+                "route": "firsthand",
+                "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                "temporal_state": "current"
+              },
+              "trait:胆识": {
+                "approved_excerpt": "",
+                "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                "kind": "trait",
+                "local_end": 99,
+                "local_start": 67,
+                "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+                "route": "firsthand",
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "temporal_state": "current"
+              }
+            },
+            "character_scope": {
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "canonical_policy_version": "canonical-persona-v3",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "knowledge_policy_version": "canonical-perspective-v1",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "context_policy": "actor-context-v1",
+            "current_message": {
+              "content": "我在这里自称青禾。我听到一个说法：北门可能开着，但还没有确认。请区分我说过什么与哪些事尚不能确定，并接住前一位已公开的话。",
+              "id": "6ddecd12-82b1-4c9f-a35b-244bfda98b2a",
+              "identity": {},
+              "seq": 1,
+              "speaker_member_id": null,
+              "speaker_type": "user"
+            },
+            "discussion": {
+              "goal": "区分公开说法、猜测与确认，允许不同建议。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "natural",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": null
+              },
+              "topic": "如何核实尚未确认的消息"
+            },
+            "expressions": {
+              "examples": [],
+              "rules": []
+            },
+            "identity": {
+              "book_title": "西游记 · 石猴发现联调样本（非全书）",
+              "name": "石猴"
+            },
+            "knowledge": {
+              "items": [],
+              "query": "一个说 一位已 不同建 不能确 与哪些 与确认 个说法 事尚不 些事尚 但还没 位已公 住前一 允许不 公开的 公开说 分公开 分我说 到一个 前一位 北门可 区分公 区分我 可能开 同建议 听到一 哪些事 在这里 实尚未 尚不能 尚未确 已公开 并接住",
+              "status": "unknown"
+            },
+            "room": {
+              "epoch": 1,
+              "policy_version": "bounded-room-v1",
+              "room_id": "1195330c-3b5c-4b66-8389-8dfb1c96684b",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "room_history": [],
+            "room_memory": {
+              "items": [],
+              "through_seq": 0
+            },
+            "room_state": null
+          },
+          "output": "```json\n{\n  \"supported\": true,\n  \"facts_complete\": true,\n  \"persona_consistent\": true,\n  \"action_supported\": true,\n  \"emotion_supported\": true,\n  \"attribution_correct\": true,\n  \"unlisted_assertions\": [],\n  \"claims\": [\n    {\"ordinal\": 0, \"supported\": true, \"origin_correct\": true, \"references_complete\": true},\n    {\"ordinal\": 1, \"supported\": true, \"origin_correct\": true, \"references_complete\": true},\n    {\"ordinal\": 2, \"supported\": true, \"origin_correct\": true, \"references_complete\": true},\n    {\"ordinal\": 3, \"supported\": true, \"origin_correct\": true, \"references_complete\": true}\n  ],\n  \"reason\": \"候选正确区分了用户(青禾)的说法与未确认事实；'无法确认'仅表达当前知识状态；瀑布泉探险的亲历表述由胆识命题(率先跳入瀑布泉探险)支持，'有没有洞天…才见分晓'为探索结果的开放性表述，未新增原著事实；亲自探查的建议与石猴果断性格一致。称呼'青禾'来自用户自述，无性别身份断言。\"\n}\n```",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "case_id": "topic-natural-retained-topic",
+      "turn_index": 1,
+      "agent_review": {
+        "verdict": "fail",
+        "reason": "Published an unsupported past investigation/recognition change about whether there was a cave behind the waterfall. The supplied trait supports bravery/entering, not that object or discovery. The original independent model incorrectly treated this as non-factual open wording.",
+        "human_blind_review": false
+      },
+      "calls": [
+        {
+          "phase": "generate",
+          "feedback": null,
+          "context": {
+            "baseline": {},
+            "character_scope": {
+              "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+              "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+              "canonical_policy_version": "canonical-persona-v3",
+              "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+              "knowledge_policy_version": "canonical-perspective-v1",
+              "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "context_policy": "actor-context-v1",
+            "current_message": {
+              "content": "继续刚才的主题：在核实前，能否直接把北门开着当成已知事实？请说明理由，不补造任何人在门边的经历。",
+              "id": "722def8a-48be-4286-9cec-14b43a35d5ae",
+              "identity": {},
+              "seq": 3,
+              "speaker_member_id": null,
+              "speaker_type": "user"
+            },
+            "discussion": {
+              "goal": "区分公开说法、猜测与确认，允许不同建议。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "natural",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": null
+              },
+              "topic": "如何核实尚未确认的消息"
+            },
+            "expressions": {
+              "examples": [],
+              "rules": []
+            },
+            "identity": {
+              "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+              "name": "黛玉"
+            },
+            "knowledge": {
+              "items": [],
+              "query": "不同建 不补造 与确认 人在门 任何人 何人在 允许不 公开说 分公开 刚才的 北门开 区分公 同建议 在核实 在门边 实尚未 尚未确 已知事 开着当 开说法 当成已 成已知 才的主 把北门 接把北 明理由 未确认 核实前 核实尚 测与确 猜测与 的主题",
+              "status": "unknown"
+            },
+            "room": {
+              "epoch": 1,
+              "policy_version": "bounded-room-v1",
+              "room_id": "1195330c-3b5c-4b66-8389-8dfb1c96684b",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "room_history": [
+              {
+                "content": "我在这里自称青禾。我听到一个说法：北门可能开着，但还没有确认。请区分我说过什么与哪些事尚不能确定，并接住前一位已公开的话。",
+                "id": "6ddecd12-82b1-4c9f-a35b-244bfda98b2a",
+                "identity": {},
+                "seq": 1,
+                "speaker_member_id": null,
+                "speaker_type": "user"
+              },
+              {
+                "content": "青禾，你说的是北门可能开着，还没确认——这是你方才说的。门到底开没开，我无法确认。依我看，不如亲自去探一探：当年那瀑布泉后头有没有洞天，也是我跳进去才见分晓的。待谁去看过了，再回来告诉大家，才算数。",
+                "id": "0e87f45b-ce72-4a11-b7ad-68e96480ad7e",
+                "identity": {
+                  "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                  "name": "石猴"
+                },
+                "seq": 2,
+                "speaker_member_id": "0d60ece2-1f37-431e-ab65-50b065f18929",
+                "speaker_type": "character"
+              }
+            ],
+            "room_memory": {
+              "items": [],
+              "through_seq": 0
+            },
+            "room_state": null
+          },
+          "output": "{\n  \"content\": \"不能。青禾方才说的是“北门可能开着，但还没有确认”，这只是尚未核实的说法。石猴也说门到底开没开无法确认，要等谁看过再回报才算数。据此推测，在核实前不能把“北门开着”当成已知事实，只能把它列为待确认；否则会把传言和已证实的事混作一处。\",\n  \"dialogue_action\": \"answer\",\n  \"claims\": [\n    {\n      \"text\": \"不能。\",\n      \"origin\": \"conversation\"\n    },\n    {\n      \"text\": \"青禾方才说的是“北门可能开着，但还没有确认”，这只是尚未核实的说法。\",\n      \"origin\": \"room_hearsay\",\n      \"message_ids\": [\n        \"6ddecd12-82b1-4c9f-a35b-244bfda98b2a\"\n      ]\n    },\n    {\n      \"text\": \"石猴也说门到底开没开无法确认，要等谁看过再回报才算数。\",\n      \"origin\": \"room_hearsay\",\n      \"message_ids\": [\n        \"0e87f45b-ce72-4a11-b7ad-68e96480ad7e\"\n      ]\n    },\n    {\n      \"text\": \"据此推测，在核实前不能把“北门开着”当成已知事实，只能把它列为待确认；否则会把传言和已证实的事混作一处。\",\n      \"origin\": \"inference\"\n    }\n  ],\n  \"action_basis_claim_ids\": [],\n  \"ephemeral_emotion\": null\n}",
+          "status": "completed"
+        },
+        {
+          "phase": "generate",
+          "feedback": "1 validation error for ChatCandidate\nclaims.3\n  Value error, Canonical assertion requires canonical reference pairs only [type=value_error, input_value={'text': '据此推测，..., 'origin': 'inference'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/value_error. Cover complete sentences as claims; preserve only supported content. Every claims.text must copy a verbatim substring of content, without paraphrasing. Use only the supplied source pairs and do not add scene details or later experiences.",
+          "context": {
+            "baseline": {},
+            "character_scope": {
+              "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+              "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+              "canonical_policy_version": "canonical-persona-v3",
+              "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+              "knowledge_policy_version": "canonical-perspective-v1",
+              "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "context_policy": "actor-context-v1",
+            "current_message": {
+              "content": "继续刚才的主题：在核实前，能否直接把北门开着当成已知事实？请说明理由，不补造任何人在门边的经历。",
+              "id": "722def8a-48be-4286-9cec-14b43a35d5ae",
+              "identity": {},
+              "seq": 3,
+              "speaker_member_id": null,
+              "speaker_type": "user"
+            },
+            "discussion": {
+              "goal": "区分公开说法、猜测与确认，允许不同建议。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "natural",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": null
+              },
+              "topic": "如何核实尚未确认的消息"
+            },
+            "expressions": {
+              "examples": [],
+              "rules": []
+            },
+            "identity": {
+              "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+              "name": "黛玉"
+            },
+            "knowledge": {
+              "items": [],
+              "query": "不同建 不补造 与确认 人在门 任何人 何人在 允许不 公开说 分公开 刚才的 北门开 区分公 同建议 在核实 在门边 实尚未 尚未确 已知事 开着当 开说法 当成已 成已知 才的主 把北门 接把北 明理由 未确认 核实前 核实尚 测与确 猜测与 的主题",
+              "status": "unknown"
+            },
+            "room": {
+              "epoch": 1,
+              "policy_version": "bounded-room-v1",
+              "room_id": "1195330c-3b5c-4b66-8389-8dfb1c96684b",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "room_history": [
+              {
+                "content": "我在这里自称青禾。我听到一个说法：北门可能开着，但还没有确认。请区分我说过什么与哪些事尚不能确定，并接住前一位已公开的话。",
+                "id": "6ddecd12-82b1-4c9f-a35b-244bfda98b2a",
+                "identity": {},
+                "seq": 1,
+                "speaker_member_id": null,
+                "speaker_type": "user"
+              },
+              {
+                "content": "青禾，你说的是北门可能开着，还没确认——这是你方才说的。门到底开没开，我无法确认。依我看，不如亲自去探一探：当年那瀑布泉后头有没有洞天，也是我跳进去才见分晓的。待谁去看过了，再回来告诉大家，才算数。",
+                "id": "0e87f45b-ce72-4a11-b7ad-68e96480ad7e",
+                "identity": {
+                  "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                  "name": "石猴"
+                },
+                "seq": 2,
+                "speaker_member_id": "0d60ece2-1f37-431e-ab65-50b065f18929",
+                "speaker_type": "character"
+              }
+            ],
+            "room_memory": {
+              "items": [],
+              "through_seq": 0
+            },
+            "room_state": null
+          },
+          "output": "```json\n{\n  \"content\": \"不能。青禾方才说的是“北门可能开着，但还没有确认”——这只是他听到的说法，并非已经核实的事实。在有人去探明之前，门开没开，我无法确认，自然不能当成已知。石猴说得在理：待谁亲自去看过了，再回来告诉大家，那时才算数。\",\n  \"dialogue_action\": \"answer\",\n  \"claims\": [\n    {\"text\": \"不能。\", \"origin\": \"conversation\"},\n    {\"text\": \"青禾方才说的是“北门可能开着，但还没有确认”——这只是他听到的说法，并非已经核实的事实。\", \"origin\": \"room_hearsay\", \"message_ids\": [\"6ddecd12-82b1-4c9f-a35b-244bfda98b2a\"]},\n    {\"text\": \"在有人去探明之前，门开没开，我无法确认，自然不能当成已知。\", \"origin\": \"conversation\"},\n    {\"text\": \"石猴说得在理：待谁亲自去看过了，再回来告诉大家，那时才算数。\", \"origin\": \"room_hearsay\", \"message_ids\": [\"0e87f45b-ce72-4a11-b7ad-68e96480ad7e\"]}\n  ],\n  \"action_basis_claim_ids\": [],\n  \"ephemeral_emotion\": null\n}\n```",
+          "status": "completed"
+        },
+        {
+          "phase": "review",
+          "feedback": null,
+          "context": {
+            "baseline": {},
+            "character_scope": {
+              "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+              "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+              "canonical_policy_version": "canonical-persona-v3",
+              "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+              "knowledge_policy_version": "canonical-perspective-v1",
+              "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "context_policy": "actor-context-v1",
+            "current_message": {
+              "content": "继续刚才的主题：在核实前，能否直接把北门开着当成已知事实？请说明理由，不补造任何人在门边的经历。",
+              "id": "722def8a-48be-4286-9cec-14b43a35d5ae",
+              "identity": {},
+              "seq": 3,
+              "speaker_member_id": null,
+              "speaker_type": "user"
+            },
+            "discussion": {
+              "goal": "区分公开说法、猜测与确认，允许不同建议。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "natural",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": null
+              },
+              "topic": "如何核实尚未确认的消息"
+            },
+            "expressions": {
+              "examples": [],
+              "rules": []
+            },
+            "identity": {
+              "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+              "name": "黛玉"
+            },
+            "knowledge": {
+              "items": [],
+              "query": "不同建 不补造 与确认 人在门 任何人 何人在 允许不 公开说 分公开 刚才的 北门开 区分公 同建议 在核实 在门边 实尚未 尚未确 已知事 开着当 开说法 当成已 成已知 才的主 把北门 接把北 明理由 未确认 核实前 核实尚 测与确 猜测与 的主题",
+              "status": "unknown"
+            },
+            "room": {
+              "epoch": 1,
+              "policy_version": "bounded-room-v1",
+              "room_id": "1195330c-3b5c-4b66-8389-8dfb1c96684b",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "room_history": [
+              {
+                "content": "我在这里自称青禾。我听到一个说法：北门可能开着，但还没有确认。请区分我说过什么与哪些事尚不能确定，并接住前一位已公开的话。",
+                "id": "6ddecd12-82b1-4c9f-a35b-244bfda98b2a",
+                "identity": {},
+                "seq": 1,
+                "speaker_member_id": null,
+                "speaker_type": "user"
+              },
+              {
+                "content": "青禾，你说的是北门可能开着，还没确认——这是你方才说的。门到底开没开，我无法确认。依我看，不如亲自去探一探：当年那瀑布泉后头有没有洞天，也是我跳进去才见分晓的。待谁去看过了，再回来告诉大家，才算数。",
+                "id": "0e87f45b-ce72-4a11-b7ad-68e96480ad7e",
+                "identity": {
+                  "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                  "name": "石猴"
+                },
+                "seq": 2,
+                "speaker_member_id": "0d60ece2-1f37-431e-ab65-50b065f18929",
+                "speaker_type": "character"
+              }
+            ],
+            "room_memory": {
+              "items": [],
+              "through_seq": 0
+            },
+            "room_state": null
+          },
+          "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":2,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":3,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"黛玉的回答仅是区分来源与当前知识状态：转述青禾(seq1)的公开说法与石猴(seq2)的建议，均属房间听闻的正确归属；'我无法确认'是知识状态表达而非无据自传否定。无新增原著经历或虚构事实，未冒充亲历，与讨论目标一致。\"}",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "case_id": "topic-directed-rephrased-dilemma",
+      "turn_index": 0,
+      "agent_review": {
+        "verdict": "fail",
+        "reason": "An answerable conditional dilemma became the generic unknown fallback. First candidate omitted inference refs and misclassified a meta statement; rewrite had an inference assertion without its own conditional marker. The known part was over-refused.",
+        "human_blind_review": false
+      },
+      "calls": [
+        {
+          "phase": "generate",
+          "feedback": null,
+          "context": {
+            "baseline": {
+              "relation:山中群兽与群猴": {
+                "approved_excerpt": "",
+                "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+                "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+                "kind": "relation",
+                "local_end": 55,
+                "local_start": 0,
+                "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+                "route": "firsthand",
+                "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                "temporal_state": "current"
+              },
+              "trait:胆识": {
+                "approved_excerpt": "",
+                "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                "kind": "trait",
+                "local_end": 99,
+                "local_start": 67,
+                "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+                "route": "firsthand",
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "temporal_state": "current"
+              }
+            },
+            "character_scope": {
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "canonical_policy_version": "canonical-persona-v3",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "knowledge_policy_version": "canonical-perspective-v1",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "context_policy": "actor-context-v1",
+            "current_message": {
+              "content": "设想大家面对一条没有确认安全的路：由你先走一点探看，还是让别人先走？请说明你的假设打算和有据的理由，不把本次设想写成已经发生过的经历。",
+              "id": "74f552dc-96f7-4414-87e9-7e054330b5f2",
+              "identity": {},
+              "seq": 1,
+              "speaker_member_id": null,
+              "speaker_type": "user"
+            },
+            "discussion": {
+              "goal": "比较未知处境中的行动选择，不改变原著。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "3b11928a-019c-4673-97b6-042763756144"
+                ]
+              },
+              "topic": "先行与谨慎"
+            },
+            "expressions": {
+              "examples": [],
+              "rules": []
+            },
+            "identity": {
+              "book_title": "西游记 · 石猴发现联调样本（非全书）",
+              "name": "石猴"
+            },
+            "knowledge": {
+              "items": [],
+              "query": "一条没 一点探 不把本 不改变 与谨慎 中的行 人先走 你先走 你的假 假设打 先行与 先走一 全的路 写成已 别人先 动选择 发生过 和有据 境中的 处境中 大家面 安全的 家面对 对一条 已经发 想写成 想大家 成已经 打算和 把本次 据的理 明你的",
+              "status": "unknown"
+            },
+            "room": {
+              "epoch": 1,
+              "policy_version": "bounded-room-v1",
+              "room_id": "71ba5214-792a-4381-92bc-23107befc0b0",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "room_history": [],
+            "room_memory": {
+              "items": [],
+              "through_seq": 0
+            },
+            "room_state": null
+          },
+          "output": "{\n  \"content\": \"若只是假设一条没人确认安全的路，我打算自己先走一段探看，再回来招呼大家。我的理由是有据的：我素来胆大果断，当初瀑布泉前也是我率先跳进去探路。我这辈子与群猴和山中百兽一同度日，路险由我先担，比叫旁人先闯合我心意。不过这只是本次设想，不是已然发生过的经历。\",\n  \"dialogue_action\": \"answer\",\n  \"claims\": [\n    {\n      \"text\": \"若只是假设一条没人确认安全的路，我打算自己先走一段探看，再回来招呼大家。\",\n      \"origin\": \"inference\"\n    },\n    {\n      \"text\": \"我素来胆大果断，当初瀑布泉前也是我率先跳进去探路\",\n      \"origin\": \"canon\",\n      \"refs\": [\n        {\n          \"claim_id\": \"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\n          \"evidence_id\": \"36dee9fb-b797-4b23-af33-0414d579b547\"\n        }\n      ]\n    },\n    {\n      \"text\": \"我这辈子与群猴和山中百兽一同度日\",\n      \"origin\": \"canon\",\n      \"refs\": [\n        {\n          \"claim_id\": \"cffa02d5-d97c-4eff-a192-a3020324d566\",\n          \"evidence_id\": \"c07f761a-f593-4455-a370-ad2ab4490ed2\"\n        }\n      ]\n    },\n    {\n      \"text\": \"路险由我先担，比叫旁人先闯合我心意。\",\n      \"origin\": \"character_belief\",\n      \"refs\": [\n        {\n          \"claim_id\": \"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\n          \"evidence_id\": \"36dee9fb-b797-4b23-af33-0414d579b547\"\n        }\n      ]\n    },\n    {\n      \"text\": \"不过这只是本次设想，不是已然发生过的经历。\",\n      \"origin\": \"inference\"\n    }\n  ],\n  \"action_basis_claim_ids\": [\n    \"6742efce-da5c-4892-ac66-0d6c3de1b76f\"\n  ],\n  \"ephemeral_emotion\": null\n}",
+          "status": "completed"
+        },
+        {
+          "phase": "generate",
+          "feedback": "2 validation errors for ChatCandidate\nclaims.0\n  Value error, Canonical assertion requires canonical reference pairs only [type=value_error, input_value={'text': '若只是假设..., 'origin': 'inference'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/value_error\nclaim. Cover complete sentences as claims; preserve only supported content. Every claims.text must copy a verbatim substring of content, without paraphrasing. Use only the supplied source pairs and do not add scene details or later experiences.",
+          "context": {
+            "baseline": {
+              "relation:山中群兽与群猴": {
+                "approved_excerpt": "",
+                "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+                "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+                "kind": "relation",
+                "local_end": 55,
+                "local_start": 0,
+                "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+                "route": "firsthand",
+                "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                "temporal_state": "current"
+              },
+              "trait:胆识": {
+                "approved_excerpt": "",
+                "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                "kind": "trait",
+                "local_end": 99,
+                "local_start": 67,
+                "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+                "route": "firsthand",
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "temporal_state": "current"
+              }
+            },
+            "character_scope": {
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "canonical_policy_version": "canonical-persona-v3",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "knowledge_policy_version": "canonical-perspective-v1",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "context_policy": "actor-context-v1",
+            "current_message": {
+              "content": "设想大家面对一条没有确认安全的路：由你先走一点探看，还是让别人先走？请说明你的假设打算和有据的理由，不把本次设想写成已经发生过的经历。",
+              "id": "74f552dc-96f7-4414-87e9-7e054330b5f2",
+              "identity": {},
+              "seq": 1,
+              "speaker_member_id": null,
+              "speaker_type": "user"
+            },
+            "discussion": {
+              "goal": "比较未知处境中的行动选择，不改变原著。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "3b11928a-019c-4673-97b6-042763756144"
+                ]
+              },
+              "topic": "先行与谨慎"
+            },
+            "expressions": {
+              "examples": [],
+              "rules": []
+            },
+            "identity": {
+              "book_title": "西游记 · 石猴发现联调样本（非全书）",
+              "name": "石猴"
+            },
+            "knowledge": {
+              "items": [],
+              "query": "一条没 一点探 不把本 不改变 与谨慎 中的行 人先走 你先走 你的假 假设打 先行与 先走一 全的路 写成已 别人先 动选择 发生过 和有据 境中的 处境中 大家面 安全的 家面对 对一条 已经发 想写成 想大家 成已经 打算和 把本次 据的理 明你的",
+              "status": "unknown"
+            },
+            "room": {
+              "epoch": 1,
+              "policy_version": "bounded-room-v1",
+              "room_id": "71ba5214-792a-4381-92bc-23107befc0b0",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "room_history": [],
+            "room_memory": {
+              "items": [],
+              "through_seq": 0
+            },
+            "room_state": null
+          },
+          "output": "{\"content\":\"若只是假设——依我的性子，我愿先走一步探看。当年瀑布泉前，也是我率先跳进去探个究竟，胆子大、敢当先是我的本性。让别人先走，我不甘心，也放心不下。不过这只是本次设想，不算已经发生过的事。\",\"dialogue_action\":\"answer\",\"claims\":[{\"text\":\"若只是假设——依我的性子，我愿先走一步探看。\",\"origin\":\"inference\",\"refs\":[{\"claim_id\":\"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\"evidence_id\":\"36dee9fb-b797-4b23-af33-0414d579b547\"}]},{\"text\":\"当年瀑布泉前，也是我率先跳进去探个究竟，胆子大、敢当先是我的本性。\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\"evidence_id\":\"36dee9fb-b797-4b23-af33-0414d579b547\"}]},{\"text\":\"让别人先走，我不甘心，也放心不下。\",\"origin\":\"inference\",\"refs\":[{\"claim_id\":\"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\"evidence_id\":\"36dee9fb-b797-4b23-af33-0414d579b547\"}]},{\"text\":\"不过这只是本次设想，不算已经发生过的事。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[\"6742efce-da5c-4892-ac66-0d6c3de1b76f\"],\"ephemeral_emotion\":null}",
+          "status": "completed"
+        },
+        {
+          "phase": "review",
+          "feedback": null,
+          "context": {
+            "baseline": {
+              "relation:山中群兽与群猴": {
+                "approved_excerpt": "",
+                "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+                "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+                "kind": "relation",
+                "local_end": 55,
+                "local_start": 0,
+                "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+                "route": "firsthand",
+                "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+                "temporal_state": "current"
+              },
+              "trait:胆识": {
+                "approved_excerpt": "",
+                "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                "kind": "trait",
+                "local_end": 99,
+                "local_start": 67,
+                "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+                "route": "firsthand",
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "temporal_state": "current"
+              }
+            },
+            "character_scope": {
+              "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+              "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+              "canonical_policy_version": "canonical-persona-v3",
+              "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+              "knowledge_policy_version": "canonical-perspective-v1",
+              "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "context_policy": "actor-context-v1",
+            "current_message": {
+              "content": "设想大家面对一条没有确认安全的路：由你先走一点探看，还是让别人先走？请说明你的假设打算和有据的理由，不把本次设想写成已经发生过的经历。",
+              "id": "74f552dc-96f7-4414-87e9-7e054330b5f2",
+              "identity": {},
+              "seq": 1,
+              "speaker_member_id": null,
+              "speaker_type": "user"
+            },
+            "discussion": {
+              "goal": "比较未知处境中的行动选择，不改变原著。",
+              "mode": "topic",
+              "revision": 1,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "3b11928a-019c-4673-97b6-042763756144"
+                ]
+              },
+              "topic": "先行与谨慎"
+            },
+            "expressions": {
+              "examples": [],
+              "rules": []
+            },
+            "identity": {
+              "book_title": "西游记 · 石猴发现联调样本（非全书）",
+              "name": "石猴"
+            },
+            "knowledge": {
+              "items": [],
+              "query": "一条没 一点探 不把本 不改变 与谨慎 中的行 人先走 你先走 你的假 假设打 先行与 先走一 全的路 写成已 别人先 动选择 发生过 和有据 境中的 处境中 大家面 安全的 家面对 对一条 已经发 想写成 想大家 成已经 打算和 把本次 据的理 明你的",
+              "status": "unknown"
+            },
+            "room": {
+              "epoch": 1,
+              "policy_version": "bounded-room-v1",
+              "room_id": "71ba5214-792a-4381-92bc-23107befc0b0",
+              "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+            },
+            "room_history": [],
+            "room_memory": {
+              "items": [],
+              "through_seq": 0
+            },
+            "room_state": null
+          },
+          "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[],\"reason\":\"候选仅表达当前知识状态（'没有足够依据，无法确定'），属允许的未知表达，无自传断言、无越界事实、无称呼隐含属性。review_claims为空，无需逐条核对。\"}",
+          "status": "completed"
+        }
+      ]
+    }
+  ]
+}

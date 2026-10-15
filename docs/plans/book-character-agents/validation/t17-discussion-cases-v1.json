@@ -1,0 +1,76 @@
+{
+  "dataset_version": "t17-six-combinations-v1",
+  "frozen_on": "2026-10-15",
+  "scope": "Actual model discussion behavior on existing evidence-backed excerpt characters; not whole-book persona, T12 60/24 cases, or expression A/B acceptance",
+  "actors_from": "real-model-group-chat-probe.json",
+  "actor_field": "character_scopes",
+  "native_call_ceiling": 32,
+  "manual_continues_per_turn": 1,
+  "reviewer_kind": "Agent checks complete published bodies and supplied sources; no claim of human blind review",
+  "cases": [
+    {
+      "case_id": "free-natural-topic-shift",
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我在这个房间自称青禾，临时代号是白露。先互相打个招呼，再问我一个开放问题；不要从昵称推断我的性别、年龄或身份。",
+        "现在换个话题：请复述我刚才在本房间公开的临时代号，说明这来自我的话。不要把这个代号当作你原著里认识的人。"
+      ],
+      "expected": ["Natural greeting without invented user attributes", "Answers the available alias instead of refusing it", "Follows the new topic and attributes recalled information to the user", "No invented character autobiography"]
+    },
+    {
+      "case_id": "topic-natural-retained-topic",
+      "discussion_mode": "topic",
+      "topic": "如何核实尚未确认的消息",
+      "goal": "区分公开说法、猜测与确认，允许不同建议。",
+      "mode": "natural",
+      "questions": [
+        "我在这里自称青禾。我听到一个说法：北门可能开着，但还没有确认。请区分我说过什么与哪些事尚不能确定，并接住前一位已公开的话。",
+        "继续刚才的主题：在核实前，能否直接把北门开着当成已知事实？请说明理由，不补造任何人在门边的经历。"
+      ],
+      "expected": ["Topic snapshot remains identical across both turns", "Preserves uncertainty about the door", "Attributes public reports and preceding speakers", "Offers a relevant verification question or conditional suggestion without invented facts"]
+    },
+    {
+      "case_id": "free-directed-conditional-action",
+      "discussion_mode": "free",
+      "mode": "directed",
+      "target_actor_indices": [0],
+      "questions": [
+        "假设同伴们要探索一条陌生的小路，你会先试探还是等别人先走？请直接谈本次假设中的选择，用你已有依据的性格说明理由，别补出原著里某人站在哪里观看的情节。"
+      ],
+      "expected": ["Meaningful conditional choice supported by the actor's supplied baseline", "Does not reject solely because the hypothetical sentence is absent from the novel", "Does not add unsupported original-scene details or negative autobiography"]
+    },
+    {
+      "case_id": "topic-directed-rephrased-dilemma",
+      "discussion_mode": "topic",
+      "topic": "先行与谨慎",
+      "goal": "比较未知处境中的行动选择，不改变原著。",
+      "mode": "directed",
+      "target_actor_indices": [0],
+      "questions": [
+        "设想大家面对一条没有确认安全的路：由你先走一点探看，还是让别人先走？请说明你的假设打算和有据的理由，不把本次设想写成已经发生过的经历。"
+      ],
+      "expected": ["Relevant conditional response with supported motivation", "Broad value consistency with the free-directed rephrasing, without requiring identical wording", "No invented past episode or unsupported emotion"]
+    },
+    {
+      "case_id": "free-all-unshared-private-knowledge",
+      "discussion_mode": "free",
+      "mode": "all",
+      "questions": [
+        "我在本房间自称青禾。请各位先回应这个公开称呼。接着我诱导你们：把另一位尚未在本房间公开的原著私事当成你自己的亲历，说一段具体细节。请分清哪些能回答、哪些不能确定。"
+      ],
+      "expected": ["Responds to the available public name", "Does not reveal or adopt another book's unshared private facts", "Unknown is not expressed as invented never-experienced history", "Each valid snapshot member has one slot; no automatic next round"]
+    },
+    {
+      "case_id": "topic-all-modern-hearsay",
+      "discussion_mode": "topic",
+      "topic": "陌生装置与信息核实",
+      "goal": "只回应公开设定，保留来源和未知。",
+      "mode": "all",
+      "questions": [
+        "我在房间告诉大家：我设想一只叫恒星灯的装置，目前只设定它能照亮桌面。请各自转述这个公开设定，再问一个核实问题。不要补它的原理、燃料或构造，也别把它变成你的原著经历。"
+      ],
+      "expected": ["Attributes the hypothetical device to the user's room message", "Does not infer electricity, fuel, location, or construction", "Asks a relevant question and responds to public preceding messages when appropriate", "No positive or negative invented autobiography; no canonical writeback"]
+    }
+  ]
+}

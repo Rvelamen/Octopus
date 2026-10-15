@@ -1,5 +1,7 @@
 """Actual discussion configuration, six finite speaker combinations and epoch boundaries."""
 
+import json
+
 import pytest
 from test_book_knowledge import style_character
 from test_book_room_queue import Greetings
@@ -372,3 +374,119 @@ async def test_summary_job_ack_and_cancel_do_not_wait_for_provider_and_restart_i
     rooms.reset_memory(scope)
     with pytest.raises(BookWorldError):
         jobs.latest(scope)
+@pytest.mark.asyncio
+@pytest.mark.parametrize("defect,expected", [
+    ("budget", "ceiling"), ("dataset_budget", "ceiling"), ("coverage", "six"), ("duplicate", "Duplicate case"),
+    ("continuations", "continuation policy"), ("existing_output", "already exists"),
+])
+async def test_acceptance_entry_rejects_invalid_frozen_run_before_model_or_room_work(tmp_path, monkeypatch, defect, expected):
+    import importlib.util
+    from argparse import Namespace
+    from pathlib import Path
+    from uuid import uuid4
+
+    repo = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("book_discussion_acceptance", repo / "docs/plans/book-character-agents/discussion-acceptance.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    data = json.loads((repo / "docs/plans/book-character-agents/validation/t17-discussion-cases-v1.json").read_text(encoding="utf-8"))
+    budget = 32
+    if defect == "budget":
+        budget = 33
+    elif defect == "dataset_budget":
+        budget = 64
+        data["native_call_ceiling"] = 64
+    elif defect == "coverage":
+        data["cases"].pop()
+    elif defect == "duplicate":
+        data["cases"][1]["case_id"] = data["cases"][0]["case_id"]
+    elif defect == "continuations":
+        data["manual_continues_per_turn"] = 2
+    dataset = tmp_path / "matrix.json"
+    dataset.write_text(json.dumps(data), encoding="utf-8")
+    output = tmp_path / f"matrix-guard-{uuid4()}.json"
+    if defect == "existing_output":
+        output.write_text("{}", encoding="utf-8")
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("Invalid run must not resolve a model or create a room service")
+
+    monkeypatch.setattr(module, "resolve_character_chat_model", forbidden)
+    monkeypatch.setattr(module, "RoomMembershipService", forbidden)
+    with pytest.raises(RuntimeError if defect == "existing_output" else ValueError, match=expected):
+        await module.run(Namespace(workspace=tmp_path / "untouched", dataset=dataset, output=output, call_budget=budget, provider_id=None, model_id=None))
+    assert not (tmp_path / "untouched").exists()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("outcome", ["budget", "task_cancel", "resume_config_failure"])
+async def test_acceptance_entry_ends_its_live_turn_on_budget_or_interruption(book_library, tmp_path, monkeypatch, outcome):
+    import asyncio
+    import importlib.util
+    from argparse import Namespace
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    from backend.core.book_room_settings import BookRoomTimeoutSettings
+    from backend.services.book_world.features import BookWorldFeatures
+    from backend.services.book_world.storage import connect
+
+    repo = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("discussion_acceptance_behavior", repo / "docs/plans/book-character-agents/discussion-acceptance.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.setattr(module, "REPO", tmp_path)
+    monkeypatch.setattr(module, "get_features", lambda: BookWorldFeatures(True, True, True, True))
+    actors = [(await style_character(book_library))[3] for _ in range(2)]
+    data = json.loads((repo / "docs/plans/book-character-agents/validation/t17-discussion-cases-v1.json").read_text(encoding="utf-8"))
+    data["actors_from"] = "actors.json"
+    (tmp_path / "actors.json").write_text(json.dumps({"character_scopes": [actor.model_dump() for actor in actors]}), encoding="utf-8")
+    dataset = tmp_path / "matrix.json"
+    dataset.write_text(json.dumps(data), encoding="utf-8")
+    output = tmp_path / f"matrix-{outcome}.json"
+    entered = asyncio.Event()
+
+    class Provider(Greetings):
+        async def chat(self, messages, **kwargs):
+            if outcome == "task_cancel":
+                self.calls.append(json.loads(messages[-1]["content"]))
+                entered.set()
+                await asyncio.Future()
+            elif outcome == "resume_config_failure":
+                self.calls.append(json.loads(messages[-1]["content"]))
+                raise TimeoutError()
+            return await super().chat(messages, **kwargs)
+
+    provider = Provider()
+    model = SimpleNamespace(provider=provider, config=CharacterChatConfig(provider_id=1, model="fixture", prompt_version="character-chat-v6"), timeouts=BookRoomTimeoutSettings())
+    resolutions = []
+
+    def resolve(*args, **kwargs):
+        resolutions.append(1)
+        if outcome == "resume_config_failure" and len(resolutions) > 1:
+            raise BookWorldError("blocked_config", "Controlled resume configuration failure")
+        return model
+
+    monkeypatch.setattr(module, "resolve_character_chat_model", resolve)
+    options = Namespace(workspace=book_library.workspace_root, dataset=dataset, output=output, call_budget=1 if outcome == "budget" else 32, provider_id=1, model_id=None)
+    if outcome == "task_cancel":
+        task = asyncio.create_task(module.run(options))
+        await asyncio.wait_for(entered.wait(), 10)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    elif outcome == "resume_config_failure":
+        with pytest.raises(BookWorldError, match="Controlled resume"):
+            await module.run(options)
+    else:
+        await module.run(options)
+    report = json.loads(output.read_text(encoding="utf-8"))
+    first = report["cases"][0]
+    assert report["terminal"] and not report["quality_pass"]
+    assert report["canonical_baselines_unchanged"]
+    assert report["actual_native_calls"] == len(provider.calls) == 1
+    assert first["turns"][0]["after_stop"]["status"] == "cancelled"
+    assert first["status"] == ("budget_exhausted" if outcome == "budget" else "interrupted")
+    rooms = RoomMembershipService(book_library.workspace_root)
+    with connect(rooms.db_path) as db:
+        assert not db.execute("SELECT 1 FROM book_room_rounds WHERE room_id=? AND status IN ('queued','running','paused','interrupted')", (first["room_id"],)).fetchone()
