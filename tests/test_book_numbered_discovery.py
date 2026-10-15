@@ -80,6 +80,29 @@ def test_numbered_windows_cover_long_names_and_unicode_without_partial_source_re
     assert covered == set(range(len(text)))
 
 
+@pytest.mark.parametrize("defect,expected", [
+    ("unknown_person", "Scene 1 references unregistered person 9"),
+    ("repeated_person", "Scene 1 repeats person 0"),
+    ("repeated_registry", "Duplicate person registry number: 0"),
+    ("repeated_known", "Known identity 0 has multiple registry entries"),
+    ("unused_registry", "Unused registry entries: 2"),
+])
+def test_numbered_errors_identify_the_scene_and_identity_for_a_bounded_retry(defect, expected):
+    reply = numbered_reply()
+    if defect == "unknown_person":
+        reply["scenes"][1]["c"][0]["p"] = 9
+    elif defect == "repeated_person":
+        reply["scenes"][1]["c"].append(copy.deepcopy(reply["scenes"][1]["c"][0]))
+    elif defect == "repeated_registry":
+        reply["people"].append(copy.deepcopy(reply["people"][0]))
+    elif defect == "repeated_known":
+        reply["people"][1].update(k=0,state="existing")
+    else:
+        reply["people"].append({"i":2})
+    with pytest.raises(ValueError, match=expected):
+        assemble_numbered(json.dumps(reply),prepare_numbered(input_data()))
+
+
 @pytest.mark.parametrize("repeated", [False, True])
 def test_numbered_registry_preserves_original_multiscene_capacity_above_256_people(repeated):
     data = {"segments":[],"known_characters":[]}
@@ -228,3 +251,40 @@ async def test_numbered_service_persists_existing_shape_and_keeps_uncertainty(bo
         saved = json.loads(database.execute("SELECT result_json FROM book_build_steps WHERE build_id=?",(build["build_id"],)).fetchone()[0])["result"]
         assert "people" not in saved
         assert saved["scenes"][0]["characters"][0]["evidence"]["segment_id"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("always_invalid", [False, True])
+async def test_numbered_retry_receives_precise_feedback_and_never_exceeds_two_calls(book_library, always_invalid):
+    item, source = story(book_library, "人物甲说：\"这不是秘密\"。\n\n人物乙经过，人物甲安坐。")
+    service = BookDiscoveryService(book_library.workspace_root)
+    config = DiscoveryConfig(provider_id=1, model="fixture", prompt_version="character-discovery-v14")
+    build = service.create_build(item, source, config)
+    seen = []
+
+    class Provider:
+        async def chat(self, messages, **kwargs):
+            data = json.loads(messages[-1]["content"])
+            seen.append(data)
+            if len(seen) == 2:
+                assert "Scene 1 repeats person 0" in data["previous_error"]
+                assert "in-scene e" in data["previous_error"]
+            reply = numbered_reply()
+            reply["people"][0].pop("k")
+            reply["people"][0]["state"] = "new"
+            for scene in reply["scenes"]:
+                for appearance in scene["c"]:
+                    if appearance["p"] == 0:
+                        appearance.pop("kn")
+                        appearance["n"] = "人物甲"
+            if len(seen) == 1 or always_invalid:
+                reply["scenes"][1]["c"].append(copy.deepcopy(reply["scenes"][1]["c"][0]))
+            return LLMResponse(content=json.dumps(reply))
+
+    await service.run(build["build_id"], Provider(), config)
+    assert len(seen) == 2
+    result = service.get_build(item, build["build_id"])
+    if always_invalid:
+        assert result["status"] == "failed" and "Scene 1 repeats person 0" in result["error_detail"]
+    else:
+        assert result["stage"] == "discovery_complete"

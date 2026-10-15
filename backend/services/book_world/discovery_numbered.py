@@ -1,6 +1,7 @@
 """Compact identities and immutable source anchors, expanded before full validation."""
 
 import copy
+from collections import Counter
 from typing import Literal
 
 from pydantic import Field, model_validator
@@ -129,10 +130,12 @@ def assemble_numbered(raw: str, packet: dict, *, allow_implicit_name: bool = Fal
     response = NumberedDiscovery.model_validate_json(parse_json(raw))
     people = {person.person_index: person for person in response.people}
     if len(people) != len(response.people):
-        raise ValueError("Duplicate person registry number")
+        duplicate = next(index for index, count in Counter(person.person_index for person in response.people).items() if count > 1)
+        raise ValueError(f"Duplicate person registry number: {duplicate}; each i must be unique")
     known = [person.known_index for person in response.people if person.known_index is not None]
     if len(known) != len(set(known)):
-        raise ValueError("Known identity must have one registry entry")
+        duplicate = next(index for index, count in Counter(known).items() if count > 1)
+        raise ValueError(f"Known identity {duplicate} has multiple registry entries; reuse one local i across scenes")
     if any(index >= len(packet["catalog"]) for index in known):
         raise ValueError("Known identity number was not offered")
     used = set()
@@ -143,15 +146,17 @@ def assemble_numbered(raw: str, packet: dict, *, allow_implicit_name: bool = Fal
         return numbered_span(packet["anchors"][index], label, occurrence)
 
     scenes = []
-    for scene in response.scenes:
+    for scene_index, scene in enumerate(response.scenes):
         if any(index < 0 or index >= len(packet["original"]["segments"]) for index in scene.segment_indices):
             raise ValueError("Segment number was not offered")
         scene_people = set()
         characters = []
         for appearance in scene.appearances:
             person = people.get(appearance.person_index)
-            if person is None or appearance.person_index in scene_people:
-                raise ValueError("Scene references an unknown or duplicate person")
+            if person is None:
+                raise ValueError(f"Scene {scene_index} references unregistered person {appearance.person_index}; add its registry entry or correct p without guessing identity")
+            if appearance.person_index in scene_people:
+                raise ValueError(f"Scene {scene_index} repeats person {appearance.person_index}; keep one appearance and put extra literal names in a with their own in-scene e. Keep distinct people separate")
             used.add(appearance.person_index)
             scene_people.add(appearance.person_index)
             if person.known_index is not None:
@@ -195,5 +200,6 @@ def assemble_numbered(raw: str, packet: dict, *, allow_implicit_name: bool = Fal
         scenes.append({"segment_ids": [packet["original"]["segments"][index]["id"] for index in scene.segment_indices],
                        "location_label": scene.location, "characters": characters})
     if used != set(people):
-        raise ValueError("Unused registry entry cannot grant an identity")
+        unused = ", ".join(map(str, sorted(set(people) - used)[:8]))
+        raise ValueError(f"Unused registry entries: {unused}; register only referenced identities, preserving actual source characters and evidence")
     return {"scenes": scenes}

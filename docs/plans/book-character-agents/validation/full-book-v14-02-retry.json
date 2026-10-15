@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-15",
+  "action": "Explicit finite retry under the ongoing user goal, after recorded structural/source failures; no prior checkpoint is rewritten",
+  "diagnosis": [
+    "西游记: same-scene duplicate p, then unregistered p; precise scene/person feedback is now available without relaxing validation",
+    "红楼梦: scene-local literal failure after structural regeneration; retain checkpoints and let the existing bounded target repair run"
+  ],
+  "before": [
+    {
+      "job_id": "733a1181-5820-43a3-b35e-9a0fa20ad165",
+      "library_item_id": 1,
+      "generation": 1,
+      "status": "failed",
+      "discovery_build_id": "8bd9696d-84be-459c-84e7-ff2435064590"
+    },
+    {
+      "job_id": "e6f95af7-0dba-40c0-b81d-6e72d0cd449a",
+      "library_item_id": 2,
+      "generation": 1,
+      "status": "failed",
+      "discovery_build_id": "eaf3a575-9743-4732-a2a7-34fde2fff8d1"
+    }
+  ],
+  "after": [
+    {
+      "job_id": "733a1181-5820-43a3-b35e-9a0fa20ad165",
+      "library_item_id": 1,
+      "generation": 2,
+      "status": "queued",
+      "discovery_build_id": "8bd9696d-84be-459c-84e7-ff2435064590"
+    },
+    {
+      "job_id": "e6f95af7-0dba-40c0-b81d-6e72d0cd449a",
+      "library_item_id": 2,
+      "generation": 2,
+      "status": "queued",
+      "discovery_build_id": "eaf3a575-9743-4732-a2a7-34fde2fff8d1"
+    }
+  ],
+  "quality_pass": false
+}

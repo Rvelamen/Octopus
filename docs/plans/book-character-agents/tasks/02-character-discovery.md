@@ -49,5 +49,7 @@
 
 2026-10-15 新增 v13 原文编号发现及 v14 失败条目的场景窗口修复，原存储/协议/界面与完整授权校验保持。有限修复两份真实失败输入通过，不代表全书人物质量；v14首个全来源窗口仍失败，继续保留诊断和检查点。专项85项、限定范围Mypy52文件、Ruff、前端类型/构建及实际失败/原文组件操作通过，完整项目终态见[窗口修复验证](../validation/2026-10-15-window-repair-validation.md)。
 
+结构错误进一步提供具体场景与人物编号，不改拒绝条件；七项追加回归和相关92项通过。v14第二个有限窗口实际31次，保留西游记12/411与红楼梦10/581单元；后者仍因字段归属结构错误失败，未放宽校验或宣布全书成功。见[具体诊断与有限恢复](../validation/2026-10-15-discovery-feedback-validation.md)。
+
 设计约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，代码接入点和执行顺序见[实施计划](F:/god/project/Octopus/docs/plans/book-character-agents/implementation-plan.md)。
 
