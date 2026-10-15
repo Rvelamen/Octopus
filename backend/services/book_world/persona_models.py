@@ -152,6 +152,15 @@ previous_error包含失败阶段、字段路径、类型及原因，都是待检
 """
 )
 
+EVIDENCE_PERSONA_VERSION = "persona-extract-v6"
+EXTRACT_PROMPTS[EVIDENCE_PERSONA_VERSION] = (
+    EXTRACT_PROMPTS[STRUCTURED_PERSONA_VERSION]
+    + """\n提取每项前逐子句核对将保存的claim.evidence。命题中的人物、动作、意向或完成状态、场所、对象、数量和结果，必须由该项列出的连续逐字引文完整支持；不要只引用开头，再把后续未引用段落的细节写入命题。
+每项最多3条evidence；覆盖不下就拆成更小的独立命题，只选最多6项最有依据的内容。不要为凑数量删掉必要出处、把多个经历挤成一句或补完整段人生。性格推断也需给实际动作或台词的充分上下文，并保持保守，不添加稳定绝对人格。
+完整命题证据不等于自动获知授权：access仍逐条证明本人实际获知，安全摘录不含旁白或他人秘密。不确定就保留未知，不能为通过引文覆盖而降低获知标准。
+"""
+)
+
 REVIEW_PROMPTS = {
     "persona-review-v3": REVIEW_PROMPT,
     "persona-review-v4": REVIEW_PROMPT
@@ -159,3 +168,8 @@ REVIEW_PROMPTS = {
 trait也不能夹带未证明的完成事件或认识变化。不要仅因带有“敢于”就接受容易被当作历史完成动作的模糊命题；此类需提取器重述为明确意向或保守性格，未重述前supported=false、baseline_supported=false。可以接受由主动表示愿意得到的保守主动/胆识推断，不要求只能提取原文逐字评价，但不得增加未发生的场景。拒绝不影响其他独立有据命题；不能以引文存在或熟知故事作为支持。
 """,
 }
+
+REVIEW_PROMPTS["persona-review-v5"] = (
+    REVIEW_PROMPTS["persona-review-v4"]
+    + """\n另外逐项检查保存引文覆盖：supported只能由本条提案的claim.evidence逐字引文集合完整支持。按命题拆开人物、动作、时间、完成态、数量与结果，任何子句缺引文就supported=false。即使segments其他未引用段落有该内容，也不能借整批上下文补成本条证据。acquisition/identity_evidence只证明获知及共指，不能替代缺少的命题引文。不得把完整段落中的未引用部分当作已保存引用。独立核对获知和安全摘录；拒绝一条不影响另一条独立有据命题。"""
+)

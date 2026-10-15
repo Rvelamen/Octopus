@@ -1,0 +1,771 @@
+{
+  "date": "2026-10-15",
+  "scope": "Existing Stone excerpt only, new immutable persona child from original discovery; not a controlled comparison with revised identity graph, no full-book or blind-quality claim",
+  "native_call_ceiling": 8,
+  "actual_native_calls": 4,
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 8192,
+    "call_timeout_seconds": 180,
+    "prompt_version": "persona-extract-v6",
+    "policy_version": "canonical-persona-v3",
+    "review_prompt_version": "persona-review-v5"
+  },
+  "old_build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+  "discovery_parent_id": "e6849fdb-7258-423d-bc1f-068b63b18467",
+  "ancestor_lineage": [
+    {
+      "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+      "parent_build_id": "3fb0030b-c7f5-428f-8b70-e6a5b2254af7",
+      "stage": "persona_published",
+      "status": "partial_published",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f"
+    },
+    {
+      "build_id": "3fb0030b-c7f5-428f-8b70-e6a5b2254af7",
+      "parent_build_id": "85b07c37-99fd-4eed-a54c-bfec3531f49f",
+      "stage": "persona_published",
+      "status": "partial_published",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f"
+    },
+    {
+      "build_id": "85b07c37-99fd-4eed-a54c-bfec3531f49f",
+      "parent_build_id": "e6849fdb-7258-423d-bc1f-068b63b18467",
+      "stage": "persona_published",
+      "status": "partial_published",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f"
+    },
+    {
+      "build_id": "e6849fdb-7258-423d-bc1f-068b63b18467",
+      "parent_build_id": null,
+      "stage": "discovery_complete",
+      "status": "queued",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f"
+    }
+  ],
+  "new_build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+  "previous_v5_sha256_before": "6388c7041f5644979758a3f4c953ec7e5362f3e2c2474c2ad9efc9881e53dbc0",
+  "old_agent_sha256_before": "968bfdbb2c861105c18ac18e6388d020ad0e7f3d1eebea863a33011e01ac44fb",
+  "prompt_sha256": {
+    "extract": "c9305ed1f71387c27e9f0532f53e872527c7b109b1b59d254f27fc3e1fe06c62",
+    "review": "b21a20f508d5e3a4e1c1b0f89c7232ee33846723f3fea6a1e23483cd72282e84"
+  },
+  "runtime_sha256": {
+    "persona.py": "9bab0dd15aba231db7e2168297af37805d05e9ba6f1ec878671157f5745e7c46",
+    "persona_models.py": "8ab5f61e465868c28c1a74b556ff133ca939be69adb5ccc3b2531e5aebd019b1",
+    "persona_validation.py": "b0ccb6482be0c5bd3b62a2bec3131c9d2328af3cb0e72a13dfcb52dbf08711ff",
+    "persona_publication.py": "7f860c7a0f5adeae42672a6fff14aa2d50b1bd5267127d6f10ba82102b93a13c"
+  },
+  "calls": [
+    {
+      "phase": "extract",
+      "unit_key": "0",
+      "status": "completed",
+      "input_sha256": "b992221afa176b41508c0a724951975216aa24f7d575b94bef419b1dfc40226e",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 2219,
+        "completion_tokens": 2380,
+        "total_tokens": 4599,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 64.469
+    },
+    {
+      "phase": "review",
+      "unit_key": "0",
+      "status": "completed",
+      "input_sha256": "1dbe3382a205be1ec66f782bed07715edf18f31329f65ed619a05f53be312ba7",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 3521,
+        "completion_tokens": 932,
+        "total_tokens": 4453,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 25.312
+    },
+    {
+      "phase": "extract",
+      "unit_key": "1",
+      "status": "completed",
+      "input_sha256": "6be922c99daf7bd802f5239634c16580a93bbb6cbdb61d692cf221a91f024ab9",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1229,
+        "completion_tokens": 2581,
+        "total_tokens": 3810,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 58.015
+    },
+    {
+      "phase": "review",
+      "unit_key": "1",
+      "status": "completed",
+      "input_sha256": "2a9fa702e255df37efc28e3e498a04170518f1ce5d021f4253779bc6e43163ec",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 2256,
+        "completion_tokens": 640,
+        "total_tokens": 2896,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 23.172
+    }
+  ],
+  "quality_pass": false,
+  "build": {
+    "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+    "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+    "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+    "parent_build_id": "e6849fdb-7258-423d-bc1f-068b63b18467",
+    "history_build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+    "status": "partial_published",
+    "stage": "persona_published",
+    "total_units": 2,
+    "completed_units": 2,
+    "failed_units": 0,
+    "processed_segments": 11,
+    "total_segments": 11,
+    "error_code": "partial_build",
+    "error_detail": "Some identities, evidence units or baseline slots remain unresolved",
+    "can_resume": false,
+    "config": {
+      "call_timeout_seconds": 180,
+      "max_tokens": 8192,
+      "model": "k3",
+      "policy_version": "canonical-persona-v3",
+      "prompt_version": "persona-extract-v6",
+      "provider_id": 2,
+      "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+      "reasoning_effort": "low",
+      "review_prompt_version": "persona-review-v5",
+      "unit_char_limit": 8000,
+      "unit_segment_limit": 12
+    },
+    "publication_report": {
+      "baseline_conflicts": 0,
+      "failed_units": [],
+      "published_characters": 4,
+      "rejected_claims": 2,
+      "unresolved_characters": 2
+    }
+  },
+  "characters": [
+    {
+      "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+      "character_id": "7c9ef972-34ed-4e05-a522-9506609fa359",
+      "agent_status": "needs_review",
+      "public": {
+        "entity_kind": "group",
+        "identity_state": "needs_review",
+        "name": "仙卿"
+      },
+      "reader": {
+        "claims": [],
+        "baseline": {},
+        "extensions": []
+      },
+      "published": true
+    },
+    {
+      "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+      "character_id": "0ce86307-a535-4c61-9d2f-4d3bc10d273c",
+      "agent_status": "needs_review",
+      "public": {
+        "entity_kind": "group",
+        "identity_state": "needs_review",
+        "name": "众猴"
+      },
+      "reader": {
+        "claims": [],
+        "baseline": {},
+        "extensions": []
+      },
+      "published": true
+    },
+    {
+      "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+      "character_id": "feabfaa1-0198-4129-abfc-b7267c156e37",
+      "agent_status": "sparse",
+      "public": {
+        "entity_kind": "person",
+        "identity_state": "verified",
+        "name": "千里眼"
+      },
+      "reader": {
+        "claims": [
+          {
+            "id": "18511f13-456b-42fa-8789-7dfaaa4b918d",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+            "kind": "fact",
+            "owner_character_id": null,
+            "proposition": "金光惊动玉皇大天尊玄穹高上帝，他聚集仙卿，即命千里眼、顺风耳开南天门观看。",
+            "truth_state": "true",
+            "interpretation_level": "explicit",
+            "support_state": "accepted",
+            "scene_id": "6867fb8b-6d82-402d-aaa0-c888728180d1",
+            "supersedes_claim_id": null,
+            "search_terms": "金光惊动玉皇大天尊玄穹高上帝，他聚集仙卿，即命千里眼、顺风耳开南天门观看。",
+            "evidence": [
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 33,
+                "local_end": 89,
+                "quote_text": "惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 33,
+                "local_end": 89,
+                "quote_text": "惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 73,
+                "local_end": 89,
+                "quote_text": "即命千里眼、顺风耳开南天门观看。",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 73,
+                "local_end": 89,
+                "quote_text": "即命千里眼、顺风耳开南天门观看。",
+                "support_state": "accepted"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "feabfaa1-0198-4129-abfc-b7267c156e37",
+                "route": "told",
+                "access_state": "accepted"
+              }
+            ]
+          },
+          {
+            "id": "c552121d-b4c0-4dbe-b263-cc099a2255cf",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+            "kind": "episode",
+            "owner_character_id": "feabfaa1-0198-4129-abfc-b7267c156e37",
+            "proposition": "千里眼奉旨与顺风耳出南天门外观听，看得真、听得明，须臾回报道金光之处的情况。",
+            "truth_state": "true",
+            "interpretation_level": "explicit",
+            "support_state": "rejected",
+            "scene_id": "6867fb8b-6d82-402d-aaa0-c888728180d1",
+            "supersedes_claim_id": null,
+            "search_terms": "千里眼奉旨与顺风耳出南天门外观听，看得真、听得明，须臾回报道金光之处的情况。",
+            "evidence": [
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 89,
+                "local_end": 110,
+                "quote_text": "二将果奉旨出门外看的真听的明。须臾回报道：",
+                "support_state": "rejected"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 89,
+                "local_end": 104,
+                "quote_text": "二将果奉旨出门外看的真听的明。",
+                "support_state": "rejected"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 73,
+                "local_end": 89,
+                "quote_text": "即命千里眼、顺风耳开南天门观看。",
+                "support_state": "rejected"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "feabfaa1-0198-4129-abfc-b7267c156e37",
+                "route": "firsthand",
+                "access_state": "revoked"
+              }
+            ]
+          }
+        ],
+        "baseline": {},
+        "extensions": []
+      },
+      "published": true
+    },
+    {
+      "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+      "character_id": "ee69744e-01df-48b9-9acb-67dfa6f0d4ae",
+      "agent_status": "sparse",
+      "public": {
+        "entity_kind": "person",
+        "identity_state": "verified",
+        "name": "玉皇大天尊玄穹高上帝"
+      },
+      "reader": {
+        "claims": [
+          {
+            "id": "18511f13-456b-42fa-8789-7dfaaa4b918d",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+            "kind": "fact",
+            "owner_character_id": null,
+            "proposition": "金光惊动玉皇大天尊玄穹高上帝，他聚集仙卿，即命千里眼、顺风耳开南天门观看。",
+            "truth_state": "true",
+            "interpretation_level": "explicit",
+            "support_state": "accepted",
+            "scene_id": "6867fb8b-6d82-402d-aaa0-c888728180d1",
+            "supersedes_claim_id": null,
+            "search_terms": "金光惊动玉皇大天尊玄穹高上帝，他聚集仙卿，即命千里眼、顺风耳开南天门观看。",
+            "evidence": [
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 33,
+                "local_end": 89,
+                "quote_text": "惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 33,
+                "local_end": 89,
+                "quote_text": "惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 73,
+                "local_end": 89,
+                "quote_text": "即命千里眼、顺风耳开南天门观看。",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 73,
+                "local_end": 89,
+                "quote_text": "即命千里眼、顺风耳开南天门观看。",
+                "support_state": "accepted"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "ee69744e-01df-48b9-9acb-67dfa6f0d4ae",
+                "route": "firsthand",
+                "access_state": "accepted"
+              }
+            ]
+          },
+          {
+            "id": "b95611c1-31ea-46df-91c7-f658a8f86d46",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+            "kind": "belief",
+            "owner_character_id": "ee69744e-01df-48b9-9acb-67dfa6f0d4ae",
+            "proposition": "玉帝听报后表示，下方之物乃天地精华所生，不足为异。",
+            "truth_state": "unknown",
+            "interpretation_level": "explicit",
+            "support_state": "accepted",
+            "scene_id": "6867fb8b-6d82-402d-aaa0-c888728180d1",
+            "supersedes_claim_id": null,
+            "search_terms": "玉帝听报后表示，下方之物乃天地精华所生，不足为异。",
+            "evidence": [
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 184,
+                "local_end": 210,
+                "quote_text": "玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 184,
+                "local_end": 210,
+                "quote_text": "玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”",
+                "support_state": "accepted"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "ee69744e-01df-48b9-9acb-67dfa6f0d4ae",
+                "route": "firsthand",
+                "access_state": "accepted"
+              }
+            ]
+          }
+        ],
+        "baseline": {
+          "belief:天地造化": {
+            "claim_id": "b95611c1-31ea-46df-91c7-f658a8f86d46",
+            "proposition": "玉帝听报后表示，下方之物乃天地精华所生，不足为异。",
+            "kind": "belief",
+            "evidence": [
+              {
+                "evidence_id": "489707f1-2c19-48ac-9c31-74f63f646eb5",
+                "approved_excerpt": "下方之物乃天地精华所生不足为异。"
+              }
+            ]
+          }
+        },
+        "extensions": []
+      },
+      "published": true
+    },
+    {
+      "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+      "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+      "agent_status": "ready",
+      "public": {
+        "entity_kind": "person",
+        "identity_state": "verified",
+        "name": "石猴"
+      },
+      "reader": {
+        "claims": [
+          {
+            "id": "1e2d3bff-c978-4d5f-b591-b511c4d07aa8",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+            "kind": "episode",
+            "owner_character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+            "proposition": "石猴出生后五官四肢俱全，随即学爬学走，拜了四方，并目运两道金光射冲斗府。",
+            "truth_state": "true",
+            "interpretation_level": "explicit",
+            "support_state": "accepted",
+            "scene_id": "6867fb8b-6d82-402d-aaa0-c888728180d1",
+            "supersedes_claim_id": null,
+            "search_terms": "石猴出生后五官四肢俱全，随即学爬学走，拜了四方，并目运两道金光射冲斗府。",
+            "evidence": [
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 0,
+                "local_end": 33,
+                "quote_text": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 0,
+                "local_end": 33,
+                "quote_text": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。",
+                "support_state": "accepted"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+                "route": "firsthand",
+                "access_state": "accepted"
+              }
+            ]
+          },
+          {
+            "id": "68885860-f7a3-47d8-886d-4ce7ccc97237",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+            "kind": "episode",
+            "owner_character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+            "proposition": "石猴应声答应后，瞑目蹲身将身一纵径跳入瀑布泉中，发现里面无水无波，有一座铁板桥。",
+            "truth_state": "unknown",
+            "interpretation_level": "explicit",
+            "support_state": "accepted",
+            "scene_id": "39c023de-a33e-4df7-ae35-a294c1d00017",
+            "supersedes_claim_id": null,
+            "search_terms": "石猴应声答应后，瞑目蹲身将身一纵径跳入瀑布泉中，发现里面无水无波，有一座铁板桥。",
+            "evidence": [
+              {
+                "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                "local_start": 0,
+                "local_end": 42,
+                "quote_text": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                "local_start": 43,
+                "local_end": 61,
+                "quote_text": "他住了身定了神仔细再看原来是座铁板桥",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                "local_start": 0,
+                "local_end": 42,
+                "quote_text": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "local_start": 67,
+                "local_end": 99,
+                "quote_text": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                "support_state": "accepted"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+                "route": "firsthand",
+                "access_state": "accepted"
+              }
+            ]
+          },
+          {
+            "id": "fd31456b-bc3d-4a96-9e97-fbffd38586a9",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+            "kind": "trait",
+            "owner_character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+            "proposition": "在众猴连呼三声无人应答时，石猴从丛杂中跳出主动应声表示愿意进入瀑布寻源头，表现出果敢主动。",
+            "truth_state": "unknown",
+            "interpretation_level": "explicit",
+            "support_state": "accepted",
+            "scene_id": "39c023de-a33e-4df7-ae35-a294c1d00017",
+            "supersedes_claim_id": null,
+            "search_terms": "在众猴连呼三声无人应答时，石猴从丛杂中跳出主动应声表示愿意进入瀑布寻源头，表现出果敢主动。",
+            "evidence": [
+              {
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "local_start": 36,
+                "local_end": 67,
+                "quote_text": "“那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。”",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "local_start": 67,
+                "local_end": 99,
+                "quote_text": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "local_start": 67,
+                "local_end": 99,
+                "quote_text": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                "support_state": "accepted"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+                "route": "firsthand",
+                "access_state": "accepted"
+              }
+            ]
+          },
+          {
+            "id": "ca229bc5-8f3c-444a-ae3b-e9b15b805201",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+            "kind": "episode",
+            "owner_character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+            "proposition": "石猴过桥后欠身上桥头再走再看，见洞内石座石床石盆石碗等陈设，觉得好似有人家住处一般。",
+            "truth_state": "unknown",
+            "interpretation_level": "explicit",
+            "support_state": "accepted",
+            "scene_id": "39c023de-a33e-4df7-ae35-a294c1d00017",
+            "supersedes_claim_id": null,
+            "search_terms": "石猴过桥后欠身上桥头再走再看，见洞内石座石床石盆石碗等陈设，觉得好似有人家住处一般。",
+            "evidence": [
+              {
+                "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                "local_start": 84,
+                "local_end": 109,
+                "quote_text": "却又欠身上桥头再走再看却似有人家住处一般真个好所在",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "791b6395-87b7-4963-84c6-7e99d916ad74",
+                "local_start": 53,
+                "local_end": 67,
+                "quote_text": "石座石床真可爱石盆石碗更堪夸",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                "local_start": 84,
+                "local_end": 109,
+                "quote_text": "却又欠身上桥头再走再看却似有人家住处一般真个好所在",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                "local_start": 67,
+                "local_end": 99,
+                "quote_text": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”",
+                "support_state": "accepted"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+                "route": "firsthand",
+                "access_state": "accepted"
+              }
+            ]
+          }
+        ],
+        "baseline": {
+          "trait:果敢主动": {
+            "claim_id": "fd31456b-bc3d-4a96-9e97-fbffd38586a9",
+            "proposition": "在众猴连呼三声无人应答时，石猴从丛杂中跳出主动应声表示愿意进入瀑布寻源头，表现出果敢主动。",
+            "kind": "trait",
+            "evidence": [
+              {
+                "evidence_id": "ae55801d-990c-498f-be86-2922dda70ed0",
+                "approved_excerpt": ""
+              },
+              {
+                "evidence_id": "043bdae8-3df2-47d9-971e-6b4c63dda346",
+                "approved_excerpt": ""
+              }
+            ]
+          }
+        },
+        "extensions": []
+      },
+      "published": true
+    },
+    {
+      "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+      "character_id": "61b69929-c827-43c5-a4ef-47d88c3616de",
+      "agent_status": "sparse",
+      "public": {
+        "entity_kind": "person",
+        "identity_state": "verified",
+        "name": "顺风耳"
+      },
+      "reader": {
+        "claims": [
+          {
+            "id": "18511f13-456b-42fa-8789-7dfaaa4b918d",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+            "kind": "fact",
+            "owner_character_id": null,
+            "proposition": "金光惊动玉皇大天尊玄穹高上帝，他聚集仙卿，即命千里眼、顺风耳开南天门观看。",
+            "truth_state": "true",
+            "interpretation_level": "explicit",
+            "support_state": "accepted",
+            "scene_id": "6867fb8b-6d82-402d-aaa0-c888728180d1",
+            "supersedes_claim_id": null,
+            "search_terms": "金光惊动玉皇大天尊玄穹高上帝，他聚集仙卿，即命千里眼、顺风耳开南天门观看。",
+            "evidence": [
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 33,
+                "local_end": 89,
+                "quote_text": "惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 33,
+                "local_end": 89,
+                "quote_text": "惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 73,
+                "local_end": 89,
+                "quote_text": "即命千里眼、顺风耳开南天门观看。",
+                "support_state": "accepted"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 73,
+                "local_end": 89,
+                "quote_text": "即命千里眼、顺风耳开南天门观看。",
+                "support_state": "accepted"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "61b69929-c827-43c5-a4ef-47d88c3616de",
+                "route": "told",
+                "access_state": "accepted"
+              }
+            ]
+          },
+          {
+            "id": "70c436fa-75f1-4454-bb43-a6e7fcb306cb",
+            "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+            "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+            "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+            "kind": "episode",
+            "owner_character_id": "61b69929-c827-43c5-a4ef-47d88c3616de",
+            "proposition": "顺风耳奉旨与千里眼出南天门外观听，看得真、听得明，须臾回报道金光之处的情况。",
+            "truth_state": "true",
+            "interpretation_level": "explicit",
+            "support_state": "rejected",
+            "scene_id": "6867fb8b-6d82-402d-aaa0-c888728180d1",
+            "supersedes_claim_id": null,
+            "search_terms": "顺风耳奉旨与千里眼出南天门外观听，看得真、听得明，须臾回报道金光之处的情况。",
+            "evidence": [
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 89,
+                "local_end": 110,
+                "quote_text": "二将果奉旨出门外看的真听的明。须臾回报道：",
+                "support_state": "rejected"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 89,
+                "local_end": 104,
+                "quote_text": "二将果奉旨出门外看的真听的明。",
+                "support_state": "rejected"
+              },
+              {
+                "segment_id": "655edb81-d520-4041-8848-022283505355",
+                "local_start": 73,
+                "local_end": 89,
+                "quote_text": "即命千里眼、顺风耳开南天门观看。",
+                "support_state": "rejected"
+              }
+            ],
+            "access": [
+              {
+                "character_id": "61b69929-c827-43c5-a4ef-47d88c3616de",
+                "route": "firsthand",
+                "access_state": "revoked"
+              }
+            ]
+          }
+        ],
+        "baseline": {},
+        "extensions": []
+      },
+      "published": true
+    }
+  ],
+  "old_agent_sha256_after": "968bfdbb2c861105c18ac18e6388d020ad0e7f3d1eebea863a33011e01ac44fb",
+  "old_agent_unchanged": true,
+  "previous_v5_sha256_after": "6388c7041f5644979758a3f4c953ec7e5362f3e2c2474c2ad9efc9881e53dbc0",
+  "previous_v5_unchanged": true,
+  "terminal": true
+}

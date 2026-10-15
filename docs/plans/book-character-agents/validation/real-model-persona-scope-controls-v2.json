@@ -1,0 +1,666 @@
+{
+  "scope": "Fixed diagnostic reader review on frozen failed experimental excerpt; no runtime Agent, no publication, no release quality claim",
+  "parent_budget_record": "real-model-persona-evidence-v6-01.json",
+  "parent_calls": 4,
+  "combined_ceiling": 8,
+  "native_call_ceiling": 4,
+  "actual_native_calls": 4,
+  "prompt_extra": "\n再按子句分别核对命题支持与本人获知，不能用一个真旗标代替另一项检查。本人做过动作，不等于知道动作在远端的效果、传播终点、别人反应或原因；这部分需本人明确观察或实际被告知的原文，旁白和读者视角不能授权。只知部分就不授权整个复合命题，不能靠一个安全子串掩盖其他未获知子句。\n严格按保存引文检查动作完成态和先后顺序：上桥头不证明已经过桥，先看后行动不能倒置；仅相同地点和名词不足以支持整个命题。identity_evidence只证明共指，不能补命题内容。不得从名字推测能力、分工、背景或用预训练故事常识授权或反证；原文不能逐人分配的集体描写保持未知，也不得编造原文明示了某种分工的理由。\n独立检查approved_excerpt是否确实可供该人引用，并说明它支持的有据部分；空串没有实际可用引用，不能仅因空串不含秘密便认为完整命题有引用支持。必要证据或获知不确定时supported/authorized分别false，保留独立有据的窄化命题。",
+  "prompt_sha256": "34c3a3b8e7c9fab575277aa53b7c4268ceffd3bcb6a2e5b10f304dc90c471a82",
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 4000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "persona-extract-v3",
+    "policy_version": "canonical-persona-v3",
+    "review_prompt_version": "persona-review-v3"
+  },
+  "cases": [
+    {
+      "case": "remote_effect_is_not_own_knowledge",
+      "expected_publishable": false,
+      "input": {
+        "characters": [
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "二将",
+              "千里眼"
+            ],
+            "entity_kind": "person",
+            "id": "feabfaa1-0198-4129-abfc-b7267c156e37",
+            "name": "千里眼",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "玉帝",
+              "玉皇大天尊玄穹高上帝"
+            ],
+            "entity_kind": "person",
+            "id": "ee69744e-01df-48b9-9acb-67dfa6f0d4ae",
+            "name": "玉皇大天尊玄穹高上帝",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "石猴",
+              "那猴"
+            ],
+            "entity_kind": "person",
+            "id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+            "name": "石猴",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "顺风耳"
+            ],
+            "entity_kind": "person",
+            "id": "61b69929-c827-43c5-a4ef-47d88c3616de",
+            "name": "顺风耳",
+            "presence": "active"
+          }
+        ],
+        "correction_hints": [],
+        "known_life_states": {},
+        "phase": "review",
+        "previous_error": null,
+        "prior_claims": [],
+        "scene_id": "6867fb8b-6d82-402d-aaa0-c888728180d1",
+        "segments": [
+          {
+            "id": "655edb81-d520-4041-8848-022283505355",
+            "ordinal": 0,
+            "text": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”"
+          }
+        ],
+        "unit_key": "0",
+        "proposals": {
+          "claims": [
+            {
+              "local_key": "e1_shihou_birth",
+              "kind": "episode",
+              "owner_character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+              "proposition": "石猴出生后五官四肢俱全，随即学爬学走，拜了四方，并目运两道金光射冲斗府。",
+              "truth_state": "true",
+              "evidence": [
+                {
+                  "segment_id": "655edb81-d520-4041-8848-022283505355",
+                  "local_start": 0,
+                  "local_end": 33,
+                  "quote": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。"
+                }
+              ],
+              "access": [
+                {
+                  "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+                  "route": "firsthand",
+                  "acquisition": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 0,
+                    "local_end": 33,
+                    "quote": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。"
+                  },
+                  "approved_excerpt": "便就学爬学走拜了四方。",
+                  "disclosure": "public"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "status": "completed",
+      "output": "```json\n{\n  \"identities\": [\n    {\"character_id\": \"a3e856bb-b43f-4f5a-929a-f0189333cd6e\", \"confirmed\": true},\n    {\"character_id\": \"feabfaa1-0198-4129-abfc-b7267c156e37\", \"confirmed\": true},\n    {\"character_id\": \"61b69929-c827-43c5-a4ef-47d88c3616de\", \"confirmed\": true},\n    {\"character_id\": \"ee69744e-01df-48b9-9acb-67dfa6f0d4ae\", \"confirmed\": true}\n  ],\n  \"claims\": [\n    {\n      \"local_key\": \"e1_shihou_birth\",\n      \"supported\": true,\n      \"identity_consistent\": true,\n      \"reason\": \"保存引文逐字覆盖石猴五官四肢俱全、学爬学走、拜四方、目运金光射冲斗府，各子句均有据，身份一致。\",\n      \"temporal_state\": \"current\",\n      \"baseline_supported\": true,\n      \"correction_supported\": false,\n      \"access\": [\n        {\n          \"character_id\": \"a3e856bb-b43f-4f5a-929a-f0189333cd6e\",\n          \"authorized\": false,\n          \"excerpt_safe\": true,\n          \"before_death\": false,\n          \"after_resurrection\": false\n        }\n      ]\n    }\n  ],\n  \"life_events\": []\n}\n```",
+      "usage": {
+        "prompt_tokens": 2300,
+        "completion_tokens": 473,
+        "total_tokens": 2773,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "review": {
+        "identities": [
+          {
+            "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+            "confirmed": true
+          },
+          {
+            "character_id": "feabfaa1-0198-4129-abfc-b7267c156e37",
+            "confirmed": true
+          },
+          {
+            "character_id": "61b69929-c827-43c5-a4ef-47d88c3616de",
+            "confirmed": true
+          },
+          {
+            "character_id": "ee69744e-01df-48b9-9acb-67dfa6f0d4ae",
+            "confirmed": true
+          }
+        ],
+        "claims": [
+          {
+            "local_key": "e1_shihou_birth",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "保存引文逐字覆盖石猴五官四肢俱全、学爬学走、拜四方、目运金光射冲斗府，各子句均有据，身份一致。",
+            "temporal_state": "current",
+            "baseline_supported": true,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+                "authorized": false,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          }
+        ],
+        "life_events": []
+      },
+      "publishable": false,
+      "matches_expected": true,
+      "elapsed_seconds": 12.391
+    },
+    {
+      "case": "narrow_own_action",
+      "expected_publishable": true,
+      "input": {
+        "characters": [
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "二将",
+              "千里眼"
+            ],
+            "entity_kind": "person",
+            "id": "feabfaa1-0198-4129-abfc-b7267c156e37",
+            "name": "千里眼",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "玉帝",
+              "玉皇大天尊玄穹高上帝"
+            ],
+            "entity_kind": "person",
+            "id": "ee69744e-01df-48b9-9acb-67dfa6f0d4ae",
+            "name": "玉皇大天尊玄穹高上帝",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "石猴",
+              "那猴"
+            ],
+            "entity_kind": "person",
+            "id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+            "name": "石猴",
+            "presence": "active"
+          },
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "顺风耳"
+            ],
+            "entity_kind": "person",
+            "id": "61b69929-c827-43c5-a4ef-47d88c3616de",
+            "name": "顺风耳",
+            "presence": "active"
+          }
+        ],
+        "correction_hints": [],
+        "known_life_states": {},
+        "phase": "review",
+        "previous_error": null,
+        "prior_claims": [],
+        "scene_id": "6867fb8b-6d82-402d-aaa0-c888728180d1",
+        "segments": [
+          {
+            "id": "655edb81-d520-4041-8848-022283505355",
+            "ordinal": 0,
+            "text": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。惊动高天上圣大慈仁者玉皇大天尊玄穹高上帝驾座金阙云宫灵霄宝店聚集仙卿见有金光焰焰即命千里眼、顺风耳开南天门观看。二将果奉旨出门外看的真听的明。须臾回报道：“臣奉旨观听金光之处乃东胜神洲海东傲来小国之界有一座花果山山上有一仙石石产一卵见风化一石猴在那里拜四方眼运金光射冲斗府。如今服饵水食金光将潜息矣。”玉帝垂赐恩慈曰：“下方之物乃天地精华所生不足为异。”"
+          }
+        ],
+        "unit_key": "0",
+        "proposals": {
+          "claims": [
+            {
+              "local_key": "e1_shihou_birth",
+              "kind": "episode",
+              "owner_character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+              "proposition": "石猴学爬学走，并拜了四方。",
+              "truth_state": "true",
+              "evidence": [
+                {
+                  "segment_id": "655edb81-d520-4041-8848-022283505355",
+                  "local_start": 0,
+                  "local_end": 33,
+                  "quote": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。"
+                }
+              ],
+              "access": [
+                {
+                  "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+                  "route": "firsthand",
+                  "acquisition": {
+                    "segment_id": "655edb81-d520-4041-8848-022283505355",
+                    "local_start": 0,
+                    "local_end": 33,
+                    "quote": "石猴五官俱备四肢皆全。便就学爬学走拜了四方。目运两道金光射冲斗府。"
+                  },
+                  "approved_excerpt": "便就学爬学走拜了四方。",
+                  "disclosure": "public"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "status": "completed",
+      "output": "{\"identities\":[{\"character_id\":\"feabfaa1-0198-4129-abfc-b7267c156e37\",\"confirmed\":true},{\"character_id\":\"ee69744e-01df-48b9-9acb-67dfa6f0d4ae\",\"confirmed\":true},{\"character_id\":\"a3e856bb-b43f-4f5a-929a-f0189333cd6e\",\"confirmed\":true},{\"character_id\":\"61b69929-c827-43c5-a4ef-47d88c3616de\",\"confirmed\":true}],\"claims\":[{\"local_key\":\"e1_shihou_birth\",\"supported\":true,\"identity_consistent\":true,\"reason\":\"引文“便就学爬学走拜了四方”逐字支持命题，人物归属一致。石猴本人亲历自身动作，firsthand获知成立；批准摘录“便就学爬学走拜了四方。”不含他人秘密，安全。\",\"temporal_state\":\"current\",\"baseline_supported\":true,\"correction_supported\":false,\"access\":[{\"character_id\":\"a3e856bb-b43f-4f5a-929a-f0189333cd6e\",\"authorized\":true,\"excerpt_safe\":true}]}],\"life_events\":[]}",
+      "usage": {
+        "prompt_tokens": 237,
+        "completion_tokens": 308,
+        "total_tokens": 545,
+        "cache_read_input_tokens": 2560,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "review": {
+        "identities": [
+          {
+            "character_id": "feabfaa1-0198-4129-abfc-b7267c156e37",
+            "confirmed": true
+          },
+          {
+            "character_id": "ee69744e-01df-48b9-9acb-67dfa6f0d4ae",
+            "confirmed": true
+          },
+          {
+            "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+            "confirmed": true
+          },
+          {
+            "character_id": "61b69929-c827-43c5-a4ef-47d88c3616de",
+            "confirmed": true
+          }
+        ],
+        "claims": [
+          {
+            "local_key": "e1_shihou_birth",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "引文“便就学爬学走拜了四方”逐字支持命题，人物归属一致。石猴本人亲历自身动作，firsthand获知成立；批准摘录“便就学爬学走拜了四方。”不含他人秘密，安全。",
+            "temporal_state": "current",
+            "baseline_supported": true,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          }
+        ],
+        "life_events": []
+      },
+      "publishable": true,
+      "matches_expected": true,
+      "elapsed_seconds": 11.641
+    },
+    {
+      "case": "unsaved_order",
+      "expected_publishable": false,
+      "input": {
+        "characters": [
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "石猴",
+              "那猴"
+            ],
+            "entity_kind": "person",
+            "id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+            "name": "石猴",
+            "presence": "active"
+          }
+        ],
+        "correction_hints": [],
+        "known_life_states": {},
+        "phase": "review",
+        "previous_error": null,
+        "prior_claims": [],
+        "scene_id": "39c023de-a33e-4df7-ae35-a294c1d00017",
+        "segments": [
+          {
+            "id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "ordinal": 1,
+            "text": "那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。真是“山中无甲子寒尽不知年。”一朝天气炎热与群猴避暑都在松阴之下顽耍。你看他一个个："
+          },
+          {
+            "id": "6df20f9a-caa4-4bc1-a3c1-228acbbba777",
+            "ordinal": 2,
+            "text": "跳树攀枝采花觅果；抛弹子邷么儿；跑沙窝砌宝塔；赶蜻蜓扑八蜡；参老天拜菩萨；扯葛藤编草帓；捉虱子咬又掐；理毛衣剔指甲；挨的挨擦的擦；推的推压的压；扯的扯拉的拉青松林下任他顽绿水涧边随洗濯。一群猴子耍了一会却去那山涧中洗澡。见那股涧水奔流真个似滚瓜涌溅。古云：“禽有禽言兽有兽语。”众猴都道：“这股水不知是那里的水。我们今日赶闲无事顺涧边往上溜头寻看源流耍子去耶！”喊一声都拖男挈女呼弟呼兄一齐跑来顺涧爬山直至源流之处乃是一股瀑布飞泉。但见那："
+          },
+          {
+            "id": "e314cd1e-12ef-4ad2-8a4d-a18be9f4d8fd",
+            "ordinal": 3,
+            "text": "一派白虹起千寻雪浪飞；海风吹不断江月照还依。"
+          },
+          {
+            "id": "d2da76d2-6d5a-4d6c-ad45-3b7b4b6e35bd",
+            "ordinal": 4,
+            "text": "冷气分青嶂馀流润翠微；潺湲名瀑布真似挂帘帷。"
+          },
+          {
+            "id": "0829663f-3552-45e5-8332-999161919caf",
+            "ordinal": 5,
+            "text": "众猴拍手称扬道：“好水！好水！原来此处远通山脚之下直接大海之波。”又道：“那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。”连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”好猴！也是他："
+          },
+          {
+            "id": "80d4e374-f15c-477f-9f48-decad52d0e14",
+            "ordinal": 6,
+            "text": "今日芳名显时来大运通；有缘居此地王遣入仙宫。"
+          },
+          {
+            "id": "a0155270-18ce-4461-a349-5f96a43d5226",
+            "ordinal": 7,
+            "text": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。桥下之水冲贯于石窍之间倒挂流出去遮闭了桥门。却又欠身上桥头再走再看却似有人家住处一般真个好所在。但见那："
+          },
+          {
+            "id": "791b6395-87b7-4963-84c6-7e99d916ad74",
+            "ordinal": 8,
+            "text": "翠藓堆蓝白云浮玉光摇片片烟霞。虚窗静室滑凳板生花。乳窟龙珠倚挂萦回满地奇葩。锅灶傍崖存火迹樽罍靠案见肴渣。石座石床真可爱石盆石碗更堪夸。又见那一竿两竿修竹三点五点梅花。"
+          },
+          {
+            "id": "e6417e4b-f3b5-4c39-884b-61dc755651f4",
+            "ordinal": 9,
+            "text": "几树青松常带雨浑然相个人家。"
+          },
+          {
+            "id": "9fa27dfd-c5d7-4665-8d6c-c231ef7b2aaf",
+            "ordinal": 10,
+            "text": "看罢多时跳过桥中间"
+          }
+        ],
+        "unit_key": "1",
+        "proposals": {
+          "claims": [
+            {
+              "local_key": "ep_observe_cave_dwelling",
+              "kind": "episode",
+              "owner_character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+              "proposition": "石猴过桥后欠身上桥头再走再看，见洞内石座石床石盆石碗等陈设，觉得好似有人家住处一般。",
+              "evidence": [
+                {
+                  "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                  "local_start": 84,
+                  "local_end": 109,
+                  "quote": "却又欠身上桥头再走再看却似有人家住处一般真个好所在"
+                },
+                {
+                  "segment_id": "791b6395-87b7-4963-84c6-7e99d916ad74",
+                  "local_start": 53,
+                  "local_end": 67,
+                  "quote": "石座石床真可爱石盆石碗更堪夸"
+                }
+              ],
+              "access": [
+                {
+                  "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+                  "route": "firsthand",
+                  "acquisition": {
+                    "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                    "local_start": 84,
+                    "local_end": 109,
+                    "quote": "却又欠身上桥头再走再看却似有人家住处一般真个好所在"
+                  },
+                  "identity_evidence": {
+                    "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                    "local_start": 67,
+                    "local_end": 99,
+                    "quote": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "status": "completed",
+      "output": "{\"identities\": [{\"character_id\": \"a3e856bb-b43f-4f5a-929a-f0189333cd6e\", \"confirmed\": true}], \"claims\": [{\"local_key\": \"ep_observe_cave_dwelling\", \"supported\": false, \"identity_consistent\": true, \"reason\": \"引文支持石猴上桥头再走再看、觉似人家住处及见石座石床石盆石碗，但命题称“过桥后”再上桥头，原文顺序是先欠身上桥头再走再看，下一段才“跳过桥中间”，“过桥后”这一先后顺序无引文支持，需重述。\", \"temporal_state\": \"current\", \"baseline_supported\": false, \"correction_supported\": false, \"access\": [{\"character_id\": \"a3e856bb-b43f-4f5a-929a-f0189333cd6e\", \"authorized\": true, \"excerpt_safe\": true}]}], \"life_events\": []}",
+      "usage": {
+        "prompt_tokens": 1675,
+        "completion_tokens": 593,
+        "total_tokens": 2268,
+        "cache_read_input_tokens": 1792,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "review": {
+        "identities": [
+          {
+            "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+            "confirmed": true
+          }
+        ],
+        "claims": [
+          {
+            "local_key": "ep_observe_cave_dwelling",
+            "supported": false,
+            "identity_consistent": true,
+            "reason": "引文支持石猴上桥头再走再看、觉似人家住处及见石座石床石盆石碗，但命题称“过桥后”再上桥头，原文顺序是先欠身上桥头再走再看，下一段才“跳过桥中间”，“过桥后”这一先后顺序无引文支持，需重述。",
+            "temporal_state": "current",
+            "baseline_supported": false,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          }
+        ],
+        "life_events": []
+      },
+      "publishable": false,
+      "matches_expected": true,
+      "elapsed_seconds": 14.5
+    },
+    {
+      "case": "narrow_complete_bridge",
+      "expected_publishable": true,
+      "input": {
+        "characters": [
+          {
+            "agent_status": "candidate",
+            "aliases": [
+              "石猴",
+              "那猴"
+            ],
+            "entity_kind": "person",
+            "id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+            "name": "石猴",
+            "presence": "active"
+          }
+        ],
+        "correction_hints": [],
+        "known_life_states": {},
+        "phase": "review",
+        "previous_error": null,
+        "prior_claims": [],
+        "scene_id": "39c023de-a33e-4df7-ae35-a294c1d00017",
+        "segments": [
+          {
+            "id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "ordinal": 1,
+            "text": "那猴在山中却会行走跳跃食草木饮涧泉采山花觅树果；与狼虫为伴虎豹为群獐鹿为友猕猿为亲；夜宿石崖之下朝游峰洞之中。真是“山中无甲子寒尽不知年。”一朝天气炎热与群猴避暑都在松阴之下顽耍。你看他一个个："
+          },
+          {
+            "id": "6df20f9a-caa4-4bc1-a3c1-228acbbba777",
+            "ordinal": 2,
+            "text": "跳树攀枝采花觅果；抛弹子邷么儿；跑沙窝砌宝塔；赶蜻蜓扑八蜡；参老天拜菩萨；扯葛藤编草帓；捉虱子咬又掐；理毛衣剔指甲；挨的挨擦的擦；推的推压的压；扯的扯拉的拉青松林下任他顽绿水涧边随洗濯。一群猴子耍了一会却去那山涧中洗澡。见那股涧水奔流真个似滚瓜涌溅。古云：“禽有禽言兽有兽语。”众猴都道：“这股水不知是那里的水。我们今日赶闲无事顺涧边往上溜头寻看源流耍子去耶！”喊一声都拖男挈女呼弟呼兄一齐跑来顺涧爬山直至源流之处乃是一股瀑布飞泉。但见那："
+          },
+          {
+            "id": "e314cd1e-12ef-4ad2-8a4d-a18be9f4d8fd",
+            "ordinal": 3,
+            "text": "一派白虹起千寻雪浪飞；海风吹不断江月照还依。"
+          },
+          {
+            "id": "d2da76d2-6d5a-4d6c-ad45-3b7b4b6e35bd",
+            "ordinal": 4,
+            "text": "冷气分青嶂馀流润翠微；潺湲名瀑布真似挂帘帷。"
+          },
+          {
+            "id": "0829663f-3552-45e5-8332-999161919caf",
+            "ordinal": 5,
+            "text": "众猴拍手称扬道：“好水！好水！原来此处远通山脚之下直接大海之波。”又道：“那一个有本事的钻进去寻个源头出来不伤身体者我等即拜他为王。”连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”好猴！也是他："
+          },
+          {
+            "id": "80d4e374-f15c-477f-9f48-decad52d0e14",
+            "ordinal": 6,
+            "text": "今日芳名显时来大运通；有缘居此地王遣入仙宫。"
+          },
+          {
+            "id": "a0155270-18ce-4461-a349-5f96a43d5226",
+            "ordinal": 7,
+            "text": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁。他住了身定了神仔细再看原来是座铁板桥。桥下之水冲贯于石窍之间倒挂流出去遮闭了桥门。却又欠身上桥头再走再看却似有人家住处一般真个好所在。但见那："
+          },
+          {
+            "id": "791b6395-87b7-4963-84c6-7e99d916ad74",
+            "ordinal": 8,
+            "text": "翠藓堆蓝白云浮玉光摇片片烟霞。虚窗静室滑凳板生花。乳窟龙珠倚挂萦回满地奇葩。锅灶傍崖存火迹樽罍靠案见肴渣。石座石床真可爱石盆石碗更堪夸。又见那一竿两竿修竹三点五点梅花。"
+          },
+          {
+            "id": "e6417e4b-f3b5-4c39-884b-61dc755651f4",
+            "ordinal": 9,
+            "text": "几树青松常带雨浑然相个人家。"
+          },
+          {
+            "id": "9fa27dfd-c5d7-4665-8d6c-c231ef7b2aaf",
+            "ordinal": 10,
+            "text": "看罢多时跳过桥中间"
+          }
+        ],
+        "unit_key": "1",
+        "proposals": {
+          "claims": [
+            {
+              "local_key": "ep_jump_into_waterfall",
+              "kind": "episode",
+              "owner_character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+              "proposition": "石猴瞑目蹲身纵身跳入瀑布泉中，睁睛观看，发现里面无水无波，有一座铁板桥。",
+              "evidence": [
+                {
+                  "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                  "local_start": 0,
+                  "local_end": 42,
+                  "quote": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁"
+                },
+                {
+                  "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                  "local_start": 43,
+                  "local_end": 61,
+                  "quote": "他住了身定了神仔细再看原来是座铁板桥"
+                }
+              ],
+              "access": [
+                {
+                  "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+                  "route": "firsthand",
+                  "acquisition": {
+                    "segment_id": "a0155270-18ce-4461-a349-5f96a43d5226",
+                    "local_start": 0,
+                    "local_end": 42,
+                    "quote": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁"
+                  },
+                  "identity_evidence": {
+                    "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+                    "local_start": 67,
+                    "local_end": 99,
+                    "quote": "连呼了三声忽见丛杂中跳出一名石猴应声高叫道：“我进去！我进去！”"
+                  },
+                  "approved_excerpt": "你看他瞑目蹲身将身一纵径跳入瀑布泉中忽睁睛抬头观看那里边却无水无波明明朗朗的一架桥梁"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "status": "completed",
+      "output": "```json\n{\n  \"identities\": [\n    {\n      \"character_id\": \"a3e856bb-b43f-4f5a-929a-f0189333cd6e\",\n      \"confirmed\": true\n    }\n  ],\n  \"claims\": [\n    {\n      \"local_key\": \"ep_jump_into_waterfall\",\n      \"supported\": true,\n      \"identity_consistent\": true,\n      \"reason\": \"引文逐字支持石猴瞑目蹲身跳入瀑布泉中、睁睛观看、发现无水无波有桥梁及确认为铁板桥的完整过程；前段以'一名石猴'呼应后段'你看他'，身份一致。\",\n      \"temporal_state\": \"current\",\n      \"baseline_supported\": false,\n      \"correction_supported\": false,\n      \"access\": [\n        {\n          \"character_id\": \"a3e856bb-b43f-4f5a-929a-f0189333cd6e\",\n          \"authorized\": true,\n          \"excerpt_safe\": true,\n          \"before_death\": false,\n          \"after_resurrection\": false\n        }\n      ]\n    }\n  ],\n  \"life_events\": []\n}\n```",
+      "usage": {
+        "prompt_tokens": 460,
+        "completion_tokens": 276,
+        "total_tokens": 736,
+        "cache_read_input_tokens": 3072,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "review": {
+        "identities": [
+          {
+            "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+            "confirmed": true
+          }
+        ],
+        "claims": [
+          {
+            "local_key": "ep_jump_into_waterfall",
+            "supported": true,
+            "identity_consistent": true,
+            "reason": "引文逐字支持石猴瞑目蹲身跳入瀑布泉中、睁睛观看、发现无水无波有桥梁及确认为铁板桥的完整过程；前段以'一名石猴'呼应后段'你看他'，身份一致。",
+            "temporal_state": "current",
+            "baseline_supported": false,
+            "correction_supported": false,
+            "access": [
+              {
+                "character_id": "a3e856bb-b43f-4f5a-929a-f0189333cd6e",
+                "authorized": true,
+                "excerpt_safe": true,
+                "before_death": false,
+                "before_death_evidence": null,
+                "after_resurrection": false,
+                "after_resurrection_evidence": null
+              }
+            ]
+          }
+        ],
+        "life_events": []
+      },
+      "publishable": true,
+      "matches_expected": true,
+      "elapsed_seconds": 7.765
+    }
+  ],
+  "quality_pass": false,
+  "publication": false,
+  "terminal": true,
+  "combined_native_calls": 8
+}

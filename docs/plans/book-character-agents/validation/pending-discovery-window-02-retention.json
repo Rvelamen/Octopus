@@ -1,0 +1,41 @@
+{
+  "scope": "Initial pinned 4/6 successes and one exhausted failure per book only; window 02 did not capture byte digests of every 9/11 prior success. Current attempt limits and job counter deltas checked.",
+  "all_pass": true,
+  "records": [
+    {
+      "book": "西游记",
+      "build_id": "ce1089d1-e62e-436a-925c-edb1ce12b085",
+      "initial_pinned_validated_unchanged": 4,
+      "initial_pinned_exhausted_unchanged": 1,
+      "window_native_calls": 12,
+      "job_counter_delta": 12,
+      "maximum_persisted_attempts": 2,
+      "validated_units": 12,
+      "failed_units": 6,
+      "exhausted_units": 6,
+      "retryable_failed_units": 0,
+      "pending_units": 393,
+      "first_call_phase": "discovery_unit_mentions",
+      "first_call_unit": "11",
+      "status": "queued"
+    },
+    {
+      "book": "红楼梦",
+      "build_id": "5e0c333f-0c01-4b9f-ab28-0d4642900c52",
+      "initial_pinned_validated_unchanged": 6,
+      "initial_pinned_exhausted_unchanged": 1,
+      "window_native_calls": 12,
+      "job_counter_delta": 12,
+      "maximum_persisted_attempts": 2,
+      "validated_units": 14,
+      "failed_units": 7,
+      "exhausted_units": 7,
+      "retryable_failed_units": 0,
+      "pending_units": 560,
+      "first_call_phase": "discovery_unit_mentions",
+      "first_call_unit": "14",
+      "status": "queued"
+    }
+  ],
+  "quality_pass": false
+}

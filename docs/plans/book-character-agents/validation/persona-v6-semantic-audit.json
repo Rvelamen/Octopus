@@ -1,0 +1,67 @@
+{
+  "scope": "Root and independent Agent source audit of actual native v6 excerpt results; not human blind assessment",
+  "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+  "quality_pass": false,
+  "findings": [
+    {
+      "unit": "0",
+      "local_key": "e1_shihou_birth",
+      "category": "personal_acquisition",
+      "proposition": "石猴出生后五官四肢俱全，随即学爬学走，拜了四方，并目运两道金光射冲斗府。",
+      "reason": "本人动作不证明金光远端到达斗府的效果已被本人获知；复合命题不能整体firsthand授权。"
+    },
+    {
+      "unit": "0",
+      "local_key": "f1_yudi_orders_scouts",
+      "category": "partial_acquisition",
+      "proposition": "金光惊动玉皇大天尊玄穹高上帝，他聚集仙卿，即命千里眼、顺风耳开南天门观看。",
+      "reason": "两将获知命令不证明获知玉帝先前惊动、原因及聚集仙卿；按受众窄化命题或拒绝整个授权。"
+    },
+    {
+      "unit": "0",
+      "local_key": "e2_qianliyan_scout",
+      "category": "unsupported_review_reason",
+      "proposition": "千里眼奉旨与顺风耳出南天门外观听，看得真、听得明，须臾回报道金光之处的情况。",
+      "reason": "集体看听描写未逐人分工，审查理由按名字分配能力；保守未知可以成立，所给理由不能充当原文依据。"
+    },
+    {
+      "unit": "0",
+      "local_key": "e3_shunfenger_scout",
+      "category": "unsupported_review_reason",
+      "proposition": "顺风耳奉旨与千里眼出南天门外观听，看得真、听得明，须臾回报道金光之处的情况。",
+      "reason": "同上；还需独立核对返回内容的保存引用。"
+    },
+    {
+      "unit": "0",
+      "local_key": "b1_yudi_not_surprising",
+      "category": "saved_quote_coverage",
+      "proposition": "玉帝听报后表示，下方之物乃天地精华所生，不足为异。",
+      "reason": "听报后的时间关系只在未引用上下文，未由本项保存引文覆盖。"
+    },
+    {
+      "unit": "1",
+      "local_key": "ep_jump_into_waterfall",
+      "category": "saved_quote_coverage",
+      "proposition": "石猴应声答应后，瞑目蹲身将身一纵径跳入瀑布泉中，发现里面无水无波，有一座铁板桥。",
+      "reason": "应声答应后仅在identity_evidence，不能替代claim.evidence。"
+    },
+    {
+      "unit": "1",
+      "local_key": "trait_bold_volunteer",
+      "category": "unsupported_negative_condition",
+      "proposition": "在众猴连呼三声无人应答时，石猴从丛杂中跳出主动应声表示愿意进入瀑布寻源头，表现出果敢主动。",
+      "reason": "连呼三声未建立无人应答的穷尽否定；主动意向可保守提取，不能添加该条件。"
+    },
+    {
+      "unit": "1",
+      "local_key": "ep_observe_cave_dwelling",
+      "category": "event_completion_and_order",
+      "proposition": "石猴过桥后欠身上桥头再走再看，见洞内石座石床石盆石碗等陈设，觉得好似有人家住处一般。",
+      "reason": "上桥头不证明已经过桥；保存引文不能证明过桥后的完成态与先后。"
+    }
+  ],
+  "unit_1_all_safe_excerpts_omitted_or_empty": true,
+  "empty_excerpt_policy": "Do not copy full quote automatically; excerpt_safe=true for an empty string does not certify any full quote.",
+  "controls_v2_limit": "Four fixed controls cover remote effect, narrow own action, saved order and narrow bridge; no direct scout compound-acquisition or name-based division control.",
+  "quarantine_record": "persona-v6-quarantine.json"
+}

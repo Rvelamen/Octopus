@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from .discovery import BookDiscoveryService, _hash, _json, _now
 from .identity_graph import clone_graph
 from .persona_models import (
+    EVIDENCE_PERSONA_VERSION,
     EXTRACT_PROMPT,
     EXTRACT_PROMPTS,
     REVIEW_PROMPT,
@@ -730,16 +731,19 @@ class BookPersonaService:
                         self._save, build_id, owner, generation, data, batch, review
                     )
                 except (ValueError, TimeoutError) as error:
-                    if config.prompt_version == STRUCTURED_PERSONA_VERSION:
+                    if config.prompt_version in (
+                        STRUCTURED_PERSONA_VERSION,
+                        EVIDENCE_PERSONA_VERSION,
+                    ):
                         detail = _persona_error_detail(error, failed_phase)
                     else:
                         detail = (
                             "Invalid persona fields: "
                             + ",".join(
                                 ".".join(map(str, issue["loc"]))
-                                for issue in error.errors(include_input=False, include_context=False)[
-                                    :6
-                                ]
+                                for issue in error.errors(
+                                    include_input=False, include_context=False
+                                )[:6]
                             )
                             if isinstance(error, ValidationError)
                             else "Persona model timed out"

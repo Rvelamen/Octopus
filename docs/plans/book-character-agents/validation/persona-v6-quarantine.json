@@ -1,0 +1,19 @@
+{
+  "scope": "Task-owned non-full-book experimental build only; runtime availability revoked after Agent semantic audit, not a migration or a quality acceptance test",
+  "build_id": "0f273d8d-c823-4b50-bdc7-9ad7c1dca633",
+  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+  "original_publication_status_preserved": "partial_published",
+  "lifecycle_state": "unavailable",
+  "reason": "Composite firsthand claim included an unproven remote effect; quote coverage and event order also need correction",
+  "room_members_before": 0,
+  "canonical_claim_rows_unchanged": true,
+  "claims_sha256": "5e049c5545ad83f28ad83fe0822dd54b20b7178f097719f1541d02a6784d2e3a",
+  "previous_v5_unchanged": true,
+  "head_restored_to_previous_with_new_revision": true,
+  "runtime_denials": {
+    "definition": "build_unavailable",
+    "knowledge_binding": "build_unavailable"
+  },
+  "native_calls": 0,
+  "quality_pass": false
+}
