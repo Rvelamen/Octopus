@@ -1,0 +1,343 @@
+{
+  "scope": "Two bounded existing repairs of frozen grouped prototype outputs; no persistence/publication/persona quality",
+  "native_call_ceiling": 2,
+  "actual_native_calls": 2,
+  "source_report_sha256": "84247f0f214bcee51718942713b449778283ed4da2b5cc35cafce56f552bd573",
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 4000,
+    "unit_segment_limit": 12,
+    "max_tokens": 8192,
+    "call_timeout_seconds": 180,
+    "prompt_version": "grouped-discovery-prototype-v1",
+    "policy_version": "candidate-identity-v2"
+  },
+  "cases": [
+    {
+      "book": "西游记",
+      "status": "contract_valid",
+      "input": {
+        "phase": "discovery_repair_choices",
+        "unit_key": "3",
+        "repair_targets": [
+          {
+            "scene_index": 4,
+            "character_index": 0,
+            "original": {
+              "name": "猴王",
+              "identity": "existing",
+              "anonymous": false,
+              "entity_kind": "person",
+              "presence": "active"
+            },
+            "error": "Existing identity has no unambiguous matching alias",
+            "choices": [
+              {
+                "id": 0,
+                "name": "猴王",
+                "anonymous": false,
+                "can_preserve": false,
+                "alias_allowed": false,
+                "quote": "是这般远虑真所谓道心开也！如今五虫之内惟有三等名色不伏阎王老子所管。”猴王道：“你知那三等人？”猿猴道：“乃是佛与仙与神圣三者躲过轮回不生不灭与"
+              },
+              {
+                "id": 1,
+                "name": "猴王",
+                "anonymous": false,
+                "can_preserve": false,
+                "alias_allowed": false,
+                "quote": "人？”猿猴道：“乃是佛与仙与神圣三者躲过轮回不生不灭与天地山川齐寿。”猴王道：“此三者居于何所？”猿猴道：“他只在阎浮世界之中古洞仙山之内。”猴"
+              },
+              {
+                "id": 2,
+                "name": "大王",
+                "anonymous": false,
+                "can_preserve": false,
+                "alias_allowed": true,
+                "quote": "只见那班部中忽跳出一个通背猿猴厉声高叫道：“大王若是这般远虑真所谓道心开也！如今五虫之内惟有三等名色不伏阎王老子所管。"
+              },
+              {
+                "id": 3,
+                "name": "大王",
+                "anonymous": false,
+                "can_preserve": false,
+                "alias_allowed": true,
+                "quote": "。众猴鼓掌称扬都道：“善哉！善哉！我等明日越岭登山广寻些果品大设筵宴送大王也。”"
+              },
+              {
+                "id": 4,
+                "name": "未具名人物",
+                "anonymous": true,
+                "can_preserve": false,
+                "alias_allowed": false,
+                "quote": "过轮回不生不灭与天地山川齐寿。”猴王道：“此三者居于何所？”猿猴道：“他只在阎浮世界之中古洞仙山之内。”猴王闻之满心欢喜道：“我明日就辞汝等下"
+              }
+            ]
+          }
+        ]
+      },
+      "repair_targets": 1,
+      "prompt_sha256": "02c581f24c6b2f5f5a1952f620cf00179520a14dccdf2a4bba3316f1b7a92237",
+      "output": "{\"repairs\": [{\"scene_index\": 4, \"character_index\": 0, \"identity\": \"uncertain\", \"presence\": \"active\", \"evidence_choice\": 0, \"alias_choices\": []}]}",
+      "usage": {
+        "prompt_tokens": 824,
+        "completion_tokens": 98,
+        "total_tokens": 922,
+        "cache_read_input_tokens": 256,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "scenes": 8,
+      "appearances": 18,
+      "uncertain": 8,
+      "elapsed_seconds": 8.016
+    },
+    {
+      "book": "红楼梦",
+      "status": "contract_valid",
+      "input": {
+        "phase": "discovery_repair_choices",
+        "unit_key": "3",
+        "repair_targets": [
+          {
+            "scene_index": 0,
+            "character_index": 2,
+            "original": {
+              "name": "蠢物",
+              "identity": "existing",
+              "anonymous": false,
+              "entity_kind": "unknown",
+              "presence": "referenced"
+            },
+            "error": "Existing identity has no unambiguous matching alias",
+            "choices": [
+              {
+                "id": 0,
+                "name": "蠢物",
+                "anonymous": false,
+                "can_preserve": false,
+                "alias_allowed": false,
+                "quote": "不辨是何地方．忽见那厢来了一僧一道，且行且谈．只听道人问道：“你携了这蠢物，意欲何往？\"那僧笑道：“你放心，如今现有一段风流公案正该了结，这一干"
+              },
+              {
+                "id": 1,
+                "name": "蠢物",
+                "anonymous": false,
+                "can_preserve": false,
+                "alias_allowed": false,
+                "quote": "有一段风流公案正该了结，这一干风流冤家，尚未投胎入世．趁此机会，就将此蠢物夹带于中，使他去经历经历。”那道人道：“原来近日风流冤孽又将造劫历世去"
+              }
+            ]
+          },
+          {
+            "scene_index": 1,
+            "character_index": 2,
+            "original": {
+              "name": "通灵宝玉",
+              "identity": "existing",
+              "anonymous": false,
+              "entity_kind": "unknown",
+              "presence": "silent"
+            },
+            "error": "Existing identity has no unambiguous matching alias",
+            "choices": [
+              {
+                "id": 0,
+                "name": "通灵宝玉",
+                "anonymous": false,
+                "can_preserve": false,
+                "alias_allowed": false,
+                "quote": "着，取出递与士隐．士隐接了看时，原来是块鲜明美玉，上面字迹分明，镌着\"通灵宝玉\"四字，后面还有几行小字．正欲细看时，那僧便说已到幻境，便强从手中夺了"
+              },
+              {
+                "id": 1,
+                "name": "石",
+                "anonymous": false,
+                "can_preserve": true,
+                "alias_allowed": true,
+                "quote": "行小字．正欲细看时，那僧便说已到幻境，便强从手中夺了去，与道人竟过一大石牌坊，上书四个大字，乃是\"太虚幻境\"．两边又有一幅对联，道是："
+              }
+            ]
+          },
+          {
+            "scene_index": 2,
+            "character_index": 0,
+            "original": {
+              "name": "士隐",
+              "identity": "existing",
+              "anonymous": false,
+              "entity_kind": "person",
+              "presence": "active"
+            },
+            "error": "Existing identity has no unambiguous matching alias",
+            "choices": [
+              {
+                "id": 0,
+                "name": "士隐",
+                "anonymous": false,
+                "can_preserve": false,
+                "alias_allowed": false,
+                "quote": "假作真时真亦假，无为有处有还无．士隐意欲也跟了过去，方举步时，忽听一声霹雳，有若山崩地陷．士隐大叫一声，定"
+              },
+              {
+                "id": 1,
+                "name": "士隐",
+                "anonymous": false,
+                "can_preserve": false,
+                "alias_allowed": false,
+                "quote": "有处有还无．士隐意欲也跟了过去，方举步时，忽听一声霹雳，有若山崩地陷．士隐大叫一声，定睛一看，只见烈日炎炎，芭蕉冉冉，所梦之事便忘了大半．又见奶"
+              }
+            ]
+          },
+          {
+            "scene_index": 2,
+            "character_index": 2,
+            "original": {
+              "name": "那道",
+              "identity": "existing",
+              "anonymous": false,
+              "entity_kind": "person",
+              "presence": "active"
+            },
+            "error": "Existing identity has no unambiguous matching alias",
+            "choices": [
+              {
+                "id": 0,
+                "name": "那道",
+                "anonymous": false,
+                "can_preserve": false,
+                "alias_allowed": false,
+                "quote": "，看那过会的热闹．方欲进来时，只见从那边来了一僧一道：那僧则癞头跣脚，那道则跛足蓬头，疯疯癫癫，挥霍谈笑而至．及至到了他门前，看见士隐抱着英莲，"
+              },
+              {
+                "id": 1,
+                "name": "未具名人物",
+                "anonymous": true,
+                "can_preserve": false,
+                "alias_allowed": false,
+                "quote": "莲走来．士隐见女儿越发生得粉妆玉琢，乖觉可喜，便伸手接来，抱在怀内，斗他顽耍一回，又带至街前，看那过会的热闹．方欲进来时，只见从那边来了一僧一"
+              }
+            ]
+          },
+          {
+            "scene_index": 4,
+            "character_index": 0,
+            "original": {
+              "name": "士隐",
+              "identity": "existing",
+              "anonymous": false,
+              "entity_kind": "person",
+              "presence": "active"
+            },
+            "error": "Existing identity has no unambiguous matching alias",
+            "choices": [
+              {
+                "id": 0,
+                "name": "士隐",
+                "anonymous": false,
+                "can_preserve": false,
+                "alias_allowed": false,
+                "quote": "好防佳节元宵后，便是烟消火灭时．士隐听得明白，心下犹豫，意欲问他们来历．只听道人说道：“你我不必同行，就此"
+              }
+            ]
+          },
+          {
+            "scene_index": 4,
+            "character_index": 2,
+            "original": {
+              "name": "道人",
+              "identity": "existing",
+              "anonymous": false,
+              "entity_kind": "person",
+              "presence": "active"
+            },
+            "error": "Existing identity has no unambiguous matching alias",
+            "choices": [
+              {
+                "id": 0,
+                "name": "道人",
+                "anonymous": false,
+                "can_preserve": false,
+                "alias_allowed": false,
+                "quote": "节元宵后，便是烟消火灭时．士隐听得明白，心下犹豫，意欲问他们来历．只听道人说道：“你我不必同行，就此分手，各干营生去罢．三劫后，我在北邙山等你，"
+              }
+            ]
+          },
+          {
+            "scene_index": 5,
+            "character_index": 0,
+            "original": {
+              "name": "士隐",
+              "identity": "existing",
+              "anonymous": false,
+              "entity_kind": "person",
+              "presence": "active"
+            },
+            "error": "Existing identity has no unambiguous matching alias",
+            "choices": [
+              {
+                "id": 0,
+                "name": "士隐",
+                "anonymous": false,
+                "can_preserve": false,
+                "alias_allowed": false,
+                "quote": "这士隐正痴想，忽见隔壁葫芦庙内寄居的一个穷儒-姓贾名化，表字时飞，别号雨村者"
+              },
+              {
+                "id": 2,
+                "name": "这士隐",
+                "anonymous": false,
+                "can_preserve": false,
+                "alias_allowed": true,
+                "quote": "这士隐正痴想，忽见隔壁葫芦庙内寄居的一个穷儒-姓贾名化，表字时飞，别号雨村者"
+              }
+            ]
+          },
+          {
+            "scene_index": 5,
+            "character_index": 1,
+            "original": {
+              "name": "贾雨村",
+              "identity": "existing",
+              "anonymous": false,
+              "entity_kind": "person",
+              "presence": "active"
+            },
+            "error": "Unsupported name/alias '贾化'; choose a literal label present in its quote",
+            "choices": [
+              {
+                "id": 0,
+                "name": "贾雨村",
+                "anonymous": false,
+                "can_preserve": true,
+                "alias_allowed": true,
+                "quote": "隔壁葫芦庙内寄居的一个穷儒-姓贾名化，表字时飞，别号雨村者走了出来．这贾雨村原系胡州人氏，也是诗书仕宦之族，因他生于末世，父母祖宗根基已尽，人口衰"
+              }
+            ]
+          }
+        ]
+      },
+      "repair_targets": 8,
+      "prompt_sha256": "02c581f24c6b2f5f5a1952f620cf00179520a14dccdf2a4bba3316f1b7a92237",
+      "output": "```json\n{\"repairs\": [{\"scene_index\": 0, \"character_index\": 2, \"identity\": \"uncertain\", \"presence\": \"referenced\", \"evidence_choice\": 0}, {\"scene_index\": 1, \"character_index\": 2, \"identity\": \"uncertain\", \"presence\": \"silent\", \"evidence_choice\": 0}, {\"scene_index\": 2, \"character_index\": 0, \"identity\": \"uncertain\", \"presence\": \"active\", \"evidence_choice\": 0}, {\"scene_index\": 2, \"character_index\": 2, \"identity\": \"uncertain\", \"presence\": \"active\", \"evidence_choice\": 0}, {\"scene_index\": 4, \"character_index\": 0, \"identity\": \"uncertain\", \"presence\": \"active\", \"evidence_choice\": 0}, {\"scene_index\": 4, \"character_index\": 2, \"identity\": \"uncertain\", \"presence\": \"active\", \"evidence_choice\": 0}, {\"scene_index\": 5, \"character_index\": 0, \"identity\": \"uncertain\", \"presence\": \"active\", \"evidence_choice\": 0}, {\"scene_index\": 5, \"character_index\": 1, \"identity\": \"preserve\", \"presence\": \"active\", \"evidence_choice\": 0, \"alias_choices\": []}]}\n```",
+      "usage": {
+        "prompt_tokens": 1737,
+        "completion_tokens": 492,
+        "total_tokens": 2229,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "scenes": 6,
+      "appearances": 23,
+      "uncertain": 11,
+      "elapsed_seconds": 12.094
+    }
+  ],
+  "quality_pass": false,
+  "publication": false,
+  "terminal": true
+}

@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
+from .discovery_inline import INLINE_PROMPT, INLINE_VERSION, InlineDiscovery, assemble_inline
 from .discovery_models import (
     DISCOVERY_PROMPTS,
     DiscoveryConfig,
@@ -464,6 +465,7 @@ class BookDiscoveryService:
                 "character-discovery-v11",
                 "character-discovery-v12",
                 *NUMBERED_VERSIONS,
+                INLINE_VERSION,
             ):
                 result["repair_packet"] = (
                     json.loads(step["result_json"]).get("repair_packet")
@@ -730,11 +732,15 @@ class BookDiscoveryService:
                 repair_protocol = (data.get("repair_packet") or {}).get("selection_protocol")
                 selected = repair_protocol == "source-choices-v1"
                 windowed = repair_protocol == "source-windows-v1"
-                numbered = prepare_numbered(data) if config.prompt_version in NUMBERED_VERSIONS and not data.get("repair_packet") else None
+                numbered = prepare_numbered(data) if config.prompt_version in (*NUMBERED_VERSIONS, INLINE_VERSION) and not data.get("repair_packet") else None
                 if numbered is not None:
-                    numbered_prompt = NUMBERED_LATEST_PROMPT if config.prompt_version == NUMBERED_LATEST_VERSION else NUMBERED_PROMPT
-                    system_prompt = numbered_prompt + _json(NumberedDiscovery.model_json_schema())
+                    inline = config.prompt_version == INLINE_VERSION
+                    numbered_prompt = INLINE_PROMPT if inline else NUMBERED_LATEST_PROMPT if config.prompt_version == NUMBERED_LATEST_VERSION else NUMBERED_PROMPT
+                    schema = InlineDiscovery if inline else NumberedDiscovery
+                    system_prompt = numbered_prompt + _json(schema.model_json_schema())
                     model_input = numbered["input"]
+                    if inline:
+                        model_input["phase"] = "discovery_inline"
                 elif windowed:
                     system_prompt = WINDOW_REPAIR_PROMPT + _json(WindowRepairs.model_json_schema())
                     model_input = window_repair_input(data["repair_packet"])
@@ -745,7 +751,7 @@ class BookDiscoveryService:
                     repair_prompt = (
                         REPAIR_V10_PROMPT
                         if config.prompt_version
-                        in ("character-discovery-v10", "character-discovery-v11", "character-discovery-v12", *NUMBERED_VERSIONS)
+                        in ("character-discovery-v10", "character-discovery-v11", "character-discovery-v12", *NUMBERED_VERSIONS, INLINE_VERSION)
                         else REPAIR_V9_PROMPT
                         if config.prompt_version == "character-discovery-v9"
                         else REPAIR_PROMPT
@@ -783,7 +789,7 @@ class BookDiscoveryService:
                         raise ValueError("Discovery response is truncated or requests a tool")
                     raw_for_repair = response.content or ""
                     if numbered is not None:
-                        raw_for_repair = _json(assemble_numbered(
+                        raw_for_repair = _json(assemble_inline(raw_for_repair, numbered)) if config.prompt_version == INLINE_VERSION else _json(assemble_numbered(
                             raw_for_repair, numbered,
                             allow_implicit_name=config.prompt_version == NUMBERED_LATEST_VERSION,
                         ))
@@ -829,6 +835,7 @@ class BookDiscoveryService:
                             "character-discovery-v11",
                             "character-discovery-v12",
                             *NUMBERED_VERSIONS,
+                            INLINE_VERSION,
                         )
                         and raw_for_repair
                         and not data.get("repair_packet")
@@ -845,15 +852,16 @@ class BookDiscoveryService:
                                 "character-discovery-v11",
                                 "character-discovery-v12",
                                 *NUMBERED_VERSIONS,
+                                INLINE_VERSION,
                             ),
-                            allow_binding_split=config.prompt_version in ("character-discovery-v12", *NUMBERED_VERSIONS),
+                            allow_binding_split=config.prompt_version in ("character-discovery-v12", *NUMBERED_VERSIONS, INLINE_VERSION),
                         )
                         if (
                             packet is not None
-                            and config.prompt_version in ("character-discovery-v12", *NUMBERED_VERSIONS)
+                            and config.prompt_version in ("character-discovery-v12", *NUMBERED_VERSIONS, INLINE_VERSION)
                         ):
                             selection = await asyncio.to_thread(prepare_selection, packet, data)
-                            if selection is None and config.prompt_version == NUMBERED_LATEST_VERSION:
+                            if selection is None and config.prompt_version in (NUMBERED_LATEST_VERSION, INLINE_VERSION):
                                 selection = await asyncio.to_thread(prepare_window_repair, packet, data)
                             packet = selection
                     await asyncio.to_thread(
@@ -872,6 +880,7 @@ class BookDiscoveryService:
                             "character-discovery-v11",
                             "character-discovery-v12",
                             *NUMBERED_VERSIONS,
+                            INLINE_VERSION,
                         ),
                     )
         except BookWorldError as error:

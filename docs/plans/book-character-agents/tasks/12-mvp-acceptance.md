@@ -76,3 +76,9 @@
 
 设计约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，代码接入点和执行顺序见[实施计划](F:/god/project/Octopus/docs/plans/book-character-agents/implementation-plan.md)。
 
+同日继续T17修复及全书发现：原32次开发窗口已耗尽且保留误拒、超时；独立精修4/6次得到一题条件推演发布与固定漏审负例拒绝。新消息在实际生产圆桌组件中核对ID/seq/全文和引用，未新增模型调用；原生结果、Agent逐条复核和UI证据分开保存。T17尚未完整复验，本任务84题、全书人物及完整应用路径仍未通过；详见[条件推演记录](../validation/2026-10-15-cognition-repair-validation.md)。
+
+新增显式v15发现格式，115项专项保持原完整来源/身份校验及发布栅栏。新独立全书构建各完成3单元后仍在下一单元失败，未发布完整原著档案；旧v14保留，计数不跨构建相加。真实冻结探针、完整窗口失败与剩余预算的处理见[内联发现记录](../validation/2026-10-15-inline-discovery-validation.md)，不以契约成功关闭本任务。
+
+本轮最终完整项目428通过、13项既有环境跳过；限定Mypy54文件、Ruff、前端类型/构建通过。独立六组合复验26/28次、10条人物发布，实际普通窗口暂停/手动继续已发生，但两处历史动作的来源强度仍未解决，不关闭质量项。未接入嵌套发现原型以2次初稿+2次指定修复得到两项冻结单元契约通过，仍不能当作全书自动发现。详见[矩阵v2](../validation/2026-10-15-discussion-matrix-v2-validation.md)和[来源排障](../validation/2026-10-15-inline-discovery-validation.md)。
+
