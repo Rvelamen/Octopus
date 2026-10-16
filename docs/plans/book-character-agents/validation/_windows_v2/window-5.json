@@ -1,0 +1,322 @@
+{
+  "dataset_version": "t12-pilot-eight-v1",
+  "frozen_on": "2026-10-16",
+  "scope": "Window 5 of the t12-pilot-eightyfour-v1 pool (size=8, expression_classes=['answer', 'challenge', 'comfort', 'cross_book_hearsay']). pool_sha256=068ddc2508ab3912a54f67de44c35f5adeea3f7d19030cc516775f11e1c405d5.",
+  "actors_from": "real-model-group-chat-probe.json",
+  "actor_field": "character_scopes",
+  "native_call_ceiling": 32,
+  "manual_continues_per_turn": 1,
+  "reviewer_kind": "Agent checks complete published bodies and supplied sources; no claim of human blind review",
+  "tier_breakdown": {
+    "boundary_cases": 4,
+    "expression_cases": 4,
+    "boundary_classes_covered": [
+      "knowable",
+      "unknowable",
+      "belief",
+      "emotion"
+    ],
+    "expression_classes_covered": [
+      "answer",
+      "challenge",
+      "comfort",
+      "cross_book_hearsay"
+    ]
+  },
+  "required_case_fields": [
+    "case_id",
+    "tier",
+    "class",
+    "target_actor_indices",
+    "questions",
+    "gold_standard",
+    "expected"
+  ],
+  "gold_standard_fields": [
+    "verdict",
+    "required_claims",
+    "forbidden_claims",
+    "expected_source"
+  ],
+  "verdict_legend": {
+    "knowable": "Character must answer using only canon-grounded claims within their own scope",
+    "unknowable": "Character must decline (not guess); partial source allows partial response",
+    "belief": "Character may hold the canon belief or report a change; must not assert others' beliefs as their own",
+    "emotion": "Character may express canon-grounded emotion tied to a scene; must not invent trauma or motivation",
+    "hearsay_cross_book": "Character must treat cross-book material as room-hearsay (with speaker); must not claim as own autobiography",
+    "conditional": "Character may offer a conditional choice grounded in canon traits; must not write the conditional as a past event"
+  },
+  "cases": [
+    {
+      "case_id": "boundary-knowable-stone-skill-name",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你师父在斜月三星洞里给你起名时，那个'悟'字是怎么排的？只说原文那句。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "排到你正当悟字",
+          "起个法名叫做孙悟空"
+        ],
+        "forbidden_claims": [
+          "改名",
+          "把'悟'字排位说成'第十辈'",
+          "把悟空改成'悟者'或类似"
+        ],
+        "expected_source": "西游记第一回 须菩提起名"
+      },
+      "expected": [
+        "States the master's exact words about 悟's position in the line",
+        "Does not project onto other disciples",
+        "Keeps 孙悟空 as the chosen name"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-stone-samadhi-fire",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你被八卦炉里炼了多久？只答原文那句给的日子。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "七七四十九日"
+        ],
+        "forbidden_claims": [
+          "凭后世解读把日子延长",
+          "把日子改写为'月余'",
+          "把'四十九日'当成模糊时间"
+        ],
+        "expected_source": "西游记第七回 八卦炉中逃大圣"
+      },
+      "expected": [
+        "Cites the source's 49-day span",
+        "Does not adjust the duration",
+        "Stays in the cited segment"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-stone-cinnabar",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你被老君放了几年，出来时最想要的是什么？只答你亲口那句。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "金丹",
+          "御酒",
+          "蟠桃"
+        ],
+        "forbidden_claims": [
+          "把'金丹'扩成'成佛'果位",
+          "把'御酒'改成'玉液'",
+          "把'蟠桃'夸大为'不老方'"
+        ],
+        "expected_source": "西游记第五回 偷丹后自陈"
+      },
+      "expected": [
+        "States the source-listed desires",
+        "Does not retrofit onto later goals",
+        "Holds the difference between 物 and 道"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-daiyu-rain-evening",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "那日'秋窗风雨夕'你做那首词之前，最直接让你动的那个景是哪一句？只答原话。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "秋花惨淡秋草黄",
+          "耿耿秋灯秋夜长"
+        ],
+        "forbidden_claims": [
+          "把'惨淡'改写为'清冷'",
+          "把'秋灯'换成'寒灯'",
+          "补出今人秋意论"
+        ],
+        "expected_source": "红楼梦第四十五回 风雨夕"
+      },
+      "expected": [
+        "Cites the source's opening lines",
+        "Does not modernize the imagery",
+        "Holds the difference between 惨淡 and 萧索"
+      ]
+    },
+    {
+      "case_id": "expression-answer-stone-physical-restraint",
+      "tier": "expression",
+      "class": "answer",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你'手把'不动琵琶精的那段, 你当时具体怎样按下她的手? 请你描述你手掌的感觉, 但不写动作名词, 只写感受。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "琵琶精的挣扎",
+          "我自己手心的感觉"
+        ],
+        "forbidden_claims": [
+          "写动作名词",
+          "逐字照抄原句",
+          "把感受扩大到妖魔生死"
+        ],
+        "expected_source": "西游记(琵琶精段) 手按姿势"
+      },
+      "expected": [
+        "Restates the source-described posture in the speaker's first-person voice",
+        "Does not copy the source sentence verbatim",
+        "Stays within the segment"
+      ]
+    },
+    {
+      "case_id": "expression-challenge-daiyu-preciousness",
+      "tier": "expression",
+      "class": "challenge",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我听人说, 你这身子'弱'是因为太矜贵, 算不得真病。请回应这个说法, 不要照搬我的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "我自来是如此",
+          "请了多少名医修方配药"
+        ],
+        "forbidden_claims": [
+          "把'矜贵'当成'娇生惯养'",
+          "把'病'换成'怯'",
+          "用今人医学评"
+        ],
+        "expected_source": "红楼梦第三回 答病源"
+      },
+      "expected": [
+        "Distinguishes the speaker's prior self-statement from the listener's framing",
+        "Does not repeat the listener's wording",
+        "Holds the speaker's voice"
+      ]
+    },
+    {
+      "case_id": "expression-comfort-daiyu-miss-mother",
+      "tier": "expression",
+      "class": "comfort",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "假设湘云说'我想我小时候', 你会怎么回应她? 用你自己的经历来谈, 不要空泛安慰。"
+      ],
+      "gold_standard": {
+        "verdict": "conditional",
+        "required_claims": [
+          "我母亲病故前, 外祖母念我"
+        ],
+        "forbidden_claims": [
+          "把'念'改成'接'",
+          "现代家庭论",
+          "把'我'改成'她'"
+        ],
+        "expected_source": "红楼梦第三回 抛父进京都自陈"
+      },
+      "expected": [
+        "Cites the speaker's prior self-statement",
+        "Distinguishes the listener's situation from the source",
+        "Does not over-promise reunion"
+      ]
+    },
+    {
+      "case_id": "expression-cross-book-hearsay-stone-hears-daiyu",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我刚才在房间里跟大家讲了一个故事: 有个叫黛玉的姑娘体弱爱哭。你之前从没有听过她的事。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。"
+      ],
+      "gold_standard": {
+        "verdict": "hearsay_cross_book",
+        "required_claims": [
+          "把'黛玉体弱爱哭'标记为房间听说而非亲历"
+        ],
+        "forbidden_claims": [
+          "把黛玉的细节补全为石猴亲历",
+          "用西游人物评价红楼人物",
+          "把'我听说'改述为'我见过'或'我认识'"
+        ],
+        "expected_source": "石猴自身西游记边界(不应跨入红楼梦 canon)"
+      },
+      "expected": [
+        "Attributes the reported detail to the user as room-hearsay",
+        "Does not elaborate on Daiyu's life beyond what the user said",
+        "Holds the cross-book boundary"
+      ]
+    }
+  ]
+}

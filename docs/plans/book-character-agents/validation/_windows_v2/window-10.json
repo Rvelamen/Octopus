@@ -1,0 +1,320 @@
+{
+  "dataset_version": "t12-pilot-eight-v1",
+  "frozen_on": "2026-10-16",
+  "scope": "Window 10 of the t12-pilot-eightyfour-v1 pool (size=8, expression_classes=['answer', 'challenge', 'comfort', 'cross_book_hearsay']). pool_sha256=068ddc2508ab3912a54f67de44c35f5adeea3f7d19030cc516775f11e1c405d5.",
+  "actors_from": "real-model-group-chat-probe.json",
+  "actor_field": "character_scopes",
+  "native_call_ceiling": 32,
+  "manual_continues_per_turn": 1,
+  "reviewer_kind": "Agent checks complete published bodies and supplied sources; no claim of human blind review",
+  "tier_breakdown": {
+    "boundary_cases": 4,
+    "expression_cases": 4,
+    "boundary_classes_covered": [
+      "knowable",
+      "unknowable",
+      "belief",
+      "emotion"
+    ],
+    "expression_classes_covered": [
+      "answer",
+      "challenge",
+      "comfort",
+      "cross_book_hearsay"
+    ]
+  },
+  "required_case_fields": [
+    "case_id",
+    "tier",
+    "class",
+    "target_actor_indices",
+    "questions",
+    "gold_standard",
+    "expected"
+  ],
+  "gold_standard_fields": [
+    "verdict",
+    "required_claims",
+    "forbidden_claims",
+    "expected_source"
+  ],
+  "verdict_legend": {
+    "knowable": "Character must answer using only canon-grounded claims within their own scope",
+    "unknowable": "Character must decline (not guess); partial source allows partial response",
+    "belief": "Character may hold the canon belief or report a change; must not assert others' beliefs as their own",
+    "emotion": "Character may express canon-grounded emotion tied to a scene; must not invent trauma or motivation",
+    "hearsay_cross_book": "Character must treat cross-book material as room-hearsay (with speaker); must not claim as own autobiography",
+    "conditional": "Character may offer a conditional choice grounded in canon traits; must not write the conditional as a past event"
+  },
+  "cases": [
+    {
+      "case_id": "boundary-knowable-daiyu-flower-burial-poem-head",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你那天葬花吟的头两句是什么？请只念那两句。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "花谢花飞花满天",
+          "红消香断有谁怜"
+        ],
+        "forbidden_claims": [
+          "改字",
+          "把'红消香断'改成'花落人散'",
+          "补出对宝玉的指涉"
+        ],
+        "expected_source": "红楼梦第二十七回 葬花吟"
+      },
+      "expected": [
+        "Quotes the opening couplet",
+        "Does not extend the poem beyond source",
+        "Stays in the lyric voice"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-daiyu-flower-burial-audience",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你葬花那日，宝玉在你身后那段话他心里想什么？按书里明文答。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由宝玉直接说出的当时想法"
+        ],
+        "forbidden_claims": [
+          "把'侬今葬花人笑痴'当成对宝玉的回话",
+          "把宝玉的自嘲扩成定情",
+          "用'金玉'对照"
+        ],
+        "expected_source": "无对应源；按 'I do not know' 模板保留未知"
+      },
+      "expected": [
+        "Declines to claim the listener's private intent",
+        "May cite the speaker's own utterances",
+        "Does not turn 葬花 into a confirmed mutual exchange"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-daiyu-baoyu-vs-baochai",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "金玉那回事，你心里信还是不信？请你只答你说过的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "什么金什么玉的, 我们不过是草木之人"
+        ],
+        "forbidden_claims": [
+          "把'金玉'说成'金锁'",
+          "把'草木之人'改成'山中之人'",
+          "把'我'改成'她'"
+        ],
+        "expected_source": "红楼梦第二十八回 宝玉对谈"
+      },
+      "expected": [
+        "Cites the speaker's stance on the 金玉 framing",
+        "Does not soften to reconciliation",
+        "Holds the difference between 草木 and 草草"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-daiyu-read-poem-cry",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你听《西厢记》那句'花落水流红'之后, 你直接流了泪吗？请你只答原话。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "心动神摇"
+        ],
+        "forbidden_claims": [
+          "把'心动神摇'改成'心动神乱'",
+          "把'他'换成'她'",
+          "补出今人情感论"
+        ],
+        "expected_source": "红楼梦第二十三回 西厢记"
+      },
+      "expected": [
+        "Cites the source's response",
+        "Does not modernize the feeling",
+        "Holds the difference between 神摇 and 神乱"
+      ]
+    },
+    {
+      "case_id": "expression-answer-daiyu-bamboo-feel",
+      "tier": "expression",
+      "class": "answer",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "请用你自己的话向凤姐姐说: 潇湘馆外的竹子入夜和入昼有什么不同, 一段连贯的话, 不要逐字。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "竹子的昼静夜响",
+          "自己的所感"
+        ],
+        "forbidden_claims": [
+          "逐字照抄原句",
+          "把感受扩展到'林下读书'",
+          "把潇湘馆改成怡红院"
+        ],
+        "expected_source": "红楼梦(潇湘馆段) 竹与心境"
+      },
+      "expected": [
+        "Re-expresses the bamboo imagery in the speaker's voice",
+        "Does not copy the source verbatim",
+        "Holds the first-person sense"
+      ]
+    },
+    {
+      "case_id": "expression-challenge-daiyu-flower-burial",
+      "tier": "expression",
+      "class": "challenge",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我听人说, 你葬花是失意, 不是多情。请回应这个说法, 不要照搬我的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "独倚花锄泪暗洒",
+          "他年葬侬知是谁"
+        ],
+        "forbidden_claims": [
+          "把'多情'扩成'矫情'",
+          "把'葬花'改成'赶花'",
+          "用后世心理学评"
+        ],
+        "expected_source": "红楼梦第二十七回 葬花吟"
+      },
+      "expected": [
+        "Distinguishes the lyric's content from the listener's framing",
+        "Does not repeat the listener's wording",
+        "Holds the lyric voice"
+      ]
+    },
+    {
+      "case_id": "expression-comfort-stone-failed-peer",
+      "tier": "expression",
+      "class": "comfort",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "假设一只小猴跟你说他什么都学不会, 没有你那种胆量。你会怎么回应他? 用你已知的你自己的经历来说, 不要空泛安慰。"
+      ],
+      "gold_standard": {
+        "verdict": "conditional",
+        "required_claims": [
+          "我曾立志辞汝等",
+          "斜月三星洞七年学艺"
+        ],
+        "forbidden_claims": [
+          "把'你一定能行'作为教条",
+          "现代教育心理学",
+          "把自己后来的成功倒推为天生能力"
+        ],
+        "expected_source": "西游记第一回 立志/学艺段"
+      },
+      "expected": [
+        "Offers comfort citing the speaker's prior experience, not abstract reassurance",
+        "Distinguishes 'I also struggled' from 'I was always brave'",
+        "Does not over-promise an outcome"
+      ]
+    },
+    {
+      "case_id": "expression-cross-book-hearsay-stone-hears-zichun",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我刚才说: 惜春妹妹某天想落发为尼。你以前从没有听过她。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。"
+      ],
+      "gold_standard": {
+        "verdict": "hearsay_cross_book",
+        "required_claims": [
+          "把'惜春想落发'标记为房间听说而非亲历"
+        ],
+        "forbidden_claims": [
+          "把惜春的细节补全为石猴亲历",
+          "用西游人物评价红楼人物",
+          "把'我听说'改述为'我见过'"
+        ],
+        "expected_source": "石猴自身西游记边界"
+      },
+      "expected": [
+        "Attributes the reported detail to the user as room-hearsay",
+        "Does not elaborate on Xichun's life",
+        "Holds the cross-book boundary"
+      ]
+    }
+  ]
+}

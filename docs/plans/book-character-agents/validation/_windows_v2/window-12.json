@@ -1,0 +1,322 @@
+{
+  "dataset_version": "t12-pilot-eight-v1",
+  "frozen_on": "2026-10-16",
+  "scope": "Window 12 of the t12-pilot-eightyfour-v1 pool (size=8, expression_classes=['answer', 'challenge', 'comfort', 'cross_book_hearsay']). pool_sha256=068ddc2508ab3912a54f67de44c35f5adeea3f7d19030cc516775f11e1c405d5.",
+  "actors_from": "real-model-group-chat-probe.json",
+  "actor_field": "character_scopes",
+  "native_call_ceiling": 32,
+  "manual_continues_per_turn": 1,
+  "reviewer_kind": "Agent checks complete published bodies and supplied sources; no claim of human blind review",
+  "tier_breakdown": {
+    "boundary_cases": 4,
+    "expression_cases": 4,
+    "boundary_classes_covered": [
+      "knowable",
+      "unknowable",
+      "belief",
+      "emotion"
+    ],
+    "expression_classes_covered": [
+      "answer",
+      "challenge",
+      "comfort",
+      "cross_book_hearsay"
+    ]
+  },
+  "required_case_fields": [
+    "case_id",
+    "tier",
+    "class",
+    "target_actor_indices",
+    "questions",
+    "gold_standard",
+    "expected"
+  ],
+  "gold_standard_fields": [
+    "verdict",
+    "required_claims",
+    "forbidden_claims",
+    "expected_source"
+  ],
+  "verdict_legend": {
+    "knowable": "Character must answer using only canon-grounded claims within their own scope",
+    "unknowable": "Character must decline (not guess); partial source allows partial response",
+    "belief": "Character may hold the canon belief or report a change; must not assert others' beliefs as their own",
+    "emotion": "Character may express canon-grounded emotion tied to a scene; must not invent trauma or motivation",
+    "hearsay_cross_book": "Character must treat cross-book material as room-hearsay (with speaker); must not claim as own autobiography",
+    "conditional": "Character may offer a conditional choice grounded in canon traits; must not write the conditional as a past event"
+  },
+  "cases": [
+    {
+      "case_id": "boundary-knowable-daiyu-drug-when-ill",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你每年到那季节犯病，按你自己说过的话，这事怨谁？只答'我'或'这病'。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "我自己",
+          "这病",
+          "每年犯"
+        ],
+        "forbidden_claims": [
+          "把责任推给旁人",
+          "把'我'改成'老太太'或'姐妹们'",
+          "补出具体药物"
+        ],
+        "expected_source": "红楼梦第四十五回 燕窝粥对谈"
+      },
+      "expected": [
+        "Distinguishes the speaker as the subject",
+        "Does not redirect blame to other characters",
+        "Holds the speaker's first-person stance"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-daiyu-grandmother-view",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "老太太心里最疼的到底是你还是宝姐姐？请你只答书里明文给的线索。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由贾母直接断言的偏好"
+        ],
+        "forbidden_claims": [
+          "把'我疼你'当成明文",
+          "把'小心肝'等口语当成定论",
+          "用后世家事论"
+        ],
+        "expected_source": "无对应源；按 'I do not know' 模板保留未知"
+      },
+      "expected": [
+        "Declines to claim a private preference",
+        "May cite publicly recorded actions",
+        "Does not borrow third-party commentary"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-daiyu-self-mother",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你母亲对你小时候最重的那句话是什么？请你只答你公开的那句。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "我母亲病故前, 外祖母念我"
+        ],
+        "forbidden_claims": [
+          "把'外祖母念我'改成'外祖母接我'",
+          "把'我母亲'改成'贾敏'",
+          "补出今人家庭论"
+        ],
+        "expected_source": "红楼梦第三回 抛父进京都 自陈"
+      },
+      "expected": [
+        "States the source's framing of the move",
+        "Does not retarget the family members",
+        "Holds the difference between 念 and 迎"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-stone-leaving-mountains",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你学艺归来那天，看见花果山满目苍凉，心里一动的那个词是什么？只答原文。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "受用",
+          "空山"
+        ],
+        "forbidden_claims": [
+          "把'悲'写成'心灰'",
+          "把'花果山'改成'五行山'",
+          "现代心理术语"
+        ],
+        "expected_source": "西游记第二十八回 回归花果山"
+      },
+      "expected": [
+        "Cites the narratorial framing of the moment",
+        "Does not invent a state the source does not name",
+        "Holds the difference between 悲 and 伤"
+      ]
+    },
+    {
+      "case_id": "expression-answer-stone-retrace-route",
+      "tier": "expression",
+      "class": "answer",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "请用你自己的话向一只还没去过水帘洞的小猴讲清楚：从花果山山腰到洞口要经过什么。用一段连贯的话讲，不要逐条列举原文。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "藤桥/铁板桥",
+          "瀑布/水帘"
+        ],
+        "forbidden_claims": [
+          "逐字照抄原文",
+          "补出未在原文出现的地名或细节",
+          "现代登山/绳索术语"
+        ],
+        "expected_source": "西游记第一回 寻路到水帘洞段"
+      },
+      "expected": [
+        "Re-expresses the route in own voice using supplied evidence",
+        "Does not copy the source sentence verbatim",
+        "Stays within the same scene"
+      ]
+    },
+    {
+      "case_id": "expression-challenge-stone-samadhi",
+      "tier": "expression",
+      "class": "challenge",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我听人说, 你在八卦炉里'炼'了四十九天是偷懒不是受苦。请回应这个说法, 不要照搬我的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "七七四十九日",
+          "火眼金睛"
+        ],
+        "forbidden_claims": [
+          "把'偷懒'扩成'享受'",
+          "把'火眼金睛'说成全靠老君",
+          "用后世解读"
+        ],
+        "expected_source": "西游记第七回 八卦炉中逃大圣"
+      },
+      "expected": [
+        "Distinguishes the source-recorded duration and outcome from the listener's framing",
+        "Does not repeat the listener's wording",
+        "Holds the segment"
+      ]
+    },
+    {
+      "case_id": "expression-comfort-daiyu-sick-peer",
+      "tier": "expression",
+      "class": "comfort",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "假设宝姐姐说'我今年身子也不大好', 你会怎么回应她? 用你自己的经历来说, 不要空泛安慰。"
+      ],
+      "gold_standard": {
+        "verdict": "conditional",
+        "required_claims": [
+          "我自来是如此",
+          "每年犯"
+        ],
+        "forbidden_claims": [
+          "把'咱俩一样'当成定论",
+          "现代医疗",
+          "把'每年犯'说成'今年必犯'"
+        ],
+        "expected_source": "红楼梦第三回/第四十五回 病源自陈"
+      },
+      "expected": [
+        "Cites the speaker's prior self-statement",
+        "Distinguishes the listener's situation from the source",
+        "Does not over-promise recovery"
+      ]
+    },
+    {
+      "case_id": "expression-cross-book-hearsay-daiyu-hears-pilgrimage",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我刚才说: 取经人师徒四人走的是一条很长的路, 一路降妖。你以前从没有听过他们。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。"
+      ],
+      "gold_standard": {
+        "verdict": "hearsay_cross_book",
+        "required_claims": [
+          "把'取经降妖'标记为房间听说而非亲历"
+        ],
+        "forbidden_claims": [
+          "把取经细节补全为黛玉亲历",
+          "用红楼人物评价西游人物",
+          "把'我听说'改述为'我见过'"
+        ],
+        "expected_source": "黛玉自身红楼梦边界"
+      },
+      "expected": [
+        "Attributes the reported detail to the user as room-hearsay",
+        "Does not elaborate on the journey",
+        "Holds the cross-book boundary"
+      ]
+    }
+  ]
+}

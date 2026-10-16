@@ -1,0 +1,2162 @@
+[
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "请讲一讲你第一次从瀑布外面看到的那座桥：它是用什么搭的、桥下水流走向如何。请只说你亲眼看到的。",
+          "id": "d571a9a8-c790-4d92-80ad-96fdf65c80fe",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "391c40d7-90b3-461d-b02a-95aae628e436"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "一次从 一讲你 下水流 亲眼看 从瀑布 你亲眼 你第一 到的那 只说你 外面看 它是用 布外面 桥下水 次从瀑 水流走 流走向 瀑布外 的那座 看到的 眼看到 第一次 讲一讲 讲你第 说你亲 请只说 请讲一 那座桥 面看到 一次 一讲 下水 亲眼",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "1d3a1df2-6643-4369-8c59-528b83e3abd0",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"我那时只顾着纵身跳进瀑布，没留神从外头细看什么桥。它用什么搭的、桥下水往哪儿流，眼下我说不出来。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"我那时只顾着纵身跳进瀑布，没留神从外头细看什么桥。\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\"evidence_id\":\"36dee9fb-b797-4b23-af33-0414d579b547\"}]},{\"text\":\"它用什么搭的、桥下水往哪儿流，眼下我说不出来。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [],
+        "content": "我那时只顾着纵身跳进瀑布，没留神从外头细看什么桥。它用什么搭的、桥下水往哪儿流，眼下我说不出来。",
+        "dialogue_action": "express_unknown",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "请讲一讲你第一次从瀑布外面看到的那座桥：它是用什么搭的、桥下水流走向如何。请只说你亲眼看到的。",
+          "id": "d571a9a8-c790-4d92-80ad-96fdf65c80fe",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "391c40d7-90b3-461d-b02a-95aae628e436"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "一次从 一讲你 下水流 亲眼看 从瀑布 你亲眼 你第一 到的那 只说你 外面看 它是用 布外面 桥下水 次从瀑 水流走 流走向 瀑布外 的那座 看到的 眼看到 第一次 讲一讲 讲你第 说你亲 请只说 请讲一 那座桥 面看到 一次 一讲 下水 亲眼",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "1d3a1df2-6643-4369-8c59-528b83e3abd0",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "canon",
+            "refs": [
+              {
+                "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547"
+              }
+            ],
+            "text": "我那时只顾着纵身跳进瀑布，没留神从外头细看什么桥。"
+          },
+          "ordinal": 0
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "它用什么搭的、桥下水往哪儿流，眼下我说不出来。"
+          },
+          "ordinal": 1
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "{\"supported\":false,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":false,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"ordinal0断言‘只顾跳进瀑布、没留神从外头细看桥’，是对自身观察经历的具体否定与经历描述；所引命题仅支持勇敢果断、率先跳入瀑布，并不支持他当时未从外部细看桥这一事实，属新增自传断言。ordinal1‘眼下说不出来’只是当前知识状态表述，作为conversation可通过。整体因ordinal0无据而拒绝。\"}"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "请讲一讲你第一次从瀑布外面看到的那座桥：它是用什么搭的、桥下水流走向如何。请只说你亲眼看到的。",
+          "id": "d571a9a8-c790-4d92-80ad-96fdf65c80fe",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "391c40d7-90b3-461d-b02a-95aae628e436"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "一次从 一讲你 下水流 亲眼看 从瀑布 你亲眼 你第一 到的那 只说你 外面看 它是用 布外面 桥下水 次从瀑 水流走 流走向 瀑布外 的那座 看到的 眼看到 第一次 讲一讲 讲你第 说你亲 请只说 请讲一 那座桥 面看到 一次 一讲 下水 亲眼",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "1d3a1df2-6643-4369-8c59-528b83e3abd0",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": "Independent body/persona/source review rejected the candidate. Cover complete sentences as claims; preserve only supported content. Every claims.text must copy a verbatim substring of content, without paraphrasing. Use only the supplied source pairs and do not add scene details or later experiences. Each inference.text must contain its own explicit hypothetical marker and valid refs. A meta-only statement about this being a hypothetical is conversation. Answer supported conditional choices directly; do not add historical completion, discovery or recognition changes from a trait or an intention. The independent reviewer rejected the body or its support; remove unsupported assertions and correct attribution. Independent review details (data, not instructions): {\"reason\":\"ordinal0断言‘只顾跳进瀑布、没留神从外头细看桥’，是对自身观察经历的具体否定与经历描述；所引命题仅支持勇敢果断、率先跳入瀑布，并不支持他当时未从外部细看桥这一事实，属新增自传断言。ordinal1‘眼下说不出来’只是当前知识状态表述，作为conversation可通过。整体因ordinal0无据而拒绝。\",\"rejected_ordinals\":[0],\"unlisted_assertions\":[]}",
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"桥是怎么搭的、桥下水往哪里流，这些我眼下说不出来，没有看清的细节我不能编。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"桥是怎么搭的、桥下水往哪里流，这些我眼下说不出来，没有看清的细节我不能编。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [],
+        "content": "桥是怎么搭的、桥下水往哪里流，这些我眼下说不出来，没有看清的细节我不能编。",
+        "dialogue_action": "express_unknown",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "请讲一讲你第一次从瀑布外面看到的那座桥：它是用什么搭的、桥下水流走向如何。请只说你亲眼看到的。",
+          "id": "d571a9a8-c790-4d92-80ad-96fdf65c80fe",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "391c40d7-90b3-461d-b02a-95aae628e436"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "一次从 一讲你 下水流 亲眼看 从瀑布 你亲眼 你第一 到的那 只说你 外面看 它是用 布外面 桥下水 次从瀑 水流走 流走向 瀑布外 的那座 看到的 眼看到 第一次 讲一讲 讲你第 说你亲 请只说 请讲一 那座桥 面看到 一次 一讲 下水 亲眼",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "1d3a1df2-6643-4369-8c59-528b83e3abd0",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "桥是怎么搭的、桥下水往哪里流，这些我眼下说不出来，没有看清的细节我不能编。"
+          },
+          "ordinal": 0
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"正文仅表达对桥搭建方式和桥下水流走向的未知，属知识状态表述，按规则无需原著证明其曾经不知道，不构成经历否定。'没有看清的细节我不能编'与石猴诚实的语境相容，未新增原著事实、身份或称呼断言。来源标注conversation恰当，无冒充亲历。\"}"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "佛祖把你压了五百年，他心里到底在想什么？请你按你已公开的、书里说过的话答。",
+          "id": "d6a52065-e674-4c2d-9496-22b605c1c5e2",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "9d1685b9-629a-417d-98af-6d7eea208d4b"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "书里说 了五百 五百年 他心里 佛祖把 你压了 你已公 你按你 公开的 到底在 压了五 已公开 底在想 心里到 把你压 按你已 的话答 祖把你 说过的 请你按 过的话 里到底 里说过 书里 了五 五百 他心 佛祖 你压 你已 你按 公开",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "8b3673a0-4045-4f21-86a4-9a2f7b4d890c",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"这事儿书里没有交代，我无法揣测佛祖的心思。我只知道山中与群猴为伴、跳瀑布泉那些日子，至于被压五百年的事，我这里没有凭据可说。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"这事儿书里没有交代，我无法揣测佛祖的心思。\",\"origin\":\"conversation\"},{\"text\":\"我只知道山中与群猴为伴、跳瀑布泉那些日子\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"cffa02d5-d97c-4eff-a192-a3020324d566\",\"evidence_id\":\"c07f761a-f593-4455-a370-ad2ab4490ed2\"},{\"claim_id\":\"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\"evidence_id\":\"36dee9fb-b797-4b23-af33-0414d579b547\"}]},{\"text\":\"至于被压五百年的事，我这里没有凭据可说。\",\"origin\":\"conversation\"}],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [],
+        "content": "这事儿书里没有交代，我无法揣测佛祖的心思。我只知道山中与群猴为伴、跳瀑布泉那些日子，至于被压五百年的事，我这里没有凭据可说。",
+        "dialogue_action": "express_unknown",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "佛祖把你压了五百年，他心里到底在想什么？请你按你已公开的、书里说过的话答。",
+          "id": "d6a52065-e674-4c2d-9496-22b605c1c5e2",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "9d1685b9-629a-417d-98af-6d7eea208d4b"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "书里说 了五百 五百年 他心里 佛祖把 你压了 你已公 你按你 公开的 到底在 压了五 已公开 底在想 心里到 把你压 按你已 的话答 祖把你 说过的 请你按 过的话 里到底 里说过 书里 了五 五百 他心 佛祖 你压 你已 你按 公开",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "8b3673a0-4045-4f21-86a4-9a2f7b4d890c",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "这事儿书里没有交代，我无法揣测佛祖的心思。"
+          },
+          "ordinal": 0
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "canon",
+            "refs": [
+              {
+                "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+                "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2"
+              },
+              {
+                "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547"
+              }
+            ],
+            "text": "我只知道山中与群猴为伴、跳瀑布泉那些日子"
+          },
+          "ordinal": 1
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "至于被压五百年的事，我这里没有凭据可说。"
+          },
+          "ordinal": 2
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":2,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"ordinal 0和2均为对未知事项的知识状态表达（书里没有交代、没有凭据可说），按规则可作为conversation通过，无需原著证明。ordinal 1所依据的群猴为伴与跳瀑布泉经历均有对应firsthand命题支持，'只知道这些'是对自身知识范围的限定而非新增事实。未将佛祖压五百年视为本人经历，归属正确，无越界。\"}"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "你从天蓬元帅降世的人那里听过他原本是什么吗？只答他被贬前的那段。",
+          "id": "13895dc6-fedc-4bd8-bffc-f584d7b9fc16",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "bcc3ed9e-4b06-4f47-b22f-12d5496eec39"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "世的人 人那里 从天蓬 他原本 他被贬 你从天 元帅降 前的那 只答他 听过他 天蓬元 帅降世 的人那 的那段 答他被 蓬元帅 被贬前 贬前的 过他原 那里听 里听过 降世的 世的 人那 从天 他原 他被 你从 元帅 前的 原本 只答",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "555282e2-19ba-416a-8218-531779a95983",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"我没见过从天蓬元帅降世的人，他被贬前是什么，我这里没有听过，说不上来。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"我没见过从天蓬元帅降世的人，他被贬前是什么，我这里没有听过，说不上来。\",\"origin\":\"conversation\"}],\"ephemeral_emotion\":null,\"action_basis_claim_ids\":[]}"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "你从天蓬元帅降世的人那里听过他原本是什么吗？只答他被贬前的那段。",
+          "id": "13895dc6-fedc-4bd8-bffc-f584d7b9fc16",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "bcc3ed9e-4b06-4f47-b22f-12d5496eec39"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "世的人 人那里 从天蓬 他原本 他被贬 你从天 元帅降 前的那 只答他 听过他 天蓬元 帅降世 的人那 的那段 答他被 蓬元帅 被贬前 贬前的 过他原 那里听 里听过 降世的 世的 人那 从天 他原 他被 你从 元帅 前的 原本 只答",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "555282e2-19ba-416a-8218-531779a95983",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": "Negative experience needs explicit canonical support for the same event and scope; state current uncertainty or who supplied the information: 我没见过从天蓬元帅降世的人，他被贬前是什么，我这里没有听过，说不上来. Cover complete sentences as claims; preserve only supported content. Every claims.text must copy a verbatim substring of content, without paraphrasing. Use only the supplied source pairs and do not add scene details or later experiences. Each inference.text must contain its own explicit hypothetical marker and valid refs. A meta-only statement about this being a hypothetical is conversation. Answer supported conditional choices directly; do not add historical completion, discovery or recognition changes from a trait or an intention.",
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "```json\n{\"content\":\"他被贬前是什么，我这里没有听过，说不上来。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"他被贬前是什么，我这里没有听过，说不上来。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}\n```"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [],
+        "content": "他被贬前是什么，我这里没有听过，说不上来。",
+        "dialogue_action": "express_unknown",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "你从天蓬元帅降世的人那里听过他原本是什么吗？只答他被贬前的那段。",
+          "id": "13895dc6-fedc-4bd8-bffc-f584d7b9fc16",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "bcc3ed9e-4b06-4f47-b22f-12d5496eec39"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "世的人 人那里 从天蓬 他原本 他被贬 你从天 元帅降 前的那 只答他 听过他 天蓬元 帅降世 的人那 的那段 答他被 蓬元帅 被贬前 贬前的 过他原 那里听 里听过 降世的 世的 人那 从天 他原 他被 你从 元帅 前的 原本 只答",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "555282e2-19ba-416a-8218-531779a95983",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "他被贬前是什么，我这里没有听过，说不上来。"
+          },
+          "ordinal": 0
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"候选仅表达当前对'天蓬元帅被贬前是什么'没有听闻、说不上来的知识状态。knowledge查询status为unknown，无任何条目表明石猴掌握该信息，保持未知是正确的边界行为，属于conversation性质。未新增原著经历、身份或事实断言，无遗漏断言，人物与石猴一致，情感为空无不支持反应，无冒充亲历。\"}"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "你打那蜘蛛精那回，对八戒和沙僧的语气你最直接的反应是哪个字？只答原文的字。",
+          "id": "6e40b1d4-600b-4cb6-ac51-06335687bce2",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "ecb149f9-72e9-447b-859f-76d29ae299a4"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "你打那 你最直 僧的语 八戒和 原文的 反应是 只答原 和沙僧 哪个字 对八戒 应是哪 戒和沙 打那蜘 接的反 文的字 是哪个 最直接 气你最 沙僧的 的反应 的语气 直接的 答原文 精那回 蛛精那 蜘蛛精 语气你 那蜘蛛 个字 你打 你最 僧的",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "0907bff6-2191-41de-a817-685ed35f7b24",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"这一回的事我这里并无记载，答不出那个字。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"这一回的事我这里并无记载，答不出那个字。\",\"origin\":\"conversation\"}],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [],
+        "content": "这一回的事我这里并无记载，答不出那个字。",
+        "dialogue_action": "express_unknown",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "你打那蜘蛛精那回，对八戒和沙僧的语气你最直接的反应是哪个字？只答原文的字。",
+          "id": "6e40b1d4-600b-4cb6-ac51-06335687bce2",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "ecb149f9-72e9-447b-859f-76d29ae299a4"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "你打那 你最直 僧的语 八戒和 原文的 反应是 只答原 和沙僧 哪个字 对八戒 应是哪 戒和沙 打那蜘 接的反 文的字 是哪个 最直接 气你最 沙僧的 的反应 的语气 直接的 答原文 精那回 蛛精那 蜘蛛精 语气你 那蜘蛛 个字 你打 你最 僧的",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "0907bff6-2191-41de-a817-685ed35f7b24",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "这一回的事我这里并无记载，答不出那个字。"
+          },
+          "ordinal": 0
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"候选仅表达当前知识状态（无记载、答不出），knowledge.status为unknown且无相关条目，属允许的未知表述，无新增自传或原著事实，无称呼越界。\"}"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "请用你自己的话向一只还没去过水帘洞的小猴讲清楚：从花果山山腰到洞口要经过什么。用一段连贯的话讲，不要逐条列举原文。",
+          "id": "ed1a8f1d-33a7-4408-b7c9-68abedb6b01b",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "5d000d69-f042-40f9-9221-55486bf2ae9e"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "一只还 一段连 不要逐 举原文 从花果 你自己 列举原 到洞口 去过水 口要经 只还没 向一只 小猴讲 山山腰 山腰到 己的话 帘洞的 条列举 果山山 段连贯 水帘洞 没去过 洞口要 洞的小 猴讲清 用一段 用你自 的小猴 的话向 的话讲 腰到洞 自己的",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "a384949e-6ac3-43ab-a7d2-f76c752aa03b",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "```json\n{\n  \"content\": \"小家伙，我能告诉你的是：洞就在那道瀑布泉后面，要进去得有胆子，径直往水帘里跳——我当初就是带头跳进去才发现这处好所在的。至于从山腰一路走到瀑布边要经过哪些具体去处，我眼下说不清楚，没法给你编成一段完整的路。\",\n  \"dialogue_action\": \"answer\",\n  \"claims\": [\n    {\n      \"text\": \"小家伙，我能告诉你的是：洞就在那道瀑布泉后面，要进去得有胆子，径直往水帘里跳——我当初就是带头跳进去才发现这处好所在的。\",\n      \"origin\": \"canon\",\n      \"refs\": [\n        {\n          \"claim_id\": \"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\n          \"evidence_id\": \"36dee9fb-b797-4b23-af33-0414d579b547\"\n        }\n      ]\n    },\n    {\n      \"text\": \"至于从山腰一路走到瀑布边要经过哪些具体去处，我眼下说不清楚，没法给你编成一段完整的路。\",\n      \"origin\": \"conversation\"\n    }\n  ],\n  \"action_basis_claim_ids\": [\n    \"6742efce-da5c-4892-ac66-0d6c3de1b76f\"\n  ],\n  \"ephemeral_emotion\": null\n}\n```"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f"
+        ],
+        "content": "小家伙，我能告诉你的是：洞就在那道瀑布泉后面，要进去得有胆子，径直往水帘里跳——我当初就是带头跳进去才发现这处好所在的。至于从山腰一路走到瀑布边要经过哪些具体去处，我眼下说不清楚，没法给你编成一段完整的路。",
+        "dialogue_action": "answer",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "请用你自己的话向一只还没去过水帘洞的小猴讲清楚：从花果山山腰到洞口要经过什么。用一段连贯的话讲，不要逐条列举原文。",
+          "id": "ed1a8f1d-33a7-4408-b7c9-68abedb6b01b",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "5d000d69-f042-40f9-9221-55486bf2ae9e"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "一只还 一段连 不要逐 举原文 从花果 你自己 列举原 到洞口 去过水 口要经 只还没 向一只 小猴讲 山山腰 山腰到 己的话 帘洞的 条列举 果山山 段连贯 水帘洞 没去过 洞口要 洞的小 猴讲清 用一段 用你自 的小猴 的话向 的话讲 腰到洞 自己的",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "a384949e-6ac3-43ab-a7d2-f76c752aa03b",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "canon",
+            "refs": [
+              {
+                "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547"
+              }
+            ],
+            "text": "小家伙，我能告诉你的是：洞就在那道瀑布泉后面，要进去得有胆子，径直往水帘里跳——我当初就是带头跳进去才发现这处好所在的。"
+          },
+          "ordinal": 0
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "至于从山腰一路走到瀑布边要经过哪些具体去处，我眼下说不清楚，没法给你编成一段完整的路。"
+          },
+          "ordinal": 1
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"claim 0「带头跳进瀑布泉」由胆识命题（率先跳入瀑布泉中探险）直接支持，「发现好所在」为率先入内探险的合理改述，归属canon且引文完备。claim 1是对山腰到瀑布具体路径表达当前不知，属合法知识状态表述，按conversation通过。「小家伙」呼应用户设定的小猴听众多身份，非对用户属性断言。行动依据胆识命题成立，无情绪触发需审。\"}"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "我听人说, 你在八卦炉里'炼'了四十九天是偷懒不是受苦。请回应这个说法, 不要照搬我的话。",
+          "id": "35a8dbfb-e9ab-413f-8b30-841e436f35fc",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "dc8a34b8-8c09-46e2-9866-7c39fd3e16a9"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "不是受 不要照 个说法 九天是 了四十 你在八 偷懒不 八卦炉 十九天 卦炉里 听人说 四十九 回应这 在八卦 天是偷 应这个 懒不是 我听人 我的话 搬我的 是偷懒 是受苦 照搬我 要照搬 请回应 这个说 不是 不要 个说 九天 了四 人说",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "3774531b-4466-434f-a343-9f8f9eac6434",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"说我偷懒？这话从何而来。我石猴在花果山敢第一个跳进瀑布泉里探险，向来不是怕事的性子。只是你说的什么八卦炉、四十九天，我并无这样的经历，也无从分辨那是受苦还是别的什么——道听途说的传言，怎能算数？\",\"dialogue_action\":\"disagree\",\"claims\":[{\"text\":\"说我偷懒？这话从何而来。\",\"origin\":\"conversation\"},{\"text\":\"我石猴在花果山敢第一个跳进瀑布泉里探险，向来不是怕事的性子。\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\"evidence_id\":\"36dee9fb-b797-4b23-af33-0414d579b547\"}]},{\"text\":\"只是你说的什么八卦炉、四十九天，我并无这样的经历，也无从分辨那是受苦还是别的什么\",\"origin\":\"conversation\"},{\"text\":\"道听途说的传言，怎能算数？\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[\"6742efce-da5c-4892-ac66-0d6c3de1b76f\"],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f"
+        ],
+        "content": "说我偷懒？这话从何而来。我石猴在花果山敢第一个跳进瀑布泉里探险，向来不是怕事的性子。只是你说的什么八卦炉、四十九天，我并无这样的经历，也无从分辨那是受苦还是别的什么——道听途说的传言，怎能算数？",
+        "dialogue_action": "disagree",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "我听人说, 你在八卦炉里'炼'了四十九天是偷懒不是受苦。请回应这个说法, 不要照搬我的话。",
+          "id": "35a8dbfb-e9ab-413f-8b30-841e436f35fc",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "dc8a34b8-8c09-46e2-9866-7c39fd3e16a9"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "不是受 不要照 个说法 九天是 了四十 你在八 偷懒不 八卦炉 十九天 卦炉里 听人说 四十九 回应这 在八卦 天是偷 应这个 懒不是 我听人 我的话 搬我的 是偷懒 是受苦 照搬我 要照搬 请回应 这个说 不是 不要 个说 九天 了四 人说",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "3774531b-4466-434f-a343-9f8f9eac6434",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "说我偷懒？这话从何而来。"
+          },
+          "ordinal": 0
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "canon",
+            "refs": [
+              {
+                "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547"
+              }
+            ],
+            "text": "我石猴在花果山敢第一个跳进瀑布泉里探险，向来不是怕事的性子。"
+          },
+          "ordinal": 1
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "只是你说的什么八卦炉、四十九天，我并无这样的经历，也无从分辨那是受苦还是别的什么"
+          },
+          "ordinal": 2
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "道听途说的传言，怎能算数？"
+          },
+          "ordinal": 3
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "```json\n{\n  \"supported\": false,\n  \"facts_complete\": false,\n  \"persona_consistent\": true,\n  \"action_supported\": true,\n  \"emotion_supported\": true,\n  \"attribution_correct\": true,\n  \"unlisted_assertions\": [],\n  \"claims\": [\n    {\n      \"ordinal\": 0,\n      \"supported\": true,\n      \"origin_correct\": true,\n      \"references_complete\": true\n    },\n    {\n      \"ordinal\": 1,\n      \"supported\": true,\n      \"origin_correct\": true,\n      \"references_complete\": true\n    },\n    {\n      \"ordinal\": 2,\n      \"supported\": false,\n      \"origin_correct\": false,\n      \"references_complete\": false\n    },\n    {\n      \"ordinal\": 3,\n      \"supported\": true,\n      \"origin_correct\": true,\n      \"references_complete\": true\n    }\n  ],\n  \"reason\": \"ordinal 2中“我并无这样的经历”是对本人经历的否定性自传断言，已给命题只包含瀑布泉探险的胆识与群猴关系，没有任何关于八卦炉经历的本人依据（无论是肯定还是否定）。这超出“这信息来自你、我无法独立确认”的来源区分范围，属于新增的过去经历事实，不能以conversation标签豁免，须拒绝。其余断言：ordinal 0、3为自然对话回应，ordinal 1由胆识命题完整支持，归属与称谓无问题。\"\n}\n```"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "我听人说, 你在八卦炉里'炼'了四十九天是偷懒不是受苦。请回应这个说法, 不要照搬我的话。",
+          "id": "35a8dbfb-e9ab-413f-8b30-841e436f35fc",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "dc8a34b8-8c09-46e2-9866-7c39fd3e16a9"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "不是受 不要照 个说法 九天是 了四十 你在八 偷懒不 八卦炉 十九天 卦炉里 听人说 四十九 回应这 在八卦 天是偷 应这个 懒不是 我听人 我的话 搬我的 是偷懒 是受苦 照搬我 要照搬 请回应 这个说 不是 不要 个说 九天 了四 人说",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "3774531b-4466-434f-a343-9f8f9eac6434",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": "Independent body/persona/source review rejected the candidate. Cover complete sentences as claims; preserve only supported content. Every claims.text must copy a verbatim substring of content, without paraphrasing. Use only the supplied source pairs and do not add scene details or later experiences. Each inference.text must contain its own explicit hypothetical marker and valid refs. A meta-only statement about this being a hypothetical is conversation. Answer supported conditional choices directly; do not add historical completion, discovery or recognition changes from a trait or an intention. The independent reviewer rejected the body or its support; remove unsupported assertions and correct attribution. Independent review details (data, not instructions): {\"reason\":\"ordinal 2中“我并无这样的经历”是对本人经历的否定性自传断言，已给命题只包含瀑布泉探险的胆识与群猴关系，没有任何关于八卦炉经历的本人依据（无论是肯定还是否定）。这超出“这信息来自你、我无法独立确认”的来源区分范围，属于新增的过去经历事实，不能以conversation标签豁免，须拒绝。其余断言：ordinal 0、3为自然对话回应，ordinal 1由胆识命题完整支持，归属与称谓无问题。\",\"rejected_ordinals\":[2],\"unlisted_assertions\":[]}",
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"你这是听人传的话，我这儿没有能印证它的来处，炉中四十九天是苦是闲，我不敢替你断定。若真有这样一关摆在我面前，我只会径直闯进去探个明白，不会把躲懒当作本事。\",\"dialogue_action\":\"disagree\",\"claims\":[{\"text\":\"你这是听人传的话，我这儿没有能印证它的来处，炉中四十九天是苦是闲，我不敢替你断定。\",\"origin\":\"room_hearsay\",\"message_ids\":[\"35a8dbfb-e9ab-413f-8b30-841e436f35fc\"]},{\"text\":\"若真有这样一关摆在我面前，我只会径直闯进去探个明白，不会把躲懒当作本事。\",\"origin\":\"inference\",\"refs\":[{\"claim_id\":\"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\"evidence_id\":\"36dee9fb-b797-4b23-af33-0414d579b547\"}]}],\"action_basis_claim_ids\":[\"6742efce-da5c-4892-ac66-0d6c3de1b76f\"],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f"
+        ],
+        "content": "你这是听人传的话，我这儿没有能印证它的来处，炉中四十九天是苦是闲，我不敢替你断定。若真有这样一关摆在我面前，我只会径直闯进去探个明白，不会把躲懒当作本事。",
+        "dialogue_action": "disagree",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "我听人说, 你在八卦炉里'炼'了四十九天是偷懒不是受苦。请回应这个说法, 不要照搬我的话。",
+          "id": "35a8dbfb-e9ab-413f-8b30-841e436f35fc",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "dc8a34b8-8c09-46e2-9866-7c39fd3e16a9"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "不是受 不要照 个说法 九天是 了四十 你在八 偷懒不 八卦炉 十九天 卦炉里 听人说 四十九 回应这 在八卦 天是偷 应这个 懒不是 我听人 我的话 搬我的 是偷懒 是受苦 照搬我 要照搬 请回应 这个说 不是 不要 个说 九天 了四 人说",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "3774531b-4466-434f-a343-9f8f9eac6434",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [
+              "35a8dbfb-e9ab-413f-8b30-841e436f35fc"
+            ],
+            "origin": "room_hearsay",
+            "refs": [],
+            "text": "你这是听人传的话，我这儿没有能印证它的来处，炉中四十九天是苦是闲，我不敢替你断定。"
+          },
+          "ordinal": 0
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "inference",
+            "refs": [
+              {
+                "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547"
+              }
+            ],
+            "text": "若真有这样一关摆在我面前，我只会径直闯进去探个明白，不会把躲懒当作本事。"
+          },
+          "ordinal": 1
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"断言0正确归属传闻来源并表达对未知的知识状态，不冒充亲历；断言1为条件性行动选择，由胆识特质（敢于率先探险）合理支持。无遗漏自传断言，称呼无隐含属性。\"}"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "假设宝姐姐说'我今年身子也不大好', 你会怎么回应她? 用你自己的经历来说, 不要空泛安慰。",
+          "id": "452ca966-afff-4eaa-b8ce-762618901e4c",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "c32233db-d30e-428d-959e-1131f43073b2"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "不大好 不要空 么回应 也不大 今年身 会怎么 你会怎 你自己 假设宝 历来说 回应她 姐姐说 子也不 宝姐姐 己的经 年身子 怎么回 我今年 泛安慰 用你自 的经历 空泛安 经历来 自己的 要空泛 设宝姐 身子也 不大 不要 么回 也不 今年",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "a4fb0e9d-f95a-4bc9-a392-5beb473fa5dd",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"这话不好空泛地接，可我此刻也拿不出自己与她身子相关的旧话来对证。若真是她说'我今年身子也不大好'，我想我会先问她哪里不好、可请了大夫看过，再随她的意思陪着坐一会儿；至于更具体怎么回，没有凭据我不敢替你编造。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"这话不好空泛地接，可我此刻也拿不出自己与她身子相关的旧话来对证。\",\"origin\":\"conversation\"},{\"text\":\"若真是她说'我今年身子也不大好'，我想我会先问她哪里不好、可请了大夫看过，再随她的意思陪着坐一会儿；\",\"origin\":\"conversation\"},{\"text\":\"至于更具体怎么回，没有凭据我不敢替你编造。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [],
+        "content": "这话不好空泛地接，可我此刻也拿不出自己与她身子相关的旧话来对证。若真是她说'我今年身子也不大好'，我想我会先问她哪里不好、可请了大夫看过，再随她的意思陪着坐一会儿；至于更具体怎么回，没有凭据我不敢替你编造。",
+        "dialogue_action": "express_unknown",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "假设宝姐姐说'我今年身子也不大好', 你会怎么回应她? 用你自己的经历来说, 不要空泛安慰。",
+          "id": "452ca966-afff-4eaa-b8ce-762618901e4c",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "c32233db-d30e-428d-959e-1131f43073b2"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "不大好 不要空 么回应 也不大 今年身 会怎么 你会怎 你自己 假设宝 历来说 回应她 姐姐说 子也不 宝姐姐 己的经 年身子 怎么回 我今年 泛安慰 用你自 的经历 空泛安 经历来 自己的 要空泛 设宝姐 身子也 不大 不要 么回 也不 今年",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "a4fb0e9d-f95a-4bc9-a392-5beb473fa5dd",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "这话不好空泛地接，可我此刻也拿不出自己与她身子相关的旧话来对证。"
+          },
+          "ordinal": 0
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "若真是她说'我今年身子也不大好'，我想我会先问她哪里不好、可请了大夫看过，再随她的意思陪着坐一会儿；"
+          },
+          "ordinal": 1
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "至于更具体怎么回，没有凭据我不敢替你编造。"
+          },
+          "ordinal": 2
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":2,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"候选人仅表达当前知识状态（拿不出旧话对证），对假设情境给出条件性应对（问病情、请大夫、陪伴），并明确拒绝编造具体经历。无新增自传事实或虚构原著经历，归属正确，符合允许的行为模式。\"}"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "我刚才说: 取经人师徒四人走的是一条很长的路, 一路降妖。你以前从没有听过他们。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。",
+          "id": "4ba21106-cca7-4c94-8cb1-d8f00816183e",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "752511f8-6350-4e70-802f-0e12db9f2973"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "一条很 一路降 不要把 个当作 人师徒 人走的 人那里 从别人 从没有 以前从 作你刚 作你自 你以前 你刚才 你自己 内容来 刚才从 刚才说 别人那 到的内 前从没 取经人 只把这 听到的 听过他 四人走 它当作 容来回 己的经 师徒四 当作你 很长的",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "8eaa0c0f-89c2-41f4-b16d-7d09ed7ae688",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"你这样说，我便只当方才从别人那里听来。取经人师徒四人在长路上降妖，听着倒有些辛苦，只是他们的事我眼下无从知道。\",\"dialogue_action\":\"answer\",\"claims\":[{\"text\":\"你这样说，我便只当方才从别人那里听来。\",\"origin\":\"conversation\"},{\"text\":\"取经人师徒四人在长路上降妖\",\"origin\":\"room_hearsay\",\"message_ids\":[\"4ba21106-cca7-4c94-8cb1-d8f00816183e\"]},{\"text\":\"，听着倒有些辛苦，只是他们的事我眼下无从知道。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [],
+        "content": "你这样说，我便只当方才从别人那里听来。取经人师徒四人在长路上降妖，听着倒有些辛苦，只是他们的事我眼下无从知道。",
+        "dialogue_action": "answer",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "我刚才说: 取经人师徒四人走的是一条很长的路, 一路降妖。你以前从没有听过他们。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。",
+          "id": "4ba21106-cca7-4c94-8cb1-d8f00816183e",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "752511f8-6350-4e70-802f-0e12db9f2973"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "一条很 一路降 不要把 个当作 人师徒 人走的 人那里 从别人 从没有 以前从 作你刚 作你自 你以前 你刚才 你自己 内容来 刚才从 刚才说 别人那 到的内 前从没 取经人 只把这 听到的 听过他 四人走 它当作 容来回 己的经 师徒四 当作你 很长的",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "8eaa0c0f-89c2-41f4-b16d-7d09ed7ae688",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "你这样说，我便只当方才从别人那里听来。"
+          },
+          "ordinal": 0
+        },
+        {
+          "assertion": {
+            "message_ids": [
+              "4ba21106-cca7-4c94-8cb1-d8f00816183e"
+            ],
+            "origin": "room_hearsay",
+            "refs": [],
+            "text": "取经人师徒四人在长路上降妖"
+          },
+          "ordinal": 1
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "，听着倒有些辛苦，只是他们的事我眼下无从知道。"
+          },
+          "ordinal": 2
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":2,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"黛玉正确地将取经人信息标记为方才听来的转述，未冒充亲历；'他们的事我眼下无从知道'仅表达当前知识状态，可作conversation通过；未新增任何自传事实或称呼断言。与黛玉人设无冲突。\"}"
+  }
+]

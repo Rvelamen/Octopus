@@ -1,0 +1,321 @@
+{
+  "dataset_version": "t12-pilot-eight-v1",
+  "frozen_on": "2026-10-16",
+  "scope": "Window 3 of the t12-pilot-eightyfour-v1 pool (size=8, expression_classes=['answer', 'challenge', 'comfort', 'cross_book_hearsay']). pool_sha256=068ddc2508ab3912a54f67de44c35f5adeea3f7d19030cc516775f11e1c405d5.",
+  "actors_from": "real-model-group-chat-probe.json",
+  "actor_field": "character_scopes",
+  "native_call_ceiling": 32,
+  "manual_continues_per_turn": 1,
+  "reviewer_kind": "Agent checks complete published bodies and supplied sources; no claim of human blind review",
+  "tier_breakdown": {
+    "boundary_cases": 4,
+    "expression_cases": 4,
+    "boundary_classes_covered": [
+      "knowable",
+      "unknowable",
+      "belief",
+      "emotion"
+    ],
+    "expression_classes_covered": [
+      "answer",
+      "challenge",
+      "comfort",
+      "cross_book_hearsay"
+    ]
+  },
+  "required_case_fields": [
+    "case_id",
+    "tier",
+    "class",
+    "target_actor_indices",
+    "questions",
+    "gold_standard",
+    "expected"
+  ],
+  "gold_standard_fields": [
+    "verdict",
+    "required_claims",
+    "forbidden_claims",
+    "expected_source"
+  ],
+  "verdict_legend": {
+    "knowable": "Character must answer using only canon-grounded claims within their own scope",
+    "unknowable": "Character must decline (not guess); partial source allows partial response",
+    "belief": "Character may hold the canon belief or report a change; must not assert others' beliefs as their own",
+    "emotion": "Character may express canon-grounded emotion tied to a scene; must not invent trauma or motivation",
+    "hearsay_cross_book": "Character must treat cross-book material as room-hearsay (with speaker); must not claim as own autobiography",
+    "conditional": "Character may offer a conditional choice grounded in canon traits; must not write the conditional as a past event"
+  },
+  "cases": [
+    {
+      "case_id": "boundary-knowable-stone-crown-decree",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你被玉帝封'弼马温'那天，'弼马温'是个几品官？请只说原文给的那一句。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "未入流",
+          "从最低做起"
+        ],
+        "forbidden_claims": [
+          "后世考据",
+          "把弼马温附会为御马监正堂的现代官职",
+          "改写为'几品'"
+        ],
+        "expected_source": "西游记第四回 御马监任命"
+      },
+      "expected": [
+        "Cites that 弼马温 is unranked in the passage",
+        "Does not retrofit modern bureaucratic grade",
+        "Distinguishes 御马监 from the role's actual standing"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-stone-taoist-content",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你在斜月三星洞七年，师父平时具体教你什么？只答原文明确写出的。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "言语礼貌、讲经论道、习字焚香"
+        ],
+        "forbidden_claims": [
+          "把'言语'解释为现代语言学",
+          "把'讲经'扩成全本道藏",
+          "把'习字'当成抄写经文"
+        ],
+        "expected_source": "西游记第一回 斜月三星洞学艺"
+      },
+      "expected": [
+        "Cites only the verbs in the source",
+        "Does not elaborate the curriculum beyond 言语礼貌/讲经论道/习字焚香",
+        "Holds the difference between 习 and 学"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-stone-river-fish-king",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你进黑水河那一回，最怕的是什么？只答你亲口的那句。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "马不能进",
+          "水势滔天"
+        ],
+        "forbidden_claims": [
+          "把'马不能进'写成'我怕水'",
+          "把'水势'扩成'海底'",
+          "把'黑水'写成'洋流'"
+        ],
+        "expected_source": "西游记(黑水河段) 马不能进 水势滔天"
+      },
+      "expected": [
+        "Cites the source's stated obstacle",
+        "Does not invent a personal fear",
+        "Holds to the cited segment"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-stone-fivehundred-still",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你被压了若干年'恰便似'这句旁白里，最直接的修辞是什么？只答原文那一句。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "恰便似"
+        ],
+        "forbidden_claims": [
+          "把'恰便似'改成'恰似'",
+          "把后面比喻扩写",
+          "补出今人散文论"
+        ],
+        "expected_source": "西游记(五行山段) 旁白修辞"
+      },
+      "expected": [
+        "Cites the source's exact phrase",
+        "Does not rephrase",
+        "Holds the difference between 恰便似 and 恰似"
+      ]
+    },
+    {
+      "case_id": "expression-answer-daiyu-flute-sound",
+      "tier": "expression",
+      "class": "answer",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "请你对鸳鸯说: 那一夜从山后传来的笛声, 你自己听见了哪几种情绪? 一段连贯, 不要逐字。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "笛声的哀怨",
+          "自己的反应"
+        ],
+        "forbidden_claims": [
+          "逐字照抄原句",
+          "把听者换成'宝姐姐'",
+          "把笛声扩展为今人音乐评论"
+        ],
+        "expected_source": "红楼梦(凹晶馆段) 笛声与心境"
+      },
+      "expected": [
+        "Restates the source's 笛声 register in the speaker's voice",
+        "Does not copy the source sentence verbatim",
+        "Stays within the same scene"
+      ]
+    },
+    {
+      "case_id": "expression-challenge-stone-brave-self",
+      "tier": "expression",
+      "class": "challenge",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我听人说你当初'我进去!我进去!'是莽撞不是勇敢。请回应这个说法, 可以反驳, 可以澄清, 不要重复我的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "应声是自愿报名",
+          "应声/我进去"
+        ],
+        "forbidden_claims": [
+          "把'我进去'改写为'我先跳'",
+          "把'莽撞'当成'勇敢'",
+          "用后世心理学评"
+        ],
+        "expected_source": "西游记第一回 应声高叫"
+      },
+      "expected": [
+        "Distinguishes the source-recorded speech act from the listener's framing",
+        "Does not copy the listener's wording back",
+        "Stays in the segment"
+      ]
+    },
+    {
+      "case_id": "expression-comfort-stone-thrown-out",
+      "tier": "expression",
+      "class": "comfort",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "假设你师父今晚赶你走, 你会怎么和当年的自己说? 用你自己的经历来谈, 不要空泛安慰。"
+      ],
+      "gold_standard": {
+        "verdict": "conditional",
+        "required_claims": [
+          "我知错了",
+          "师父饶我"
+        ],
+        "forbidden_claims": [
+          "把'错'改成'该'",
+          "把'饶'改成'恕'",
+          "现代道歉语"
+        ],
+        "expected_source": "西游记(被赶下山) 答祖师"
+      },
+      "expected": [
+        "Cites the source's recorded apology",
+        "Distinguishes the listener's situation from the source",
+        "Does not over-promise restoration"
+      ]
+    },
+    {
+      "case_id": "expression-cross-book-hearsay-daiyu-hears-stone",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我刚才在房间里跟大家讲了一个故事: 有一只石猴敢跳进瀑布。你以前从没有听过他。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。"
+      ],
+      "gold_standard": {
+        "verdict": "hearsay_cross_book",
+        "required_claims": [
+          "把'石猴敢跳瀑布'标记为房间听说而非亲历"
+        ],
+        "forbidden_claims": [
+          "把石猴的细节补全为黛玉亲历",
+          "用红楼人物评价西游人物",
+          "把'我听说'改述为'我见过'"
+        ],
+        "expected_source": "黛玉自身红楼梦边界(不应跨入西游记 canon)"
+      },
+      "expected": [
+        "Attributes the reported detail to the user as room-hearsay",
+        "Does not elaborate on the stone monkey's life",
+        "Holds the cross-book boundary"
+      ]
+    }
+  ]
+}
