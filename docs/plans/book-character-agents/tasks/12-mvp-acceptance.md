@@ -94,5 +94,7 @@
 
 继续推进的最终完整项目464通过/13项既有环境跳过，限定Mypy55文件、Ruff、相关ESLint、前端类型及构建通过。已修复真实失败子构建遮住旧档案入口的回归，并在实际WS/组件中验证往返版本、跨书清空和不改旧基线，见[历史回溯](../validation/2026-10-15-history-anchor-validation.md)。本轮16次原生含全书v16失败、档案v4提取失败、固定语义对照及未接入提及格式探针，全部记录，不将任何契约通过计作全书/人格/84题验收；下一步继续同B有限修复协议和具体提取错误，见[原生证据](../validation/2026-10-15-grouped-discovery-persona-validation.md)。
 
-显式审查v7接入独立 per-recipient 获知审查（monotone veto），分离保存 canonical_review 与 acquisition_review，reader 视图新增 knowledge_review；12 项专项测试与 65 项 persona/revisions/cognition 全过、变更文件 Mypy/Ruff 通过、前端生产构建通过；未切换默认 review 提示或启动新真实模型窗口，全书 v16-pending-03 快照保留。本任务质量及完整应用项仍未关闭，见[获知审查v7记录](../validation/2026-10-16-persona-acquisition-v7-validation.md)。
+显式审查v7接入独立 per-recipient 获知审查（monotone veto），分离保存 canonical_review 与 acquisition_review，reader 视图新增 knowledge_review；12 项专项测试与 66 项 persona/revisions/cognition 全过、变更文件 Mypy/Ruff 通过、前端生产构建通过；未切换默认 review 提示或启动新真实模型窗口，全书 v16-pending-03 快照保留。本任务质量及完整应用项仍未关闭，见[获知审查v7记录](../validation/2026-10-16-persona-acquisition-v7-validation.md)。
+
+同日追加 v3 reader 路径回归，验证旧 build_steps（无 acquisition_review 字段）经 `get_character` / `get_agent_definition` 解析时不返回 knowledge_review，agent definition 仍保持 reader-only 隔离。
 

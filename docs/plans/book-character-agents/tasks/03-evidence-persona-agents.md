@@ -59,5 +59,5 @@
 
 2026-10-15 增加显式v4提取/审查提示及按保存配置分派，区分主动意向和已完成行为；默认v3、旧提示与旧基线保持。两项公共服务回归验证独立子构建和旧版恢复。真实新档案8次上限、实际4次提取均失败，未进入独立审查或发布；另2次固定审查分别拒绝未获知的天庭评价、接受明确意向，只有局部语义证据。运行不是同修订身份图的受控对照，旧Agent哈希不变，见[完整失败与限制](../validation/2026-10-15-grouped-discovery-persona-validation.md)。档案质量和T12仍未通过。
 
-2026-10-16 增加显式v7独立 per-recipient 获知审查（monotone veto），与canonical review 分离保存，reader 视图显示 knowledge_review 但 Agent definition 不引入；新增 `persona_acquisition` 模块、12 项专项测试、65 项 persona/revisions/cognition 全过、变更文件 Mypy55 与 Ruff 通过、前端生产构建通过；未切换默认提示，全书 v16-pending-03 与 retention-03 快照保留。见[获知审查v7记录](../validation/2026-10-16-persona-acquisition-v7-validation.md)。T12 仍未验收。
+2026-10-16 增加显式v7独立 per-recipient 获知审查（monotone veto），与canonical review 分离保存，reader 视图显示 knowledge_review 但 Agent definition 不引入；新增 `persona_acquisition` 模块、12 项专项测试、66 项 persona/revisions/cognition 全过、变更文件 Mypy55 与 Ruff 通过、前端生产构建通过；未切换默认提示，全书 v16-pending-03 与 retention-03 快照保留。同日追加 v3 reader 路径回归，验证旧 build_steps（无 acquisition_review 字段）经 `get_character` / `get_agent_definition` 解析时不返回 knowledge_review，agent definition 仍保持 reader-only 隔离。见[获知审查v7记录](../validation/2026-10-16-persona-acquisition-v7-validation.md)。T12 仍未验收。
 

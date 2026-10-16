@@ -69,5 +69,7 @@
 
 同日从档案源头补显式v4意向/完成态审查，固定两项语义对照正确，但自动新档案提取仍失败、未发布，旧基线和旧聊天结果未改写。没有新增本任务对话调用，累计62次及两处历史动作警告保持；不能据源头固定对照关闭聊天质量条款。来源失败和后续方向见[档案/发现记录](../validation/2026-10-15-grouped-discovery-persona-validation.md)。
 
-2026-10-16 显式审查v7接入独立 per-recipient 获知审查阶段（monotone veto），分离保存 canonical_review 与 acquisition_review，reader 视图显示 knowledge_review；12 项专项测试与 65 项 persona/revisions/cognition 全过、变更文件 Mypy/Ruff 通过、前端生产构建通过；未启动本任务真实模型窗口或切换默认 review 提示。本任务保持进行中，详见[获知审查v7记录](../validation/2026-10-16-persona-acquisition-v7-validation.md)。
+2026-10-16 显式审查v7接入独立 per-recipient 获知审查阶段（monotone veto），分离保存 canonical_review 与 acquisition_review，reader 视图显示 knowledge_review；12 项专项测试与 66 项 persona/revisions/cognition 全过、变更文件 Mypy/Ruff 通过、前端生产构建通过；未启动本任务真实模型窗口或切换默认 review 提示。本任务保持进行中，详见[获知审查v7记录](../validation/2026-10-16-persona-acquisition-v7-validation.md)。
+
+同日追加 v3 reader 路径回归，验证旧 build_steps（无 acquisition_review 字段）经 `get_character` / `get_agent_definition` 解析时不返回 knowledge_review，agent definition 仍保持 reader-only 隔离。
 
