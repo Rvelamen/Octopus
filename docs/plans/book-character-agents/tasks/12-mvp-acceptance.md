@@ -98,11 +98,13 @@
 
 同日追加 v3 reader 路径回归，验证旧 build_steps（无 acquisition_review 字段）经 `get_character` / `get_agent_definition` 解析时不返回 knowledge_review，agent definition 仍保持 reader-only 隔离。
 
-同日追加 v9 review / v14 generate 历史动作防护提示回归 `test_v9_review_and_v14_generate_pin_historical_action_safeguard`，确保 character-chat-review-v9 仍包含"勇敢、敢于探险、率先进入，只支持实际给出的性格或行为"与"愿意/敢于/想要/说要去也不能自动证明已经完成该行动"防护段落、character-chat-v14 仍保留"愿意/敢于/想要/说要做不证明已经做成或看到了什么"；62 项 model contracts 全过。
+同日追加 v9 review / v14 generate 历史动作防护提示回归 `test_v9_review_and_v14_generate_pin_historical_action_safeguard`，确保 character-chat-review-v9 仍包含"勇敢、敢于探险、率先进入，只支持实际给出的性格或行为"与"愿意/敢于/想要/说要去也不能自动证明已经完成该行动"防护段落、character-chat-v14 仍保留"愿意/敢于/想要/说要做不证明已经做成或看到了什么"；63 项 model contracts 全过。
 
 同日追加 `test_persona_extract_v4_and_review_v6_pin_trait_vs_completed_action_safeguard`：锁住 v4 extract 与 v6/v7 persona review 的 trait-vs-completed-action 防护文字不被误改。
 
-同日追加 `test_acquisition_prompt_v7_pins_recipient_knowledge_safeguards`：验证 per-recipient 获知审查阶段（ACQUISITION_PROMPT）保留 monotone veto 关键防护——"不使用预训练故事常识"、"旁白客观真相不能替代获知证据"、"在场、同组织、名字暗示能力均不算路径"、"收到命令与获知其所有前因分开"、"集体看听报告不能凭名字逐人分配"——不被后续提示词编辑弱化；62 项 model contracts 全过。
+同日追加 `test_acquisition_prompt_v7_pins_recipient_knowledge_safeguards`：验证 per-recipient 获知审查阶段（ACQUISITION_PROMPT）保留 monotone veto 关键防护——"不使用预训练故事常识"、"旁白客观真相不能替代获知证据"、"在场、同组织、名字暗示能力均不算路径"、"收到命令与获知其所有前因分开"、"集体看听报告不能凭名字逐人分配"——不被后续提示词编辑弱化；63 项 model contracts 全过。
 
 同日追加 `test_acquisition_prompt_v7_frozen_sha256_matches_diagnostic_snapshot`：锁住 ACQUISITION_PROMPT 字节级 SHA256 与 `real-model-persona-acquisition-controls-v4.json` 诊断记录 `ccc2eb48…` 一致；任何字符级改动（哪怕只是空白）必须同步更新诊断并重跑原生。
+
+同日追加 `test_chat_models_module_frozen_sha256_matches_v2_matrix_runtime`：锁住 `chat_models.py` 模块级 SHA256 与 `real-model-t17-matrix-v2.json` 诊断记录 `36040c99…` 一致，与 ACQUISITION_PROMPT 字节级冻结共同覆盖 v9 审查/v14 生成与 ACQUISITION_PROMPT 关键防护不被误改。
 

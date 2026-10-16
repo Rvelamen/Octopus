@@ -838,3 +838,29 @@ def test_acquisition_prompt_v7_frozen_sha256_matches_diagnostic_snapshot():
         hashlib.sha256(ACQUISITION_PROMPT.encode()).hexdigest()
         == controls["prompt_sha256"]
     )
+
+
+def test_chat_models_module_frozen_sha256_matches_v2_matrix_runtime():
+    """chat_models.py runtime file must stay frozen against the v2 matrix diagnostic.
+
+    The v9 chat review and v14 chat generate were both added into
+    chat_models.py in the same commit, so freezing the module's sha256 against
+    the v2 matrix runtime_sha256 also freezes the historical-action
+    safeguard text. Any future change must update the diagnostic snapshot,
+    re-run the matrix, and refresh the sha256 here.
+    """
+    import hashlib
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    matrix = json.loads(
+        (base / "real-model-t17-matrix-v2.json").read_text(encoding="utf-8")
+    )
+    module_path = (
+        Path(__file__).resolve().parents[1]
+        / "backend/services/book_world/chat_models.py"
+    )
+    assert (
+        hashlib.sha256(module_path.read_bytes()).hexdigest()
+        == matrix["runtime_sha256"]["chat_models.py"]
+    )

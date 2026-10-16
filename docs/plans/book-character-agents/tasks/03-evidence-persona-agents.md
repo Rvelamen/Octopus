@@ -63,7 +63,9 @@
 
 同日追加 `test_persona_extract_v4_and_review_v6_pin_trait_vs_completed_action_safeguard`：验证 persona-extract-v4 与 persona-review-v6/v7 的 trait/intention-vs-completed-action 防护文字在源提示词编辑后仍保留，锁住 v3 默认下历史动作/性格混说风险。
 
-同日追加 `test_acquisition_prompt_v7_pins_recipient_knowledge_safeguards`：验证 per-recipient 获知审查阶段（ACQUISITION_PROMPT）保留"不使用预训练故事常识"、"旁白客观真相不能替代获知证据"、"在场、同组织、名字暗示能力均不算路径"、"收到命令与获知其所有前因分开"、"集体看听报告不能凭名字逐人分配"等关键防护；62 项 model contracts 全过。
+同日追加 `test_acquisition_prompt_v7_pins_recipient_knowledge_safeguards`：验证 per-recipient 获知审查阶段（ACQUISITION_PROMPT）保留"不使用预训练故事常识"、"旁白客观真相不能替代获知证据"、"在场、同组织、名字暗示能力均不算路径"、"收到命令与获知其所有前因分开"、"集体看听报告不能凭名字逐人分配"等关键防护；63 项 model contracts 全过。
 
 同日追加 `test_acquisition_prompt_v7_frozen_sha256_matches_diagnostic_snapshot`：锁住 ACQUISITION_PROMPT 当前字节级 SHA256 与保存的 `real-model-persona-acquisition-controls-v4.json` 诊断记录 `ccc2eb487c0edbb3659b02ed1b56c0f554a4cd01f664178d1b8b21600d4741c0` 一致；任何字符级改动必须同步更新诊断记录并重跑原生确认。
+
+同日追加 `test_chat_models_module_frozen_sha256_matches_v2_matrix_runtime`：锁住 `chat_models.py` 模块级 SHA256 与 `real-model-t17-matrix-v2.json` 诊断记录 `36040c99…` 一致，与 ACQUISITION_PROMPT 字节级冻结共同覆盖 v9 审查/v14 生成与 ACQUISITION_PROMPT 关键防护不被误改。
 
