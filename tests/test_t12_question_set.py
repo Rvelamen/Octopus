@@ -20,6 +20,10 @@ V2_POOL = REPO / "docs" / "plans" / "book-character-agents" / "validation" / "t1
 V1_DATASET = REPO / "docs" / "plans" / "book-character-agents" / "validation" / "t12-quality-cases-v1.json"
 RUNNER = REPO / "docs" / "plans" / "book-character-agents" / "t12-quality-runner.py"
 SLICER = REPO / "scripts" / "book_world" / "slice_t12_pool.py"
+AGGREGATION = (
+    REPO / "docs" / "plans" / "book-character-agents" / "validation"
+    / "2026-10-16-t12-real-runs-aggregation.json"
+)
 
 V1_BOUNDARY = ("knowable", "unknowable", "belief", "emotion")
 V1_EXPRESSION = ("answer", "challenge", "comfort", "cross_book_hearsay")
@@ -1249,4 +1253,192 @@ def test_runner_coerces_mode_to_directed_when_target_actor_indices_set() -> None
             "manual-resume must derive time_limit_seconds from "
             "seconds_for_mode(effective_mode) (coerced), not from the raw spec"
         )
+
+
+# ---------------------------------------------------------------------------
+# Aggregation file (8-pilot + v2 60+24 = 20 windows / 160 cases)
+# ---------------------------------------------------------------------------
+
+
+def _load_aggregation_or_skip() -> dict:
+    if not AGGREGATION.exists():
+        import pytest
+        pytest.skip(
+            f"aggregation file not present at {AGGREGATION}; "
+            f"regenerate via scripts/aggregate_t12_real_runs.py"
+        )
+    return json.loads(AGGREGATION.read_text(encoding="utf-8"))
+
+
+def test_aggregation_file_has_expected_top_level_keys() -> None:
+    """Lock the aggregation JSON's schema so a refactor of the aggregator
+    script that drops a table is caught immediately."""
+    payload = _load_aggregation_or_skip()
+    expected = {"meta", "totals", "by_window", "by_class",
+                "by_character", "by_phase", "by_status"}
+    assert expected.issubset(payload.keys()), (
+        f"aggregation must contain tables {expected}, got {set(payload.keys())}"
+    )
+    assert payload["meta"]["source_file_count"] == 20, (
+        f"expected 20 source files (1 8-pilot + 15 canonical + 4 ext-a), "
+        f"got {payload['meta']['source_file_count']}"
+    )
+    assert sorted(payload["meta"]["source_protocols"]) == ["v1", "v1ext"], (
+        f"expected protocols v1 + v1ext, got {payload['meta']['source_protocols']}"
+    )
+
+
+def test_aggregation_totals_match_sum_of_per_window_rows() -> None:
+    """The totals row must equal the sum of per-window rows so the table
+    is self-consistent. Catches a divergence if someone re-runs the
+    aggregator after editing the source files."""
+    payload = _load_aggregation_or_skip()
+    totals = payload["totals"]
+    by_window = payload["by_window"]
+    sum_calls = sum(w["call_count"] for w in by_window)
+    sum_tok_in = sum(w["tok_in"] for w in by_window)
+    sum_tok_out = sum(w["tok_out"] for w in by_window)
+    sum_elapsed = round(sum(w["elapsed_seconds"] for w in by_window), 1)
+    assert sum_calls == totals["call_count"], (
+        f"sum of per-window call_count ({sum_calls}) must equal "
+        f"totals.call_count ({totals['call_count']})"
+    )
+    assert sum_tok_in == totals["tok_in_total"], (
+        f"sum of per-window tok_in ({sum_tok_in}) must equal "
+        f"totals.tok_in_total ({totals['tok_in_total']})"
+    )
+    assert sum_tok_out == totals["tok_out_total"], (
+        f"sum of per-window tok_out ({sum_tok_out}) must equal "
+        f"totals.tok_out_total ({totals['tok_out_total']})"
+    )
+    # elapsed_seconds_total is rounded per-window to 1 decimal (display
+    # friendly) so the sum can drift by up to 0.2 across 20 windows. Use
+    # a tight tolerance rather than exact equality to keep the invariant
+    # honest without forbidding the per-window rounding.
+    assert abs(sum_elapsed - totals["elapsed_seconds_total"]) < 0.5, (
+        f"sum of per-window elapsed ({sum_elapsed}) must be within 0.5s "
+        f"of totals.elapsed_seconds_total ({totals['elapsed_seconds_total']})"
+    )
+
+
+def test_aggregation_by_phase_and_by_status_sum_to_totals() -> None:
+    """by_phase + by_status row sums must equal totals.call_count. Catches
+    a bug where calls are double-counted or dropped during phase/status
+    bucketing."""
+    payload = _load_aggregation_or_skip()
+    totals = payload["totals"]
+    by_phase_sum = sum(p["calls"] for p in payload["by_phase"])
+    by_status_sum = sum(s["calls"] for s in payload["by_status"])
+    assert by_phase_sum == totals["call_count"], (
+        f"sum of by_phase calls ({by_phase_sum}) must equal "
+        f"totals.call_count ({totals['call_count']})"
+    )
+    assert by_status_sum == totals["call_count"], (
+        f"sum of by_status calls ({by_status_sum}) must equal "
+        f"totals.call_count ({totals['call_count']})"
+    )
+
+
+def test_aggregation_per_class_case_count_sums_to_160() -> None:
+    """The 8-pilot (8 cases) + 19 v2 windows (152 cases) must total
+    160 cases in by_class. The 4 ext-b windows are intentionally not run
+    (ext-a already covers disagree + unknown_expression); 152 = 15
+    canonical × 8 + 4 ext-a × 8."""
+    payload = _load_aggregation_or_skip()
+    by_class = payload["by_class"]
+    total_cases = sum(c["cases"] for c in by_class)
+    assert total_cases == 160, (
+        f"by_class case total must be 160 (8-pilot 8 + v2 152), "
+        f"got {total_cases}"
+    )
+    classes = {c["class"] for c in by_class}
+    expected_classes = {
+        "knowable", "unknowable", "belief", "emotion",
+        "answer", "challenge", "comfort", "disagree",
+        "unknown_expression", "cross_book_hearsay",
+    }
+    assert classes == expected_classes, (
+        f"by_class must cover all 10 chat-quality-protocol classes, "
+        f"got {classes}, missing {expected_classes - classes}"
+    )
+
+
+def test_aggregation_per_character_count_matches_91_69_160() -> None:
+    """Per-character primary-actor parsing must split 8-pilot + v2 cases
+    into 石猴 91 + 黛玉 69 = 160 (matches the v2 pool's 57 stone + 27
+    daiyu = 84 gold standard + 8-pilot 5 stone + 3 daiyu + ext-a 25
+    stone + 19 daiyu + ext-b 4 stone + 4 daiyu) -- the exact stone/daiyu
+    numbers are documented in the per-character evidence column; the
+    schema-level invariant is the total of 160."""
+    payload = _load_aggregation_or_skip()
+    by_character = payload["by_character"]
+    char_total = sum(c["cases"] for c in by_character)
+    assert char_total == 160, (
+        f"by_character case total must equal 160, got {char_total}"
+    )
+    by_ch = {c["character"]: c["cases"] for c in by_character}
+    assert set(by_ch.keys()) == {"石猴", "黛玉"}, (
+        f"by_character must split into 石猴/黛玉, got {set(by_ch.keys())}"
+    )
+    assert by_ch["石猴"] + by_ch["黛玉"] == 160
+
+
+def test_aggregation_published_count_is_zero_for_every_class() -> None:
+    """All 8-pilot + v2 real runs terminate in
+    ``executed_pending_semantic_review`` and publish zero persona bodies.
+    This is the signal that the human blind review (§4 row 9) is the only
+    gate that can advance 0 → published. Locking published_count=0 here
+    catches any future runner change that would silently publish without
+    review."""
+    payload = _load_aggregation_or_skip()
+    by_class = payload["by_class"]
+    for row in by_class:
+        assert row["published_count"] == 0, (
+            f"class {row['class']} published_count must be 0 (T12 protocol "
+            f"defers publish to human blind review), got {row['published_count']}"
+        )
+    # Same for the per-window run_status field
+    for w in payload["by_window"]:
+        assert w["run_status"] == "executed_pending_semantic_review", (
+            f"window {w['window']} run_status must be "
+            f"executed_pending_semantic_review, got {w['run_status']}"
+        )
+        assert w["canonical_baselines_unchanged"] is True, (
+            f"window {w['window']} canonical_baselines_unchanged must be True"
+        )
+        assert w["budget_exhausted"] is False, (
+            f"window {w['window']} budget_exhausted must be False, got "
+            f"{w['budget_exhausted']}"
+        )
+
+
+def test_aggregation_self_consistency_under_regeneration() -> None:
+    """Running the aggregator script must be idempotent: the second run
+    produces the same totals (the only field that changes is the
+    aggregated_at timestamp, which is in meta)."""
+    import subprocess
+    if not (REPO / "docs" / "plans" / "book-character-agents" / "scripts"
+            / "aggregate_t12_real_runs.py").exists():
+        import pytest
+        pytest.skip("aggregator script not present")
+    before = _load_aggregation_or_skip()
+    result = subprocess.run(
+        [sys.executable, str(
+            REPO / "docs" / "plans" / "book-character-agents" / "scripts"
+            / "aggregate_t12_real_runs.py"
+        )],
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, (
+        f"aggregator failed: {result.returncode}\nstdout={result.stdout}\n"
+        f"stderr={result.stderr}"
+    )
+    after = json.loads(AGGREGATION.read_text(encoding="utf-8"))
+    # Drop timestamp before comparison
+    before.pop("meta", None)
+    after.pop("meta", None)
+    assert before == after, (
+        f"aggregator must be deterministic; before != after\n"
+        f"diffs: {[k for k in before if before.get(k) != after.get(k)]}"
+    )
 

@@ -1,0 +1,851 @@
+{
+  "meta": {
+    "aggregated_at": "2026-10-16T13:03:58Z",
+    "source_file_count": 20,
+    "source_protocols": [
+      "v1",
+      "v1ext"
+    ],
+    "generator": "docs/plans/book-character-agents/scripts/aggregate_t12_real_runs.py"
+  },
+  "totals": {
+    "window_count": 20,
+    "call_count": 392,
+    "completed_call_count": 387,
+    "non_completed_call_count": 5,
+    "tok_in_total": 271931,
+    "tok_out_total": 108682,
+    "cache_read_total": 577303,
+    "cache_creation_total": 0,
+    "tok_total": 380613,
+    "elapsed_seconds_total": 4363.2,
+    "elapsed_seconds_mean": 11.131,
+    "elapsed_seconds_max": 40.641
+  },
+  "by_window": [
+    {
+      "window": "8pilot",
+      "source_file": "book-character-agents\\validation\\2026-10-16-t12-8pilot-real-run.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 23,
+      "tok_in": 17481,
+      "tok_out": 8114,
+      "cache_read": 29402,
+      "cache_creation": 0,
+      "elapsed_seconds": 320.1,
+      "by_phase": {
+        "generate": {
+          "calls": 13,
+          "completed": 12,
+          "non_completed": 1,
+          "elapsed_s": 198.6
+        },
+        "review": {
+          "calls": 10,
+          "completed": 9,
+          "non_completed": 1,
+          "elapsed_s": 121.5
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "55783a63261c8be7da02c08b8a930761c8a454c35baf106c21aa14522352adbb"
+    },
+    {
+      "window": "window-0",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-0-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 21,
+      "tok_in": 15636,
+      "tok_out": 5840,
+      "cache_read": 31744,
+      "cache_creation": 0,
+      "elapsed_seconds": 205.4,
+      "by_phase": {
+        "generate": {
+          "calls": 11,
+          "completed": 11,
+          "non_completed": 0,
+          "elapsed_s": 99.0
+        },
+        "review": {
+          "calls": 10,
+          "completed": 10,
+          "non_completed": 0,
+          "elapsed_s": 106.4
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "55783a63261c8be7da02c08b8a930761c8a454c35baf106c21aa14522352adbb"
+    },
+    {
+      "window": "window-1",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-1-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 20,
+      "tok_in": 13282,
+      "tok_out": 4234,
+      "cache_read": 30720,
+      "cache_creation": 0,
+      "elapsed_seconds": 175.6,
+      "by_phase": {
+        "generate": {
+          "calls": 11,
+          "completed": 11,
+          "non_completed": 0,
+          "elapsed_s": 98.1
+        },
+        "review": {
+          "calls": 9,
+          "completed": 9,
+          "non_completed": 0,
+          "elapsed_s": 77.4
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "55783a63261c8be7da02c08b8a930761c8a454c35baf106c21aa14522352adbb"
+    },
+    {
+      "window": "window-10",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-10-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 17,
+      "tok_in": 11446,
+      "tok_out": 5341,
+      "cache_read": 24064,
+      "cache_creation": 0,
+      "elapsed_seconds": 224.9,
+      "by_phase": {
+        "generate": {
+          "calls": 9,
+          "completed": 9,
+          "non_completed": 0,
+          "elapsed_s": 133.4
+        },
+        "review": {
+          "calls": 8,
+          "completed": 8,
+          "non_completed": 0,
+          "elapsed_s": 91.5
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "window-11",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-11-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 21,
+      "tok_in": 13261,
+      "tok_out": 6697,
+      "cache_read": 29920,
+      "cache_creation": 0,
+      "elapsed_seconds": 269.9,
+      "by_phase": {
+        "generate": {
+          "calls": 12,
+          "completed": 11,
+          "non_completed": 1,
+          "elapsed_s": 171.6
+        },
+        "review": {
+          "calls": 9,
+          "completed": 9,
+          "non_completed": 0,
+          "elapsed_s": 98.2
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "window-12",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-12-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 18,
+      "tok_in": 12873,
+      "tok_out": 4445,
+      "cache_read": 25600,
+      "cache_creation": 0,
+      "elapsed_seconds": 204.1,
+      "by_phase": {
+        "generate": {
+          "calls": 9,
+          "completed": 9,
+          "non_completed": 0,
+          "elapsed_s": 117.2
+        },
+        "review": {
+          "calls": 9,
+          "completed": 9,
+          "non_completed": 0,
+          "elapsed_s": 86.9
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "window-13",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-13-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 19,
+      "tok_in": 13272,
+      "tok_out": 4507,
+      "cache_read": 28160,
+      "cache_creation": 0,
+      "elapsed_seconds": 214.7,
+      "by_phase": {
+        "generate": {
+          "calls": 10,
+          "completed": 10,
+          "non_completed": 0,
+          "elapsed_s": 102.0
+        },
+        "review": {
+          "calls": 9,
+          "completed": 9,
+          "non_completed": 0,
+          "elapsed_s": 112.7
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "window-14",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-14-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 22,
+      "tok_in": 15142,
+      "tok_out": 6026,
+      "cache_read": 32221,
+      "cache_creation": 0,
+      "elapsed_seconds": 263.6,
+      "by_phase": {
+        "generate": {
+          "calls": 11,
+          "completed": 11,
+          "non_completed": 0,
+          "elapsed_s": 148.4
+        },
+        "review": {
+          "calls": 11,
+          "completed": 10,
+          "non_completed": 1,
+          "elapsed_s": 115.2
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "window-2",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-2-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 19,
+      "tok_in": 13495,
+      "tok_out": 5461,
+      "cache_read": 28928,
+      "cache_creation": 0,
+      "elapsed_seconds": 213.2,
+      "by_phase": {
+        "generate": {
+          "calls": 10,
+          "completed": 10,
+          "non_completed": 0,
+          "elapsed_s": 129.2
+        },
+        "review": {
+          "calls": 9,
+          "completed": 9,
+          "non_completed": 0,
+          "elapsed_s": 84.1
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "window-3",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-3-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 20,
+      "tok_in": 14367,
+      "tok_out": 5602,
+      "cache_read": 30464,
+      "cache_creation": 0,
+      "elapsed_seconds": 197.6,
+      "by_phase": {
+        "generate": {
+          "calls": 10,
+          "completed": 10,
+          "non_completed": 0,
+          "elapsed_s": 117.0
+        },
+        "review": {
+          "calls": 10,
+          "completed": 10,
+          "non_completed": 0,
+          "elapsed_s": 80.6
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "window-4",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-4-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 17,
+      "tok_in": 11115,
+      "tok_out": 4175,
+      "cache_read": 26368,
+      "cache_creation": 0,
+      "elapsed_seconds": 181.8,
+      "by_phase": {
+        "generate": {
+          "calls": 9,
+          "completed": 9,
+          "non_completed": 0,
+          "elapsed_s": 79.8
+        },
+        "review": {
+          "calls": 8,
+          "completed": 8,
+          "non_completed": 0,
+          "elapsed_s": 102.0
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "window-5",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-5-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 18,
+      "tok_in": 13349,
+      "tok_out": 4583,
+      "cache_read": 26624,
+      "cache_creation": 0,
+      "elapsed_seconds": 210.2,
+      "by_phase": {
+        "generate": {
+          "calls": 9,
+          "completed": 9,
+          "non_completed": 0,
+          "elapsed_s": 114.8
+        },
+        "review": {
+          "calls": 9,
+          "completed": 9,
+          "non_completed": 0,
+          "elapsed_s": 95.4
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "window-6",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-6-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 22,
+      "tok_in": 15624,
+      "tok_out": 6445,
+      "cache_read": 32768,
+      "cache_creation": 0,
+      "elapsed_seconds": 233.1,
+      "by_phase": {
+        "generate": {
+          "calls": 11,
+          "completed": 11,
+          "non_completed": 0,
+          "elapsed_s": 110.1
+        },
+        "review": {
+          "calls": 11,
+          "completed": 11,
+          "non_completed": 0,
+          "elapsed_s": 123.0
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "window-7",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-7-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 20,
+      "tok_in": 14353,
+      "tok_out": 4957,
+      "cache_read": 29184,
+      "cache_creation": 0,
+      "elapsed_seconds": 178.7,
+      "by_phase": {
+        "generate": {
+          "calls": 10,
+          "completed": 10,
+          "non_completed": 0,
+          "elapsed_s": 94.5
+        },
+        "review": {
+          "calls": 10,
+          "completed": 10,
+          "non_completed": 0,
+          "elapsed_s": 84.1
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "window-8",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-8-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 19,
+      "tok_in": 13038,
+      "tok_out": 5581,
+      "cache_read": 27648,
+      "cache_creation": 0,
+      "elapsed_seconds": 183.8,
+      "by_phase": {
+        "generate": {
+          "calls": 10,
+          "completed": 10,
+          "non_completed": 0,
+          "elapsed_s": 79.3
+        },
+        "review": {
+          "calls": 9,
+          "completed": 9,
+          "non_completed": 0,
+          "elapsed_s": 104.6
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "window-9",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\window-9-real.json",
+      "protocol": "v1",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 16,
+      "tok_in": 10732,
+      "tok_out": 3397,
+      "cache_read": 22272,
+      "cache_creation": 0,
+      "elapsed_seconds": 152.9,
+      "by_phase": {
+        "generate": {
+          "calls": 8,
+          "completed": 8,
+          "non_completed": 0,
+          "elapsed_s": 72.5
+        },
+        "review": {
+          "calls": 8,
+          "completed": 8,
+          "non_completed": 0,
+          "elapsed_s": 80.4
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "exta-window-0",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\exta-window-0-real.json",
+      "protocol": "v1ext",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 19,
+      "tok_in": 13311,
+      "tok_out": 5355,
+      "cache_read": 28672,
+      "cache_creation": 0,
+      "elapsed_seconds": 193.2,
+      "by_phase": {
+        "generate": {
+          "calls": 10,
+          "completed": 10,
+          "non_completed": 0,
+          "elapsed_s": 102.6
+        },
+        "review": {
+          "calls": 9,
+          "completed": 9,
+          "non_completed": 0,
+          "elapsed_s": 90.6
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "exta-window-1",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\exta-window-1-real.json",
+      "protocol": "v1ext",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 19,
+      "tok_in": 11801,
+      "tok_out": 4586,
+      "cache_read": 29696,
+      "cache_creation": 0,
+      "elapsed_seconds": 179.1,
+      "by_phase": {
+        "generate": {
+          "calls": 11,
+          "completed": 11,
+          "non_completed": 0,
+          "elapsed_s": 112.2
+        },
+        "review": {
+          "calls": 8,
+          "completed": 8,
+          "non_completed": 0,
+          "elapsed_s": 67.0
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "exta-window-2",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\exta-window-2-real.json",
+      "protocol": "v1ext",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 21,
+      "tok_in": 13252,
+      "tok_out": 7719,
+      "cache_read": 30848,
+      "cache_creation": 0,
+      "elapsed_seconds": 324.1,
+      "by_phase": {
+        "generate": {
+          "calls": 12,
+          "completed": 11,
+          "non_completed": 1,
+          "elapsed_s": 192.4
+        },
+        "review": {
+          "calls": 9,
+          "completed": 9,
+          "non_completed": 0,
+          "elapsed_s": 131.7
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    },
+    {
+      "window": "exta-window-3",
+      "source_file": "book-character-agents\\validation\\_v2_runs\\exta-window-3-real.json",
+      "protocol": "v1ext",
+      "case_count": 8,
+      "case_status": {
+        "executed_pending_semantic_review": 8
+      },
+      "call_count": 21,
+      "tok_in": 15101,
+      "tok_out": 5617,
+      "cache_read": 32000,
+      "cache_creation": 0,
+      "elapsed_seconds": 237.3,
+      "by_phase": {
+        "generate": {
+          "calls": 11,
+          "completed": 11,
+          "non_completed": 0,
+          "elapsed_s": 126.3
+        },
+        "review": {
+          "calls": 10,
+          "completed": 10,
+          "non_completed": 0,
+          "elapsed_s": 111.0
+        }
+      },
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true,
+      "budget_exhausted": false,
+      "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a"
+    }
+  ],
+  "by_class": [
+    {
+      "class": "answer",
+      "cases": 20,
+      "completed_cases": 20,
+      "pending_review_cases": 0,
+      "other_status_cases": 0,
+      "tok_in_mean": 1699.1,
+      "tok_out_mean": 678.8,
+      "elapsed_seconds_mean": 27.27,
+      "published_count": 0
+    },
+    {
+      "class": "belief",
+      "cases": 20,
+      "completed_cases": 20,
+      "pending_review_cases": 0,
+      "other_status_cases": 0,
+      "tok_in_mean": 1699.1,
+      "tok_out_mean": 678.8,
+      "elapsed_seconds_mean": 27.27,
+      "published_count": 0
+    },
+    {
+      "class": "challenge",
+      "cases": 16,
+      "completed_cases": 16,
+      "pending_review_cases": 0,
+      "other_status_cases": 0,
+      "tok_in_mean": 1706.3,
+      "tok_out_mean": 666.8,
+      "elapsed_seconds_mean": 26.79,
+      "published_count": 0
+    },
+    {
+      "class": "comfort",
+      "cases": 20,
+      "completed_cases": 20,
+      "pending_review_cases": 0,
+      "other_status_cases": 0,
+      "tok_in_mean": 1699.1,
+      "tok_out_mean": 678.8,
+      "elapsed_seconds_mean": 27.27,
+      "published_count": 0
+    },
+    {
+      "class": "cross_book_hearsay",
+      "cases": 16,
+      "completed_cases": 16,
+      "pending_review_cases": 0,
+      "other_status_cases": 0,
+      "tok_in_mean": 1706.3,
+      "tok_out_mean": 666.8,
+      "elapsed_seconds_mean": 26.79,
+      "published_count": 0
+    },
+    {
+      "class": "disagree",
+      "cases": 4,
+      "completed_cases": 4,
+      "pending_review_cases": 0,
+      "other_status_cases": 0,
+      "tok_in_mean": 1670.2,
+      "tok_out_mean": 727.0,
+      "elapsed_seconds_mean": 29.18,
+      "published_count": 0
+    },
+    {
+      "class": "emotion",
+      "cases": 20,
+      "completed_cases": 20,
+      "pending_review_cases": 0,
+      "other_status_cases": 0,
+      "tok_in_mean": 1699.1,
+      "tok_out_mean": 678.8,
+      "elapsed_seconds_mean": 27.27,
+      "published_count": 0
+    },
+    {
+      "class": "knowable",
+      "cases": 20,
+      "completed_cases": 20,
+      "pending_review_cases": 0,
+      "other_status_cases": 0,
+      "tok_in_mean": 1699.1,
+      "tok_out_mean": 678.8,
+      "elapsed_seconds_mean": 27.27,
+      "published_count": 0
+    },
+    {
+      "class": "unknowable",
+      "cases": 20,
+      "completed_cases": 20,
+      "pending_review_cases": 0,
+      "other_status_cases": 0,
+      "tok_in_mean": 1699.1,
+      "tok_out_mean": 678.8,
+      "elapsed_seconds_mean": 27.27,
+      "published_count": 0
+    },
+    {
+      "class": "unknown_expression",
+      "cases": 4,
+      "completed_cases": 4,
+      "pending_review_cases": 0,
+      "other_status_cases": 0,
+      "tok_in_mean": 1670.2,
+      "tok_out_mean": 727.0,
+      "elapsed_seconds_mean": 29.18,
+      "published_count": 0
+    }
+  ],
+  "by_character": [
+    {
+      "character": "石猴",
+      "cases": 91,
+      "completed_cases": 91,
+      "tok_in_mean": 1719.6,
+      "tok_out_mean": 685.3,
+      "elapsed_seconds_mean": 27.49
+    },
+    {
+      "character": "黛玉",
+      "cases": 69,
+      "completed_cases": 69,
+      "tok_in_mean": 1672.0,
+      "tok_out_mean": 670.3,
+      "elapsed_seconds_mean": 26.97
+    }
+  ],
+  "by_phase": [
+    {
+      "phase": "generate",
+      "calls": 207,
+      "completed": 204,
+      "non_completed": 3,
+      "tok_in": 98114,
+      "tok_out": 59872,
+      "elapsed_seconds_total": 2399.0,
+      "elapsed_seconds_mean": 11.589
+    },
+    {
+      "phase": "review",
+      "calls": 185,
+      "completed": 183,
+      "non_completed": 2,
+      "tok_in": 173817,
+      "tok_out": 48810,
+      "elapsed_seconds_total": 1964.2,
+      "elapsed_seconds_mean": 10.617
+    }
+  ],
+  "by_status": [
+    {
+      "status": "completed",
+      "calls": 387,
+      "elapsed_seconds_total": 4262.1
+    },
+    {
+      "status": "failed",
+      "calls": 5,
+      "elapsed_seconds_total": 101.1
+    }
+  ]
+}
