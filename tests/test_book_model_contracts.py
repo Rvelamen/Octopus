@@ -864,3 +864,66 @@ def test_chat_models_module_frozen_sha256_matches_v2_matrix_runtime():
         hashlib.sha256(module_path.read_bytes()).hexdigest()
         == matrix["runtime_sha256"]["chat_models.py"]
     )
+
+
+def test_persona_diagnostic_sha256s_match_prompt_versions():
+    """Each persona diagnostic snapshot must point at the same review/extract prompt bytes.
+
+    The intent-v4, intent-v5, evidence-v6 and scope-v7 diagnostics were
+    collected against specific (review, extract) prompt versions. Freezing
+    these mappings here means any drift in ``persona_models.py`` will fail
+    the contract — the diagnostic author has to re-record the snapshot and
+    re-run the run before the regression can be re-enabled.
+    """
+    import hashlib
+    from pathlib import Path
+
+    from backend.services.book_world.persona_models import (
+        EXTRACT_PROMPTS,
+        REVIEW_PROMPTS,
+    )
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+
+    # (diagnostic, expected review version, expected extract version)
+    cases = [
+        (
+            "real-model-persona-intent-v4-01.json",
+            "persona-review-v4",
+            "persona-extract-v4",
+        ),
+        (
+            "real-model-persona-intent-v5-01.json",
+            "persona-review-v4",
+            "persona-extract-v5",
+        ),
+        (
+            "real-model-persona-evidence-v6-01.json",
+            "persona-review-v5",
+            "persona-extract-v6",
+        ),
+        (
+            "real-model-persona-scope-v7-01.json",
+            "persona-review-v7",
+            "persona-extract-v7",
+        ),
+    ]
+
+    for fname, review_ver, extract_ver in cases:
+        data = json.loads((base / fname).read_text(encoding="utf-8"))
+        expected_review_sha = data["prompt_sha256"]["review"]
+        expected_extract_sha = data["prompt_sha256"]["extract"]
+
+        actual_review_sha = hashlib.sha256(
+            REVIEW_PROMPTS[review_ver].encode()
+        ).hexdigest()
+        actual_extract_sha = hashlib.sha256(
+            EXTRACT_PROMPTS[extract_ver].encode()
+        ).hexdigest()
+
+        assert actual_review_sha == expected_review_sha, (
+            f"{fname} review sha drift: {actual_review_sha} != {expected_review_sha}"
+        )
+        assert actual_extract_sha == expected_extract_sha, (
+            f"{fname} extract sha drift: {actual_extract_sha} != {expected_extract_sha}"
+        )

@@ -69,3 +69,5 @@
 
 同日追加 `test_chat_models_module_frozen_sha256_matches_v2_matrix_runtime`：锁住 `chat_models.py` 模块级 SHA256 与 `real-model-t17-matrix-v2.json` 诊断记录 `36040c99…` 一致，与 ACQUISITION_PROMPT 字节级冻结共同覆盖 v9 审查/v14 生成与 ACQUISITION_PROMPT 关键防护不被误改。
 
+同日追加 `test_persona_diagnostic_sha256s_match_prompt_versions`：把 intent-v4、intent-v5、evidence-v6、scope-v7 四份 persona 诊断中的 `prompt_sha256.review` 与 `prompt_sha256.extract` 绑定到 `persona_models.py` 中具体的 v4+v4、v4+v5、v5+v6、v7+v7 组合；任何 prompt 字符级改动必须同步更新诊断并重跑原生。
+
