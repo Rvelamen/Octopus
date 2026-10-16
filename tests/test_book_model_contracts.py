@@ -814,3 +814,27 @@ def test_acquisition_prompt_v7_pins_recipient_knowledge_safeguards():
     assert "unknown_parts列出未证明本人所知的命题子句" in ACQUISITION_PROMPT
     assert "excerpt_safe=false" in ACQUISITION_PROMPT
     assert "空串没有可用引用，不要自动填全文" in ACQUISITION_PROMPT
+
+
+def test_acquisition_prompt_v7_frozen_sha256_matches_diagnostic_snapshot():
+    """ACQUISITION_PROMPT must stay byte-for-byte frozen against the saved diagnostic.
+
+    The acquisition stage is monotone veto. A single character edit to the
+    prompt re-opens knowledge-path regressions; the per-recipient safeguards
+    only work when the prompt is exact. The saved diagnostic carries the
+    ccc2eb48… sha256, so any drift forces this test to fail before the new
+    prompt is shipped.
+    """
+    import hashlib
+    from pathlib import Path
+
+    from backend.services.book_world.persona_acquisition import ACQUISITION_PROMPT
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    controls = json.loads(
+        (base / "real-model-persona-acquisition-controls-v4.json").read_text(encoding="utf-8")
+    )
+    assert (
+        hashlib.sha256(ACQUISITION_PROMPT.encode()).hexdigest()
+        == controls["prompt_sha256"]
+    )
