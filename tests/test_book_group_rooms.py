@@ -716,3 +716,252 @@ async def test_muting_current_speaker_does_not_restart_the_remaining_turn_deadli
         if not worker.done():
             worker.cancel()
             await asyncio.gather(worker, return_exceptions=True)
+
+
+
+async def _style_character_in_separate_book(library, *, text, character_name, presence="active"):
+    """Stand-alone ``style_character`` variant that creates a *new* book item.
+
+    ``tests.test_book_knowledge.style_character`` always reuses the
+    hardcoded ``persona-story.txt`` fixture and its single book; calling
+    it twice in the same workspace produces two scopes that still share
+    the same ``book_id`` / ``source_version_id`` (the second call
+    overwrites the file used to build the first), which defeats any
+    real cross-book test. This helper calls
+    ``test_book_persona.discovered`` with caller-supplied text and
+    people, so each invocation produces a distinct library item with a
+    distinct ``book_id`` — the precondition for the T17 cross-book
+    hearsay guarantee.
+    """
+    from test_book_persona import ScriptedPersonaProvider, discovered, quote, review_all
+
+    from backend.services.book_world.knowledge import CharacterKnowledgeService
+    from backend.services.book_world.persona import BookPersonaService, PersonaConfig
+
+    item, parent = await discovered(
+        library, text=text, people=((character_name, presence),)
+    )
+    service = BookPersonaService(library.workspace_root)
+    config = PersonaConfig(provider_id=1, model="fixture", unit_char_limit=4000)
+    build = service.request_build(item, parent, config)["build_id"]
+
+    def extract(data):
+        actor = data["characters"][0]["id"]
+        proof = quote(data["segments"][0], text)
+        return {
+            "claims": [
+                {
+                    "local_key": "style",
+                    "kind": "style",
+                    "owner_character_id": actor,
+                    "proposition": f"{character_name}用语平和简短",
+                    "slot_key": "style:语气",
+                    "evidence": [proof],
+                    "access": [
+                        {
+                            "character_id": actor,
+                            "route": "firsthand",
+                            "acquisition": proof,
+                            "approved_excerpt": proof["quote"],
+                        }
+                    ],
+                }
+            ]
+        }
+
+    await service.run(build, ScriptedPersonaProvider(extract, review_all), config)
+    actor = service.discovery.list_characters(item, build)["characters"][0]["id"]
+    scope = CharacterKnowledgeService(library.workspace_root).bind_character(
+        item, build, actor
+    )
+    return item, build, actor, scope
+
+
+@pytest.mark.asyncio
+async def test_cross_book_user_told_hearsay_does_not_become_character_autobiography(
+    book_library,
+):
+    """T17 '用户讲述的书外材料归为房间听说，不能变为人物自传经历'.
+
+    The user tells a character from book A about a character from a
+    *different* book B. The character's reply must record that detail
+    as ``room_hearsay`` whose source is the user's message — not as
+    canon belonging to the actor's own book. The CHECK constraint in
+    ``backend/services/book_world/room_schema.sql`` enforces
+    ``origin='room_hearsay' ⇒ heard_message_id IS NOT NULL`` and the
+    canon-side columns NULL; this test pins the wire-level shape of a
+    published reply so a future regression that drops the constraint
+    — or lets the worker re-tag a user-supplied cross-book detail as
+    ``canon`` — fails the build.
+    """
+    import json
+
+    from test_book_rooms import empty_review
+
+    from backend.core.providers.base import LLMResponse
+    from backend.services.book_world.chat_worker import BookChatWorker
+    from backend.services.book_world.knowledge import CharacterKnowledgeService
+    from backend.services.book_world.members import RoomMembershipService
+    from backend.services.book_world.room_models import CharacterChatConfig
+    from backend.services.book_world.rounds import BookRoundService
+
+    a_text = "石猴在山间跳跃，见到一棵桃树。旁白：石猴在花果山。人物甲说：“我在山里跑。”"
+    b_text = "黛玉在窗前读书，见到落花。旁白：黛玉在大观园。人物乙说：“花落人闲。”"
+    _, _, _, stone_scope = await _style_character_in_separate_book(
+        book_library, text=a_text, character_name="石猴"
+    )
+    _, _, _, daiyu_scope = await _style_character_in_separate_book(
+        book_library, text=b_text, character_name="黛玉"
+    )
+    assert stone_scope.book_id != daiyu_scope.book_id, (
+        "fixture invariant: the two characters must live in different books "
+        "for this test to be a real cross-book probe"
+    )
+
+    membership = RoomMembershipService(book_library.workspace_root)
+    room = membership.create(
+        [stone_scope, daiyu_scope], client_room_id="cross-book-hearsay-room"
+    )
+    scope = membership.rooms.bind_room(room["room_id"], 1)
+    rounds = BookRoundService(book_library.workspace_root)
+    config = CharacterChatConfig(provider_id=1, model="fixture")
+    stone_member = next(
+        member for member in room["members"]
+        if member["character_id"] == stone_scope.character_id
+    )
+    daiyu_member = next(
+        member for member in room["members"]
+        if member["character_id"] == daiyu_scope.character_id
+    )
+    user_message = (
+        "我刚从另一本书里听到一个姑娘叫黛玉，旁白说她在大观园，体弱爱哭。"
+        "你（石猴）不要把她的细节当作自己的亲历，只说你听到的。"
+    )
+    turn = rounds.submit(
+        scope,
+        "cross-book-hearsay-turn",
+        user_message,
+        config,
+        time_limit_seconds=60,
+        mode="directed",
+        target_member_ids=[stone_member["id"]],
+    )
+    # The user message is inserted with a fresh UUID by BookRoundService
+    # and is *not* exposed on the slot dict; read it back from the
+    # message log so the hearsay provider can tag the assertion with
+    # the actual heard_message_id.
+    history = membership.rooms.read_messages(scope)["messages"]
+    heard_messages = [m for m in history if m["speaker_type"] == "user"]
+    assert heard_messages, "the directed turn must record the user message in the log"
+    heard_user_id = heard_messages[-1]["id"]
+
+    class HearsayProvider:
+        async def chat(self, messages, **kwargs):
+            data = json.loads(messages[-1]["content"])
+            if data["phase"] == "generate":
+                # The reply deliberately names the cross-book detail
+                # ("大观园", "体弱爱哭") so the test fails if the ref
+                # pipeline silently re-tags it as ``canon`` and links
+                # it to 石猴's book.
+                content = (
+                    "我听到你说那个叫黛玉的姑娘在大观园，体弱爱哭。"
+                    "这件事只是你刚才告诉我的，我自己没去过那个园子。"
+                )
+                result = {
+                    "content": content,
+                    "dialogue_action": "answer",
+                    "claims": [
+                        {
+                            "text": content,
+                            "origin": "room_hearsay",
+                            "message_ids": [heard_user_id],
+                        }
+                    ],
+                }
+            else:
+                result = empty_review()
+                result["claims"] = [
+                    {
+                        "ordinal": 0,
+                        "supported": True,
+                        "origin_correct": True,
+                        "references_complete": True,
+                    }
+                ]
+            return LLMResponse(content=json.dumps(result, ensure_ascii=False))
+
+    # Snapshot the canonical baselines BEFORE the chat turn so we can
+    # later prove the turn did not silently mutate them — the same
+    # 'non-destructive cross-book turn' invariant the t17 matrix probe
+    # pins at the matrix level.
+    knowledge = CharacterKnowledgeService(book_library.workspace_root)
+    stone_before = knowledge.baseline(stone_scope).slots
+    daiyu_before = knowledge.baseline(daiyu_scope).slots
+
+    await BookChatWorker(book_library.workspace_root).run(
+        scope, turn["round_id"], HearsayProvider(), config
+    )
+    final = rounds.get_round(scope, turn["round_id"])
+    assert final["status"] == "completed", (
+        f"expected completed, got status={final['status']!r} "
+        f"error={final.get('error_code')!r}"
+    )
+    published = membership.rooms.read_messages(scope)["messages"]
+    assert [m["seq"] for m in published] == [1, 2]
+    reply = published[1]
+    assert reply["speaker_type"] == "character"
+    assert reply["speaker_member_id"] == stone_member["id"]
+    assert reply["refs"], "the published reply must carry at least one ref"
+    for ref in reply["refs"]:
+        # The T17 guarantee: a user-supplied cross-book detail must
+        # stay as room_hearsay and trace back to the user's message —
+        # never to the actor's own canonical evidence.
+        assert ref["origin"] == "room_hearsay", (
+            f"cross-book detail must be room_hearsay, got {ref['origin']!r}: "
+            f"a canon claim would silently make the user-told cross-book "
+            f"detail part of {stone_scope.character_id}'s own book — that "
+            f"is the T17 '用户讲述的书外材料归为房间听说' violation."
+        )
+        assert ref["heard_message_id"] == heard_user_id, (
+            f"room_hearsay ref must point at the user's message id "
+            f"{heard_user_id!r}, got {ref['heard_message_id']!r}"
+        )
+        # Re-assert the schema CHECK constraint in Python so a future
+        # migration that drops the constraint cannot silently regress
+        # the T17 guarantee.
+        for forbidden in (
+            "book_id",
+            "source_version_id",
+            "build_id",
+            "character_id",
+            "claim_id",
+            "evidence_id",
+        ):
+            assert ref.get(forbidden) in (None, ""), (
+                f"room_hearsay ref must have {forbidden} NULL, got "
+                f"{ref.get(forbidden)!r}; the schema CHECK constraint "
+                f"guarantees this and a regression here would mean the "
+                f"user-told cross-book detail has leaked into the "
+                f"actor's canon."
+            )
+    # The actors' own canonical baselines must not have changed during
+    # this turn — 'non-destructive cross-book turn' is the same
+    # invariant the t17 matrix probe pins at the matrix level. The
+    # slot dicts were snapshotted before the chat worker ran (see
+    # above); re-read after the turn and assert byte-equality.
+    assert knowledge.baseline(stone_scope).slots == stone_before, (
+        "石猴's baseline slots must not change during a cross-book hearsay turn"
+    )
+    assert knowledge.baseline(daiyu_scope).slots == daiyu_before, (
+        "黛玉's baseline slots must not change during a cross-book hearsay turn"
+    )
+    # 黛玉 is in the room but was not addressed: directed mode
+    # produces exactly one slot for the targeted member, and the
+    # undirected members do not appear in the slot list at all. The
+    # turn-boundary check is therefore simply: cursor advances by 1
+    # and the published message log is the user message + the
+    # single targeted member's reply.
+    assert final["cursor"] == 1
+    assert len(final["slots"]) == 1
+    assert final["slots"][0]["member_id"] == stone_member["id"]
+    assert final["slots"][0]["status"] in {"completed", "published"}
