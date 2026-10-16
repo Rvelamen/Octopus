@@ -30,7 +30,7 @@ def expect(name, fn, error=None):
 def scope(build="a1"):
     mapping = {"a1":("a","s1"),"a2":("a","s1"),"a3":("a","s2"),"b1":("b","sb")}
     book, source = mapping[build]
-    return dict(book_id=book, source_version_id=source, build_id=build)
+    return {"book_id": book, "source_version_id": source, "build_id": build}
 def claim(cid, build="a1", **kwargs):
     insert("book_claims", id=cid, **scope(build), kind="fact",
            proposition="原著中的秘密", interpretation_level="explicit", support_state="accepted",
@@ -46,16 +46,16 @@ def turn(rid, tid, epoch=1, member_id=None, mode="directed", timeout_seconds=60)
     generation = db.execute("SELECT membership_generation FROM book_room_members WHERE id=?",
                             (member_id,)).fetchone()[0]
     discussion = db.execute("SELECT discussion_revision,discussion_mode,discussion_topic,discussion_goal FROM book_rooms WHERE id=?", (rid,)).fetchone()
-    discussion_snapshot = json.dumps(dict(zip(("revision","mode","topic","goal"), discussion)), ensure_ascii=False)
+    discussion_snapshot = json.dumps(dict(zip(("revision","mode","topic","goal"), discussion, strict=False)), ensure_ascii=False)
     insert("book_room_rounds", id=tid, room_id=rid, epoch=epoch, client_turn_id=tid,
            mode=mode, discussion_snapshot_json=discussion_snapshot, status="running", time_limit_seconds=timeout_seconds, lease_owner="worker", lease_generation=1,
            lease_expires_at="2099-01-01T00:00:00.000Z")
     insert("book_round_slots", id=f"{tid}-slot", room_id=rid, epoch=epoch, round_id=tid,
            position=0, member_id=member_id, member_generation=generation, status="running")
 def message(mid, rid, tid, seq, epoch=1, character=False, **extra):
-    row = dict(id=mid, room_id=rid, epoch=epoch, seq=seq, round_id=tid,
-               speaker_type="character" if character else "user", content="公开发言",
-               validation_state="accepted" if character else "not_applicable")
+    row = {"id": mid, "room_id": rid, "epoch": epoch, "seq": seq, "round_id": tid,
+               "speaker_type": "character" if character else "user", "content": "公开发言",
+               "validation_state": "accepted" if character else "not_applicable"}
     if character:
         snapshot = db.execute("SELECT member_id,member_generation FROM book_round_slots WHERE id=?",
                               (f"{tid}-slot",)).fetchone()
@@ -348,14 +348,14 @@ expect("discussion-profile-default",lambda: (
        None if db.execute("SELECT discussion_mode,discussion_topic,discussion_goal,discussion_revision FROM book_rooms WHERE id='discussion'").fetchone()==("free",None,None,0)
        else (_ for _ in ()).throw(AssertionError("discussion defaults mismatch"))))
 for name, kwargs in [
-    ("topic-required",dict(discussion_mode="topic")),
-    ("topic-whitespace",dict(discussion_mode="topic",discussion_topic="   ")),
-    ("topic-too-long",dict(discussion_mode="topic",discussion_topic="字"*201)),
-    ("goal-too-long",dict(discussion_mode="topic",discussion_topic="主题",discussion_goal="字"*1001)),
-    ("free-cannot-have-topic",dict(discussion_topic="主题")),
-    ("free-cannot-have-goal",dict(discussion_goal="目标")),
-    ("mode-enumeration",dict(discussion_mode="natural")),
-    ("revision-integer",dict(discussion_revision=0.5)),
+    ("topic-required",{"discussion_mode": "topic"}),
+    ("topic-whitespace",{"discussion_mode": "topic","discussion_topic": "   "}),
+    ("topic-too-long",{"discussion_mode": "topic","discussion_topic": "字"*201}),
+    ("goal-too-long",{"discussion_mode": "topic","discussion_topic": "主题","discussion_goal": "字"*1001}),
+    ("free-cannot-have-topic",{"discussion_topic": "主题"}),
+    ("free-cannot-have-goal",{"discussion_goal": "目标"}),
+    ("mode-enumeration",{"discussion_mode": "natural"}),
+    ("revision-integer",{"discussion_revision": 0.5}),
 ]:
     expect("discussion-"+name,lambda kwargs=kwargs: insert("book_rooms",id="bad-discussion",title="bad",**kwargs),"CHECK")
 expect("discussion-change-needs-revision",lambda: db.execute(
@@ -368,10 +368,10 @@ expect("discussion-old-free-snapshot-rejected",lambda: insert("book_room_rounds"
        "discussion_snapshot_mismatch")
 expect("discussion-boolean-snapshot-revision-rejected",lambda: insert("book_room_rounds",id="bad-discussion",
        room_id="discussion",epoch=1,client_turn_id="bad-discussion",mode="natural",time_limit_seconds=60,
-       discussion_snapshot_json=json.dumps(dict(revision=True,mode="topic",topic="选择与命运",goal="比较人物价值选择"))),"CHECK")
+       discussion_snapshot_json=json.dumps({"revision": True,"mode": "topic","topic": "选择与命运","goal": "比较人物价值选择"})),"CHECK")
 expect("discussion-topic-natural-combination",lambda: turn("discussion","discussion1",mode="natural"))
 expect("discussion-topic-snapshot-captured",lambda: (
-       None if json.loads(db.execute("SELECT discussion_snapshot_json FROM book_room_rounds WHERE id='discussion1'").fetchone()[0])==dict(revision=1,mode="topic",topic="选择与命运",goal="比较人物价值选择")
+       None if json.loads(db.execute("SELECT discussion_snapshot_json FROM book_room_rounds WHERE id='discussion1'").fetchone()[0])=={"revision": 1,"mode": "topic","topic": "选择与命运","goal": "比较人物价值选择"}
        else (_ for _ in ()).throw(AssertionError("snapshot mismatch"))))
 expect("discussion-running-switch-blocked",lambda: db.execute(
        "UPDATE book_rooms SET discussion_topic='新的主题',discussion_revision=2 WHERE id='discussion'"),"room_busy")
@@ -381,7 +381,7 @@ expect("discussion-paused-switch-blocked",lambda: db.execute(
        "UPDATE book_rooms SET discussion_topic='新的主题',discussion_revision=2 WHERE id='discussion'"),"room_busy")
 expect("discussion-paused-snapshot-immutable",lambda: db.execute(
        "UPDATE book_room_rounds SET discussion_snapshot_json=? WHERE id='discussion1'",
-       (json.dumps(dict(revision=2,mode="free",topic=None,goal=None)),)),"immutable_discussion_snapshot")
+       (json.dumps({"revision": 2,"mode": "free","topic": None,"goal": None}),)),"immutable_discussion_snapshot")
 expect("discussion-resume-same-topic",lambda: db.execute(
        "UPDATE book_room_rounds SET status='running',lease_generation=lease_generation+1 WHERE id='discussion1'"))
 expect("discussion-user-message",lambda: message("discussion-user","discussion","discussion1",1))
@@ -400,7 +400,7 @@ expect("discussion-old-round-keeps-topic",lambda: (
        else (_ for _ in ()).throw(AssertionError("old discussion overwritten"))))
 expect("discussion-free-all-combination",lambda: turn("discussion","discussion2",mode="all",timeout_seconds=300))
 expect("discussion-free-all-snapshot",lambda: (
-       None if json.loads(db.execute("SELECT discussion_snapshot_json FROM book_room_rounds WHERE id='discussion2'").fetchone()[0])==dict(revision=2,mode="free",topic=None,goal=None)
+       None if json.loads(db.execute("SELECT discussion_snapshot_json FROM book_room_rounds WHERE id='discussion2'").fetchone()[0])=={"revision": 2,"mode": "free","topic": None,"goal": None}
        else (_ for _ in ()).throw(AssertionError("new free snapshot mismatch"))))
 expect("discussion-stop-final-turn",lambda: (
        db.execute("UPDATE book_room_rounds SET status='cancelled',cancel_requested=1 WHERE id='discussion2'"),
@@ -413,7 +413,7 @@ for speaker_mode in ("directed","all"):
            turn("discussion",round_id,mode=speaker_mode,timeout_seconds=300 if speaker_mode=="all" else 60))
     expect("discussion-topic-"+speaker_mode+"-snapshot",lambda round_id=round_id,speaker_mode=speaker_mode: (
            None if db.execute("SELECT mode FROM book_room_rounds WHERE id=?",(round_id,)).fetchone()[0]==speaker_mode
-           and json.loads(db.execute("SELECT discussion_snapshot_json FROM book_room_rounds WHERE id=?",(round_id,)).fetchone()[0])==dict(revision=3,mode="topic",topic="自由与责任",goal=None)
+           and json.loads(db.execute("SELECT discussion_snapshot_json FROM book_room_rounds WHERE id=?",(round_id,)).fetchone()[0])=={"revision": 3,"mode": "topic","topic": "自由与责任","goal": None}
            else (_ for _ in ()).throw(AssertionError("speaker/content modes conflated"))))
     expect("discussion-topic-"+speaker_mode+"-finishes",lambda round_id=round_id: (
            db.execute("UPDATE book_room_rounds SET status='completed' WHERE id=?",(round_id,)),
