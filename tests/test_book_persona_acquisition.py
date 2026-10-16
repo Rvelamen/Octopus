@@ -180,3 +180,36 @@ async def test_cancel_during_knowledge_review_cannot_save_late_proof_or_claim(bo
                 (build["build_id"],),
             ).fetchone()[0]
         )
+
+
+@pytest.mark.asyncio
+async def test_legacy_get_character_without_acquisition_review_omits_knowledge_field(
+    book_library,
+):
+    """Build steps created before v7 have no acquisition_review; reader must still resolve."""
+    item, parent = await discovered(book_library)
+    service = BookPersonaService(book_library.workspace_root)
+    settings = PersonaConfig(
+        provider_id=1,
+        model="fixture",
+        unit_char_limit=4000,
+        prompt_version="persona-extract-v3",
+        review_prompt_version="persona-review-v3",
+    )
+    build = service.request_build(item, parent, settings)
+    await service.run(build["build_id"], PersonaProvider(), settings)
+    with connect(service.db_path) as db:
+        payload = json.loads(
+            db.execute(
+                "SELECT result_json FROM book_build_steps WHERE build_id=? AND stage='evidence'",
+                (build["build_id"],),
+            ).fetchone()[0]
+        )
+        assert "acquisition_review" not in payload
+        assert payload.get("claim_ids")
+    person = service.discovery.list_characters(item, build["build_id"])["characters"][0]
+    detail = service.get_character(item, build["build_id"], person["id"])
+    serialized = json.dumps(detail, ensure_ascii=False)
+    assert "knowledge_review" not in serialized
+    definition = service.get_agent_definition(item, build["build_id"], person["id"])
+    assert "knowledge_review" not in json.dumps(definition)
