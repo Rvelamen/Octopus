@@ -122,3 +122,5 @@
 
 同日追加 `test_inline_discovery_v2_module_sha_matches_diagnostic_runtime`：锁住 `backend/services/book_world/discovery_inline.py` 的字节级 SHA256 与 `real-model-inline-discovery-v2.json` 中 `runtime_sha256` 记录一致，是 INLINE_PROMPT 字节冻结之外的"模块本身"补充；70 项 model contracts 全过。
 
+同日追加 `test_room_and_knowledge_policy_versions_pin_diagnostic_strings`：锁住 `ROOM_POLICY_VERSION="bounded-room-v1"`、`KNOWLEDGE_POLICY_VERSION="canonical-perspective-v1"` 与 `PersonaConfig.policy_version` 默认值 `"canonical-persona-v3"` 必须与 t17 matrix v1/v2 中 `character_scopes` 与 `model_config.policy_version` 一致；71 项 model contracts 全过。
+

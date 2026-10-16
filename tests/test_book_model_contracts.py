@@ -1061,6 +1061,57 @@ def test_inline_discovery_v2_module_sha_matches_diagnostic_runtime():
     )
 
 
+def test_room_and_knowledge_policy_versions_pin_diagnostic_strings():
+    """Room and knowledge policy versions must match the saved diagnostics.
+
+    Both `t17-matrix-v1.json` and `t17-matrix-v2.json` record
+    policy_version="bounded-room-v1" and
+    knowledge_policy_version="canonical-perspective-v1" in
+    character_scopes. These values are imported from the runtime
+    constants ROOM_POLICY_VERSION and KNOWLEDGE_POLICY_VERSION. If a
+    future bump silently renames them, every saved persona binding stops
+    round-tripping with the same scope label.
+    """
+    from pathlib import Path
+
+    from backend.services.book_world.knowledge_models import (
+        KNOWLEDGE_POLICY_VERSION,
+    )
+    from backend.services.book_world.persona_models import PersonaConfig
+    from backend.services.book_world.room_models import ROOM_POLICY_VERSION
+
+    assert ROOM_POLICY_VERSION == "bounded-room-v1"
+    assert KNOWLEDGE_POLICY_VERSION == "canonical-perspective-v1"
+    # PersonaConfig default is also part of the saved scope label; a silent
+    # change to "canonical-persona-v4" would invalidate every diagnostic.
+    assert PersonaConfig.model_fields["policy_version"].default == "canonical-persona-v3"
+
+    # Both diagnostics record the same scope labels. Make sure they
+    # really do (and didn't drift between v1 and v2 of the matrix).
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    for fname in (
+        "real-model-t17-matrix-v1.json",
+        "real-model-t17-matrix-v2.json",
+    ):
+        data = json.loads((base / fname).read_text(encoding="utf-8"))
+        for scope in data["character_scopes"]:
+            assert scope["canonical_policy_version"] == "canonical-persona-v3", (
+                f"{fname} character scope records "
+                f"{scope['canonical_policy_version']!r}; "
+                "PersonaConfig default must still be 'canonical-persona-v3'."
+            )
+            assert scope["knowledge_policy_version"] == "canonical-perspective-v1", (
+                f"{fname} character scope records "
+                f"{scope['knowledge_policy_version']!r}; "
+                "KNOWLEDGE_POLICY_VERSION must still be 'canonical-perspective-v1'."
+            )
+        cfg = data["model_config"]
+        assert cfg["policy_version"] == "bounded-room-v1", (
+            f"{fname} model_config records policy_version={cfg['policy_version']!r}; "
+            "ROOM_POLICY_VERSION must still be 'bounded-room-v1'."
+        )
+
+
 def test_chat_review_v9_sha_matches_conditional_and_negative_diagnostics():
     """character-chat-review-v9 must stay byte-frozen against t17 SHA diagnostics.
 
