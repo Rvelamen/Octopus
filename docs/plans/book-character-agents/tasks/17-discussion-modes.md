@@ -73,7 +73,7 @@
 
 同日追加 v3 reader 路径回归，验证旧 build_steps（无 acquisition_review 字段）经 `get_character` / `get_agent_definition` 解析时不返回 knowledge_review，agent definition 仍保持 reader-only 隔离。
 
-同日追加 v9 review / v14 generate 历史动作防护提示回归 `test_v9_review_and_v14_generate_pin_historical_action_safeguard`，验证 v9 review 必须保留"勇敢、敢于探险、率先进入，只支持实际给出的性格或行为"与"愿意/敢于/想要/说要去也不能自动证明已经完成该行动"防护段落、v9 review 仍以 v8 为基础累加、v14 generate 必须保留"愿意/敢于/想要/说要做不证明已经做成或看到了什么"；59 项 model contracts 全过。
+同日追加 v9 review / v14 generate 历史动作防护提示回归 `test_v9_review_and_v14_generate_pin_historical_action_safeguard`，验证 v9 review 必须保留"勇敢、敢于探险、率先进入，只支持实际给出的性格或行为"与"愿意/敢于/想要/说要去也不能自动证明已经完成该行动"防护段落、v9 review 仍以 v8 为基础累加、v14 generate 必须保留"愿意/敢于/想要/说要做不证明已经做成或看到了什么"；60 项 model contracts 全过。
 
 同日追加 `test_persona_extract_v4_and_review_v6_pin_trait_vs_completed_action_safeguard`：验证 v4 extract 在 v3 基础上追加"本人台词'我进去'不能直接提取'已跳入并探明洞内情况'"与"trait 不能用'敢于率先跳入'这类容易被误读为已完成动作的合并措辞"防护、v6 review 在 v5 基础上追加"上桥头不证明已经过桥"与"不得从名字推测能力"防护、v7 review 仍以 v6 为基础累加；锁住 v3 默认下历史动作/性格混说风险。
 
