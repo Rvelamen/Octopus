@@ -1,6 +1,6 @@
 # T12 人工盲评操作卡（2026-10-16）
 
-> 真实模型质量层最后一道门 — §4 row 9 / row 81 / row 82 / row 84 / row 85 / row 87 / row 88 / row 89 / row 92 / row 94 / row 95 / row 96 共 12 条「未关闭」项的统一收口。
+> 真实模型质量层最后一道门 — §4 row 9 / row 81 / row 82 / row 84 / row 85 / row 87 / row 88 / row 89 / row 92 / row 95 / row 96 共 11 条「未关闭」项的统一收口（row 87 rephrase_claim 操作 + 12 条总条数变 11 条均由 T15 秒数设置关闭带来；按"只增不改"原则本卡原文保留 row 87 编号但 §4 表内已删除该行）。
 >
 > 本卡不调用任何模型、不修改任何 runner 输出、不修改任何 canonical baseline（`c2da28c8` / `58609a52`），仅指引审阅者完成 CLI 操作。
 
@@ -10,6 +10,7 @@
 - **协议**：[2026-10-16-blind-review-protocol.md](2026-10-16-blind-review-protocol.md)（§1-§7，含 6 判定键 / 优先级 / 已知 timeout case / 输出 JSON 结构 / 关闭条件 / 不变量）
 - **已填好的 160 case worksheet**：[blind-review-2026-10-16-worksheet.csv](blind-review-2026-10-16-worksheet.csv)（1 header + 160 行 = 8-pilot 8 + 15 canonical × 8 + 4 ext-a × 8；每行含 `case_id` / `run_label` / `tier` / `class` / `character` / `mode` / `question` / `character_response` / `round_status` / `round_error_code` / `has_response` / `gold_verdict` / `required_claims` / `forbidden_claims` / `expected_source` + 留空的 `reviewer_verdict` / `reviewer_comment`）
 - **聚合报告**（盲评抽样用）：[2026-10-16-t12-real-runs-aggregation.md](2026-10-16-t12-real-runs-aggregation.md)（Part I 6 张 T12 表 + Part II 4 张 T17 表，含 by_class / by_character 抽样维度）
+- **完成报告模板**：[2026-10-16-blind-review-report-template.md](2026-10-16-blind-review-report-template.md)（8 节骨架：审阅者 / 审阅时间 / stats / 关键评论 / 已知异常 / 与 §4 行衔接 / 不变量 / §4 行更新清单）
 
 ## 2. 审阅者最短路径（推荐首次）
 
