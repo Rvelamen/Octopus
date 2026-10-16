@@ -19,7 +19,7 @@
 | T09 全体与控制 | [2026-10-14-all-queue-validation](./2026-10-14-all-queue-validation.md) | (历史提交) | 暂停/继续/停止 |
 | T10 自动导入 | [2026-10-14-automatic-import-validation](./2026-10-14-automatic-import-validation.md) | (历史提交) | 199 通过 |
 | T11 来源生命周期 + 跨工作区矩阵 | [2026-10-14-source-lifecycle-validation](./2026-10-14-source-lifecycle-validation.md) + 矩阵契约测试 (本批次) | (历史) + (本批次) | 9 lifecycle + 1 矩阵 |
-| T12 题集 + 切片器 + 6 类负例防护 + 11 类人物/别名/说话者/权限/基线/隔离确定性聚合 | [2026-10-16-t12-v2-pool-slicer-evidence.md](./2026-10-16-t12-v2-pool-slicer-evidence.md) | 9073987 / bcced1d / 75f2af2 / 589db8e / c57594d | 84 题金标准 + 45 窗口 + 87 负例 + 42 人物/别名聚合 |
+| T12 题集 + 切片器 + 6 类负例防护 + 11 类人物/别名/说话者/权限/基线/隔离 + 3 类禁言/移除恢复/局部来源删除确定性聚合 | [2026-10-16-t12-v2-pool-slicer-evidence.md](./2026-10-16-t12-v2-pool-slicer-evidence.md) | 9073987 / bcced1d / 75f2af2 / 589db8e / c57594d / 57558c7 | 84 题金标准 + 45 窗口 + 87 负例 + 42 人物/别名 + 6 禁言/移除恢复/局部来源删除聚合 |
 | T15 秒数设置 | (无独立验证文档) | e29231c | 3 契约测试 |
 | T16 圆桌 UI | [2026-10-14-roundtable-validation](./2026-10-14-roundtable-validation.md) | (历史提交) | WS 3D + 2D 切换 |
 | T17 主题/自由 | [2026-10-15-discussion-matrix-v2-validation](./2026-10-15-discussion-matrix-v2-validation.md) + cognition 修复 | 70eed8e / 0e87b78 / 24d1959 | 26/28 + lint 门 |
@@ -28,6 +28,8 @@
 最近 10 个 commit（`git log --oneline -10`）：
 
 ```
+57558c7 docs(t12): aggregate 禁言/移除恢复/局部来源删除 under one deterministic row
+dff1d81 docs(state): include 4a92df1 in the recent-10-commits list
 4a92df1 docs(state): surface T08/T11/T12-aggregation guards alongside existing 4
 c57594d docs(t12): aggregate 11 T03/T04/T09 deterministic sub-items under one row
 589db8e docs(t12): aggregate 6 negative-example safeguards under one deterministic row
@@ -36,9 +38,6 @@ f129ba7 test(t11): pin cross-workspace 6-dim read+write+delete matrix in one pyt
 3bc9548 docs(state): add state-of-play handoff summarizing closed deterministic gates and budget-blocked items
 e29231c test(t15): pin saved timeout default flows into chat submit for directed + all modes
 24d1959 docs(test): wire trait-completion lint into persona publication summary
-75f2af2 docs(t12): record v2 84-case pool + slicer in acceptance index
-bcced1d docs(t12): record v2 pool + slicer + 0-model-call verification evidence
-9073987 test(t12): pin v2 84-case pool + slicer + 15 contract tests + dry-runs
 ```
 
 分支：`feature/pdf-annotation-chat-and-clip-fix`（已推送远端，与 `main` 同步无冲突）
@@ -73,6 +72,9 @@ bcced1d docs(t12): record v2 pool + slicer + 0-model-call verification evidence
 8. **T03/T04/T09 11 类人物/别名/说话者/权限/基线/隔离确定性聚合** 已索引（commit c57594d）
    - 文件：T12 验收证据索引 §2 新增"人物/别名/说话者/权限/基线标注精度/依据召回/历史 vs 当前/跨书源隔离（确定性层）"行
    - 17 (T03) + 18 (T04，含 4+3 参数化) + 7 (T09) = 42 项既有测试被映射到 11 类子项
+9. **T09/T11 禁言/移除恢复/局部来源删除确定性聚合** 已索引（commit 57558c7）
+   - 文件：T12 验收证据索引 §2 新增"同一工作区两部书的禁言/移除恢复/局部来源删除（确定性层）"行
+   - 2 (禁言 T09) + 3 (移除恢复 T09) + 1 (局部来源删除 T11 矩阵) = 6 项既有测试被映射到 3 类子项
 
 ## 3. 待解锁：模型预算授权
 
