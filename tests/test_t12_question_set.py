@@ -340,12 +340,16 @@ def test_slicer_covers_pool_across_windows() -> None:
     )
 
 
-def test_extension_windows_are_not_runner_compatible() -> None:
-    """v1-extension windows must carry dataset_version ``-ext`` so the
-    runner rejects them at validate_dataset time. The 4 canonical
-    expression classes plus disagree + unknown_expression together
-    exceed the runner's hard-coded 4-class expectation, so the version
-    bump is the wire signal that the window is for audit only.
+def test_extension_windows_use_v1ext_protocol_and_runner_accepts() -> None:
+    """v1-extension windows carry ``dataset_version='t12-pilot-eight-v1-ext'``
+    and a 4-expression-class declaration in ``tier_breakdown`` drawn from
+    the 6 chat-quality-protocol classes (including ``disagree`` /
+    ``unknown_expression``). The runner accepts them via the
+    ``t12-pilot-eight-v1-ext`` parallel protocol (separate
+    ``expected_count`` block in the runner) instead of rejecting them.
+    The v1 wire contract is unchanged: v1 windows still must match the
+    frozen 4-class list pinned by
+    ``test_runner_expected_count_class_list_matches_v1_protocol``.
     """
     import subprocess
 
@@ -353,7 +357,14 @@ def test_extension_windows_are_not_runner_compatible() -> None:
         import pytest
         pytest.skip("v2 pool not present")
     out = REPO / "tmp" / "test-t12-ext-a-0.json"
+    runner_path = REPO / "docs" / "plans" / "book-character-agents" / "t12-quality-runner.py"
+    actors_path = REPO / "docs" / "plans" / "book-character-agents" / "validation" / "real-model-group-chat-probe.json"
+    if not actors_path.exists():
+        import pytest
+        pytest.skip("probe persona source not present")
     try:
+        # Slice ext-a window 0 (covers disagree + unknown_expression among
+        # its 4 expression slots).
         subprocess.run(
             [sys.executable, str(SLICER),
              "--pool", str(V2_POOL),
@@ -365,11 +376,51 @@ def test_extension_windows_are_not_runner_compatible() -> None:
         )
         window = _load(out)
         assert window["dataset_version"] == "t12-pilot-eight-v1-ext"
-        # Must include unknown_expression and disagree (extension set 'a')
         expr_classes = {c["class"] for c in window["cases"]
                         if c["tier"] == "expression"}
         assert "unknown_expression" in expr_classes
         assert "disagree" in expr_classes
+        # Mirror the sliced window to where the runner expects the actor
+        # source: the runner resolves ``actors_from`` as
+        # ``dataset_path.parent / actors_from``, and the actor source
+        # already lives in ``validation/``. Without this copy, the
+        # runner's --dry-run cannot load character scopes.
+        out_in_validation = out.parent / "test-t12-ext-a-0-mirrored.json"
+        try:
+            mirrored = dict(window)
+            # Point actors_from at the in-place copy the runner will
+            # see when it reads from ``tmp/``.
+            mirrored_path = REPO / "tmp" / "real-model-group-chat-probe.json"
+            subprocess.run(
+                [sys.executable, "-c",
+                 "import shutil, pathlib; "
+                 f"shutil.copy({str(actors_path)!r}, {str(mirrored_path)!r})"],
+                capture_output=True, text=True, check=True, cwd=str(REPO),
+            )
+            out_in_validation.write_text(
+                json.dumps(mirrored, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+            # The runner must accept the v1ext window via --dry-run.
+            result = subprocess.run(
+                [sys.executable, str(runner_path),
+                 "--workspace", str(REPO / "tmp" / "book-corpus-workspace"),
+                 "--dataset", str(out_in_validation),
+                 "--output", str(REPO / "tmp" / "test-t12-ext-a-0-dryrun.json"),
+                 "--call-budget", "32",
+                 "--dry-run"],
+                capture_output=True, text=True, cwd=str(REPO),
+            )
+            assert result.returncode == 0, (
+                f"runner must accept v1ext windows via the v1ext protocol; "
+                f"stderr={result.stderr!r}"
+            )
+        finally:
+            if out_in_validation.exists():
+                out_in_validation.unlink()
+            mirrored = REPO / "tmp" / "real-model-group-chat-probe.json"
+            if mirrored.exists():
+                mirrored.unlink()
     finally:
         if out.exists():
             out.unlink()
@@ -1067,6 +1118,51 @@ def test_runner_expected_count_class_list_matches_v1_protocol() -> None:
                 f"expected_count['{key}'] must contain {needle}; "
                 f"got {list_body!r} (v1 protocol frozen on these 4 classes)"
             )
+
+
+def test_runner_v1ext_protocol_class_list_uses_chat_quality_protocol() -> None:
+    """The runner's v1ext branch (``dataset_version='t12-pilot-eight-v1-ext'``)
+    must declare its boundary classes the same way as v1, and must set
+    ``expression_classes_covered=None`` so ``validate_dataset`` reads the
+    actual 4 expression classes from the window's
+    ``tier_breakdown.expression_classes_covered``. This lets ext-a/ext-b
+    windows cover ``disagree`` and ``unknown_expression`` (the two
+    chat-quality-protocol classes that the v1 protocol deliberately
+    excluded) without re-freezing the v1 wire contract.
+    """
+    source = RUNNER.read_text(encoding="utf-8")
+
+    # v1ext branch must exist with the frozen extension dataset_version.
+    assert '"t12-pilot-eight-v1-ext"' in source, (
+        "runner must declare the v1ext dataset_version literal so the "
+        "v1ext branch in run() can dispatch to the v1ext expected_count"
+    )
+    # The v1ext block must have the same boundary class set as v1.
+    boundary_marker = '"boundary_classes_covered": [\n            "knowable", "unknowable", "belief", "emotion"'
+    # Tolerate whitespace variations in the literal.
+    v1ext_idx = source.find('"t12-pilot-eight-v1-ext"')
+    v1ext_block = source[v1ext_idx:] if v1ext_idx != -1 else ""
+    assert '"knowable"' in v1ext_block, (
+        "v1ext block must include 'knowable' boundary class"
+    )
+    assert '"unknowable"' in v1ext_block
+    assert '"belief"' in v1ext_block
+    assert '"emotion"' in v1ext_block
+    # The v1ext block must set expression_classes_covered to None so
+    # validate_dataset reads it from the window's tier_breakdown.
+    # The None literal must appear inside the v1ext expected_count
+    # block (not anywhere else in the file).
+    v1ext_block_end = v1ext_block.find("}", v1ext_block.find("expression_classes_covered"))
+    assert v1ext_block_end != -1, (
+        "v1ext expected_count must contain expression_classes_covered"
+    )
+    v1ext_block_window = v1ext_block[
+        v1ext_block.find("expression_classes_covered"):v1ext_block_end
+    ]
+    assert "None" in v1ext_block_window, (
+        f"v1ext expression_classes_covered must be None (read from "
+        f"tier_breakdown); got window={v1ext_block_window!r}"
+    )
 
 
 def test_runner_coerces_mode_to_directed_when_target_actor_indices_set() -> None:

@@ -89,8 +89,8 @@ def source_ids(value):
 def validate_dataset(dataset, *, expected_count, expected_ceiling, reviewer_kind, dataset_required_fields, case_required_fields, gold_required_fields):
     if dataset.get("dataset_version") != expected_count["dataset_version"]:
         raise ValueError(
-            f"dataset_version drifted: {dataset.get('dataset_version')!r} != "
-            f"{expected_count['dataset_version']!r}"
+            f"dataset_version drifted: dataset={dataset.get('dataset_version')!r}, "
+            f"runner expects {expected_count['dataset_version']!r}"
         )
     ceiling = dataset.get("native_call_ceiling")
     if ceiling != expected_ceiling:
@@ -129,9 +129,37 @@ def validate_dataset(dataset, *, expected_count, expected_ceiling, reviewer_kind
     expected_classes = {
         ("boundary", c)
         for c in expected_count["boundary_classes_covered"]
-    } | {
-        ("expression", c)
-        for c in expected_count["expression_classes_covered"]
+    }
+    # Two protocols: v1 (frozen 4-of-6 expression classes) vs v1ext
+    # (4 expression classes declared per window, drawn from any of the 6
+    # chat-quality-protocol classes). v1 keeps the frozen list; v1ext
+    # accepts whichever 4 the window's ``tier_breakdown.expression_classes_covered``
+    # declares, as long as they're a strict subset of the 6 protocol
+    # classes. This lets ext-a/ext-b windows cover disagree +
+    # unknown_expression without re-freezing the v1 wire contract.
+    expression_expected = expected_count.get("expression_classes_covered")
+    if expression_expected is None:
+        # v1ext protocol: read expression classes from tier_breakdown.
+        tb = dataset.get("tier_breakdown") or {}
+        expression_declared = set(tb.get("expression_classes_covered") or [])
+        allowed_v1ext = {
+            "answer", "challenge", "comfort",
+            "disagree", "unknown_expression", "cross_book_hearsay",
+        }
+        if not expression_declared:
+            raise ValueError(
+                f"v1ext dataset must declare expression_classes_covered in "
+                f"tier_breakdown (one of the 6 chat-quality-protocol classes)"
+            )
+        if expression_declared - allowed_v1ext:
+            raise ValueError(
+                f"v1ext expression classes {expression_declared - allowed_v1ext} "
+                f"are not part of the 6 chat-quality-protocol classes; "
+                f"allowed = {sorted(allowed_v1ext)}"
+            )
+        expression_expected = sorted(expression_declared)
+    expected_classes |= {
+        ("expression", c) for c in expression_expected
     }
     actual_classes = {(c.get("tier"), c.get("class")) for c in cases}
     if actual_classes != expected_classes:
@@ -147,12 +175,40 @@ async def run(options):
     if output.exists() or raw_path.exists():
         raise RuntimeError("This run already exists; inspect it instead of restarting its budget")
     dataset = json.loads(dataset_path.read_text(encoding="utf-8"))
-    expected_count = {
-        "dataset_version": "t12-pilot-eight-v1",
-        "case_count": 8,
-        "boundary_classes_covered": ["knowable", "unknowable", "belief", "emotion"],
-        "expression_classes_covered": ["answer", "challenge", "comfort", "cross_book_hearsay"],
-    }
+    # Two parallel protocols share the same 8-case / 32-call ceiling:
+    #   - v1   (frozen): 4 canonical expression classes
+    #                   (answer / challenge / comfort / cross_book_hearsay)
+    #   - v1ext (ext-a/ext-b): 4 expression classes drawn from the 6
+    #                   chat-quality-protocol classes (incl. disagree /
+    #                   unknown_expression), declared per-window via
+    #                   ``tier_breakdown.expression_classes_covered``.
+    # v1ext lets ext-a/ext-b windows reach the 4 disagree + 4
+    # unknown_expression cases in t12-quality-cases-v2.json without
+    # re-freezing the v1 wire contract. The v1 protocol's exact class
+    # list is preserved as a literal so the existing
+    # test_runner_expected_count_class_list_matches_v1_protocol guard
+    # continues to pin it verbatim.
+    if dataset.get("dataset_version") == "t12-pilot-eight-v1":
+        expected_count = {
+            "dataset_version": "t12-pilot-eight-v1",
+            "case_count": 8,
+            "boundary_classes_covered": ["knowable", "unknowable", "belief", "emotion"],
+            "expression_classes_covered": ["answer", "challenge", "comfort", "cross_book_hearsay"],
+        }
+    elif dataset.get("dataset_version") == "t12-pilot-eight-v1-ext":
+        expected_count = {
+            "dataset_version": "t12-pilot-eight-v1-ext",
+            "case_count": 8,
+            "boundary_classes_covered": ["knowable", "unknowable", "belief", "emotion"],
+            # None triggers the v1ext branch in validate_dataset
+            # (reads the actual 4 from tier_breakdown).
+            "expression_classes_covered": None,
+        }
+    else:
+        raise ValueError(
+            f"unrecognized dataset_version: {dataset.get('dataset_version')!r}; "
+            f"runner accepts 't12-pilot-eight-v1' or 't12-pilot-eight-v1-ext'"
+        )
     validate_dataset(
         dataset,
         expected_count=expected_count,

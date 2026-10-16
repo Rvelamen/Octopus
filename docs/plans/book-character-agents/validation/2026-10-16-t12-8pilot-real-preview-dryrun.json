@@ -4,7 +4,7 @@
   "dataset_version": "t12-pilot-eight-v1",
   "dataset_sha256": "2647a18db9afecf3acb4c81889b3b48e3a00e41f6733e78044ca81bfea358fb8",
   "actors_source_sha256": "4361f5ae1bb93f4414c876c48e3a4cb54df8c1c3d823b8febda1e0653a9e4c71",
-  "runner_sha256": "55783a63261c8be7da02c08b8a930761c8a454c35baf106c21aa14522352adbb",
+  "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a",
   "scope": "First 8 of the T12 60+24+84 question set. Cover the 4 boundary layers (knowable / unknowable / belief / emotion) and 4 of the 6 expression classes (answer / challenge / comfort / cross_book_hearsay). The remaining 76 cases (full 60 boundary + 20 expression) are not yet authored; this pilot is a small-budget, evidence-anchored first slice to validate the dataset / runner / schema. Not whole-book persona, not T17 six-combination matrix, not the full 24-pair A/B expression comparison.",
   "character_scopes": [
     {
