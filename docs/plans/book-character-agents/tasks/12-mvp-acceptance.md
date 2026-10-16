@@ -112,3 +112,5 @@
 
 同日追加 `test_t17_matrix_v2_freezes_all_five_chat_runtime_modules`：把 `real-model-t17-matrix-v2.json` 中 5 个 chat-room 运行时模块（`chat_worker.py`、`chat_models.py`、`chat_validation.py`、`context.py`、`knowledge.py`）的字节级 SHA256 一并冻结；任何 chat-room 端代码改动必须同步更新诊断并重跑六组合原生。
 
+同日追加 `test_discovery_inline_and_grouped_prompts_match_v2_v1_diagnostics`：锁住 `INLINE_PROMPT`（discovery_inline）与 `GROUPED_PROMPT`（discovery_grouped）的字节级 SHA256，分别与 `real-model-inline-discovery-v2.json` 和 `real-model-grouped-discovery-v1.json` 中 `prompt_sha256` 一致；发现阶段提示词任何字符级改动必须同步更新诊断并重跑。
+

@@ -958,3 +958,44 @@ def test_t17_matrix_v2_freezes_all_five_chat_runtime_modules():
             f"{rel} module drift: {actual_sha} != {expected_sha}; "
             "re-run the six-combination matrix and update the diagnostic."
         )
+
+
+def test_discovery_inline_and_grouped_prompts_match_v2_v1_diagnostics():
+    """INLINE_PROMPT and GROUPED_PROMPT must stay byte-frozen against discovery diagnostics.
+
+    These two prompt constants drive the inline and grouped discovery
+    stages. The inline v2 diagnostic recorded the most recent run; the
+    grouped v1 diagnostic is the only grouped snapshot on disk. Any
+    character-level change must update the corresponding diagnostic,
+    re-run the discovery run, and refresh the expected hash here —
+    otherwise the new prompt will silently start receiving inputs
+    that were originally validated against the old text.
+    """
+    import hashlib
+    from pathlib import Path
+
+    from backend.services.book_world.discovery_grouped import GROUPED_PROMPT
+    from backend.services.book_world.discovery_inline import INLINE_PROMPT
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+
+    cases = [
+        (
+            "real-model-inline-discovery-v2.json",
+            "prompt_sha256",
+            INLINE_PROMPT,
+        ),
+        (
+            "real-model-grouped-discovery-v1.json",
+            "prompt_sha256",
+            GROUPED_PROMPT,
+        ),
+    ]
+    for fname, sha_key, prompt in cases:
+        data = json.loads((base / fname).read_text(encoding="utf-8"))
+        expected = data[sha_key]
+        actual = hashlib.sha256(prompt.encode()).hexdigest()
+        assert actual == expected, (
+            f"{fname} prompt drift: {actual} != {expected}; "
+            "re-run the discovery and update the diagnostic."
+        )

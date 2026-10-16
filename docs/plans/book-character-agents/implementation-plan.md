@@ -371,3 +371,5 @@ v15发现链路115项专项通过，独立全书首窗8次完成两书各3单元
 新增 4 份 persona 诊断 SHA256 冻结回归 `test_persona_diagnostic_sha256s_match_prompt_versions`：验证 `real-model-persona-intent-v4-01.json`、`real-model-persona-intent-v5-01.json`、`real-model-persona-evidence-v6-01.json`、`real-model-persona-scope-v7-01.json` 四个诊断中记录的 `prompt_sha256.review` 与 `prompt_sha256.extract` 都对应到 `persona_models.py` 中具体的 review/extract 版本（分别 v4+v4、v4+v5、v5+v6、v7+v7）；任何 prompt 字符级改动必须同步更新对应诊断并重跑原生；63 项 model contracts 全过。
 
 新增 t17 v2 矩阵 5 个 chat-room 模块级 SHA256 冻结回归 `test_t17_matrix_v2_freezes_all_five_chat_runtime_modules`：验证 `real-model-t17-matrix-v2.json` 中 `runtime_sha256` 记录的所有 5 个模块（`chat_worker.py`、`chat_models.py`、`chat_validation.py`、`context.py`、`knowledge.py`）的当前字节级哈希与诊断一致；任何 chat-room 端代码改动必须同步更新诊断并重跑六组合原生；63 项 model contracts 全过。
+
+新增 `test_discovery_inline_and_grouped_prompts_match_v2_v1_diagnostics`：锁住 `INLINE_PROMPT`（discovery_inline）与 `GROUPED_PROMPT`（discovery_grouped）的字节级 SHA256，分别与 `real-model-inline-discovery-v2.json` 和 `real-model-grouped-discovery-v1.json` 中 `prompt_sha256` 一致；发现阶段提示词任何字符级改动必须同步更新诊断并重跑。
