@@ -375,6 +375,7 @@ def render_markdown(payload: dict[str, Any]) -> str:
     t17_summary = payload.get("t17_summary", [])
     ab_comparison = payload.get("ab_comparison", [])
     cognition_per_case = payload.get("cognition_per_case", [])
+    t17_published_bodies = payload.get("t17_published_bodies", [])
     meta = payload["meta"]
 
     lines = []
@@ -512,6 +513,53 @@ def render_markdown(payload: dict[str, Any]) -> str:
             )
     else:
         lines.append("（cognition pilot 文件缺失）")
+    lines.append("")
+    lines.append("### 10. T17 published body 抽样（A/B + cognition 共 21 slot）")
+    lines.append("")
+    if t17_published_bodies:
+        # Per-source + per-case + per-slot table. The 1/6 cognition-pilot
+        # case ``topic-directed-rephrased-dilemma`` is the only "cognition
+        # 正例" in T17 row 95; showing its content + ref breakdown makes
+        # the signal concrete. Identity / content_len / ref_count / origin
+        # distribution are what a reviewer needs to judge true positive.
+        lines.append("| source | case_id | turn/slot | identity | content_len | ref_count | ref_origins | has_canon |")
+        lines.append("| --- | --- | --- | --- | ---: | ---: | --- | :---: |")
+        for row in t17_published_bodies:
+            ident = f"{row.get('identity_name') or '?'}·{row.get('identity_book_title') or '?'}"
+            origins = ",".join(row.get("ref_origins", [])) or "—"
+            has_canon = (
+                "✓"
+                if "canon" in (row.get("ref_count_by_origin") or {})
+                else "—"
+            )
+            lines.append(
+                f"| {row['source']} | {row['case_id']}"
+                f" | {row['turn_idx']}/{row['slot_idx']}"
+                f" | {ident}"
+                f" | {row['content_len']}"
+                f" | {row['ref_count']}"
+                f" | {origins}"
+                f" | {has_canon} |"
+            )
+        lines.append("")
+        # First cognition-pilot published body (the 1/6 正例) printed in full
+        # so a reviewer can see the 条件推演 / 引述 / 有据否定经历 pattern
+        # directly, not just an aggregated counter.
+        for row in t17_published_bodies:
+            if (
+                row["source"] == "t17_cognition_pilot"
+                and row.get("content")
+            ):
+                lines.append("**T17 cognition 正例 body（topic-directed-rephrased-dilemma / directed mode / published slot 0/0）**：")
+                lines.append("")
+                lines.append(f"> {row['content']}")
+                lines.append("")
+                if row.get("first_ref_text"):
+                    lines.append(f"首条 citation：{row['first_ref_text']}")
+                    lines.append("")
+                break
+    else:
+        lines.append("（无 T17 published body 抽样）")
     lines.append("")
 
     # --- Part III — 归因方法说明 ---
@@ -667,6 +715,113 @@ def build_cognition_per_case(
     return []
 
 
+def _extract_published_body_for_slot(
+    turn: dict[str, Any], slot: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Return the character message that produced this published slot.
+
+    Walks the turn's ``messages`` to find the ``character``-speaker message
+    whose ``speaker_member_id`` matches the slot's ``member_id``. Returns
+    the body, ref breakdown, and identity so a reviewer can judge whether
+    the published text is a true positive (e.g. for the 1/6 cognition-pilot
+    case). Returns ``None`` if no matching character message is found
+    (defensive — should not happen in normal T17 output)."""
+    slot_member = slot.get("member_id")
+    for m in turn.get("messages", []):
+        if (
+            m.get("speaker_type") == "character"
+            and m.get("speaker_member_id") == slot_member
+        ):
+            content = m.get("content", "")
+            refs = m.get("refs", []) or []
+            ref_origins = sorted({r.get("origin", "unknown") for r in refs})
+            ref_count_by_origin: dict[str, int] = {}
+            for r in refs:
+                o = r.get("origin", "unknown")
+                ref_count_by_origin[o] = ref_count_by_origin.get(o, 0) + 1
+            first_ref = refs[0] if refs else None
+            return {
+                "content": content,
+                "content_len": len(content),
+                "ref_count": len(refs),
+                "ref_origins": ref_origins,
+                "ref_count_by_origin": ref_count_by_origin,
+                "first_ref_text": (
+                    (first_ref.get("assertion_text") or "")[:120]
+                    if first_ref and first_ref.get("assertion_text")
+                    else None
+                ),
+                "identity": m.get("identity", {}),
+            }
+    return None
+
+
+def extract_t17_published_bodies(
+    t17_items: list[tuple[str, Path, dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Per-source per-case per-slot published body extraction.
+
+    For every published slot across the 3 T17 real-run files, extract
+    the actual character text + citation metadata so a reviewer can
+    judge whether each ``published`` is a true positive. This is the
+    concrete evidence T17 row 95 ("条件推演 / 引述 / 有据否定经历有
+    正例") needs — the 1/6 cognition-pilot case is only meaningful if
+    the published body actually exhibits one of those 3 patterns.
+
+    Deterministic, read-only, no model calls."""
+    rows = []
+    for label, _, run in t17_items:
+        for case in run.get("cases", []):
+            if case.get("status") != "executed_pending_semantic_review":
+                continue
+            cid = case.get("case_id")
+            for ti, turn in enumerate(case.get("turns", [])):
+                for si, slot in enumerate(turn.get("round", {}).get("slots", [])):
+                    if slot.get("status") != "published":
+                        continue
+                    body = _extract_published_body_for_slot(turn, slot)
+                    if body is None:
+                        # published slot with no character message — record
+                        # the slot metadata only, so the gap is visible
+                        rows.append(
+                            {
+                                "source": label,
+                                "case_id": cid,
+                                "turn_idx": ti,
+                                "slot_idx": si,
+                                "member_id": slot.get("member_id"),
+                                "content": None,
+                                "content_len": 0,
+                                "ref_count": 0,
+                                "ref_origins": [],
+                                "ref_count_by_origin": {},
+                                "first_ref_text": None,
+                                "identity": {},
+                                "note": "published slot has no matching character message",
+                            }
+                        )
+                        continue
+                    identity = body["identity"] or {}
+                    rows.append(
+                        {
+                            "source": label,
+                            "case_id": cid,
+                            "turn_idx": ti,
+                            "slot_idx": si,
+                            "member_id": slot.get("member_id"),
+                            "content": body["content"],
+                            "content_len": body["content_len"],
+                            "ref_count": body["ref_count"],
+                            "ref_origins": body["ref_origins"],
+                            "ref_count_by_origin": body["ref_count_by_origin"],
+                            "first_ref_text": body["first_ref_text"],
+                            "identity_name": identity.get("name"),
+                            "identity_book_title": identity.get("book_title"),
+                        }
+                    )
+    return rows
+
+
 def main() -> int:
     items = discover_runs()
     t17_items = load_t17_runs()
@@ -682,6 +837,7 @@ def main() -> int:
     t17_summary = build_t17_summary(t17_items)
     ab_comparison = build_ab_comparison(t17_items)
     cognition_per_case = build_cognition_per_case(t17_items)
+    t17_published_bodies = extract_t17_published_bodies(t17_items)
     from datetime import datetime, timezone
     aggregated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     payload = {
@@ -701,6 +857,7 @@ def main() -> int:
         "t17_summary": t17_summary,
         "ab_comparison": ab_comparison,
         "cognition_per_case": cognition_per_case,
+        "t17_published_bodies": t17_published_bodies,
     }
     OUTPUT_JSON.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
@@ -720,6 +877,7 @@ def main() -> int:
         f"t17_sources={len(t17_items)}"
         f" ab_rows={len(ab_comparison)}"
         f" cognition_rows={len(cognition_per_case)}"
+        f" published_body_rows={len(t17_published_bodies)}"
     )
     return 0
 

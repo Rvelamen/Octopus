@@ -1,6 +1,6 @@
 # T12 + T17 真实模型运行聚合
 
-> 聚合时间：2026-10-16T13:14:33Z  |  T12 来源文件：20 份（v1, v1ext 协议）  |  T17 来源文件：3 份  |  模型调用：0
+> 聚合时间：2026-10-16T13:22:33Z  |  T12 来源文件：20 份（v1, v1ext 协议）  |  T17 来源文件：3 份  |  模型调用：0
 
 ## Part I — T12 真实模型运行（8-pilot + v2 60+24）
 
@@ -108,6 +108,39 @@
 | topic-directed-rephrased-dilemma | topic | directed | executed_pending_semantic_review | 1 | 1 |
 | free-all-unshared-private-knowledge | None | None | not_selected | 0 | 0 |
 | topic-all-modern-hearsay | None | None | not_selected | 0 | 0 |
+
+### 10. T17 published body 抽样（A/B + cognition 共 21 slot）
+
+| source | case_id | turn/slot | identity | content_len | ref_count | ref_origins | has_canon |
+| --- | --- | --- | --- | ---: | ---: | --- | :---: |
+| t17_matrix_v2_A | free-natural-topic-shift | 0/0 | 石猴·西游记 · 石猴发现联调样本（非全书） | 47 | 1 | canon | ✓ |
+| t17_matrix_v2_A | free-natural-topic-shift | 1/0 | 黛玉·红楼梦 · 黛玉读书联调样本（非全书） | 42 | 1 | room_hearsay | — |
+| t17_matrix_v2_A | topic-natural-retained-topic | 0/0 | 石猴·西游记 · 石猴发现联调样本（非全书） | 102 | 2 | inference,room_hearsay | — |
+| t17_matrix_v2_A | topic-natural-retained-topic | 1/0 | 黛玉·红楼梦 · 黛玉读书联调样本（非全书） | 92 | 2 | room_hearsay | — |
+| t17_matrix_v2_A | free-directed-conditional-action | 0/0 | 石猴·西游记 · 石猴发现联调样本（非全书） | 63 | 2 | canon,inference | ✓ |
+| t17_matrix_v2_A | topic-directed-rephrased-dilemma | 0/0 | 石猴·西游记 · 石猴发现联调样本（非全书） | 67 | 4 | canon,inference | ✓ |
+| t17_matrix_v2_A | free-all-unshared-private-knowledge | 0/0 | 石猴·西游记 · 石猴发现联调样本（非全书） | 98 | 2 | canon | ✓ |
+| t17_matrix_v2_A | free-all-unshared-private-knowledge | 0/1 | 黛玉·红楼梦 · 黛玉读书联调样本（非全书） | 88 | 0 | — | — |
+| t17_matrix_v2_A | topic-all-modern-hearsay | 0/0 | 石猴·西游记 · 石猴发现联调样本（非全书） | 55 | 1 | room_hearsay | — |
+| t17_matrix_v2_A | topic-all-modern-hearsay | 0/1 | 黛玉·红楼梦 · 黛玉读书联调样本（非全书） | 69 | 1 | room_hearsay | — |
+| t17_ab_reeval_B | free-natural-topic-shift | 0/0 | 石猴·西游记 · 石猴发现联调样本（非全书） | 25 | 0 | — | — |
+| t17_ab_reeval_B | free-natural-topic-shift | 1/0 | 黛玉·红楼梦 · 黛玉读书联调样本（非全书） | 51 | 2 | room_hearsay | — |
+| t17_ab_reeval_B | topic-natural-retained-topic | 0/0 | 石猴·西游记 · 石猴发现联调样本（非全书） | 86 | 1 | room_hearsay | — |
+| t17_ab_reeval_B | topic-natural-retained-topic | 1/0 | 黛玉·红楼梦 · 黛玉读书联调样本（非全书） | 111 | 2 | room_hearsay | — |
+| t17_ab_reeval_B | free-directed-conditional-action | 0/0 | 石猴·西游记 · 石猴发现联调样本（非全书） | 57 | 2 | canon,inference | ✓ |
+| t17_ab_reeval_B | topic-directed-rephrased-dilemma | 0/0 | 石猴·西游记 · 石猴发现联调样本（非全书） | 85 | 2 | inference | — |
+| t17_ab_reeval_B | free-all-unshared-private-knowledge | 0/0 | 石猴·西游记 · 石猴发现联调样本（非全书） | 81 | 3 | canon,room_hearsay | ✓ |
+| t17_ab_reeval_B | free-all-unshared-private-knowledge | 0/1 | 黛玉·红楼梦 · 黛玉读书联调样本（非全书） | 110 | 1 | room_hearsay | — |
+| t17_ab_reeval_B | topic-all-modern-hearsay | 0/0 | 石猴·西游记 · 石猴发现联调样本（非全书） | 60 | 1 | room_hearsay | — |
+| t17_ab_reeval_B | topic-all-modern-hearsay | 0/1 | 黛玉·红楼梦 · 黛玉读书联调样本（非全书） | 60 | 1 | room_hearsay | — |
+| t17_cognition_pilot | topic-directed-rephrased-dilemma | 0/0 | 石猴·西游记 · 石猴发现联调样本（非全书） | 66 | 5 | canon,inference | ✓ |
+
+**T17 cognition 正例 body（topic-directed-rephrased-dilemma / directed mode / published slot 0/0）**：
+
+> 假设这条路没人验过，我会先走几步探看，看清动静再回头招呼同伴；我这性子敢领头。若前面真不安稳，我宁可自己多试，也不让大家一齐闯进去。
+
+首条 citation：假设这条路没人验过，我会先走几步探看，看清动静再回头招呼同伴；
+
 
 ## Part III — 归因方法说明
 

@@ -1276,7 +1276,8 @@ def test_aggregation_file_has_expected_top_level_keys() -> None:
     payload = _load_aggregation_or_skip()
     expected = {"meta", "totals", "by_window", "by_class",
                 "by_character", "by_phase", "by_status",
-                "t17_summary", "ab_comparison", "cognition_per_case"}
+                "t17_summary", "ab_comparison", "cognition_per_case",
+                "t17_published_bodies"}
     assert expected.issubset(payload.keys()), (
         f"aggregation must contain tables {expected}, got {set(payload.keys())}"
     )
@@ -1566,4 +1567,99 @@ def test_aggregation_t17_cognition_pilot_runs_exactly_one_case() -> None:
             f"not_selected case {row['case_id']} must have 0 published "
             f"slots, got {row['published_slots']}"
         )
+
+
+def test_aggregation_t17_published_bodies_extracts_21_slots_with_real_content() -> None:
+    """T17 row 95 '条件推演 / 引述 / 有据否定经历有正例' needs the 1/6
+    cognition-pilot positive example to have REAL character text + citation
+    refs, not just a published-slot counter. This test pins the per-slot
+    body extraction: 21 rows total (10 A path + 10 B path + 1 cognition
+    pilot), every row has the character identity + content + at least
+    one citation ref, and the single cognition positive example
+    (topic-directed-rephrased-dilemma) is the row a reviewer needs to
+    read to confirm 条件推演 / 引述 / 有据否定经历 — i.e. the content
+    is a hypothetical conditional reasoning rather than a literal
+    experience claim."""
+    payload = _load_aggregation_or_skip()
+    bodies = payload.get("t17_published_bodies", [])
+    assert len(bodies) == 21, (
+        f"t17_published_bodies must list 21 published-slot rows "
+        f"(10 A + 10 B + 1 cognition), got {len(bodies)}"
+    )
+    # Per-source distribution
+    from collections import Counter
+    by_source = Counter(r["source"] for r in bodies)
+    assert by_source.get("t17_matrix_v2_A") == 10, (
+        f"A path must have 10 published bodies, got {by_source.get('t17_matrix_v2_A')}"
+    )
+    assert by_source.get("t17_ab_reeval_B") == 10, (
+        f"B path must have 10 published bodies, got {by_source.get('t17_ab_reeval_B')}"
+    )
+    assert by_source.get("t17_cognition_pilot") == 1, (
+        f"cognition pilot must have exactly 1 published body, got "
+        f"{by_source.get('t17_cognition_pilot')}"
+    )
+    # Every row must carry a real character identity (name + book) and
+    # non-empty content. ref_count is NOT required to be ≥1 — some
+    # published bodies are refusals / stance statements (e.g. "我不该拿
+    # 旁人私事冒充亲历" with 0 refs) that still legitimately publish.
+    # The aggregate ref distribution across all 21 rows must include at
+    # least one canon + one inference (the 1/6 cognition positive example
+    # uses 1 canon + 4 inference per the real-run data).
+    for row in bodies:
+        assert row.get("identity_name"), (
+            f"row {row['source']}/{row['case_id']}/{row['turn_idx']}/"
+            f"{row['slot_idx']} must have identity_name"
+        )
+        assert row.get("identity_book_title"), (
+            f"row {row['source']}/{row['case_id']}/{row['turn_idx']}/"
+            f"{row['slot_idx']} must have identity_book_title"
+        )
+        assert row.get("content") and len(row["content"]) > 0, (
+            f"row {row['source']}/{row['case_id']}/{row['turn_idx']}/"
+            f"{row['slot_idx']} must have non-empty content"
+        )
+    total_refs = sum(row.get("ref_count", 0) for row in bodies)
+    assert total_refs >= 30, (
+        f"across all 21 published bodies, total ref_count must be ≥30 "
+        f"(per the real-run distribution of ~36), got {total_refs}"
+    )
+    # Origin distribution sanity: at least 1 canon and 1 inference across
+    # the 21 rows (proves the runner is logging real citation refs, not
+    # all of them being stance/refusal responses with empty refs)
+    origins_seen = set()
+    for row in bodies:
+        origins_seen.update(row.get("ref_origins", []))
+    assert "canon" in origins_seen, (
+        f"at least 1 published body must carry a canon ref, got "
+        f"origins {origins_seen}"
+    )
+    assert "inference" in origins_seen or "room_hearsay" in origins_seen, (
+        f"at least 1 published body must carry an inference or "
+        f"room_hearsay ref, got origins {origins_seen}"
+    )
+    # The 1 cognition positive example is the row that proves
+    # 条件推演 / 引述 / 有据否定经历 — its content must exhibit a
+    # conditional / hypothetical marker (假设/如果/要是/若是/万一/若/...),
+    # which is the linguistic signal of 条件推演 (conditional reasoning).
+    # It must also have at least 1 ref (the conditional reasoning cites
+    # the character's own canonical self-description "我这性子敢领头").
+    cognition = [r for r in bodies if r["source"] == "t17_cognition_pilot"]
+    assert len(cognition) == 1, (
+        f"cognition pilot must yield exactly 1 published body, got {len(cognition)}"
+    )
+    content = cognition[0]["content"]
+    assert cognition[0]["case_id"] == "topic-directed-rephrased-dilemma", (
+        f"the 1 cognition positive example must be the directed rephrased "
+        f"dilemma case, got {cognition[0]['case_id']}"
+    )
+    assert any(marker in content for marker in ("假设", "如果", "要是", "若是", "万一", "若")), (
+        f"cognition positive example must exhibit a 条件推演 marker "
+        f"(假设/如果/要是/若是/万一/若), got content: {content!r}"
+    )
+    assert cognition[0]["ref_count"] >= 1, (
+        f"the 1 cognition positive example must carry ≥1 citation ref "
+        f"(canonical self-citation for '我这性子敢领头'), got "
+        f"{cognition[0]['ref_count']}"
+    )
 

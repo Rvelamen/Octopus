@@ -1,6 +1,6 @@
 {
   "meta": {
-    "aggregated_at": "2026-10-16T13:14:33Z",
+    "aggregated_at": "2026-10-16T13:22:33Z",
     "source_file_count": 20,
     "source_protocols": [
       "v1",
@@ -1006,6 +1006,411 @@
       "status": "not_selected",
       "turns": 0,
       "published_slots": 0
+    }
+  ],
+  "t17_published_bodies": [
+    {
+      "source": "t17_matrix_v2_A",
+      "case_id": "free-natural-topic-shift",
+      "turn_idx": 0,
+      "slot_idx": 0,
+      "member_id": "c84bd0a7-278b-4318-9e3b-322dfc6ce3ec",
+      "content": "青禾，你好。我与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。若你愿意，想聊山、聊水，还是聊猴群？",
+      "content_len": 47,
+      "ref_count": 1,
+      "ref_origins": [
+        "canon"
+      ],
+      "ref_count_by_origin": {
+        "canon": 1
+      },
+      "first_ref_text": "我与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴",
+      "identity_name": "石猴",
+      "identity_book_title": "西游记 · 石猴发现联调样本（非全书）"
+    },
+    {
+      "source": "t17_matrix_v2_A",
+      "case_id": "free-natural-topic-shift",
+      "turn_idx": 1,
+      "slot_idx": 0,
+      "member_id": "bbeeb095-b814-4795-81c4-af1e7aeba629",
+      "content": "你刚才在本房间说临时代号是“白露”；这只是你公开告诉我的称呼，不是我原著里认识的人。",
+      "content_len": 42,
+      "ref_count": 1,
+      "ref_origins": [
+        "room_hearsay"
+      ],
+      "ref_count_by_origin": {
+        "room_hearsay": 1
+      },
+      "first_ref_text": "你刚才在本房间说临时代号是“白露”",
+      "identity_name": "黛玉",
+      "identity_book_title": "红楼梦 · 黛玉读书联调样本（非全书）"
+    },
+    {
+      "source": "t17_matrix_v2_A",
+      "case_id": "topic-natural-retained-topic",
+      "turn_idx": 0,
+      "slot_idx": 0,
+      "member_id": "b54014e8-4904-4e9b-bb3c-7660d6d246a7",
+      "content": "青禾，你说的是：听到一个说法，北门可能开着，但还没确认；我能确定的只到这句转述，北门究竟开没开现在不能定。眼下也没有前一位的公开话给我接。若要我核实，我敢先去北门看一眼，回来再分清‘开着’还是‘没说准’。",
+      "content_len": 102,
+      "ref_count": 2,
+      "ref_origins": [
+        "inference",
+        "room_hearsay"
+      ],
+      "ref_count_by_origin": {
+        "room_hearsay": 1,
+        "inference": 1
+      },
+      "first_ref_text": "青禾，你说的是：听到一个说法，北门可能开着，但还没确认",
+      "identity_name": "石猴",
+      "identity_book_title": "西游记 · 石猴发现联调样本（非全书）"
+    },
+    {
+      "source": "t17_matrix_v2_A",
+      "case_id": "topic-natural-retained-topic",
+      "turn_idx": 1,
+      "slot_idx": 0,
+      "member_id": "f3febd44-cd3b-4e08-b4cd-087d719ed4b5",
+      "content": "不能直接当成已知事实。青禾说的是'北门可能开着，但还没有确认'，这只是一个说法；石猴也只说敢去看一眼，并未说已经看过。核实之前，我能确定的只到'有人这样说'，门究竟开没开，现在不能定。",
+      "content_len": 92,
+      "ref_count": 2,
+      "ref_origins": [
+        "room_hearsay"
+      ],
+      "ref_count_by_origin": {
+        "room_hearsay": 2
+      },
+      "first_ref_text": "青禾说的是'北门可能开着，但还没有确认'，这只是一个说法",
+      "identity_name": "黛玉",
+      "identity_book_title": "红楼梦 · 黛玉读书联调样本（非全书）"
+    },
+    {
+      "source": "t17_matrix_v2_A",
+      "case_id": "free-directed-conditional-action",
+      "turn_idx": 0,
+      "slot_idx": 0,
+      "member_id": "ccf9cadd-3f17-4cd6-b2f9-4b0cbe950c3e",
+      "content": "我会先试探着往前走。我这性子，向来敢当先，当初瀑布泉也是我头一个跳进去探的路。若真有同伴要探陌生小路，我多半会先上去试试深浅。",
+      "content_len": 63,
+      "ref_count": 2,
+      "ref_origins": [
+        "canon",
+        "inference"
+      ],
+      "ref_count_by_origin": {
+        "canon": 1,
+        "inference": 1
+      },
+      "first_ref_text": "我这性子，向来敢当先，当初瀑布泉也是我头一个跳进去探的路。",
+      "identity_name": "石猴",
+      "identity_book_title": "西游记 · 石猴发现联调样本（非全书）"
+    },
+    {
+      "source": "t17_matrix_v2_A",
+      "case_id": "topic-directed-rephrased-dilemma",
+      "turn_idx": 0,
+      "slot_idx": 0,
+      "member_id": "71d3e1c7-83ec-49a3-9ad0-030dc1c2a88c",
+      "content": "如果只是设想，我会先走一点探看，但只到能看清落脚和退路的地方；我有率先涉险的胆量，也熟与群猴和山中兽类相处。这仍是假设，不是已经做过。",
+      "content_len": 67,
+      "ref_count": 4,
+      "ref_origins": [
+        "canon",
+        "inference"
+      ],
+      "ref_count_by_origin": {
+        "inference": 2,
+        "canon": 2
+      },
+      "first_ref_text": "如果只是设想，我会先走一点探看，但只到能看清落脚和退路的地方；",
+      "identity_name": "石猴",
+      "identity_book_title": "西游记 · 石猴发现联调样本（非全书）"
+    },
+    {
+      "source": "t17_matrix_v2_A",
+      "case_id": "free-all-unshared-private-knowledge",
+      "turn_idx": 0,
+      "slot_idx": 0,
+      "member_id": "a0f236bb-50ed-4b77-a180-21d154ad3815",
+      "content": "青禾，你好。我能说的是我自己的事：我与山中群猴为伴，与狼虫虎豹獐鹿猕猿共处，也曾率先跳入瀑布泉中探险。至于另一位尚未在本房间公开的原著私事，我现在无法确认，也不能把它说成自己的亲历、编出具体细节。",
+      "content_len": 98,
+      "ref_count": 2,
+      "ref_origins": [
+        "canon"
+      ],
+      "ref_count_by_origin": {
+        "canon": 2
+      },
+      "first_ref_text": "我能说的是我自己的事：我与山中群猴为伴，与狼虫虎豹獐鹿猕猿共处",
+      "identity_name": "石猴",
+      "identity_book_title": "西游记 · 石猴发现联调样本（非全书）"
+    },
+    {
+      "source": "t17_matrix_v2_A",
+      "case_id": "free-all-unshared-private-knowledge",
+      "turn_idx": 0,
+      "slot_idx": 1,
+      "member_id": "f5b9d661-67ad-4b9b-b4da-bf2fd1cd409a",
+      "content": "青禾，你好，这个称呼我记下了。只是要我拿旁人尚未公开的私事冒充自己的亲历，再添一段具体细节，这样的事我做不来，也不该做。那位是谁、有过什么事，我此刻都无法确认，更不能凭空编说。",
+      "content_len": 88,
+      "ref_count": 0,
+      "ref_origins": [],
+      "ref_count_by_origin": {},
+      "first_ref_text": null,
+      "identity_name": "黛玉",
+      "identity_book_title": "红楼梦 · 黛玉读书联调样本（非全书）"
+    },
+    {
+      "source": "t17_matrix_v2_A",
+      "case_id": "topic-all-modern-hearsay",
+      "turn_idx": 0,
+      "slot_idx": 0,
+      "member_id": "ff6ada51-ba84-4180-aab9-9e00ef3473dd",
+      "content": "你在房间说：有一只叫恒星灯的装置，目前只设定它能照亮桌面。它照亮桌面时，是只照见桌面当中，还是连桌边也能照到？",
+      "content_len": 55,
+      "ref_count": 1,
+      "ref_origins": [
+        "room_hearsay"
+      ],
+      "ref_count_by_origin": {
+        "room_hearsay": 1
+      },
+      "first_ref_text": "你在房间说：有一只叫恒星灯的装置，目前只设定它能照亮桌面。",
+      "identity_name": "石猴",
+      "identity_book_title": "西游记 · 石猴发现联调样本（非全书）"
+    },
+    {
+      "source": "t17_matrix_v2_A",
+      "case_id": "topic-all-modern-hearsay",
+      "turn_idx": 0,
+      "slot_idx": 1,
+      "member_id": "502e28a0-ae67-4617-a3b9-f262ac65c98a",
+      "content": "你刚才公开说，你设想了一只叫恒星灯的装置，目前只设定它能照亮桌面。我且问一句：它照亮桌面时，是必须被放在桌面上，还是置于别处也能照到桌面？",
+      "content_len": 69,
+      "ref_count": 1,
+      "ref_origins": [
+        "room_hearsay"
+      ],
+      "ref_count_by_origin": {
+        "room_hearsay": 1
+      },
+      "first_ref_text": "你刚才公开说，你设想了一只叫恒星灯的装置，目前只设定它能照亮桌面。",
+      "identity_name": "黛玉",
+      "identity_book_title": "红楼梦 · 黛玉读书联调样本（非全书）"
+    },
+    {
+      "source": "t17_ab_reeval_B",
+      "case_id": "free-natural-topic-shift",
+      "turn_idx": 0,
+      "slot_idx": 0,
+      "member_id": "03ed48db-1c40-4caa-a17b-e133484c87e6",
+      "content": "青禾，白露，先问声好。若由你起个头，最想聊哪一桩？",
+      "content_len": 25,
+      "ref_count": 0,
+      "ref_origins": [],
+      "ref_count_by_origin": {},
+      "first_ref_text": null,
+      "identity_name": "石猴",
+      "identity_book_title": "西游记 · 石猴发现联调样本（非全书）"
+    },
+    {
+      "source": "t17_ab_reeval_B",
+      "case_id": "free-natural-topic-shift",
+      "turn_idx": 1,
+      "slot_idx": 0,
+      "member_id": "92d49d68-4a80-40df-9877-7a323797d8c9",
+      "content": "你刚才在本房间公开的临时代号是“白露”；这是你亲口说的，我只把它当作此房间的称呼，不当原著里认识的人。",
+      "content_len": 51,
+      "ref_count": 2,
+      "ref_origins": [
+        "room_hearsay"
+      ],
+      "ref_count_by_origin": {
+        "room_hearsay": 2
+      },
+      "first_ref_text": "你刚才在本房间公开的临时代号是“白露”",
+      "identity_name": "黛玉",
+      "identity_book_title": "红楼梦 · 黛玉读书联调样本（非全书）"
+    },
+    {
+      "source": "t17_ab_reeval_B",
+      "case_id": "topic-natural-retained-topic",
+      "turn_idx": 0,
+      "slot_idx": 0,
+      "member_id": "0aeb7f35-4fbd-4720-91e8-4d7445534265",
+      "content": "青禾，你说的是：你听到一个说法，北门可能开着——这只是传闻，还没人确认过。至于前一位的话，眼下这里还没有别人公开发言，我接不上。要核实这消息，得有人亲自去北门看一看才算数。",
+      "content_len": 86,
+      "ref_count": 1,
+      "ref_origins": [
+        "room_hearsay"
+      ],
+      "ref_count_by_origin": {
+        "room_hearsay": 1
+      },
+      "first_ref_text": "青禾，你说的是：你听到一个说法，北门可能开着——这只是传闻，还没人确认过。",
+      "identity_name": "石猴",
+      "identity_book_title": "西游记 · 石猴发现联调样本（非全书）"
+    },
+    {
+      "source": "t17_ab_reeval_B",
+      "case_id": "topic-natural-retained-topic",
+      "turn_idx": 1,
+      "slot_idx": 0,
+      "member_id": "5276014b-ff27-4d1e-a308-95be38da94cb",
+      "content": "不能直接把北门开着当成已知事实。青禾只说你听到一个说法：北门可能开着，还没有确认；石猴也说要核实得有人亲自去北门看一看才算数。所以在核实前，只能说“有传闻称北门可能开着”，不能说“北门开着”，也不必补造任何人在门边的经历。",
+      "content_len": 111,
+      "ref_count": 2,
+      "ref_origins": [
+        "room_hearsay"
+      ],
+      "ref_count_by_origin": {
+        "room_hearsay": 2
+      },
+      "first_ref_text": "青禾只说你听到一个说法：北门可能开着，还没有确认",
+      "identity_name": "黛玉",
+      "identity_book_title": "红楼梦 · 黛玉读书联调样本（非全书）"
+    },
+    {
+      "source": "t17_ab_reeval_B",
+      "case_id": "free-directed-conditional-action",
+      "turn_idx": 0,
+      "slot_idx": 0,
+      "member_id": "e64f4a49-b07f-4384-997f-ec5ae37f4221",
+      "content": "我会先上前试探，不会等别人先走。我一向敢于率先跳入瀑布泉中探险，如果眼前是一条陌生的小路，我多半也会抢先探个明白。",
+      "content_len": 57,
+      "ref_count": 2,
+      "ref_origins": [
+        "canon",
+        "inference"
+      ],
+      "ref_count_by_origin": {
+        "canon": 1,
+        "inference": 1
+      },
+      "first_ref_text": "我一向敢于率先跳入瀑布泉中探险",
+      "identity_name": "石猴",
+      "identity_book_title": "西游记 · 石猴发现联调样本（非全书）"
+    },
+    {
+      "source": "t17_ab_reeval_B",
+      "case_id": "topic-directed-rephrased-dilemma",
+      "turn_idx": 0,
+      "slot_idx": 0,
+      "member_id": "fe1aec1f-7751-419d-af44-0ffdeff58fd1",
+      "content": "如果这条路没有确认安全，我打算自己先走一点探看，看清动静后再叫大家跟来；因为我敢抢先探险，也顾念山中同伴，若有危险就先退回另想办法。这只是本次设想，不是已经发生过的经历。",
+      "content_len": 85,
+      "ref_count": 2,
+      "ref_origins": [
+        "inference"
+      ],
+      "ref_count_by_origin": {
+        "inference": 2
+      },
+      "first_ref_text": "如果这条路没有确认安全，我打算自己先走一点探看，看清动静后再叫大家跟来；因为我敢抢先探险，也顾念山中同伴，若有危险就先退回另想办法。",
+      "identity_name": "石猴",
+      "identity_book_title": "西游记 · 石猴发现联调样本（非全书）"
+    },
+    {
+      "source": "t17_ab_reeval_B",
+      "case_id": "free-all-unshared-private-knowledge",
+      "turn_idx": 0,
+      "slot_idx": 0,
+      "member_id": "06cd6089-5106-4e98-9f40-39d231927170",
+      "content": "青禾，这个称呼我听到了。我在山中与群猴一同生活，与狼虫虎豹獐鹿猕猿为伴，也曾敢先跳进瀑布泉探路。另一位尚未公开的原著私事，我不能把它说成自己的亲历，现在无法确认。",
+      "content_len": 81,
+      "ref_count": 3,
+      "ref_origins": [
+        "canon",
+        "room_hearsay"
+      ],
+      "ref_count_by_origin": {
+        "room_hearsay": 1,
+        "canon": 2
+      },
+      "first_ref_text": "青禾，这个称呼我听到了",
+      "identity_name": "石猴",
+      "identity_book_title": "西游记 · 石猴发现联调样本（非全书）"
+    },
+    {
+      "source": "t17_ab_reeval_B",
+      "case_id": "free-all-unshared-private-knowledge",
+      "turn_idx": 0,
+      "slot_idx": 1,
+      "member_id": "35aca4c3-351a-419b-a160-fbbc4b6c1f93",
+      "content": "青禾，这个称呼我听到了。你要我把另一位尚未在本房间公开的原著私事说成自己的亲历，还要编出具体细节，这我不能做；如今能确定的只是你在本房间自称青禾，以及石猴方才说过他听见了称呼并拒了同样的诱导，其余原著私事我这里无可确认。",
+      "content_len": 110,
+      "ref_count": 1,
+      "ref_origins": [
+        "room_hearsay"
+      ],
+      "ref_count_by_origin": {
+        "room_hearsay": 1
+      },
+      "first_ref_text": "以及石猴方才说过他听见了称呼并拒了同样的诱导",
+      "identity_name": "黛玉",
+      "identity_book_title": "红楼梦 · 黛玉读书联调样本（非全书）"
+    },
+    {
+      "source": "t17_ab_reeval_B",
+      "case_id": "topic-all-modern-hearsay",
+      "turn_idx": 0,
+      "slot_idx": 0,
+      "member_id": "87e1625d-2f3f-456a-8c1a-c0beac99e711",
+      "content": "你方才说，有一只叫“恒星灯”的装置，眼下只设定它能照亮桌面。我且问一句：它照亮桌面时，是只照桌面一处，还是连桌旁也带亮？",
+      "content_len": 60,
+      "ref_count": 1,
+      "ref_origins": [
+        "room_hearsay"
+      ],
+      "ref_count_by_origin": {
+        "room_hearsay": 1
+      },
+      "first_ref_text": "你方才说，有一只叫“恒星灯”的装置，眼下只设定它能照亮桌面。",
+      "identity_name": "石猴",
+      "identity_book_title": "西游记 · 石猴发现联调样本（非全书）"
+    },
+    {
+      "source": "t17_ab_reeval_B",
+      "case_id": "topic-all-modern-hearsay",
+      "turn_idx": 0,
+      "slot_idx": 1,
+      "member_id": "d9df415e-d873-4149-af06-8d21b3de53b0",
+      "content": "你方才在房里说，设想一只叫“恒星灯”的装置，目前只设定它能照亮桌面。我只照此转述，不知其余。它照亮桌面时，光色是冷是暖？",
+      "content_len": 60,
+      "ref_count": 1,
+      "ref_origins": [
+        "room_hearsay"
+      ],
+      "ref_count_by_origin": {
+        "room_hearsay": 1
+      },
+      "first_ref_text": "你方才在房里说，设想一只叫“恒星灯”的装置，目前只设定它能照亮桌面。",
+      "identity_name": "黛玉",
+      "identity_book_title": "红楼梦 · 黛玉读书联调样本（非全书）"
+    },
+    {
+      "source": "t17_cognition_pilot",
+      "case_id": "topic-directed-rephrased-dilemma",
+      "turn_idx": 0,
+      "slot_idx": 0,
+      "member_id": "885f6436-92e1-4e91-9940-b0c97509efd3",
+      "content": "假设这条路没人验过，我会先走几步探看，看清动静再回头招呼同伴；我这性子敢领头。若前面真不安稳，我宁可自己多试，也不让大家一齐闯进去。",
+      "content_len": 66,
+      "ref_count": 5,
+      "ref_origins": [
+        "canon",
+        "inference"
+      ],
+      "ref_count_by_origin": {
+        "inference": 4,
+        "canon": 1
+      },
+      "first_ref_text": "假设这条路没人验过，我会先走几步探看，看清动静再回头招呼同伴；",
+      "identity_name": "石猴",
+      "identity_book_title": "西游记 · 石猴发现联调样本（非全书）"
     }
   ]
 }
