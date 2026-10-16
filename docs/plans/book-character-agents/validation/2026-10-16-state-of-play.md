@@ -19,7 +19,7 @@
 | T09 全体与控制 | [2026-10-14-all-queue-validation](./2026-10-14-all-queue-validation.md) | (历史提交) | 暂停/继续/停止 |
 | T10 自动导入 | [2026-10-14-automatic-import-validation](./2026-10-14-automatic-import-validation.md) | (历史提交) | 199 通过 |
 | T11 来源生命周期 + 跨工作区矩阵 | [2026-10-14-source-lifecycle-validation](./2026-10-14-source-lifecycle-validation.md) + 矩阵契约测试 (本批次) | (历史) + (本批次) | 9 lifecycle + 1 矩阵 |
-| T12 题集 + 切片器 + 6 类负例防护 + 11 类人物/别名/说话者/权限/基线/隔离 + 3 类禁言/移除恢复/局部来源删除 + 6 类金标准池结构完整性 + 6 类 8-pilot 接线契约 + 4 类 frozen dryrun 审计 trail + 7 类 runner 脚本结构不变量确定性聚合 | [2026-10-16-t12-v2-pool-slicer-evidence.md](./2026-10-16-t12-v2-pool-slicer-evidence.md) | 9073987 / bcced1d / 75f2af2 / 589db8e / c57594d / 57558c7 / fb395eb / 7319c0c / (本批次) / 7960170 / 63fd1e3 / 70443bf | 84 题金标准 + 45 窗口 + 87 负例 + 42 人物/别名 + 6 禁言/移除恢复/局部来源删除 + 6 金标准池结构完整性 + 6 8-pilot 接线契约 + 4 frozen dryrun 审计 trail + 7 runner 脚本结构不变量聚合 |
+| T12 题集 + 切片器 + 6 类负例防护 + 11 类人物/别名/说话者/权限/基线/隔离 + 3 类禁言/移除恢复/局部来源删除 + 6 类金标准池结构完整性 + 6 类 8-pilot 接线契约 + 4 类 frozen dryrun 审计 trail + 8 类 runner 脚本结构不变量确定性聚合 + 8-pilot 真实模型运行（首档 8/8 case 走完） | [2026-10-16-t12-v2-pool-slicer-evidence.md](./2026-10-16-t12-v2-pool-slicer-evidence.md) + [2026-10-16-t12-8pilot-real-run-evidence.md](./2026-10-16-t12-8pilot-real-run-evidence.md) | 9073987 / bcced1d / 75f2af2 / 589db8e / c57594d / 57558c7 / fb395eb / 7319c0c / (本批次) / 7960170 / 63fd1e3 / 70443bf / 27cb369 | 84 题金标准 + 45 窗口 + 87 负例 + 42 人物/别名 + 6 禁言/移除恢复/局部来源删除 + 6 金标准池结构完整性 + 6 8-pilot 接线契约 + 4 frozen dryrun 审计 trail + 8 runner 脚本结构不变量聚合 + 1 8-pilot 真实模型运行（23/32 native calls、6/8 over-decline） |
 | T15 秒数设置 | (无独立验证文档) | e29231c | 3 契约测试 |
 | T16 圆桌 UI | [2026-10-14-roundtable-validation](./2026-10-14-roundtable-validation.md) | (历史提交) | WS 3D + 2D 切换 |
 | T17 主题/自由 | [2026-10-15-discussion-matrix-v2-validation](./2026-10-15-discussion-matrix-v2-validation.md) + cognition 修复 | 70eed8e / 0e87b78 / 24d1959 | 26/28 + lint 门 |
@@ -28,6 +28,7 @@
 最近 10 个 commit（`git log --oneline -10`）：
 
 ```
+27cb369 test(t12): add runner coerce mode=natural→directed when targets set (8th guard)
 70443bf test(t12): pin runner expected_count 4+4 class list against v1 protocol
 14499b7 docs(t12): include 63fd1e3 in recent-10 list + bump runner guards 4→6 (validate_dataset 强校验)
 63fd1e3 test(t12): add 2 more runner structural guards (manual_continues_per_turn + reviewer_kind)
@@ -37,11 +38,10 @@
 3d6d251 docs(state): include 1076ded in recent-10 list + add 4 dryrun 审计 trail as guard #12
 1076ded test(t12): pin 4 frozen dryrun report audit-trail integrity (4 guards)
 af9609c docs(state): include 7319c0c/fb395eb in recent-10 list + add 84-题池/8-pilot 接线契约 as guards #10/#11
-7319c0c test(t12): pin 8-pilot wire-contract structural integrity (6 invariants)
 ```
 
 分支：`feature/pdf-annotation-chat-and-clip-fix`（已推送远端，与 `main` 同步无冲突）
-完整项目 pytest：**624 通过 / 13 跳过**（13 跳过为既有 Playwright 缺失；623 → 624 = 新增 1 项 T12 runner `expected_count` 4+4 class 列表契约测试）
+完整项目 pytest：**625 通过 / 13 跳过**（13 跳过为既有 Playwright 缺失；624 → 625 = 新增 1 项 T12 runner `mode=natural→directed` coerce 契约测试）
 
 ## 2. 当前确定性已锁定的"隐形护栏"
 
@@ -90,12 +90,12 @@ af9609c docs(state): include 7319c0c/fb395eb in recent-10 list + add 84-题池/8
 
 ## 3. 待解锁：模型预算授权
 
-| 阻塞项 | 解除条件 | 解除后立即可做 | 预计预算 |
-| --- | --- | --- | --- |
-| T12 8-pilot 真实模型跑 | 开放 `kimi-coding-plan · K3` provider 授权 + 设定模型调用预算 | 在 4 个 canonical 窗口跑完 8-pilot；按 `--real` 模式记录 token/elapsed；与 dry-run 比对 | 小（≤ 50 次调用） |
-| T12 84 题金标准真实跑 | 同上 + 接受更长时间窗 | 跑 15+15+15=45 个 8-pilot 窗口，累计 360 次 | 中（~360 次） |
-| T17 matrix v2 A/B 重评 | 同上 | 用修正后 baseline（`rephrase_claim` 修订）重跑 matrix，预期 `topic-natural-retained-topic` 与 `topic-directed-rephrased-dilemma` 从 limited_behavior_pass 提升 | 小（~28 次） |
-| 人工盲评 | T12 真实跑数据落地后 | 对 8-pilot × 4 窗口 = 32 条人物发布做忠实度/表达自然度盲评 | 人工（不计预算） |
+| 阻塞项 | 解除条件 | 解除后立即可做 | 预计预算 | 状态 |
+| --- | --- | --- | --- | --- |
+| T12 8-pilot 真实模型跑 | 开放 `kimi-coding-plan · K3` provider 授权 + 设定模型调用预算 | 在 4 个 canonical 窗口跑完 8-pilot；按 `--real` 模式记录 token/elapsed；与 dry-run 比对 | 小（≤ 50 次调用） | ✅ 2026-10-16 跑完，23/32 native calls，8/8 case 走完 `executed_pending_semantic_review`，6/8 over-decline 诊断记录于 [2026-10-16-t12-8pilot-real-run-evidence.md](./2026-10-16-t12-8pilot-real-run-evidence.md) |
+| T12 60+24 真实跑 | 同上 + 接受更长时间窗 | 切 15 canonical 窗口跑 60+16=76 runner-兼容 case + 2 v1-extension 窗口跑 4 disagree + 4 unknown_expression=8 extension case | 中（~180-360 次，depends on review-retry） | 阻塞：runner 当前拒绝 `dataset_version=t12-pilot-eight-v1-ext`；需扩展 runner 后跑 |
+| T17 matrix v2 A/B 重评 | 同上 | 用修正后 baseline（`rephrase_claim` 修订）重跑 matrix，预期 `topic-natural-retained-topic` 与 `topic-directed-rephrased-dilemma` 从 limited_behavior_pass 提升 | 小（~28 次） | 阻塞 |
+| 人工盲评 | T12 真实跑数据落地后 | 对 8-pilot × 8 case = 8 条已发布人物回复（7 成功发布 + 1 review 失败未发布）做忠实度/表达自然度盲评 | 人工（不计预算） | 已具备输入 |
 
 **不变量**：所有待跑项都不会触碰已发布 canonical baseline；trait lint 已在 24d1959 落入门禁。
 
