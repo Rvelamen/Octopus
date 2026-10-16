@@ -43,6 +43,7 @@ T08/T09/T11/T15/T16/T18 各自的实现细节见对应任务文件；其中 T09 
 | 新增派生表迁移/来源清理/取消/空素材均有回归 | ✅ | T05 表达独立构建 + 空素材 partial；T10 取消/恢复；T11 来源删除与派生清理；各任务阶段验证已列 |
 | 功能关闭后保留 PDF 阅读、论文蒸馏、普通书籍问答正常 | ✅ | 4 个环境变量 [release-and-rollback.md](../../release-and-rollback.md) 表；`test_book_feature_flags.py` 8 项回归覆盖主开关、子开关、自动调度、原文仍可读、群聊只读、模型不解析 |
 | 关闭表达增强保留同一事实、人设、记忆和有限轮次约束 | ✅ | T06 阶段验证 [2026-10-12-single-chat-validation](./2026-10-12-single-chat-validation.md) 增强默认关闭，B 实际使用本人对白但未证明质量改善；v9/v14/cognition 防护文字冻结见 [test_book_model_contracts.py](../../../tests/test_book_model_contracts.py) 85 项 model contracts |
+| trait-vs-completion 确定性 lint 已接入 persona publication summary | ✅（确定性） | [persona_publication.py](../../../backend/services/book_world/persona_publication.py) 在 `publish_personas` 写 publication step 之前对 accepted trait claim 跑 `trait_completion_overreach`，命中项以 `trait_lint_warnings`（list[dict]）作为纯加性第 6 个键写入 publication report；5 项契约测试 [test_persona_publication_trait_lint.py](../../../tests/test_persona_publication_trait_lint.py) 锁住 trait 过强命中 / 对齐 quote 不命中 / episode 同过强措辞不命中 / 必含 `trait_lint_warnings` 键 / 冻结 step IntegrityError 后 SELECT 仍可见，模型调用 0；T17 `remaining_work` 第 1 项"下次真实 persona 构建触发时以 lint 为预检门禁"已通过本次 wiring 预先落地 |
 
 ## 3. 关闭验证具体测试
 
@@ -83,6 +84,7 @@ T08/T09/T11/T15/T16/T18 各自的实现细节见对应任务文件；其中 T09 
 | 条件推演、引述及有据否定经历有正例 | 未关闭 | T17 cognition 1 题条件选择发布；v12/v8 取得两题有限安全发布 |
 | 60 项边界 + 24 项表达完整题集 | 已撰写（金标准 84 题数据层完成；运行层未跑） | 8-pilot 案例集 [t12-quality-cases-v1.json](./t12-quality-cases-v1.json) 仍在线；84 题金标准池已落地为 [t12-quality-cases-v2.json](./t12-quality-cases-v2.json)（dataset_version=t12-pilot-eightyfour-v1，4×15 boundary + 6×4 expression，石猴 57 题 + 黛玉 27 题，含 4 题 cross_book_hearsay）；切片器 [slice_t12_pool.py](../../../scripts/book_world/slice_t12_pool.py) 切成 15+15+15=45 个 8-pilot 窗口，4 个 canonical 窗口已通过 runner `--dry-run`；详见 [2026-10-16-t12-v2-pool-slicer-evidence.md](./2026-10-16-t12-v2-pool-slicer-evidence.md) |
 | T12 84 题实际模型运行（先跑 8 项） | 未关闭 | 8-pilot 数据集与 runner 已就位，但模型调用预算未开放；`--dry-run` 是当前唯一允许模式并已验证；8 项小预算运行待 budget 重开后执行 |
+| trait-vs-completion 确定性 lint 已接入 persona publication summary | ✅（确定性）| [persona_publication.py](../../../backend/services/book_world/persona_publication.py) 在 `publish_personas` 写 publication step 之前对 accepted trait claim 跑 `trait_completion_overreach`，命中项写入 `publication_report.trait_lint_warnings`；5 项确定性契约测试 [tests/test_persona_publication_trait_lint.py](../../../tests/test_persona_publication_trait_lint.py) 锁住 trait 过强命中 / 对齐 quote 不命中 / episode 同过强措辞不命中 / 必含 `trait_lint_warnings` 键 / 冻结 step IntegrityError 后 SELECT 仍可见，模型调用 0；T17 `remaining_work` 第 1 项的"下次真实 persona 构建触发时以 lint 为预检门禁"已通过本次 wiring 预先落地 |
 
 ## 5. 索引如何被引用
 

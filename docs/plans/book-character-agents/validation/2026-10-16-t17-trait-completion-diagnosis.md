@@ -162,9 +162,7 @@ quote 对齐：
 
 ## 后续衔接
 
-- 下次真实 persona 构建触发时，在 `persona.py` 生成完成后调用
-  `scan_trait_claims`，把命中项以 warning 形式写入 build metadata 或
-  revision review prompt；具体接入点待 T17 重新评估时确定，本次不预绑定。
-- 若未来需要对现存 build `c2da28c8` 产出修订版，需先扩展 T04 修订操作集
-  （新增 `rephrase_claim` 类操作），再以本 lint 为 review 一侧的确定性预检；
-  该扩展超出本次范围。
+- 诊断文档落地后已立即把 `trait_completion_overreach` 接入 `persona_publication.py`：每次 `publish_personas` 完成 evidence 评估、写 `book_build_steps stage='publication' unit_key='summary'` 之前，对 `kind='trait' AND support_state='accepted' AND access_state='accepted'` 的 trait claim 用 lint 全量扫描，命中项以 `trait_lint_warnings`（list[dict]）作为纯加性第 6 个键写入 publication report；status `partial_published` / `published` 判定逻辑与既有 5 个键保持不变。实现见 [backend/services/book_world/persona_publication.py](../../../backend/services/book_world/persona_publication.py) 第 132-165 行。
+- 接入落地由 [tests/test_persona_publication_trait_lint.py](../../../tests/test_persona_publication_trait_lint.py) 5 项确定性契约测试锁住：trait 过强命中 1 条 / 对齐 quote 不命中 / episode 同过强措辞不命中 / 任意 build 必含 `trait_lint_warnings` 键 / 冻结的 publication step result_json 触发 IntegrityError 后原始警告 SELECT 仍可见。5 项同时通过、模型调用 0。
+- 下次真实 persona 构建（`persona.py` 真实 model provider 接入）首次运行时，publication report 即可对外暴露 `trait_lint_warnings`，revision-review prompt 与 `discovery.get_build` API 消费者可直接读取并按警告重生成该 trait；不再需要等到 T17 重新评估或 `rephrase_claim` 类修订操作落地才触发门禁。
+- 若未来仍需对现存 build `c2da28c8` 产出修订版，需先扩展 T04 修订操作集（新增 `rephrase_claim` 类操作），再以本 lint 为 review 一侧的确定性预检；该扩展超出本次范围，与本次 wiring 互不阻塞。

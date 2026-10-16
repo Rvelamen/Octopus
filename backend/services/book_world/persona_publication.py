@@ -5,6 +5,7 @@ import sqlite3
 from typing import Any
 
 from .discovery import _json
+from .proposition_alignment import trait_completion_overreach
 from .revision_storage import advance_revision_head, check_revision_head, check_revision_identities
 from .source import BookWorldError
 
@@ -128,6 +129,40 @@ def publish_personas(db: sqlite3.Connection, build: sqlite3.Row) -> None:
         "published_characters": ready,
         "baseline_conflicts": sum(map(len, conflicts.values())),
     }
+    # Trait-vs-completion lint (deterministic gate; T17 remaining_work item 1).
+    trait_warnings: list[dict[str, Any]] = []
+    trait_rows = db.execute(
+        "SELECT c.id AS claim_id, c.owner_character_id AS character_id, c.proposition "
+        "FROM book_claims c JOIN book_claim_access a ON a.claim_id=c.id AND a.build_id=c.build_id "
+        "WHERE c.build_id=? AND c.kind='trait' AND c.support_state='accepted' "
+        "AND a.access_state='accepted' AND a.character_id=c.owner_character_id",
+        (build_id,),
+    ).fetchall()
+    quote_rows = db.execute(
+        "SELECT e.claim_id, e.quote_text FROM book_evidence e "
+        "WHERE e.build_id=? AND e.support_state='accepted' "
+        "AND e.claim_id IN (SELECT id FROM book_claims WHERE build_id=? AND kind='trait') "
+        "ORDER BY e.claim_id, e.quote_hash",
+        (build_id, build_id),
+    ).fetchall()
+    quote_by_claim: dict[str, str] = {}
+    for row in quote_rows:
+        quote_by_claim.setdefault(row["claim_id"], row["quote_text"])  # first wins
+    for row in trait_rows:
+        finding = trait_completion_overreach(row["proposition"], quote_by_claim.get(row["claim_id"], ""))
+        if finding is not None:
+            trait_warnings.append(
+                {
+                    "claim_id": row["claim_id"],
+                    "character_id": row["character_id"],
+                    "proposition": finding.proposition,
+                    "evidence_quote": finding.quote,
+                    "asserted_verb": finding.asserted_verb,
+                    "matched_intent_marker": finding.matched_intent_marker,
+                    "reason": finding.reason,
+                }
+            )
+    report["trait_lint_warnings"] = trait_warnings
     db.execute(
         "INSERT INTO book_build_steps(book_id,source_version_id,build_id,stage,unit_key,input_hash,status,result_json,lease_generation) VALUES (?,?,?,'publication','summary','summary','validated',?,?)",
         (*scope, _json(report), build["lease_generation"]),
