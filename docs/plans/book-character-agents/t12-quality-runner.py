@@ -148,8 +148,8 @@ def validate_dataset(dataset, *, expected_count, expected_ceiling, reviewer_kind
         }
         if not expression_declared:
             raise ValueError(
-                f"v1ext dataset must declare expression_classes_covered in "
-                f"tier_breakdown (one of the 6 chat-quality-protocol classes)"
+                "v1ext dataset must declare expression_classes_covered in "
+                "tier_breakdown (one of the 6 chat-quality-protocol classes)"
             )
         if expression_declared - allowed_v1ext:
             raise ValueError(
