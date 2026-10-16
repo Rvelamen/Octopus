@@ -148,3 +148,7 @@
 
 同日追加 `test_t17_agent_reviews_pin_unfinished_and_baseline_invariants`：把 `t17-cognition-agent-review.json` 与 `t17-matrix-v2-agent-review.json` 两份 Agent 自审报告的 `t17_complete=False` / `t12_complete=False` / `quality_pass=False` 锁定为"本任务与 T12 尚未通过 Agent 自审即未验收"的硬证据；并把 cognition 报告的 `baseline_mutation=False` 与 v2 矩阵报告的 `canonical_baselines_unchanged=True` 锁定为"未验收 ≠ 偷偷改基线"的硬约束——`t17_complete` / `t12_complete` 不许在没有重录诊断和新一轮通过的前提下偷偷翻成 True；83 项 model contracts 全过。
 
+同日追加 `test_small_probes_pin_frozen_source_sha_and_budget_consumption`：把 `real-model-detail-review-v7.json` 的 `source_sha256=4cd263c7…` + `actual_calls == native_call_budget` (2==2) / `real-model-grouped-repair-v1.json` 的 `source_report_sha256=84247f0f…` + `actual_native_calls == native_call_ceiling` (2==2) + 两 case 共用 `prompt_sha256=02c581f2…` / `real-model-unit-literal-options-v1.json` 的 `probe_source_sha256=0473ebdd…` + `actual_native_calls == native_call_ceiling` (2==2) 锁定为详情审查 / grouped 修复 / 字面选项三份小预算探针的字节级输入指纹 + 预算硬相等；三份探针全部 `publication: False` + `terminal: True`——是 `t17_complete=False` / `t12_complete=False` 之外"小预算探针不偷偷写库"的硬证据；84 项 model contracts 全过。
+
+同日追加 `test_anchored_and_mentions_prototypes_share_input_pair`：把 `real-model-anchored-discovery-v1.json` 与 `real-model-mentions-discovery-v1.json` 两份 v1 原型的 `cases[].source_input_sha256` 共同锁定为同一对冻结输入（`65270ca4…` + `d6dea8f6…`），并锁定 `policy_version="candidate-identity-v2"` + `prompt_version` 以 `-prototype-v1` 结尾——是发现阶段"原型而非生产"标识与对比同一对冻结单元的硬证据；85 项 model contracts 全过。
+

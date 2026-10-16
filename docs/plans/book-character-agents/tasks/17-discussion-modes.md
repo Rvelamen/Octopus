@@ -123,3 +123,7 @@
 
 同日追加 `test_t17_agent_reviews_pin_unfinished_and_baseline_invariants`：把 `t17-cognition-agent-review.json` / `t17-matrix-v2-agent-review.json` 的 `t17_complete=False` / `t12_complete=False` / `quality_pass=False` 与 cognition 报告 `baseline_mutation=False` / v2 矩阵报告 `canonical_baselines_unchanged=True` 锁定为"本任务与 T12 尚未验收 + 未偷偷改基线"的硬证据——`t17_complete` / `t12_complete` 不许在没重录诊断与新一轮通过时翻成 True；83 项 model contracts 全过。
 
+同日追加 `test_small_probes_pin_frozen_source_sha_and_budget_consumption`：把 `real-model-detail-review-v7.json` 的 `source_sha256=4cd263c7…` 与 `actual_calls == native_call_budget` (2==2) 锁定为 v7 详情审查探针的字节级输入指纹 + 预算硬相等；把 `real-model-grouped-repair-v1.json` 的 `source_report_sha256=84247f0f…` 与 `actual_native_calls == native_call_ceiling` (2==2) + 两 case 共用 `prompt_sha256=02c581f2…` 锁定为 grouped 修复探针的字节级报告指纹 + 共享 prompt 指纹 + 预算硬相等；把 `real-model-unit-literal-options-v1.json` 的 `probe_source_sha256=0473ebdd…` 与 `actual_native_calls == native_call_ceiling` (2==2) 锁定为字面选项探针的字节级输入指纹 + 预算硬相等；三份探针全部 `publication: False` + `terminal: True`——任何偷偷写入基线/库/落库的探针改动都会让该测试失败；84 项 model contracts 全过。
+
+同日追加 `test_anchored_and_mentions_prototypes_share_input_pair`：把 `real-model-anchored-discovery-v1.json` 与 `real-model-mentions-discovery-v1.json` 两份 v1 原型（anchored 场景型 / mentions 提及型）的 `cases[].source_input_sha256` 共同锁定为同一对冻结输入（`65270ca4…` + `d6dea8f6…`），并锁定 `policy_version="candidate-identity-v2"` + `prompt_version` 以 `-prototype-v1` 结尾的"原型而非生产"标识——`source_input_sha256` 漂移即代表两个原型已不再对比同一对冻结单元，policy/prompt 版本漂移即代表原型标记被偷偷换为生产；85 项 model contracts 全过。
+

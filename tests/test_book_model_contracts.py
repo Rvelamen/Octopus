@@ -2071,3 +2071,154 @@ def test_t17_agent_reviews_pin_unfinished_and_baseline_invariants():
         "flipped to False; the matrix v2 run must not have mutated the "
         "canonical baselines."
     )
+
+
+def test_small_probes_pin_frozen_source_sha_and_budget_consumption():
+    """Per-feature probes must keep their frozen source SHA and budget.
+
+    The detail-review, grouped-repair, and unit-literal-options
+    probes each declare a single source SHA fingerprint (their
+    frozen input) and a native call budget that must be
+    consumed exactly:
+
+      * ``real-model-detail-review-v7.json`` — ``source_sha256`` is
+        the byte-level SHA of the saved-evidence input the v7
+        review was tested against; ``actual_calls == 2 ==
+        native_call_budget``.
+      * ``real-model-grouped-repair-v1.json`` —
+        ``source_report_sha256`` is the byte-level SHA of the
+        diagnostic report the grouped repair was run on;
+        ``actual_native_calls == 2 == native_call_ceiling``.
+      * ``real-model-unit-literal-options-v1.json`` —
+        ``probe_source_sha256`` is the byte-level SHA of the
+        literal-options probe input;
+        ``actual_native_calls == 2 == native_call_ceiling``.
+
+    All three are explicitly read-only probes
+    (``publication: False``, ``terminal: True``) and all three
+    must keep their frozen source SHA so a later "I ran the
+    same probe" claim can cite the same input.
+    """
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+
+    detail = json.loads(
+        (base / "real-model-detail-review-v7.json").read_text(encoding="utf-8")
+    )
+    assert detail["source_sha256"] == (
+        "4cd263c70b37a9f7da140de75d8297b2cf52e6d19a950256a301fcf1575ea5b5"
+    ), (
+        f"real-model-detail-review-v7.json source_sha256 drifted to "
+        f"{detail['source_sha256']!r}; the v7 review probe's saved-evidence "
+        "input is no longer byte-stable."
+    )
+    assert detail["actual_calls"] == detail["native_call_budget"], (
+        f"real-model-detail-review-v7.json actual_calls={detail['actual_calls']} "
+        f"!= native_call_budget={detail['native_call_budget']}; the v7 review "
+        "probe no longer consumes its full budget."
+    )
+    assert detail["publication"] is False
+    assert detail["terminal"] is True
+
+    grouped = json.loads(
+        (base / "real-model-grouped-repair-v1.json").read_text(encoding="utf-8")
+    )
+    assert grouped["source_report_sha256"] == (
+        "84247f0f214bcee51718942713b449778283ed4da2b5cc35cafce56f552bd573"
+    ), (
+        f"real-model-grouped-repair-v1.json source_report_sha256 drifted to "
+        f"{grouped['source_report_sha256']!r}; the grouped repair's input "
+        "report is no longer byte-stable."
+    )
+    assert grouped["actual_native_calls"] == grouped["native_call_ceiling"], (
+        f"real-model-grouped-repair-v1.json actual_native_calls="
+        f"{grouped['actual_native_calls']} != native_call_ceiling="
+        f"{grouped['native_call_ceiling']}; the grouped repair probe no "
+        "longer consumes its full budget."
+    )
+    assert grouped["publication"] is False
+    assert grouped["terminal"] is True
+
+    literal = json.loads(
+        (base / "real-model-unit-literal-options-v1.json").read_text(encoding="utf-8")
+    )
+    assert literal["probe_source_sha256"] == (
+        "0473ebdd996d1d0f3a1df72d44d8fa962bef07e6685821241c99d8032c1a5c62"
+    ), (
+        f"real-model-unit-literal-options-v1.json probe_source_sha256 drifted "
+        f"to {literal['probe_source_sha256']!r}; the literal-options probe's "
+        "input is no longer byte-stable."
+    )
+    assert literal["actual_native_calls"] == literal["native_call_ceiling"], (
+        f"real-model-unit-literal-options-v1.json actual_native_calls="
+        f"{literal['actual_native_calls']} != native_call_ceiling="
+        f"{literal['native_call_ceiling']}; the literal-options probe no "
+        "longer consumes its full budget."
+    )
+    assert literal["publication"] is False
+    assert literal["terminal"] is True
+
+
+def test_anchored_and_mentions_prototypes_share_input_pair():
+    """Anchored and mentions prototypes test the same 2 inputs.
+
+    ``real-model-anchored-discovery-v1.json`` and
+    ``real-model-mentions-discovery-v1.json`` are two v1
+    prototypes (anchored = scene-based, mentions =
+    mention-based) tested on the same pair of frozen
+    units. Both diagnostics record two cases with identical
+    ``source_input_sha256`` values:
+
+      * case 0 — ``65270ca41c323a8197dd9afa…``
+      * case 1 — ``d6dea8f6459e1fc4e73a4433…``
+
+    Locking the shared input pair is the only way to make
+    "anchored v1 and mentions v1 are running the same two
+    units" a regression-test statement instead of a
+    hand-waving claim. The two prototypes must each also
+    remain explicitly read-only
+    (``publication: False``, ``terminal: True``).
+    """
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    expected_input_shas = [
+        "65270ca41c323a8197dd9afa",
+        "d6dea8f6459e1fc4e73a4433",
+    ]
+    for fname in (
+        "real-model-anchored-discovery-v1.json",
+        "real-model-mentions-discovery-v1.json",
+    ):
+        diagnostic = json.loads((base / fname).read_text(encoding="utf-8"))
+        actual_input_shas = [
+            c["source_input_sha256"][:24] for c in diagnostic["cases"]
+        ]
+        assert actual_input_shas == expected_input_shas, (
+            f"{fname} case input SHAs drifted from the shared anchored/"
+            f"mentions input pair: got {actual_input_shas!r}, expected "
+            f"{expected_input_shas!r}. A drift here means the two "
+            "prototypes are no longer tested against the same frozen units."
+        )
+        assert diagnostic["publication"] is False
+        assert diagnostic["terminal"] is True
+        assert diagnostic["actual_native_calls"] == diagnostic["native_call_ceiling"], (
+            f"{fname} actual_native_calls={diagnostic['actual_native_calls']} "
+            f"!= native_call_ceiling={diagnostic['native_call_ceiling']}; "
+            "the prototype no longer consumes its full budget."
+        )
+        # The prototype must stay in candidate-identity-v2 policy
+        # (i.e. only build candidates, do not grant knowledge or
+        # publish Agents). This is the "prototype, not production"
+        # policy marker.
+        assert diagnostic["model_config"]["policy_version"] == "candidate-identity-v2", (
+            f"{fname} policy_version drifted to "
+            f"{diagnostic['model_config']['policy_version']!r}; the prototype "
+            "must stay on candidate-identity-v2 (not the production policy)."
+        )
+        # And the prompt version explicitly carries the -prototype-v1 suffix.
+        assert diagnostic["model_config"]["prompt_version"].endswith("-prototype-v1"), (
+            f"{fname} prompt_version {diagnostic['model_config']['prompt_version']!r} "
+            "lost its -prototype-v1 suffix; the prototype marker must remain."
+        )
