@@ -743,3 +743,40 @@ def test_v9_review_and_v14_generate_pin_historical_action_safeguard():
     v14_generate = GENERATE_PROMPTS["character-chat-v14"]
     assert "愿意/敢于/想要/说要做" in v14_generate
     assert "不证明已经做成或看到了什么" in v14_generate
+
+
+def test_persona_extract_v4_and_review_v6_pin_trait_vs_completed_action_safeguard():
+    """v4 extract and v6 review must keep the trait/intention-vs-action safeguard.
+
+    The matrix v2 T17 review surfaced a 'source strength warning': a model using
+    the v3 default extracted a trait '石猴勇敢果断，敢于率先跳入瀑布泉中探险'
+    from evidence '我进去！', and the v9 chat review still accepted the trait for
+    a historical-action claim. v4 extract and v6 persona review both contain
+    explicit safeguards against this conflation; they must survive prompt edits
+    so a future v3 default does not silently re-introduce the issue.
+    """
+    from backend.services.book_world.persona_models import EXTRACT_PROMPTS, REVIEW_PROMPTS
+
+    v3_extract = EXTRACT_PROMPTS["persona-extract-v3"]
+    assert "主动表示愿意进入" not in v3_extract, "v3 base should not pre-empt v4 safeguard"
+
+    v4_extract = EXTRACT_PROMPTS["persona-extract-v4"]
+    assert v3_extract in v4_extract, "v4 must extend v3; safeguard is an addition"
+    assert "本人台词" in v4_extract and "我进去" in v4_extract
+    assert "不证明实际做成、看见、获知或得到结果" in v4_extract
+    assert "主动表示愿意进入" in v4_extract
+    assert "敢于率先跳入" in v4_extract
+    assert "容易被误读为已完成动作" in v4_extract
+    assert "episode另需原文明示实际发生" in v4_extract
+
+    v5_review = REVIEW_PROMPTS["persona-review-v5"]
+    v6_review = REVIEW_PROMPTS["persona-review-v6"]
+    assert v5_review in v6_review, "v6 must extend v5; safeguard is an addition"
+    assert "上桥头不证明已经过桥" in v6_review
+    assert "先看后行动不能倒置" in v6_review
+    assert "仅相同地点和名词不足以支持整个命题" in v6_review
+    assert "不得从名字推测能力" in v6_review
+    assert "保留独立有据的窄化命题" in v6_review
+
+    v7_review = REVIEW_PROMPTS["persona-review-v7"]
+    assert v6_review in v7_review, "v7 must extend v6; acquisition stage is an addition"

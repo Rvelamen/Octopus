@@ -359,3 +359,5 @@ v15发现链路115项专项通过，独立全书首窗8次完成两书各3单元
 新增 v3 reader 路径回归：`test_legacy_get_character_without_acquisition_review_omits_knowledge_field` 验证旧 build_steps（无 acquisition_review 字段）经 `get_character` / `get_agent_definition` 解析时不返回 knowledge_review，agent definition 保持 reader-only 隔离；12 项 acquisition 专项与 66 项 persona/revisions/cognition 全过。
 
 新增历史动作防护提示回归 `test_v9_review_and_v14_generate_pin_historical_action_safeguard`：验证 character-chat-review-v9 保留"勇敢、敢于探险、率先进入，只支持实际给出的性格或行为"与"愿意/敢于/想要/说要去也不能自动证明已经完成该行动"防护段落、v9 仍以 v8 为基础累加、character-chat-v14 保留"愿意/敢于/想要/说要做不证明已经做成或看到了什么"；59 项 model contracts 全过。
+
+新增 persona extract/review trait-vs-completed-action 防护回归 `test_persona_extract_v4_and_review_v6_pin_trait_vs_completed_action_safeguard`：验证 persona-extract-v4 在 v3 基础上保留"本人台词'我进去'不能直接提取'已跳入并探明洞内情况'"与"trait 不能用'敢于率先跳入'这类容易被误读为已完成动作的合并措辞"防护、persona-review-v6 在 v5 基础上保留"上桥头不证明已经过桥"与"不得从名字推测能力"防护、persona-review-v7 仍以 v6 为基础累加；锁住 v3 默认下历史动作/性格混说风险，不让 T17 v2 矩阵"源强度警告"在源头重新出现。

@@ -61,3 +61,5 @@
 
 2026-10-16 增加显式v7独立 per-recipient 获知审查（monotone veto），与canonical review 分离保存，reader 视图显示 knowledge_review 但 Agent definition 不引入；新增 `persona_acquisition` 模块、12 项专项测试、66 项 persona/revisions/cognition 全过、变更文件 Mypy55 与 Ruff 通过、前端生产构建通过；未切换默认提示，全书 v16-pending-03 与 retention-03 快照保留。同日追加 v3 reader 路径回归，验证旧 build_steps（无 acquisition_review 字段）经 `get_character` / `get_agent_definition` 解析时不返回 knowledge_review，agent definition 仍保持 reader-only 隔离。见[获知审查v7记录](../validation/2026-10-16-persona-acquisition-v7-validation.md)。T12 仍未验收。
 
+同日追加 `test_persona_extract_v4_and_review_v6_pin_trait_vs_completed_action_safeguard`：验证 persona-extract-v4 与 persona-review-v6/v7 的 trait/intention-vs-completed-action 防护文字在源提示词编辑后仍保留，锁住 v3 默认下历史动作/性格混说风险。
+
