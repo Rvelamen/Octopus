@@ -86,3 +86,5 @@
 同日追加 `test_t17_matrix_runner_sha_and_baseline_invariant_pin_v2_diagnostic`：锁住 `discussion-acceptance.py` 矩阵执行器的字节级 SHA256 与 t17 matrix v2 / cognition-pilot v1 / cognition-pilot v2 三份诊断的 `runner_sha256=cdcc9040…` 一致；并锁住 matrix v1 / matrix v2 / cognition-pilot v1 / cognition-pilot v2 四份诊断共同报告的 `canonical_baselines_unchanged=True` 与 `canonical_baselines_before == canonical_baselines_after`，把"矩阵与认知探针是只读、非破坏性"从隐性假设变成四份诊断共同背书的硬约束；任何执行器代码改动或探针写入越界必须同步更新全部相关诊断并重跑；72 项 model contracts 全过。
 
 同日追加 `test_inline_discovery_v1_module_shas_pin_numbered_runtime`：锁住 `discovery_numbered.py` 字节级 SHA256 与 inline discovery v1 诊断 `5f16f1b1…` 一致；并把 v1 与 v2 inline 诊断的 `discovery_inline.py` SHA 差异作为历史快照契约显式验证（v1 与 v2 不同，正是 v1→v2 之间对 inline 文件的合法改动的硬证据），与已存在的 v2 inline SHA 冻结互补；73 项 model contracts 全过。
+
+同日追加 `test_inline_discovery_v1_corpus_files_sha_pin_full_source`：锁住 `tmp/book-corpus/西游记.txt` 与 `tmp/book-corpus/红楼梦.txt` 两部原始书稿的字节级 SHA256 与 inline discovery v1 诊断 `corpus_sources.books[].sha256` 一致（`3f2bf216…` 与 `5eca888f…`），作为发现阶段输入数据的硬证据；任何原始书稿改动必须同步更新诊断并重跑 inline discovery，否则该诊断记录的实际输出与输入无法再重现；74 项 model contracts 全过。

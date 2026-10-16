@@ -103,3 +103,5 @@
 
 同日追加 `test_inline_discovery_v1_module_shas_pin_numbered_runtime`：锁住 `discovery_numbered.py` 字节级 SHA256 与 inline discovery v1 诊断 `5f16f1b1…` 一致；并验证 v1 与 v2 inline 诊断中 `discovery_inline.py` SHA 必然不同（作为 v1→v2 之间合法改动的历史快照契约）；73 项 model contracts 全过。
 
+同日追加 `test_inline_discovery_v1_corpus_files_sha_pin_full_source`：锁住 `tmp/book-corpus/西游记.txt` 与 `tmp/book-corpus/红楼梦.txt` 字节级 SHA256 与 inline discovery v1 诊断 `corpus_sources.books[].sha256` 一致（`3f2bf216…` 与 `5eca888f…`），作为发现阶段输入数据的硬证据；74 项 model contracts 全过。
+

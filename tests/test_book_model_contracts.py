@@ -1354,3 +1354,53 @@ def test_inline_discovery_v1_module_shas_pin_numbered_runtime():
         "historical snapshot, so this is a sign the v1/v2 run labels "
         "have been conflated"
     )
+
+
+def test_inline_discovery_v1_corpus_files_sha_pin_full_source():
+    """Corpus text files must stay byte-frozen against the v1 inline source.
+
+    The v1 inline discovery diagnostic recorded
+    ``corpus_sources.books[].sha256`` for both 西游记 and 红楼梦. The
+    discovery runs operate directly on these files in
+    ``tmp/book-corpus/``; if either text changes, the diagnostic
+    evidence is invalidated (the discovery outputs cannot be
+    re-derived from the new text without re-running the discovery).
+
+    Freezing the file SHAs here is the equivalent of pinning the
+    discovery source data: any edit to either corpus file must
+    re-record the inline v1 diagnostic, re-run the discovery, and
+    refresh the expected hash. The discovery_numbered.py lock
+    complements this by pinning the discovery consumer.
+    """
+    import hashlib
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    diagnostic = json.loads(
+        (base / "real-model-inline-discovery-v1.json").read_text(encoding="utf-8")
+    )
+
+    # Map title -> expected file SHA from the diagnostic.
+    expected_by_title = {}
+    for book in diagnostic["corpus_sources"]["books"]:
+        expected_by_title[book["title"]] = book["sha256"]
+
+    corpus_dir = (
+        Path(__file__).resolve().parents[1] / "tmp" / "book-corpus"
+    )
+    # File name to diagnostic title mapping. The on-disk files use the
+    # Chinese title verbatim; the diagnostic also uses the Chinese
+    # title, so we can match by basename.
+    for title, expected_sha in expected_by_title.items():
+        file_path = corpus_dir / f"{title}.txt"
+        assert file_path.exists(), (
+            f"corpus file {file_path} not found; the v1 diagnostic "
+            f"recorded it at {expected_sha}"
+        )
+        actual_sha = hashlib.sha256(file_path.read_bytes()).hexdigest()
+        assert actual_sha == expected_sha, (
+            f"{title} corpus text drift: {actual_sha} != {expected_sha}; "
+            "the v1 inline diagnostic was recorded against this exact "
+            "byte content; update the diagnostic and re-run the inline "
+            "discovery to refresh the evidence chain."
+        )
