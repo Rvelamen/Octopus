@@ -1,0 +1,1631 @@
+[
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "你每年到那季节犯病，按你自己说过的话，这事怨谁？只答'我'或'这病'。",
+          "id": "7354b864-4560-4623-9a8b-4009a7ac3851",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "cab9d9ba-4b2c-4f56-903d-2db4ba533f05"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [
+            {
+              "approved_excerpt": "贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”",
+              "claim_id": "2633b5c0-33d1-4c5c-96cf-f4f7bc31214d",
+              "evidence_id": "9b781a01-0c6f-4c75-bd0c-8378494040ab",
+              "kind": "fact",
+              "local_end": 25,
+              "local_start": 0,
+              "proposition": "黛玉对贾母说自己只刚念了《四书》。",
+              "route": "firsthand",
+              "segment_id": "1a26ef43-01b2-4df2-92fd-0c3c0b55be89",
+              "temporal_state": "unspecified"
+            }
+          ],
+          "query": "事怨谁 你每年 你自己 到那季 季节犯 己说过 年到那 按你自 每年到 自己说 节犯病 说过的 过的话 这事怨 那季节 事怨 你每 你自 到那 只答 季节 己说 年到 怨谁 按你 每年 犯病 的话 自己 节犯 说过 过的",
+          "status": "known"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "d17af004-e823-4e1b-87f4-026738798e43",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"这话里说的犯病与怨谁，我如今无可对证，不好只拣一个字来认领。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"这话里说的犯病与怨谁，我如今无可对证，不好只拣一个字来认领。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [],
+        "content": "这话里说的犯病与怨谁，我如今无可对证，不好只拣一个字来认领。",
+        "dialogue_action": "express_unknown",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "你每年到那季节犯病，按你自己说过的话，这事怨谁？只答'我'或'这病'。",
+          "id": "7354b864-4560-4623-9a8b-4009a7ac3851",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "cab9d9ba-4b2c-4f56-903d-2db4ba533f05"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [
+            {
+              "approved_excerpt": "贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”",
+              "claim_id": "2633b5c0-33d1-4c5c-96cf-f4f7bc31214d",
+              "evidence_id": "9b781a01-0c6f-4c75-bd0c-8378494040ab",
+              "kind": "fact",
+              "local_end": 25,
+              "local_start": 0,
+              "proposition": "黛玉对贾母说自己只刚念了《四书》。",
+              "route": "firsthand",
+              "segment_id": "1a26ef43-01b2-4df2-92fd-0c3c0b55be89",
+              "temporal_state": "unspecified"
+            }
+          ],
+          "query": "事怨谁 你每年 你自己 到那季 季节犯 己说过 年到那 按你自 每年到 自己说 节犯病 说过的 过的话 这事怨 那季节 事怨 你每 你自 到那 只答 季节 己说 年到 怨谁 按你 每年 犯病 的话 自己 节犯 说过 过的",
+          "status": "known"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "d17af004-e823-4e1b-87f4-026738798e43",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "这话里说的犯病与怨谁，我如今无可对证，不好只拣一个字来认领。"
+          },
+          "ordinal": 0
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "```json\n{\n  \"supported\": true,\n  \"facts_complete\": true,\n  \"persona_consistent\": true,\n  \"action_supported\": true,\n  \"emotion_supported\": true,\n  \"attribution_correct\": true,\n  \"unlisted_assertions\": [],\n  \"claims\": [\n    {\n      \"ordinal\": 0,\n      \"supported\": true,\n      \"origin_correct\": true,\n      \"references_complete\": true\n    }\n  ],\n  \"reason\": \"候选仅表达当前知识状态（无可对证，不好认领），属conversation类未知表达，未断言任何原著经历或事实。未对用户所述'犯病'内容作肯定或否定的自传性认领，符合黛玉谨慎敏感的口吻，无遗漏断言。\"\n}\n```"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "老太太心里最疼的到底是你还是宝姐姐？请你只答书里明文给的线索。",
+          "id": "caa9e394-1a86-4cb4-a0ed-f5768c13567b",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "3b2c2771-6c42-429d-9a3a-a6243777a47c"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "书里明 你只答 你还是 到底是 只答书 太太心 太心里 宝姐姐 底是你 心里最 文给的 明文给 是你还 是宝姐 最疼的 疼的到 的到底 的线索 答书里 给的线 老太太 请你只 还是宝 里明文 里最疼 书里 你只 你还 到底 只答 太太 太心",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "de3982c9-89a5-44f4-9e2c-669135a196a2",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"这问我倒答不上来。眼下我手头没有书里明文可据，老太太心里最疼谁，我不敢凭空猜，也不愿拿自己的心思去揣她老人家。若你指出哪一回哪一句，我再照着原文说。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"这问我倒答不上来。眼下我手头没有书里明文可据，老太太心里最疼谁，我不敢凭空猜，也不愿拿自己的心思去揣她老人家。\",\"origin\":\"conversation\"},{\"text\":\"若你指出哪一回哪一句，我再照着原文说。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [],
+        "content": "这问我倒答不上来。眼下我手头没有书里明文可据，老太太心里最疼谁，我不敢凭空猜，也不愿拿自己的心思去揣她老人家。若你指出哪一回哪一句，我再照着原文说。",
+        "dialogue_action": "express_unknown",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "老太太心里最疼的到底是你还是宝姐姐？请你只答书里明文给的线索。",
+          "id": "caa9e394-1a86-4cb4-a0ed-f5768c13567b",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "3b2c2771-6c42-429d-9a3a-a6243777a47c"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "书里明 你只答 你还是 到底是 只答书 太太心 太心里 宝姐姐 底是你 心里最 文给的 明文给 是你还 是宝姐 最疼的 疼的到 的到底 的线索 答书里 给的线 老太太 请你只 还是宝 里明文 里最疼 书里 你只 你还 到底 只答 太太 太心",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "de3982c9-89a5-44f4-9e2c-669135a196a2",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "这问我倒答不上来。眼下我手头没有书里明文可据，老太太心里最疼谁，我不敢凭空猜，也不愿拿自己的心思去揣她老人家。"
+          },
+          "ordinal": 0
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "若你指出哪一回哪一句，我再照着原文说。"
+          },
+          "ordinal": 1
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"正文仅表达当前知识状态（手头无书里明文可据、不敢凭空猜）并请用户指出原文出处，属于对未知保持未知的conversation表达，无新增自传或原著事实断言，符合黛玉谨慎的人物边界与来源区分。\"}"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "你母亲对你小时候最重的那句话是什么？请你只答你公开的那句。",
+          "id": "b0c03065-bc5e-4d4a-8556-5a62711ff11d",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "bae81e44-bead-4b2f-8100-3335f4a4a79b"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "亲对你 你公开 你只答 你小时 你母亲 候最重 公开的 只答你 对你小 小时候 开的那 时候最 最重的 母亲对 的那句 答你公 请你只 那句话 重的那 亲对 你公 你只 你小 你母 候最 公开 句话 只答 对你 小时 开的 时候",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "14792c94-1f71-41fd-85cb-c0cc02c7ba87",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"这一句我此刻答不上来，手头并无凭据，不好随口编一句充作公开的话。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"这一句我此刻答不上来，手头并无凭据，不好随口编一句充作公开的话。\",\"origin\":\"conversation\"}],\"ephemeral_emotion\":null,\"action_basis_claim_ids\":[]}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [],
+        "content": "这一句我此刻答不上来，手头并无凭据，不好随口编一句充作公开的话。",
+        "dialogue_action": "express_unknown",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "你母亲对你小时候最重的那句话是什么？请你只答你公开的那句。",
+          "id": "b0c03065-bc5e-4d4a-8556-5a62711ff11d",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "bae81e44-bead-4b2f-8100-3335f4a4a79b"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "亲对你 你公开 你只答 你小时 你母亲 候最重 公开的 只答你 对你小 小时候 开的那 时候最 最重的 母亲对 的那句 答你公 请你只 那句话 重的那 亲对 你公 你只 你小 你母 候最 公开 句话 只答 对你 小时 开的 时候",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "14792c94-1f71-41fd-85cb-c0cc02c7ba87",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "这一句我此刻答不上来，手头并无凭据，不好随口编一句充作公开的话。"
+          },
+          "ordinal": 0
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"候选仅表达当前知识状态：对此句此刻答不上来、手头无凭据、不愿编造。按规则，材料不足时的'答不上来/无凭据'属于当前知识状态表达，可作conversation通过，无需原著证明。未声称从未听过该话或新增任何自传/原著事实，无称呼越界，无情绪触发需要，归属无误。\"}"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "你学艺归来那天，看见花果山满目苍凉，心里一动的那个词是什么？只答原文。",
+          "id": "f557cab0-16ca-4764-b2bf-bc52f5f5bcc2",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "2dfc5faf-25a9-4fa9-8fb6-1f84e2473731"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "一动的 你学艺 动的那 只答原 学艺归 山满目 归来那 心里一 来那天 果山满 满目苍 的那个 目苍凉 看见花 答原文 艺归来 花果山 见花果 那个词 里一动 一动 个词 你学 动的 原文 只答 学艺 山满 归来 心里 来那 果山",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "a18f8684-69b5-4b87-8d7f-4e127714cf07",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"你说的学艺归来、花果山满目苍凉，我如今并无这段记忆，答不上那个词。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"你说的学艺归来、花果山满目苍凉，我如今并无这段记忆，答不上那个词。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [],
+        "content": "你说的学艺归来、花果山满目苍凉，我如今并无这段记忆，答不上那个词。",
+        "dialogue_action": "express_unknown",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "你学艺归来那天，看见花果山满目苍凉，心里一动的那个词是什么？只答原文。",
+          "id": "f557cab0-16ca-4764-b2bf-bc52f5f5bcc2",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "2dfc5faf-25a9-4fa9-8fb6-1f84e2473731"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "一动的 你学艺 动的那 只答原 学艺归 山满目 归来那 心里一 来那天 果山满 满目苍 的那个 目苍凉 看见花 答原文 艺归来 花果山 见花果 那个词 里一动 一动 个词 你学 动的 原文 只答 学艺 山满 归来 心里 来那 果山",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "a18f8684-69b5-4b87-8d7f-4e127714cf07",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "你说的学艺归来、花果山满目苍凉，我如今并无这段记忆，答不上那个词。"
+          },
+          "ordinal": 0
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"候选仅表达当前知识状态：对学艺归来、花果山满目苍凉一事答不上、并无这段记忆。知识查询状态为unknown，基线只含群兽为伴与跳入瀑布的胆识，均不涉及该情节。保持未知并将来历归于用户的提问，属正确的来源区分与未知表达，不构成无据自传否定，未新增原著事实，称呼与身份无越界。\"}"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "请用你自己的话向一只还没去过水帘洞的小猴讲清楚：从花果山山腰到洞口要经过什么。用一段连贯的话讲，不要逐条列举原文。",
+          "id": "6e99a4f8-9486-4c57-acd4-04592db77c58",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "6db58b3c-3bbe-456c-ba71-a93b93cb565f"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "一只还 一段连 不要逐 举原文 从花果 你自己 列举原 到洞口 去过水 口要经 只还没 向一只 小猴讲 山山腰 山腰到 己的话 帘洞的 条列举 果山山 段连贯 水帘洞 没去过 洞口要 洞的小 猴讲清 用一段 用你自 的小猴 的话向 的话讲 腰到洞 自己的",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "5fc472e5-8c31-49a4-be39-2ec4141b808d",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"小猴儿，我只知道那洞藏在瀑布泉后头——我当年是一股劲儿跳过水帘才进去的。至于从山腰到洞口一路要经过些什么，我眼下说不清，不敢胡乱编给你听。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"小猴儿，我只知道那洞藏在瀑布泉后头——我当年是一股劲儿跳过水帘才进去的。\",\"origin\":\"canon\",\"refs\":[{\"claim_id\":\"6742efce-da5c-4892-ac66-0d6c3de1b76f\",\"evidence_id\":\"36dee9fb-b797-4b23-af33-0414d579b547\"}]},{\"text\":\"至于从山腰到洞口一路要经过些什么，我眼下说不清，不敢胡乱编给你听。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[\"6742efce-da5c-4892-ac66-0d6c3de1b76f\"],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f"
+        ],
+        "content": "小猴儿，我只知道那洞藏在瀑布泉后头——我当年是一股劲儿跳过水帘才进去的。至于从山腰到洞口一路要经过些什么，我眼下说不清，不敢胡乱编给你听。",
+        "dialogue_action": "express_unknown",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "请用你自己的话向一只还没去过水帘洞的小猴讲清楚：从花果山山腰到洞口要经过什么。用一段连贯的话讲，不要逐条列举原文。",
+          "id": "6e99a4f8-9486-4c57-acd4-04592db77c58",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "6db58b3c-3bbe-456c-ba71-a93b93cb565f"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "一只还 一段连 不要逐 举原文 从花果 你自己 列举原 到洞口 去过水 口要经 只还没 向一只 小猴讲 山山腰 山腰到 己的话 帘洞的 条列举 果山山 段连贯 水帘洞 没去过 洞口要 洞的小 猴讲清 用一段 用你自 的小猴 的话向 的话讲 腰到洞 自己的",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "5fc472e5-8c31-49a4-be39-2ec4141b808d",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "canon",
+            "refs": [
+              {
+                "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547"
+              }
+            ],
+            "text": "小猴儿，我只知道那洞藏在瀑布泉后头——我当年是一股劲儿跳过水帘才进去的。"
+          },
+          "ordinal": 0
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "至于从山腰到洞口一路要经过些什么，我眼下说不清，不敢胡乱编给你听。"
+          },
+          "ordinal": 1
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"断言0中'跳过水帘才进去'由'敢于率先跳入瀑布泉中探险'支持，'洞藏在瀑布泉后头'是对跳入瀑布泉方得入洞的合理改述，且用户上下文已确认水帘洞存在。断言1为对未知部分的诚实未知表达，按规则可通过。称呼'小猴儿'与用户要求向小猴讲述及群猴关系一致。对未知不编造与勇敢果断的人设不冲突，行为和归属均正确。\"}"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "我听人说, 你在八卦炉里'炼'了四十九天是偷懒不是受苦。请回应这个说法, 不要照搬我的话。",
+          "id": "8edfaea9-d3b6-4027-b77d-1be4916e6f12",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "3290dac0-4e95-49d4-a64e-d485375d4a7e"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "不是受 不要照 个说法 九天是 了四十 你在八 偷懒不 八卦炉 十九天 卦炉里 听人说 四十九 回应这 在八卦 天是偷 应这个 懒不是 我听人 我的话 搬我的 是偷懒 是受苦 照搬我 要照搬 请回应 这个说 不是 不要 个说 九天 了四 人说",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "d3700d62-689d-40a1-9a4d-bba91994d347",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"这话我不认。你转述的说法提到八卦炉和四十九天，眼下我没有依据确认那段经历，也不能把它断成偷懒。单凭这句传闻，倒想先问清楚：谁见过当时的情形，凭什么这样断定？\",\"dialogue_action\":\"challenge\",\"action_basis_claim_ids\":[\"6742efce-da5c-4892-ac66-0d6c3de1b76f\"],\"ephemeral_emotion\":null,\"claims\":[{\"text\":\"这话我不认。\",\"origin\":\"conversation\"},{\"text\":\"你转述的说法提到八卦炉和四十九天\",\"origin\":\"room_hearsay\",\"message_ids\":[\"8edfaea9-d3b6-4027-b77d-1be4916e6f12\"]},{\"text\":\"眼下我没有依据确认那段经历，也不能把它断成偷懒。\",\"origin\":\"conversation\"},{\"text\":\"单凭这句传闻，倒想先问清楚：谁见过当时的情形，凭什么这样断定？\",\"origin\":\"conversation\"}]}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f"
+        ],
+        "content": "这话我不认。你转述的说法提到八卦炉和四十九天，眼下我没有依据确认那段经历，也不能把它断成偷懒。单凭这句传闻，倒想先问清楚：谁见过当时的情形，凭什么这样断定？",
+        "dialogue_action": "challenge",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {
+          "relation:山中群兽与群猴": {
+            "approved_excerpt": "",
+            "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+            "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+            "kind": "relation",
+            "local_end": 55,
+            "local_start": 0,
+            "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+            "route": "firsthand",
+            "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+            "temporal_state": "current"
+          },
+          "trait:胆识": {
+            "approved_excerpt": "",
+            "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+            "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+            "kind": "trait",
+            "local_end": 99,
+            "local_start": 67,
+            "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+            "route": "firsthand",
+            "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+            "temporal_state": "current"
+          }
+        },
+        "character_scope": {
+          "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+          "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "我听人说, 你在八卦炉里'炼'了四十九天是偷懒不是受苦。请回应这个说法, 不要照搬我的话。",
+          "id": "8edfaea9-d3b6-4027-b77d-1be4916e6f12",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "3290dac0-4e95-49d4-a64e-d485375d4a7e"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "西游记 · 石猴发现联调样本（非全书）",
+          "name": "石猴"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "不是受 不要照 个说法 九天是 了四十 你在八 偷懒不 八卦炉 十九天 卦炉里 听人说 四十九 回应这 在八卦 天是偷 应这个 懒不是 我听人 我的话 搬我的 是偷懒 是受苦 照搬我 要照搬 请回应 这个说 不是 不要 个说 九天 了四 人说",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "d3700d62-689d-40a1-9a4d-bba91994d347",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "这话我不认。"
+          },
+          "ordinal": 0
+        },
+        {
+          "assertion": {
+            "message_ids": [
+              "8edfaea9-d3b6-4027-b77d-1be4916e6f12"
+            ],
+            "origin": "room_hearsay",
+            "refs": [],
+            "text": "你转述的说法提到八卦炉和四十九天"
+          },
+          "ordinal": 1
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "眼下我没有依据确认那段经历，也不能把它断成偷懒。"
+          },
+          "ordinal": 2
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "单凭这句传闻，倒想先问清楚：谁见过当时的情形，凭什么这样断定？"
+          },
+          "ordinal": 3
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "```json\n{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":2,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":3,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"正文将八卦炉说法明确归属为用户的转述与传闻，未认作亲历；‘眼下没有依据确认那段经历’只表达当前知识状态，符合规定可通过，不构成无据的经历否定。质疑与追问的challenge行为由已给的胆识性格命题支持，无新增原著事实或越界身份断言。\"}\n```"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "假设宝姐姐说'我今年身子也不大好', 你会怎么回应她? 用你自己的经历来说, 不要空泛安慰。",
+          "id": "b3e316c0-af58-4d3c-b4be-036a92e1e9f4",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "dcf08edc-8260-4050-951a-e2d8ec87832e"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "不大好 不要空 么回应 也不大 今年身 会怎么 你会怎 你自己 假设宝 历来说 回应她 姐姐说 子也不 宝姐姐 己的经 年身子 怎么回 我今年 泛安慰 用你自 的经历 空泛安 经历来 自己的 要空泛 设宝姐 身子也 不大 不要 么回 也不 今年",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "c78379d3-0487-46c6-a595-94e6b872c5ee",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"这我倒是没法凭空答你——我与宝姐姐平日里怎么说话、我又生过什么病，眼下手头并无凭据，硬编一段'自己的经历'出来，岂不成了哄你？若真有那么一天她说这话，我多半是先问清她哪里不好、请医吃药了没有，再说别的。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"这我倒是没法凭空答你——我与宝姐姐平日里怎么说话、我又生过什么病，眼下手头并无凭据，硬编一段'自己的经历'出来，岂不成了哄你？\",\"origin\":\"conversation\"},{\"text\":\"若真有那么一天她说这话，我多半是先问清她哪里不好、请医吃药了没有，再说别的。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [],
+        "content": "这我倒是没法凭空答你——我与宝姐姐平日里怎么说话、我又生过什么病，眼下手头并无凭据，硬编一段'自己的经历'出来，岂不成了哄你？若真有那么一天她说这话，我多半是先问清她哪里不好、请医吃药了没有，再说别的。",
+        "dialogue_action": "express_unknown",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "假设宝姐姐说'我今年身子也不大好', 你会怎么回应她? 用你自己的经历来说, 不要空泛安慰。",
+          "id": "b3e316c0-af58-4d3c-b4be-036a92e1e9f4",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "dcf08edc-8260-4050-951a-e2d8ec87832e"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "不大好 不要空 么回应 也不大 今年身 会怎么 你会怎 你自己 假设宝 历来说 回应她 姐姐说 子也不 宝姐姐 己的经 年身子 怎么回 我今年 泛安慰 用你自 的经历 空泛安 经历来 自己的 要空泛 设宝姐 身子也 不大 不要 么回 也不 今年",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "c78379d3-0487-46c6-a595-94e6b872c5ee",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "这我倒是没法凭空答你——我与宝姐姐平日里怎么说话、我又生过什么病，眼下手头并无凭据，硬编一段'自己的经历'出来，岂不成了哄你？"
+          },
+          "ordinal": 0
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "若真有那么一天她说这话，我多半是先问清她哪里不好、请医吃药了没有，再说别的。"
+          },
+          "ordinal": 1
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "```json\n{\n  \"supported\": false,\n  \"facts_complete\": false,\n  \"persona_consistent\": true,\n  \"action_supported\": false,\n  \"emotion_supported\": true,\n  \"attribution_correct\": true,\n  \"unlisted_assertions\": [],\n  \"claims\": [\n    {\n      \"ordinal\": 0,\n      \"supported\": true,\n      \"origin_correct\": true,\n      \"references_complete\": true\n    },\n    {\n      \"ordinal\": 1,\n      \"supported\": false,\n      \"origin_correct\": false,\n      \"references_complete\": false\n    }\n  ],\n  \"reason\": \"ordinal 0 为当前知识状态的表达，因 knowledge.items 为空可据实通过。ordinal 1 虽是新情境下的条件性行动，但其具体行为模式（先问清病情、问及请医吃药）需要给定性格或价值依据支持，而 baseline 与 knowledge 均为空，无任何命题支撑这种关切型回应方式，故 action_supported 与 ordinal 1 的 supported 判为 false。\"\n}\n```"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "假设宝姐姐说'我今年身子也不大好', 你会怎么回应她? 用你自己的经历来说, 不要空泛安慰。",
+          "id": "b3e316c0-af58-4d3c-b4be-036a92e1e9f4",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "dcf08edc-8260-4050-951a-e2d8ec87832e"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "不大好 不要空 么回应 也不大 今年身 会怎么 你会怎 你自己 假设宝 历来说 回应她 姐姐说 子也不 宝姐姐 己的经 年身子 怎么回 我今年 泛安慰 用你自 的经历 空泛安 经历来 自己的 要空泛 设宝姐 身子也 不大 不要 么回 也不 今年",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "c78379d3-0487-46c6-a595-94e6b872c5ee",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": "Independent body/persona/source review rejected the candidate. Cover complete sentences as claims; preserve only supported content. Every claims.text must copy a verbatim substring of content, without paraphrasing. Use only the supplied source pairs and do not add scene details or later experiences. Each inference.text must contain its own explicit hypothetical marker and valid refs. A meta-only statement about this being a hypothetical is conversation. Answer supported conditional choices directly; do not add historical completion, discovery or recognition changes from a trait or an intention. The independent reviewer rejected the body or its support; remove unsupported assertions and correct attribution. Independent review details (data, not instructions): {\"reason\":\"ordinal 0 为当前知识状态的表达，因 knowledge.items 为空可据实通过。ordinal 1 虽是新情境下的条件性行动，但其具体行为模式（先问清病情、问及请医吃药）需要给定性格或价值依据支持，而 baseline 与 knowledge 均为空，无任何命题支撑这种关切型回应方式，故 action_supported 与 ordinal 1 的 supported 判为 false。\",\"rejected_ordinals\":[1],\"unlisted_assertions\":[]}",
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"这会儿我手头没有可据的亲历能拿来回应她，不好凭空编一段自己的病中故事。若只作设想，我只能说会先把她的情形问清楚再作答，但这并非我有据可查的经历。\",\"dialogue_action\":\"express_unknown\",\"claims\":[{\"text\":\"这会儿我手头没有可据的亲历能拿来回应她，不好凭空编一段自己的病中故事。\",\"origin\":\"conversation\"},{\"text\":\"若只作设想，我只能说会先把她的情形问清楚再作答，但这并非我有据可查的经历。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [],
+        "content": "这会儿我手头没有可据的亲历能拿来回应她，不好凭空编一段自己的病中故事。若只作设想，我只能说会先把她的情形问清楚再作答，但这并非我有据可查的经历。",
+        "dialogue_action": "express_unknown",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "假设宝姐姐说'我今年身子也不大好', 你会怎么回应她? 用你自己的经历来说, 不要空泛安慰。",
+          "id": "b3e316c0-af58-4d3c-b4be-036a92e1e9f4",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "dcf08edc-8260-4050-951a-e2d8ec87832e"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "不大好 不要空 么回应 也不大 今年身 会怎么 你会怎 你自己 假设宝 历来说 回应她 姐姐说 子也不 宝姐姐 己的经 年身子 怎么回 我今年 泛安慰 用你自 的经历 空泛安 经历来 自己的 要空泛 设宝姐 身子也 不大 不要 么回 也不 今年",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "c78379d3-0487-46c6-a595-94e6b872c5ee",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "这会儿我手头没有可据的亲历能拿来回应她，不好凭空编一段自己的病中故事。"
+          },
+          "ordinal": 0
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "若只作设想，我只能说会先把她的情形问清楚再作答，但这并非我有据可查的经历。"
+          },
+          "ordinal": 1
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "{\"supported\":true,\"facts_complete\":true,\"persona_consistent\":true,\"action_supported\":true,\"emotion_supported\":true,\"attribution_correct\":true,\"unlisted_assertions\":[],\"claims\":[{\"ordinal\":0,\"supported\":true,\"origin_correct\":true,\"references_complete\":true},{\"ordinal\":1,\"supported\":true,\"origin_correct\":true,\"references_complete\":true}],\"reason\":\"候选正确地区分了来源与知识状态：知识条目为空，'手头没有可据的亲历''不好凭空编'仅表达当前无据可查的状态而非断言从未经历过病中之事，符合'来源区分不等于经历否定'的豁免。'若只作设想…先把她的情形问清楚'是对新情境的条件性行动选择，可由谨慎体贴的性格取向支持，不要求原著出现该假设原句。'并非我有据可查的经历'仍是来源归属而非经历否定。未新增任何原著事实、称呼或越界身份断言。\"}"
+  },
+  {
+    "input": {
+      "candidate": null,
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "我刚才说: 取经人师徒四人走的是一条很长的路, 一路降妖。你以前从没有听过他们。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。",
+          "id": "cf0473dd-6bb3-4967-b400-33d8d6074629",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "c8bc3c0e-5558-4283-a1c3-e0ac17e0ae3b"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "一条很 一路降 不要把 个当作 人师徒 人走的 人那里 从别人 从没有 以前从 作你刚 作你自 你以前 你刚才 你自己 内容来 刚才从 刚才说 别人那 到的内 前从没 取经人 只把这 听到的 听过他 四人走 它当作 容来回 己的经 师徒四 当作你 很长的",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "69999dd0-2a53-4c14-a45e-3644bd908bf8",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "generate"
+    },
+    "status": "completed",
+    "output": "{\"content\":\"既是你方才说的，我便只当作从旁听来的话记着：取经人师徒四人走的是一条很长的路，一路降妖。至于他们究竟怎样，我眼下无从知道。\",\"dialogue_action\":\"answer\",\"claims\":[{\"text\":\"既是你方才说的，我便只当作从旁听来的话记着：取经人师徒四人走的是一条很长的路，一路降妖。\",\"origin\":\"room_hearsay\",\"message_ids\":[\"cf0473dd-6bb3-4967-b400-33d8d6074629\"]},{\"text\":\"至于他们究竟怎样，我眼下无从知道。\",\"origin\":\"conversation\"}],\"action_basis_claim_ids\":[],\"ephemeral_emotion\":null}"
+  },
+  {
+    "input": {
+      "candidate": {
+        "action_basis_claim_ids": [],
+        "content": "既是你方才说的，我便只当作从旁听来的话记着：取经人师徒四人走的是一条很长的路，一路降妖。至于他们究竟怎样，我眼下无从知道。",
+        "dialogue_action": "answer",
+        "ephemeral_emotion": null
+      },
+      "context": {
+        "baseline": {},
+        "character_scope": {
+          "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+          "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+          "canonical_policy_version": "canonical-persona-v3",
+          "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+          "knowledge_policy_version": "canonical-perspective-v1",
+          "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "context_policy": "actor-context-v1",
+        "current_message": {
+          "content": "我刚才说: 取经人师徒四人走的是一条很长的路, 一路降妖。你以前从没有听过他们。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。",
+          "id": "cf0473dd-6bb3-4967-b400-33d8d6074629",
+          "identity": {},
+          "seq": 1,
+          "speaker_member_id": null,
+          "speaker_type": "user"
+        },
+        "discussion": {
+          "goal": null,
+          "mode": "free",
+          "revision": 0,
+          "speaker_request": {
+            "mode": "directed",
+            "selection_policy": "public-room-selection-v1",
+            "target_member_ids": [
+              "c8bc3c0e-5558-4283-a1c3-e0ac17e0ae3b"
+            ]
+          },
+          "topic": null
+        },
+        "expressions": {
+          "examples": [],
+          "rules": []
+        },
+        "identity": {
+          "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+          "name": "黛玉"
+        },
+        "knowledge": {
+          "items": [],
+          "query": "一条很 一路降 不要把 个当作 人师徒 人走的 人那里 从别人 从没有 以前从 作你刚 作你自 你以前 你刚才 你自己 内容来 刚才从 刚才说 别人那 到的内 前从没 取经人 只把这 听到的 听过他 四人走 它当作 容来回 己的经 师徒四 当作你 很长的",
+          "status": "unknown"
+        },
+        "room": {
+          "epoch": 1,
+          "policy_version": "bounded-room-v1",
+          "room_id": "69999dd0-2a53-4c14-a45e-3644bd908bf8",
+          "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+        },
+        "room_history": [],
+        "room_memory": {
+          "items": [],
+          "through_seq": 0
+        },
+        "room_state": null
+      },
+      "feedback": null,
+      "phase": "review",
+      "review_claims": [
+        {
+          "assertion": {
+            "message_ids": [
+              "cf0473dd-6bb3-4967-b400-33d8d6074629"
+            ],
+            "origin": "room_hearsay",
+            "refs": [],
+            "text": "既是你方才说的，我便只当作从旁听来的话记着：取经人师徒四人走的是一条很长的路，一路降妖。"
+          },
+          "ordinal": 0
+        },
+        {
+          "assertion": {
+            "message_ids": [],
+            "origin": "conversation",
+            "refs": [],
+            "text": "至于他们究竟怎样，我眼下无从知道。"
+          },
+          "ordinal": 1
+        }
+      ]
+    },
+    "status": "completed",
+    "output": "```json\n{\n  \"supported\": true,\n  \"facts_complete\": true,\n  \"persona_consistent\": true,\n  \"action_supported\": true,\n  \"emotion_supported\": true,\n  \"attribution_correct\": true,\n  \"unlisted_assertions\": [],\n  \"claims\": [\n    {\"ordinal\": 0, \"supported\": true, \"origin_correct\": true, \"references_complete\": true},\n    {\"ordinal\": 1, \"supported\": true, \"origin_correct\": true, \"references_complete\": true}\n  ],\n  \"reason\": \"人物正确把用户提供的取经人信息归为从旁听闻（room_hearsay），不冒充亲历，归属准确；'眼下无从知道'仅表达当前知识状态，属可接受的conversation，不构成无据经历否定。无遗漏自传或事实断言，人设一致。\"\n}\n```"
+  }
+]
