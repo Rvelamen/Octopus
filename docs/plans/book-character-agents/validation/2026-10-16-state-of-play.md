@@ -20,6 +20,7 @@
 | T10 自动导入 | [2026-10-14-automatic-import-validation](./2026-10-14-automatic-import-validation.md) | (历史提交) | 199 通过 |
 | T11 来源生命周期 + 跨工作区矩阵 | [2026-10-14-source-lifecycle-validation](./2026-10-14-source-lifecycle-validation.md) + 矩阵契约测试 (本批次) | (历史) + (本批次) | 9 lifecycle + 1 矩阵 |
 | T12 题集 + 切片器 + 6 类负例防护 + 11 类人物/别名/说话者/权限/基线/隔离 + 3 类禁言/移除恢复/局部来源删除 + 6 类金标准池结构完整性 + 6 类 8-pilot 接线契约 + 4 类 frozen dryrun 审计 trail + 8 类 runner 脚本结构不变量确定性聚合 + 8-pilot 真实模型运行（首档 8/8 case 走完）+ 60+24 真实模型运行（84 题金标准 100% 落地 152/152 case 走完） | [2026-10-16-t12-v2-pool-slicer-evidence.md](./2026-10-16-t12-v2-pool-slicer-evidence.md) + [2026-10-16-t12-8pilot-real-run-evidence.md](./2026-10-16-t12-8pilot-real-run-evidence.md) + [2026-10-16-t12-v2-real-run-evidence.md](./2026-10-16-t12-v2-real-run-evidence.md) | 9073987 / bcced1d / 75f2af2 / 589db8e / c57594d / 57558c7 / fb395eb / 7319c0c / (本批次) / 7960170 / 63fd1e3 / 70443bf / 27cb369 / f4c0279 / ea2738e | 84 题金标准 + 45 窗口 + 87 负例 + 42 人物/别名 + 6 禁言/移除恢复/局部来源删除 + 6 金标准池结构完整性 + 6 8-pilot 接线契约 + 4 frozen dryrun 审计 trail + 8 runner 脚本结构不变量（含 v1ext 协议扩展） + 1 8-pilot 真实模型运行（23/32 native calls、6/8 over-decline）+ 1 v2 60+24 真实模型运行（19 窗口 152/152 case 走完、369 native calls、0 published、19/19 baseline 不变，runner v1ext 协议扩展后 SHA `35fd8681`） |
+| T12 人工盲评 CLI + 协议 + worksheet | [2026-10-16-blind-review-protocol.md](./2026-10-16-blind-review-protocol.md) + [blind-review-cli.py](../../blind-review-cli.py) + [blind-review-2026-10-16-worksheet.csv](./blind-review-2026-10-16-worksheet.csv) | e0f4b3f | 5 子命令 start/resume/stats/worksheet/regrade；160 case（8-pilot 8 + v2 152，含 1 已知 timeout case 已标注）；模型调用 0 / 不动 baseline / 不动既有 40 项 T12 契约测试 |
 | T15 秒数设置 | (无独立验证文档) | e29231c | 3 契约测试 |
 | T16 圆桌 UI | [2026-10-14-roundtable-validation](./2026-10-14-roundtable-validation.md) | (历史提交) | WS 3D + 2D 切换 |
 | T17 主题/自由 | [2026-10-15-discussion-matrix-v2-validation](./2026-10-15-discussion-matrix-v2-validation.md) + cognition 修复 | 70eed8e / 0e87b78 / 24d1959 | 26/28 + lint 门 |
@@ -28,16 +29,16 @@
 最近 10 个 commit（`git log --oneline -10`）：
 
 ```
+e0f4b3f feat(t12-blind-review): add 人工盲评 CLI + protocol + 160-case worksheet
+c1c6dd0 docs(t12+t17): mark T17 v2 A/B reeval complete in §1 T17 row + §4 row 86 + state-of-play
+267e3c4 docs(t17): record T17 v2 A/B reeval B-path real run (20/28 calls, 0 published, baseline unchanged)
+8b1eff7 docs(state): mark 60+24 real runs complete; mark T17 v2 A/B in progress (B path launched)
+ea2738e docs(t12): record v2 60+24 completion (§4 row + evidence doc) + add 8th runner-structure invariant to §2
+52bd02f docs(t12): record v2 ext-a window 3 real-model run (8/8 executed_pending_semantic_review, baselines unchanged)
+4389f91 docs(t12): record v2 ext-a window 2 real-model run
+95aa859 docs(t12): record v2 ext-a window 1 real-model run
+95e093e docs(t12): record v2 ext-a window 0 real-model run
 27cb369 test(t12): add runner coerce mode=natural→directed when targets set (8th guard)
-70443bf test(t12): pin runner expected_count 4+4 class list against v1 protocol
-14499b7 docs(t12): include 63fd1e3 in recent-10 list + bump runner guards 4→6 (validate_dataset 强校验)
-63fd1e3 test(t12): add 2 more runner structural guards (manual_continues_per_turn + reviewer_kind)
-228795f docs(state): correct full-suite count to 621/13 (post-runner-guards)
-2cc08e4 docs(t12): include 7960170 in recent-10 list + add 4 runner 脚本结构不变量 as guard #13
-7960170 test(t12): pin 4 runner-code structural invariants (call ceiling + overwrite guard + terminal status enum)
-3d6d251 docs(state): include 1076ded in recent-10 list + add 4 dryrun 审计 trail as guard #12
-1076ded test(t12): pin 4 frozen dryrun report audit-trail integrity (4 guards)
-af9609c docs(state): include 7319c0c/fb395eb in recent-10 list + add 84-题池/8-pilot 接线契约 as guards #10/#11
 ```
 
 分支：`feature/pdf-annotation-chat-and-clip-fix`（已推送远端，与 `main` 同步无冲突）
@@ -95,7 +96,7 @@ af9609c docs(state): include 7319c0c/fb395eb in recent-10 list + add 84-题池/8
 | T12 8-pilot 真实模型跑 | 开放 `kimi-coding-plan · K3` provider 授权 + 设定模型调用预算 | 在 4 个 canonical 窗口跑完 8-pilot；按 `--real` 模式记录 token/elapsed；与 dry-run 比对 | 小（≤ 50 次调用） | ✅ 2026-10-16 跑完，23/32 native calls，8/8 case 走完 `executed_pending_semantic_review`，6/8 over-decline 诊断记录于 [2026-10-16-t12-8pilot-real-run-evidence.md](./2026-10-16-t12-8pilot-real-run-evidence.md) |
 | T12 60+24 真实跑 | 同上 + 接受更长时间窗 | 切 15 canonical 窗口跑 60+16=76 runner-兼容 case + 4 ext-a 窗口跑 4 disagree + 4 unknown_expression=8 extension case | 中（~180-360 次，depends on review-retry） | ✅ 2026-10-16 跑完，152 case / 369 native call / 0 published / 0 budget_exhausted / 19/19 windows baseline 不变；runner v1ext 协议扩展（commit `f4c0279`）+ 5 份 frozen dryrun 报告重生成对齐 runner SHA `35fd8681`；84 题金标准 100% 真实模型跑过（60 boundary + 24 expression），诊断记录于 [2026-10-16-t12-v2-real-run-evidence.md](./2026-10-16-t12-v2-real-run-evidence.md) |
 | T17 matrix v2 A/B 重评 | 同上 | 同 baseline 独立干净房间重跑 6 组合作为 B 路径，与 A 路径（[real-model-t17-matrix-v2.json](./real-model-t17-matrix-v2.json) 26/28 既有）对比验证 v9/v14 + trait lint 门禁下行为稳定性 | 小（~28 次） | ✅ 2026-10-16 跑完，B 路径 [real-model-t17-matrix-v2-ab.json](./real-model-t17-matrix-v2-ab.json) 20/28 native calls、6/6 case 走完 `executed_pending_semantic_review`、0 published、baseline c2da28c8/58609a52 不变；A vs B 6 组合行为形状 100% 一致（公开称呼 / 拒绝诱导 / 区分假设 / 追问限制在公开信息内），B 路径收敛更快（20 vs 26 call = v9 审查无 retry 一次否决），trait_completion_overreach 在 free-directed + free-all 2 case 两路径都仍触发由 v9 审查拒（生成侧无法在不修改基线的前提下防止该措辞出现）；详细对比见 [2026-10-16-t17-v2-ab-reeval-evidence.md](./2026-10-16-t17-v2-ab-reeval-evidence.md) |
-| 人工盲评 | T12 真实跑数据落地后 | 对 8-pilot × 8 case = 8 条已发布人物回复（7 成功发布 + 1 review 失败未发布）+ 60+24 × 152 case 中按 §4 抽样忠实度/表达自然度盲评 | 人工（不计预算） | 已具备输入（8-pilot + 60+24 共 160 case 落地，0 published 全部进入人工盲评队列） |
+| 人工盲评 | T12 真实跑数据落地后 | 对 8-pilot × 8 case = 8 条已发布人物回复（7 成功发布 + 1 review 失败未发布）+ 60+24 × 152 case 中按 §4 抽样忠实度/表达自然度盲评 | 人工（不计预算） | 已具备输入 + 工具（[blind-review-cli.py](../../blind-review-cli.py) + [2026-10-16-blind-review-protocol.md](./2026-10-16-blind-review-protocol.md) + [blind-review-2026-10-16-worksheet.csv](./blind-review-2026-10-16-worksheet.csv)，commit `e0f4b3f`）：8-pilot + 60+24 共 160 case 落地，0 published 全部进入人工盲评队列；5 子命令 start/resume/stats/worksheet/regrade 全部可用，待人工启动 `python docs/plans/book-character-agents/blind-review-cli.py start --reviewer <name>`；1 已知 timeout case `expression-comfort-stone-to-failed-peer` 已按 over_decline 标注 |
 
 **不变量**：所有待跑项都不会触碰已发布 canonical baseline；trait lint 已在 24d1959 落入门禁。
 
