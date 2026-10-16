@@ -28,7 +28,7 @@
 最近 10 个 commit（`git log --oneline -10`）：
 
 ```
-(本批次) docs(t12): aggregate 4 frozen dryrun 报告审计 trail 完整性 under one deterministic row
+1076ded test(t12): pin 4 frozen dryrun report audit-trail integrity (4 guards)
 af9609c docs(state): include 7319c0c/fb395eb in recent-10 list + add 84-题池/8-pilot 接线契约 as guards #10/#11
 7319c0c test(t12): pin 8-pilot wire-contract structural integrity (6 invariants)
 fb395eb test(t12): pin 84-question gold-standard pool structural integrity (6 invariants)
