@@ -29,10 +29,11 @@ real BookWorldService / RoomMembershipService / BookRoundService
 in-process; the goal is regression coverage, not behavior QA.
 """
 
-import json
+import sqlite3
 
 import pytest
 
+from backend.data.schema import agent
 
 # ---------------------------------------------------------------------------
 # T04 — revision CAS
@@ -478,3 +479,201 @@ async def test_t16_32_person_room_seat_indexes_stable_across_remove_readd(
         f"re-added member must reclaim the same seat_index, was "
         f"{initial_seats[removed_id]!r}, now {readd_member['seat_index']!r}"
     )
+
+
+# ---------------------------------------------------------------------------
+# T15 — saved timeout default flows into chat submit for directed + all modes
+# ---------------------------------------------------------------------------
+
+
+class TemporaryDatabase:
+    """Use a real SQLite connection without opening the user's application database.
+
+    Copied verbatim from ``tests/test_book_room_timeout_settings.py:18-27``
+    so the T15 contracts do not depend on the timeout-settings suite's
+    internal helper. A single failure in T15 must not cascade into the
+    timeout-settings suite's ``database`` fixture.
+    """
+
+    def __init__(self, path):
+        self.connection = sqlite3.connect(path)
+        self.connection.row_factory = sqlite3.Row
+        agent.create_tables(self.connection)
+
+    def _get_connection(self) -> sqlite3.Connection:
+        return self.connection
+
+
+@pytest.mark.asyncio
+async def test_t15_chat_submit_reads_saved_timeout_default_for_directed_mode(
+    book_library, tmp_path
+):
+    """T15: a value saved to ``agent_defaults.book_room_round_timeout_seconds``
+    must round-trip through ``BookRoomTimeoutSettings.seconds_for_mode`` and
+    land on the round row verbatim when ``rounds.submit`` is called in
+    ``mode='directed'``. This pins the read-path that the real chat handler
+    uses at ``book_room.py:418`` — saving 91 and seeing 91 on the round row
+    is what the user can actually do at runtime."""
+    from pathlib import Path
+
+    from test_book_knowledge import style_character
+
+    from backend.core.book_room_settings import BookRoomTimeoutSettings
+    from backend.data.provider_store import AgentDefaultsRepository
+    from backend.services.book_world.members import RoomMembershipService
+    from backend.services.book_world.room_models import CharacterChatConfig
+    from backend.services.book_world.rounds import BookRoundService
+
+    db_path = Path(tmp_path) / "agent_defaults.db"
+    db = TemporaryDatabase(db_path)
+    try:
+        repo = AgentDefaultsRepository(db)
+        repo.get_or_create_defaults()
+        repo.update_agent_defaults(
+            book_room_round_timeout_seconds=91,
+            book_room_all_round_timeout_seconds=301,
+        )
+        defaults = repo.get_or_create_defaults()
+        # Build BookRoomTimeoutSettings exactly as chat_provider.py:135-138 does.
+        timeouts = BookRoomTimeoutSettings(
+            book_room_round_timeout_seconds=defaults.book_room_round_timeout_seconds,
+            book_room_all_round_timeout_seconds=defaults.book_room_all_round_timeout_seconds,
+        )
+        assert timeouts.seconds_for_mode("directed") == 91, (
+            f"saved directed-mode default must read back as 91, got "
+            f"{timeouts.seconds_for_mode('directed')!r}"
+        )
+
+        _, _, _, scope = await style_character(book_library)
+        membership = RoomMembershipService(book_library.workspace_root)
+        room = membership.create([scope], client_room_id="t15-directed-room")
+        room_scope = membership.rooms.bind_room(room["room_id"], 1)
+        rounds = BookRoundService(book_library.workspace_root)
+        config = CharacterChatConfig(provider_id=1, model="fixture")
+        turn = rounds.submit(
+            room_scope,
+            "t15-directed",
+            "你好",
+            config,
+            time_limit_seconds=timeouts.seconds_for_mode("directed"),
+            mode="directed",
+            target_member_ids=[room["members"][0]["id"]],
+        )
+        assert turn["time_limit_seconds"] == 91, (
+            f"directed-mode round must record saved time_limit_seconds=91, "
+            f"got {turn['time_limit_seconds']!r}"
+        )
+        reloaded = rounds.get_round(room_scope, turn["round_id"])
+        assert reloaded["time_limit_seconds"] == 91, (
+            f"get_round must return the same time_limit_seconds=91, "
+            f"got {reloaded['time_limit_seconds']!r}"
+        )
+    finally:
+        db.connection.close()
+
+
+@pytest.mark.asyncio
+async def test_t15_chat_submit_reads_saved_timeout_default_for_all_mode(
+    book_library, tmp_path
+):
+    """T15: a value saved to ``agent_defaults.book_room_all_round_timeout_seconds``
+    must round-trip through ``BookRoomTimeoutSettings.seconds_for_mode('all')``
+    and land on the round row when ``rounds.submit`` is called in ``mode='all'``.
+    The two-character room is required so the ``all`` mode is meaningful
+    (mirrors T09 at lines 315-359)."""
+    from pathlib import Path
+
+    from test_book_knowledge import style_character
+
+    from backend.core.book_room_settings import BookRoomTimeoutSettings
+    from backend.data.provider_store import AgentDefaultsRepository
+    from backend.services.book_world.members import RoomMembershipService
+    from backend.services.book_world.room_models import CharacterChatConfig
+    from backend.services.book_world.rounds import BookRoundService
+
+    db_path = Path(tmp_path) / "agent_defaults_all.db"
+    db = TemporaryDatabase(db_path)
+    try:
+        repo = AgentDefaultsRepository(db)
+        repo.get_or_create_defaults()
+        repo.update_agent_defaults(
+            book_room_round_timeout_seconds=91,
+            book_room_all_round_timeout_seconds=301,
+        )
+        defaults = repo.get_or_create_defaults()
+        timeouts = BookRoomTimeoutSettings(
+            book_room_round_timeout_seconds=defaults.book_room_round_timeout_seconds,
+            book_room_all_round_timeout_seconds=defaults.book_room_all_round_timeout_seconds,
+        )
+        assert timeouts.seconds_for_mode("all") == 301, (
+            f"saved all-mode default must read back as 301, got "
+            f"{timeouts.seconds_for_mode('all')!r}"
+        )
+
+        _, _, _, first = await style_character(book_library)
+        _, _, _, second = await style_character(book_library)
+        membership = RoomMembershipService(book_library.workspace_root)
+        room = membership.create([first, second], client_room_id="t15-all-room")
+        room_scope = membership.rooms.bind_room(room["room_id"], 1)
+        rounds = BookRoundService(book_library.workspace_root)
+        config = CharacterChatConfig(provider_id=1, model="fixture")
+        turn = rounds.submit(
+            room_scope,
+            "t15-all",
+            "全员到齐",
+            config,
+            time_limit_seconds=timeouts.seconds_for_mode("all"),
+            mode="all",
+        )
+        assert turn["time_limit_seconds"] == 301, (
+            f"all-mode round must record saved time_limit_seconds=301, "
+            f"got {turn['time_limit_seconds']!r}"
+        )
+        reloaded = rounds.get_round(room_scope, turn["round_id"])
+        assert reloaded["time_limit_seconds"] == 301, (
+            f"get_round must return the same time_limit_seconds=301, "
+            f"got {reloaded['time_limit_seconds']!r}"
+        )
+    finally:
+        db.connection.close()
+
+
+@pytest.mark.asyncio
+async def test_t15_saved_timeout_default_persists_across_database_reopen(
+    tmp_path,
+):
+    """T15: the saved ``book_room_round_timeout_seconds=91`` and
+    ``book_room_all_round_timeout_seconds=301`` must survive closing the
+    SQLite connection and reopening the same file — mirroring
+    ``tests/test_book_room_timeout_settings.py::test_defaults_custom_values_and_reopen``.
+    The chat worker is long-lived and reads the saved value at submit
+    time (not at process start), so a reopen must not silently revert."""
+    from pathlib import Path
+
+    from backend.data.provider_store import AgentDefaultsRepository
+
+    db_path = Path(tmp_path) / "preferences.db"
+    first = TemporaryDatabase(db_path)
+    try:
+        repo = AgentDefaultsRepository(first)
+        repo.get_or_create_defaults()
+        repo.update_agent_defaults(
+            book_room_round_timeout_seconds=91,
+            book_room_all_round_timeout_seconds=301,
+        )
+    finally:
+        first.connection.close()
+
+    reopened = TemporaryDatabase(db_path)
+    try:
+        saved = AgentDefaultsRepository(reopened).get_or_create_defaults()
+        assert saved.book_room_round_timeout_seconds == 91, (
+            f"directed-mode default must survive reopen as 91, got "
+            f"{saved.book_room_round_timeout_seconds!r}"
+        )
+        assert saved.book_room_all_round_timeout_seconds == 301, (
+            f"all-mode default must survive reopen as 301, got "
+            f"{saved.book_room_all_round_timeout_seconds!r}"
+        )
+    finally:
+        reopened.connection.close()
