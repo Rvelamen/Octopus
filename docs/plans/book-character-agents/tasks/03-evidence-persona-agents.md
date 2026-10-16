@@ -63,3 +63,5 @@
 
 同日追加 `test_persona_extract_v4_and_review_v6_pin_trait_vs_completed_action_safeguard`：验证 persona-extract-v4 与 persona-review-v6/v7 的 trait/intention-vs-completed-action 防护文字在源提示词编辑后仍保留，锁住 v3 默认下历史动作/性格混说风险。
 
+同日追加 `test_acquisition_prompt_v7_pins_recipient_knowledge_safeguards`：验证 per-recipient 获知审查阶段（ACQUISITION_PROMPT）保留"不使用预训练故事常识"、"旁白客观真相不能替代获知证据"、"在场、同组织、名字暗示能力均不算路径"、"收到命令与获知其所有前因分开"、"集体看听报告不能凭名字逐人分配"等关键防护；61 项 model contracts 全过。
+

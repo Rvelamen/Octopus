@@ -780,3 +780,37 @@ def test_persona_extract_v4_and_review_v6_pin_trait_vs_completed_action_safeguar
 
     v7_review = REVIEW_PROMPTS["persona-review-v7"]
     assert v6_review in v7_review, "v7 must extend v6; acquisition stage is an addition"
+
+
+def test_acquisition_prompt_v7_pins_recipient_knowledge_safeguards():
+    """ACQUISITION_PROMPT (persona-review-v7) must keep per-recipient knowledge safeguards.
+
+    The acquisition stage is monotone veto: it can only revoke what canonical
+    review granted, never add knowledge. The prompt's key safeguards (no
+    pre-trained story knowledge, presence/name/order are not knowledge paths,
+    narrator truth cannot replace evidence) must survive prompt edits so the
+    v6 review's reader-only isolation does not silently regress into a
+    'whole knowledge from narrator truth' claim.
+    """
+    from backend.services.book_world.persona_acquisition import (
+        ACQUISITION_PROMPT,
+        ACQUISITION_REVIEW_VERSION,
+    )
+    from backend.services.book_world.persona_models import REVIEW_PROMPTS
+
+    assert ACQUISITION_REVIEW_VERSION == "persona-review-v7"
+    assert ACQUISITION_REVIEW_VERSION in REVIEW_PROMPTS
+    # v7 is the same semantic prompt as v6; the acquisition stage is a separate
+    # prompt used in an independent pass via ACQUISITION_PROMPT.
+    assert REVIEW_PROMPTS[ACQUISITION_REVIEW_VERSION] == REVIEW_PROMPTS["persona-review-v6"]
+
+    assert "只审查人物本人知道什么" in ACQUISITION_PROMPT
+    assert "不使用预训练故事常识" in ACQUISITION_PROMPT
+    assert "旁白客观真相不能替代获知证据" in ACQUISITION_PROMPT
+    assert "收到命令与获知其所有前因分开" in ACQUISITION_PROMPT
+    assert "在场、同组织、名字暗示能力均不算路径" in ACQUISITION_PROMPT
+    assert "集体看听报告可以证明集体行为，但不能凭名字逐人分配" in ACQUISITION_PROMPT
+    assert "knowledge_scope=whole只限整条命题的所有子句都由本人实际观察" in ACQUISITION_PROMPT
+    assert "unknown_parts列出未证明本人所知的命题子句" in ACQUISITION_PROMPT
+    assert "excerpt_safe=false" in ACQUISITION_PROMPT
+    assert "空串没有可用引用，不要自动填全文" in ACQUISITION_PROMPT
