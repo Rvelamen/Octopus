@@ -146,3 +146,5 @@
 
 同日追加 `test_discovery_probes_pin_no_publication_and_actual_budget`：把 8 份发现探针（v8-repair / v9-repair / v10-repair / v12-choices / v13-literal / v13-numbered / v14-window-repair / v12-binding-repairs）的 `database_publication=False` 或 `publication=False` 与 `terminal=True` 锁定为"发现探针不写库"的硬证据；并把 `real-model-discovery-v7-contract.json` 的 `validation_pass=True` 锁定为 v7 契约在冻结输入下成立的硬证据——八份探针共同背书"发现阶段只读不写库"的非破坏性约束；82 项 model contracts 全过。
 
+同日追加 `test_t17_agent_reviews_pin_unfinished_and_baseline_invariants`：把 `t17-cognition-agent-review.json` 与 `t17-matrix-v2-agent-review.json` 两份 Agent 自审报告的 `t17_complete=False` / `t12_complete=False` / `quality_pass=False` 锁定为"本任务与 T12 尚未通过 Agent 自审即未验收"的硬证据；并把 cognition 报告的 `baseline_mutation=False` 与 v2 矩阵报告的 `canonical_baselines_unchanged=True` 锁定为"未验收 ≠ 偷偷改基线"的硬约束——`t17_complete` / `t12_complete` 不许在没有重录诊断和新一轮通过的前提下偷偷翻成 True；83 项 model contracts 全过。
+

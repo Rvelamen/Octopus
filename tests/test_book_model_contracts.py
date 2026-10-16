@@ -2003,3 +2003,71 @@ def test_discovery_probes_pin_no_publication_and_actual_budget():
         "real-model-discovery-v7-contract.json validation_pass flipped to "
         "False; the v7 contract no longer holds on its recorded input."
     )
+
+
+def test_t17_agent_reviews_pin_unfinished_and_baseline_invariants():
+    """Agent reviews must honestly mark T17/T12 as not yet closed.
+
+    Both ``t17-cognition-agent-review.json`` and
+    ``t17-matrix-v2-agent-review.json`` are the Agent's own
+    post-run audit of the t17 work. They carry four honest
+    signals that the work is **not** yet accepted:
+
+      * ``t17_complete: False`` and ``t12_complete: False`` —
+        the review explicitly states the task is not closed.
+        Flipping either to True without a re-recorded
+        diagnostic and a new pass would silently claim
+        acceptance that never happened.
+
+      * ``quality_pass: False`` — the Agent did not find the
+        run quality-acceptable. This is a separate signal
+        from "complete" and must remain in sync with the
+        failure catalog.
+
+      * ``baseline_mutation: False`` (cognition) /
+        ``canonical_baselines_unchanged: True`` (matrix v2) —
+        the run is non-destructive. Locking both ensures
+        that the honesty signal ("not yet closed") does not
+        come at the cost of a hidden baseline rewrite.
+
+    Together these tests make "T17 / T12 are not closed by
+    this run" a regression-test statement, not a hand-wave.
+    """
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    for fname in (
+        "t17-cognition-agent-review.json",
+        "t17-matrix-v2-agent-review.json",
+    ):
+        review = json.loads((base / fname).read_text(encoding="utf-8"))
+        assert review["t17_complete"] is False, (
+            f"{fname} flipped t17_complete to True without re-recording "
+            "the diagnostic; t17 must not be silently marked complete."
+        )
+        assert review["t12_complete"] is False, (
+            f"{fname} flipped t12_complete to True without re-recording "
+            "the diagnostic; t12 must not be silently marked complete."
+        )
+        assert review["quality_pass"] is False, (
+            f"{fname} flipped quality_pass to True without re-recording "
+            "the diagnostic; the Agent's quality pass must remain in sync "
+            "with the failure catalog."
+        )
+
+    # Per-review non-destructive probe signals must also hold.
+    cognition = json.loads(
+        (base / "t17-cognition-agent-review.json").read_text(encoding="utf-8")
+    )
+    assert cognition["baseline_mutation"] is False, (
+        "t17-cognition-agent-review.json baseline_mutation flipped to True; "
+        "the cognition probe must not have mutated the canonical baseline."
+    )
+    matrix_v2 = json.loads(
+        (base / "t17-matrix-v2-agent-review.json").read_text(encoding="utf-8")
+    )
+    assert matrix_v2["canonical_baselines_unchanged"] is True, (
+        "t17-matrix-v2-agent-review.json canonical_baselines_unchanged "
+        "flipped to False; the matrix v2 run must not have mutated the "
+        "canonical baselines."
+    )

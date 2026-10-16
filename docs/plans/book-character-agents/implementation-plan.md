@@ -405,3 +405,5 @@ v15发现链路115项专项通过，独立全书首窗8次完成两书各3单元
 新增 `test_t17_review_cognition_v1_pins_instruction_sha_and_aggregate_budget`：把 `real-model-t17-review-cognition-v1.json` 的 `instruction_sha256=e7295bfe…`（cognition-safeguard 评审增补段字节级 SHA）/ `source_matrix=real-model-t17-matrix-v1.json` / `actual_native_calls==native_call_ceiling`（2==2）/ `aggregate_t17_ceiling=32` / `aggregate_native_calls=27`（v1 矩阵 25 + cognition 2）/ `publication=False` 锁定为认知防护评审增补的字节级指纹与 t17 累计预算硬约束；81 项 model contracts 全过。
 
 新增 `test_discovery_probes_pin_no_publication_and_actual_budget`：把 8 份发现探针的 `database_publication=False` 或 `publication=False` / `terminal=True` 锁定为"发现探针不写库"的硬证据；并把 `real-model-discovery-v7-contract.json` 的 `validation_pass=True` 锁定为 v7 契约在冻结输入下成立的硬证据；82 项 model contracts 全过。
+
+新增 `test_t17_agent_reviews_pin_unfinished_and_baseline_invariants`：把 `t17-cognition-agent-review.json` / `t17-matrix-v2-agent-review.json` 两份 Agent 自审报告的 `t17_complete=False` / `t12_complete=False` / `quality_pass=False` 锁定为"本任务与 T12 尚未通过 Agent 自审即未验收"的硬证据；并把 cognition 报告的 `baseline_mutation=False` 与 v2 矩阵报告的 `canonical_baselines_unchanged=True` 锁定为"未验收 ≠ 偷偷改基线"的硬约束；83 项 model contracts 全过。
