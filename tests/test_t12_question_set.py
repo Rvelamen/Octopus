@@ -645,3 +645,130 @@ def test_v2_pool_gold_standard_verdict_uses_protocol_vocabulary() -> None:
             f"case {case['case_id']!r} gold_standard.verdict={v!r} "
             f"is not in the protocol vocabulary {VALID}"
         )
+
+
+# ---------------------------------------------------------------------------
+# v1 8-pilot dataset invariants — the runner's wire contract. v1 is the
+# 8-case dataset t12-quality-runner.py consumes; v2 is the 84-case
+# upstream pool. v1 ≠ a literal subset of v2 by case_id (they are
+# different authoring rounds that cover the same protocol class set),
+# but v1 must itself be self-consistent on the wire contract the
+# runner checks.
+# ---------------------------------------------------------------------------
+
+
+def _ensure_v1_exists() -> dict:
+    if not V1_DATASET.exists():
+        import pytest
+        pytest.skip(f"v1 dataset not present at {V1_DATASET}")
+    return _load(V1_DATASET)
+
+
+def test_v1_dataset_has_exactly_8_cases() -> None:
+    """The runner hard-codes the 8-pilot contract; the v1 dataset must
+    be exactly 8 cases or the runner's expected_count check fails.
+    """
+    v1 = _ensure_v1_exists()
+    assert len(v1["cases"]) == 8, (
+        f"v1 8-pilot must have exactly 8 cases, got {len(v1['cases'])}"
+    )
+
+
+def test_v1_dataset_class_set_matches_canonical_protocol() -> None:
+    """v1 must cover exactly the 4 boundary classes + the 4 canonical
+    expression classes (one case per class). The remaining 2
+    expression classes (disagree, unknown_expression) are intentionally
+    excluded from v1 — they are covered by v2 + the extension windows
+    (see test_extension_windows_are_not_runner_compatible).
+    """
+    v1 = _ensure_v1_exists()
+    classes = {(c["tier"], c["class"]) for c in v1["cases"]}
+    expected = (
+        {("boundary", c) for c in V1_BOUNDARY}
+        | {("expression", c) for c in V1_EXPRESSION}
+    )
+    assert classes == expected, (
+        f"v1 class set must match the 4+4 canonical protocol; "
+        f"missing {expected - classes}, extra {classes - expected}"
+    )
+
+
+def test_v1_dataset_one_case_per_class() -> None:
+    """Each of the 8 classes must appear exactly once in v1; otherwise
+    the runner's per-class counters would lie about coverage.
+    """
+    from collections import Counter
+    v1 = _ensure_v1_exists()
+    counts = Counter((c["tier"], c["class"]) for c in v1["cases"])
+    for k, v in counts.items():
+        assert v == 1, f"v1 {k} appears {v} times; expected exactly 1"
+
+
+def test_v1_dataset_covers_both_characters_and_both_books() -> None:
+    """8-pilot covers 石猴 (0) and 黛玉 (1); the cross_book_hearsay
+    case must list both book UUIDs.
+    """
+    v1 = _ensure_v1_exists()
+    actors = {c["target_actor_indices"][0] for c in v1["cases"]}
+    assert actors == {0, 1}, f"v1 must cover both characters, got {actors}"
+    hearsay = [c for c in v1["cases"] if c["class"] == "cross_book_hearsay"]
+    assert len(hearsay) == 1
+    assert set(hearsay[0]["book_ids"]) == {XYJ, HLM}, (
+        f"v1 cross_book_hearsay case must list both books, "
+        f"got {hearsay[0]['book_ids']}"
+    )
+
+
+def test_v1_dataset_metadata_freeze() -> None:
+    """The runner checks ``dataset_version == 't12-pilot-eight-v1'`` and
+    ``native_call_ceiling == 32``; both are wire contracts.
+    """
+    v1 = _ensure_v1_exists()
+    assert v1["dataset_version"] == "t12-pilot-eight-v1", (
+        f"v1 dataset_version must be t12-pilot-eight-v1 (runner wire "
+        f"signal), got {v1['dataset_version']!r}"
+    )
+    assert v1["native_call_ceiling"] == 32, (
+        f"v1 native_call_ceiling must be 32 (runner wire signal), "
+        f"got {v1['native_call_ceiling']!r}"
+    )
+
+
+def test_v1_pool_v2_slicing_round_trip() -> None:
+    """The v2 84-case pool can be sliced into 8-pilot windows; the
+    result must satisfy the same v1 contract. This is a round-trip
+    check: pick window 0, assert it carries the v1 dataset_version,
+    8 cases, the 4 boundary + 4 expression class set, and ceiling=32.
+    """
+    import subprocess
+
+    if not V2_POOL.exists():
+        import pytest
+        pytest.skip("v2 pool not present")
+    out = REPO / "tmp" / "test-t12-roundtrip-window-0.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        subprocess.run(
+            [sys.executable, str(SLICER),
+             "--pool", str(V2_POOL),
+             "--output", str(out),
+             "--window-index", "0",
+             "--window-size", "8"],
+            capture_output=True, text=True, check=True, cwd=str(REPO),
+        )
+        window = _load(out)
+        assert window["dataset_version"] == "t12-pilot-eight-v1"
+        assert window["native_call_ceiling"] == 32
+        assert len(window["cases"]) == 8
+        classes = {(c["tier"], c["class"]) for c in window["cases"]}
+        assert ("boundary", "knowable") in classes
+        assert ("boundary", "unknowable") in classes
+        assert ("boundary", "belief") in classes
+        assert ("boundary", "emotion") in classes
+        assert ("expression", "answer") in classes
+        assert ("expression", "challenge") in classes
+        assert ("expression", "comfort") in classes
+        assert ("expression", "cross_book_hearsay") in classes
+    finally:
+        if out.exists():
+            out.unlink()
