@@ -127,3 +127,5 @@
 
 同日追加 `test_anchored_and_mentions_prototypes_share_input_pair`：把 `real-model-anchored-discovery-v1.json` 与 `real-model-mentions-discovery-v1.json` 两份 v1 原型（anchored 场景型 / mentions 提及型）的 `cases[].source_input_sha256` 共同锁定为同一对冻结输入（`65270ca4…` + `d6dea8f6…`），并锁定 `policy_version="candidate-identity-v2"` + `prompt_version` 以 `-prototype-v1` 结尾的"原型而非生产"标识——`source_input_sha256` 漂移即代表两个原型已不再对比同一对冻结单元，policy/prompt 版本漂移即代表原型标记被偷偷换为生产；85 项 model contracts 全过。
 
+同日新增 [T12 验收证据索引](../validation/2026-10-16-t12-acceptance-index.md)，把本任务累计 62 次原生调用 + 4 次 cognition 防护精修 + t17-matrix-v2-agent-review `t17_complete=False` / `t12_complete=False` / `quality_pass=False` 明确归入"未关闭清单"对应行；不替本任务或 T12 的真实模型质量做通过判定。
+

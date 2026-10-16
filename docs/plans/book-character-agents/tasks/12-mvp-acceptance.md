@@ -152,3 +152,5 @@
 
 同日追加 `test_anchored_and_mentions_prototypes_share_input_pair`：把 `real-model-anchored-discovery-v1.json` 与 `real-model-mentions-discovery-v1.json` 两份 v1 原型的 `cases[].source_input_sha256` 共同锁定为同一对冻结输入（`65270ca4…` + `d6dea8f6…`），并锁定 `policy_version="candidate-identity-v2"` + `prompt_version` 以 `-prototype-v1` 结尾——是发现阶段"原型而非生产"标识与对比同一对冻结单元的硬证据；85 项 model contracts 全过。
 
+同日新增 [T12 验收证据索引](../validation/2026-10-16-t12-acceptance-index.md)，把 T01–T11/T15/T16/T18 已落实的存储/服务/协议/界面证据按 T12 验收标准逐条映射到阶段验证、测试文件和运行脚本；只把"结构权限/幂等/隔离/开关/读写矩阵/可关闭/可回滚"等确定性子项列为已勾选，60 项边界 / 24 项表达 / 84 题金标准 / 全书 / 完整应用 / 人工盲评归入"未关闭清单"并指向现有真实模型记录。本索引不替模型质量背书；4 节起列明每条未关闭项的当前证据位置与状态。85 项 model contracts 仍为完整项目前置硬证据。
+
