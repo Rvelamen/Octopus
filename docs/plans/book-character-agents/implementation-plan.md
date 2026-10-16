@@ -373,3 +373,5 @@ v15发现链路115项专项通过，独立全书首窗8次完成两书各3单元
 新增 t17 v2 矩阵 5 个 chat-room 模块级 SHA256 冻结回归 `test_t17_matrix_v2_freezes_all_five_chat_runtime_modules`：验证 `real-model-t17-matrix-v2.json` 中 `runtime_sha256` 记录的所有 5 个模块（`chat_worker.py`、`chat_models.py`、`chat_validation.py`、`context.py`、`knowledge.py`）的当前字节级哈希与诊断一致；任何 chat-room 端代码改动必须同步更新诊断并重跑六组合原生；63 项 model contracts 全过。
 
 新增 `test_discovery_inline_and_grouped_prompts_match_v2_v1_diagnostics`：锁住 `INLINE_PROMPT`（discovery_inline）与 `GROUPED_PROMPT`（discovery_grouped）的字节级 SHA256，分别与 `real-model-inline-discovery-v2.json` 和 `real-model-grouped-discovery-v1.json` 中 `prompt_sha256` 一致；发现阶段提示词任何字符级改动必须同步更新诊断并重跑。
+
+新增 `test_chat_review_v9_sha_matches_conditional_and_negative_diagnostics`：锁住 `character-chat-review-v9` 字节级 SHA256 与 `real-model-t17-conditional-positive-v1.json` 及 `real-model-t17-current-negative-v1.json` 中 `review_prompt_sha256` 一致（两份诊断必须用同一份 v9 review 文本）；是对 `chat_models.py` 模块冻结的细粒度补充，让 v9 review 文本变更即使不影响模块其他内容也会失败。

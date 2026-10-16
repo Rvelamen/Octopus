@@ -999,3 +999,36 @@ def test_discovery_inline_and_grouped_prompts_match_v2_v1_diagnostics():
             f"{fname} prompt drift: {actual} != {expected}; "
             "re-run the discovery and update the diagnostic."
         )
+
+
+def test_chat_review_v9_sha_matches_conditional_and_negative_diagnostics():
+    """character-chat-review-v9 must stay byte-frozen against t17 SHA diagnostics.
+
+    The conditional-positive and current-negative T17 diagnostics both
+    recorded a `review_prompt_sha256` of the v9 review. Freezing this
+    here complements the chat_models.py module freeze: any change to
+    the v9 review text will fail this test even if some unrelated
+    function in the file is touched, so the diagnostic author has to
+    re-record the snapshot and re-run the conditional/negative probes.
+    """
+    import hashlib
+    from pathlib import Path
+
+    from backend.services.book_world.chat_models import REVIEW_PROMPTS
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    expected_sha = "91ebcd2c1b193ab27b7350f12d21f0c7fd9bafd1615abc5c806c10fbc85a439e"
+    actual_sha = hashlib.sha256(
+        REVIEW_PROMPTS["character-chat-review-v9"].encode()
+    ).hexdigest()
+    assert actual_sha == expected_sha
+
+    # Both diagnostics must agree on the same hash.
+    for fname in (
+        "real-model-t17-conditional-positive-v1.json",
+        "real-model-t17-current-negative-v1.json",
+    ):
+        data = json.loads((base / fname).read_text(encoding="utf-8"))
+        assert data["review_prompt_sha256"] == expected_sha, (
+            f"{fname} recorded a different review sha: {data['review_prompt_sha256']}"
+        )
