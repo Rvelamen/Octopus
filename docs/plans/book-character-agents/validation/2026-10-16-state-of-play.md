@@ -28,6 +28,7 @@
 最近 10 个 commit（`git log --oneline -10`）：
 
 ```
+4a92df1 docs(state): surface T08/T11/T12-aggregation guards alongside existing 4
 c57594d docs(t12): aggregate 11 T03/T04/T09 deterministic sub-items under one row
 589db8e docs(t12): aggregate 6 negative-example safeguards under one deterministic row
 3dc3d88 test(t08): pin directed @ resolves to target member_id when two members share display name
