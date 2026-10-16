@@ -1288,3 +1288,69 @@ def test_t17_matrix_runner_sha_and_baseline_invariant_pin_v2_diagnostic():
             "before and after the run; the matrix/pilot is meant to "
             "be a read-only probe"
         )
+
+
+def test_inline_discovery_v1_module_shas_pin_numbered_runtime():
+    """The v1 inline diagnostic recorded two discovery module SHAs.
+
+    v1 of the inline discovery diagnostic recorded runtime SHAs for
+    three files: ``discovery_inline.py`` (which we now freeze against
+    v2 separately), ``discovery_numbered.py``, and ``discovery.py``.
+    The inline prompt has since moved to v2 and ``discovery_inline.py``
+    has been rewritten; ``discovery.py`` was also edited and is no
+    longer byte-stable against the v1 diagnostic. However
+    ``discovery_numbered.py`` is still byte-stable against v1 — the
+    numbered module is still in production and the v1 inline run
+    observed it at SHA ``5f16f1b1…``. Freezing that here means any
+    future edit to ``discovery_numbered.py`` must update the v1
+    diagnostic, re-run the inline discovery, and refresh the expected
+    hash, exactly as the chat-room matrix requires.
+    """
+    import hashlib
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    diagnostic = json.loads(
+        (base / "real-model-inline-discovery-v1.json").read_text(encoding="utf-8")
+    )
+    runtime = diagnostic["runtime_sha256"]
+
+    # discovery_numbered.py is still byte-stable against v1; lock it.
+    numbered_path = (
+        Path(__file__).resolve().parents[1]
+        / "backend/services/book_world/discovery_numbered.py"
+    )
+    actual_sha = hashlib.sha256(numbered_path.read_bytes()).hexdigest()
+    expected_sha = runtime[
+        "backend/services/book_world/discovery_numbered.py"
+    ]
+    assert actual_sha == expected_sha, (
+        "discovery_numbered.py drift: "
+        f"{actual_sha} != {expected_sha}; "
+        "the v1 inline discovery diagnostic observed this module at "
+        "this SHA; re-run the inline discovery and update the diagnostic."
+    )
+
+    # discovery_inline.py changed between v1 and v2; v1's expected
+    # value is the historical snapshot, not the current file. We
+    # still record the historical v1 expectation in a comment so the
+    # next reader does not mistake the v1 SHA for a current one.
+    v1_inline_sha = runtime[
+        "backend/services/book_world/discovery_inline.py"
+    ]
+    # The v2 inline test freezes the current SHA; the v1 value here
+    # is the historical reference. Asserting v1 != v2-equivalent
+    # documents that the inline file has been edited at least once
+    # between the two native runs.
+    v2_diagnostic = json.loads(
+        (base / "real-model-inline-discovery-v2.json").read_text(encoding="utf-8")
+    )
+    v2_inline_sha = v2_diagnostic["runtime_sha256"][
+        "backend/services/book_world/discovery_inline.py"
+    ]
+    assert v1_inline_sha != v2_inline_sha, (
+        "v1 and v2 inline diagnostics report the same SHA for "
+        "discovery_inline.py; the v1 SHA is documented to be a "
+        "historical snapshot, so this is a sign the v1/v2 run labels "
+        "have been conflated"
+    )

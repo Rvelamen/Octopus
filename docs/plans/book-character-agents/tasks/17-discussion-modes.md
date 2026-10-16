@@ -101,3 +101,5 @@
 
 同日追加 `test_t17_matrix_runner_sha_and_baseline_invariant_pin_v2_diagnostic`：锁住 `discussion-acceptance.py` 矩阵执行器字节级 SHA256 与 t17 matrix v2 / cognition-pilot v1 / cognition-pilot v2 三份诊断的 `runner_sha256=cdcc9040…` 一致；并锁住 matrix v1 / matrix v2 / cognition-pilot v1 / cognition-pilot v2 四份诊断共同报告的 `canonical_baselines_unchanged=True` 与 `canonical_baselines_before == canonical_baselines_after`，作为"矩阵与认知探针是只读、非破坏性"的硬证据；72 项 model contracts 全过。
 
+同日追加 `test_inline_discovery_v1_module_shas_pin_numbered_runtime`：锁住 `discovery_numbered.py` 字节级 SHA256 与 inline discovery v1 诊断 `5f16f1b1…` 一致；并验证 v1 与 v2 inline 诊断中 `discovery_inline.py` SHA 必然不同（作为 v1→v2 之间合法改动的历史快照契约）；73 项 model contracts 全过。
+
