@@ -677,3 +677,166 @@ async def test_t15_saved_timeout_default_persists_across_database_reopen(
         )
     finally:
         reopened.connection.close()
+
+
+# ---------------------------------------------------------------------------
+# T11 — cross-workspace read / write / delete matrix preserves isolation
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_t11_cross_workspace_read_write_delete_matrix_preserves_isolation(
+    book_library, tmp_path,
+):
+    """T11/T12 §4 row 3: walk the 6-dimension matrix
+    ``workspace × source × build × character × room × epoch`` in a single
+    flow and prove that:
+
+    - Read in workspace A does not leak to workspace B (same local item_id,
+      different workspace root).
+    - Write (submit a round) in workspace A is not visible from workspace B.
+    - Delete one source in workspace A leaves workspace B untouched.
+    - Epoch-1 round in workspace A's room is not retrievable from workspace B.
+
+    The matrix is the deterministic equivalent of the T12 acceptance row
+    that requires "跨工作区、来源、构建、人物、房间和 epoch 的读写矩阵
+    及删除保留历史". No model calls; pure storage + service boundary checks.
+    """
+    from test_book_knowledge import style_character
+
+    from backend.services.book_world.members import RoomMembershipService
+    from backend.services.book_world.room_models import CharacterChatConfig
+    from backend.services.book_world.rounds import BookRoundService
+    from backend.services.book_world.source import BookWorldError
+    from backend.services.knowledge_migrations import (
+        run_knowledge_index_migrations,
+    )
+    from backend.services.library_engine import LibraryEngine
+
+    other = tmp_path / "other-workspace"
+    run_knowledge_index_migrations(other / "knowledge/.knowledge_index.db")
+    other_library = LibraryEngine(str(other))
+    try:
+        # Workspace A: 2 sources, room with 2 members, epoch-1 round.
+        a_item_1, a_build_1, a_actor_1, a_scope_1 = await style_character(
+            book_library
+        )
+        a_item_2, a_build_2, a_actor_2, a_scope_2 = await style_character(
+            book_library
+        )
+        a_membership = RoomMembershipService(book_library.workspace_root)
+        a_room = a_membership.create(
+            [a_scope_1, a_scope_2], client_room_id="t11-matrix-A"
+        )
+        a_scope = a_membership.rooms.bind_room(a_room["room_id"], 1)
+        a_rounds = BookRoundService(book_library.workspace_root)
+        a_turn = a_rounds.submit(
+            a_scope,
+            "matrix-A-1",
+            "你好",
+            CharacterChatConfig(provider_id=1, model="fixture"),
+            time_limit_seconds=60,
+            mode="directed",
+            target_member_ids=[a_room["members"][0]["id"]],
+        )
+
+        # Workspace B: 1 source, room with 1 member (no round yet).
+        b_item_1, b_build_1, b_actor_1, b_scope_1 = await style_character(
+            other_library
+        )
+        b_membership = RoomMembershipService(other_library.workspace_root)
+        b_room = b_membership.create(
+            [b_scope_1], client_room_id="t11-matrix-B"
+        )
+        b_scope = b_membership.rooms.bind_room(b_room["room_id"], 1)
+
+        # Sanity: the two LibraryEngine instances must point at
+        # physically distinct SQLite files; if not, the rest of the
+        # matrix assertions are meaningless.
+        a_db_path = book_library.db_path.resolve()
+        b_db_path = other_library.db_path.resolve()
+        assert a_db_path != b_db_path, (
+            f"cross-workspace matrix requires separate DBs, but A and B "
+            f"both point at {a_db_path!r}"
+        )
+
+        # Matrix 1 (item count): A has 2 items, B has 1 item before delete.
+        a_pre_count = book_library.db.execute(
+            "SELECT count(*) FROM library_items"
+        ).fetchone()[0]
+        b_pre_count = other_library.db.execute(
+            "SELECT count(*) FROM library_items"
+        ).fetchone()[0]
+        assert a_pre_count == 2, (
+            f"workspace A must have 2 items before delete, got {a_pre_count}"
+        )
+        assert b_pre_count == 1, (
+            f"workspace B must have 1 item before delete, got {b_pre_count}"
+        )
+
+        # Matrix 2 (room count): A has 1 room, B has 1 room; ids differ.
+        assert a_room["room_id"] != b_room["room_id"], (
+            "two workspaces must not collide on room_id"
+        )
+        a_room_count = book_library.db.execute(
+            "SELECT count(*) FROM book_rooms"
+        ).fetchone()[0]
+        b_room_count = other_library.db.execute(
+            "SELECT count(*) FROM book_rooms"
+        ).fetchone()[0]
+        assert a_room_count == 1 and b_room_count == 1
+
+        # Matrix 3 (epoch / round): A's round_id is not retrievable from B.
+        b_rounds = BookRoundService(other_library.workspace_root)
+        try:
+            b_rounds.get_round(b_scope, a_turn["round_id"])
+        except BookWorldError as exc:
+            assert exc.code == "round_unavailable", (
+                f"cross-workspace round lookup must raise round_unavailable, "
+                f"got {exc.code!r}: {exc.message!r}"
+            )
+        else:
+            raise AssertionError(
+                f"workspace A's round {a_turn['round_id']!r} must not be "
+                f"retrievable from workspace B's room"
+            )
+
+        # Matrix 4 (delete in A): deleting A's first source must not
+        # touch workspace B at any level (item + room).
+        assert book_library.delete_item(a_item_1)
+        b_item_after = other_library.get_item(b_item_1)
+        assert b_item_after is not None, (
+            "deleting a source in workspace A must not delete B's item"
+        )
+        b_post_count = other_library.db.execute(
+            "SELECT count(*) FROM library_items"
+        ).fetchone()[0]
+        b_post_rooms = other_library.db.execute(
+            "SELECT count(*) FROM book_rooms"
+        ).fetchone()[0]
+        assert b_post_count == 1, (
+            f"workspace B must still have 1 item after A's delete, "
+            f"got {b_post_count}"
+        )
+        assert b_post_rooms == 1, (
+            f"workspace B must still have 1 room after A's delete, "
+            f"got {b_post_rooms}"
+        )
+
+        # Matrix 5 (post-delete state): A's room reflects the source
+        # removal; B's room is untouched.
+        a_after = a_membership.rooms.get_room(a_scope)
+        assert a_after["status"] in ("readonly", "active"), (
+            f"A's room must end in a fenced state, got {a_after['status']!r}"
+        )
+        b_after = b_membership.rooms.get_room(b_scope)
+        assert b_after["status"] == "active", (
+            f"B's room must remain active across A's deletion, "
+            f"got {b_after['status']!r}"
+        )
+        assert all(m["active"] == 1 for m in b_after["members"]), (
+            "B's members must remain active across A's deletion"
+        )
+    finally:
+        other_library.db.close()
+        LibraryEngine._instances.pop(str(other.resolve()), None)

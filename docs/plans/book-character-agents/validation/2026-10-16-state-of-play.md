@@ -18,7 +18,7 @@
 | T08 跨书多人 | [2026-10-14-group-room-validation](./2026-10-14-group-room-validation.md) | (历史提交) | 13 真实 k3 |
 | T09 全体与控制 | [2026-10-14-all-queue-validation](./2026-10-14-all-queue-validation.md) | (历史提交) | 暂停/继续/停止 |
 | T10 自动导入 | [2026-10-14-automatic-import-validation](./2026-10-14-automatic-import-validation.md) | (历史提交) | 199 通过 |
-| T11 来源生命周期 | [2026-10-14-source-lifecycle-validation](./2026-10-14-source-lifecycle-validation.md) | (历史提交) | 取消/恢复/删除 |
+| T11 来源生命周期 + 跨工作区矩阵 | [2026-10-14-source-lifecycle-validation](./2026-10-14-source-lifecycle-validation.md) + 矩阵契约测试 (本批次) | (历史) + (本批次) | 9 lifecycle + 1 矩阵 |
 | T12 题集 + 切片器 | [2026-10-16-t12-v2-pool-slicer-evidence.md](./2026-10-16-t12-v2-pool-slicer-evidence.md) | 9073987 / bcced1d / 75f2af2 | 84 题金标准 + 45 窗口 |
 | T15 秒数设置 | (无独立验证文档) | e29231c | 3 契约测试 |
 | T16 圆桌 UI | [2026-10-14-roundtable-validation](./2026-10-14-roundtable-validation.md) | (历史提交) | WS 3D + 2D 切换 |
@@ -28,6 +28,7 @@
 最近 10 个 commit（`git log --oneline -10`）：
 
 ```
+3bc9548 docs(state): add state-of-play handoff summarizing closed deterministic gates and budget-blocked items
 e29231c test(t15): pin saved timeout default flows into chat submit for directed + all modes
 24d1959 docs(test): wire trait-completion lint into persona publication summary
 75f2af2 docs(t12): record v2 84-case pool + slicer in acceptance index
@@ -37,7 +38,6 @@ bcced1d docs(t12): record v2 pool + slicer + 0-model-call verification evidence
 70eed8e test(t17): pin trait-vs-completion lint + matrix v2 deterministic reeval
 3183cb7 docs(implementation-plan): record 9-task contract test suite + 577 passed
 ac1dcad test(t04-t11,t16): add 9 deterministic per-task contract tests
-bcec07d test(t17): pin cross-book user-told hearsay does not become character autobiography
 ```
 
 分支：`feature/pdf-annotation-chat-and-clip-fix`（已推送远端，与 `main` 同步无冲突）
