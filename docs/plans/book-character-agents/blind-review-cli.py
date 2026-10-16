@@ -470,6 +470,149 @@ def cmd_worksheet(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_import(args: argparse.Namespace) -> int:
+    """从离线审阅的 worksheet CSV 导入 reviewer_verdict + reviewer_comment 列。
+
+    用户可：
+    1. 跑 `worksheet` 子命令导出 160 case 到 CSV
+    2. 在 Excel/编辑器里填充 reviewer_verdict (p/f/o/u/s/c) + reviewer_comment 列
+    3. 跑本子命令把已填的 case 写入 JSON（与 `start`/`regrade` 输出格式一致）
+
+    每行按 (run_id, case_id) 合并：与既有 JSON 中同 key 的审阅替换，其他保留。
+    reviewer_verdict 为空的行跳过。
+    """
+    csv_path = Path(args.worksheet).resolve()
+    out_path = Path(args.out).resolve()
+    if not csv_path.exists():
+        print(f"ERROR: worksheet 文件不存在 {csv_path}")
+        return 1
+    cases = collect_all_cases()
+    if not cases:
+        print("ERROR: 未找到任何 case")
+        return 1
+    by_run_case: dict[tuple[str, str], dict[str, Any]] = {}
+    for case in cases:
+        by_run_case[(case["run_id"], case["case_id"])] = case
+
+    # 加载既有审阅
+    existing_reviews: list[dict[str, Any]] = []
+    if out_path.exists():
+        with out_path.open(encoding="utf-8") as fh:
+            existing_report = json.load(fh)
+        existing_reviews = list(existing_report.get("reviews") or [])
+    existing_keys = {f"{r['run_id']}::{r['case_id']}" for r in existing_reviews}
+
+    imported = 0
+    skipped_empty = 0
+    skipped_unknown_verdict = 0
+    skipped_unknown_case = 0
+    replaced = 0
+    with csv_path.open(encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh)
+        required_columns = {"case_id", "reviewer_verdict"}
+        missing = required_columns - set(reader.fieldnames or [])
+        if missing:
+            print(f"ERROR: worksheet 缺少必需列 {sorted(missing)}")
+            return 1
+        for row in reader:
+            case_id = (row.get("case_id") or "").strip()
+            verdict_raw = (row.get("reviewer_verdict") or "").strip().lower()
+            comment = (row.get("reviewer_comment") or "").strip()
+            if not verdict_raw:
+                skipped_empty += 1
+                continue
+            ch = verdict_raw[0]
+            if ch not in VERDICT_KEYS:
+                skipped_unknown_verdict += 1
+                print(f"WARNING: case_id={case_id!r} verdict={verdict_raw!r} 未识别键，跳过")
+                continue
+            run_label = (row.get("run_label") or "").strip()
+            # 从 case 列表里按 (run_label, case_id) 找完整 context
+            target = None
+            for case in cases:
+                if case["case_id"] == case_id and case["run_label"] == run_label:
+                    target = case
+                    break
+            if target is None:
+                # 退而求其次：按 case_id 找（多 run 出现时取第一个）
+                matches = [c for c in cases if c["case_id"] == case_id]
+                if not matches:
+                    skipped_unknown_case += 1
+                    print(f"WARNING: case_id={case_id!r} run_label={run_label!r} 在 160 case 中找不到，跳过")
+                    continue
+                target = matches[0]
+                if len(matches) > 1:
+                    print(
+                        f"WARNING: case_id={case_id!r} 在 {len(matches)} 处出现，"
+                        f"已取第一处 run_id={target['run_id']!r}"
+                    )
+            verdict_label, _ = VERDICT_KEYS[ch]
+            review_entry = {
+                "run_id": target["run_id"],
+                "run_label": target["run_label"],
+                "case_id": case_id,
+                "tier": target["tier"],
+                "class": target["class"],
+                "mode": target["mode"],
+                "discussion_mode": target["discussion_mode"],
+                "character_label": target["character_label"],
+                "character_build_id": target["character_build_id"],
+                "verdict_key": ch,
+                "verdict": verdict_label,
+                "comment": comment,
+                "reviewed_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            }
+            key = f"{target['run_id']}::{case_id}"
+            if key in existing_keys:
+                existing_reviews = [
+                    r for r in existing_reviews
+                    if f"{r['run_id']}::{r['case_id']}" != key
+                ]
+                replaced += 1
+            else:
+                existing_keys.add(key)
+            existing_reviews.append(review_entry)
+            imported += 1
+
+    if imported == 0:
+        print("ERROR: worksheet 中没有 reviewer_verdict 非空的有效行，未写入 JSON")
+        return 1
+
+    # 构造 header：继承既有（如有），否则按默认
+    if out_path.exists():
+        with out_path.open(encoding="utf-8") as fh:
+            prior = json.load(fh)
+        header = {
+            "reviewer": prior.get("reviewer") or os.environ.get("USER", "reviewer"),
+            "review_start": prior.get("review_start")
+            or time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "review_protocol_version": prior.get("review_protocol_version", "v1"),
+            "reviewer_kind": prior.get(
+                "reviewer_kind",
+                "Agent checks complete published bodies and supplied sources; no claim of human blind review",
+            ),
+            "case_count": prior.get("case_count", len(cases)),
+            "show_blind": prior.get("show_blind", False),
+        }
+    else:
+        header = {
+            "reviewer": os.environ.get("USER", "reviewer"),
+            "review_start": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "review_protocol_version": "v1",
+            "reviewer_kind": "Agent checks complete published bodies and supplied sources; no claim of human blind review",
+            "case_count": len(cases),
+            "show_blind": False,
+        }
+    save_review(out_path, header, existing_reviews)
+    print(
+        f"已导入 {imported} 条审阅到 {out_path}"
+        f"（替换既有 {replaced} 条 + 新增 {imported - replaced} 条；"
+        f"跳过空行 {skipped_empty} / 未知 verdict {skipped_unknown_verdict} / 未知 case {skipped_unknown_case}）"
+    )
+    print("下一步可跑 `python blind-review-cli.py stats --out <out>` 查看审阅统计")
+    return 0
+
+
 def cmd_regrade(args: argparse.Namespace) -> int:
     """重审单条 case：显示完整信息 + 提供单字符判定重判（追加到 reviews 列表）。"""
     out_path = Path(args.out).resolve()
@@ -572,6 +715,13 @@ def main() -> int:
         "--worksheet", default=str(VALIDATION_DIR / "blind-review-2026-10-16-worksheet.csv")
     )
 
+    p_import = sub.add_parser("import", help="从已填的 worksheet CSV 导入审阅到 JSON")
+    p_import.add_argument(
+        "--worksheet", default=str(VALIDATION_DIR / "blind-review-2026-10-16-worksheet.csv"),
+        help="已填 reviewer_verdict / reviewer_comment 列的 worksheet CSV",
+    )
+    p_import.add_argument("--out", default=str(VALIDATION_DIR / "blind-review-2026-10-16.json"))
+
     p_regrade = sub.add_parser("regrade", help="重审单条 case")
     p_regrade.add_argument("case_id")
     p_regrade.add_argument("--out", default=str(VALIDATION_DIR / "blind-review-2026-10-16.json"))
@@ -582,6 +732,7 @@ def main() -> int:
         "resume": cmd_resume,
         "stats": cmd_stats,
         "worksheet": cmd_worksheet,
+        "import": cmd_import,
         "regrade": cmd_regrade,
     }[args.command](args)
 
