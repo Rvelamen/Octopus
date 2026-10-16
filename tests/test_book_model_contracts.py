@@ -1063,3 +1063,66 @@ def test_chat_review_v9_sha_matches_conditional_and_negative_diagnostics():
         assert data["review_prompt_sha256"] == expected_sha, (
             f"{fname} recorded a different review sha: {data['review_prompt_sha256']}"
         )
+
+
+def test_persona_version_constants_pin_aliases_and_prompts():
+    """Persona version constants must point at specific EXTRACT/REVIEW prompts and keep aliasing.
+
+    The build pipeline reads STRUCTURED_PERSONA_VERSION, EVIDENCE_PERSONA_VERSION,
+    SCOPED_PERSONA_VERSION and ACQUISITION_REVIEW_VERSION to decide which prompt
+    body to invoke. If a constant silently moves to a different key (e.g. v6 -> v8)
+    the saved diagnostics would no longer match what the running code uses. This
+    test freezes the four constants to their current key bindings and locks the
+    v7-review-equals-v6-review alias so the persona review can keep using v7 as
+    a stable label while sharing the actual v6 prompt body.
+    """
+    from backend.services.book_world.persona_acquisition import (
+        ACQUISITION_REVIEW_VERSION,
+    )
+    from backend.services.book_world.persona_models import (
+        EVIDENCE_PERSONA_VERSION,
+        EXTRACT_PROMPTS,
+        REVIEW_PROMPTS,
+        SCOPED_PERSONA_VERSION,
+        STRUCTURED_PERSONA_VERSION,
+    )
+
+    # Extract-side constants must point at specific EXTRACT_PROMPT keys.
+    assert STRUCTURED_PERSONA_VERSION == "persona-extract-v5"
+    assert EVIDENCE_PERSONA_VERSION == "persona-extract-v6"
+    assert SCOPED_PERSONA_VERSION == "persona-extract-v7"
+
+    # Acquisition review must use persona-review-v7 (the same label frozen by
+    # the persona-scope v7 diagnostic and the acquisition-controls v4 snapshot).
+    assert ACQUISITION_REVIEW_VERSION == "persona-review-v7"
+
+    # The keys must all exist; otherwise a future rename would silently
+    # break build runs that still reference the old name.
+    for key in (
+        STRUCTURED_PERSONA_VERSION,
+        EVIDENCE_PERSONA_VERSION,
+        SCOPED_PERSONA_VERSION,
+    ):
+        assert key in EXTRACT_PROMPTS, f"EXTRACT_PROMPTS missing {key}"
+    assert ACQUISITION_REVIEW_VERSION in REVIEW_PROMPTS, (
+        f"REVIEW_PROMPTS missing {ACQUISITION_REVIEW_VERSION}"
+    )
+
+    # Alias chain: persona-review-v7 shares its body with persona-review-v6
+    # (so existing v6 diagnostics remain valid for v7 runs). v7 must be the
+    # exact same string, not a re-typed copy.
+    assert REVIEW_PROMPTS["persona-review-v7"] is REVIEW_PROMPTS["persona-review-v6"]
+    assert REVIEW_PROMPTS["persona-review-v7"] == REVIEW_PROMPTS["persona-review-v6"]
+
+    # The persona-extract chain is not an alias chain: v4 -> v5 -> v6 -> v7
+    # are all distinct bodies (cumulative additions). Lock that fact so a
+    # future "extract-v7 is just an alias of v6" change would be caught.
+    for older, newer in [
+        ("persona-extract-v3", "persona-extract-v4"),
+        ("persona-extract-v4", "persona-extract-v5"),
+        ("persona-extract-v5", "persona-extract-v6"),
+        ("persona-extract-v6", "persona-extract-v7"),
+    ]:
+        assert EXTRACT_PROMPTS[older] in EXTRACT_PROMPTS[newer], (
+            f"{newer} must extend {older} (cumulative); not an alias"
+        )

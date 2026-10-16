@@ -118,3 +118,5 @@
 
 同日追加 `test_v9_review_pins_cognition_change_safeguard`：锁住 v9 review 在 v8 基础上新增的 3 段 cognition 防护——"原著的认识变化也是事实"、"嵌在过去经历中的'有没有X/是否X'"、"新处境的条件性选择"——防止 v9 review 退回 v8 后再次出现过去经历否定与新条件推演过严的双向回归。
 
+同日追加 `test_persona_version_constants_pin_aliases_and_prompts`：锁住 persona 构建管线的 4 个版本常量（`STRUCTURED_PERSONA_VERSION="persona-extract-v5"`、`EVIDENCE_PERSONA_VERSION="persona-extract-v6"`、`SCOPED_PERSONA_VERSION="persona-extract-v7"`、`ACQUISITION_REVIEW_VERSION="persona-review-v7"`）必须指向仍存在的 prompt 键；锁住 `persona-review-v7` 是 `persona-review-v6` 的同对象别名（v7=v6 共用 prompt 体），并锁住 persona-extract v3→v7 是逐版本累加而非别名；69 项 model contracts 全过。
+

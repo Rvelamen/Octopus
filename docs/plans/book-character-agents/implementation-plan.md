@@ -377,3 +377,5 @@ v15发现链路115项专项通过，独立全书首窗8次完成两书各3单元
 新增 `test_chat_review_v9_sha_matches_conditional_and_negative_diagnostics`：锁住 `character-chat-review-v9` 字节级 SHA256 与 `real-model-t17-conditional-positive-v1.json` 及 `real-model-t17-current-negative-v1.json` 中 `review_prompt_sha256` 一致（两份诊断必须用同一份 v9 review 文本）；是对 `chat_models.py` 模块冻结的细粒度补充，让 v9 review 文本变更即使不影响模块其他内容也会失败。
 
 新增 `test_v9_review_pins_cognition_change_safeguard`：锁住 v9 review 在 v8 基础上新增的 3 段 cognition 防护——"原著的认识变化也是事实"（"后来才知道X" 本身是事实不是修辞）、"嵌在过去经历中的'有没有X/是否X'"（不能因像开放问题就放行本人已知答案）、"新处境的条件性选择"（新处境的条件选择可由已给性格支持，不要求原文出现同一路径）；防止 v9 review 退回到 v8 后再次出现过去经历否定与新条件推演过严的双向回归。
+
+新增 `test_persona_version_constants_pin_aliases_and_prompts`：锁住 persona 构建管线的 4 个版本常量——`STRUCTURED_PERSONA_VERSION="persona-extract-v5"`、`EVIDENCE_PERSONA_VERSION="persona-extract-v6"`、`SCOPED_PERSONA_VERSION="persona-extract-v7"`、`ACQUISITION_REVIEW_VERSION="persona-review-v7"`——必须指向 `EXTRACT_PROMPTS`/`REVIEW_PROMPTS` 中仍然存在的键；同时锁住 `persona-review-v7` 是 `persona-review-v6` 的同对象别名（不能改成独立副本否则 v6/v7 诊断将不同步），并锁住 persona-extract v3→v7 是逐版本累加而非别名（每次都新增防护段落，不能偷偷退化成 alias）；69 项 model contracts 全过。

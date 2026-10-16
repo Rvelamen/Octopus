@@ -77,3 +77,5 @@
 
 同日追加 `test_chat_review_v9_sha_matches_conditional_and_negative_diagnostics`：锁住 `character-chat-review-v9` 字节级 SHA256 与 `real-model-t17-conditional-positive-v1.json` 及 `real-model-t17-current-negative-v1.json` 中 `review_prompt_sha256` 一致；是 `chat_models.py` 模块冻结的细粒度补充。
 
+同日追加 `test_persona_version_constants_pin_aliases_and_prompts`：锁住 persona 构建管线的 4 个版本常量（`STRUCTURED_PERSONA_VERSION="persona-extract-v5"`、`EVIDENCE_PERSONA_VERSION="persona-extract-v6"`、`SCOPED_PERSONA_VERSION="persona-extract-v7"`、`ACQUISITION_REVIEW_VERSION="persona-review-v7"`）必须指向仍存在的 prompt 键；锁住 `persona-review-v7` 是 `persona-review-v6` 的同对象别名（v7=v6 共用 prompt 体，scope-v7 诊断记录因此仍能映射 v6 review），并锁住 persona-extract v3→v7 是逐版本累加而非别名；69 项 model contracts 全过。
+
