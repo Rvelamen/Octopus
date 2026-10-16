@@ -1,11 +1,12 @@
 {
   "meta": {
-    "aggregated_at": "2026-10-16T13:03:58Z",
+    "aggregated_at": "2026-10-16T13:14:33Z",
     "source_file_count": 20,
     "source_protocols": [
       "v1",
       "v1ext"
     ],
+    "t17_source_file_count": 3,
     "generator": "docs/plans/book-character-agents/scripts/aggregate_t12_real_runs.py"
   },
   "totals": {
@@ -846,6 +847,165 @@
       "status": "failed",
       "calls": 5,
       "elapsed_seconds_total": 101.1
+    }
+  ],
+  "t17_summary": [
+    {
+      "source": "t17_matrix_v2_A",
+      "source_file": "book-character-agents\\validation\\real-model-t17-matrix-v2.json",
+      "case_count": 6,
+      "cases_executed_pending_semantic_review": 6,
+      "cases_not_selected": 0,
+      "cases_other_status": 0,
+      "native_call_count": 26,
+      "published_slot_count": 10,
+      "tok_in": 19369,
+      "tok_out": 10229,
+      "elapsed_seconds": 372.2,
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true
+    },
+    {
+      "source": "t17_ab_reeval_B",
+      "source_file": "book-character-agents\\validation\\real-model-t17-matrix-v2-ab.json",
+      "case_count": 6,
+      "cases_executed_pending_semantic_review": 6,
+      "cases_not_selected": 0,
+      "cases_other_status": 0,
+      "native_call_count": 20,
+      "published_slot_count": 10,
+      "tok_in": 16925,
+      "tok_out": 6822,
+      "elapsed_seconds": 261.8,
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true
+    },
+    {
+      "source": "t17_cognition_pilot",
+      "source_file": "book-character-agents\\validation\\real-model-t17-cognition-pilot-v2.json",
+      "case_count": 6,
+      "cases_executed_pending_semantic_review": 1,
+      "cases_not_selected": 5,
+      "cases_other_status": 0,
+      "native_call_count": 3,
+      "published_slot_count": 1,
+      "tok_in": 3768,
+      "tok_out": 1621,
+      "elapsed_seconds": 55.9,
+      "run_status": "executed_pending_semantic_review",
+      "canonical_baselines_unchanged": true
+    }
+  ],
+  "ab_comparison": [
+    {
+      "case_id": "free-all-unshared-private-knowledge",
+      "discussion_mode": "free",
+      "mode": "all",
+      "A_published_slots": 2,
+      "B_published_slots": 2,
+      "A_equals_B": true,
+      "A_case_status": "executed_pending_semantic_review",
+      "B_case_status": "executed_pending_semantic_review"
+    },
+    {
+      "case_id": "free-directed-conditional-action",
+      "discussion_mode": "free",
+      "mode": "directed",
+      "A_published_slots": 1,
+      "B_published_slots": 1,
+      "A_equals_B": true,
+      "A_case_status": "executed_pending_semantic_review",
+      "B_case_status": "executed_pending_semantic_review"
+    },
+    {
+      "case_id": "free-natural-topic-shift",
+      "discussion_mode": "free",
+      "mode": "natural",
+      "A_published_slots": 2,
+      "B_published_slots": 2,
+      "A_equals_B": true,
+      "A_case_status": "executed_pending_semantic_review",
+      "B_case_status": "executed_pending_semantic_review"
+    },
+    {
+      "case_id": "topic-all-modern-hearsay",
+      "discussion_mode": "topic",
+      "mode": "all",
+      "A_published_slots": 2,
+      "B_published_slots": 2,
+      "A_equals_B": true,
+      "A_case_status": "executed_pending_semantic_review",
+      "B_case_status": "executed_pending_semantic_review"
+    },
+    {
+      "case_id": "topic-directed-rephrased-dilemma",
+      "discussion_mode": "topic",
+      "mode": "directed",
+      "A_published_slots": 1,
+      "B_published_slots": 1,
+      "A_equals_B": true,
+      "A_case_status": "executed_pending_semantic_review",
+      "B_case_status": "executed_pending_semantic_review"
+    },
+    {
+      "case_id": "topic-natural-retained-topic",
+      "discussion_mode": "topic",
+      "mode": "natural",
+      "A_published_slots": 2,
+      "B_published_slots": 2,
+      "A_equals_B": true,
+      "A_case_status": "executed_pending_semantic_review",
+      "B_case_status": "executed_pending_semantic_review"
+    }
+  ],
+  "cognition_per_case": [
+    {
+      "case_id": "free-natural-topic-shift",
+      "discussion_mode": null,
+      "mode": null,
+      "status": "not_selected",
+      "turns": 0,
+      "published_slots": 0
+    },
+    {
+      "case_id": "topic-natural-retained-topic",
+      "discussion_mode": null,
+      "mode": null,
+      "status": "not_selected",
+      "turns": 0,
+      "published_slots": 0
+    },
+    {
+      "case_id": "free-directed-conditional-action",
+      "discussion_mode": null,
+      "mode": null,
+      "status": "not_selected",
+      "turns": 0,
+      "published_slots": 0
+    },
+    {
+      "case_id": "topic-directed-rephrased-dilemma",
+      "discussion_mode": "topic",
+      "mode": "directed",
+      "status": "executed_pending_semantic_review",
+      "turns": 1,
+      "published_slots": 1
+    },
+    {
+      "case_id": "free-all-unshared-private-knowledge",
+      "discussion_mode": null,
+      "mode": null,
+      "status": "not_selected",
+      "turns": 0,
+      "published_slots": 0
+    },
+    {
+      "case_id": "topic-all-modern-hearsay",
+      "discussion_mode": null,
+      "mode": null,
+      "status": "not_selected",
+      "turns": 0,
+      "published_slots": 0
     }
   ]
 }

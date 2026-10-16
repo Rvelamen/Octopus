@@ -1,8 +1,10 @@
-# T12 真实模型运行聚合（8-pilot + v2 60+24 = 160 case 链路）
+# T12 + T17 真实模型运行聚合
 
-> 聚合时间：2026-10-16T13:03:58Z  |  来源文件：20 份（v1, v1ext 协议）  |  模型调用：0
+> 聚合时间：2026-10-16T13:14:33Z  |  T12 来源文件：20 份（v1, v1ext 协议）  |  T17 来源文件：3 份  |  模型调用：0
 
-## 1. 总体
+## Part I — T12 真实模型运行（8-pilot + v2 60+24）
+
+### 1. 总体
 
 - 窗口数：20
 - 调用总数：392（已完成 387 / 未完成 5）
@@ -14,7 +16,7 @@
 - elapsed_seconds 平均/调用：11.131
 - elapsed_seconds 最大/调用：40.641
 
-## 2. 按窗口
+### 2. 按窗口
 
 | 窗口 | 协议 | case | 调用 | tok_in | tok_out | cache_read | cache_create | elapsed_s | 状态 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -39,7 +41,7 @@
 | exta-window-2 | v1ext | 8 | 21 | 13,252 | 7,719 | 30,848 | 0 | 324.1 | executed_pending_semantic_review |
 | exta-window-3 | v1ext | 8 | 21 | 15,101 | 5,617 | 32,000 | 0 | 237.3 | executed_pending_semantic_review |
 
-## 3. 按 class（按窗口 case 数等分归因 token/elapsed）
+### 3. 按 class（按窗口 case 数等分归因 token/elapsed）
 
 | class | cases | 已完成 | 待审 | tok_in 平均 | tok_out 平均 | elapsed 平均 | published |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -54,30 +56,62 @@
 | unknowable | 20 | 20 | 0 | 1699.1 | 678.8 | 27.27 | 0 |
 | unknown_expression | 4 | 4 | 0 | 1670.2 | 727.0 | 29.18 | 0 |
 
-## 4. 按角色（从 case_id slug 解析 primary actor）
+### 4. 按角色（从 case_id slug 解析 primary actor）
 
 | 角色 | cases | 已完成 | tok_in 平均 | tok_out 平均 | elapsed 平均 |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | 石猴 | 91 | 91 | 1719.6 | 685.3 | 27.49 |
 | 黛玉 | 69 | 69 | 1672.0 | 670.3 | 26.97 |
 
-## 5. 按 phase（generate vs review）
+### 5. 按 phase（generate vs review）
 
 | phase | 调用 | 完成 | 未完成 | tok_in | tok_out | elapsed 总和 | elapsed 平均 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | generate | 207 | 204 | 3 | 98,114 | 59,872 | 2399.0 | 11.589 |
 | review | 185 | 183 | 2 | 173,817 | 48,810 | 1964.2 | 10.617 |
 
-## 6. 按 call status
+### 6. 按 call status
 
 | status | 调用 | elapsed 总和 |
 | --- | ---: | ---: |
 | completed | 387 | 4262.1 |
 | failed | 5 | 101.1 |
 
-## 7. 归因方法说明
+## Part II — T17 真实模型运行（6 组合 + A/B + cognition）
 
-- per-class / per-character 的 token 与 elapsed 通过按窗口 case 数等分归因（窗口 totals / case_count）。
-- 这是 runner 输出 schema 不在 ``calls`` 层携带 case_id 时的确定性近似：每个窗口内 8 个 case 通常共享相同 runner budget，所以等分是稳定近似。
-- published 永远为 0：8-pilot + v2 真实跑全部进入 ``executed_pending_semantic_review`` 终态，质量层不声明通过；T12 §4 row 9 的人工盲评接收这一信号。
+### 7. T17 来源总览
+
+| 来源 | case | executed | not_selected | other | native_call | published_slots | tok_in | tok_out | elapsed_s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| t17_matrix_v2_A | 6 | 6 | 0 | 0 | 26 | 10 | 19,369 | 10,229 | 372.2 |
+| t17_ab_reeval_B | 6 | 6 | 0 | 0 | 20 | 10 | 16,925 | 6,822 | 261.8 |
+| t17_cognition_pilot | 6 | 1 | 5 | 0 | 3 | 1 | 3,768 | 1,621 | 55.9 |
+
+### 8. T17 A/B 对照（matrix_v2 A 路径 vs ab_reeval B 路径）
+
+| case_id | discussion_mode | mode | A published | B published | A==B | A status | B status |
+| --- | --- | --- | ---: | ---: | :---: | --- | --- |
+| free-all-unshared-private-knowledge | free | all | 2 | 2 | ✓ | executed_pending_semantic_review | executed_pending_semantic_review |
+| free-directed-conditional-action | free | directed | 1 | 1 | ✓ | executed_pending_semantic_review | executed_pending_semantic_review |
+| free-natural-topic-shift | free | natural | 2 | 2 | ✓ | executed_pending_semantic_review | executed_pending_semantic_review |
+| topic-all-modern-hearsay | topic | all | 2 | 2 | ✓ | executed_pending_semantic_review | executed_pending_semantic_review |
+| topic-directed-rephrased-dilemma | topic | directed | 1 | 1 | ✓ | executed_pending_semantic_review | executed_pending_semantic_review |
+| topic-natural-retained-topic | topic | natural | 2 | 2 | ✓ | executed_pending_semantic_review | executed_pending_semantic_review |
+
+### 9. T17 cognition pilot（6 case 选 1）
+
+| case_id | discussion_mode | mode | status | turns | published_slots |
+| --- | --- | --- | --- | ---: | ---: |
+| free-natural-topic-shift | None | None | not_selected | 0 | 0 |
+| topic-natural-retained-topic | None | None | not_selected | 0 | 0 |
+| free-directed-conditional-action | None | None | not_selected | 0 | 0 |
+| topic-directed-rephrased-dilemma | topic | directed | executed_pending_semantic_review | 1 | 1 |
+| free-all-unshared-private-knowledge | None | None | not_selected | 0 | 0 |
+| topic-all-modern-hearsay | None | None | not_selected | 0 | 0 |
+
+## Part III — 归因方法说明
+
+- T12 per-class / per-character 的 token 与 elapsed 通过按窗口 case 数等分归因（窗口 totals / case_count）。
+- T12 published 永远为 0：8-pilot + v2 真实跑全部进入 ``executed_pending_semantic_review`` 终态，质量层不声明通过；T12 §4 row 9 的人工盲评接收这一信号。
+- T17 published 来自 ``round.slots[].status == 'published'``（slot-level，不是 case-level 的 status 字段）。case.status = ``executed_pending_semantic_review`` 只代表流程走完，slot 仍可能 publish；T17 row 95 cognition 正例 = cognition pilot 中 1 case 取得 ≥1 published slot，T17 row 91 A/B 对照 = A 路径 6 case / B 路径 6 case 的 published-slot 数逐 case 比较（A==B 列）。
 

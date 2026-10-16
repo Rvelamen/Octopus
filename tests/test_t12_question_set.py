@@ -1275,7 +1275,8 @@ def test_aggregation_file_has_expected_top_level_keys() -> None:
     script that drops a table is caught immediately."""
     payload = _load_aggregation_or_skip()
     expected = {"meta", "totals", "by_window", "by_class",
-                "by_character", "by_phase", "by_status"}
+                "by_character", "by_phase", "by_status",
+                "t17_summary", "ab_comparison", "cognition_per_case"}
     assert expected.issubset(payload.keys()), (
         f"aggregation must contain tables {expected}, got {set(payload.keys())}"
     )
@@ -1441,4 +1442,128 @@ def test_aggregation_self_consistency_under_regeneration() -> None:
         f"aggregator must be deterministic; before != after\n"
         f"diffs: {[k for k in before if before.get(k) != after.get(k)]}"
     )
+
+
+# ---------------------------------------------------------------------------
+# T17 aggregation contract tests
+#
+# T17 produces 3 distinct real-run files (A path, B path, cognition pilot)
+# whose results the §4 row 91 (A/B 对照) and §4 row 95 (cognition 正例)
+# directly consume. These tests lock the aggregation shape and the
+# deterministic A==B / 1-of-6-runned invariants.
+# ---------------------------------------------------------------------------
+
+
+def test_aggregation_t17_summary_has_three_sources_with_published_slots() -> None:
+    """T17 real-run file constant set: 1 A-path + 1 B-path + 1 cognition pilot.
+    The A/B path each have 6 cases, all executed; the cognition pilot has 6
+    candidate cases but only the cognition-passing subset runs."""
+    payload = _load_aggregation_or_skip()
+    t17_summary = payload.get("t17_summary", [])
+    assert len(t17_summary) == 3, (
+        f"t17_summary must have 3 source rows (A, B, cognition), got "
+        f"{len(t17_summary)}: {[r['source'] for r in t17_summary]}"
+    )
+    by_source = {r["source"]: r for r in t17_summary}
+    assert set(by_source.keys()) == {
+        "t17_matrix_v2_A", "t17_ab_reeval_B", "t17_cognition_pilot"
+    }, (
+        f"t17_summary sources must be exactly A/B/cognition, got "
+        f"{set(by_source.keys())}"
+    )
+    # A and B each cover 6 T17 cases, all executed_pending_semantic_review.
+    for src in ("t17_matrix_v2_A", "t17_ab_reeval_B"):
+        row = by_source[src]
+        assert row["case_count"] == 6, (
+            f"{src} must have 6 cases, got {row['case_count']}"
+        )
+        assert row["cases_executed_pending_semantic_review"] == 6, (
+            f"{src} all 6 cases must be executed_pending_semantic_review, "
+            f"got {row['cases_executed_pending_semantic_review']}"
+        )
+        assert row["cases_not_selected"] == 0, (
+            f"{src} must have 0 not_selected cases, got {row['cases_not_selected']}"
+        )
+    # The published_slot_count comes from round.slots[].status == "published"
+    # (slot-level, not case-level), and is the T17 row 95 evidence signal.
+    for src in ("t17_matrix_v2_A", "t17_ab_reeval_B", "t17_cognition_pilot"):
+        row = by_source[src]
+        assert row["published_slot_count"] >= 0, (
+            f"{src} published_slot_count must be non-negative, got "
+            f"{row['published_slot_count']}"
+        )
+
+
+def test_aggregation_t17_ab_comparison_has_6_cases_with_A_equals_B() -> None:
+    """T17 row 91 'A/B 对照' evidence: 6 cases, side-by-side A vs B
+    published-slot counts. The A/B paths share the same model config but
+    run independently; the A==B invariant must hold for the deterministic
+    shape to be useful as the A/B 对照 signal."""
+    payload = _load_aggregation_or_skip()
+    ab = payload.get("ab_comparison", [])
+    assert len(ab) == 6, (
+        f"ab_comparison must have 6 cases, got {len(ab)}: "
+        f"{[r['case_id'] for r in ab]}"
+    )
+    case_ids = {r["case_id"] for r in ab}
+    expected_ids = {
+        "free-all-unshared-private-knowledge",
+        "free-directed-conditional-action",
+        "free-natural-topic-shift",
+        "topic-all-modern-hearsay",
+        "topic-directed-rephrased-dilemma",
+        "topic-natural-retained-topic",
+    }
+    assert case_ids == expected_ids, (
+        f"ab_comparison must cover all 6 T17 discussion_matrix cases, "
+        f"got {case_ids}, missing {expected_ids - case_ids}"
+    )
+    for row in ab:
+        assert row["A_equals_B"] is True, (
+            f"case {row['case_id']} A==B must be True for the A/B 对照 "
+            f"signal to be meaningful, got A={row['A_published_slots']} "
+            f"B={row['B_published_slots']}"
+        )
+        assert row["A_case_status"] == "executed_pending_semantic_review", (
+            f"case {row['case_id']} A status must be "
+            f"executed_pending_semantic_review, got {row['A_case_status']}"
+        )
+        assert row["B_case_status"] == "executed_pending_semantic_review", (
+            f"case {row['case_id']} B status must be "
+            f"executed_pending_semantic_review, got {row['B_case_status']}"
+        )
+
+
+def test_aggregation_t17_cognition_pilot_runs_exactly_one_case() -> None:
+    """T17 row 95 '条件推演 / 引述 / 有据否定经历有正例' evidence: the
+    cognition pilot exercises 6 candidate cases and runs exactly the ones
+    that pass the cognition filter. From the real-run data, 1 of 6 ran
+    (topic-directed-rephrased-dilemma) and produced 1 published slot —
+    this is the row 95 '正例' (positive example) signal."""
+    payload = _load_aggregation_or_skip()
+    cognition = payload.get("cognition_per_case", [])
+    assert len(cognition) == 6, (
+        f"cognition_per_case must list 6 candidate cases, got {len(cognition)}"
+    )
+    executed = [r for r in cognition if r["status"] == "executed_pending_semantic_review"]
+    not_selected = [r for r in cognition if r["status"] == "not_selected"]
+    assert len(executed) == 1, (
+        f"cognition pilot must run exactly 1 case, got {len(executed)}: "
+        f"{[r['case_id'] for r in executed]}"
+    )
+    assert len(not_selected) == 5, (
+        f"cognition pilot must reject 5 cases (not_selected), got "
+        f"{len(not_selected)}"
+    )
+    # The 1 case that ran must have ≥1 published slot
+    assert executed[0]["published_slots"] >= 1, (
+        f"the 1 cognition-executed case must have ≥1 published slot, got "
+        f"{executed[0]['published_slots']}"
+    )
+    # All 5 not_selected cases must have 0 published slots
+    for row in not_selected:
+        assert row["published_slots"] == 0, (
+            f"not_selected case {row['case_id']} must have 0 published "
+            f"slots, got {row['published_slots']}"
+        )
 

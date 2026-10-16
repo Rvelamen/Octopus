@@ -41,6 +41,13 @@ VALIDATION_DIR = PLAN_DIR / "validation"
 RUNS_DIR = VALIDATION_DIR / "_v2_runs"
 EIGHT_PILOT = VALIDATION_DIR / "2026-10-16-t12-8pilot-real-run.json"
 
+# T17 real-run files (separate from T12 v1/v1ext windows; the T17 protocol
+# exercises 6 free/topic x natural/directed/all combinations, not the
+# chat-quality-protocol class set)
+T17_MATRIX_V2 = VALIDATION_DIR / "real-model-t17-matrix-v2.json"  # A path
+T17_AB_REEVAL = VALIDATION_DIR / "real-model-t17-matrix-v2-ab.json"  # B path
+T17_COGNITION_PILOT = VALIDATION_DIR / "real-model-t17-cognition-pilot-v2.json"
+
 OUTPUT_JSON = VALIDATION_DIR / "2026-10-16-t12-real-runs-aggregation.json"
 OUTPUT_MD = VALIDATION_DIR / "2026-10-16-t12-real-runs-aggregation.md"
 
@@ -365,17 +372,26 @@ def render_markdown(payload: dict[str, Any]) -> str:
     by_character = payload["by_character"]
     by_phase = payload["by_phase"]
     by_status = payload["by_status"]
+    t17_summary = payload.get("t17_summary", [])
+    ab_comparison = payload.get("ab_comparison", [])
+    cognition_per_case = payload.get("cognition_per_case", [])
     meta = payload["meta"]
 
     lines = []
-    lines.append("# T12 真实模型运行聚合（8-pilot + v2 60+24 = 160 case 链路）")
+    lines.append("# T12 + T17 真实模型运行聚合")
     lines.append("")
     lines.append(
-        f"> 聚合时间：{meta['aggregated_at']}  |  来源文件：{meta['source_file_count']} 份"
-        f"（{', '.join(meta['source_protocols'])} 协议）  |  模型调用：0"
+        f"> 聚合时间：{meta['aggregated_at']}  |  T12 来源文件：{meta['source_file_count']} 份"
+        f"（{', '.join(meta['source_protocols'])} 协议）"
+        f"  |  T17 来源文件：{meta.get('t17_source_file_count', 0)} 份"
+        f"  |  模型调用：0"
     )
     lines.append("")
-    lines.append("## 1. 总体")
+
+    # --- Part I — T12 ---
+    lines.append("## Part I — T12 真实模型运行（8-pilot + v2 60+24）")
+    lines.append("")
+    lines.append("### 1. 总体")
     lines.append("")
     lines.append(f"- 窗口数：{totals['window_count']}")
     lines.append(f"- 调用总数：{totals['call_count']}（已完成 {totals['completed_call_count']} / 未完成 {totals['non_completed_call_count']}）")
@@ -387,7 +403,7 @@ def render_markdown(payload: dict[str, Any]) -> str:
     lines.append(f"- elapsed_seconds 平均/调用：{totals['elapsed_seconds_mean']}")
     lines.append(f"- elapsed_seconds 最大/调用：{totals['elapsed_seconds_max']}")
     lines.append("")
-    lines.append("## 2. 按窗口")
+    lines.append("### 2. 按窗口")
     lines.append("")
     lines.append("| 窗口 | 协议 | case | 调用 | tok_in | tok_out | cache_read | cache_create | elapsed_s | 状态 |")
     lines.append("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
@@ -399,7 +415,7 @@ def render_markdown(payload: dict[str, Any]) -> str:
             f" | {row['elapsed_seconds']} | {row['run_status']} |"
         )
     lines.append("")
-    lines.append("## 3. 按 class（按窗口 case 数等分归因 token/elapsed）")
+    lines.append("### 3. 按 class（按窗口 case 数等分归因 token/elapsed）")
     lines.append("")
     lines.append("| class | cases | 已完成 | 待审 | tok_in 平均 | tok_out 平均 | elapsed 平均 | published |")
     lines.append("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
@@ -411,7 +427,7 @@ def render_markdown(payload: dict[str, Any]) -> str:
             f" | {row['published_count']} |"
         )
     lines.append("")
-    lines.append("## 4. 按角色（从 case_id slug 解析 primary actor）")
+    lines.append("### 4. 按角色（从 case_id slug 解析 primary actor）")
     lines.append("")
     lines.append("| 角色 | cases | 已完成 | tok_in 平均 | tok_out 平均 | elapsed 平均 |")
     lines.append("| --- | ---: | ---: | ---: | ---: | ---: |")
@@ -422,7 +438,7 @@ def render_markdown(payload: dict[str, Any]) -> str:
             f" | {row['tok_out_mean']} | {row['elapsed_seconds_mean']} |"
         )
     lines.append("")
-    lines.append("## 5. 按 phase（generate vs review）")
+    lines.append("### 5. 按 phase（generate vs review）")
     lines.append("")
     lines.append("| phase | 调用 | 完成 | 未完成 | tok_in | tok_out | elapsed 总和 | elapsed 平均 |")
     lines.append("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
@@ -433,7 +449,7 @@ def render_markdown(payload: dict[str, Any]) -> str:
             f" | {row['elapsed_seconds_total']} | {row['elapsed_seconds_mean']} |"
         )
     lines.append("")
-    lines.append("## 6. 按 call status")
+    lines.append("### 6. 按 call status")
     lines.append("")
     lines.append("| status | 调用 | elapsed 总和 |")
     lines.append("| --- | ---: | ---: |")
@@ -443,27 +459,219 @@ def render_markdown(payload: dict[str, Any]) -> str:
             f" | {row['elapsed_seconds_total']} |"
         )
     lines.append("")
-    lines.append("## 7. 归因方法说明")
+
+    # --- Part II — T17 ---
+    lines.append("## Part II — T17 真实模型运行（6 组合 + A/B + cognition）")
+    lines.append("")
+    lines.append("### 7. T17 来源总览")
+    lines.append("")
+    if t17_summary:
+        lines.append("| 来源 | case | executed | not_selected | other | native_call | published_slots | tok_in | tok_out | elapsed_s |")
+        lines.append("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+        for row in t17_summary:
+            lines.append(
+                f"| {row['source']} | {row['case_count']}"
+                f" | {row['cases_executed_pending_semantic_review']}"
+                f" | {row['cases_not_selected']}"
+                f" | {row['cases_other_status']}"
+                f" | {row['native_call_count']}"
+                f" | {row['published_slot_count']}"
+                f" | {row['tok_in']:,}"
+                f" | {row['tok_out']:,}"
+                f" | {row['elapsed_seconds']} |"
+            )
+    else:
+        lines.append("（无 T17 真实跑文件）")
+    lines.append("")
+    lines.append("### 8. T17 A/B 对照（matrix_v2 A 路径 vs ab_reeval B 路径）")
+    lines.append("")
+    if ab_comparison:
+        lines.append("| case_id | discussion_mode | mode | A published | B published | A==B | A status | B status |")
+        lines.append("| --- | --- | --- | ---: | ---: | :---: | --- | --- |")
+        for row in ab_comparison:
+            eq_mark = "✓" if row["A_equals_B"] else "✗"
+            lines.append(
+                f"| {row['case_id']} | {row['discussion_mode']} | {row['mode']}"
+                f" | {row['A_published_slots']} | {row['B_published_slots']}"
+                f" | {eq_mark}"
+                f" | {row['A_case_status']} | {row['B_case_status']} |"
+            )
+    else:
+        lines.append("（A 路径或 B 路径文件缺失）")
+    lines.append("")
+    lines.append("### 9. T17 cognition pilot（6 case 选 1）")
+    lines.append("")
+    if cognition_per_case:
+        lines.append("| case_id | discussion_mode | mode | status | turns | published_slots |")
+        lines.append("| --- | --- | --- | --- | ---: | ---: |")
+        for row in cognition_per_case:
+            lines.append(
+                f"| {row['case_id']} | {row['discussion_mode']} | {row['mode']}"
+                f" | {row['status']} | {row['turns']}"
+                f" | {row['published_slots']} |"
+            )
+    else:
+        lines.append("（cognition pilot 文件缺失）")
+    lines.append("")
+
+    # --- Part III — 归因方法说明 ---
+    lines.append("## Part III — 归因方法说明")
     lines.append("")
     lines.append(
-        "- per-class / per-character 的 token 与 elapsed 通过按窗口 case 数等分归因（窗口 totals / case_count）。"
+        "- T12 per-class / per-character 的 token 与 elapsed 通过按窗口 case 数等分归因（窗口 totals / case_count）。"
     )
     lines.append(
-        "- 这是 runner 输出 schema 不在 ``calls`` 层携带 case_id 时的确定性近似："
-        "每个窗口内 8 个 case 通常共享相同 runner budget，所以等分是稳定近似。"
-    )
-    lines.append(
-        "- published 永远为 0：8-pilot + v2 真实跑全部进入 ``executed_pending_semantic_review`` 终态，"
+        "- T12 published 永远为 0：8-pilot + v2 真实跑全部进入 ``executed_pending_semantic_review`` 终态，"
         "质量层不声明通过；T12 §4 row 9 的人工盲评接收这一信号。"
+    )
+    lines.append(
+        "- T17 published 来自 ``round.slots[].status == 'published'``（slot-level，不是 case-level 的 status 字段）。"
+        "case.status = ``executed_pending_semantic_review`` 只代表流程走完，slot 仍可能 publish；"
+        "T17 row 95 cognition 正例 = cognition pilot 中 1 case 取得 ≥1 published slot，"
+        "T17 row 91 A/B 对照 = A 路径 6 case / B 路径 6 case 的 published-slot 数逐 case 比较（A==B 列）。"
     )
     lines.append("")
     return "\n".join(lines)
 
 
+def count_published_slots(case: dict[str, Any]) -> int:
+    """Return total published slot count across all turns of a case.
+
+    A ``round.slots[].status == "published"`` is the actual publish marker
+    in the T17 runner output (the case-level ``status`` may say
+    ``executed_pending_semantic_review`` even when individual slots publish,
+    because the runner does not auto-claim full quality pass)."""
+    n = 0
+    for turn in case.get("turns", []):
+        for slot in turn.get("round", {}).get("slots", []):
+            if slot.get("status") == "published":
+                n += 1
+    return n
+
+
+def load_t17_runs() -> list[tuple[str, Path, dict[str, Any]]]:
+    """Yield ``(label, path, run_json)`` for the 3 T17 real-run files."""
+    out: list[tuple[str, Path, dict[str, Any]]] = []
+    if T17_MATRIX_V2.exists():
+        out.append(("t17_matrix_v2_A", T17_MATRIX_V2, load_run(T17_MATRIX_V2)))
+    if T17_AB_REEVAL.exists():
+        out.append(("t17_ab_reeval_B", T17_AB_REEVAL, load_run(T17_AB_REEVAL)))
+    if T17_COGNITION_PILOT.exists():
+        out.append(
+            ("t17_cognition_pilot", T17_COGNITION_PILOT, load_run(T17_COGNITION_PILOT))
+        )
+    return out
+
+
+def build_t17_summary(
+    t17_items: list[tuple[str, Path, dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Per-source T17 totals: cases / native calls / published slots.
+
+    The T17 protocol is discussion_matrix × natural/directed/all = 6 cases;
+    each case typically produces 1-2 turns × 1-2 slots. ``published_slots``
+    is the actual publish count (slot-level, not case-level) and is the
+    signal T17 row 91 + row 95 need."""
+    rows = []
+    for label, path, run in t17_items:
+        cases = run.get("cases", [])
+        calls = run.get("calls", [])
+        published = sum(count_published_slots(c) for c in cases)
+        cases_executed = sum(
+            1 for c in cases if c.get("status") == "executed_pending_semantic_review"
+        )
+        cases_not_selected = sum(
+            1 for c in cases if c.get("status") == "not_selected"
+        )
+        cases_other = len(cases) - cases_executed - cases_not_selected
+        tok_in = sum(c.get("usage", {}).get("prompt_tokens", 0) for c in calls)
+        tok_out = sum(c.get("usage", {}).get("completion_tokens", 0) for c in calls)
+        elapsed = sum(c.get("elapsed_seconds", 0) or 0 for c in calls)
+        rows.append(
+            {
+                "source": label,
+                "source_file": str(path.relative_to(PLAN_DIR.parent)),
+                "case_count": len(cases),
+                "cases_executed_pending_semantic_review": cases_executed,
+                "cases_not_selected": cases_not_selected,
+                "cases_other_status": cases_other,
+                "native_call_count": len(calls),
+                "published_slot_count": published,
+                "tok_in": tok_in,
+                "tok_out": tok_out,
+                "elapsed_seconds": round(elapsed, 1),
+                "run_status": run.get("run_status"),
+                "canonical_baselines_unchanged": run.get(
+                    "canonical_baselines_unchanged"
+                ),
+            }
+        )
+    return rows
+
+
+def build_ab_comparison(
+    t17_items: list[tuple[str, Path, dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Side-by-side comparison of A (matrix_v2) vs B (ab_reeval) on the 6
+    T17 discussion_matrix cases. T17 row 91 'A/B 对照' wants this exact
+    shape: same case_id, same model config, two independent runner runs,
+    per-case A vs B published-slot count."""
+    by_label: dict[str, dict[str, Any]] = {label: run for label, _, run in t17_items}
+    a_run = by_label.get("t17_matrix_v2_A")
+    b_run = by_label.get("t17_ab_reeval_B")
+    if a_run is None or b_run is None:
+        return []
+    a_cases = {c["case_id"]: c for c in a_run.get("cases", [])}
+    b_cases = {c["case_id"]: c for c in b_run.get("cases", [])}
+    rows = []
+    for cid in sorted(a_cases.keys() & b_cases.keys()):
+        a = a_cases[cid]
+        b = b_cases[cid]
+        a_pub = count_published_slots(a)
+        b_pub = count_published_slots(b)
+        rows.append(
+            {
+                "case_id": cid,
+                "discussion_mode": a.get("discussion_mode"),
+                "mode": a.get("mode"),
+                "A_published_slots": a_pub,
+                "B_published_slots": b_pub,
+                "A_equals_B": a_pub == b_pub,
+                "A_case_status": a.get("status"),
+                "B_case_status": b.get("status"),
+            }
+        )
+    return rows
+
+
+def build_cognition_per_case(
+    t17_items: list[tuple[str, Path, dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Per-case cognition selection status. T17 row 95 '条件推演 / 引述 /
+    有据否定经历有正例' wants a per-case breakdown: which of the 6 T17
+    cognition cases actually ran (``executed_pending_semantic_review``) and
+    which got ``not_selected`` (cognition filter rejected them)."""
+    for label, _, run in t17_items:
+        if label == "t17_cognition_pilot":
+            return [
+                {
+                    "case_id": c.get("case_id"),
+                    "discussion_mode": c.get("discussion_mode"),
+                    "mode": c.get("mode"),
+                    "status": c.get("status"),
+                    "turns": len(c.get("turns", [])),
+                    "published_slots": count_published_slots(c),
+                }
+                for c in run.get("cases", [])
+            ]
+    return []
+
+
 def main() -> int:
     items = discover_runs()
+    t17_items = load_t17_runs()
     if not items:
-        print("ERROR: no real-run files found", flush=True)
+        print("ERROR: no T12 real-run files found", flush=True)
         return 1
     totals = build_totals(items)
     by_window = build_by_window(items)
@@ -471,6 +679,9 @@ def main() -> int:
     by_character = build_by_character(items)
     by_phase = build_by_phase(items)
     by_status = build_by_status(items)
+    t17_summary = build_t17_summary(t17_items)
+    ab_comparison = build_ab_comparison(t17_items)
+    cognition_per_case = build_cognition_per_case(t17_items)
     from datetime import datetime, timezone
     aggregated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     payload = {
@@ -478,6 +689,7 @@ def main() -> int:
             "aggregated_at": aggregated_at,
             "source_file_count": len(items),
             "source_protocols": sorted({infer_protocol(p) for _, p, _ in items}),
+            "t17_source_file_count": len(t17_items),
             "generator": "docs/plans/book-character-agents/scripts/aggregate_t12_real_runs.py",
         },
         "totals": totals,
@@ -486,6 +698,9 @@ def main() -> int:
         "by_character": by_character,
         "by_phase": by_phase,
         "by_status": by_status,
+        "t17_summary": t17_summary,
+        "ab_comparison": ab_comparison,
+        "cognition_per_case": cognition_per_case,
     }
     OUTPUT_JSON.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
@@ -497,9 +712,14 @@ def main() -> int:
         f"{OUTPUT_MD.relative_to(PLAN_DIR.parent)}"
     )
     print(
-        f"windows={totals['window_count']} calls={totals['call_count']}"
+        f"t12_windows={totals['window_count']} calls={totals['call_count']}"
         f" tok_in={totals['tok_in_total']:,} tok_out={totals['tok_out_total']:,}"
         f" elapsed_s={totals['elapsed_seconds_total']}"
+    )
+    print(
+        f"t17_sources={len(t17_items)}"
+        f" ab_rows={len(ab_comparison)}"
+        f" cognition_rows={len(cognition_per_case)}"
     )
     return 0
 

@@ -84,11 +84,13 @@
 * 19/19 窗口 case 全部 executed_pending_semantic_review（无 interrupted / budget_exhausted / dry_run）
 * 0 published（与 8-pilot 6/8 over-decline 模式一致：模型在 knowable / belief / emotion / answer / challenge / comfort 6 个 class 倾向"无源不答"）
 
-### 3.3 真实模型运行聚合（8-pilot + v2 60+24 = 20 窗口 / 160 case / 392 native call）
+### 3.3 真实模型运行聚合（8-pilot + v2 60+24 = 20 窗口 / 160 case / 392 native call）+ T17（3 份 A/B + cognition）
 
-按 [scripts/aggregate_t12_real_runs.py](../../scripts/aggregate_t12_real_runs.py) 把 8-pilot + 19 v2 真实跑文件聚合为一张证据表，
+按 [scripts/aggregate_t12_real_runs.py](../../scripts/aggregate_t12_real_runs.py) 把 8-pilot + 19 v2 真实跑文件 + 3 T17 真实跑文件（A 路径 [real-model-t17-matrix-v2.json](./real-model-t17-matrix-v2.json) + B 路径 [real-model-t17-matrix-v2-ab.json](./real-model-t17-matrix-v2-ab.json) + cognition pilot [real-model-t17-cognition-pilot-v2.json](./real-model-t17-cognition-pilot-v2.json)）聚合为一张证据表，
 输出 [2026-10-16-t12-real-runs-aggregation.md](./2026-10-16-t12-real-runs-aggregation.md) + [2026-10-16-t12-real-runs-aggregation.json](./2026-10-16-t12-real-runs-aggregation.json)。
-聚合为纯读路径、不调用模型、不修改任何源文件。摘要：
+聚合为纯读路径、不调用模型、不修改任何源文件。分 Part I（T12）/ Part II（T17）/ Part III（归因方法说明）三段。
+
+**T12 段**摘要：
 
 * **总体**：20 窗口 / 392 native call（387 completed + 5 failed）/ 271,931 prompt_tokens + 108,682 completion_tokens + 577,303 cache_read_input_tokens / 4,363.2 elapsed_s（均值 11.1s/调用，最大 40.6s/调用）。
 * **按窗口**：20 行（v1 协议 16 行 + v1ext 协议 4 行 + 8-pilot 1 行），每窗口 8 case / 16-23 调用 / 152.9-324.1 elapsed_s，状态全部 `executed_pending_semantic_review`，`canonical_baselines_unchanged=true`、`budget_exhausted=false`。
@@ -97,7 +99,15 @@
 * **按 phase**：generate 207 调用（11.6s/调用 平均）+ review 185 调用（10.6s/调用 平均），review 调用平均 token 输入 939 高于 generate 的 474（review prompt 携带 8 个 candidate body 全文比对）；两 phase 失败率 1.4% / 1.1%。
 * **按 status**：387 completed / 5 failed；5 failed 全部在 protocol "executed_pending_semantic_review" 终态内（runner 把 call-level 失败折回 case-level 的 `executed_pending_semantic_review`，不升级到 case `failed`）。
 
-聚合满足 T12 §4 row 80 / 81 / 84 / 86 / 91 所需"分类 + 分角色 + 分阶段 + 累计"4 维数据可对照消费；T12 §4 row 9 人工盲评接收 `by_class` 表逐 case 抽样与 `by_window` 表逐窗口抽样。
+**T17 段**摘要（直接消费 T17 §4 row 91 A/B 对照 + row 95 cognition 正例）：
+
+* **T17 来源总览**（Part II 第 7 节）：3 份来源 = t17_matrix_v2_A（6 case / 26 native call / 10 published_slot）+ t17_ab_reeval_B（6 case / 20 native call / 10 published_slot）+ t17_cognition_pilot（6 case 候选 / 1 case executed / 3 native call / 1 published_slot / 5 not_selected）。
+* **T17 A/B 对照**（Part II 第 8 节）：6 case 全部 A==B（6/6 case `A_equals_B=True`）—— free-all-unshared-private-knowledge 2/2、free-directed-conditional-action 1/1、free-natural-topic-shift 2/2、topic-all-modern-hearsay 2/2、topic-directed-rephrased-dilemma 1/1、topic-natural-retained-topic 2/2；A 路径 10 published_slot = B 路径 10 published_slot 形状完全相同。A 路径 26 native call / B 路径 20 native call（B 路径 6 步提早收敛——这是同一 baseline c2da28c8/58609a52 在不同时间点的独立跑，published 形状 100% 一致但 call budget 收敛不同，正是 "A/B 对照" 的有效信号）。
+* **T17 cognition pilot**（Part II 第 9 节）：6 case 候选 → 1 case 跑通（`topic-directed-rephrased-dilemma` 在 `discussion_mode=topic, mode=directed` 下取得 `executed_pending_semantic_review` + 1 published_slot）+ 5 case 被 cognition 过滤为 `not_selected`（`free-natural-topic-shift` / `topic-natural-retained-topic` / `free-directed-conditional-action` / `free-all-unshared-private-knowledge` / `topic-all-modern-hearsay` → 0 published_slot）。这 1/6 case 跑通 + 1 published_slot 正是 T17 §4 row 95 "条件推演 / 引述 / 有据否定经历有正例" 的正例证据。
+
+10 项契约测试 [tests/test_t12_question_set.py](../../../tests/test_t12_question_set.py) 锁住 7 项 T12 + 3 项 T17 形状：top-level 11 份含 t17_summary / ab_comparison / cognition_per_case、T12 跨表一致性 + 不可变 published=0 + 重新生成幂等、T17 3 来源案例数与 published_slot、6 case A==B 全 True、cognition pilot 1 executed + 5 not_selected 且执行 case ≥1 published_slot。
+
+聚合满足 T12 §4 row 80 / 81 / 84 / 86 / 91 所需"分类 + 分角色 + 分阶段 + 累计"4 维数据可对照消费；T12 §4 row 9 人工盲评接收 `by_class` 表逐 case 抽样与 `by_window` 表逐窗口抽样。T17 §4 row 91 A/B 对照接收 `ab_comparison` 6 case 逐 case published-slot 比对；T17 §4 row 95 cognition 正例接收 `cognition_per_case` 1 executed / 5 not_selected 逐 case 状态。
 
 ## 4. T12 §4 验收索引更新
 
