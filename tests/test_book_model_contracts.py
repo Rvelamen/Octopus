@@ -1686,3 +1686,104 @@ def test_discussion_probe_v8_through_v12_pin_baseline_unchanged_invariant():
             f"{fname} sets canonical_baselines_unchanged=False while the "
             "hashes agree; either the boolean or the hash equality is stale."
         )
+
+
+def test_expression_revision_room_memory_probes_pin_readonly_invariants():
+    """Three single-purpose probes must each honor their read-only contract.
+
+    The expression, revision, and room-memory probes are
+    per-feature read-only probes that each guard a different
+    sub-system against silent mutation. The locking is a
+    per-feature contract:
+
+      * **expression-probe** — the probe over the canonical
+        expression archive must not mutate it
+        (``canonical_archive_unchanged=True``), the
+        ``sample_sha256`` fingerprint of the input must stay
+        present, and ``actual_calls`` must equal the declared
+        budget (no over/under run).
+
+      * **revision-probe** — the probe over the persona
+        revision path must preserve the original build
+        (``original_build_preserved=True``), pass the
+        base-archive-snapshot assertion
+        (``base_archive_snapshot_assertion_passed=True``),
+        and the probe must not change global model settings
+        (``global_model_settings_changed=False``).
+
+      * **room-memory-probe** — the probe over the room
+        memory summary path must keep the canonical baseline
+        unchanged (``canonical_baseline_unchanged=True``) and
+        consume exactly the declared call budget
+        (``actual_calls == call_budget``).
+
+    Each contract is the per-feature counterpart to the
+    t17 matrix / discussion v8-v12 baseline-unchanged
+    invariants. Together they guarantee that no probe
+    accidentally publishes partial state into the canonical
+    archives / builds / baselines.
+    """
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+
+    # --- expression probe ---
+    expression = json.loads(
+        (base / "real-model-expression-probe.json").read_text(encoding="utf-8")
+    )
+    assert expression["canonical_archive_unchanged"] is True, (
+        "real-model-expression-probe.json canonical_archive_unchanged "
+        "flipped away from True; the expression probe must not mutate "
+        "the canonical expression archive."
+    )
+    assert expression["sample_sha256"], (
+        "real-model-expression-probe.json lost its sample_sha256; without "
+        "it the probe's input sample is no longer reproducible."
+    )
+    # The probe budget is fixed at 2 calls in the recorded diagnostic;
+    # any future change to the call count must re-record the diagnostic.
+    assert expression["actual_calls"] == 2, (
+        f"real-model-expression-probe.json actual_calls={expression['actual_calls']} "
+        "drifted from the recorded 2-call budget; the probe shape changed "
+        "and the diagnostic must be re-recorded."
+    )
+
+    # --- revision probe ---
+    revision = json.loads(
+        (base / "real-model-revision-probe.json").read_text(encoding="utf-8")
+    )
+    assert revision["original_build_preserved"] is True, (
+        "real-model-revision-probe.json original_build_preserved flipped "
+        "away from True; the revision probe must not mutate the original "
+        "persona build."
+    )
+    assert revision["base_archive_snapshot_assertion_passed"] is True, (
+        "real-model-revision-probe.json base_archive_snapshot_assertion_passed "
+        "flipped away from True; the base archive snapshot assertion no longer "
+        "holds and the revision probe is no longer the read-only audit it claims."
+    )
+    assert revision["global_model_settings_changed"] is False, (
+        "real-model-revision-probe.json global_model_settings_changed flipped "
+        "to True; the probe is supposed to leave global model settings alone."
+    )
+    # The probe consumed exactly 6 calls in the recorded diagnostic.
+    assert revision["calls"] == 6, (
+        f"real-model-revision-probe.json calls={revision['calls']} drifted "
+        "from the recorded 6-call count; the probe shape changed and the "
+        "diagnostic must be re-recorded."
+    )
+
+    # --- room-memory probe ---
+    room_memory = json.loads(
+        (base / "real-model-room-memory-probe.json").read_text(encoding="utf-8")
+    )
+    assert room_memory["canonical_baseline_unchanged"] is True, (
+        "real-model-room-memory-probe.json canonical_baseline_unchanged "
+        "flipped away from True; the room memory probe must not mutate the "
+        "canonical room baseline."
+    )
+    assert room_memory["actual_calls"] == room_memory["call_budget"], (
+        f"real-model-room-memory-probe.json actual_calls={room_memory['actual_calls']} "
+        f"!= call_budget={room_memory['call_budget']}; the room memory probe "
+        "consumed a different number of calls than its declared budget."
+    )

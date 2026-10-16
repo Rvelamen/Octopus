@@ -138,3 +138,5 @@
 
 同日追加 `test_discussion_probe_v8_through_v12_pin_baseline_unchanged_invariant`：把 `real-model-discussion-v8-probe.json` / `v9-probe.json` / `v10-probe.json` / `v11-probe.json` / `v12-probe.json` 五份顺序讨论探针的 `baseline_sha256_before == baseline_sha256_after` 与 `canonical_baselines_unchanged=True` 锁定为"聊天 v8→v12 全程非破坏性"的硬证据——是 t17 矩阵 `canonical_baselines_unchanged` 契约的逐版本探针伙伴；任何偷偷写入基线的探针改动会让该测试失败；78 项 model contracts 全过。
 
+同日追加 `test_expression_revision_room_memory_probes_pin_readonly_invariants`：把 `real-model-expression-probe.json` 的 `canonical_archive_unchanged=True` / `sample_sha256` 存在 / `actual_calls==2` 锁定为 expression 探针只读契约；把 `real-model-revision-probe.json` 的 `original_build_preserved=True` / `base_archive_snapshot_assertion_passed=True` / `global_model_settings_changed=False` / `calls==6` 锁定为 revision 探针只读契约；把 `real-model-room-memory-probe.json` 的 `canonical_baseline_unchanged=True` / `actual_calls==call_budget` 锁定为 room-memory 探针只读契约——三项单功能探针的只读保护与 t17 矩阵/v8-v12 探针基线共同覆盖"无探针偷偷写入权威库/基线/原档案"的硬约束；79 项 model contracts 全过。
+
