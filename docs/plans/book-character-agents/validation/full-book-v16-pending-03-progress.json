@@ -1,0 +1,961 @@
+{
+  "date": "2026-10-15",
+  "window": "v16-pending-03",
+  "scope": "Actual full-source automatic construction, progress only; not full-book persona acceptance",
+  "discovery_prompt": "character-discovery-v16",
+  "max_native_calls": 32,
+  "calls_per_book": 16,
+  "book_budget_stops": [
+    "西游记"
+  ],
+  "native_calls": [
+    {
+      "book": "西游记",
+      "phase": "discovery_grouped",
+      "unit_key": "18",
+      "status": "completed",
+      "input_sha256": "2d4f5c3cb76e5c9754856c6713fecabb87219f37607a85c4fff7c6425f899023",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1865,
+        "completion_tokens": 2380,
+        "total_tokens": 4245,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 51.672
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_grouped",
+      "unit_key": "19",
+      "status": "completed",
+      "input_sha256": "766a8b3baa096a3cda3283165c033f025d09f045fd188de32f7e2fdde10de591",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 594,
+        "completion_tokens": 1146,
+        "total_tokens": 1740,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 38.36
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_grouped",
+      "unit_key": "20",
+      "status": "completed",
+      "input_sha256": "9411b491fe47a27907d0026c5be169d64d84f524746239df8ce80cb0e319e200",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1934,
+        "completion_tokens": 2376,
+        "total_tokens": 4310,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 55.156
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_grouped",
+      "unit_key": "21",
+      "status": "completed",
+      "input_sha256": "414fc50857d0b25b06f750c49d02d7068d5e0a103b22ec955d639f457cb0e458",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1714,
+        "completion_tokens": 1820,
+        "total_tokens": 3534,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 52.875
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_unit_mentions",
+      "unit_key": "21",
+      "status": "completed",
+      "input_sha256": "ff80e024043ede60a193e5482f38eba9439ac3f7bbb0fa7cf16976e16192d4e8",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1946,
+        "completion_tokens": 4111,
+        "total_tokens": 6057,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 109.641
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_grouped",
+      "unit_key": "22",
+      "status": "completed",
+      "input_sha256": "3f7264a2545c4457a10a57f2e705b043f9040ad4353ddb267f4d071c1c1387b9",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1921,
+        "completion_tokens": 2115,
+        "total_tokens": 4036,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 41.781
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_repair_windows",
+      "unit_key": "22",
+      "status": "completed",
+      "input_sha256": "92c74c5cac2399819a1346b9a706e7a9c3f087bb921963184d3c09f94ae3d545",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 3139,
+        "completion_tokens": 1834,
+        "total_tokens": 4973,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 50.781
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_grouped",
+      "unit_key": "23",
+      "status": "completed",
+      "input_sha256": "885d9539c7f5c971dd89e53764012690b290760d135e14ca5c0cb6f56353c4c9",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 484,
+        "completion_tokens": 1725,
+        "total_tokens": 2209,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 55.828
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_grouped",
+      "unit_key": "24",
+      "status": "completed",
+      "input_sha256": "1fb8265e40ed4ac53f46904f9992452c4c5261d6d4d08edc9466bf55f1ba9db7",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1719,
+        "completion_tokens": 3295,
+        "total_tokens": 5014,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 86.578
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_unit_mentions",
+      "unit_key": "24",
+      "status": "completed",
+      "input_sha256": "57ca147de0ca23878b50932dbeb1cdb4adc0cfb5c48a1efedaa99ab3fc6c10ed",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1951,
+        "completion_tokens": 2288,
+        "total_tokens": 4239,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 45.984
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_grouped",
+      "unit_key": "25",
+      "status": "completed",
+      "input_sha256": "fc5aa53731b07a9069a6c10412559a67b991dba5a9577ab88a7aabd4e116d1a4",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1522,
+        "completion_tokens": 2083,
+        "total_tokens": 3605,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 50.234
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_unit_mentions",
+      "unit_key": "25",
+      "status": "completed",
+      "input_sha256": "b2fe0d2ae4cb99b0b24c54dadd0876b24d1397b4e4d4d2270ec90abc02423865",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1754,
+        "completion_tokens": 4250,
+        "total_tokens": 6004,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 111.172
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_grouped",
+      "unit_key": "26",
+      "status": "completed",
+      "input_sha256": "6eb14f16c5da60fa7fde6420b95fddd0320df5a0963be107acf4480521b3cf41",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1636,
+        "completion_tokens": 1853,
+        "total_tokens": 3489,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 47.937
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_unit_mentions",
+      "unit_key": "26",
+      "status": "completed",
+      "input_sha256": "671469b42dd6d20d17fa5c07e08d97b9e4412545af54311a6e6ed8e62095a839",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1865,
+        "completion_tokens": 2300,
+        "total_tokens": 4165,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 58.391
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_grouped",
+      "unit_key": "27",
+      "status": "completed",
+      "input_sha256": "3e8b0f756ba25124012b7768f7e39caf79d98ddda959e998fdbfc7968215edc7",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1745,
+        "completion_tokens": 2979,
+        "total_tokens": 4724,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 73.047
+    },
+    {
+      "book": "西游记",
+      "phase": "discovery_unit_mentions",
+      "unit_key": "27",
+      "status": "completed",
+      "input_sha256": "f540a66860797834de41de7137c3777660d3956bd6eab61594b855dffb0d015f",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1977,
+        "completion_tokens": 1314,
+        "total_tokens": 3291,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 38.25
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_grouped",
+      "unit_key": "21",
+      "status": "completed",
+      "input_sha256": "af0e8ae222250df6346fb938b36842f12697d770639c4fadfa5ea1f786e2c23e",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1019,
+        "completion_tokens": 282,
+        "total_tokens": 1301,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 8.61
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_unit_mentions",
+      "unit_key": "21",
+      "status": "completed",
+      "input_sha256": "eb8b27579cf8cd47e9ad27ca26c45c3b27625fe455aeca7415ee1c07f01a31f4",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1252,
+        "completion_tokens": 602,
+        "total_tokens": 1854,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 23.281
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_grouped",
+      "unit_key": "22",
+      "status": "completed",
+      "input_sha256": "3c4908312f40d37e5e2799ddd1c8fe18dc177ebe81b5cfae5623b7090b2fd7cd",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 640,
+        "completion_tokens": 624,
+        "total_tokens": 1264,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 24.938
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_grouped",
+      "unit_key": "23",
+      "status": "completed",
+      "input_sha256": "aa785146d55360ba71861799ff97b3486445f1f7c4a12b0903ba1011c194ed6d",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 593,
+        "completion_tokens": 521,
+        "total_tokens": 1114,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 12.969
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_grouped",
+      "unit_key": "24",
+      "status": "completed",
+      "input_sha256": "ee01ae08eaf7f57fe2d785eeb6d631b08b9a2598210ef3ee8c37873da908d92d",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1455,
+        "completion_tokens": 1190,
+        "total_tokens": 2645,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 30.734
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_grouped",
+      "unit_key": "25",
+      "status": "completed",
+      "input_sha256": "e100d93729e4389e870e3b0d72374f985da1d094a188b74cdd147ea1a89ece83",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 506,
+        "completion_tokens": 313,
+        "total_tokens": 819,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 25.109
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_grouped",
+      "unit_key": "26",
+      "status": "completed",
+      "input_sha256": "7c106cb19e6a305eec59e32e34d175ade6d75bf4611290c4ac3711c8f4810c79",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 523,
+        "completion_tokens": 293,
+        "total_tokens": 816,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 12.188
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_unit_mentions",
+      "unit_key": "26",
+      "status": "completed",
+      "input_sha256": "59e7e912b720de8122a0fc5b1565cb7d56236b654cae6d2b5ed02b470cd611a5",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 755,
+        "completion_tokens": 670,
+        "total_tokens": 1425,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 29.047
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_grouped",
+      "unit_key": "27",
+      "status": "completed",
+      "input_sha256": "4180b63b388ccaf984f4b455010fc5b99b6d9ae9275ea68d7aaa28dfef17966f",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 598,
+        "completion_tokens": 460,
+        "total_tokens": 1058,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 22.532
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_unit_mentions",
+      "unit_key": "27",
+      "status": "completed",
+      "input_sha256": "3a8a32c4c27ff5d8b57089fb02aa8dedf78067415b60c6868301feac8f69e887",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 827,
+        "completion_tokens": 481,
+        "total_tokens": 1308,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 14.031
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_grouped",
+      "unit_key": "28",
+      "status": "completed",
+      "input_sha256": "9cef43c4452dc543473a08b7c99ddfbe64295cb15be805f1768bdfa719bbcd7d",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1396,
+        "completion_tokens": 2121,
+        "total_tokens": 3517,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 55.422
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_grouped",
+      "unit_key": "29",
+      "status": "completed",
+      "input_sha256": "35b0c59912c002b7997af5ea967fdc5c824e9c216f7519a0b4a9c077f0539e95",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 172,
+        "completion_tokens": 393,
+        "total_tokens": 565,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 10.016
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_grouped",
+      "unit_key": "30",
+      "status": "completed",
+      "input_sha256": "4f5560076c17898a1e16bb2f68730cd58a0db828877a7efabf44ba5ee3f10dee",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1890,
+        "completion_tokens": 1364,
+        "total_tokens": 3254,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 31.891
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_unit_mentions",
+      "unit_key": "30",
+      "status": "completed",
+      "input_sha256": "c1de3c4f6bd3c9a296ab20825509726002679fc1fb85322e62e61131f3731bec",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 2122,
+        "completion_tokens": 1600,
+        "total_tokens": 3722,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 40.203
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_grouped",
+      "unit_key": "31",
+      "status": "completed",
+      "input_sha256": "85199cd176c20cd4e06b1410fbcf1ee6a77c71da6374978a03a73c0cb6181ba9",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1204,
+        "completion_tokens": 1483,
+        "total_tokens": 2687,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 52.063
+    },
+    {
+      "book": "红楼梦",
+      "phase": "discovery_unit_mentions",
+      "unit_key": "31",
+      "status": "completed",
+      "input_sha256": "97d1f95a565066691278e6b09fcd0fe4b8ecd7791d5d96d29ca742c459e7cb81",
+      "finish_reason": "end_turn",
+      "usage": {
+        "prompt_tokens": 1436,
+        "completion_tokens": 3730,
+        "total_tokens": 5166,
+        "cache_read_input_tokens": 512,
+        "cache_creation_input_tokens": 0
+      },
+      "elapsed_seconds": 87.563
+    }
+  ],
+  "jobs": [
+    {
+      "job_id": "c993dae7-5644-472e-9032-167d9d4b6359",
+      "pending_discovery_units": 383,
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "library_item_id": 1,
+      "status": "queued",
+      "phase": "discovery",
+      "generation": 10,
+      "book_id": "38b26a66-6472-43aa-8f2b-f507bba91567",
+      "source_version_id": "1aef951e-c84c-4e29-9ccc-71e1e2718de8",
+      "discovery_build_id": "ce1089d1-e62e-436a-925c-edb1ce12b085",
+      "persona_build_id": null,
+      "actual_calls": 48,
+      "error_code": null,
+      "error_detail": null,
+      "strategy": {
+        "context_window": 1000000,
+        "discovery": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 8192,
+          "model": "k3",
+          "policy_version": "candidate-identity-v2",
+          "prompt_version": "character-discovery-v16",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "unit_char_limit": 2000,
+          "unit_segment_limit": 12
+        },
+        "expression": {
+          "call_timeout_seconds": 180,
+          "context_window": 1000000,
+          "max_calls_per_window": 80,
+          "max_tokens": 8192,
+          "max_units_per_window": 20,
+          "model": "k3",
+          "policy_version": "expression-material-v1",
+          "prompt_version": "expression-extract-v1",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "expression-review-v1",
+          "unit_char_limit": 2000,
+          "unit_segment_limit": 12
+        },
+        "model_record_id": 337,
+        "persona": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 8192,
+          "model": "k3",
+          "policy_version": "canonical-persona-v3",
+          "prompt_version": "persona-extract-v3",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "persona-review-v3",
+          "unit_char_limit": 8000,
+          "unit_segment_limit": 12
+        }
+      },
+      "expression_sets": [],
+      "usage": {
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 36608,
+        "completion_tokens": 86546,
+        "prompt_tokens": 73358,
+        "total_tokens": 159904
+      },
+      "canon_available": false,
+      "canonical_status": null
+    },
+    {
+      "job_id": "abcd7f05-d283-45a7-869f-ce5a6c7e97c9",
+      "pending_discovery_units": 549,
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "library_item_id": 2,
+      "status": "queued",
+      "phase": "discovery",
+      "generation": 10,
+      "book_id": "79e0fbfd-1ce5-4ec9-a690-f7e51e4eb9eb",
+      "source_version_id": "5a25df59-9904-46f8-ada6-cc7acd70da50",
+      "discovery_build_id": "5e0c333f-0c01-4b9f-ab28-0d4642900c52",
+      "persona_build_id": null,
+      "actual_calls": 53,
+      "error_code": null,
+      "error_detail": null,
+      "strategy": {
+        "context_window": 1000000,
+        "discovery": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 8192,
+          "model": "k3",
+          "policy_version": "candidate-identity-v2",
+          "prompt_version": "character-discovery-v16",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "unit_char_limit": 2000,
+          "unit_segment_limit": 12
+        },
+        "expression": {
+          "call_timeout_seconds": 180,
+          "context_window": 1000000,
+          "max_calls_per_window": 80,
+          "max_tokens": 8192,
+          "max_units_per_window": 20,
+          "model": "k3",
+          "policy_version": "expression-material-v1",
+          "prompt_version": "expression-extract-v1",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "expression-review-v1",
+          "unit_char_limit": 2000,
+          "unit_segment_limit": 12
+        },
+        "model_record_id": 337,
+        "persona": {
+          "call_timeout_seconds": 180,
+          "max_tokens": 8192,
+          "model": "k3",
+          "policy_version": "canonical-persona-v3",
+          "prompt_version": "persona-extract-v3",
+          "provider_id": 2,
+          "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+          "reasoning_effort": "low",
+          "review_prompt_version": "persona-review-v3",
+          "unit_char_limit": 8000,
+          "unit_segment_limit": 12
+        }
+      },
+      "expression_sets": [],
+      "usage": {
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 45056,
+        "completion_tokens": 73685,
+        "prompt_tokens": 73634,
+        "total_tokens": 147319
+      },
+      "canon_available": false,
+      "canonical_status": null
+    }
+  ],
+  "discovery": [
+    {
+      "build_id": "ce1089d1-e62e-436a-925c-edb1ce12b085",
+      "status": "queued",
+      "stage": "character_discovery",
+      "total_units": 411,
+      "completed_units": 18,
+      "failed_units": 10,
+      "processed_segments": 147,
+      "total_segments": 3311,
+      "error_code": null,
+      "error_detail": null
+    },
+    {
+      "build_id": "5e0c333f-0c01-4b9f-ab28-0d4642900c52",
+      "status": "queued",
+      "stage": "character_discovery",
+      "total_units": 581,
+      "completed_units": 20,
+      "failed_units": 12,
+      "processed_segments": 150,
+      "total_segments": 2665,
+      "error_code": null,
+      "error_detail": null
+    }
+  ],
+  "budget_stop": true,
+  "quality_pass": false,
+  "decoder_revision": "f0d64578ae736f5412e3533d1099ee1d47625fd5",
+  "decoder_sha256": {
+    "discovery.py": "40a974808a29eaba38b1c6a65d273e27edd35341b0deae595c9e838a308a3fed",
+    "discovery_models.py": "bf60c9133c58cb154200e7149fe36f57a349fd34d78d2142c23358594138482c",
+    "discovery_repair.py": "4c55aa455cde2860c7773172080b8c2d947fca39088c5bf1930fef63d29ba8f1",
+    "discovery_selection.py": "d0cacdb0038cf36ac5ad90a3275cd49e8be80cf91ebaf47d472f17933dbcd367",
+    "discovery_numbered.py": "5f16f1b19b02332809b800a3ad8c63d0c05d617f0ba8cea0f5eb3dba8a188afc",
+    "discovery_window_repair.py": "067753a8867bb592e7ca0959538484ab17336656543e03da022efee5d67608e8",
+    "discovery_inline.py": "a689082c1aa97e088e17e56c412670253f871421147987f8a727b9173674ab9b",
+    "discovery_grouped.py": "7591de428bb672083ffa77d17efcbed38ab3546f5fc1323ca097c16585aed895",
+    "discovery_unit_repair.py": "808adb01bb926778883f281979819ae2f144d4d2acbbd0aabee631e72bc47298",
+    "automatic.py": "6b63a133845d92ecaafb425c143cd96018c0357061c2ac7ee5ffabe109bf6c46",
+    "automatic_execution.py": "9d4c37be2686dee0242b6344be0fd2ee116734c09d470776e0468a04bf825ea9"
+  },
+  "retained_steps_before": {
+    "ce1089d1-e62e-436a-925c-edb1ce12b085": {
+      "0": {
+        "input_hash": "b03ea1a020403c052eb2a80a8c5e75e8ef44b220d226894448c8a7d536d353f6",
+        "status": "validated",
+        "attempts": 1,
+        "result_sha256": "12060d3c205bfb92e65b0665e1ecedce6b8f1c80da84c116ed7496ba190cdbbd"
+      },
+      "1": {
+        "input_hash": "f2fd3ffd893dd453dbda95341e7a04216150fe2f887d3a69a16baacf35103f87",
+        "status": "validated",
+        "attempts": 1,
+        "result_sha256": "f5df6ef54ba4f4a086c9d00dc3f4da7031054d59904c39e30968514ef26e95e3"
+      },
+      "2": {
+        "input_hash": "7b4b82f45b4e927e3a5b0d48e99aaebd15eaf8fcec0589117850dd66499629ad",
+        "status": "validated",
+        "attempts": 1,
+        "result_sha256": "fb5cdc0ce879c051eae3697f80521371a1ca1b4d538c4b19669afa30c5c2a8c0"
+      },
+      "3": {
+        "input_hash": "573bd7b31a5dd4530f85d69fd43dbc838f243d4dd5205cbe9193a0d7ad9a8396",
+        "status": "validated",
+        "attempts": 1,
+        "result_sha256": "fd46a38de68b88e3048254e5549c4d38ec2c74030f23d401b6dc1e502ea6d9de"
+      },
+      "4": {
+        "input_hash": "1548e5572870a5a1bd53d5a88543aca66a4a3a091df341a303a0014484e07183",
+        "status": "failed",
+        "attempts": 2,
+        "result_sha256": "14fd5a5d54e8117d7f22c3a89a1759f910dba31efc7c1255ceeb4be7fc1c542f"
+      },
+      "5": {
+        "input_hash": "6cd613e03b3019e24627122b15ada00d1fa5d88af5b4528b067a053855ee7321",
+        "status": "validated",
+        "attempts": 2,
+        "result_sha256": "86b0e4e34fd0fc76420a4dfd92943e3d8819b9dbeff060ef173ac9a686005b07"
+      },
+      "6": {
+        "input_hash": "a0f409a4b38839f20638d75e9790e2869279278a26d8d595aa3e3efb59d40e1c",
+        "status": "validated",
+        "attempts": 2,
+        "result_sha256": "383f0e4b7ec1efa97bf84300cae3385a7183bd6bd7488d010ab25f161ab81b1d"
+      },
+      "7": {
+        "input_hash": "fca3c4b9f098bf0cd441e5d3b64fa9b2ff9597b782edfe21a77a5795bd9dc428",
+        "status": "validated",
+        "attempts": 1,
+        "result_sha256": "7525ca6175b6811154d7b2664b7fa591142cb1b6bb1a8faca936c73e216f1c37"
+      },
+      "8": {
+        "input_hash": "ba795467b0ae3b41c86f8f130d211ae10ae7f93ec6dc13d0d1db61d28d3633c8",
+        "status": "validated",
+        "attempts": 2,
+        "result_sha256": "a062d9f41f5f29c04f4c163954bc40a68f14916ad6b2f3372bc6c64f906efe80"
+      },
+      "9": {
+        "input_hash": "1bc759d86bbaf1878e848c5174eedd72171cf591f28b36b7046e5d5ff706040c",
+        "status": "validated",
+        "attempts": 2,
+        "result_sha256": "d3e902b357589e442b1ea07748fd2c2d4bdc2a399a1455ca93c9443c6adb1fd5"
+      },
+      "10": {
+        "input_hash": "d8244b5e6bb2b543c66b03d15bb547f9c57d45afa144db54d33c3c1d5fb3e300",
+        "status": "failed",
+        "attempts": 2,
+        "result_sha256": "c561b9a506ca871c460a21136676d41902cf202b94610a4dec562d87e2addbe7"
+      },
+      "11": {
+        "input_hash": "d97a2a9c6e935835c5d740102e0716be91e884a74d5ee1c65c451a135a852959",
+        "status": "validated",
+        "attempts": 2,
+        "result_sha256": "a4978fce8c50f117ed65492b8fd6bd9cb9f5fbb787806008204bf60132edf19a"
+      },
+      "12": {
+        "input_hash": "05428cc42d599c1f3647bdb68f7fefb337e279d08664460c2d6cf7fa12023167",
+        "status": "failed",
+        "attempts": 2,
+        "result_sha256": "8d7ebcc48d86fe0fcd7147c03a07753ab0b5fe35e80c39fcad2749ae9165b4a3"
+      },
+      "13": {
+        "input_hash": "e68e9a1ddbed7b8870162dad4bac9106323b4ea00374a5b7d852d7b1ab4396ba",
+        "status": "failed",
+        "attempts": 2,
+        "result_sha256": "e61a2d0d25b022a26e64cbd31a45e459e5adcec782a2c2672be7beb43bcff911"
+      },
+      "14": {
+        "input_hash": "7873a5d6cf2981cc8e62577719a237f0050040bd64c041575f08bd786e8957b6",
+        "status": "failed",
+        "attempts": 2,
+        "result_sha256": "e9168d990368d561a1a9a8fca0db4533f0e7c9ce669c29484e8322393e0baa24"
+      },
+      "15": {
+        "input_hash": "d0966a92a1b3b5811f2349b168efdef8f42c1574540bda2d24ccbd14b9f72497",
+        "status": "failed",
+        "attempts": 2,
+        "result_sha256": "cc7620637127920bf75ed5147c7647ab3688e0314e58f7dd374105f9eee8cf67"
+      },
+      "16": {
+        "input_hash": "6d5f78477e0b7443b2b0a4787d96dfe899710a0ba614504062faa43e51b61dbf",
+        "status": "validated",
+        "attempts": 2,
+        "result_sha256": "e02dcc56496cd58893823ad476f149bc82ce1078b6db553b9cbb805707a419d8"
+      },
+      "17": {
+        "input_hash": "910c45fd80fe146538fddfa6b555d6f6a71ee257cc4a1c2dd447f8d773667cdd",
+        "status": "validated",
+        "attempts": 1,
+        "result_sha256": "f27a40053582515a8b2fbcbb4952d6db9810e082a8d3fb9f1d2b25ec6d91e438"
+      }
+    },
+    "5e0c333f-0c01-4b9f-ab28-0d4642900c52": {
+      "0": {
+        "input_hash": "d5c3dce254a934edf2518406876b2a8c892364634e9261fbd4820103ccd9fd0f",
+        "status": "validated",
+        "attempts": 1,
+        "result_sha256": "7829670aeb62c8cc20e1839616ab4c1d582c422fe0f20ec2c83c5c5deac003ba"
+      },
+      "1": {
+        "input_hash": "9045f151051e75db1b754b17773bf8b8b1bff12e4257a78ee5b3261245830c5f",
+        "status": "validated",
+        "attempts": 1,
+        "result_sha256": "4580906b15b02eb0ff2dfc5e89005212fb38fdd52019b913d15d165c58a79ce7"
+      },
+      "2": {
+        "input_hash": "c963201560880f9fc7f3a5afb223be7b361211bcaeb219c67e71dde54ae0adaa",
+        "status": "validated",
+        "attempts": 2,
+        "result_sha256": "21c8e70e00ddc5021eea5daa5a5373400c0bfb19ac757c5d4bbebc81690eacfe"
+      },
+      "3": {
+        "input_hash": "8e783ff1de50862f78d73d1a22aaa1f78e8161591f85773d7941a24fce5247ae",
+        "status": "validated",
+        "attempts": 2,
+        "result_sha256": "0886b63e7ea21bfe5a7af91bbf002eb002a8d90aa7b69b921e88b9cefb77e6e5"
+      },
+      "4": {
+        "input_hash": "8231056c8d8bde357b89dd3fe04a126179b7205118b119aebcc945b8dd63fbc4",
+        "status": "validated",
+        "attempts": 2,
+        "result_sha256": "cc3de53de9598386e64222059d6189dbc4c5b3b5841ce6a69754fc7cc99f7dd6"
+      },
+      "5": {
+        "input_hash": "c70cc597be6f4cb783bef3f6414b31925a59bf5a461df14c72388bc63beb57c4",
+        "status": "validated",
+        "attempts": 1,
+        "result_sha256": "64aaf9416de76b299a335ba222d7be355481b315f9339c1c5ae1463809433146"
+      },
+      "6": {
+        "input_hash": "1f5ab6b3d576770f62b8ef838cc61e6450c97ede88b700fd2fdf51e8be779b84",
+        "status": "failed",
+        "attempts": 2,
+        "result_sha256": "18a3552bff16eebc75b2a3f8e2a38a6efe7b22eb77107149d73b1183decfbcad"
+      },
+      "7": {
+        "input_hash": "997a1d14cbe4ada3b242edbd9763a5b9673fe92083ba578a2a72945e7d20a560",
+        "status": "failed",
+        "attempts": 2,
+        "result_sha256": "be072187e40984e106fc5c48604b770ee4cdddc402f8d4bdd43a515d0f45f5ea"
+      },
+      "8": {
+        "input_hash": "bb79969c38a8d2fe19c30f1a74cf20b1de888c3f3f3af5ff3690ee1ddecfdd44",
+        "status": "validated",
+        "attempts": 2,
+        "result_sha256": "824cafca6b9b6f828872e2ea2876a8b28269cc98b53559c9ce2a500f771b2772"
+      },
+      "9": {
+        "input_hash": "35a77bbb900cde53741768a0f69e040d680f7490fb440d2264aca18e33aa01b1",
+        "status": "validated",
+        "attempts": 1,
+        "result_sha256": "f290f316651bd1c22cfeafe16111556d8a0d4ab46cef71094705d2c6c6f67086"
+      },
+      "10": {
+        "input_hash": "48add9844a61840dd46a4e7d0d92944efc46bdd5249b7d0ca6cd064eba0f8dd2",
+        "status": "failed",
+        "attempts": 2,
+        "result_sha256": "aeaba590d0e690331359fcebad2f213829efae61de376d6de8857442c7103089"
+      },
+      "11": {
+        "input_hash": "2ea46b6e82127b0c3426b134c013c245611ec8cab52209077b1da9426c217955",
+        "status": "validated",
+        "attempts": 2,
+        "result_sha256": "e544d89cbc27add2ef0eee181619170e4832bb803b0502930111cf747cb29a7d"
+      },
+      "12": {
+        "input_hash": "773f828349d1ca850bd9c72ef484f9e0737f615ed1050ca65ecabcde0cc55d0a",
+        "status": "validated",
+        "attempts": 1,
+        "result_sha256": "238ddbd27ce4f2d3a7bf8af49b1d6dbda242dfc7ae0f972d9f71adb19acf53be"
+      },
+      "13": {
+        "input_hash": "30be04bc83e3a19578153d7cd48dd579476a109d6c032e6cb97ab498e7d27549",
+        "status": "validated",
+        "attempts": 1,
+        "result_sha256": "d37dd60408090c630ff931c3edb148728264663d783972c57424a962f449707c"
+      },
+      "14": {
+        "input_hash": "7a5bb0cc53cc28cd702e8b1058ee2e9ffcba07d17b4da9cb4fd260f28a97a371",
+        "status": "validated",
+        "attempts": 2,
+        "result_sha256": "79a74b9bc265434c1f4672b7d304558fb80de4894e51b69dc08a0dbbaa50dbf1"
+      },
+      "15": {
+        "input_hash": "0976c9b0659268eb9eff7b46a981863e7b8e70dbe6367e57cebb743454a443a9",
+        "status": "validated",
+        "attempts": 2,
+        "result_sha256": "2c741da087d780a887c87c3d4568d7a67af446b1a09eef5f244045586f11a8e8"
+      },
+      "16": {
+        "input_hash": "ac98437f709cc08186baa2d78cb7df8bd9137c41721fbe354fd58f2f382be8ab",
+        "status": "validated",
+        "attempts": 1,
+        "result_sha256": "ec71cfb512aafa945fa2dcfed39babc0cbadd7573672e5a085848b3d5d1640a8"
+      },
+      "17": {
+        "input_hash": "7e62296770be5d0a93f17aa3649e651931d9e20a040583b8a41bf7b7c2719694",
+        "status": "failed",
+        "attempts": 2,
+        "result_sha256": "820db50f6cb71c95d0e6cdb765c8d6b85f95c4baa495834c912c88d64b2763a9"
+      },
+      "18": {
+        "input_hash": "c3a006edb8277ceb3cf9ce5a359afe00f3a2d4a7e65c92f087934e4093d2f519",
+        "status": "failed",
+        "attempts": 2,
+        "result_sha256": "9399bb883e13de970849cb54b3560794d43db03b0fdf4cc3ee4bfddd435aa110"
+      },
+      "19": {
+        "input_hash": "ab01ecc6ba34e2c1df2a7e101574285342135ef663e2edb4350430b65748efdb",
+        "status": "failed",
+        "attempts": 2,
+        "result_sha256": "3bdcb889c4a453f78202884a715fb98f8e88dd3ed9fbf920b50ee4ed1dbf9f3f"
+      },
+      "20": {
+        "input_hash": "f5b5d3b0b6723fc426018496dce4ab2c5cdc432a5c140225a22ee46bff1f5316",
+        "status": "failed",
+        "attempts": 2,
+        "result_sha256": "366414698a876f1edb7adfd46d1ec8baf7270735fc2732e57fc408a7f470e205"
+      }
+    }
+  },
+  "recovered_jobs": [
+    "c993dae7-5644-472e-9032-167d9d4b6359",
+    "abcd7f05-d283-45a7-869f-ce5a6c7e97c9"
+  ],
+  "retention_check": {
+    "ce1089d1-e62e-436a-925c-edb1ce12b085": true,
+    "5e0c333f-0c01-4b9f-ab28-0d4642900c52": true
+  },
+  "native_call_count": 32,
+  "terminal": true
+}

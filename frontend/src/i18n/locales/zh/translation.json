@@ -150,6 +150,10 @@
     "correctedBelief": "原著明确修正了此前的信念或设定",
     "accessAllowed": "获知路径已通过",
     "accessDenied": "不作为人物可知内容",
+    "knowledgeScopeLabel": "本人获知审查",
+    "knowledgeScope": { "whole": "整条命题可知", "partial": "仅部分可知", "unproven": "获知尚未证实" },
+    "unknownKnowledgeParts": "未证实本人所知：",
+    "excerptSafetyReason": "摘录审查：",
     "publicationCoverage": "已发布 {{published}} 人 · 待复核 {{unresolved}} 人 · 失败单元 {{failed}} · 不确定基线 {{conflicts}}",
     "claimKind": {
       "fact": "世界事实",

@@ -11,6 +11,13 @@ from pydantic import ValidationError
 
 from .discovery import BookDiscoveryService, _hash, _json, _now
 from .identity_graph import clone_graph
+from .persona_acquisition import (
+    ACQUISITION_PROMPT,
+    ACQUISITION_REVIEW_VERSION,
+    AcquisitionReview,
+    apply_acquisition_veto,
+    validate_acquisition_review,
+)
 from .persona_models import (
     EVIDENCE_PERSONA_VERSION,
     EXTRACT_PROMPT,
@@ -152,6 +159,16 @@ class BookPersonaService:
             ).fetchone()
             if person is None:
                 raise BookWorldError("character_unavailable", "Character belongs to another build")
+            knowledge_reviews = {}
+            for step in db.execute(
+                "SELECT result_json FROM book_build_steps WHERE book_id=? AND source_version_id=? AND build_id=? AND stage='evidence' AND status='validated'",
+                (build["book_id"], build["source_version_id"], build_id),
+            ):
+                payload = json.loads(step["result_json"])
+                for proof in payload.get("acquisition_review", {}).get("recipients", []):
+                    claim_id = payload.get("claim_ids", {}).get(proof["local_key"])
+                    if proof["character_id"] == character_id and claim_id:
+                        knowledge_reviews[claim_id] = proof
             claims = []
             for claim in db.execute(
                 "SELECT DISTINCT c.* FROM book_claims c LEFT JOIN book_claim_access a ON a.claim_id=c.id AND a.build_id=c.build_id WHERE c.build_id=? AND (c.owner_character_id=? OR a.character_id=?) ORDER BY c.rowid",
@@ -171,6 +188,9 @@ class BookPersonaService:
                         (build_id, claim["id"], character_id),
                     )
                 ]
+                if claim["id"] in knowledge_reviews:
+                    for grant in grants:
+                        grant["knowledge_review"] = knowledge_reviews[claim["id"]]
                 claims.append({**dict(claim), "evidence": evidence, "access": grants})
             return {
                 "build_id": build_id,
@@ -449,6 +469,9 @@ class BookPersonaService:
         data: dict[str, Any],
         batch: PersonaBatch,
         review: PersonaReview,
+        *,
+        acquisition_review: AcquisitionReview | None = None,
+        canonical_review: PersonaReview | None = None,
     ) -> None:
         with connect(self.db_path) as db:
             db.execute("BEGIN IMMEDIATE")
@@ -605,6 +628,9 @@ class BookPersonaService:
                 "proposals": batch.model_dump(),
                 "claim_ids": ids,
             }
+            if acquisition_review is not None and canonical_review is not None:
+                result["acquisition_review"] = acquisition_review.model_dump()
+                result["canonical_review"] = canonical_review.model_dump()
             db.execute(
                 "UPDATE book_build_steps SET status='validated',result_json=? WHERE build_id=? AND stage='evidence' AND unit_key=? AND lease_generation=?",
                 (_json(result), build_id, data["unit_key"], generation),
@@ -672,7 +698,7 @@ class BookPersonaService:
                     "Persona input exceeds context budget; reduce proposed claims/quotes"
                 )
             await asyncio.to_thread(self._renew, build_id, owner, generation, config)
-            if data.get("correction_hints"):
+            if data.get("correction_hints") and data["phase"] in ("extract", "review"):
                 prompt += "\ncorrection_hints 是经过原文审查的归属纠错请求。依据本单元原文重新提取相应 kind 的内容，使用新版 target_character_id 和提示指定的 local_key；proposition 也应按正确归属改写。独立复核必须验证这些要求，不允许继续授权错误原人物。无法确认就拒绝，不凭请求增加原著事实。\n"
                 if data["phase"] == "review":
                     prompt += "逐项返回 revision_checks：same_claim_repaired 判断指定 local_key 的新断言是否修复了提示 proposition 的同一语义内容，不能用同段另一个特征冒充；original_assignment_removed 判断全部 proposals 中是否已不存在原错误归属，改写或同义表达也视为残留。分别审查并说明原文理由；不能确定就 false。\n"
@@ -730,8 +756,36 @@ class BookPersonaService:
                         batch,
                         data,
                     )
+                    audit: dict[str, Any] = {}
+                    if config.review_prompt_version == ACQUISITION_REVIEW_VERSION:
+                        failed_phase = "acquisition"
+                        knowledge = (
+                            validate_acquisition_review(
+                                await call(
+                                    ACQUISITION_PROMPT,
+                                    AcquisitionReview.model_json_schema(),
+                                    {**checked, "phase": "review_acquisition"},
+                                ),
+                                batch,
+                                data,
+                            )
+                            if any(claim.access for claim in batch.claims)
+                            else AcquisitionReview(recipients=[])
+                        )
+                        audit = {
+                            "canonical_review": review,
+                            "acquisition_review": knowledge,
+                        }
+                        review = apply_acquisition_veto(review, knowledge)
                     await asyncio.to_thread(
-                        self._save, build_id, owner, generation, data, batch, review
+                        self._save,
+                        build_id,
+                        owner,
+                        generation,
+                        data,
+                        batch,
+                        review,
+                        **audit,
                     )
                 except (ValueError, TimeoutError) as error:
                     if config.prompt_version in (

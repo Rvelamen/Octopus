@@ -353,3 +353,5 @@ v15发现链路115项专项通过，独立全书首窗8次完成两书各3单元
 显式档案v6/审查v5已接入保存引文全子句检查，但原生摘录4次部分发布仍漏审远端效果本人获知、两将部分获知、动作次序及引用覆盖；实验B已不可用、0成员、定义/知识绑定拒绝，原著行和旧v5不变。剩余4次固定范围诊断符合预期，合计8/8，不是质量通过。完整项目520通过/13既有跳过、限定Mypy55与Ruff通过，前端相同源码复用前次验证。全来源另24次续窗推进至西游记12/411、红楼梦14/581，未进T03；详见[保存引文与获知复核](validation/2026-10-15-persona-evidence-validation.md)。继续显式获知/摘录修复及同B扫描，T17/T12未验收。
 
 显式提取v7强制安全摘录字段选择，审查v6保留旧版本并按冻结指令分派；70项专项、完整项目526通过/13既有跳过、限定Mypy55与Ruff通过，两轴审查无阻塞。实际新B4次虽有9条显式摘录，仍漏审远端获知、个人感官分配和保存引文覆盖，已隔离且未用于聊天；余量4次复核仍失败，合计8/8。另4次逐人理由原型仅目标正确，仍保留感官分配失败，未接入。全书同B32次窗运行中，西游记本书16次后18/411、147/3311片段，红楼梦继续；详见[获知范围验证](validation/2026-10-15-persona-scope-validation.md)。继续收紧来源链及原有检查点，T17/T12保持未验收。
+
+显式审查v7接入独立 per-recipient 获知审查阶段，monotone veto 不越过 canonical review；新 `persona_acquisition` 模块与 `_save` 中 canonical_review/acquisition_review 分离保存，`get_character` reader 视图追加 knowledge_review 但不进 Agent definition，前端 Modal/i18n 同步，`tests/test_book_persona_acquisition.py` 12 项新增与 persona/revisions/cognition 65 项全过、变更文件 Mypy55 与 Ruff 通过、前端生产构建通过；未启动真实模型窗口或切换默认提示，全书 v16-pending-03 与 retention-03 快照保留。详见[获知审查v7记录](validation/2026-10-16-persona-acquisition-v7-validation.md)。T17/T12 保持未验收。

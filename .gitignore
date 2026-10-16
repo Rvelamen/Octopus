@@ -176,6 +176,7 @@ tests/
 !/tests/test_book_inline_discovery.py
 !/tests/test_book_grouped_discovery.py
 !/tests/test_book_persona_cognition.py
+!/tests/test_book_persona_acquisition.py
 !/tests/test_book_unit_repair.py
 !/tests/test_book_discovery_progress.py
 .agents/skills/ai-elements/SKILL.md

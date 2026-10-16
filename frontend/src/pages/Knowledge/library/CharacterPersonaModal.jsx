@@ -33,7 +33,16 @@ export default function CharacterPersonaModal({ detail, request, onClose, onLoca
         {claim.kind === 'belief' && <Tag>{t('bookWorld.beliefTruth', { truth: t(`bookWorld.truthState.${claim.truth_state}`) })}</Tag>}
         <p style={{ margin: '6px 0' }}>{claim.proposition}</p>
         {claim.supersedes_claim_id && <div style={{ fontSize: 12 }}>{t('bookWorld.correctedBelief')}</div>}
-        {claim.access.map((access) => <div key={access.character_id} style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t(`bookWorld.accessRoute.${access.route}`)} · {t(access.access_state === 'accepted' ? 'bookWorld.accessAllowed' : 'bookWorld.accessDenied')}</div>)}
+        {claim.access.map((access) => <div key={access.character_id} style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+          {t(`bookWorld.accessRoute.${access.route}`)} · {t(access.access_state === 'accepted' ? 'bookWorld.accessAllowed' : 'bookWorld.accessDenied')}
+          {access.knowledge_review && <details style={{ marginTop: 4 }}>
+            <summary>{t('bookWorld.knowledgeScopeLabel')} · {t(`bookWorld.knowledgeScope.${access.knowledge_review.knowledge_scope}`)}</summary>
+            <p>{access.knowledge_review.reason}</p>
+            {access.knowledge_review.unknown_parts.length > 0 && <p>{t('bookWorld.unknownKnowledgeParts')}{access.knowledge_review.unknown_parts.join('；')}</p>}
+            <p>{t('bookWorld.excerptSafetyReason')}{access.knowledge_review.excerpt_reason}</p>
+            {access.knowledge_review.knowledge_evidence.map((proof, index) => <blockquote key={`${proof.segment_id}:${index}`} style={{ whiteSpace: 'pre-wrap' }}>{proof.quote}</blockquote>)}
+          </details>}
+        </div>)}
         {claim.evidence.map((evidence, index) => <div key={`${evidence.segment_id}:${index}`} style={{ marginTop: 6, fontSize: 12, whiteSpace: 'pre-wrap' }}>
           <blockquote style={{ margin: '4px 0', paddingLeft: 10, borderLeft: '2px solid var(--border)' }}>{evidence.quote_text}</blockquote>
           <Button size="small" type="link" onClick={() => onLocate(evidence)}>{t('bookWorld.candidateEvidence')}</Button>

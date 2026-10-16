@@ -200,3 +200,6 @@ REVIEW_PROMPTS["persona-review-v6"] = (
 严格按保存引文检查动作完成态和先后顺序：上桥头不证明已经过桥，先看后行动不能倒置；仅相同地点和名词不足以支持整个命题。identity_evidence只证明共指，不能补命题内容。不得从名字推测能力、分工、背景或用预训练故事常识授权或反证；原文不能逐人分配的集体描写保持未知，也不得编造原文明示了某种分工的理由。
 独立检查approved_excerpt是否确实可供该人引用，并说明它支持的有据部分；空串没有实际可用引用，不能仅因空串不含秘密便认为完整命题有引用支持。必要证据或获知不确定时supported/authorized分别false，保留独立有据的窄化命题。"""
 )
+
+# v7 retains this semantic review and adds an independent per-recipient veto stage.
+REVIEW_PROMPTS["persona-review-v7"] = REVIEW_PROMPTS["persona-review-v6"]

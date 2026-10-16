@@ -150,6 +150,10 @@
     "correctedBelief": "Explicitly corrects an earlier belief or state",
     "accessAllowed": "Acquisition verified",
     "accessDenied": "Unavailable to this character",
+    "knowledgeScopeLabel": "Personal knowledge review",
+    "knowledgeScope": { "whole": "Whole proposition known", "partial": "Only part known", "unproven": "Knowledge unproven" },
+    "unknownKnowledgeParts": "Not established as personally known: ",
+    "excerptSafetyReason": "Excerpt review: ",
     "publicationCoverage": "Published {{published}} · Review {{unresolved}} · Failed units {{failed}} · Uncertain slots {{conflicts}}",
     "claimKind": {
       "fact": "World fact",
