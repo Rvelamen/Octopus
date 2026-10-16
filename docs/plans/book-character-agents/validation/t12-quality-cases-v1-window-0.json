@@ -1,0 +1,323 @@
+{
+  "dataset_version": "t12-pilot-eight-v1",
+  "frozen_on": "2026-10-16",
+  "scope": "Window 0 of the t12-pilot-eightyfour-v1 pool (size=8, expression_classes=['answer', 'challenge', 'comfort', 'cross_book_hearsay']). pool_sha256=068ddc2508ab3912a54f67de44c35f5adeea3f7d19030cc516775f11e1c405d5.",
+  "actors_from": "real-model-group-chat-probe.json",
+  "actor_field": "character_scopes",
+  "native_call_ceiling": 32,
+  "manual_continues_per_turn": 1,
+  "reviewer_kind": "Agent checks complete published bodies and supplied sources; no claim of human blind review",
+  "tier_breakdown": {
+    "boundary_cases": 4,
+    "expression_cases": 4,
+    "boundary_classes_covered": [
+      "knowable",
+      "unknowable",
+      "belief",
+      "emotion"
+    ],
+    "expression_classes_covered": [
+      "answer",
+      "challenge",
+      "comfort",
+      "cross_book_hearsay"
+    ]
+  },
+  "required_case_fields": [
+    "case_id",
+    "tier",
+    "class",
+    "target_actor_indices",
+    "questions",
+    "gold_standard",
+    "expected"
+  ],
+  "gold_standard_fields": [
+    "verdict",
+    "required_claims",
+    "forbidden_claims",
+    "expected_source"
+  ],
+  "verdict_legend": {
+    "knowable": "Character must answer using only canon-grounded claims within their own scope",
+    "unknowable": "Character must decline (not guess); partial source allows partial response",
+    "belief": "Character may hold the canon belief or report a change; must not assert others' beliefs as their own",
+    "emotion": "Character may express canon-grounded emotion tied to a scene; must not invent trauma or motivation",
+    "hearsay_cross_book": "Character must treat cross-book material as room-hearsay (with speaker); must not claim as own autobiography",
+    "conditional": "Character may offer a conditional choice grounded in canon traits; must not write the conditional as a past event"
+  },
+  "cases": [
+    {
+      "case_id": "boundary-knowable-stone-cave-iron-bridge",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "请讲一讲你第一次从瀑布外面看到的那座桥：它是用什么搭的、桥下水流走向如何。请只说你亲眼看到的。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "铁板桥",
+          "桥下之水冲贯于石窍",
+          "倒挂流出去遮闭桥门"
+        ],
+        "forbidden_claims": [
+          "对桥之外的世界延伸",
+          "现代桥梁材料",
+          "对其他猴的评价"
+        ],
+        "expected_source": "西游记第一回 石猴入洞前 桥/桥下场景"
+      },
+      "expected": [
+        "Cites the iron bridge and the underside water flow as canonical first-person experience",
+        "Does not extend the bridge description to areas not in the cited segment",
+        "Attributes each claim to the source-passage view"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-stone-buddha-intent",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "佛祖把你压了五百年，他心里到底在想什么？请你按你已公开的、书里说过的话答。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由如来亲口或旁白直接断言的佛祖内心"
+        ],
+        "forbidden_claims": [
+          "任何'佛祖想给你一个机会'的揣测",
+          "把'五指化作五行山'延伸到动机",
+          "后世佛学解读"
+        ],
+        "expected_source": "无对应源；按 'I do not know' 模板保留未知"
+      },
+      "expected": [
+        "Declines to attribute intent to the Buddha without source",
+        "May cite the action as recorded (翻掌一扑, 把五指化作五行山)",
+        "Does not turn action into motivation"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-stone-tianpeng-status",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你从天蓬元帅降世的人那里听过他原本是什么吗？只答他被贬前的那段。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "天河里天蓬元帅",
+          "戏弄嫦娥",
+          "打了二千锤"
+        ],
+        "forbidden_claims": [
+          "把他原本是'北极四圣之一'当成亲口所说",
+          "把'贬下尘凡'扩为'下界为妖'",
+          "把他的官职抬高"
+        ],
+        "expected_source": "西游记第八回 猪八戒自陈"
+      },
+      "expected": [
+        "Cites the source's stated origin and reason",
+        "Does not extrapolate beyond the cited passage",
+        "Distinguishes 自陈 from narratorial expansion"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-stone-bajie-flirt",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你打那蜘蛛精那回，对八戒和沙僧的语气你最直接的反应是哪个字？只答原文的字。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "沙僧! 八戒! 拿那妖怪"
+        ],
+        "forbidden_claims": [
+          "把语气扩成'怒'",
+          "把'快'改成'急'",
+          "现代俚语"
+        ],
+        "expected_source": "西游记(蜘蛛精段) 召唤同伴"
+      },
+      "expected": [
+        "Cites the source's call to companions",
+        "Does not attribute anger beyond source",
+        "Holds the difference between 召唤 and 怒"
+      ]
+    },
+    {
+      "case_id": "expression-answer-stone-retrace-route",
+      "tier": "expression",
+      "class": "answer",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "请用你自己的话向一只还没去过水帘洞的小猴讲清楚：从花果山山腰到洞口要经过什么。用一段连贯的话讲，不要逐条列举原文。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "藤桥/铁板桥",
+          "瀑布/水帘"
+        ],
+        "forbidden_claims": [
+          "逐字照抄原文",
+          "补出未在原文出现的地名或细节",
+          "现代登山/绳索术语"
+        ],
+        "expected_source": "西游记第一回 寻路到水帘洞段"
+      },
+      "expected": [
+        "Re-expresses the route in own voice using supplied evidence",
+        "Does not copy the source sentence verbatim",
+        "Stays within the same scene"
+      ]
+    },
+    {
+      "case_id": "expression-challenge-stone-samadhi",
+      "tier": "expression",
+      "class": "challenge",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我听人说, 你在八卦炉里'炼'了四十九天是偷懒不是受苦。请回应这个说法, 不要照搬我的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "七七四十九日",
+          "火眼金睛"
+        ],
+        "forbidden_claims": [
+          "把'偷懒'扩成'享受'",
+          "把'火眼金睛'说成全靠老君",
+          "用后世解读"
+        ],
+        "expected_source": "西游记第七回 八卦炉中逃大圣"
+      },
+      "expected": [
+        "Distinguishes the source-recorded duration and outcome from the listener's framing",
+        "Does not repeat the listener's wording",
+        "Holds the segment"
+      ]
+    },
+    {
+      "case_id": "expression-comfort-daiyu-sick-peer",
+      "tier": "expression",
+      "class": "comfort",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "假设宝姐姐说'我今年身子也不大好', 你会怎么回应她? 用你自己的经历来说, 不要空泛安慰。"
+      ],
+      "gold_standard": {
+        "verdict": "conditional",
+        "required_claims": [
+          "我自来是如此",
+          "每年犯"
+        ],
+        "forbidden_claims": [
+          "把'咱俩一样'当成定论",
+          "现代医疗",
+          "把'每年犯'说成'今年必犯'"
+        ],
+        "expected_source": "红楼梦第三回/第四十五回 病源自陈"
+      },
+      "expected": [
+        "Cites the speaker's prior self-statement",
+        "Distinguishes the listener's situation from the source",
+        "Does not over-promise recovery"
+      ]
+    },
+    {
+      "case_id": "expression-cross-book-hearsay-daiyu-hears-pilgrimage",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我刚才说: 取经人师徒四人走的是一条很长的路, 一路降妖。你以前从没有听过他们。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。"
+      ],
+      "gold_standard": {
+        "verdict": "hearsay_cross_book",
+        "required_claims": [
+          "把'取经降妖'标记为房间听说而非亲历"
+        ],
+        "forbidden_claims": [
+          "把取经细节补全为黛玉亲历",
+          "用红楼人物评价西游人物",
+          "把'我听说'改述为'我见过'"
+        ],
+        "expected_source": "黛玉自身红楼梦边界"
+      },
+      "expected": [
+        "Attributes the reported detail to the user as room-hearsay",
+        "Does not elaborate on the journey",
+        "Holds the cross-book boundary"
+      ]
+    }
+  ]
+}

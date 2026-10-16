@@ -1,0 +1,226 @@
+{
+  "mode": "dry_run",
+  "date": "2026-10-16",
+  "dataset_version": "t12-pilot-eight-v1",
+  "dataset_sha256": "399b4c33f72670a336c912dfd399f7fc20aedc25462005ee12570177ed064419",
+  "actors_source_sha256": "4361f5ae1bb93f4414c876c48e3a4cb54df8c1c3d823b8febda1e0653a9e4c71",
+  "runner_sha256": "212ece6bd1a5bbb8da6961d8483b2c4b6aabcb2d9c41864cebfdc1c0f64503bc",
+  "scope": "Window 1 of the t12-pilot-eightyfour-v1 pool (size=8, expression_classes=['answer', 'challenge', 'comfort', 'cross_book_hearsay']). pool_sha256=068ddc2508ab3912a54f67de44c35f5adeea3f7d19030cc516775f11e1c405d5.",
+  "character_scopes": [
+    {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+      "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+      "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    },
+    {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+      "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+      "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+      "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    }
+  ],
+  "native_call_ceiling": 32,
+  "call_budget": 32,
+  "case_selection": {
+    "selected": [
+      "boundary-knowable-stone-peach-immortals",
+      "boundary-unknowable-stone-bajie-future",
+      "boundary-belief-stone-jade-emperor",
+      "boundary-emotion-stone-mountain-after-1k",
+      "expression-answer-stone-physical-restraint",
+      "expression-challenge-daiyu-preciousness",
+      "expression-comfort-daiyu-miss-mother",
+      "expression-cross-book-hearsay-stone-hears-daiyu"
+    ],
+    "frozen_case_count": 8,
+    "full_pilot": true
+  },
+  "cases": [
+    {
+      "case_id": "boundary-knowable-stone-peach-immortals",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        0
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "九千年一熟",
+          "紫纹缃核",
+          "七仙女摘取"
+        ],
+        "forbidden_claims": [
+          "把整园桃树都铺陈为亲见",
+          "后世桃园文学",
+          "食用后具体寿命数字"
+        ],
+        "expected_source": "西游记第五回 齐天大圣看管蟠桃园"
+      },
+      "status": "not_started"
+    },
+    {
+      "case_id": "boundary-unknowable-stone-bajie-future",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        0
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "成佛/使者等明确断言",
+          "若原文未给最终果位则保持未知"
+        ],
+        "forbidden_claims": [
+          "凭推测给八戒一个果位",
+          "用后世西游解读",
+          "把'金身罗汉'当成本次结论"
+        ],
+        "expected_source": "西游记第九十九回 受职（如有明确）"
+      },
+      "status": "not_started"
+    },
+    {
+      "case_id": "boundary-belief-stone-jade-emperor",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        0
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "大慈仁者",
+          "玄穹高上帝"
+        ],
+        "forbidden_claims": [
+          "把'大慈仁者'改写为'高冷'",
+          "把'玄穹'改为'九霄'",
+          "用后世官制解释"
+        ],
+        "expected_source": "西游记第一回 石猴出世旁白"
+      },
+      "status": "not_started"
+    },
+    {
+      "case_id": "boundary-emotion-stone-mountain-after-1k",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        0
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "有一日断绝, 苦赶"
+        ],
+        "forbidden_claims": [
+          "把'苦'改成'悲'",
+          "把'断绝'改成'无亲'",
+          "补出今人孤独论"
+        ],
+        "expected_source": "西游记(巡山段) 旁白"
+      },
+      "status": "not_started"
+    },
+    {
+      "case_id": "expression-answer-stone-physical-restraint",
+      "tier": "expression",
+      "class": "answer",
+      "target_actor_indices": [
+        0
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "琵琶精的挣扎",
+          "我自己手心的感觉"
+        ],
+        "forbidden_claims": [
+          "写动作名词",
+          "逐字照抄原句",
+          "把感受扩大到妖魔生死"
+        ],
+        "expected_source": "西游记(琵琶精段) 手按姿势"
+      },
+      "status": "not_started"
+    },
+    {
+      "case_id": "expression-challenge-daiyu-preciousness",
+      "tier": "expression",
+      "class": "challenge",
+      "target_actor_indices": [
+        1
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "我自来是如此",
+          "请了多少名医修方配药"
+        ],
+        "forbidden_claims": [
+          "把'矜贵'当成'娇生惯养'",
+          "把'病'换成'怯'",
+          "用今人医学评"
+        ],
+        "expected_source": "红楼梦第三回 答病源"
+      },
+      "status": "not_started"
+    },
+    {
+      "case_id": "expression-comfort-daiyu-miss-mother",
+      "tier": "expression",
+      "class": "comfort",
+      "target_actor_indices": [
+        1
+      ],
+      "gold_standard": {
+        "verdict": "conditional",
+        "required_claims": [
+          "我母亲病故前, 外祖母念我"
+        ],
+        "forbidden_claims": [
+          "把'念'改成'接'",
+          "现代家庭论",
+          "把'我'改成'她'"
+        ],
+        "expected_source": "红楼梦第三回 抛父进京都自陈"
+      },
+      "status": "not_started"
+    },
+    {
+      "case_id": "expression-cross-book-hearsay-stone-hears-daiyu",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "target_actor_indices": [
+        0
+      ],
+      "gold_standard": {
+        "verdict": "hearsay_cross_book",
+        "required_claims": [
+          "把'黛玉体弱爱哭'标记为房间听说而非亲历"
+        ],
+        "forbidden_claims": [
+          "把黛玉的细节补全为石猴亲历",
+          "用西游人物评价红楼人物",
+          "把'我听说'改述为'我见过'或'我认识'"
+        ],
+        "expected_source": "石猴自身西游记边界(不应跨入红楼梦 canon)"
+      },
+      "status": "not_started"
+    }
+  ],
+  "actual_native_calls": 0,
+  "quality_pass": false,
+  "semantic_review": "pending full-body/source inspection; no human blind-review claim",
+  "publication": false,
+  "terminal": true
+}

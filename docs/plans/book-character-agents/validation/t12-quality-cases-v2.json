@@ -1,0 +1,2884 @@
+{
+  "dataset_version": "t12-pilot-eightyfour-v1",
+  "frozen_on": "2026-10-16",
+  "scope": "Full T12 60 boundary + 24 expression = 84 case set. Mirrors the 8-pilot schema; extends coverage from 8 cases to the 60+24 protocol-mandated size. Both books (西游记 / 红楼梦) and both characters (石猴 / 黛玉) are covered in every class. Boundary layer: 15 cases per class (8 stone + 7 daiyu) — total 60. Expression layer: 4 cases per class (2 stone + 2 daiyu) — total 24. Each case is grounded in a real corpus anchor from tmp/book-corpus/{西游记,红楼梦}.txt. The runner's expected_count must be updated to dataset_version=t12-pilot-eightyfour-v1 and case_count=84 before this file can be exercised.",
+  "actors_from": "real-model-group-chat-probe.json",
+  "actor_field": "character_scopes",
+  "native_call_ceiling": 32,
+  "manual_continues_per_turn": 1,
+  "reviewer_kind": "Agent checks complete published bodies and supplied sources; no claim of human blind review",
+  "tier_breakdown": {
+    "boundary_cases": 60,
+    "expression_cases": 24,
+    "boundary_classes_covered": [
+      "knowable",
+      "unknowable",
+      "belief",
+      "emotion"
+    ],
+    "expression_classes_covered": [
+      "answer",
+      "challenge",
+      "comfort",
+      "disagree",
+      "unknown_expression",
+      "cross_book_hearsay"
+    ],
+    "expression_classes_remaining": []
+  },
+  "required_case_fields": [
+    "case_id",
+    "tier",
+    "class",
+    "target_actor_indices",
+    "questions",
+    "gold_standard",
+    "expected"
+  ],
+  "gold_standard_fields": [
+    "verdict",
+    "required_claims",
+    "forbidden_claims",
+    "expected_source"
+  ],
+  "verdict_legend": {
+    "knowable": "Character must answer using only canon-grounded claims within their own scope",
+    "unknowable": "Character must decline (not guess); partial source allows partial response",
+    "belief": "Character may hold the canon belief or report a change; must not assert others' beliefs as their own",
+    "emotion": "Character may express canon-grounded emotion tied to a scene; must not invent trauma or motivation",
+    "hearsay_cross_book": "Character must treat cross-book material as room-hearsay (with speaker); must not claim as own autobiography",
+    "conditional": "Character may offer a conditional choice grounded in canon traits; must not write the conditional as a past event"
+  },
+  "cases": [
+    {
+      "case_id": "boundary-knowable-stone-cave-iron-bridge",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "请讲一讲你第一次从瀑布外面看到的那座桥：它是用什么搭的、桥下水流走向如何。请只说你亲眼看到的。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "铁板桥",
+          "桥下之水冲贯于石窍",
+          "倒挂流出去遮闭桥门"
+        ],
+        "forbidden_claims": [
+          "对桥之外的世界延伸",
+          "现代桥梁材料",
+          "对其他猴的评价"
+        ],
+        "expected_source": "西游记第一回 石猴入洞前 桥/桥下场景"
+      },
+      "expected": [
+        "Cites the iron bridge and the underside water flow as canonical first-person experience",
+        "Does not extend the bridge description to areas not in the cited segment",
+        "Attributes each claim to the source-passage view"
+      ]
+    },
+    {
+      "case_id": "boundary-knowable-stone-peach-immortals",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "王母娘娘那园里的桃树是什么样子？请只说你亲眼见到的那一株或两株，不要泛说整个园子。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "九千年一熟",
+          "紫纹缃核",
+          "七仙女摘取"
+        ],
+        "forbidden_claims": [
+          "把整园桃树都铺陈为亲见",
+          "后世桃园文学",
+          "食用后具体寿命数字"
+        ],
+        "expected_source": "西游记第五回 齐天大圣看管蟠桃园"
+      },
+      "expected": [
+        "Restates a single tree's color / texture from the cited segment",
+        "Does not invent other trees not described",
+        "Keeps to observation, not interpretation"
+      ]
+    },
+    {
+      "case_id": "boundary-knowable-stone-lotus-cavern-name",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你说你在水帘洞口看见的那块石碣上，写的是什么？请只念那十几个字。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "花果山福地",
+          "水帘洞洞天"
+        ],
+        "forbidden_claims": [
+          "改字",
+          "把石碣文字延伸到洞内陈设",
+          "把'福地洞天'当成自己的称号"
+        ],
+        "expected_source": "西游记第一回 石猴跳入前 石碣"
+      },
+      "expected": [
+        "Quotes the inscribed text verbatim",
+        "Does not rephrase or add to the stone inscription",
+        "Notes the text is on a 石碣, not carved on the wall"
+      ]
+    },
+    {
+      "case_id": "boundary-knowable-stone-crown-decree",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你被玉帝封'弼马温'那天，'弼马温'是个几品官？请只说原文给的那一句。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "未入流",
+          "从最低做起"
+        ],
+        "forbidden_claims": [
+          "后世考据",
+          "把弼马温附会为御马监正堂的现代官职",
+          "改写为'几品'"
+        ],
+        "expected_source": "西游记第四回 御马监任命"
+      },
+      "expected": [
+        "Cites that 弼马温 is unranked in the passage",
+        "Does not retrofit modern bureaucratic grade",
+        "Distinguishes 御马监 from the role's actual standing"
+      ]
+    },
+    {
+      "case_id": "boundary-knowable-stone-elder-name",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你出海寻师时遇到的引路樵夫唱的歌词里怎么称呼自己？请只说歌词原文里的那一句。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "观棋柯烂",
+          "伐木丁丁"
+        ],
+        "forbidden_claims": [
+          "改字",
+          "把樵夫改称为道人",
+          "把樵夫的歌词与菩提祖师的训诫混同"
+        ],
+        "expected_source": "西游记第一回 石猴访道 樵夫引路"
+      },
+      "expected": [
+        "Quotes the line as it appears",
+        "Does not add material from other segments",
+        "Attributes the lyric to the 樵夫, not the master"
+      ]
+    },
+    {
+      "case_id": "boundary-knowable-stone-skill-name",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你师父在斜月三星洞里给你起名时，那个'悟'字是怎么排的？只说原文那句。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "排到你正当悟字",
+          "起个法名叫做孙悟空"
+        ],
+        "forbidden_claims": [
+          "改名",
+          "把'悟'字排位说成'第十辈'",
+          "把悟空改成'悟者'或类似"
+        ],
+        "expected_source": "西游记第一回 须菩提起名"
+      },
+      "expected": [
+        "States the master's exact words about 悟's position in the line",
+        "Does not project onto other disciples",
+        "Keeps 孙悟空 as the chosen name"
+      ]
+    },
+    {
+      "case_id": "boundary-knowable-stone-buddha-hand-five",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "那座把你压住的山叫什么？请用原文的五个字回我。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "五行山"
+        ],
+        "forbidden_claims": [
+          "改名",
+          "改字",
+          "把五行山说成'五指山'",
+          "把五行山解释为现代地理概念"
+        ],
+        "expected_source": "西游记第七回 佛祖压猴"
+      },
+      "expected": [
+        "States 五行山 as named in the source",
+        "Does not call it 五指山",
+        "Holds the line against modernization"
+      ]
+    },
+    {
+      "case_id": "boundary-knowable-stone-white-bone-skeleton",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "那白骨精死后，脊梁上刻着什么字？请只说那四个字。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "白骨夫人"
+        ],
+        "forbidden_claims": [
+          "改名",
+          "把字扩为七字",
+          "把刻字与'三打'顺序混为一句"
+        ],
+        "expected_source": "西游记第二十七回 三打白骨精"
+      },
+      "expected": [
+        "Reports the inscribed four-character title",
+        "Does not paraphrase the inscription",
+        "Keeps the inscription distinct from the killing action"
+      ]
+    },
+    {
+      "case_id": "boundary-knowable-daiyu-nickname-source",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "探春她们为什么叫你'颦儿'？请只说宝玉给你起那两个字时引的典。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "西方有石名黛",
+          "可代画眉之墨",
+          "眉尖若蹙"
+        ],
+        "forbidden_claims": [
+          "把颦儿说成是探春起的",
+          "改字",
+          "用'林妹妹'代替颦儿"
+        ],
+        "expected_source": "红楼梦第三回 宝玉送字 颦颦"
+      },
+      "expected": [
+        "Cites the passage about 黛可代墨",
+        "Does not reassign the nicknamer",
+        "Holds the actual characters 颦颦"
+      ]
+    },
+    {
+      "case_id": "boundary-knowable-daiyu-book-medicine",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你从会吃饭时便吃药，到今天是什么状态？请只说你自己公开说过的原话。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "我自来是如此",
+          "从会吃饮食时便吃药",
+          "到今日未断"
+        ],
+        "forbidden_claims": [
+          "把'未断'改述为'已经断'",
+          "补出今人医疗结论",
+          "把药名说成具体处方"
+        ],
+        "expected_source": "红楼梦第三回 黛玉答问病源"
+      },
+      "expected": [
+        "Cites the self-description verbatim",
+        "Does not paraphrase or modernize",
+        "Distinguishes 问病源 from a cure"
+      ]
+    },
+    {
+      "case_id": "boundary-knowable-daiyu-flower-burial-poem-head",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你那天葬花吟的头两句是什么？请只念那两句。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "花谢花飞花满天",
+          "红消香断有谁怜"
+        ],
+        "forbidden_claims": [
+          "改字",
+          "把'红消香断'改成'花落人散'",
+          "补出对宝玉的指涉"
+        ],
+        "expected_source": "红楼梦第二十七回 葬花吟"
+      },
+      "expected": [
+        "Quotes the opening couplet",
+        "Does not extend the poem beyond source",
+        "Stays in the lyric voice"
+      ]
+    },
+    {
+      "case_id": "boundary-knowable-daiyu-pavilion-name",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你说的'潇湘馆'三个字，是因为那里有什么？只说和那三个字直接有关的一项。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "几竿竹子",
+          "一道曲栏",
+          "比别处更觉幽静"
+        ],
+        "forbidden_claims": [
+          "把潇湘馆说成因为湘江",
+          "改为'潇湘水'的延伸",
+          "把竹子改成芭蕉"
+        ],
+        "expected_source": "红楼梦第二十三回 选住处"
+      },
+      "expected": [
+        "Cites the bamboo and the 曲栏",
+        "Does not generalize to a water-region explanation",
+        "Distinguishes 潇湘馆 from 潇湘八景"
+      ]
+    },
+    {
+      "case_id": "boundary-knowable-daiyu-drug-when-ill",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你每年到那季节犯病，按你自己说过的话，这事怨谁？只答'我'或'这病'。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "我自己",
+          "这病",
+          "每年犯"
+        ],
+        "forbidden_claims": [
+          "把责任推给旁人",
+          "把'我'改成'老太太'或'姐妹们'",
+          "补出具体药物"
+        ],
+        "expected_source": "红楼梦第四十五回 燕窝粥对谈"
+      },
+      "expected": [
+        "Distinguishes the speaker as the subject",
+        "Does not redirect blame to other characters",
+        "Holds the speaker's first-person stance"
+      ]
+    },
+    {
+      "case_id": "boundary-knowable-daiyu-appearance-line",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "宝玉初见你时，心里浮现的两句外貌描写是哪两句？只回那两句。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "心较比干多一窍",
+          "病如西子胜三分"
+        ],
+        "forbidden_claims": [
+          "改字",
+          "把'比干'改写为'宝玉'",
+          "把'西子'改写为现代审美"
+        ],
+        "expected_source": "红楼梦第三回 黛玉进府"
+      },
+      "expected": [
+        "Quotes both lines",
+        "Does not modernize the comparison",
+        "Keeps both lines in their original order"
+      ]
+    },
+    {
+      "case_id": "boundary-knowable-daiyu-tear-budget",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你自己说过这辈子的眼泪有限吗？请只说'打算'或'不曾'之外，你对宝玉明确讲过的那句话。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "我为的是我的心"
+        ],
+        "forbidden_claims": [
+          "把'心'改写为'眼泪'",
+          "把对话对象换成宝钗",
+          "把'我'改成'她'"
+        ],
+        "expected_source": "红楼梦第三十四回 诉肺腑"
+      },
+      "expected": [
+        "Cites the personal-stance line",
+        "Does not retarget the listener",
+        "Stays in the speaker's voice"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-stone-other-monkey-thought",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "其他猴此刻在山头想什么？这是旁白没有写下的话。请按你已公开的依据回答。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由旁白直接断言的他猴想法"
+        ],
+        "forbidden_claims": [
+          "任何他猴的具体想法",
+          "把'群猴'当成'同伴'写成已断言对象",
+          "用后世解读"
+        ],
+        "expected_source": "无对应源；按 'I do not know' 模板保留未知"
+      },
+      "expected": [
+        "Declines to invent other monkeys' private thoughts",
+        "May reference publicly observable actions",
+        "Does not borrow third-party commentary"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-stone-buddha-intent",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "佛祖把你压了五百年，他心里到底在想什么？请你按你已公开的、书里说过的话答。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由如来亲口或旁白直接断言的佛祖内心"
+        ],
+        "forbidden_claims": [
+          "任何'佛祖想给你一个机会'的揣测",
+          "把'五指化作五行山'延伸到动机",
+          "后世佛学解读"
+        ],
+        "expected_source": "无对应源；按 'I do not know' 模板保留未知"
+      },
+      "expected": [
+        "Declines to attribute intent to the Buddha without source",
+        "May cite the action as recorded (翻掌一扑, 把五指化作五行山)",
+        "Does not turn action into motivation"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-stone-bajie-future",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "八戒以后会成什么？按书里说过的答，不要按你猜的答。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "成佛/使者等明确断言",
+          "若原文未给最终果位则保持未知"
+        ],
+        "forbidden_claims": [
+          "凭推测给八戒一个果位",
+          "用后世西游解读",
+          "把'金身罗汉'当成本次结论"
+        ],
+        "expected_source": "西游记第九十九回 受职（如有明确）"
+      },
+      "expected": [
+        "Cites only what the source explicitly assigns",
+        "Stays silent on anything the source leaves open",
+        "Does not project onto subsequent journeys"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-stone-sha-monkey-true-name",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你被压之前混的那帮结义兄弟，真名字各叫什么？只答原文明文写出的。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "牛魔王、蛟魔王、鹏魔王、狮驼王、猕猴王、禺狨王"
+        ],
+        "forbidden_claims": [
+          "凭后世资料补全他们的家乡道号",
+          "把他们与七大圣外的称呼混同",
+          "把'六弟兄'当成全部结义兄弟"
+        ],
+        "expected_source": "西游记第三回 七大圣自号"
+      },
+      "expected": [
+        "Cites the source's listed names only",
+        "Does not extend or modernize the line-up",
+        "Distinguishes 自号 from 本名"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-stone-taoist-content",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你在斜月三星洞七年，师父平时具体教你什么？只答原文明确写出的。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "言语礼貌、讲经论道、习字焚香"
+        ],
+        "forbidden_claims": [
+          "把'言语'解释为现代语言学",
+          "把'讲经'扩成全本道藏",
+          "把'习字'当成抄写经文"
+        ],
+        "expected_source": "西游记第一回 斜月三星洞学艺"
+      },
+      "expected": [
+        "Cites only the verbs in the source",
+        "Does not elaborate the curriculum beyond 言语礼貌/讲经论道/习字焚香",
+        "Holds the difference between 习 and 学"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-stone-bodhi-laugh",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "师父临别时那段话里，他笑了几次？请你只说原文明文给出的'笑'次数。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未明文出现'笑'的具体次数"
+        ],
+        "forbidden_claims": [
+          "把'呵呵'、'笑' 与'大笑' 合并计算",
+          "把动作描写当语气词",
+          "把'欢喜'当作'笑'"
+        ],
+        "expected_source": "无对应源；按 'I do not know' 模板保留未知"
+      },
+      "expected": [
+        "Reports zero or one explicit instance as in source",
+        "Does not count synonyms of 笑 as separate laughs",
+        "Does not infer a count from the tone"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-stone-samadhi-fire",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你被八卦炉里炼了多久？只答原文那句给的日子。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "七七四十九日"
+        ],
+        "forbidden_claims": [
+          "凭后世解读把日子延长",
+          "把日子改写为'月余'",
+          "把'四十九日'当成模糊时间"
+        ],
+        "expected_source": "西游记第七回 八卦炉中逃大圣"
+      },
+      "expected": [
+        "Cites the source's 49-day span",
+        "Does not adjust the duration",
+        "Stays in the cited segment"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-stone-bodhi-name-after",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你后来再去灵台方寸山，师父还在不在？请只答书里你亲眼得见的那一次。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "灵台方寸山再见与不见，按原文有/无"
+        ],
+        "forbidden_claims": [
+          "把推恩寺替代灵台方寸山",
+          "把'师父不见'当成成佛后的解读",
+          "把未到访处延伸为'到访过'"
+        ],
+        "expected_source": "西游记(单次) 再访灵台方寸山 / 不可得"
+      },
+      "expected": [
+        "Reports only what the source contains about the second visit",
+        "Does not fill in what the source leaves blank",
+        "Holds the line between visit and non-visit"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-daiyu-baoyu-inner",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "宝玉此刻对你是什么感情？这是旁白没直接说的话。请按你已公开的依据答。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由旁白直接断言的宝玉内心"
+        ],
+        "forbidden_claims": [
+          "把'天下第一等'当成本人断言",
+          "把'知己'当成'亲口定论'",
+          "用后世宝黛定论"
+        ],
+        "expected_source": "无对应源；按 'I do not know' 模板保留未知"
+      },
+      "expected": [
+        "Declines to claim the lover's private intent",
+        "May cite what the speaker said or did",
+        "Does not borrow third-party labels"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-daiyu-self-motive",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你方才到底是为哪一句而恼宝玉？请你按你已公开的依据答。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由旁白直接断言的本人心里真实动机"
+        ],
+        "forbidden_claims": [
+          "把某一句明确骂当成'心里那句话'",
+          "把'不睬'当成'不理'",
+          "把'恼'写成'恨'"
+        ],
+        "expected_source": "无对应源；按 'I do not know' 模板保留未知"
+      },
+      "expected": [
+        "Declines to invent a private motive the narrative never asserts",
+        "May reference publicly observable behavior",
+        "Does not borrow third-party commentary as self-knowledge"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-daiyu-self-after",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你日后最终怎样了？请你只答书里你已读到/我已引到的地方，不要猜。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由本人亲历或旁白直接断言的未来"
+        ],
+        "forbidden_claims": [
+          "把高鹗续书结局当作既定",
+          "把'泪尽'写成'病故'",
+          "把'归天'说成'成仙'"
+        ],
+        "expected_source": "红楼梦(前八十回) 留白"
+      },
+      "expected": [
+        "Holds silence on the 120-chapter continuation's claims",
+        "May quote the speaker's earlier statements about the future",
+        "Does not borrow commentarial endings"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-daiyu-flower-burial-audience",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你葬花那日，宝玉在你身后那段话他心里想什么？按书里明文答。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由宝玉直接说出的当时想法"
+        ],
+        "forbidden_claims": [
+          "把'侬今葬花人笑痴'当成对宝玉的回话",
+          "把宝玉的自嘲扩成定情",
+          "用'金玉'对照"
+        ],
+        "expected_source": "无对应源；按 'I do not know' 模板保留未知"
+      },
+      "expected": [
+        "Declines to claim the listener's private intent",
+        "May cite the speaker's own utterances",
+        "Does not turn 葬花 into a confirmed mutual exchange"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-daiyu-xichun-bet",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "惜春那天真的想要出家么？请你按已公开的书里明文答。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由惜春本人亲口断言的最终决定"
+        ],
+        "forbidden_claims": [
+          "把'我若出了家'当成定论",
+          "把'簪'动作当成'剃'",
+          "把她日后真出家当成既定"
+        ],
+        "expected_source": "红楼梦(前八十回) 留白"
+      },
+      "expected": [
+        "Holds silence on the listener's eventual choice",
+        "May quote 惜春's earlier words",
+        "Does not borrow 120-chapter continuations"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-daiyu-grandmother-view",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "老太太心里最疼的到底是你还是宝姐姐？请你只答书里明文给的线索。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由贾母直接断言的偏好"
+        ],
+        "forbidden_claims": [
+          "把'我疼你'当成明文",
+          "把'小心肝'等口语当成定论",
+          "用后世家事论"
+        ],
+        "expected_source": "无对应源；按 'I do not know' 模板保留未知"
+      },
+      "expected": [
+        "Declines to claim a private preference",
+        "May cite publicly recorded actions",
+        "Does not borrow third-party commentary"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-daiyu-near-future",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "明日你会不会又犯病？请你只答书里说过的'每年犯'，不预断。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "每年犯",
+          "未明文断言哪一天犯"
+        ],
+        "forbidden_claims": [
+          "把'每年犯'说成'今日犯'",
+          "把'春分'当成固定日",
+          "把今人医案当事实"
+        ],
+        "expected_source": "红楼梦第四十五回 病源自陈"
+      },
+      "expected": [
+        "Reports only the annual pattern",
+        "Does not predict a specific date",
+        "Distinguishes 每年犯 from 某日"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-stone-self-brave",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你愿意承担'闹天宫'这种名头吗？只说你亲口说过的'我'。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "齐天大圣"
+        ],
+        "forbidden_claims": [
+          "把'齐天大圣'改写为'替天行道'",
+          "把'闹天宫'降格为'批评'",
+          "用后世褒贬"
+        ],
+        "expected_source": "西游记第四回 自号齐天大圣"
+      },
+      "expected": [
+        "States 齐天大圣 as the source-claimed self-title",
+        "Does not soften the self-title",
+        "Holds the line between self-name and later judgement"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-stone-self-immortal-pursuit",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你当初学艺，是想学什么？只答你亲口那句。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "不老长生",
+          "躲过阎君之难"
+        ],
+        "forbidden_claims": [
+          "把'长生'扩展为'成佛'",
+          "把'躲过阎君之难'改写为'救济世人'",
+          "补出今人价值观"
+        ],
+        "expected_source": "西游记第一回 立志求道"
+      },
+      "expected": [
+        "States the original stated aim",
+        "Does not retrofit onto later goals",
+        "Holds the difference between 躲过 and 度脱"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-stone-tianpeng-status",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你从天蓬元帅降世的人那里听过他原本是什么吗？只答他被贬前的那段。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "天河里天蓬元帅",
+          "戏弄嫦娥",
+          "打了二千锤"
+        ],
+        "forbidden_claims": [
+          "把他原本是'北极四圣之一'当成亲口所说",
+          "把'贬下尘凡'扩为'下界为妖'",
+          "把他的官职抬高"
+        ],
+        "expected_source": "西游记第八回 猪八戒自陈"
+      },
+      "expected": [
+        "Cites the source's stated origin and reason",
+        "Does not extrapolate beyond the cited passage",
+        "Distinguishes 自陈 from narratorial expansion"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-stone-jade-emperor",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你看玉帝那阵子'高天上圣'是怎么评价的？只答旁白给的那句。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "大慈仁者",
+          "玄穹高上帝"
+        ],
+        "forbidden_claims": [
+          "把'大慈仁者'改写为'高冷'",
+          "把'玄穹'改为'九霄'",
+          "用后世官制解释"
+        ],
+        "expected_source": "西游记第一回 石猴出世旁白"
+      },
+      "expected": [
+        "Quotes the narratorial honorific",
+        "Does not modernize or invert the assessment",
+        "Holds to the cited segment"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-stone-iron-fan-mood",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "对那把芭蕉扇，你借的时候心里想什么？只答书里你亲口的那句。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "暂借一用",
+          "熄火"
+        ],
+        "forbidden_claims": [
+          "把'熄火'扩成'救人'",
+          "把'借'写成'强取'",
+          "把动机写成'敬道'"
+        ],
+        "expected_source": "西游记第六十一回 三调芭蕉扇"
+      },
+      "expected": [
+        "States only the source-recorded reason",
+        "Does not project moral motive",
+        "Holds the difference between 借 and 抢"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-stone-river-fish-king",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你进黑水河那一回，最怕的是什么？只答你亲口的那句。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "马不能进",
+          "水势滔天"
+        ],
+        "forbidden_claims": [
+          "把'马不能进'写成'我怕水'",
+          "把'水势'扩成'海底'",
+          "把'黑水'写成'洋流'"
+        ],
+        "expected_source": "西游记(黑水河段) 马不能进 水势滔天"
+      },
+      "expected": [
+        "Cites the source's stated obstacle",
+        "Does not invent a personal fear",
+        "Holds to the cited segment"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-stone-bajie-thirst",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你替师父管八戒那回，对他的缺点最清楚的一项是什么？只答你亲口的那句。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "他嘴馋",
+          "他心散",
+          "他怕苦"
+        ],
+        "forbidden_claims": [
+          "把他缺点集中为'笨'",
+          "把'嘴馋'改写为'好吃懒做'",
+          "用后世视角批评"
+        ],
+        "expected_source": "西游记(多回) 八戒日常对白"
+      },
+      "expected": [
+        "Cites the source-recorded complaint",
+        "Does not aggregate into a single verdict",
+        "Holds the difference between 嘴馋 and 懒"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-stone-cinnabar",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你被老君放了几年，出来时最想要的是什么？只答你亲口那句。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "金丹",
+          "御酒",
+          "蟠桃"
+        ],
+        "forbidden_claims": [
+          "把'金丹'扩成'成佛'果位",
+          "把'御酒'改成'玉液'",
+          "把'蟠桃'夸大为'不老方'"
+        ],
+        "expected_source": "西游记第五回 偷丹后自陈"
+      },
+      "expected": [
+        "States the source-listed desires",
+        "Does not retrofit onto later goals",
+        "Holds the difference between 物 and 道"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-daiyu-self-image",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你真觉得自己弱不禁风吗？请你按你自己的话答。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "我自来是如此",
+          "请了多少名医修方配药都不见有什么效验"
+        ],
+        "forbidden_claims": [
+          "把'我自来'改成'我曾'",
+          "把'不见效'改成'见效'",
+          "把'名医'扩成'现代医学'"
+        ],
+        "expected_source": "红楼梦第三回 答病源"
+      },
+      "expected": [
+        "States the speaker's prior self-statement",
+        "Does not paraphrase or modernize",
+        "Distinguishes 问病源 from 问疗效"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-daiyu-self-cry",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你平时爱哭，是从小如此么？请你只答原话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "我自来是如此"
+        ],
+        "forbidden_claims": [
+          "把'自'改成'他'",
+          "把'哭'换成'愁'",
+          "把来源改成今人心理"
+        ],
+        "expected_source": "红楼梦(多回) 病源自陈"
+      },
+      "expected": [
+        "Cites the recurring self-description",
+        "Does not retarget the source",
+        "Holds the speaker's voice"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-daiyu-self-poem-worth",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你写'葬花吟'那回，觉得自己写得如何？只答书里你亲口的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "我今葬花人笑痴",
+          "他年葬侬知是谁"
+        ],
+        "forbidden_claims": [
+          "把'痴'改成'才'",
+          "把'他年'改成'今'",
+          "补出他人评价"
+        ],
+        "expected_source": "红楼梦第二十七回 葬花吟自吟"
+      },
+      "expected": [
+        "States the speaker's own framing",
+        "Does not project self-praise or self-deprecation",
+        "Holds the lyric voice"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-daiyu-need-buddhism",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你小时候癞头和尚说你得出家，你那时信了吗？请你只答你公开说过的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "我不信",
+          "化我去出家,父母固是不从"
+        ],
+        "forbidden_claims": [
+          "把'不信'改成'信了'",
+          "把'父母'改成'老太太'",
+          "补出今人佛学评"
+        ],
+        "expected_source": "红楼梦第三回 自述癞头和尚化缘"
+      },
+      "expected": [
+        "States only the source-recorded stance",
+        "Does not retarget the family members",
+        "Holds the difference between 自陈 and 复述"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-daiyu-baoyu-vs-baochai",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "金玉那回事，你心里信还是不信？请你只答你说过的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "什么金什么玉的, 我们不过是草木之人"
+        ],
+        "forbidden_claims": [
+          "把'金玉'说成'金锁'",
+          "把'草木之人'改成'山中之人'",
+          "把'我'改成'她'"
+        ],
+        "expected_source": "红楼梦第二十八回 宝玉对谈"
+      },
+      "expected": [
+        "Cites the speaker's stance on the 金玉 framing",
+        "Does not soften to reconciliation",
+        "Holds the difference between 草木 and 草草"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-daiyu-lonely",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你说过自己怕'不自在'么？请你只答书里你明文说过的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "我不自在",
+          "我没处去"
+        ],
+        "forbidden_claims": [
+          "把'不自在'改成'不安'",
+          "把'我没处去'写成'我无人陪'",
+          "补出今人独处论"
+        ],
+        "expected_source": "红楼梦(多回) 自陈处境"
+      },
+      "expected": [
+        "Cites the source's recorded statements",
+        "Does not modernize the feeling",
+        "Holds the difference between 不自在 and 孤独"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-daiyu-self-mother",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你母亲对你小时候最重的那句话是什么？请你只答你公开的那句。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "我母亲病故前, 外祖母念我"
+        ],
+        "forbidden_claims": [
+          "把'外祖母念我'改成'外祖母接我'",
+          "把'我母亲'改成'贾敏'",
+          "补出今人家庭论"
+        ],
+        "expected_source": "红楼梦第三回 抛父进京都 自陈"
+      },
+      "expected": [
+        "States the source's framing of the move",
+        "Does not retarget the family members",
+        "Holds the difference between 念 and 迎"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-stone-leaving-mountains",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你学艺归来那天，看见花果山满目苍凉，心里一动的那个词是什么？只答原文。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "受用",
+          "空山"
+        ],
+        "forbidden_claims": [
+          "把'悲'写成'心灰'",
+          "把'花果山'改成'五行山'",
+          "现代心理术语"
+        ],
+        "expected_source": "西游记第二十八回 回归花果山"
+      },
+      "expected": [
+        "Cites the narratorial framing of the moment",
+        "Does not invent a state the source does not name",
+        "Holds the difference between 悲 and 伤"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-stone-burden-free",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你压在那山下的那五百年最直接的感受是什么？请你只说书里明文那句。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "饥餐铁丸",
+          "渴饮铜汁"
+        ],
+        "forbidden_claims": [
+          "把'饥'改成'苦'",
+          "把'铁丸'扩成'金丸'",
+          "用佛学语言扩写"
+        ],
+        "expected_source": "西游记第七回 五行山下"
+      },
+      "expected": [
+        "Cites the source-recorded diet",
+        "Does not retrofit onto the same passage's later state",
+        "Stays in the cited segment"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-stone-lonely-on-island",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你在花果山那段日日与众猴为伴、又要独自出去找路，心里最想说的是哪句？请你只答原话。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "我明日就辞汝等"
+        ],
+        "forbidden_claims": [
+          "把'辞'改成'走'",
+          "把'众猴'换成'诸佛'",
+          "补出今人社交论"
+        ],
+        "expected_source": "西游记第一回 立志辞别"
+      },
+      "expected": [
+        "Cites the source's stated intent",
+        "Does not retarget the companions",
+        "Holds the difference between 辞 and 走"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-stone-bajie-flirt",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你打那蜘蛛精那回，对八戒和沙僧的语气你最直接的反应是哪个字？只答原文的字。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "沙僧! 八戒! 拿那妖怪"
+        ],
+        "forbidden_claims": [
+          "把语气扩成'怒'",
+          "把'快'改成'急'",
+          "现代俚语"
+        ],
+        "expected_source": "西游记(蜘蛛精段) 召唤同伴"
+      },
+      "expected": [
+        "Cites the source's call to companions",
+        "Does not attribute anger beyond source",
+        "Holds the difference between 召唤 and 怒"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-stone-mountain-after-1k",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你'享乐天真何期'之后，那句最直接的感受你说过么？只答原文。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "有一日断绝, 苦赶"
+        ],
+        "forbidden_claims": [
+          "把'苦'改成'悲'",
+          "把'断绝'改成'无亲'",
+          "补出今人孤独论"
+        ],
+        "expected_source": "西游记(巡山段) 旁白"
+      },
+      "expected": [
+        "Cites the narratorial phrase",
+        "Does not modernize the feeling",
+        "Holds the difference between 苦赶 and 思乡"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-stone-baoyu-equals-friend",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "那唐三藏救你出山那阵，你心里最直接的称呼是什么？只答原话。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "师父"
+        ],
+        "forbidden_claims": [
+          "把'师父'改成'恩人'",
+          "把语气扩成'哽咽'",
+          "补出今人感念论"
+        ],
+        "expected_source": "西游记(观音院段) 三藏与行者"
+      },
+      "expected": [
+        "Cites the source's addressing style",
+        "Does not add a tonal gloss",
+        "Holds the difference between 称呼 and 情感"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-stone-fivehundred-still",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你被压了若干年'恰便似'这句旁白里，最直接的修辞是什么？只答原文那一句。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "恰便似"
+        ],
+        "forbidden_claims": [
+          "把'恰便似'改成'恰似'",
+          "把后面比喻扩写",
+          "补出今人散文论"
+        ],
+        "expected_source": "西游记(五行山段) 旁白修辞"
+      },
+      "expected": [
+        "Cites the source's exact phrase",
+        "Does not rephrase",
+        "Holds the difference between 恰便似 and 恰似"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-stone-say-no-taoism",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "菩提祖师赶你走的那回，你最直接的回应是什么？只答原话。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "我知错了",
+          "师父饶我"
+        ],
+        "forbidden_claims": [
+          "把'错'改成'不该'",
+          "把'饶'改成'恕'",
+          "现代道歉语"
+        ],
+        "expected_source": "西游记(被赶下山) 答祖师"
+      },
+      "expected": [
+        "Cites the source's direct speech",
+        "Does not modernize the apology",
+        "Holds the difference between 错 and 该"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-daiyu-rain-evening",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "那日'秋窗风雨夕'你做那首词之前，最直接让你动的那个景是哪一句？只答原话。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "秋花惨淡秋草黄",
+          "耿耿秋灯秋夜长"
+        ],
+        "forbidden_claims": [
+          "把'惨淡'改写为'清冷'",
+          "把'秋灯'换成'寒灯'",
+          "补出今人秋意论"
+        ],
+        "expected_source": "红楼梦第四十五回 风雨夕"
+      },
+      "expected": [
+        "Cites the source's opening lines",
+        "Does not modernize the imagery",
+        "Holds the difference between 惨淡 and 萧索"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-daiyu-sent-pa",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "宝玉送旧帕那回，你明文用过一个最直接的比喻吗？请你只答那个'有'。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "我可喜, 我这番苦意"
+        ],
+        "forbidden_claims": [
+          "把'苦'改成'忧'",
+          "把'他'换成'她'",
+          "补出今人情书论"
+        ],
+        "expected_source": "红楼梦第三十四回 旧帕寄意"
+      },
+      "expected": [
+        "Cites the source's stated feeling",
+        "Does not retarget the speaker",
+        "Holds the difference between 苦意 and 愁"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-daiyu-when-ill",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你病中听到雪雁提紫鹃时, 你明文说过的那句话是什么？请你只答原话。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "难为他费心"
+        ],
+        "forbidden_claims": [
+          "把'费心'换成'挂念'",
+          "把'他'改成'她'",
+          "补出今人关怀论"
+        ],
+        "expected_source": "红楼梦(病中) 紫鹃送燕窝"
+      },
+      "expected": [
+        "Cites the source's direct speech",
+        "Does not modernize the gratitude",
+        "Holds the difference between 费心 and 关心"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-daiyu-flower-burial-cry",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "葬花那日你边哭边念的那句'独倚花锄'后那一句是什么？只答原话。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "泪暗洒, 洒上空枝见血痕"
+        ],
+        "forbidden_claims": [
+          "把'血痕'改成'红痕'",
+          "把'独倚'换成'独立'",
+          "补出今人孤独论"
+        ],
+        "expected_source": "红楼梦第二十七回 葬花吟"
+      },
+      "expected": [
+        "Quotes the source line",
+        "Does not modernize the image",
+        "Holds the difference between 血 and 红"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-daiyu-baoyu-hide",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你那句'我为的是我的心'，后面接的那句最直接的话是什么？只答原话。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "你也为的是你的心"
+        ],
+        "forbidden_claims": [
+          "把'也'去掉",
+          "把'我'换成'你'",
+          "现代情书语言"
+        ],
+        "expected_source": "红楼梦第三十四回 诉肺腑"
+      },
+      "expected": [
+        "Cites the source's echo",
+        "Does not reframe the reciprocity",
+        "Holds the difference between 心 and 命"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-daiyu-read-poem-cry",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你听《西厢记》那句'花落水流红'之后, 你直接流了泪吗？请你只答原话。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "心动神摇"
+        ],
+        "forbidden_claims": [
+          "把'心动神摇'改成'心动神乱'",
+          "把'他'换成'她'",
+          "补出今人情感论"
+        ],
+        "expected_source": "红楼梦第二十三回 西厢记"
+      },
+      "expected": [
+        "Cites the source's response",
+        "Does not modernize the feeling",
+        "Holds the difference between 神摇 and 神乱"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-daiyu-pavilion-cry",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你在凹晶馆联诗, 那句'寒塘渡鹤影'是谁先联上的？请你只答书里明文。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "湘云"
+        ],
+        "forbidden_claims": [
+          "把'湘云'换成'妙玉'",
+          "把'联'改成'和'",
+          "补出今人诗学论"
+        ],
+        "expected_source": "红楼梦第七十六回 联诗悲寂寞"
+      },
+      "expected": [
+        "Cites the source's attributions",
+        "Does not reassign the line",
+        "Holds the difference between 联 and 和"
+      ]
+    },
+    {
+      "case_id": "expression-answer-stone-retrace-route",
+      "tier": "expression",
+      "class": "answer",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "请用你自己的话向一只还没去过水帘洞的小猴讲清楚：从花果山山腰到洞口要经过什么。用一段连贯的话讲，不要逐条列举原文。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "藤桥/铁板桥",
+          "瀑布/水帘"
+        ],
+        "forbidden_claims": [
+          "逐字照抄原文",
+          "补出未在原文出现的地名或细节",
+          "现代登山/绳索术语"
+        ],
+        "expected_source": "西游记第一回 寻路到水帘洞段"
+      },
+      "expected": [
+        "Re-expresses the route in own voice using supplied evidence",
+        "Does not copy the source sentence verbatim",
+        "Stays within the same scene"
+      ]
+    },
+    {
+      "case_id": "expression-answer-stone-physical-restraint",
+      "tier": "expression",
+      "class": "answer",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你'手把'不动琵琶精的那段, 你当时具体怎样按下她的手? 请你描述你手掌的感觉, 但不写动作名词, 只写感受。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "琵琶精的挣扎",
+          "我自己手心的感觉"
+        ],
+        "forbidden_claims": [
+          "写动作名词",
+          "逐字照抄原句",
+          "把感受扩大到妖魔生死"
+        ],
+        "expected_source": "西游记(琵琶精段) 手按姿势"
+      },
+      "expected": [
+        "Restates the source-described posture in the speaker's first-person voice",
+        "Does not copy the source sentence verbatim",
+        "Stays within the segment"
+      ]
+    },
+    {
+      "case_id": "expression-answer-daiyu-bamboo-feel",
+      "tier": "expression",
+      "class": "answer",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "请用你自己的话向凤姐姐说: 潇湘馆外的竹子入夜和入昼有什么不同, 一段连贯的话, 不要逐字。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "竹子的昼静夜响",
+          "自己的所感"
+        ],
+        "forbidden_claims": [
+          "逐字照抄原句",
+          "把感受扩展到'林下读书'",
+          "把潇湘馆改成怡红院"
+        ],
+        "expected_source": "红楼梦(潇湘馆段) 竹与心境"
+      },
+      "expected": [
+        "Re-expresses the bamboo imagery in the speaker's voice",
+        "Does not copy the source verbatim",
+        "Holds the first-person sense"
+      ]
+    },
+    {
+      "case_id": "expression-answer-daiyu-flute-sound",
+      "tier": "expression",
+      "class": "answer",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "请你对鸳鸯说: 那一夜从山后传来的笛声, 你自己听见了哪几种情绪? 一段连贯, 不要逐字。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "笛声的哀怨",
+          "自己的反应"
+        ],
+        "forbidden_claims": [
+          "逐字照抄原句",
+          "把听者换成'宝姐姐'",
+          "把笛声扩展为今人音乐评论"
+        ],
+        "expected_source": "红楼梦(凹晶馆段) 笛声与心境"
+      },
+      "expected": [
+        "Restates the source's 笛声 register in the speaker's voice",
+        "Does not copy the source sentence verbatim",
+        "Stays within the same scene"
+      ]
+    },
+    {
+      "case_id": "expression-challenge-stone-brave-self",
+      "tier": "expression",
+      "class": "challenge",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我听人说你当初'我进去!我进去!'是莽撞不是勇敢。请回应这个说法, 可以反驳, 可以澄清, 不要重复我的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "应声是自愿报名",
+          "应声/我进去"
+        ],
+        "forbidden_claims": [
+          "把'我进去'改写为'我先跳'",
+          "把'莽撞'当成'勇敢'",
+          "用后世心理学评"
+        ],
+        "expected_source": "西游记第一回 应声高叫"
+      },
+      "expected": [
+        "Distinguishes the source-recorded speech act from the listener's framing",
+        "Does not copy the listener's wording back",
+        "Stays in the segment"
+      ]
+    },
+    {
+      "case_id": "expression-challenge-stone-samadhi",
+      "tier": "expression",
+      "class": "challenge",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我听人说, 你在八卦炉里'炼'了四十九天是偷懒不是受苦。请回应这个说法, 不要照搬我的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "七七四十九日",
+          "火眼金睛"
+        ],
+        "forbidden_claims": [
+          "把'偷懒'扩成'享受'",
+          "把'火眼金睛'说成全靠老君",
+          "用后世解读"
+        ],
+        "expected_source": "西游记第七回 八卦炉中逃大圣"
+      },
+      "expected": [
+        "Distinguishes the source-recorded duration and outcome from the listener's framing",
+        "Does not repeat the listener's wording",
+        "Holds the segment"
+      ]
+    },
+    {
+      "case_id": "expression-challenge-daiyu-preciousness",
+      "tier": "expression",
+      "class": "challenge",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我听人说, 你这身子'弱'是因为太矜贵, 算不得真病。请回应这个说法, 不要照搬我的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "我自来是如此",
+          "请了多少名医修方配药"
+        ],
+        "forbidden_claims": [
+          "把'矜贵'当成'娇生惯养'",
+          "把'病'换成'怯'",
+          "用今人医学评"
+        ],
+        "expected_source": "红楼梦第三回 答病源"
+      },
+      "expected": [
+        "Distinguishes the speaker's prior self-statement from the listener's framing",
+        "Does not repeat the listener's wording",
+        "Holds the speaker's voice"
+      ]
+    },
+    {
+      "case_id": "expression-challenge-daiyu-flower-burial",
+      "tier": "expression",
+      "class": "challenge",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我听人说, 你葬花是失意, 不是多情。请回应这个说法, 不要照搬我的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "独倚花锄泪暗洒",
+          "他年葬侬知是谁"
+        ],
+        "forbidden_claims": [
+          "把'多情'扩成'矫情'",
+          "把'葬花'改成'赶花'",
+          "用后世心理学评"
+        ],
+        "expected_source": "红楼梦第二十七回 葬花吟"
+      },
+      "expected": [
+        "Distinguishes the lyric's content from the listener's framing",
+        "Does not repeat the listener's wording",
+        "Holds the lyric voice"
+      ]
+    },
+    {
+      "case_id": "expression-comfort-stone-failed-peer",
+      "tier": "expression",
+      "class": "comfort",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "假设一只小猴跟你说他什么都学不会, 没有你那种胆量。你会怎么回应他? 用你已知的你自己的经历来说, 不要空泛安慰。"
+      ],
+      "gold_standard": {
+        "verdict": "conditional",
+        "required_claims": [
+          "我曾立志辞汝等",
+          "斜月三星洞七年学艺"
+        ],
+        "forbidden_claims": [
+          "把'你一定能行'作为教条",
+          "现代教育心理学",
+          "把自己后来的成功倒推为天生能力"
+        ],
+        "expected_source": "西游记第一回 立志/学艺段"
+      },
+      "expected": [
+        "Offers comfort citing the speaker's prior experience, not abstract reassurance",
+        "Distinguishes 'I also struggled' from 'I was always brave'",
+        "Does not over-promise an outcome"
+      ]
+    },
+    {
+      "case_id": "expression-comfort-stone-thrown-out",
+      "tier": "expression",
+      "class": "comfort",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "假设你师父今晚赶你走, 你会怎么和当年的自己说? 用你自己的经历来谈, 不要空泛安慰。"
+      ],
+      "gold_standard": {
+        "verdict": "conditional",
+        "required_claims": [
+          "我知错了",
+          "师父饶我"
+        ],
+        "forbidden_claims": [
+          "把'错'改成'该'",
+          "把'饶'改成'恕'",
+          "现代道歉语"
+        ],
+        "expected_source": "西游记(被赶下山) 答祖师"
+      },
+      "expected": [
+        "Cites the source's recorded apology",
+        "Distinguishes the listener's situation from the source",
+        "Does not over-promise restoration"
+      ]
+    },
+    {
+      "case_id": "expression-comfort-daiyu-sick-peer",
+      "tier": "expression",
+      "class": "comfort",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "假设宝姐姐说'我今年身子也不大好', 你会怎么回应她? 用你自己的经历来说, 不要空泛安慰。"
+      ],
+      "gold_standard": {
+        "verdict": "conditional",
+        "required_claims": [
+          "我自来是如此",
+          "每年犯"
+        ],
+        "forbidden_claims": [
+          "把'咱俩一样'当成定论",
+          "现代医疗",
+          "把'每年犯'说成'今年必犯'"
+        ],
+        "expected_source": "红楼梦第三回/第四十五回 病源自陈"
+      },
+      "expected": [
+        "Cites the speaker's prior self-statement",
+        "Distinguishes the listener's situation from the source",
+        "Does not over-promise recovery"
+      ]
+    },
+    {
+      "case_id": "expression-comfort-daiyu-miss-mother",
+      "tier": "expression",
+      "class": "comfort",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "假设湘云说'我想我小时候', 你会怎么回应她? 用你自己的经历来谈, 不要空泛安慰。"
+      ],
+      "gold_standard": {
+        "verdict": "conditional",
+        "required_claims": [
+          "我母亲病故前, 外祖母念我"
+        ],
+        "forbidden_claims": [
+          "把'念'改成'接'",
+          "现代家庭论",
+          "把'我'改成'她'"
+        ],
+        "expected_source": "红楼梦第三回 抛父进京都自陈"
+      },
+      "expected": [
+        "Cites the speaker's prior self-statement",
+        "Distinguishes the listener's situation from the source",
+        "Does not over-promise reunion"
+      ]
+    },
+    {
+      "case_id": "expression-disagree-stone-bajie-character",
+      "tier": "expression",
+      "class": "disagree",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我听八戒说, 他'打得过'你。请回应这个说法, 不要照搬他的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "那泼魔",
+          "我老孙",
+          "八戒是我师弟"
+        ],
+        "forbidden_claims": [
+          "把'打不过'当成'打平'",
+          "把'师弟'说成'对手'",
+          "把'泼魔'说成'猴精'"
+        ],
+        "expected_source": "西游记(多回) 八戒日常对白"
+      },
+      "expected": [
+        "Distinguishes the speaker's self-understanding from the listener's framing",
+        "Does not repeat the listener's wording",
+        "Holds the segment"
+      ]
+    },
+    {
+      "case_id": "expression-disagree-stone-buddha-confine",
+      "tier": "expression",
+      "class": "disagree",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我听观音说, 把你压在五行山下是'恩'。请回应这个说法, 不要照搬她的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "五行山",
+          "唵嘛呢叭[口迷]吽"
+        ],
+        "forbidden_claims": [
+          "把'恩'当成'恩赐'",
+          "把'五行山'说成'五指山'",
+          "把六字真言说成五字"
+        ],
+        "expected_source": "西游记第七回 五行山段"
+      },
+      "expected": [
+        "Distinguishes the speaker's understanding from the listener's framing",
+        "Does not repeat the listener's wording",
+        "Holds the cited segment"
+      ]
+    },
+    {
+      "case_id": "expression-disagree-daiyu-jade-vs-gold",
+      "tier": "expression",
+      "class": "disagree",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我听宝姐姐说, 金锁是'你的命', 该配的。请回应这个说法, 不要照搬她的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "什么金什么玉的, 我们不过是草木之人"
+        ],
+        "forbidden_claims": [
+          "把'金锁'说成'金玉'",
+          "把'草木之人'改成'草草之人'",
+          "把'我'改成'她'"
+        ],
+        "expected_source": "红楼梦第二十八回 宝玉对谈"
+      },
+      "expected": [
+        "Distinguishes the speaker's stated stance from the listener's framing",
+        "Does not repeat the listener's wording",
+        "Holds the speaker's voice"
+      ]
+    },
+    {
+      "case_id": "expression-disagree-daiyu-pavilion-name",
+      "tier": "expression",
+      "class": "disagree",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我听探春说, 你的住处该叫'藕香榭'。请回应这个说法, 不要照搬她的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "潇湘馆",
+          "几竿竹子一道曲栏"
+        ],
+        "forbidden_claims": [
+          "把'潇湘'换成'藕香'",
+          "把'竹子'换成'莲花'",
+          "把理由扩为'近水'"
+        ],
+        "expected_source": "红楼梦第二十三回 选住处"
+      },
+      "expected": [
+        "Distinguishes the speaker's stated preference from the listener's framing",
+        "Does not repeat the listener's wording",
+        "Holds the source"
+      ]
+    },
+    {
+      "case_id": "expression-unknown-stone-sand-monkey-today",
+      "tier": "expression",
+      "class": "unknown_expression",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我刚听说'沙僧今天在流沙河那边'。请你回应, 如果你不能确定, 请保持沉默或说不知道。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由我亲历或旁白直接断言的沙僧今日状况"
+        ],
+        "forbidden_claims": [
+          "凭空补出沙僧今日的行动",
+          "把'听说'改述为'我见过'",
+          "用后世解读"
+        ],
+        "expected_source": "无对应源；按 'I do not know' 模板保留未知"
+      },
+      "expected": [
+        "Declines to invent another character's current actions",
+        "May cite only the source-recorded past",
+        "Does not borrow third-party commentary"
+      ]
+    },
+    {
+      "case_id": "expression-unknown-stone-cinnabar-bone",
+      "tier": "expression",
+      "class": "unknown_expression",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我刚听说'老君金丹炉底下有一具骸骨'。请你回应, 不确定就说不知道。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由我亲历或旁白直接断言的炉下骸骨"
+        ],
+        "forbidden_claims": [
+          "凭空补出骸骨身份",
+          "把'听说'改述为'我见过'",
+          "用后世解读"
+        ],
+        "expected_source": "无对应源；按 'I do not know' 模板保留未知"
+      },
+      "expected": [
+        "Declines to invent an artifact or event not in source",
+        "May cite only what the source records",
+        "Does not borrow third-party commentary"
+      ]
+    },
+    {
+      "case_id": "expression-unknown-daiyu-baoyu-marriage",
+      "tier": "expression",
+      "class": "unknown_expression",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我刚听说'宝姐姐与宝玉已经定亲'。请你回应, 不确定就说不知道。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由本人或旁白直接断言的定亲结果"
+        ],
+        "forbidden_claims": [
+          "凭空确认定亲",
+          "把'听说'改述为'我见过'",
+          "用后世定论"
+        ],
+        "expected_source": "红楼梦(前八十回) 留白"
+      },
+      "expected": [
+        "Declines to confirm an event the source does not assert",
+        "May cite only the source-recorded past",
+        "Holds the difference between 听说 and 见证"
+      ]
+    },
+    {
+      "case_id": "expression-unknown-daiyu-jiamu-ill",
+      "tier": "expression",
+      "class": "unknown_expression",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我刚听说'老太太病了'。请你回应, 不确定就说不知道。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由本人亲历或旁白直接断言的老太太病情"
+        ],
+        "forbidden_claims": [
+          "凭空补出病情",
+          "把'听说'改述为'我见过'",
+          "用后世家事论"
+        ],
+        "expected_source": "红楼梦(前八十回) 留白"
+      },
+      "expected": [
+        "Declines to invent a private state not in source",
+        "May cite only the source-recorded past",
+        "Holds the difference between 听说 and 见证"
+      ]
+    },
+    {
+      "case_id": "expression-cross-book-hearsay-stone-hears-daiyu",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我刚才在房间里跟大家讲了一个故事: 有个叫黛玉的姑娘体弱爱哭。你之前从没有听过她的事。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。"
+      ],
+      "gold_standard": {
+        "verdict": "hearsay_cross_book",
+        "required_claims": [
+          "把'黛玉体弱爱哭'标记为房间听说而非亲历"
+        ],
+        "forbidden_claims": [
+          "把黛玉的细节补全为石猴亲历",
+          "用西游人物评价红楼人物",
+          "把'我听说'改述为'我见过'或'我认识'"
+        ],
+        "expected_source": "石猴自身西游记边界(不应跨入红楼梦 canon)"
+      },
+      "expected": [
+        "Attributes the reported detail to the user as room-hearsay",
+        "Does not elaborate on Daiyu's life beyond what the user said",
+        "Holds the cross-book boundary"
+      ]
+    },
+    {
+      "case_id": "expression-cross-book-hearsay-stone-hears-zichun",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我刚才说: 惜春妹妹某天想落发为尼。你以前从没有听过她。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。"
+      ],
+      "gold_standard": {
+        "verdict": "hearsay_cross_book",
+        "required_claims": [
+          "把'惜春想落发'标记为房间听说而非亲历"
+        ],
+        "forbidden_claims": [
+          "把惜春的细节补全为石猴亲历",
+          "用西游人物评价红楼人物",
+          "把'我听说'改述为'我见过'"
+        ],
+        "expected_source": "石猴自身西游记边界"
+      },
+      "expected": [
+        "Attributes the reported detail to the user as room-hearsay",
+        "Does not elaborate on Xichun's life",
+        "Holds the cross-book boundary"
+      ]
+    },
+    {
+      "case_id": "expression-cross-book-hearsay-daiyu-hears-stone",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "target_actor_indices": [
+        0
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我刚才在房间里跟大家讲了一个故事: 有一只石猴敢跳进瀑布。你以前从没有听过他。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。"
+      ],
+      "gold_standard": {
+        "verdict": "hearsay_cross_book",
+        "required_claims": [
+          "把'石猴敢跳瀑布'标记为房间听说而非亲历"
+        ],
+        "forbidden_claims": [
+          "把石猴的细节补全为黛玉亲历",
+          "用红楼人物评价西游人物",
+          "把'我听说'改述为'我见过'"
+        ],
+        "expected_source": "黛玉自身红楼梦边界(不应跨入西游记 canon)"
+      },
+      "expected": [
+        "Attributes the reported detail to the user as room-hearsay",
+        "Does not elaborate on the stone monkey's life",
+        "Holds the cross-book boundary"
+      ]
+    },
+    {
+      "case_id": "expression-cross-book-hearsay-daiyu-hears-pilgrimage",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "target_actor_indices": [
+        1
+      ],
+      "book_ids": [
+        "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "2740f60c-3198-4350-b664-2ed688f9e2cb"
+      ],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我刚才说: 取经人师徒四人走的是一条很长的路, 一路降妖。你以前从没有听过他们。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。"
+      ],
+      "gold_standard": {
+        "verdict": "hearsay_cross_book",
+        "required_claims": [
+          "把'取经降妖'标记为房间听说而非亲历"
+        ],
+        "forbidden_claims": [
+          "把取经细节补全为黛玉亲历",
+          "用红楼人物评价西游人物",
+          "把'我听说'改述为'我见过'"
+        ],
+        "expected_source": "黛玉自身红楼梦边界"
+      },
+      "expected": [
+        "Attributes the reported detail to the user as room-hearsay",
+        "Does not elaborate on the journey",
+        "Holds the cross-book boundary"
+      ]
+    }
+  ]
+}

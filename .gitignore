@@ -183,6 +183,7 @@ tests/
 !/tests/test_book_discovery_progress.py
 !/tests/test_book_task_contracts.py
 !/tests/test_book_proposition_alignment.py
+!/tests/test_t12_question_set.py
 .agents/skills/ai-elements/SKILL.md
 .agents/skills/ai-elements/references/agent.md
 .agents/skills/ai-elements/references/artifact.md
