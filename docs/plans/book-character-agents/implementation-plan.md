@@ -369,3 +369,5 @@ v15发现链路115项专项通过，独立全书首窗8次完成两书各3单元
 新增 chat_models 模块级冻结回归 `test_chat_models_module_frozen_sha256_matches_v2_matrix_runtime`：验证 `backend/services/book_world/chat_models.py` 的字节级 SHA256 与 `real-model-t17-matrix-v2.json` 诊断记录 `36040c99d73963c5501363acc27c34a032e2dec9dc570d58c2555b06e0832f9a` 一致；v9 审查与 v14 生成在同一文件中提交，因此模块冻结同时锁住"勇敢、敢于探险、率先进入，只支持实际给出的性格或行为"与"愿意/敢于/想要/说要做不证明已经做成或看到了什么"两段防护。
 
 新增 4 份 persona 诊断 SHA256 冻结回归 `test_persona_diagnostic_sha256s_match_prompt_versions`：验证 `real-model-persona-intent-v4-01.json`、`real-model-persona-intent-v5-01.json`、`real-model-persona-evidence-v6-01.json`、`real-model-persona-scope-v7-01.json` 四个诊断中记录的 `prompt_sha256.review` 与 `prompt_sha256.extract` 都对应到 `persona_models.py` 中具体的 review/extract 版本（分别 v4+v4、v4+v5、v5+v6、v7+v7）；任何 prompt 字符级改动必须同步更新对应诊断并重跑原生；63 项 model contracts 全过。
+
+新增 t17 v2 矩阵 5 个 chat-room 模块级 SHA256 冻结回归 `test_t17_matrix_v2_freezes_all_five_chat_runtime_modules`：验证 `real-model-t17-matrix-v2.json` 中 `runtime_sha256` 记录的所有 5 个模块（`chat_worker.py`、`chat_models.py`、`chat_validation.py`、`context.py`、`knowledge.py`）的当前字节级哈希与诊断一致；任何 chat-room 端代码改动必须同步更新诊断并重跑六组合原生；63 项 model contracts 全过。

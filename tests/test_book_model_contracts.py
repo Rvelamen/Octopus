@@ -927,3 +927,34 @@ def test_persona_diagnostic_sha256s_match_prompt_versions():
         assert actual_extract_sha == expected_extract_sha, (
             f"{fname} extract sha drift: {actual_extract_sha} != {expected_extract_sha}"
         )
+
+
+def test_t17_matrix_v2_freezes_all_five_chat_runtime_modules():
+    """All 5 chat-room runtime modules must stay byte-frozen against the v2 matrix.
+
+    The v2 matrix diagnostic recorded a runtime_sha256 for each module that
+    participated in the six-combination native run. Freezing the whole
+    snapshot here means every chat/room code change (including helpers that
+    do not touch prompts) must update the diagnostic, re-run the matrix,
+    and refresh the expected hash. This is a deliberately broad contract
+    because the v2 matrix is the most recent complete native run and
+    anything that breaks byte-equality needs re-justification.
+    """
+    import hashlib
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    matrix = json.loads(
+        (base / "real-model-t17-matrix-v2.json").read_text(encoding="utf-8")
+    )
+    runtime = matrix["runtime_sha256"]
+    module_root = (
+        Path(__file__).resolve().parents[1] / "backend/services/book_world"
+    )
+    for rel, expected_sha in runtime.items():
+        module_path = module_root / Path(rel).name
+        actual_sha = hashlib.sha256(module_path.read_bytes()).hexdigest()
+        assert actual_sha == expected_sha, (
+            f"{rel} module drift: {actual_sha} != {expected_sha}; "
+            "re-run the six-combination matrix and update the diagnostic."
+        )

@@ -85,3 +85,5 @@
 
 同日追加 `test_persona_diagnostic_sha256s_match_prompt_versions`：把 intent-v4、intent-v5、evidence-v6、scope-v7 四份 persona 诊断中的 `prompt_sha256.review` 与 `prompt_sha256.extract` 绑定到 `persona_models.py` 中具体的 v4+v4、v4+v5、v5+v6、v7+v7 组合；任何 prompt 字符级改动必须同步更新诊断并重跑原生，否则测试失败。
 
+同日追加 `test_t17_matrix_v2_freezes_all_five_chat_runtime_modules`：把 `real-model-t17-matrix-v2.json` 中 5 个 chat-room 运行时模块（`chat_worker.py`、`chat_models.py`、`chat_validation.py`、`context.py`、`knowledge.py`）的字节级 SHA256 一并冻结；任何 chat-room 端代码改动必须同步更新诊断并重跑六组合原生，否则测试失败。
+
