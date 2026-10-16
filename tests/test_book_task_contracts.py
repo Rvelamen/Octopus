@@ -308,6 +308,65 @@ async def test_t08_two_characters_with_same_name_get_distinct_member_ids(
     )
 
 
+@pytest.mark.asyncio
+async def test_t08_directed_at_with_same_name_resolves_to_target_member_id(
+    book_library,
+):
+    """T08: when two room members share the same display name, a
+    directed submit keyed by ``target_member_ids`` must still
+    address the right member — the directed selection in
+    ``select_speakers`` (coordinator.py:37-49) uses member_id, not
+    name, so the named collision does not collapse the targeting.
+
+    The test creates two ``人物甲`` (the default fixture name), puts
+    them in the same room, and submits a directed turn addressed
+    only at the first member. The round must contain exactly one
+    slot bound to that member_id; the second ``人物甲`` must not be
+    in the slot list despite sharing the name. This is the
+    deterministic equivalent of the T12 §4 row 4 "同名 @" requirement.
+    """
+    from test_book_knowledge import style_character
+
+    from backend.services.book_world.members import RoomMembershipService
+    from backend.services.book_world.room_models import CharacterChatConfig
+    from backend.services.book_world.rounds import BookRoundService
+
+    _, _, actor_1, first = await style_character(book_library)
+    _, _, actor_2, second = await style_character(book_library)
+    # Sanity: both members share the same display name "人物甲"
+    # because style_character uses a fixed default text.
+    membership = RoomMembershipService(book_library.workspace_root)
+    room = membership.create(
+        [first, second], client_room_id="t08-same-name-directed"
+    )
+    first_member = next(m for m in room["members"] if m["character_id"] == actor_1)
+    second_member = next(m for m in room["members"] if m["character_id"] == actor_2)
+    assert first_member["id"] != second_member["id"]
+    room_scope = membership.rooms.bind_room(room["room_id"], 1)
+    rounds = BookRoundService(book_library.workspace_root)
+    config = CharacterChatConfig(provider_id=1, model="fixture")
+    turn = rounds.submit(
+        room_scope,
+        "directed-at-first",
+        "只 @ 第一个",
+        config,
+        time_limit_seconds=60,
+        mode="directed",
+        target_member_ids=[first_member["id"]],
+    )
+    reloaded = rounds.get_round(room_scope, turn["round_id"])
+    slot_member_ids = [slot["member_id"] for slot in reloaded["slots"]]
+    assert slot_member_ids == [first_member["id"]], (
+        f"directed @ with same-name members must select only the "
+        f"targeted member_id; got slots {slot_member_ids!r}, expected "
+        f"[{first_member['id']!r}]"
+    )
+    assert second_member["id"] not in slot_member_ids, (
+        f"second same-name member {second_member['id']!r} must not "
+        f"appear in slots despite sharing display name with target"
+    )
+
+
 # ---------------------------------------------------------------------------
 # T09 — muted members are explicitly skipped in mode='all'
 # ---------------------------------------------------------------------------

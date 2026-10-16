@@ -15,7 +15,7 @@
 | T05 知情与表达 | [2026-10-12-knowledge-expression-validation](./2026-10-12-knowledge-expression-validation.md) | (历史提交) | 124 通过 |
 | T06 受限单聊 | [2026-10-12-single-chat-validation](./2026-10-12-single-chat-validation.md) | (历史提交) | 154 通过 |
 | T07 房间记忆 | [2026-10-13-room-memory-validation](./2026-10-13-room-memory-validation.md) | (历史提交) | 172 通过 |
-| T08 跨书多人 | [2026-10-14-group-room-validation](./2026-10-14-group-room-validation.md) | (历史提交) | 13 真实 k3 |
+| T08 跨书多人 | [2026-10-14-group-room-validation](./2026-10-14-group-room-validation.md) | (历史) + (本批次) | 13 真实 k3 + 1 同名 @ 契约 |
 | T09 全体与控制 | [2026-10-14-all-queue-validation](./2026-10-14-all-queue-validation.md) | (历史提交) | 暂停/继续/停止 |
 | T10 自动导入 | [2026-10-14-automatic-import-validation](./2026-10-14-automatic-import-validation.md) | (历史提交) | 199 通过 |
 | T11 来源生命周期 + 跨工作区矩阵 | [2026-10-14-source-lifecycle-validation](./2026-10-14-source-lifecycle-validation.md) + 矩阵契约测试 (本批次) | (历史) + (本批次) | 9 lifecycle + 1 矩阵 |
