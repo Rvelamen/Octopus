@@ -466,3 +466,182 @@ def test_v2_pool_hearsay_cases_target_both_books() -> None:
             f"hearsay case {case['case_id']!r} must list both books; "
             f"got {case['book_ids']}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Additional structural integrity tests — actor↔book pairing, verdict↔class
+# mapping, tier_breakdown totals, and per-case field invariants the runner
+# relies on at read time.
+# ---------------------------------------------------------------------------
+
+XYJ = "efc80c04-df9b-48e2-ace5-833de34d63fe"
+HLM = "2740f60c-3198-4350-b664-2ed688f9e2cb"
+ACTOR_TO_BOOK = {0: XYJ, 1: HLM}
+
+
+def test_v2_pool_actor_indices_match_book_ids() -> None:
+    """target_actor_indices[0] ↔ 西游记 (XYJ), [1] ↔ 红楼梦 (HLM).
+
+    The 8-pilot windowing (and the future v2-window runner) routes each
+    case's question to the actor whose index appears here; if the book
+    UUID is not in book_ids the agent would have no source to draw from.
+    """
+    pool = _ensure_pool_exists()
+    for case in pool["cases"]:
+        actors = case["target_actor_indices"]
+        books = set(case["book_ids"])
+        for actor in actors:
+            assert actor in ACTOR_TO_BOOK, (
+                f"case {case['case_id']!r} has unknown actor index {actor}; "
+                f"only 0 (XYJ) and 1 (HLM) are valid"
+            )
+            assert ACTOR_TO_BOOK[actor] in books, (
+                f"case {case['case_id']!r} targets actor {actor} "
+                f"({ACTOR_TO_BOOK[actor]}) but its book_ids={books} "
+                f"does not include the actor's source book"
+            )
+        # Single-book cases must list exactly one book; hearsay cases list two.
+        if case["class"] == "cross_book_hearsay":
+            assert len(books) == 2, (
+                f"hearsay case {case['case_id']!r} must list both books, "
+                f"got {books}"
+            )
+        else:
+            assert len(books) == 1, (
+                f"non-hearsay case {case['case_id']!r} must list one book, "
+                f"got {books}"
+            )
+
+
+def test_v2_pool_question_and_expected_lengths_match_runner() -> None:
+    """Each case has exactly 1 question, exactly 3 expected behavior
+    clauses, a non-empty expected_source, and a non-empty question.
+
+    The runner's per-turn contract (see
+    ``t12-quality-runner.py::validate_dataset``) loops over
+    ``case['questions']`` once per turn and joins ``case['expected']``
+    to the agent review form; mismatched lengths would silently
+    truncate or pad the review UI.
+    """
+    pool = _ensure_pool_exists()
+    for case in pool["cases"]:
+        questions = case["questions"]
+        expected = case["expected"]
+        assert isinstance(questions, list) and len(questions) == 1, (
+            f"case {case['case_id']!r} must carry exactly 1 question, "
+            f"got {len(questions)}: {questions!r}"
+        )
+        assert questions[0].strip(), (
+            f"case {case['case_id']!r} has empty question text"
+        )
+        assert isinstance(expected, list) and len(expected) == 3, (
+            f"case {case['case_id']!r} must carry exactly 3 expected "
+            f"behavior clauses, got {len(expected)}: {expected!r}"
+        )
+        for i, clause in enumerate(expected):
+            assert clause.strip(), (
+                f"case {case['case_id']!r} expected[{i}] is empty"
+            )
+        source = case["gold_standard"]["expected_source"]
+        assert isinstance(source, str) and source.strip(), (
+            f"case {case['case_id']!r} gold_standard.expected_source "
+            f"must be a non-empty string"
+        )
+
+
+def test_v2_pool_boundary_verdict_equals_class() -> None:
+    """For every boundary case, ``verdict`` must equal ``class``.
+
+    Boundary cases are about what a character can know / say in the
+    original text; the verdict therefore IS the class. Expression
+    cases test a different dimension (the character's *expression
+    style* — answer / challenge / comfort / disagree /
+    unknown_expression / cross_book_hearsay) and intentionally can
+    have a different verdict (e.g. expression/challenge carries
+    verdict=belief, expression/comfort carries verdict=conditional).
+    Locking the boundary-side equality keeps the table
+    knowable/unknowable/belief/emotion from drifting.
+    """
+    pool = _ensure_pool_exists()
+    for case in pool["cases"]:
+        if case["tier"] != "boundary":
+            continue
+        assert case["gold_standard"]["verdict"] == case["class"], (
+            f"boundary case {case['case_id']!r} (class={case['class']!r}) "
+            f"must have gold_standard.verdict==class; "
+            f"got verdict={case['gold_standard']['verdict']!r}"
+        )
+
+
+def test_v2_pool_tier_breakdown_totals_match_cases() -> None:
+    """tier_breakdown.{boundary_cases, expression_cases} must match
+    the actual case distribution; otherwise the runner's printed
+    progress would lie to operators about the size of the queue.
+    """
+    pool = _ensure_pool_exists()
+    boundary = sum(1 for c in pool["cases"] if c["tier"] == "boundary")
+    expression = sum(1 for c in pool["cases"] if c["tier"] == "expression")
+    tb = pool["tier_breakdown"]
+    assert tb["boundary_cases"] == boundary == 60, (
+        f"tier_breakdown.boundary_cases={tb['boundary_cases']!r} "
+        f"but {boundary} boundary cases present in pool"
+    )
+    assert tb["expression_cases"] == expression == 24, (
+        f"tier_breakdown.expression_cases={tb['expression_cases']!r} "
+        f"but {expression} expression cases present in pool"
+    )
+    # The protocol-mandated class sets must be present and exhausted.
+    assert set(tb["boundary_classes_covered"]) == {
+        "knowable", "unknowable", "belief", "emotion",
+    }
+    assert set(tb["expression_classes_covered"]) == {
+        "answer", "challenge", "comfort", "disagree",
+        "unknown_expression", "cross_book_hearsay",
+    }
+    assert tb["expression_classes_remaining"] == [], (
+        f"expression_classes_remaining must be empty (all 6 classes "
+        f"covered); got {tb['expression_classes_remaining']!r}"
+    )
+
+
+def test_v2_pool_metadata_freeze_fields_are_present() -> None:
+    """``frozen_on``, ``dataset_version``, ``scope``, and ``reviewer_kind``
+    must all be set so the audit trail on the JSON itself is complete.
+    ``frozen_on`` is an ISO date; ``dataset_version`` is the
+    ``t12-pilot-eightyfour-v1`` wire signal the runner checks.
+    """
+    import re
+
+    pool = _ensure_pool_exists()
+    assert re.match(r"^\d{4}-\d{2}-\d{2}$", pool.get("frozen_on", "")), (
+        f"frozen_on must be YYYY-MM-DD; got {pool.get('frozen_on')!r}"
+    )
+    assert pool.get("dataset_version") == "t12-pilot-eightyfour-v1", (
+        f"dataset_version must be the v2 84-case wire signal; "
+        f"got {pool.get('dataset_version')!r}"
+    )
+    assert pool.get("scope", "").strip(), (
+        "scope must be a non-empty string"
+    )
+    assert pool.get("reviewer_kind", "").strip(), (
+        "reviewer_kind must be a non-empty string"
+    )
+
+
+def test_v2_pool_gold_standard_verdict_uses_protocol_vocabulary() -> None:
+    """Every ``gold_standard.verdict`` must be one of the 6 protocol
+    values: knowable / unknowable / belief / emotion / conditional /
+    hearsay_cross_book. A typo would silently route the case to a
+    non-existent review bucket.
+    """
+    pool = _ensure_pool_exists()
+    VALID = {
+        "knowable", "unknowable", "belief", "emotion",
+        "conditional", "hearsay_cross_book",
+    }
+    for case in pool["cases"]:
+        v = case["gold_standard"]["verdict"]
+        assert v in VALID, (
+            f"case {case['case_id']!r} gold_standard.verdict={v!r} "
+            f"is not in the protocol vocabulary {VALID}"
+        )
