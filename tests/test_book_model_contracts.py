@@ -745,6 +745,37 @@ def test_v9_review_and_v14_generate_pin_historical_action_safeguard():
     assert "不证明已经做成或看到了什么" in v14_generate
 
 
+def test_v9_review_pins_cognition_change_safeguard():
+    """v9 review must keep the cognition-change, past-conditional and current-choice paragraphs.
+
+    v9 review introduced three new safeguards on top of v8:
+      - "原著的认识变化也是事实": a "later found out X" line is itself a
+        fact, not a hedge; the review must require a supporting claim
+        rather than treat the phrasing as rhetoric.
+      - "嵌在过去经历中的'有没有X/是否X'": past-tense yes/no probes must
+        not be auto-released just because they sound like open questions
+        when the body already says the answer is known.
+      - "新处境的条件性选择": conditional choices under a new situation
+        can rest on existing character, not on the same route or the
+        same question appearing in the source.
+
+    Without these paragraphs the v9 review can re-allow past-knowledge
+    denials and over-restrict conditional choice questions, both of
+    which the conditional-positive/negative diagnostics were built to
+    distinguish.
+    """
+    from backend.services.book_world.chat_models import REVIEW_PROMPTS
+
+    v9 = REVIEW_PROMPTS["character-chat-review-v9"]
+    assert "原著的认识变化也是事实" in v9
+    assert "后来才知道X" in v9 or "亲眼查看后才明白X" in v9
+    assert "嵌在过去经历中的" in v9
+    assert "新处境的条件性选择" in v9
+    v8 = REVIEW_PROMPTS["character-chat-review-v8"]
+    # Sanity: the new paragraphs are additions, not in v8.
+    assert "新处境的条件性选择" not in v8
+
+
 def test_persona_extract_v4_and_review_v6_pin_trait_vs_completed_action_safeguard():
     """v4 extract and v6 review must keep the trait/intention-vs-action safeguard.
 

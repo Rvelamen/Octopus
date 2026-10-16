@@ -116,3 +116,5 @@
 
 同日追加 `test_chat_review_v9_sha_matches_conditional_and_negative_diagnostics`：锁住 `character-chat-review-v9` 字节级 SHA256 与 `real-model-t17-conditional-positive-v1.json` 及 `real-model-t17-current-negative-v1.json` 中 `review_prompt_sha256` 一致；是 `chat_models.py` 模块冻结的细粒度补充。
 
+同日追加 `test_v9_review_pins_cognition_change_safeguard`：锁住 v9 review 在 v8 基础上新增的 3 段 cognition 防护——"原著的认识变化也是事实"、"嵌在过去经历中的'有没有X/是否X'"、"新处境的条件性选择"——防止 v9 review 退回 v8 后再次出现过去经历否定与新条件推演过严的双向回归。
+

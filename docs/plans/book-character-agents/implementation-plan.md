@@ -375,3 +375,5 @@ v15发现链路115项专项通过，独立全书首窗8次完成两书各3单元
 新增 `test_discovery_inline_and_grouped_prompts_match_v2_v1_diagnostics`：锁住 `INLINE_PROMPT`（discovery_inline）与 `GROUPED_PROMPT`（discovery_grouped）的字节级 SHA256，分别与 `real-model-inline-discovery-v2.json` 和 `real-model-grouped-discovery-v1.json` 中 `prompt_sha256` 一致；发现阶段提示词任何字符级改动必须同步更新诊断并重跑。
 
 新增 `test_chat_review_v9_sha_matches_conditional_and_negative_diagnostics`：锁住 `character-chat-review-v9` 字节级 SHA256 与 `real-model-t17-conditional-positive-v1.json` 及 `real-model-t17-current-negative-v1.json` 中 `review_prompt_sha256` 一致（两份诊断必须用同一份 v9 review 文本）；是对 `chat_models.py` 模块冻结的细粒度补充，让 v9 review 文本变更即使不影响模块其他内容也会失败。
+
+新增 `test_v9_review_pins_cognition_change_safeguard`：锁住 v9 review 在 v8 基础上新增的 3 段 cognition 防护——"原著的认识变化也是事实"（"后来才知道X" 本身是事实不是修辞）、"嵌在过去经历中的'有没有X/是否X'"（不能因像开放问题就放行本人已知答案）、"新处境的条件性选择"（新处境的条件选择可由已给性格支持，不要求原文出现同一路径）；防止 v9 review 退回到 v8 后再次出现过去经历否定与新条件推演过严的双向回归。
