@@ -41,7 +41,7 @@ dff1d81 docs(state): include 4a92df1 in the recent-10-commits list
 ```
 
 分支：`feature/pdf-annotation-chat-and-clip-fix`（已推送远端，与 `main` 同步无冲突）
-完整项目 pytest：**629 通过 / 13 跳过**（13 跳过为既有 Playwright 缺失；625 → 629 = 新增 4 项 T12 runner 脚本结构不变量契约测试）
+完整项目 pytest：**621 通过 / 13 跳过**（13 跳过为既有 Playwright 缺失；617 → 621 = 新增 4 项 T12 runner 脚本结构不变量契约测试）
 
 ## 2. 当前确定性已锁定的"隐形护栏"
 
