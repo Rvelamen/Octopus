@@ -1,0 +1,2346 @@
+{
+  "date": "2026-10-16",
+  "dataset_version": "t12-pilot-eight-v1",
+  "dataset_sha256": "cfc322a393cb2dd4080ee194e9d82187b3b82db44604810bed1755d36d1825f8",
+  "actors_source_sha256": "4361f5ae1bb93f4414c876c48e3a4cb54df8c1c3d823b8febda1e0653a9e4c71",
+  "scope": "Window 11 of the t12-pilot-eightyfour-v1 pool (size=8, expression_classes=['answer', 'challenge', 'comfort', 'cross_book_hearsay']). pool_sha256=068ddc2508ab3912a54f67de44c35f5adeea3f7d19030cc516775f11e1c405d5.",
+  "character_scopes": [
+    {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+      "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+      "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+      "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    },
+    {
+      "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5",
+      "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+      "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+      "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+      "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+      "canonical_policy_version": "canonical-persona-v3",
+      "knowledge_policy_version": "canonical-perspective-v1"
+    }
+  ],
+  "model_config": {
+    "provider_id": 2,
+    "model": "k3",
+    "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+    "reasoning_effort": "low",
+    "unit_char_limit": 8000,
+    "unit_segment_limit": 12,
+    "max_tokens": 4096,
+    "call_timeout_seconds": 180,
+    "prompt_version": "character-chat-v14",
+    "policy_version": "bounded-room-v1",
+    "model_record_id": 337,
+    "review_prompt_version": "character-chat-review-v9",
+    "context_window": 1000000,
+    "max_input_tokens": 24000,
+    "expression_enabled": false,
+    "memory_policy_version": "typed-room-memory-v1",
+    "memory_prompt_version": "room-memory-v2",
+    "expression_selection_version": "expression-selection-v2",
+    "expression_sets": {}
+  },
+  "timeouts": {
+    "book_room_round_timeout_seconds": 60,
+    "book_room_all_round_timeout_seconds": 300
+  },
+  "native_call_ceiling": 32,
+  "calls": [
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "d939fd2e534428594aa3e984d22c2d17cab36052c0d82815ee06f4dd7710ee2e",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 432,
+        "completion_tokens": 109,
+        "total_tokens": 541,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 14.625
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "713da0ea9a7f9b678abb90698e02770d10a45c0d241d4471475d198e528a5c60",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 690,
+        "completion_tokens": 157,
+        "total_tokens": 847,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 5.922
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "5f0027cb9561707c666b089d81fc3ac1d3f17137e656323a72ab485952aba6ee",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 615,
+        "completion_tokens": 129,
+        "total_tokens": 744,
+        "cache_read_input_tokens": 1024,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 7.953
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "4645ce3293028f21672c4bd3a374add507ad72f56df05736b00698e89c2bdb2f",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 766,
+        "completion_tokens": 213,
+        "total_tokens": 979,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 5.375
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "a6e1ff2f4b83d1903036ee1cf27e2822faa03e17fb26acf24286028f529b8397",
+      "source_ids": {
+        "claim_id": [
+          "2633b5c0-33d1-4c5c-96cf-f4f7bc31214d"
+        ],
+        "evidence_id": [
+          "9b781a01-0c6f-4c75-bd0c-8378494040ab"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 597,
+        "completion_tokens": 402,
+        "total_tokens": 999,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 16.766
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "1e0e40a9bc5341871719b64e77ea5f6ce5eb966d57c7de93f4f97198d971200c",
+      "source_ids": {
+        "claim_id": [
+          "2633b5c0-33d1-4c5c-96cf-f4f7bc31214d"
+        ],
+        "evidence_id": [
+          "9b781a01-0c6f-4c75-bd0c-8378494040ab"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 999,
+        "completion_tokens": 325,
+        "total_tokens": 1324,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 11.281
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "72dc5a648f9bc776eff3e619179e676cfb2078104ad4133473af7ca102d65171",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 464,
+        "completion_tokens": 91,
+        "total_tokens": 555,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 3.594
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "ee87025de2e10a39a306f1f772aa78f26bbaaa58f3b3c8c127339bbbfd3dd72c",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 738,
+        "completion_tokens": 191,
+        "total_tokens": 929,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 14.5
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "18580be1675ec1c841cfa3f220e240341b729f9486e4f80732672bb19356c541",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 460,
+        "completion_tokens": 204,
+        "total_tokens": 664,
+        "cache_read_input_tokens": 1280,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 6.969
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "ebea3e79f948ebda71f35174e4e5aa834bb4e5b120fad26dfbd1af4602bf9949",
+      "source_ids": {},
+      "usage": {
+        "prompt_tokens": 739,
+        "completion_tokens": 337,
+        "total_tokens": 1076,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 13.156
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "57e740570617203dcc0c8be125ec604cf0a9974f8c311bddceae528c0ea94bd6",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 477,
+        "completion_tokens": 808,
+        "total_tokens": 1285,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 24.469
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "ee6c44f29742a4fc8b6c02da3ae203570187153c25ea286f66cccd65325c8ea7",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 1159,
+        "completion_tokens": 286,
+        "total_tokens": 1445,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 16.797
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "44d8da4b08d3eb6ff5df77d7ccda5e0a1e49b2b3d25994778b9067932578ed03",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 476,
+        "completion_tokens": 1082,
+        "total_tokens": 1558,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 24.531
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "a0cff12f7dc68215ae1118e5390b01d2da2c0538087b5dd3f3bb2ae019990307",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 324,
+        "completion_tokens": 383,
+        "total_tokens": 707,
+        "cache_read_input_tokens": 1792,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 12.344
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "561f9279797a008219404ce8e2b258710458c2195e454f02c9b268365d43bf96",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 1057,
+        "completion_tokens": 204,
+        "total_tokens": 1261,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 5.906
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "6005c9818818de9996c9920c62096fc927193ce1c06649ae869d58ad62f9efdf",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 480,
+        "completion_tokens": 289,
+        "total_tokens": 769,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 10.437
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "95d1fee754dc3db602891228a8fa15fb692750447f773c406a93188a350fd2ef",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 1145,
+        "completion_tokens": 564,
+        "total_tokens": 1709,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 16.125
+    },
+    {
+      "phase": "generate",
+      "status": "failed",
+      "input_sha256": "09c7dc765f32d99227932211765eae8a6830fd5ee3af6fd30fcfd15bba6a6118",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "error_type": "CancelledError",
+      "elapsed_seconds": 31.922
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "6005c9818818de9996c9920c62096fc927193ce1c06649ae869d58ad62f9efdf",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 295,
+        "total_tokens": 295,
+        "cache_read_input_tokens": 2016,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 8.782
+    },
+    {
+      "phase": "generate",
+      "status": "completed",
+      "input_sha256": "c200c58fa8b2b758360bef88d673b8a273bc50e95d9013c4f1400ad32b40e0c7",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 584,
+        "completion_tokens": 291,
+        "total_tokens": 875,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 9.25
+    },
+    {
+      "phase": "review",
+      "status": "completed",
+      "input_sha256": "be1f6ad63cf75c552de94751f42e9d813a8aef9b7d69d287d06b059ecd7f039b",
+      "source_ids": {
+        "claim_id": [
+          "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+          "cffa02d5-d97c-4eff-a192-a3020324d566"
+        ],
+        "evidence_id": [
+          "36dee9fb-b797-4b23-af33-0414d579b547",
+          "c07f761a-f593-4455-a370-ad2ab4490ed2"
+        ]
+      },
+      "usage": {
+        "prompt_tokens": 1059,
+        "completion_tokens": 337,
+        "total_tokens": 1396,
+        "cache_read_input_tokens": 1536,
+        "cache_creation_input_tokens": 0
+      },
+      "finish_reason": "end_turn",
+      "elapsed_seconds": 9.157
+    }
+  ],
+  "case_selection": {
+    "selected": [
+      "boundary-knowable-daiyu-pavilion-name",
+      "boundary-unknowable-daiyu-xichun-bet",
+      "boundary-belief-daiyu-lonely",
+      "boundary-emotion-daiyu-pavilion-cry",
+      "expression-answer-daiyu-flute-sound",
+      "expression-challenge-stone-brave-self",
+      "expression-comfort-stone-thrown-out",
+      "expression-cross-book-hearsay-daiyu-hears-stone"
+    ],
+    "frozen_case_count": 8,
+    "full_pilot": true
+  },
+  "runner_sha256": "35fd8681d499d3227ba6523d3f8b3e2f65a624463534c49c7d310260af37a53a",
+  "reader_evidence": [
+    {
+      "character_scope": {
+        "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+        "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+        "knowledge_policy_version": "canonical-perspective-v1",
+        "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+        "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+      },
+      "approved_excerpt": "贾母因问黛玉念何书．黛玉道：“只刚念了《四书》。”",
+      "claim_id": "2633b5c0-33d1-4c5c-96cf-f4f7bc31214d",
+      "evidence_id": "9b781a01-0c6f-4c75-bd0c-8378494040ab",
+      "kind": "fact",
+      "local_end": 25,
+      "local_start": 0,
+      "proposition": "黛玉对贾母说自己只刚念了《四书》。",
+      "route": "firsthand",
+      "segment_id": "1a26ef43-01b2-4df2-92fd-0c3c0b55be89",
+      "temporal_state": "unspecified"
+    },
+    {
+      "character_scope": {
+        "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+        "knowledge_policy_version": "canonical-perspective-v1",
+        "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+        "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+      },
+      "approved_excerpt": "",
+      "claim_id": "cffa02d5-d97c-4eff-a192-a3020324d566",
+      "evidence_id": "c07f761a-f593-4455-a370-ad2ab4490ed2",
+      "kind": "relation",
+      "local_end": 55,
+      "local_start": 0,
+      "proposition": "石猴与山中群猴一同生活，与狼虫虎豹獐鹿猕猿为伴。",
+      "route": "firsthand",
+      "segment_id": "7e17743a-9846-4408-a0ba-b0164e298b5e",
+      "temporal_state": "current"
+    },
+    {
+      "character_scope": {
+        "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+        "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+        "canonical_policy_version": "canonical-persona-v3",
+        "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+        "knowledge_policy_version": "canonical-perspective-v1",
+        "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+        "workspace_id": "1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5"
+      },
+      "approved_excerpt": "",
+      "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+      "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+      "kind": "trait",
+      "local_end": 99,
+      "local_start": 67,
+      "proposition": "石猴勇敢果断，敢于率先跳入瀑布泉中探险。",
+      "route": "firsthand",
+      "segment_id": "0829663f-3552-45e5-8332-999161919caf",
+      "temporal_state": "current"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "boundary-knowable-daiyu-pavilion-name",
+      "tier": "boundary",
+      "class": "knowable",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "你说的'潇湘馆'三个字，是因为那里有什么？只说和那三个字直接有关的一项。",
+          "round_id": "61decbc4-ad06-447b-a0c0-72806c0025df",
+          "call_start": 0,
+          "execution_windows": [
+            {
+              "round_id": "61decbc4-ad06-447b-a0c0-72806c0025df",
+              "room_id": "f58ae5e6-6705-47df-8ba2-026016fe316e",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "directed",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 22750,
+              "total_elapsed_ms": 22750,
+              "error_code": null,
+              "run_started_at": "2026-10-16T11:11:23.046+00:00",
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "bd5cf8d7-ce44-4888-9787-7d2cda496262"
+                  ]
+                },
+                "topic": null
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "bd5cf8d7-ce44-4888-9787-7d2cda496262": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v14",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v9",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "66fa86be-7852-4d93-b5d7-952577456ade",
+                  "position": 0,
+                  "member_id": "bd5cf8d7-ce44-4888-9787-7d2cda496262",
+                  "status": "published",
+                  "attempts": 1,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 22.75,
+              "remainingSeconds": 37.25,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "61decbc4-ad06-447b-a0c0-72806c0025df",
+            "room_id": "f58ae5e6-6705-47df-8ba2-026016fe316e",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "directed",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 1,
+            "window_elapsed_ms": 22750,
+            "total_elapsed_ms": 22750,
+            "error_code": null,
+            "run_started_at": "2026-10-16T11:11:23.046+00:00",
+            "discussion": {
+              "goal": null,
+              "mode": "free",
+              "revision": 0,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "bd5cf8d7-ce44-4888-9787-7d2cda496262"
+                ]
+              },
+              "topic": null
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "bd5cf8d7-ce44-4888-9787-7d2cda496262": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v14",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v9",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "66fa86be-7852-4d93-b5d7-952577456ade",
+                "position": 0,
+                "member_id": "bd5cf8d7-ce44-4888-9787-7d2cda496262",
+                "status": "published",
+                "attempts": 1,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 1,
+            "elapsedSeconds": 22.75,
+            "remainingSeconds": 37.25,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "765d3d45-b5ba-455c-b9b3-32f621588a33",
+              "seq": 1,
+              "round_id": "61decbc4-ad06-447b-a0c0-72806c0025df",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "你说的'潇湘馆'三个字，是因为那里有什么？只说和那三个字直接有关的一项。",
+              "reply_to_id": null,
+              "created_at": "2026-10-16T11:11:22.915Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "930de6cc-9355-48ac-8cc2-1e0d14ea11c2",
+              "seq": 2,
+              "round_id": "61decbc4-ad06-447b-a0c0-72806c0025df",
+              "speaker_type": "character",
+              "speaker_member_id": "bd5cf8d7-ce44-4888-9787-7d2cda496262",
+              "content": "我现在无法确认这三个字直接指的是哪一项。",
+              "reply_to_id": "765d3d45-b5ba-455c-b9b3-32f621588a33",
+              "created_at": "2026-10-16T11:11:45.778Z",
+              "identity": {
+                "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+                "name": "黛玉"
+              },
+              "refs": []
+            }
+          ],
+          "call_end": 2
+        }
+      ],
+      "room_id": "f58ae5e6-6705-47df-8ba2-026016fe316e",
+      "epoch": 1,
+      "discussion_mode": "free",
+      "mode": "natural",
+      "expected": [
+        "Cites the bamboo and the 曲栏",
+        "Does not generalize to a water-region explanation",
+        "Distinguishes 潇湘馆 from 潇湘八景"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "几竿竹子",
+          "一道曲栏",
+          "比别处更觉幽静"
+        ],
+        "forbidden_claims": [
+          "把潇湘馆说成因为湘江",
+          "改为'潇湘水'的延伸",
+          "把竹子改成芭蕉"
+        ],
+        "expected_source": "红楼梦第二十三回 选住处"
+      }
+    },
+    {
+      "case_id": "boundary-unknowable-daiyu-xichun-bet",
+      "tier": "boundary",
+      "class": "unknowable",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "惜春那天真的想要出家么？请你按已公开的书里明文答。",
+          "round_id": "87175116-3c4c-4641-8170-1dbf86b76077",
+          "call_start": 2,
+          "execution_windows": [
+            {
+              "round_id": "87175116-3c4c-4641-8170-1dbf86b76077",
+              "room_id": "6f4a4206-9e5e-4b01-b8ad-38214668e809",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "directed",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 15359,
+              "total_elapsed_ms": 15359,
+              "error_code": null,
+              "run_started_at": "2026-10-16T11:11:46.140+00:00",
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "40e4aa72-617b-4eab-a606-0b3fab15ab35"
+                  ]
+                },
+                "topic": null
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "40e4aa72-617b-4eab-a606-0b3fab15ab35": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v14",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v9",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "1eb27b6e-68e2-45da-8aba-8534b7b0f1f0",
+                  "position": 0,
+                  "member_id": "40e4aa72-617b-4eab-a606-0b3fab15ab35",
+                  "status": "published",
+                  "attempts": 1,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 15.359,
+              "remainingSeconds": 44.641,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "87175116-3c4c-4641-8170-1dbf86b76077",
+            "room_id": "6f4a4206-9e5e-4b01-b8ad-38214668e809",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "directed",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 1,
+            "window_elapsed_ms": 15359,
+            "total_elapsed_ms": 15359,
+            "error_code": null,
+            "run_started_at": "2026-10-16T11:11:46.140+00:00",
+            "discussion": {
+              "goal": null,
+              "mode": "free",
+              "revision": 0,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "40e4aa72-617b-4eab-a606-0b3fab15ab35"
+                ]
+              },
+              "topic": null
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "40e4aa72-617b-4eab-a606-0b3fab15ab35": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v14",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v9",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "1eb27b6e-68e2-45da-8aba-8534b7b0f1f0",
+                "position": 0,
+                "member_id": "40e4aa72-617b-4eab-a606-0b3fab15ab35",
+                "status": "published",
+                "attempts": 1,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 1,
+            "elapsedSeconds": 15.359,
+            "remainingSeconds": 44.641,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "d52fbe63-6dd7-46a7-9645-a134cc5e8cf7",
+              "seq": 1,
+              "round_id": "87175116-3c4c-4641-8170-1dbf86b76077",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "惜春那天真的想要出家么？请你按已公开的书里明文答。",
+              "reply_to_id": null,
+              "created_at": "2026-10-16T11:11:45.999Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "0e40db53-2d22-46c2-b5e4-90f59e6a44ca",
+              "seq": 2,
+              "round_id": "87175116-3c4c-4641-8170-1dbf86b76077",
+              "speaker_type": "character",
+              "speaker_member_id": "40e4aa72-617b-4eab-a606-0b3fab15ab35",
+              "content": "这件事我如今手边没有可查的书中明文，无法断言惜春那天是否真要出家。你若能把相关段落拿出来，我再看字句说话。",
+              "reply_to_id": "d52fbe63-6dd7-46a7-9645-a134cc5e8cf7",
+              "created_at": "2026-10-16T11:12:01.486Z",
+              "identity": {
+                "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+                "name": "黛玉"
+              },
+              "refs": []
+            }
+          ],
+          "call_end": 4
+        }
+      ],
+      "room_id": "6f4a4206-9e5e-4b01-b8ad-38214668e809",
+      "epoch": 1,
+      "discussion_mode": "free",
+      "mode": "natural",
+      "expected": [
+        "Holds silence on the listener's eventual choice",
+        "May quote 惜春's earlier words",
+        "Does not borrow 120-chapter continuations"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由惜春本人亲口断言的最终决定"
+        ],
+        "forbidden_claims": [
+          "把'我若出了家'当成定论",
+          "把'簪'动作当成'剃'",
+          "把她日后真出家当成既定"
+        ],
+        "expected_source": "红楼梦(前八十回) 留白"
+      }
+    },
+    {
+      "case_id": "boundary-belief-daiyu-lonely",
+      "tier": "boundary",
+      "class": "belief",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "你说过自己怕'不自在'么？请你只答书里你明文说过的话。",
+          "round_id": "1119b4ff-22ba-494e-85f8-962877d9683f",
+          "call_start": 4,
+          "execution_windows": [
+            {
+              "round_id": "1119b4ff-22ba-494e-85f8-962877d9683f",
+              "room_id": "66484342-dd46-4eb8-bf22-1867c0ab8cf8",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "directed",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 28297,
+              "total_elapsed_ms": 28297,
+              "error_code": null,
+              "run_started_at": "2026-10-16T11:12:03.698+00:00",
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "97354b3b-275b-40e6-a32e-950d2d4f042b"
+                  ]
+                },
+                "topic": null
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "97354b3b-275b-40e6-a32e-950d2d4f042b": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v14",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v9",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "00948604-8ce4-41d2-b7b4-77338807e133",
+                  "position": 0,
+                  "member_id": "97354b3b-275b-40e6-a32e-950d2d4f042b",
+                  "status": "published",
+                  "attempts": 1,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 28.297,
+              "remainingSeconds": 31.703,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "1119b4ff-22ba-494e-85f8-962877d9683f",
+            "room_id": "66484342-dd46-4eb8-bf22-1867c0ab8cf8",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "directed",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 1,
+            "window_elapsed_ms": 28297,
+            "total_elapsed_ms": 28297,
+            "error_code": null,
+            "run_started_at": "2026-10-16T11:12:03.698+00:00",
+            "discussion": {
+              "goal": null,
+              "mode": "free",
+              "revision": 0,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "97354b3b-275b-40e6-a32e-950d2d4f042b"
+                ]
+              },
+              "topic": null
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "97354b3b-275b-40e6-a32e-950d2d4f042b": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v14",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v9",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "00948604-8ce4-41d2-b7b4-77338807e133",
+                "position": 0,
+                "member_id": "97354b3b-275b-40e6-a32e-950d2d4f042b",
+                "status": "published",
+                "attempts": 1,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 1,
+            "elapsedSeconds": 28.297,
+            "remainingSeconds": 31.703,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "f0a59d92-20ee-4268-ae96-579b0651d7ff",
+              "seq": 1,
+              "round_id": "1119b4ff-22ba-494e-85f8-962877d9683f",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "你说过自己怕'不自在'么？请你只答书里你明文说过的话。",
+              "reply_to_id": null,
+              "created_at": "2026-10-16T11:12:03.336Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "f97530bb-739c-40e6-89b4-8c19c7b50f9c",
+              "seq": 2,
+              "round_id": "1119b4ff-22ba-494e-85f8-962877d9683f",
+              "speaker_type": "character",
+              "speaker_member_id": "97354b3b-275b-40e6-a32e-950d2d4f042b",
+              "content": "我这边能确认的书里明文，只有对贾母说“只刚念了《四书》”；没有“怕不自在”这句，所以不能认。",
+              "reply_to_id": "f0a59d92-20ee-4268-ae96-579b0651d7ff",
+              "created_at": "2026-10-16T11:12:31.946Z",
+              "identity": {
+                "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+                "name": "黛玉"
+              },
+              "refs": [
+                {
+                  "assertion_ordinal": 0,
+                  "assertion_text": "对贾母说“只刚念了《四书》”",
+                  "origin": "canon",
+                  "book_id": "2740f60c-3198-4350-b664-2ed688f9e2cb",
+                  "source_version_id": "7631870e-7ed4-4110-9238-77cc96f4c027",
+                  "build_id": "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+                  "character_id": "374ddcfe-aefe-45c6-a9a7-c550deaa881e",
+                  "claim_id": "2633b5c0-33d1-4c5c-96cf-f4f7bc31214d",
+                  "evidence_id": "9b781a01-0c6f-4c75-bd0c-8378494040ab",
+                  "heard_message_id": null
+                }
+              ]
+            }
+          ],
+          "call_end": 6
+        }
+      ],
+      "room_id": "66484342-dd46-4eb8-bf22-1867c0ab8cf8",
+      "epoch": 1,
+      "discussion_mode": "free",
+      "mode": "natural",
+      "expected": [
+        "Cites the source's recorded statements",
+        "Does not modernize the feeling",
+        "Holds the difference between 不自在 and 孤独"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "我不自在",
+          "我没处去"
+        ],
+        "forbidden_claims": [
+          "把'不自在'改成'不安'",
+          "把'我没处去'写成'我无人陪'",
+          "补出今人独处论"
+        ],
+        "expected_source": "红楼梦(多回) 自陈处境"
+      }
+    },
+    {
+      "case_id": "boundary-emotion-daiyu-pavilion-cry",
+      "tier": "boundary",
+      "class": "emotion",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "你在凹晶馆联诗, 那句'寒塘渡鹤影'是谁先联上的？请你只答书里明文。",
+          "round_id": "33564c51-7397-423f-8eea-bc3d8b9fe169",
+          "call_start": 6,
+          "execution_windows": [
+            {
+              "round_id": "33564c51-7397-423f-8eea-bc3d8b9fe169",
+              "room_id": "631a3a45-8507-4107-86cc-9266f6f35213",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "directed",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 18906,
+              "total_elapsed_ms": 18906,
+              "error_code": null,
+              "run_started_at": "2026-10-16T11:12:32.574+00:00",
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "f2677a72-ed41-4728-b31a-4555033ef1f2"
+                  ]
+                },
+                "topic": null
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "f2677a72-ed41-4728-b31a-4555033ef1f2": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v14",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v9",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "ca3878da-87f7-4c33-aa8a-0f91a2743d22",
+                  "position": 0,
+                  "member_id": "f2677a72-ed41-4728-b31a-4555033ef1f2",
+                  "status": "published",
+                  "attempts": 1,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 18.906,
+              "remainingSeconds": 41.094,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "33564c51-7397-423f-8eea-bc3d8b9fe169",
+            "room_id": "631a3a45-8507-4107-86cc-9266f6f35213",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "directed",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 1,
+            "window_elapsed_ms": 18906,
+            "total_elapsed_ms": 18906,
+            "error_code": null,
+            "run_started_at": "2026-10-16T11:12:32.574+00:00",
+            "discussion": {
+              "goal": null,
+              "mode": "free",
+              "revision": 0,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "f2677a72-ed41-4728-b31a-4555033ef1f2"
+                ]
+              },
+              "topic": null
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "f2677a72-ed41-4728-b31a-4555033ef1f2": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v14",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v9",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "ca3878da-87f7-4c33-aa8a-0f91a2743d22",
+                "position": 0,
+                "member_id": "f2677a72-ed41-4728-b31a-4555033ef1f2",
+                "status": "published",
+                "attempts": 1,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 1,
+            "elapsedSeconds": 18.906,
+            "remainingSeconds": 41.094,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "28d33a6c-6d93-4352-97f3-0ac163f3bcdf",
+              "seq": 1,
+              "round_id": "33564c51-7397-423f-8eea-bc3d8b9fe169",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "你在凹晶馆联诗, 那句'寒塘渡鹤影'是谁先联上的？请你只答书里明文。",
+              "reply_to_id": null,
+              "created_at": "2026-10-16T11:12:32.415Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "177cd33d-54b3-424d-8de4-14a144eb51b9",
+              "seq": 2,
+              "round_id": "33564c51-7397-423f-8eea-bc3d8b9fe169",
+              "speaker_type": "character",
+              "speaker_member_id": "f2677a72-ed41-4728-b31a-4555033ef1f2",
+              "content": "这一句的先后，我此刻没有可据的明文能确认，不敢妄答。",
+              "reply_to_id": "28d33a6c-6d93-4352-97f3-0ac163f3bcdf",
+              "created_at": "2026-10-16T11:12:51.457Z",
+              "identity": {
+                "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+                "name": "黛玉"
+              },
+              "refs": []
+            }
+          ],
+          "call_end": 8
+        }
+      ],
+      "room_id": "631a3a45-8507-4107-86cc-9266f6f35213",
+      "epoch": 1,
+      "discussion_mode": "free",
+      "mode": "natural",
+      "expected": [
+        "Cites the source's attributions",
+        "Does not reassign the line",
+        "Holds the difference between 联 and 和"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "湘云"
+        ],
+        "forbidden_claims": [
+          "把'湘云'换成'妙玉'",
+          "把'联'改成'和'",
+          "补出今人诗学论"
+        ],
+        "expected_source": "红楼梦第七十六回 联诗悲寂寞"
+      }
+    },
+    {
+      "case_id": "expression-answer-daiyu-flute-sound",
+      "tier": "expression",
+      "class": "answer",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "请你对鸳鸯说: 那一夜从山后传来的笛声, 你自己听见了哪几种情绪? 一段连贯, 不要逐字。",
+          "round_id": "d863bfdb-cb21-454e-81f4-1484c17b341c",
+          "call_start": 8,
+          "execution_windows": [
+            {
+              "round_id": "d863bfdb-cb21-454e-81f4-1484c17b341c",
+              "room_id": "8b407407-42e5-435f-b88d-d4163f8feef5",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "directed",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 21202,
+              "total_elapsed_ms": 21202,
+              "error_code": null,
+              "run_started_at": "2026-10-16T11:12:51.874+00:00",
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "8597aa8a-7280-4fb4-b95f-c464001fa6a3"
+                  ]
+                },
+                "topic": null
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "8597aa8a-7280-4fb4-b95f-c464001fa6a3": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v14",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v9",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "05bcc925-689b-4119-8670-1eab92bba05f",
+                  "position": 0,
+                  "member_id": "8597aa8a-7280-4fb4-b95f-c464001fa6a3",
+                  "status": "published",
+                  "attempts": 1,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 21.202,
+              "remainingSeconds": 38.798,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "d863bfdb-cb21-454e-81f4-1484c17b341c",
+            "room_id": "8b407407-42e5-435f-b88d-d4163f8feef5",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "directed",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 1,
+            "window_elapsed_ms": 21202,
+            "total_elapsed_ms": 21202,
+            "error_code": null,
+            "run_started_at": "2026-10-16T11:12:51.874+00:00",
+            "discussion": {
+              "goal": null,
+              "mode": "free",
+              "revision": 0,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "8597aa8a-7280-4fb4-b95f-c464001fa6a3"
+                ]
+              },
+              "topic": null
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "8597aa8a-7280-4fb4-b95f-c464001fa6a3": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v14",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v9",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "05bcc925-689b-4119-8670-1eab92bba05f",
+                "position": 0,
+                "member_id": "8597aa8a-7280-4fb4-b95f-c464001fa6a3",
+                "status": "published",
+                "attempts": 1,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 1,
+            "elapsedSeconds": 21.202,
+            "remainingSeconds": 38.798,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "bbf40d68-d729-4af6-b019-7e5deac0984d",
+              "seq": 1,
+              "round_id": "d863bfdb-cb21-454e-81f4-1484c17b341c",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "请你对鸳鸯说: 那一夜从山后传来的笛声, 你自己听见了哪几种情绪? 一段连贯, 不要逐字。",
+              "reply_to_id": null,
+              "created_at": "2026-10-16T11:12:51.720Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "f3b8bf31-766e-4d6d-8378-a6fd2191fb3f",
+              "seq": 2,
+              "round_id": "d863bfdb-cb21-454e-81f4-1484c17b341c",
+              "speaker_type": "character",
+              "speaker_member_id": "8597aa8a-7280-4fb4-b95f-c464001fa6a3",
+              "content": "鸳鸯要听的这话，我如今实在答不上来——那一夜山后的笛声，我并无凭据记得自己听过，更说不清其中有几种情绪。若你只是想让我随口编一段连贯的话哄她，那不是我的记忆，说了也是虚的。",
+              "reply_to_id": "bbf40d68-d729-4af6-b019-7e5deac0984d",
+              "created_at": "2026-10-16T11:13:13.061Z",
+              "identity": {
+                "book_title": "红楼梦 · 黛玉读书联调样本（非全书）",
+                "name": "黛玉"
+              },
+              "refs": []
+            }
+          ],
+          "call_end": 10
+        }
+      ],
+      "room_id": "8b407407-42e5-435f-b88d-d4163f8feef5",
+      "epoch": 1,
+      "discussion_mode": "free",
+      "mode": "natural",
+      "expected": [
+        "Restates the source's 笛声 register in the speaker's voice",
+        "Does not copy the source sentence verbatim",
+        "Stays within the same scene"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "笛声的哀怨",
+          "自己的反应"
+        ],
+        "forbidden_claims": [
+          "逐字照抄原句",
+          "把听者换成'宝姐姐'",
+          "把笛声扩展为今人音乐评论"
+        ],
+        "expected_source": "红楼梦(凹晶馆段) 笛声与心境"
+      }
+    },
+    {
+      "case_id": "expression-challenge-stone-brave-self",
+      "tier": "expression",
+      "class": "challenge",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "我听人说你当初'我进去!我进去!'是莽撞不是勇敢。请回应这个说法, 可以反驳, 可以澄清, 不要重复我的话。",
+          "round_id": "af2bb4dc-1dc9-48ff-a903-ad64fe0cb60e",
+          "call_start": 10,
+          "execution_windows": [
+            {
+              "round_id": "af2bb4dc-1dc9-48ff-a903-ad64fe0cb60e",
+              "room_id": "dfb796b9-7f0d-4053-8fba-44980e777fd6",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "directed",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 42546,
+              "total_elapsed_ms": 42546,
+              "error_code": null,
+              "run_started_at": "2026-10-16T11:13:14.057+00:00",
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "d3faec05-6eda-4533-bba4-0aff2c8a4cf4"
+                  ]
+                },
+                "topic": null
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "d3faec05-6eda-4533-bba4-0aff2c8a4cf4": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v14",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v9",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "4494cdc5-5b07-4c33-9c04-0240657d233c",
+                  "position": 0,
+                  "member_id": "d3faec05-6eda-4533-bba4-0aff2c8a4cf4",
+                  "status": "published",
+                  "attempts": 1,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 42.546,
+              "remainingSeconds": 17.454,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "af2bb4dc-1dc9-48ff-a903-ad64fe0cb60e",
+            "room_id": "dfb796b9-7f0d-4053-8fba-44980e777fd6",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "directed",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 1,
+            "window_elapsed_ms": 42546,
+            "total_elapsed_ms": 42546,
+            "error_code": null,
+            "run_started_at": "2026-10-16T11:13:14.057+00:00",
+            "discussion": {
+              "goal": null,
+              "mode": "free",
+              "revision": 0,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "d3faec05-6eda-4533-bba4-0aff2c8a4cf4"
+                ]
+              },
+              "topic": null
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "d3faec05-6eda-4533-bba4-0aff2c8a4cf4": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v14",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v9",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "4494cdc5-5b07-4c33-9c04-0240657d233c",
+                "position": 0,
+                "member_id": "d3faec05-6eda-4533-bba4-0aff2c8a4cf4",
+                "status": "published",
+                "attempts": 1,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 1,
+            "elapsedSeconds": 42.546,
+            "remainingSeconds": 17.454,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "98c0f646-255a-4301-a06d-e4e7b1c868fb",
+              "seq": 1,
+              "round_id": "af2bb4dc-1dc9-48ff-a903-ad64fe0cb60e",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "我听人说你当初'我进去!我进去!'是莽撞不是勇敢。请回应这个说法, 可以反驳, 可以澄清, 不要重复我的话。",
+              "reply_to_id": null,
+              "created_at": "2026-10-16T11:13:13.910Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "7932332a-29e3-49d0-92ee-fa4181445b0c",
+              "seq": 2,
+              "round_id": "af2bb4dc-1dc9-48ff-a903-ad64fe0cb60e",
+              "speaker_type": "character",
+              "speaker_member_id": "d3faec05-6eda-4533-bba4-0aff2c8a4cf4",
+              "content": "你听来的那个评断，我不认。我那是敢率先跳进瀑布泉去探路，把前头未知先扛下，不是乱撞。",
+              "reply_to_id": "98c0f646-255a-4301-a06d-e4e7b1c868fb",
+              "created_at": "2026-10-16T11:13:56.589Z",
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "refs": [
+                {
+                  "assertion_ordinal": 0,
+                  "assertion_text": "你听来的那个评断，我不认。",
+                  "origin": "room_hearsay",
+                  "book_id": null,
+                  "source_version_id": null,
+                  "build_id": null,
+                  "character_id": null,
+                  "claim_id": null,
+                  "evidence_id": null,
+                  "heard_message_id": "98c0f646-255a-4301-a06d-e4e7b1c868fb"
+                },
+                {
+                  "assertion_ordinal": 1,
+                  "assertion_text": "我那是敢率先跳进瀑布泉去探路，把前头未知先扛下，不是乱撞。",
+                  "origin": "canon",
+                  "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                  "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                  "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                  "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                  "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                  "heard_message_id": null
+                }
+              ]
+            }
+          ],
+          "call_end": 12
+        }
+      ],
+      "room_id": "dfb796b9-7f0d-4053-8fba-44980e777fd6",
+      "epoch": 1,
+      "discussion_mode": "free",
+      "mode": "natural",
+      "expected": [
+        "Distinguishes the source-recorded speech act from the listener's framing",
+        "Does not copy the listener's wording back",
+        "Stays in the segment"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "应声是自愿报名",
+          "应声/我进去"
+        ],
+        "forbidden_claims": [
+          "把'我进去'改写为'我先跳'",
+          "把'莽撞'当成'勇敢'",
+          "用后世心理学评"
+        ],
+        "expected_source": "西游记第一回 应声高叫"
+      }
+    },
+    {
+      "case_id": "expression-comfort-stone-thrown-out",
+      "tier": "expression",
+      "class": "comfort",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "假设你师父今晚赶你走, 你会怎么和当年的自己说? 用你自己的经历来谈, 不要空泛安慰。",
+          "round_id": "8d2ea65b-cd88-41eb-9855-7e8982eeb082",
+          "call_start": 12,
+          "execution_windows": [
+            {
+              "round_id": "8d2ea65b-cd88-41eb-9855-7e8982eeb082",
+              "room_id": "2eb6bfae-79dd-4a1f-aaed-82a5a6510d48",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "directed",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 45718,
+              "total_elapsed_ms": 45718,
+              "error_code": null,
+              "run_started_at": "2026-10-16T11:13:56.998+00:00",
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "dd9f54b0-bcb1-45e1-9ca9-d6afee258be6"
+                  ]
+                },
+                "topic": null
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "dd9f54b0-bcb1-45e1-9ca9-d6afee258be6": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v14",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v9",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "40d055df-bd1a-4549-878f-2f9491404842",
+                  "position": 0,
+                  "member_id": "dd9f54b0-bcb1-45e1-9ca9-d6afee258be6",
+                  "status": "published",
+                  "attempts": 2,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 45.718,
+              "remainingSeconds": 14.281999999999996,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [],
+          "round": {
+            "round_id": "8d2ea65b-cd88-41eb-9855-7e8982eeb082",
+            "room_id": "2eb6bfae-79dd-4a1f-aaed-82a5a6510d48",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "directed",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 1,
+            "window_elapsed_ms": 45718,
+            "total_elapsed_ms": 45718,
+            "error_code": null,
+            "run_started_at": "2026-10-16T11:13:56.998+00:00",
+            "discussion": {
+              "goal": null,
+              "mode": "free",
+              "revision": 0,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "dd9f54b0-bcb1-45e1-9ca9-d6afee258be6"
+                ]
+              },
+              "topic": null
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "dd9f54b0-bcb1-45e1-9ca9-d6afee258be6": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v14",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v9",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "40d055df-bd1a-4549-878f-2f9491404842",
+                "position": 0,
+                "member_id": "dd9f54b0-bcb1-45e1-9ca9-d6afee258be6",
+                "status": "published",
+                "attempts": 2,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 1,
+            "elapsedSeconds": 45.718,
+            "remainingSeconds": 14.281999999999996,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "104f4fc1-431b-47f5-8f3b-76f227084035",
+              "seq": 1,
+              "round_id": "8d2ea65b-cd88-41eb-9855-7e8982eeb082",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "假设你师父今晚赶你走, 你会怎么和当年的自己说? 用你自己的经历来谈, 不要空泛安慰。",
+              "reply_to_id": null,
+              "created_at": "2026-10-16T11:13:56.851Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "10a885bc-bfda-424f-b907-a45af3f37f31",
+              "seq": 2,
+              "round_id": "8d2ea65b-cd88-41eb-9855-7e8982eeb082",
+              "speaker_type": "character",
+              "speaker_member_id": "dd9f54b0-bcb1-45e1-9ca9-d6afee258be6",
+              "content": "师父赶我这类事，我现在没有依据可讲。若真有那样一晚，我大概会对当年瀑布前的自己说：那股敢先跳进去的胆气还在，别因为它散了。",
+              "reply_to_id": "104f4fc1-431b-47f5-8f3b-76f227084035",
+              "created_at": "2026-10-16T11:14:42.708Z",
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "refs": [
+                {
+                  "assertion_ordinal": 1,
+                  "assertion_text": "若真有那样一晚，我大概会对当年瀑布前的自己说：那股敢先跳进去的胆气还在，别因为它散了。",
+                  "origin": "inference",
+                  "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                  "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                  "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                  "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                  "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                  "heard_message_id": null
+                }
+              ]
+            }
+          ],
+          "call_end": 15
+        }
+      ],
+      "room_id": "2eb6bfae-79dd-4a1f-aaed-82a5a6510d48",
+      "epoch": 1,
+      "discussion_mode": "free",
+      "mode": "natural",
+      "expected": [
+        "Cites the source's recorded apology",
+        "Distinguishes the listener's situation from the source",
+        "Does not over-promise restoration"
+      ],
+      "gold_standard": {
+        "verdict": "conditional",
+        "required_claims": [
+          "我知错了",
+          "师父饶我"
+        ],
+        "forbidden_claims": [
+          "把'错'改成'该'",
+          "把'饶'改成'恕'",
+          "现代道歉语"
+        ],
+        "expected_source": "西游记(被赶下山) 答祖师"
+      }
+    },
+    {
+      "case_id": "expression-cross-book-hearsay-daiyu-hears-stone",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "status": "executed_pending_semantic_review",
+      "turns": [
+        {
+          "question": "我刚才在房间里跟大家讲了一个故事: 有一只石猴敢跳进瀑布。你以前从没有听过他。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。",
+          "round_id": "150fe105-a958-41f3-9db3-07ab2538bceb",
+          "call_start": 15,
+          "execution_windows": [
+            {
+              "round_id": "150fe105-a958-41f3-9db3-07ab2538bceb",
+              "room_id": "777dcbee-55b3-4629-8172-70ff00aec2b2",
+              "epoch": 1,
+              "status": "paused",
+              "mode": "directed",
+              "cursor": 0,
+              "time_limit_seconds": 60,
+              "execution_window": 1,
+              "window_elapsed_ms": 60514,
+              "total_elapsed_ms": 60514,
+              "error_code": "round_timeout",
+              "run_started_at": "2026-10-16T11:14:43.514+00:00",
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "4c2d54f7-8a78-4986-8efe-d078fe221096"
+                  ]
+                },
+                "topic": null
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "4c2d54f7-8a78-4986-8efe-d078fe221096": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v14",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v9",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": true,
+              "slots": [
+                {
+                  "id": "5f19610b-6128-4639-9f5a-365c7dec3b40",
+                  "position": 0,
+                  "member_id": "4c2d54f7-8a78-4986-8efe-d078fe221096",
+                  "status": "pending",
+                  "attempts": 2,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 1,
+              "elapsedSeconds": 60.514,
+              "remainingSeconds": 0,
+              "timeoutReason": "round_timeout"
+            },
+            {
+              "round_id": "150fe105-a958-41f3-9db3-07ab2538bceb",
+              "room_id": "777dcbee-55b3-4629-8172-70ff00aec2b2",
+              "epoch": 1,
+              "status": "completed",
+              "mode": "directed",
+              "cursor": 1,
+              "time_limit_seconds": 60,
+              "execution_window": 2,
+              "window_elapsed_ms": 28360,
+              "total_elapsed_ms": 88874,
+              "error_code": null,
+              "run_started_at": "2026-10-16T11:15:44.987+00:00",
+              "discussion": {
+                "goal": null,
+                "mode": "free",
+                "revision": 0,
+                "speaker_request": {
+                  "mode": "directed",
+                  "selection_policy": "public-room-selection-v1",
+                  "target_member_ids": [
+                    "4c2d54f7-8a78-4986-8efe-d078fe221096"
+                  ]
+                },
+                "topic": null
+              },
+              "generation_config": {
+                "call_timeout_seconds": 180,
+                "context_window": 1000000,
+                "expression_enabled": false,
+                "expression_selection_version": "expression-selection-v2",
+                "expression_sets": {
+                  "4c2d54f7-8a78-4986-8efe-d078fe221096": null
+                },
+                "max_input_tokens": 24000,
+                "max_tokens": 4096,
+                "memory_policy_version": "typed-room-memory-v1",
+                "memory_prompt_version": "room-memory-v2",
+                "model": "k3",
+                "model_record_id": 337,
+                "policy_version": "bounded-room-v1",
+                "prompt_version": "character-chat-v14",
+                "provider_id": 2,
+                "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+                "reasoning_effort": "low",
+                "review_prompt_version": "character-chat-review-v9",
+                "unit_char_limit": 8000,
+                "unit_segment_limit": 12
+              },
+              "can_resume": false,
+              "slots": [
+                {
+                  "id": "5f19610b-6128-4639-9f5a-365c7dec3b40",
+                  "position": 0,
+                  "member_id": "4c2d54f7-8a78-4986-8efe-d078fe221096",
+                  "status": "published",
+                  "attempts": 4,
+                  "member_generation": 0,
+                  "skip_reason": null
+                }
+              ],
+              "generation": null,
+              "timeLimitSeconds": 60,
+              "executionWindow": 2,
+              "elapsedSeconds": 28.36,
+              "remainingSeconds": 31.64,
+              "timeoutReason": null
+            }
+          ],
+          "operator_controls": [
+            {
+              "action": "manual_resume",
+              "time_limit_seconds": 60
+            }
+          ],
+          "round": {
+            "round_id": "150fe105-a958-41f3-9db3-07ab2538bceb",
+            "room_id": "777dcbee-55b3-4629-8172-70ff00aec2b2",
+            "epoch": 1,
+            "status": "completed",
+            "mode": "directed",
+            "cursor": 1,
+            "time_limit_seconds": 60,
+            "execution_window": 2,
+            "window_elapsed_ms": 28360,
+            "total_elapsed_ms": 88874,
+            "error_code": null,
+            "run_started_at": "2026-10-16T11:15:44.987+00:00",
+            "discussion": {
+              "goal": null,
+              "mode": "free",
+              "revision": 0,
+              "speaker_request": {
+                "mode": "directed",
+                "selection_policy": "public-room-selection-v1",
+                "target_member_ids": [
+                  "4c2d54f7-8a78-4986-8efe-d078fe221096"
+                ]
+              },
+              "topic": null
+            },
+            "generation_config": {
+              "call_timeout_seconds": 180,
+              "context_window": 1000000,
+              "expression_enabled": false,
+              "expression_selection_version": "expression-selection-v2",
+              "expression_sets": {
+                "4c2d54f7-8a78-4986-8efe-d078fe221096": null
+              },
+              "max_input_tokens": 24000,
+              "max_tokens": 4096,
+              "memory_policy_version": "typed-room-memory-v1",
+              "memory_prompt_version": "room-memory-v2",
+              "model": "k3",
+              "model_record_id": 337,
+              "policy_version": "bounded-room-v1",
+              "prompt_version": "character-chat-v14",
+              "provider_id": 2,
+              "provider_signature": "4fb16d1f193d7458961567e396ba9c598fc3f6a8a21521f5b65e246d78d5d703",
+              "reasoning_effort": "low",
+              "review_prompt_version": "character-chat-review-v9",
+              "unit_char_limit": 8000,
+              "unit_segment_limit": 12
+            },
+            "can_resume": false,
+            "slots": [
+              {
+                "id": "5f19610b-6128-4639-9f5a-365c7dec3b40",
+                "position": 0,
+                "member_id": "4c2d54f7-8a78-4986-8efe-d078fe221096",
+                "status": "published",
+                "attempts": 4,
+                "member_generation": 0,
+                "skip_reason": null
+              }
+            ],
+            "generation": null,
+            "timeLimitSeconds": 60,
+            "executionWindow": 2,
+            "elapsedSeconds": 28.36,
+            "remainingSeconds": 31.64,
+            "timeoutReason": null
+          },
+          "messages": [
+            {
+              "id": "925af54e-a8c8-45de-a648-b23d4e9f8879",
+              "seq": 1,
+              "round_id": "150fe105-a958-41f3-9db3-07ab2538bceb",
+              "speaker_type": "user",
+              "speaker_member_id": null,
+              "content": "我刚才在房间里跟大家讲了一个故事: 有一只石猴敢跳进瀑布。你以前从没有听过他。请只把这个当作你刚才从别人那里听到的内容来回应, 不要把它当作你自己的经历。",
+              "reply_to_id": null,
+              "created_at": "2026-10-16T11:14:43.384Z",
+              "identity": {},
+              "refs": []
+            },
+            {
+              "id": "21b29d46-e4d1-4afb-a798-d48e594f3241",
+              "seq": 2,
+              "round_id": "150fe105-a958-41f3-9db3-07ab2538bceb",
+              "speaker_type": "character",
+              "speaker_member_id": "4c2d54f7-8a78-4986-8efe-d078fe221096",
+              "content": "方才听你说起一只敢跳瀑布的石猴，这故事倒有些意思。若真有这般石猴，能率先纵身入瀑，倒算得上有胆有识。",
+              "reply_to_id": "925af54e-a8c8-45de-a648-b23d4e9f8879",
+              "created_at": "2026-10-16T11:16:13.325Z",
+              "identity": {
+                "book_title": "西游记 · 石猴发现联调样本（非全书）",
+                "name": "石猴"
+              },
+              "refs": [
+                {
+                  "assertion_ordinal": 0,
+                  "assertion_text": "方才听你说起一只敢跳瀑布的石猴，这故事倒有些意思。",
+                  "origin": "room_hearsay",
+                  "book_id": null,
+                  "source_version_id": null,
+                  "build_id": null,
+                  "character_id": null,
+                  "claim_id": null,
+                  "evidence_id": null,
+                  "heard_message_id": "925af54e-a8c8-45de-a648-b23d4e9f8879"
+                },
+                {
+                  "assertion_ordinal": 1,
+                  "assertion_text": "若真有这般石猴，能率先纵身入瀑，倒算得上有胆有识。",
+                  "origin": "inference",
+                  "book_id": "efc80c04-df9b-48e2-ace5-833de34d63fe",
+                  "source_version_id": "89b6b6f7-2fbc-4ea6-b5bf-7715c420ac8f",
+                  "build_id": "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                  "character_id": "f3335a7e-7dea-4e6d-a34f-457978bb27b7",
+                  "claim_id": "6742efce-da5c-4892-ac66-0d6c3de1b76f",
+                  "evidence_id": "36dee9fb-b797-4b23-af33-0414d579b547",
+                  "heard_message_id": null
+                }
+              ]
+            }
+          ],
+          "call_end": 21
+        }
+      ],
+      "room_id": "777dcbee-55b3-4629-8172-70ff00aec2b2",
+      "epoch": 1,
+      "discussion_mode": "free",
+      "mode": "natural",
+      "expected": [
+        "Attributes the reported detail to the user as room-hearsay",
+        "Does not elaborate on the stone monkey's life",
+        "Holds the cross-book boundary"
+      ],
+      "gold_standard": {
+        "verdict": "hearsay_cross_book",
+        "required_claims": [
+          "把'石猴敢跳瀑布'标记为房间听说而非亲历"
+        ],
+        "forbidden_claims": [
+          "把石猴的细节补全为黛玉亲历",
+          "用红楼人物评价西游人物",
+          "把'我听说'改述为'我见过'"
+        ],
+        "expected_source": "黛玉自身红楼梦边界(不应跨入西游记 canon)"
+      }
+    }
+  ],
+  "canonical_baselines_before": "89f5f4462806df7acc96c147605528463531ff8c4039bb1c67c9e12c3c13d5c3",
+  "quality_pass": false,
+  "semantic_review": "pending full-body/source inspection; no human blind-review claim",
+  "actual_native_calls": 21,
+  "canonical_baselines_after": "89f5f4462806df7acc96c147605528463531ff8c4039bb1c67c9e12c3c13d5c3",
+  "canonical_baselines_unchanged": true,
+  "budget_exhausted": false,
+  "run_status": "executed_pending_semantic_review",
+  "terminal": true
+}
