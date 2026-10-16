@@ -989,3 +989,45 @@ def test_runner_run_status_terminal_enum_covers_all_paths() -> None:
         "in the runner's case-status update"
     )
 
+
+def test_runner_validate_dataset_enforces_manual_continues_per_turn_equals_one() -> None:
+    """The runner's ``validate_dataset`` must reject any dataset whose
+    ``manual_continues_per_turn`` field drifts from 1. The T12 protocol
+    requires operator-driven continuation (no auto-continue); silently
+    allowing ``manual_continues_per_turn=0`` would let a 2-call pilot
+    become a 64-call runaway by removing the pause-then-resume contract.
+    """
+    source = RUNNER.read_text(encoding="utf-8")
+    assert 'manual_continues_per_turn") != 1' in source, (
+        f"runner validate_dataset must check manual_continues_per_turn == 1; "
+        f"drift guard missing in {RUNNER}"
+    )
+    assert "operator-continuation policy" in source, (
+        "runner must keep the descriptive 'operator-continuation policy' "
+        "rationale in the ValueError so the reviewer sees why 1 is the "
+        "frozen value"
+    )
+
+
+def test_runner_validate_dataset_enforces_reviewer_kind_match() -> None:
+    """The runner must explicitly pass a non-human-blind-review
+    ``reviewer_kind`` string to ``validate_dataset`` and the function
+    must compare it against the dataset's own field. Drifting either
+    side (dataset claims human blind review, or runner stops checking)
+    would let a future real run silently inflate the audit-trail
+    quality claim.
+    """
+    source = RUNNER.read_text(encoding="utf-8")
+    assert "Agent checks complete published bodies and supplied sources" in source, (
+        f"runner must pass a non-human-blind-review reviewer_kind to "
+        f"validate_dataset; call-site string missing in {RUNNER}"
+    )
+    assert "no claim of human blind review" in source, (
+        f"reviewer_kind string must explicitly disclaim human blind "
+        f"review; qualifier missing in {RUNNER}"
+    )
+    assert 'dataset.get("reviewer_kind") != reviewer_kind' in source, (
+        f"validate_dataset must compare dataset's reviewer_kind against "
+        f"the runner's reviewer_kind argument; comparison missing in {RUNNER}"
+    )
+
