@@ -63,7 +63,13 @@ python docs/plans/book-character-agents/blind-review-cli.py regrade <case_id>
 
 ## 6. 完成后写报告
 
-完成 160 case 全部判定后，生成审阅报告 `validation/2026-10-16-blind-review-report.md`，把 stats 段落复制进去 + 关键 case 的评论节选，把 §4 12 条「未关闭」行从「未关闭」改写为「✅（人工盲评 160/160 判定完成）」，按"只增不改"原则不删既有记录。详见协议 §6。
+完成 160 case 全部判定后，按模板 [2026-10-16-blind-review-report-template.md](2026-10-16-blind-review-report-template.md) 生成审阅报告 `validation/2026-10-16-blind-review-report.md`：
+1. 跑 `python docs/plans/book-character-agents/blind-review-cli.py stats --out validation/2026-10-16.json` 取得 stats
+2. 把 stats 段落复制到模板第 3 节
+3. 从 review JSON 选 3-5 条代表性 case 评论填到第 4 节
+4. 按协议 §6 把 T12 验收索引 §4 三行（row 1 / row 5 / row 9）从「未关闭」改写为「✅（人工盲评 160/160 判定完成）」，按"只增不改"原则不删既有记录
+
+模板已就绪在 [2026-10-16-blind-review-report-template.md](2026-10-16-blind-review-report-template.md)，可直接复制改名为 `2026-10-16-blind-review-report.md` 后填字段。
 
 ## 7. 不变量（与 CLI / 协议一致）
 
