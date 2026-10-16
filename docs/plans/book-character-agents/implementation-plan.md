@@ -1,6 +1,6 @@
 # Octopus 书籍人物 Agent 实施计划
 
-更新日期：2026 年 10 月 15 日。状态：T01 至 T11、T15、T16、T18 已落实；T17 链路已实现、真实回应尚未通过，继续排障后进入 T12。ChatHaruhi 的表达检索、上下文分区和带出处记忆已接入；真实模型仍有误拒、引文歧义及截断案例，完整质量由 T12 判断，表达增强默认关闭。当前按用户要求控制模型调用预算，以固定窗口记录实际用量；Agent 逐项原文复核不冒充人工盲评。
+更新日期：2026 年 10 月 16 日。状态：T01 至 T12、T15、T16、T17、T18 已落实链路与确定性层；T12 8-pilot + 60+24 + A/B 三档真实模型层已跑完（盲评工具就绪，待人工执行 160 case 判定）；T17 cognition 第 3 题 + rephrase_claim 操作超出本次范围。ChatHaruhi 的表达检索、上下文分区和带出处记忆已接入；真实模型仍有误拒与完成式过强案例，runner 不声称质量层通过（`quality_pass=False` / `semantic_review=pending`），质量由人工盲评把守。当前按用户要求控制模型调用预算，以固定窗口记录实际用量；Agent 逐项原文复核不冒充人工盲评。
 
 目标是逐步交付自动生成人物 Agent、原著知识约束和多人聊天室。共 16 项首版任务与 2 项增强任务，每项包含可演示的用户行为、真正的前置依赖、实施步骤、验收标准和验证场景。权威约束见[详细设计](F:/god/project/Octopus/docs/plans/book-character-agents/detailed-design.md)，背景见[研究报告](F:/god/project/Octopus/docs/research/2026-10-10-book-character-agents.md)。
 
@@ -59,7 +59,7 @@ flowchart LR
   T09 -.-> T14
 ```
 
-T01 至 T11、T15、T16 与 T18 已实施。T17 链路与确定性验证已落实，真实模型回应未通过，下一步继续排障；完整用户路径与模型质量仍等待 T12。
+T01 至 T12、T15、T16、T17、T18 链路与确定性层已实施。T12 三档真实模型运行（8-pilot + 60+24 + A/B 复跑）已落地，runner 不声称质量层通过；盲评 CLI + 协议 + worksheet 已 100% 在确定性层独立落地（commit e0f4b3f）+ 端到端 e2e 验证完成（commit d79ce79），160 case 真实判定待人工执行；T17 cognition 第 3 题 + rephrase_claim 操作超出本次范围，详见[状态交接](validation/2026-10-16-state-of-play.md) §4。
 
 ## 已验证阶段与真实语料
 
@@ -80,6 +80,8 @@ T05 已完成：迁移 18–21、CanonicalScope/AllowlistedContext、安全基�
 T06 已完成：迁移 22/23、作用域上下文、有限生成/独立审查/改写、原子发布、计时与停止/继续、桌面协议及单聊入口已贯通。新增 30 项回归，完整项目 154 通过、13 环境跳过；模块 Mypy 33 文件、Ruff、ESLint 与生产构建通过。真实界面探针 10 次调用，有效表达对照累计 18 次调用；B 实际使用本人对白，但未证明质量改善，增强仍默认关闭。六项 UI 竞态、重开计时与当前 WS 历史/取证验收通过；原预算恢复、幂等和情绪类型问题完成复核。见[单聊阶段验收](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-single-chat-validation.md)。
 
 T07 已完成来源摘要、作用域召回、房间状态与重置的完整链路。迁移 24、17 项新记忆测试及旧轮恢复参数回归，模块 Mypy 35 文件、Ruff、ESLint、构建和实际组件/WS 验收通过；完整项目最终计数见[阶段验收](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-13-room-memory-validation.md)。四个复核 P2 均以失败回归修复。真实 k3 七次固定预算取得正确摘要，但人物候选来源分类不合契约，未知回退误拒可回答代号；保留为 T12 案例，不宣称真实回忆问答质量通过。跨书成员采用临时 SQLite 契约夹具验证，群聊创建和真实互动等待 T08/T12。
+
+T12 已完成确定性层与三档真实模型层。**确定性层** 包含 84 题金标准池 [t12-quality-cases-v2.json](F:/god/project/Octopus/docs/plans/book-character-agents/validation/t12-quality-cases-v2.json) + 切片器 + 87 项 model contracts（6 类负例防护）+ 42 项人物/别名/说话者/权限/基线/隔离 + 6 项禁言/移除恢复/局部来源删除 + 6 项金标准池结构完整性 + 6 项 8-pilot 接线契约 + 4 项 frozen dryrun 审计 trail + 8 项 runner 脚本结构不变量 + 3 项 trait lint 接入 + 1 项 v1ext 协议扩展 + 160 case 人工盲评 CLI = 合计 156 项契约测试；合并 T15 3 项、T09/T10/T11/T16 既有 30+ 测试，完整项目最终 625 通过 / 13 既有跳过（持续到 649 项收集）。**真实模型层** 三档已落地：(1) 8-pilot 真实跑 8/8 case 走完 `executed_pending_semantic_review`（23/32 native calls，6/8 over-decline）见 [8pilot-real-run-evidence.md](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-16-t12-8pilot-real-run-evidence.md)；(2) 60+24 v2 真实跑 19 个窗口 / 152 case / 369 native calls / 0 published / 19/19 baseline 不变（runner v1ext 协议扩展 `f4c0279` 覆盖 disagree + unknown_expression）见 [v2-real-run-evidence.md](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-16-t12-v2-real-run-evidence.md)；(3) A/B 复跑 B 路径 6/6 case / 20/28 native calls（与 A 路径 26/28 行为形状 100% 一致，B 收敛更快）见 [t17-v2-ab-reeval-evidence.md](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-16-t17-v2-ab-reeval-evidence.md)。**盲评 CLI** 工具 [blind-review-cli.py](F:/god/project/Octopus/docs/plans/book-character-agents/blind-review-cli.py) + 协议 [blind-review-protocol.md](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-16-blind-review-protocol.md) + worksheet + 端到端 e2e 验证 [e2e-evidence.md](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-16-t12-blind-review-cli-e2e-evidence.md) 共同提供 160 case 的人工审阅界面（5 子命令 start/resume/stats/worksheet/regrade，6 判定键 p/f/o/u/s/c）；实际 160 case 判定待人工执行 `python docs/plans/book-character-agents/blind-review-cli.py start --reviewer <name>`。**未关闭清单** 集中记录于 [T12 验收索引](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-16-t12-acceptance-index.md) §4，11 项均依赖人工盲评与 `rephrase_claim` 操作（后者超出本次范围）。模型调用 0（盲评工具）/ 23+369+20（8pilot+60+24+A/B 真实跑）/ 100%（8-pilot + v2 + ext-a 19 窗口 100% 真实跑过）。
 
 T02 两部完整语料的工作器遍历使用不生成任何人物断言的替身，覆盖 322 / 275 个检查点；真实 k3 仅做原著摘录联调。样本四个个体候选及两个待复核群体不代表全书召回或人格质量。具体限制、模型适配与证据见[人物发现验证记录](F:/god/project/Octopus/docs/plans/book-character-agents/validation/2026-10-12-discovery-validation.md)。
 
