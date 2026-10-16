@@ -471,6 +471,7 @@ def cmd_worksheet(args: argparse.Namespace) -> int:
 
 
 def cmd_regrade(args: argparse.Namespace) -> int:
+    """重审单条 case：显示完整信息 + 提供单字符判定重判（追加到 reviews 列表）。"""
     out_path = Path(args.out).resolve()
     cases = collect_all_cases()
     target = [c for c in cases if c["case_id"] == args.case_id]
@@ -481,6 +482,73 @@ def cmd_regrade(args: argparse.Namespace) -> int:
         print(f"WARNING: case_id={args.case_id} 在 {len(target)} 处出现，全部展示")
     for case in target:
         print(render_case(case, show_blind=False))
+
+    # 加载既有审阅（如有）
+    if out_path.exists():
+        with out_path.open(encoding="utf-8") as fh:
+            report = json.load(fh)
+    else:
+        print(f"未找到审阅文件 {out_path}，请先执行 start 子命令")
+        return 1
+    existing = report.get("reviews") or []
+    existing_keys = {f"{r['run_id']}::{r['case_id']}" for r in existing}
+    header = {
+        "reviewer": report.get("reviewer"),
+        "review_start": report.get("review_start"),
+        "review_protocol_version": report.get("review_protocol_version", "v1"),
+        "reviewer_kind": report.get(
+            "reviewer_kind",
+            "Agent checks complete published bodies and supplied sources; no claim of human blind review",
+        ),
+        "case_count": report.get("case_count", len(cases)),
+        "show_blind": report.get("show_blind", False),
+    }
+    print(render_help())
+    print()
+    for case in target:
+        key = f"{case['run_id']}::{case['case_id']}"
+        prior = "已有判定" if key in existing_keys else "无判定"
+        print(f"\n--- 重审 {case['case_id']} ({prior}) ---")
+        while True:
+            verdict_input = prompt_with_default("判定 (p/f/o/u/s/c/?/q，q 跳过)").lower()
+            if not verdict_input:
+                continue
+            ch = verdict_input[0]
+            if ch == "?":
+                print(render_help())
+                continue
+            if ch == "q":
+                print("跳过（不修改）")
+                return 0
+            if ch not in VERDICT_KEYS:
+                print(f"未识别键 '{verdict_input}'，请重试")
+                continue
+            verdict_label, _ = VERDICT_KEYS[ch]
+            comment = ""
+            if ch in ("f", "o", "u", "c"):
+                comment = prompt_with_default("评论（可空）")
+            # 移除既有同 key 判定，追加新判定
+            existing = [r for r in existing if f"{r['run_id']}::{r['case_id']}" != key]
+            existing.append(
+                {
+                    "run_id": case["run_id"],
+                    "run_label": case["run_label"],
+                    "case_id": case["case_id"],
+                    "tier": case["tier"],
+                    "class": case["class"],
+                    "mode": case["mode"],
+                    "discussion_mode": case["discussion_mode"],
+                    "character_label": case["character_label"],
+                    "character_build_id": case["character_build_id"],
+                    "verdict_key": ch,
+                    "verdict": verdict_label,
+                    "comment": comment,
+                    "reviewed_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                }
+            )
+            save_review(out_path, header, existing)
+            print(f"  → 重审 {verdict_label}{('：' + comment) if comment else ''}，已写入 {out_path}")
+            break
     return 0
 
 
