@@ -357,3 +357,5 @@ v15发现链路115项专项通过，独立全书首窗8次完成两书各3单元
 显式审查v7接入独立 per-recipient 获知审查阶段，monotone veto 不越过 canonical review；新 `persona_acquisition` 模块与 `_save` 中 canonical_review/acquisition_review 分离保存，`get_character` reader 视图追加 knowledge_review 但不进 Agent definition，前端 Modal/i18n 同步，`tests/test_book_persona_acquisition.py` 12 项新增与 persona/revisions/cognition 66 项全过、变更文件 Mypy55 与 Ruff 通过、前端生产构建通过；未启动真实模型窗口或切换默认提示，全书 v16-pending-03 与 retention-03 快照保留。详见[获知审查v7记录](validation/2026-10-16-persona-acquisition-v7-validation.md)。T17/T12 保持未验收。
 
 新增 v3 reader 路径回归：`test_legacy_get_character_without_acquisition_review_omits_knowledge_field` 验证旧 build_steps（无 acquisition_review 字段）经 `get_character` / `get_agent_definition` 解析时不返回 knowledge_review，agent definition 保持 reader-only 隔离；12 项 acquisition 专项与 66 项 persona/revisions/cognition 全过。
+
+新增历史动作防护提示回归 `test_v9_review_and_v14_generate_pin_historical_action_safeguard`：验证 character-chat-review-v9 保留"勇敢、敢于探险、率先进入，只支持实际给出的性格或行为"与"愿意/敢于/想要/说要去也不能自动证明已经完成该行动"防护段落、v9 仍以 v8 为基础累加、character-chat-v14 保留"愿意/敢于/想要/说要做不证明已经做成或看到了什么"；59 项 model contracts 全过。

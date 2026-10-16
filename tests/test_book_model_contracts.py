@@ -717,3 +717,29 @@ async def test_compact_review_budget_keeps_claim_sources_and_generation_context_
         display["review_context_sha256"]
         == hashlib.sha256(_json(seen[1]["context"]).encode()).hexdigest()
     )
+
+
+def test_v9_review_and_v14_generate_pin_historical_action_safeguard():
+    """v9 review and v14 generate must keep the trait/intention safeguard text.
+
+    The historical-action safeguard prevents a trait (e.g. "勇敢、敢于率先进入")
+    from being used to assert completed actions or knowledge changes. It must
+    survive prompt edits; otherwise the v8/9 review alone would re-introduce the
+    '率先进入 ⇒ 群猴观看' and '勇敢 ⇒ 已完成动作' patterns that v7 acquisition
+    review already blocks at the persona level.
+    """
+    from backend.services.book_world.chat_models import GENERATE_PROMPTS, REVIEW_PROMPTS
+
+    v9_review = REVIEW_PROMPTS["character-chat-review-v9"]
+    assert "勇敢" in v9_review and "率先进入" in v9_review
+    assert "不额外证明" in v9_review and "认识变化" in v9_review
+    assert "愿意/敢于/想要/说要去" in v9_review
+    assert "区分意向、发生和结果" in v9_review
+    assert "不从故事常识补齐" in v9_review
+
+    v8_review = REVIEW_PROMPTS["character-chat-review-v8"]
+    assert v8_review in v9_review, "v9 review must extend v8; safeguard is an addition"
+
+    v14_generate = GENERATE_PROMPTS["character-chat-v14"]
+    assert "愿意/敢于/想要/说要做" in v14_generate
+    assert "不证明已经做成或看到了什么" in v14_generate
