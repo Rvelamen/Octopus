@@ -19,7 +19,7 @@
 | T09 全体与控制 | [2026-10-14-all-queue-validation](./2026-10-14-all-queue-validation.md) | (历史提交) | 暂停/继续/停止 |
 | T10 自动导入 | [2026-10-14-automatic-import-validation](./2026-10-14-automatic-import-validation.md) | (历史提交) | 199 通过 |
 | T11 来源生命周期 + 跨工作区矩阵 | [2026-10-14-source-lifecycle-validation](./2026-10-14-source-lifecycle-validation.md) + 矩阵契约测试 (本批次) | (历史) + (本批次) | 9 lifecycle + 1 矩阵 |
-| T12 题集 + 切片器 + 6 类负例防护 + 11 类人物/别名/说话者/权限/基线/隔离 + 3 类禁言/移除恢复/局部来源删除 + 6 类金标准池结构完整性 + 6 类 8-pilot 接线契约确定性聚合 | [2026-10-16-t12-v2-pool-slicer-evidence.md](./2026-10-16-t12-v2-pool-slicer-evidence.md) | 9073987 / bcced1d / 75f2af2 / 589db8e / c57594d / 57558c7 / fb395eb / (本批次) | 84 题金标准 + 45 窗口 + 87 负例 + 42 人物/别名 + 6 禁言/移除恢复/局部来源删除 + 21 金标准池结构完整性 + 6 8-pilot 接线契约聚合 |
+| T12 题集 + 切片器 + 6 类负例防护 + 11 类人物/别名/说话者/权限/基线/隔离 + 3 类禁言/移除恢复/局部来源删除 + 6 类金标准池结构完整性 + 6 类 8-pilot 接线契约 + 4 类 frozen dryrun 审计 trail 确定性聚合 | [2026-10-16-t12-v2-pool-slicer-evidence.md](./2026-10-16-t12-v2-pool-slicer-evidence.md) | 9073987 / bcced1d / 75f2af2 / 589db8e / c57594d / 57558c7 / fb395eb / 7319c0c / (本批次) | 84 题金标准 + 45 窗口 + 87 负例 + 42 人物/别名 + 6 禁言/移除恢复/局部来源删除 + 21 金标准池结构完整性 + 6 8-pilot 接线契约 + 4 frozen dryrun 审计 trail 聚合 |
 | T15 秒数设置 | (无独立验证文档) | e29231c | 3 契约测试 |
 | T16 圆桌 UI | [2026-10-14-roundtable-validation](./2026-10-14-roundtable-validation.md) | (历史提交) | WS 3D + 2D 切换 |
 | T17 主题/自由 | [2026-10-15-discussion-matrix-v2-validation](./2026-10-15-discussion-matrix-v2-validation.md) + cognition 修复 | 70eed8e / 0e87b78 / 24d1959 | 26/28 + lint 门 |
@@ -28,6 +28,8 @@
 最近 10 个 commit（`git log --oneline -10`）：
 
 ```
+(本批次) docs(t12): aggregate 4 frozen dryrun 报告审计 trail 完整性 under one deterministic row
+af9609c docs(state): include 7319c0c/fb395eb in recent-10 list + add 84-题池/8-pilot 接线契约 as guards #10/#11
 7319c0c test(t12): pin 8-pilot wire-contract structural integrity (6 invariants)
 fb395eb test(t12): pin 84-question gold-standard pool structural integrity (6 invariants)
 483daae docs(state): include 57558c7 in recent-10 list + add 禁言/移除恢复/局部来源删除 as guard #9
@@ -36,12 +38,10 @@ dff1d81 docs(state): include 4a92df1 in the recent-10-commits list
 4a92df1 docs(state): surface T08/T11/T12-aggregation guards alongside existing 4
 c57594d docs(t12): aggregate 11 T03/T04/T09 deterministic sub-items under one row
 589db8e docs(t12): aggregate 6 negative-example safeguards under one deterministic row
-3dc3d88 test(t08): pin directed @ resolves to target member_id when two members share display name
-f129ba7 test(t11): pin cross-workspace 6-dim read+write+delete matrix in one pytest flow
 ```
 
 分支：`feature/pdf-annotation-chat-and-clip-fix`（已推送远端，与 `main` 同步无冲突）
-完整项目 pytest：**621 通过 / 13 跳过**（13 跳过为既有 Playwright 缺失；615 → 621 = 新增 6 项 T12 8-pilot 数据集结构完整性契约测试）
+完整项目 pytest：**625 通过 / 13 跳过**（13 跳过为既有 Playwright 缺失；621 → 625 = 新增 4 项 4 份 frozen dryrun 报告审计 trail 完整性契约测试）
 
 ## 2. 当前确定性已锁定的"隐形护栏"
 
@@ -78,9 +78,12 @@ f129ba7 test(t11): pin cross-workspace 6-dim read+write+delete matrix in one pyt
 10. **84 题金标准池结构完整性确定性聚合** 已索引（commit fb395eb）
    - 文件：T12 验收证据索引 §2 新增"84 题金标准池结构完整性（确定性层）"行
    - 在 [tests/test_t12_question_set.py](../../../tests/test_t12_question_set.py) 末尾追加 6 项数据层不变量测试：`test_v2_pool_actor_indices_match_book_ids` / `_question_and_expected_lengths_match_runner` / `_boundary_verdict_equals_class` / `_tier_breakdown_totals_match_cases` / `_metadata_freeze_fields_are_present` / `_gold_standard_verdict_uses_protocol_vocabulary`；前 15 项切片器/wiring 既有测试保持不变，合计 21 项契约测试；actor↔book 配对 / question 长度 / boundary verdict=class / tier_breakdown 合计 / metadata 冻结字段 / verdict 词汇 6 类不变量 100% 在确定性层独立关闭
-11. **T12 8-pilot 数据集结构完整性确定性聚合** 已索引（本批次）
+11. **T12 8-pilot 数据集结构完整性确定性聚合** 已索引（commit 7319c0c）
    - 文件：T12 验收证据索引 §2 新增"T12 8-pilot 数据集结构完整性（确定性层）"行
    - 在 [tests/test_t12_question_set.py](../../../tests/test_t12_question_set.py) 末尾追加 6 项接线契约测试：`test_v1_dataset_has_exactly_8_cases` / `_class_set_matches_canonical_protocol` / `_one_case_per_class` / `_covers_both_characters_and_both_books` / `_metadata_freeze` / `_pool_v2_slicing_round_trip`；前 21 项切片器/wiring/v2 既有测试保持不变，合计 27 项契约测试；8 case / 4+4 canonical class / 每类 1 case / 双人物双书 / dataset_version=8-pilot / ceiling=32 / v2→window 0 round-trip 7 类不变量 100% 在确定性层独立关闭
+12. **4 份 frozen dryrun 报告审计 trail 完整性确定性聚合** 已索引（本批次）
+   - 文件：T12 验收证据索引 §2 新增"4 份 frozen dryrun 报告审计 trail 完整性（确定性层）"行
+   - 在 [tests/test_t12_question_set.py](../../../tests/test_t12_question_set.py) 末尾追加 4 项契约测试：`test_dryrun_reports_all_canonical_windows_present` / `_carry_v1_wire_contract` / `_runner_sha256_matches_runner_file` / `_each_window_has_distinct_dataset_sha`；前 27 项切片器/wiring/v2/v1 既有测试保持不变，合计 31 项契约测试；4 份报告齐 / v1 wire contract / runner SHA 一致 / 4 份 dataset SHA 互异 4 类不变量 100% 在确定性层独立关闭
 
 ## 3. 待解锁：模型预算授权
 

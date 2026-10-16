@@ -772,3 +772,116 @@ def test_v1_pool_v2_slicing_round_trip() -> None:
     finally:
         if out.exists():
             out.unlink()
+
+
+# ---------------------------------------------------------------------------
+# Frozen dryrun report guards — the 4 canonical dryrun reports on disk are
+# the audit trail showing the runner wire contract works end-to-end with
+# 0 model calls. They freeze a runner_sha256 (so an unintended runner edit
+# is visible) and a per-window dataset_sha256 (so a window cannot be
+# re-authored silently). If any of the SHA pins drifts, downstream
+# tooling comparing report-from-baseline to a fresh report would silently
+# disagree.
+# ---------------------------------------------------------------------------
+
+DRYRUN_REPORTS = (
+    REPO / "docs" / "plans" / "book-character-agents" / "validation"
+    / "2026-10-16-t12-window-0-dryrun.json",
+    REPO / "docs" / "plans" / "book-character-agents" / "validation"
+    / "2026-10-16-t12-window-1-dryrun.json",
+    REPO / "docs" / "plans" / "book-character-agents" / "validation"
+    / "2026-10-16-t12-window-2-dryrun.json",
+    REPO / "docs" / "plans" / "book-character-agents" / "validation"
+    / "2026-10-16-t12-window-3-dryrun.json",
+)
+
+
+def test_dryrun_reports_all_canonical_windows_present() -> None:
+    """All 4 canonical window dryrun reports must be on disk; the
+    audit trail is incomplete if any is missing.
+    """
+    import pytest
+    for path in DRYRUN_REPORTS:
+        if not path.exists():
+            pytest.skip(f"dryrun report not present at {path}")
+
+
+def test_dryrun_reports_carry_v1_wire_contract() -> None:
+    """Each dryrun report must carry the v1 wire signal: dataset_version,
+    ceiling, 8 cases, and actual_native_calls==0 (since mode=='dry_run').
+    """
+    import pytest
+    seen = 0
+    for path in DRYRUN_REPORTS:
+        if not path.exists():
+            continue
+        seen += 1
+        report = _load(path)
+        assert report["mode"] == "dry_run", (
+            f"{path.name} mode must be dry_run, got {report['mode']!r}"
+        )
+        assert report["dataset_version"] == "t12-pilot-eight-v1", (
+            f"{path.name} must carry v1 dataset_version, "
+            f"got {report['dataset_version']!r}"
+        )
+        assert report["native_call_ceiling"] == 32, (
+            f"{path.name} must have ceiling=32, got "
+            f"{report['native_call_ceiling']!r}"
+        )
+        assert report["actual_native_calls"] == 0, (
+            f"{path.name} dry_run must have 0 native calls, got "
+            f"{report['actual_native_calls']!r}"
+        )
+        assert report["publication"] is False
+        assert report["quality_pass"] is False
+        assert len(report["cases"]) == 8
+    if seen == 0:
+        pytest.skip("no dryrun reports present on disk")
+
+
+def test_dryrun_reports_runner_sha256_matches_runner_file() -> None:
+    """The frozen runner_sha256 in each dryrun report must match the
+    SHA of the runner script on disk. If the runner is edited
+    intentionally, regenerate the dryrun reports and update the test;
+    if not, the test catches silent drift.
+    """
+    import hashlib
+    import pytest
+    runner_bytes = RUNNER.read_bytes()
+    actual_runner_sha = hashlib.sha256(runner_bytes).hexdigest()
+    seen = 0
+    for path in DRYRUN_REPORTS:
+        if not path.exists():
+            continue
+        seen += 1
+        report = _load(path)
+        assert report["runner_sha256"] == actual_runner_sha, (
+            f"{path.name} frozen runner_sha256={report['runner_sha256']!r} "
+            f"drifted from the runner file on disk {actual_runner_sha!r}; "
+            f"either regenerate the dryrun reports or revert the runner edit"
+        )
+    if seen == 0:
+        pytest.skip("no dryrun reports present on disk")
+
+
+def test_dryrun_reports_each_window_has_distinct_dataset_sha() -> None:
+    """Different windows slice the v2 pool differently, so their
+    dataset_sha256 must differ. Two reports sharing the same SHA would
+    mean a copy-paste bug in the audit trail.
+    """
+    import pytest
+    seen = []
+    for path in DRYRUN_REPORTS:
+        if not path.exists():
+            continue
+        report = _load(path)
+        seen.append((path.name, report["dataset_sha256"]))
+    if len(seen) < 2:
+        pytest.skip("need ≥2 dryrun reports to compare")
+    shas = [s for _, s in seen]
+    assert len(set(shas)) == len(shas), (
+        f"dryrun reports must each carry a distinct dataset_sha256 "
+        f"(different windows = different slices); got {list(zip(*seen))[0]} "
+        f"-> {shas}"
+    )
+
