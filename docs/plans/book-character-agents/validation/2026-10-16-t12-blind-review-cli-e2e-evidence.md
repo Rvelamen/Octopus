@@ -100,7 +100,29 @@ $ python ... regrade boundary-knowable-stone-discovery --out /tmp/test.json
 - 'q' 跳过（不修改）
 - 写出新 JSON 后 stats 立即反映（commit 26a6791 之前 regrade 仅显示不写入；现已支持真实重审）
 
-### 2.6 验证完成后清理
+### 2.6 import 从 worksheet CSV 离线导入
+
+```
+$ python ... worksheet --worksheet /tmp/ws.csv       # 导出 160 case
+$ # 在 Excel/编辑器里填 reviewer_verdict + reviewer_comment 列
+$ python ... import --worksheet /tmp/ws-filled.csv --out /tmp/out.json
+已导入 3 条审阅到 /tmp/out.json（替换既有 0 条 + 新增 3 条；跳过空行 157 / 未知 verdict 0 / 未知 case 0）
+$ python ... stats --out /tmp/out.json
+case 总数: 3
+  pass:        1
+  fail:        1
+  over_decline: 1
+  带评论:       2
+```
+
+- 离线填 CSV → 一次性导入 JSON 替代交互式 `start` 子命令 160 次按键
+- 每行按 `(run_label, case_id)` 找完整 case context；fallback 第一个 case_id 匹配并 WARN
+- 空 `reviewer_verdict` 行跳过（计数但不 WARN）；未知 verdict 键 WARN + 跳过
+- 既有 JSON 保留：同 (run_id, case_id) 替换，其他保留
+- 同一 CSV 二次导入 → "替换既有 3 条 + 新增 0 条"，merge 路径正确
+- header (reviewer / review_start / reviewer_kind / show_blind) 继承既有 JSON
+
+### 2.7 验证完成后清理
 
 ```
 $ rm /tmp/test.json /tmp/sample.csv
