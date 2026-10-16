@@ -1228,35 +1228,63 @@ def test_t17_matrix_runner_sha_and_baseline_invariant_pin_v2_diagnostic():
       change that accidentally mutates a persona baseline (e.g. by
       publishing a partial session in the wrong workspace) would
       invalidate the matrix and must be caught here.
+
+    The same baseline-invariance flag is also recorded in the matrix
+    v1 diagnostic and the two cognition-pilot diagnostics, all of
+    which refer to the same per-character canonical SHA. Locking all
+    four together keeps the t17 evidence chain consistent: a future
+    runner change that mutates a baseline would have to fix four
+    diagnostics, which forces the new state to be re-justified.
     """
     import hashlib
     from pathlib import Path
 
     base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
-    matrix = json.loads(
-        (base / "real-model-t17-matrix-v2.json").read_text(encoding="utf-8")
-    )
 
-    # Runner script: byte-frozen against the diagnostic.
     runner_path = (
         Path(__file__).resolve().parents[1]
         / "docs/plans/book-character-agents/discussion-acceptance.py"
     )
     actual_runner_sha = hashlib.sha256(runner_path.read_bytes()).hexdigest()
-    assert actual_runner_sha == matrix["runner_sha256"], (
-        "discussion-acceptance.py drift: "
-        f"{actual_runner_sha} != {matrix['runner_sha256']}; "
-        "re-run the six-combination matrix and update the diagnostic."
-    )
 
-    # Baseline invariance: the canonical per-character SHA must be the
-    # same before and after the matrix run. This is the "non-destructive
-    # read-only probe" guarantee.
-    assert matrix["canonical_baselines_unchanged"] is True
-    assert (
-        matrix["canonical_baselines_before"]
-        == matrix["canonical_baselines_after"]
-    ), (
-        "matrix v2 reports the canonical baseline was mutated during "
-        "the run; the matrix is meant to be a read-only probe"
+    # Diagnostics that record a runner_sha256 — these three all
+    # observed the same runner script and the same canonical baseline
+    # invariant.
+    runner_diagnostics = (
+        "real-model-t17-matrix-v2.json",
+        "real-model-t17-cognition-pilot-v1.json",
+        "real-model-t17-cognition-pilot-v2.json",
     )
+    for fname in runner_diagnostics:
+        diagnostic = json.loads((base / fname).read_text(encoding="utf-8"))
+        assert diagnostic["runner_sha256"] == actual_runner_sha, (
+            f"{fname} reports runner_sha256="
+            f"{diagnostic['runner_sha256']} but discussion-acceptance.py "
+            f"is now {actual_runner_sha}; re-run the matrix/pilot and "
+            "update the diagnostic."
+        )
+
+    # Baseline-invariance: every diagnostic that records the before
+    # and after canonical SHA must show they are equal. matrix v1
+    # predates the runner_sha256 field but still records the
+    # invariance flag, so it is locked here too.
+    baseline_diagnostics = (
+        "real-model-t17-matrix-v1.json",
+        "real-model-t17-matrix-v2.json",
+        "real-model-t17-cognition-pilot-v1.json",
+        "real-model-t17-cognition-pilot-v2.json",
+    )
+    for fname in baseline_diagnostics:
+        diagnostic = json.loads((base / fname).read_text(encoding="utf-8"))
+        assert diagnostic["canonical_baselines_unchanged"] is True, (
+            f"{fname} reports canonical_baselines_unchanged=False; "
+            "the matrix/pilot is meant to be a read-only probe"
+        )
+        assert (
+            diagnostic["canonical_baselines_before"]
+            == diagnostic["canonical_baselines_after"]
+        ), (
+            f"{fname} reports canonical baseline drift between "
+            "before and after the run; the matrix/pilot is meant to "
+            "be a read-only probe"
+        )
