@@ -28,7 +28,7 @@
 最近 10 个 commit（`git log --oneline -10`）：
 
 ```
-(本批次) docs(t12): aggregate T12 8-pilot 接线契约完整性 under one deterministic row
+7319c0c test(t12): pin 8-pilot wire-contract structural integrity (6 invariants)
 fb395eb test(t12): pin 84-question gold-standard pool structural integrity (6 invariants)
 483daae docs(state): include 57558c7 in recent-10 list + add 禁言/移除恢复/局部来源删除 as guard #9
 57558c7 docs(t12): aggregate 禁言/移除恢复/局部来源删除 under one deterministic row
