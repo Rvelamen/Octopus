@@ -106,7 +106,7 @@ ea2738e docs(t12): record v2 60+24 completion (§4 row + evidence doc) + add 8th
 | --- | --- | --- |
 | T04 修订机制新增 `rephrase_claim` 类操作 | T17 诊断明确标"超出本次范围" | 若未来仍需对现存 build `c2da28c8` 产出修订版，需先扩展操作集，再以 lint 为 review 一侧的预检；该扩展与本次 wiring 互不阻塞 |
 | T17 cognition 第 3 题（条件推演 · 复杂分支） | 现有真实模型调用未稳定通过 | 待 v9 防护文字冻结后下次真实跑复评 |
-| 60 项边界 + 24 项表达完整题集的真实跑 | 阻塞于预算 | 题集已撰写为 [t12-quality-cases-v2.json](./t12-quality-cases-v2.json)；仅运行层未跑 |
+| 60+24 真实跑（运行层） | 已完成（2026-10-16 跑完 152/152 case） | 84 题金标准 100% 真实模型跑过（60 boundary + 16 canonical expression + 4 ext-a disagree + 4 ext-a unknown_expression = 84 题），19 窗口 / 369 native calls / 0 published / 19/19 baseline 不变，详见 §3 第 2 行 + [2026-10-16-t12-v2-real-run-evidence.md](./2026-10-16-t12-v2-real-run-evidence.md)；本行原条目"阻塞于预算；仅运行层未跑"系 2026-10-16 真实跑落地前留下，按"只增不改"原则保留旧描述并以新行覆盖"
 
 ## 5. 接手人下一步操作清单
 
