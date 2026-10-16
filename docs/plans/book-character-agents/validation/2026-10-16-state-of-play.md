@@ -20,7 +20,7 @@
 | T10 自动导入 | [2026-10-14-automatic-import-validation](./2026-10-14-automatic-import-validation.md) | (历史提交) | 199 通过 |
 | T11 来源生命周期 + 跨工作区矩阵 | [2026-10-14-source-lifecycle-validation](./2026-10-14-source-lifecycle-validation.md) + 矩阵契约测试 (本批次) | (历史) + (本批次) | 9 lifecycle + 1 矩阵 |
 | T12 题集 + 切片器 + 6 类负例防护 + 11 类人物/别名/说话者/权限/基线/隔离 + 3 类禁言/移除恢复/局部来源删除 + 6 类金标准池结构完整性 + 6 类 8-pilot 接线契约 + 4 类 frozen dryrun 审计 trail + 8 类 runner 脚本结构不变量确定性聚合 + 8-pilot 真实模型运行（首档 8/8 case 走完）+ 60+24 真实模型运行（84 题金标准 100% 落地 152/152 case 走完） | [2026-10-16-t12-v2-pool-slicer-evidence.md](./2026-10-16-t12-v2-pool-slicer-evidence.md) + [2026-10-16-t12-8pilot-real-run-evidence.md](./2026-10-16-t12-8pilot-real-run-evidence.md) + [2026-10-16-t12-v2-real-run-evidence.md](./2026-10-16-t12-v2-real-run-evidence.md) | 9073987 / bcced1d / 75f2af2 / 589db8e / c57594d / 57558c7 / fb395eb / 7319c0c / (本批次) / 7960170 / 63fd1e3 / 70443bf / 27cb369 / f4c0279 / ea2738e | 84 题金标准 + 45 窗口 + 87 负例 + 42 人物/别名 + 6 禁言/移除恢复/局部来源删除 + 6 金标准池结构完整性 + 6 8-pilot 接线契约 + 4 frozen dryrun 审计 trail + 8 runner 脚本结构不变量（含 v1ext 协议扩展） + 1 8-pilot 真实模型运行（23/32 native calls、6/8 over-decline）+ 1 v2 60+24 真实模型运行（19 窗口 152/152 case 走完、369 native calls、0 published、19/19 baseline 不变，runner v1ext 协议扩展后 SHA `35fd8681`） |
-| T12 人工盲评 CLI + 协议 + worksheet | [2026-10-16-blind-review-protocol.md](./2026-10-16-blind-review-protocol.md) + [blind-review-cli.py](../../blind-review-cli.py) + [blind-review-2026-10-16-worksheet.csv](./blind-review-2026-10-16-worksheet.csv) | e0f4b3f | 5 子命令 start/resume/stats/worksheet/regrade；160 case（8-pilot 8 + v2 152，含 1 已知 timeout case 已标注）；模型调用 0 / 不动 baseline / 不动既有 40 项 T12 契约测试 |
+| T12 人工盲评 CLI + 协议 + worksheet | [2026-10-16-blind-review-protocol.md](./2026-10-16-blind-review-protocol.md) + [blind-review-cli.py](../../blind-review-cli.py) + [blind-review-2026-10-16-worksheet.csv](./blind-review-2026-10-16-worksheet.csv) + [2026-10-16-t12-blind-review-cli-e2e-evidence.md](./2026-10-16-t12-blind-review-cli-e2e-evidence.md) | e0f4b3f / c103a62 | 5 子命令 start/resume/stats/worksheet/regrade；160 case（8-pilot 8 + v2 152，含 1 已知 timeout case 已标注）；模型调用 0 / 不动 baseline / 不动既有 40 项 T12 契约测试；端到端 e2e 验证（commit c103a62 同步修复 v1ext runner-accept 测试幂等性 + commit 25ca27a 同步注册工具于 §1/§2/§4）已完成：3 case 真实跑通 start → quit → resume → stats → regrade 链路，临时输出已清理 |
 | T15 秒数设置 | (无独立验证文档) | e29231c | 3 契约测试 |
 | T16 圆桌 UI | [2026-10-14-roundtable-validation](./2026-10-14-roundtable-validation.md) | (历史提交) | WS 3D + 2D 切换 |
 | T17 主题/自由 | [2026-10-15-discussion-matrix-v2-validation](./2026-10-15-discussion-matrix-v2-validation.md) + cognition 修复 | 70eed8e / 0e87b78 / 24d1959 | 26/28 + lint 门 |
@@ -29,6 +29,9 @@
 最近 10 个 commit（`git log --oneline -10`）：
 
 ```
+(本批次) docs(t12): add 盲评 CLI e2e validation evidence + state-of-play link
+c103a62 test(t12): make v1ext runner-accept test idempotent (pre-clean dryrun output)
+25ca27a docs(t12): register 人工盲评 CLI (commit e0f4b3f) in state-of-play §1/§3 + acceptance index §2/§4
 e0f4b3f feat(t12-blind-review): add 人工盲评 CLI + protocol + 160-case worksheet
 c1c6dd0 docs(t12+t17): mark T17 v2 A/B reeval complete in §1 T17 row + §4 row 86 + state-of-play
 267e3c4 docs(t17): record T17 v2 A/B reeval B-path real run (20/28 calls, 0 published, baseline unchanged)
@@ -36,9 +39,6 @@ c1c6dd0 docs(t12+t17): mark T17 v2 A/B reeval complete in §1 T17 row + §4 row 
 ea2738e docs(t12): record v2 60+24 completion (§4 row + evidence doc) + add 8th runner-structure invariant to §2
 52bd02f docs(t12): record v2 ext-a window 3 real-model run (8/8 executed_pending_semantic_review, baselines unchanged)
 4389f91 docs(t12): record v2 ext-a window 2 real-model run
-95aa859 docs(t12): record v2 ext-a window 1 real-model run
-95e093e docs(t12): record v2 ext-a window 0 real-model run
-27cb369 test(t12): add runner coerce mode=natural→directed when targets set (8th guard)
 ```
 
 分支：`feature/pdf-annotation-chat-and-clip-fix`（已推送远端，与 `main` 同步无冲突）
