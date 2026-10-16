@@ -885,3 +885,107 @@ def test_dryrun_reports_each_window_has_distinct_dataset_sha() -> None:
         f"-> {shas}"
     )
 
+
+# ---------------------------------------------------------------------------
+# Runner script structural invariants — pins the contract that the runner
+# itself satisfies even when no dryrun report is on disk. These are
+# textual/bytecode-level guards: they do not import or execute the runner
+# (which would mutate sys.path) but read its source so the safety
+# invariants survive any future dryrun regeneration.
+# ---------------------------------------------------------------------------
+
+
+def test_runner_max_native_calls_constant_is_32() -> None:
+    """The runner file must declare ``MAX_NATIVE_CALLS = 32`` as a
+    module-level constant. This is the call ceiling that protects T12
+    8-pilot from runaway model spend; a silent change to 64 would
+    silently double the per-pilot budget.
+    """
+    import re
+
+    source = RUNNER.read_text(encoding="utf-8")
+    match = re.search(r"^MAX_NATIVE_CALLS\s*=\s*(\d+)\s*$", source, re.MULTILINE)
+    assert match is not None, (
+        f"runner must declare a module-level MAX_NATIVE_CALLS = N constant; "
+        f"none found in {RUNNER}"
+    )
+    assert int(match.group(1)) == 32, (
+        f"MAX_NATIVE_CALLS must remain 32 (T12 8-pilot ceiling); got "
+        f"{match.group(1)!r}"
+    )
+
+
+def test_runner_call_budget_default_matches_ceiling() -> None:
+    """The runner's ``--call-budget`` argparse default must equal
+    ``MAX_NATIVE_CALLS`` (32). A mismatch would mean the default CLI
+    invocation consumes fewer calls than the ceiling allows — i.e. the
+    8-pilot could be silently truncated.
+    """
+    import re
+
+    source = RUNNER.read_text(encoding="utf-8")
+    max_match = re.search(r"^MAX_NATIVE_CALLS\s*=\s*(\d+)\s*$", source, re.MULTILINE)
+    budget_match = re.search(
+        r'add_argument\(\s*"--call-budget"[^)]*default\s*=\s*(\d+)',
+        source, re.DOTALL,
+    )
+    assert max_match is not None, "MAX_NATIVE_CALLS not found"
+    assert budget_match is not None, (
+        f"--call-budget argparse default not found in {RUNNER}"
+    )
+    max_value = int(max_match.group(1))
+    budget_default = int(budget_match.group(1))
+    assert budget_default == max_value, (
+        f"--call-budget default ({budget_default}) must equal "
+        f"MAX_NATIVE_CALLS ({max_value}) so the default CLI run "
+        f"does not silently truncate the 8-pilot"
+    )
+
+
+def test_runner_refuses_to_overwrite_existing_output() -> None:
+    """The runner must check ``output.exists() or raw_path.exists()``
+    before doing any work and raise a clear error if either already
+    exists. This is the safety invariant that prevents a real-pilot
+    run from overwriting the previous run's audit trail — a silent
+    overwrite would make budgets un-attributable.
+    """
+    source = RUNNER.read_text(encoding="utf-8")
+    assert "if output.exists() or raw_path.exists():" in source, (
+        f"runner must refuse to overwrite an existing output or raw "
+        f"path; pre-write check missing in {RUNNER}"
+    )
+    # The check must appear before any model call / save() that could
+    # mutate the output. Confirm the raising message is descriptive.
+    assert "This run already exists" in source, (
+        f"runner overwrite-guard must raise a descriptive error; "
+        f"generic RuntimeError without 'already exists' context found"
+    )
+
+
+def test_runner_run_status_terminal_enum_covers_all_paths() -> None:
+    """The runner's ``report['run_status']`` must enumerate every
+    terminal state: ``dry_run`` (validation only), ``interrupted``
+    (an exception short-circuited the loop), ``budget_exhausted``
+    (call budget hit), and ``executed_pending_semantic_review``
+    (full 8-pilot completed). A missing branch would let a real run
+    end without an explicit status — leaving the audit trail ambiguous.
+    """
+    source = RUNNER.read_text(encoding="utf-8")
+    required_statuses = {
+        "dry_run",
+        "interrupted",
+        "budget_exhausted",
+        "executed_pending_semantic_review",
+    }
+    for status in required_statuses:
+        assert f'"{status}"' in source, (
+            f"runner must wire terminal run_status {status!r} in "
+            f"the report builder; missing in {RUNNER}"
+        )
+    # ``case['status']`` must similarly carry an 'executed_pending_semantic_review'
+    # value (used per-case, not just per-run) so per-case audit is unambiguous.
+    assert "executed_pending_semantic_review" in source, (
+        "per-case status 'executed_pending_semantic_review' must appear "
+        "in the runner's case-status update"
+    )
+
