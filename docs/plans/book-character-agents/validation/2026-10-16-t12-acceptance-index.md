@@ -2,9 +2,9 @@
 
 整理 12 项实施任务已落实的存储、服务、协议和界面证据，并按 T12 验收标准把每条要求映射到具体测试、迁移、验证记录或运行脚本。**本索引不替模型质量验收背书**——只有"结构权限/幂等/隔离/开关/读写矩阵/可关闭/可回滚"等确定性子项被列为已勾选；60 项边界评测、24 项表达样本、84 题金标准、全书人格、完整应用与人工盲评仍属于真实模型运行层，按"控制模型调用预算"暂未运行完成，记录在未关闭清单里。索引本身可在不开新模型调用的情况下审查。
 
-最后更新：2026-10-16。配套：实施计划 [implementation-plan.md](../../implementation-plan.md)、T12 任务文件 [tasks/12-mvp-acceptance.md](../../tasks/12-mvp-acceptance.md)、发布开关 [release-and-rollback.md](../../release-and-rollback.md)、全部阶段验证记录在同目录 [validation/](./) 下。
+最后更新：2026-10-16（v2 题集 + 切片器 + 15 契约测试 + 0 模型 dry-run 验证已落实；详情见 [2026-10-16-t12-v2-pool-slicer-evidence.md](./2026-10-16-t12-v2-pool-slicer-evidence.md)）。配套：实施计划 [implementation-plan.md](../../implementation-plan.md)、T12 任务文件 [tasks/12-mvp-acceptance.md](../../tasks/12-mvp-acceptance.md)、发布开关 [release-and-rollback.md](../../release-and-rollback.md)、全部阶段验证记录在同目录 [validation/](./) 下。
 
-Q05 "T12 实施时提供实际文件及运行入口"已落实为 [t12-quality-cases-v1.json](./t12-quality-cases-v1.json) 8-pilot 案例集 + [t12-quality-runner.py](../../t12-quality-runner.py) 实际运行入口；当前仅以 `--dry-run` 模式验证数据集/角色/策略/字节指纹 4 项硬证据，未消耗模型预算。完整 60+24 题集尚未撰写。
+Q05 "T12 实施时提供实际文件及运行入口"已落实为 [t12-quality-cases-v1.json](./t12-quality-cases-v1.json) 8-pilot 案例集 + [t12-quality-runner.py](../../t12-quality-runner.py) 实际运行入口；当前仅以 `--dry-run` 模式验证数据集/角色/策略/字节指纹 4 项硬证据，未消耗模型预算。**60+24 题金标准已撰写**为 [t12-quality-cases-v2.json](./t12-quality-cases-v2.json)（dataset_version=t12-pilot-eightyfour-v1），配合 [slice_t12_pool.py](../../../scripts/book_world/slice_t12_pool.py) 切成 15+15+15=45 个 8-pilot 窗口，4 个 canonical 窗口已通过 runner `--dry-run`。**真实 8-pilot 模型跑仍阻塞于预算授权 + provider 选择。**
 
 ## 1. 实施任务完成状态
 
@@ -81,7 +81,7 @@ T08/T09/T11/T15/T16/T18 各自的实现细节见对应任务文件；其中 T09 
 | 人物忠实度、当前交流回应和自然程度分别盲评 | 未关闭 | T17 Agent 审读 [t17-matrix-v2-agent-review.json](./t17-matrix-v2-agent-review.json) `quality_pass=False`；人工盲评未启动 |
 | 否定自传、遗漏正文断言、他人对白、旧信念和跨书听说都有负例 | 未关闭 | T17 v9 review 与 v14 generate 历史动作防护文字已冻结（85 项 model contracts 第 70–80 项），负例覆盖 v6–v8 |
 | 条件推演、引述及有据否定经历有正例 | 未关闭 | T17 cognition 1 题条件选择发布；v12/v8 取得两题有限安全发布 |
-| 60 项边界 + 24 项表达完整题集 | 未关闭 | Q05 已落实 [t12-quality-cases-v1.json](./t12-quality-cases-v1.json) 8-pilot 案例集（4 边界 + 4 表达，覆盖 knowable/unknowable/belief/emotion + answer/challenge/comfort/cross_book_hearsay）+ [t12-quality-runner.py](../../t12-quality-runner.py) 运行入口；87 项 model contracts 已锁定 8-pilot 数据集形状与 runner 字节指纹；完整 60+24 题集尚未撰写 |
+| 60 项边界 + 24 项表达完整题集 | 已撰写（金标准 84 题数据层完成；运行层未跑） | 8-pilot 案例集 [t12-quality-cases-v1.json](./t12-quality-cases-v1.json) 仍在线；84 题金标准池已落地为 [t12-quality-cases-v2.json](./t12-quality-cases-v2.json)（dataset_version=t12-pilot-eightyfour-v1，4×15 boundary + 6×4 expression，石猴 57 题 + 黛玉 27 题，含 4 题 cross_book_hearsay）；切片器 [slice_t12_pool.py](../../../scripts/book_world/slice_t12_pool.py) 切成 15+15+15=45 个 8-pilot 窗口，4 个 canonical 窗口已通过 runner `--dry-run`；详见 [2026-10-16-t12-v2-pool-slicer-evidence.md](./2026-10-16-t12-v2-pool-slicer-evidence.md) |
 | T12 84 题实际模型运行（先跑 8 项） | 未关闭 | 8-pilot 数据集与 runner 已就位，但模型调用预算未开放；`--dry-run` 是当前唯一允许模式并已验证；8 项小预算运行待 budget 重开后执行 |
 
 ## 5. 索引如何被引用
