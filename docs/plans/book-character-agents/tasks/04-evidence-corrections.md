@@ -47,3 +47,5 @@
 
 2026-10-15 修复实际新档案失败后旧已发布版本入口消失的问题：构建查询返回同书同来源的有效历史锚点；当前失败继续可见，界面可切回旧档案，审计仅与选中版本匹配时展示。4项新增回归先失败后通过，修订模块18项通过；完整项目464通过、限定55文件Mypy、Ruff、前端类型/构建与相关ESLint通过。实际WS/组件中已往返失败/已发布版本、打开旧档案并核对跨书清空及旧Agent哈希不变，模型调用0，见[历史入口验证](../validation/2026-10-15-history-anchor-validation.md)。本次未扩大任何草稿的编辑或发布权限。
 
+2026-10-16 新增 [tests/test_book_task_contracts.py](F:/god/project/Octopus/tests/test_book_task_contracts.py) 锁定每任务一条确定性契约：T04 用 `test_t04_stale_revision_persona_build_fails_with_revision_conflict` 复现旧 create_revision 后被新 create_revision 推进 head、对旧 build_id 触发 persona.run 时 build.status='failed' 且 error_code='revision_conflict' 的 CAS 失败通道，与既有 `test_book_revisions.py` 的公共行为回归互补但只聚焦单条不变量。
+

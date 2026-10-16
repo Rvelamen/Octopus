@@ -179,6 +179,7 @@ tests/
 !/tests/test_book_persona_acquisition.py
 !/tests/test_book_unit_repair.py
 !/tests/test_book_discovery_progress.py
+!/tests/test_book_task_contracts.py
 .agents/skills/ai-elements/SKILL.md
 .agents/skills/ai-elements/references/agent.md
 .agents/skills/ai-elements/references/artifact.md
