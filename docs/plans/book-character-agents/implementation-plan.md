@@ -383,3 +383,5 @@ v15发现链路115项专项通过，独立全书首窗8次完成两书各3单元
 新增 `test_inline_discovery_v2_module_sha_matches_diagnostic_runtime`：锁住 `backend/services/book_world/discovery_inline.py` 的字节级 SHA256 与 `real-model-inline-discovery-v2.json` 中 `runtime_sha256` 记录一致；prompt 已锁定但模块字节若漂移会使得重跑结果无法复现 v2 数字，所以这里再补一层"模块本身"冻结；70 项 model contracts 全过。
 
 新增 `test_room_and_knowledge_policy_versions_pin_diagnostic_strings`：锁住房间/知识策略版本常量——`ROOM_POLICY_VERSION="bounded-room-v1"`、`KNOWLEDGE_POLICY_VERSION="canonical-perspective-v1"`、`PersonaConfig.policy_version` 默认值 `"canonical-persona-v3"`——必须与 `t17-matrix-v1.json` 和 `t17-matrix-v2.json` 中 `character_scopes` 和 `model_config.policy_version` 记录一致；任何一次静默 bump 都会让所有已保存的 persona 绑定标签失配；71 项 model contracts 全过。
+
+新增 `test_t17_matrix_runner_sha_and_baseline_invariant_pin_v2_diagnostic`：锁住 `discussion-acceptance.py` 矩阵执行器的字节级 SHA256 与 t17 matrix v2 诊断 `runner_sha256=cdcc9040…` 一致；并锁住 matrix v2 报告 `canonical_baselines_unchanged=True` 与 `canonical_baselines_before == canonical_baselines_after`，把"矩阵是只读探针、非破坏性"从隐性假设变成硬约束；任何执行器代码改动或矩阵写入越界都会让 26/28 次复验的证据基础失效，必须同步更新诊断并重跑六组合原生；72 项 model contracts 全过。

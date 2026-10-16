@@ -1206,3 +1206,57 @@ def test_persona_version_constants_pin_aliases_and_prompts():
         assert EXTRACT_PROMPTS[older] in EXTRACT_PROMPTS[newer], (
             f"{newer} must extend {older} (cumulative); not an alias"
         )
+
+
+def test_t17_matrix_runner_sha_and_baseline_invariant_pin_v2_diagnostic():
+    """The t17 v2 matrix runner and baseline-invariance must stay frozen.
+
+    The v2 matrix diagnostic recorded both ``runner_sha256`` (the
+    ``discussion-acceptance.py`` script that drove the six-combination
+    native run) and an explicit ``canonical_baselines_unchanged`` flag
+    that says the per-character canonical SHA before the run equals the
+    SHA after the run. Both are independent of the chat-room module
+    SHAs already locked elsewhere in this file:
+
+    * ``runner_sha256`` pins the script that constructs the case set,
+      timeouts, and per-case prompt/timeout wiring. If a future commit
+      edits that script, the diagnostic must be regenerated and the
+      matrix re-run, or the result can no longer claim to come from the
+      same procedure.
+    * ``canonical_baselines_unchanged`` is the proof that the matrix
+      is non-destructive on the persona canonical SHA. A future runner
+      change that accidentally mutates a persona baseline (e.g. by
+      publishing a partial session in the wrong workspace) would
+      invalidate the matrix and must be caught here.
+    """
+    import hashlib
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    matrix = json.loads(
+        (base / "real-model-t17-matrix-v2.json").read_text(encoding="utf-8")
+    )
+
+    # Runner script: byte-frozen against the diagnostic.
+    runner_path = (
+        Path(__file__).resolve().parents[1]
+        / "docs/plans/book-character-agents/discussion-acceptance.py"
+    )
+    actual_runner_sha = hashlib.sha256(runner_path.read_bytes()).hexdigest()
+    assert actual_runner_sha == matrix["runner_sha256"], (
+        "discussion-acceptance.py drift: "
+        f"{actual_runner_sha} != {matrix['runner_sha256']}; "
+        "re-run the six-combination matrix and update the diagnostic."
+    )
+
+    # Baseline invariance: the canonical per-character SHA must be the
+    # same before and after the matrix run. This is the "non-destructive
+    # read-only probe" guarantee.
+    assert matrix["canonical_baselines_unchanged"] is True
+    assert (
+        matrix["canonical_baselines_before"]
+        == matrix["canonical_baselines_after"]
+    ), (
+        "matrix v2 reports the canonical baseline was mutated during "
+        "the run; the matrix is meant to be a read-only probe"
+    )

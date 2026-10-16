@@ -83,3 +83,5 @@
 
 同日追加 `test_room_and_knowledge_policy_versions_pin_diagnostic_strings`：锁住 `ROOM_POLICY_VERSION="bounded-room-v1"`、`KNOWLEDGE_POLICY_VERSION="canonical-perspective-v1"`、`PersonaConfig.policy_version` 默认值 `"canonical-persona-v3"` 必须与 t17 matrix v1/v2 中 `character_scopes` 与 `model_config.policy_version` 一致；71 项 model contracts 全过。
 
+同日追加 `test_t17_matrix_runner_sha_and_baseline_invariant_pin_v2_diagnostic`：锁住 `discussion-acceptance.py` 矩阵执行器的字节级 SHA256 与 t17 matrix v2 诊断 `runner_sha256=cdcc9040…` 一致；并锁住 matrix v2 报告的 `canonical_baselines_unchanged=True` 与 `canonical_baselines_before == canonical_baselines_after`，作为"矩阵是只读探针"的硬证据；任何执行器代码改动或矩阵写入越界必须同步更新诊断并重跑六组合原生；72 项 model contracts 全过。
+
