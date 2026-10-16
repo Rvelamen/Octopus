@@ -362,6 +362,12 @@ def test_extension_windows_use_v1ext_protocol_and_runner_accepts() -> None:
     if not actors_path.exists():
         import pytest
         pytest.skip("probe persona source not present")
+    # The runner refuses to overwrite existing output (contract pinned by
+    # ``test_runner_refuses_to_overwrite_existing_output``); pre-clean any
+    # leftover dryrun from a previous run so this test stays idempotent.
+    dryrun_output = REPO / "tmp" / "test-t12-ext-a-0-dryrun.json"
+    if dryrun_output.exists():
+        dryrun_output.unlink()
     try:
         # Slice ext-a window 0 (covers disagree + unknown_expression among
         # its 4 expression slots).
@@ -424,6 +430,8 @@ def test_extension_windows_use_v1ext_protocol_and_runner_accepts() -> None:
     finally:
         if out.exists():
             out.unlink()
+        if dryrun_output.exists():
+            dryrun_output.unlink()
 
 
 def test_slicer_dry_run_through_runner_actually_loads() -> None:
