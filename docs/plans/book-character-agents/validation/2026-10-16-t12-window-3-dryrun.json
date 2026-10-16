@@ -4,7 +4,7 @@
   "dataset_version": "t12-pilot-eight-v1",
   "dataset_sha256": "0dcac94a267ac4f54a614b9da80af4bfdd8df4103c42eb851c091b40fbd3235f",
   "actors_source_sha256": "4361f5ae1bb93f4414c876c48e3a4cb54df8c1c3d823b8febda1e0653a9e4c71",
-  "runner_sha256": "212ece6bd1a5bbb8da6961d8483b2c4b6aabcb2d9c41864cebfdc1c0f64503bc",
+  "runner_sha256": "55783a63261c8be7da02c08b8a930761c8a454c35baf106c21aa14522352adbb",
   "scope": "Window 3 of the t12-pilot-eightyfour-v1 pool (size=8, expression_classes=['answer', 'challenge', 'comfort', 'cross_book_hearsay']). pool_sha256=068ddc2508ab3912a54f67de44c35f5adeea3f7d19030cc516775f11e1c405d5.",
   "character_scopes": [
     {

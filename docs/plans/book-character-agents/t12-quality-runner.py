@@ -394,6 +394,15 @@ async def run(options):
                         )
                     )
                 )
+            # Coercion policy: when a case pins specific target actors, the
+            # submission is semantically directed (the case author wants that
+            # exact actor to answer). ``coordinator.select_speakers`` rejects
+            # ``mode='natural'`` carrying ``target_member_ids``, so override
+            # ``mode`` whenever ``targets`` is non-empty. This keeps frozen
+            # case datasets stable while still honoring ``target_actor_indices``.
+            effective_mode = spec.get("mode", "natural")
+            if targets and effective_mode == "natural":
+                effective_mode = "directed"
             for question in spec["questions"]:
                 if len(raw_calls) >= options.call_budget:
                     exhausted = True
@@ -403,8 +412,8 @@ async def run(options):
                     str(uuid4()),
                     question,
                     model.config,
-                    time_limit_seconds=model.timeouts.seconds_for_mode(spec.get("mode", "natural")),
-                    mode=spec.get("mode", "natural"),
+                    time_limit_seconds=model.timeouts.seconds_for_mode(effective_mode),
+                    mode=effective_mode,
                     target_member_ids=targets or None,
                     expected_discussion_revision=revision,
                 )
@@ -430,7 +439,7 @@ async def run(options):
                             exhausted = True
                             break
                         latest = resolve_character_chat_model(options.provider_id, options.model_id)
-                        seconds = latest.timeouts.seconds_for_mode(spec.get("mode", "natural"))
+                        seconds = latest.timeouts.seconds_for_mode(effective_mode)
                         rounds.control(
                             scope, turn["round_id"], "resume", time_limit_seconds=seconds
                         )

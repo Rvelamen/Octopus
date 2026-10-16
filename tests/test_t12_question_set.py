@@ -1068,3 +1068,81 @@ def test_runner_expected_count_class_list_matches_v1_protocol() -> None:
                 f"got {list_body!r} (v1 protocol frozen on these 4 classes)"
             )
 
+
+def test_runner_coerces_mode_to_directed_when_target_actor_indices_set() -> None:
+    """The runner must coerce ``mode='natural'`` to ``mode='directed'``
+    whenever the case spec carries non-empty ``target_actor_indices``
+    (which builds a non-empty ``targets`` list). Without this coercion,
+    ``coordinator.select_speakers`` rejects the call with
+    ``Natural selection cannot carry directed targets`` because every
+    v1 case (and every v2 window) pins a specific target actor while
+    declaring ``mode='natural'``. The coercion preserves the frozen
+    case datasets and honors the author intent: a case that pins an
+    actor wants that actor to answer, which is a directed submission.
+    """
+    source = RUNNER.read_text(encoding="utf-8")
+
+    # The runner must define a local ``effective_mode`` variable derived
+    # from the spec, so the submit path uses the coerced mode (not the
+    # raw spec value) at both ``rounds.submit`` and the manual-resume
+    # control path.
+    assert "effective_mode = spec.get(\"mode\", \"natural\")" in source, (
+        "runner must compute an effective_mode from spec.get('mode') so "
+        "the directed-coercion policy can apply before rounds.submit"
+    )
+    assert (
+        "if targets and effective_mode == \"natural\":" in source
+    ), (
+        "runner must override effective_mode from 'natural' to 'directed' "
+        "when targets is non-empty (case spec pins a target actor)"
+    )
+    assert "    effective_mode = \"directed\"" in source, (
+        "runner must set effective_mode='directed' inside the coercion branch"
+    )
+
+    # Submit path must use the coerced mode, not the raw spec value.
+    submit_block_marker = "turn = rounds.submit("
+    submit_idx = source.find(submit_block_marker)
+    assert submit_idx != -1, f"rounds.submit call not found in {RUNNER}"
+    # Read a generous window after the submit call to verify
+    # ``mode=effective_mode`` and ``seconds_for_mode(effective_mode)``.
+    submit_window = source[submit_idx:submit_idx + 1200]
+    assert "mode=effective_mode" in submit_window, (
+        "rounds.submit must use mode=effective_mode (coerced), not "
+        "mode=spec.get('mode', 'natural')"
+    )
+    assert "seconds_for_mode(effective_mode)" in submit_window, (
+        "rounds.submit time_limit_seconds must derive from "
+        "seconds_for_mode(effective_mode) (coerced)"
+    )
+
+    # The manual-resume control path (operator continuation) must also
+    # use the coerced mode so the resumed round reads the same
+    # time_limit_seconds the submit recorded. The ``seconds`` local is
+    # computed on the line immediately above ``rounds.control(``, so
+    # capture a 1-line-back window that includes both.
+    resume_marker = 'rounds.control(\n                        scope, turn["round_id"], "resume"'
+    resume_idx = source.find(resume_marker)
+    if resume_idx == -1:
+        # Fallback to a whitespace-tolerant match.
+        import re
+        matches = list(
+            re.finditer(
+                r"seconds_for_mode\(effective_mode\)\s*\n[^\n]*rounds\.control\(",
+                source,
+            )
+        )
+        assert matches, (
+            "manual-resume must compute seconds_for_mode(effective_mode) "
+            "immediately before the rounds.control('resume', ...) call"
+        )
+    else:
+        # Window includes the line above (where ``seconds`` is computed).
+        above_idx = source.rfind("\n", 0, resume_idx - 1)
+        above_idx = source.rfind("\n", 0, above_idx - 1)
+        resume_window = source[above_idx:resume_idx + 400]
+        assert "seconds_for_mode(effective_mode)" in resume_window, (
+            "manual-resume must derive time_limit_seconds from "
+            "seconds_for_mode(effective_mode) (coerced), not from the raw spec"
+        )
+
