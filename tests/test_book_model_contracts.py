@@ -1404,3 +1404,72 @@ def test_inline_discovery_v1_corpus_files_sha_pin_full_source():
             "byte content; update the diagnostic and re-run the inline "
             "discovery to refresh the evidence chain."
         )
+
+
+def test_persona_sub_build_diagnostics_pin_agent_unchanged_invariant():
+    """Persona sub-builds must not mutate the parent Agent hash.
+
+    The intent-v4, intent-v5, evidence-v6, and scope-v7 sub-build
+    diagnostics each record ``old_agent_sha256_before`` and
+    ``old_agent_sha256_after``. The invariant
+    ``before == after`` is the hard evidence that:
+
+      * the new persona sub-build operates on a copy / child
+        ``build_id``,
+      * the parent Agent (from ``old_build_id``) is left bitwise
+        identical after the sub-build,
+      * reading the parent Agent post-run returns exactly the
+        same fingerprint that the sub-build started from.
+
+    The diagnostic also carries an explicit
+    ``old_agent_unchanged`` boolean; locking both the boolean
+    and the surrounding hash equality is the non-destructive
+    probe contract for "persona extraction never silently
+    rewrites the parent". Together with the v5/v6/v7
+    ``previous_v5_sha256_before == previous_v5_sha256_after``
+    pair, the four diagnostics collectively back the
+    "sub-build never edits upstream baselines" guarantee
+    that the t17 matrix runner contract (matrix and
+    cognition-pilot diagnostics) provides for the chat room
+    side.
+    """
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    agent_diagnostics = (
+        "real-model-persona-intent-v4-01.json",
+        "real-model-persona-intent-v5-01.json",
+        "real-model-persona-evidence-v6-01.json",
+        "real-model-persona-scope-v7-01.json",
+    )
+    for fname in agent_diagnostics:
+        diagnostic = json.loads((base / fname).read_text(encoding="utf-8"))
+        before = diagnostic["old_agent_sha256_before"]
+        after = diagnostic["old_agent_sha256_after"]
+        assert before == after, (
+            f"{fname} reports the parent Agent hash drifted during a "
+            f"persona sub-build: before={before} after={after}; the "
+            "sub-build must operate on a child build and leave the "
+            "parent Agent bitwise identical."
+        )
+        # The diagnostic also exposes an explicit boolean; both must agree.
+        assert diagnostic["old_agent_unchanged"] is True, (
+            f"{fname} sets old_agent_unchanged=False while the hashes "
+            "agree; either the boolean or the hash equality is stale."
+        )
+
+    # evidence-v6 and scope-v7 additionally carry the v5 baseline
+    # non-destructive probe.
+    v5_baseline_diagnostics = (
+        "real-model-persona-evidence-v6-01.json",
+        "real-model-persona-scope-v7-01.json",
+    )
+    for fname in v5_baseline_diagnostics:
+        diagnostic = json.loads((base / fname).read_text(encoding="utf-8"))
+        v5_before = diagnostic["previous_v5_sha256_before"]
+        v5_after = diagnostic["previous_v5_sha256_after"]
+        assert v5_before == v5_after, (
+            f"{fname} reports the v5 persona baseline drifted during a "
+            f"v6/v7 sub-build: before={v5_before} after={v5_after}; "
+            "v6/v7 must build on top of v5 without rewriting it."
+        )
