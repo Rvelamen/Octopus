@@ -19,7 +19,7 @@
 | T09 全体与控制 | [2026-10-14-all-queue-validation](./2026-10-14-all-queue-validation.md) | (历史提交) | 暂停/继续/停止 |
 | T10 自动导入 | [2026-10-14-automatic-import-validation](./2026-10-14-automatic-import-validation.md) | (历史提交) | 199 通过 |
 | T11 来源生命周期 + 跨工作区矩阵 | [2026-10-14-source-lifecycle-validation](./2026-10-14-source-lifecycle-validation.md) + 矩阵契约测试 (本批次) | (历史) + (本批次) | 9 lifecycle + 1 矩阵 |
-| T12 题集 + 切片器 | [2026-10-16-t12-v2-pool-slicer-evidence.md](./2026-10-16-t12-v2-pool-slicer-evidence.md) | 9073987 / bcced1d / 75f2af2 | 84 题金标准 + 45 窗口 |
+| T12 题集 + 切片器 + 6 类负例防护 + 11 类人物/别名/说话者/权限/基线/隔离确定性聚合 | [2026-10-16-t12-v2-pool-slicer-evidence.md](./2026-10-16-t12-v2-pool-slicer-evidence.md) | 9073987 / bcced1d / 75f2af2 / 589db8e / c57594d | 84 题金标准 + 45 窗口 + 87 负例 + 42 人物/别名聚合 |
 | T15 秒数设置 | (无独立验证文档) | e29231c | 3 契约测试 |
 | T16 圆桌 UI | [2026-10-14-roundtable-validation](./2026-10-14-roundtable-validation.md) | (历史提交) | WS 3D + 2D 切换 |
 | T17 主题/自由 | [2026-10-15-discussion-matrix-v2-validation](./2026-10-15-discussion-matrix-v2-validation.md) + cognition 修复 | 70eed8e / 0e87b78 / 24d1959 | 26/28 + lint 门 |
@@ -28,16 +28,16 @@
 最近 10 个 commit（`git log --oneline -10`）：
 
 ```
+c57594d docs(t12): aggregate 11 T03/T04/T09 deterministic sub-items under one row
+589db8e docs(t12): aggregate 6 negative-example safeguards under one deterministic row
+3dc3d88 test(t08): pin directed @ resolves to target member_id when two members share display name
+f129ba7 test(t11): pin cross-workspace 6-dim read+write+delete matrix in one pytest flow
 3bc9548 docs(state): add state-of-play handoff summarizing closed deterministic gates and budget-blocked items
 e29231c test(t15): pin saved timeout default flows into chat submit for directed + all modes
 24d1959 docs(test): wire trait-completion lint into persona publication summary
 75f2af2 docs(t12): record v2 84-case pool + slicer in acceptance index
 bcced1d docs(t12): record v2 pool + slicer + 0-model-call verification evidence
 9073987 test(t12): pin v2 84-case pool + slicer + 15 contract tests + dry-runs
-0e87b78 test(t17): pin suggested correction wording passes the lint
-70eed8e test(t17): pin trait-vs-completion lint + matrix v2 deterministic reeval
-3183cb7 docs(implementation-plan): record 9-task contract test suite + 577 passed
-ac1dcad test(t04-t11,t16): add 9 deterministic per-task contract tests
 ```
 
 分支：`feature/pdf-annotation-chat-and-clip-fix`（已推送远端，与 `main` 同步无冲突）
@@ -60,6 +60,18 @@ ac1dcad test(t04-t11,t16): add 9 deterministic per-task contract tests
    - 4 个 canonical 窗口已通过 runner `--dry-run`，数据层就绪
 4. **T17 cognition 防护文字冻结**（85 项 model contracts 第 70–80 项）
    - `tests/test_book_model_contracts.py` 已锁 v9/v14/cognition 防护
+5. **T11 跨工作区 6 维读写删矩阵** 已锁（commit f129ba7）
+   - 文件：`tests/test_book_task_contracts.py` 末尾 `test_t11_cross_workspace_read_write_delete_matrix_preserves_isolation`
+   - 6 维（workspace × source × build × character × room × epoch）一次性覆盖；删 A 不影响 B 行数与 room 状态
+6. **T08 同名 @ directed 选择以 member_id 为准** 已锁（commit 3dc3d88）
+   - 文件：`tests/test_book_task_contracts.py` 末尾 `test_t08_directed_at_with_same_name_resolves_to_target_member_id`
+   - 锁住 `coordinator.py:37-49` 的 `by_id` 字典；两个 "人物甲" 不会因为名字相同而被错投
+7. **T12 6 类负例防护确定性聚合** 已索引（commit 589db8e）
+   - 文件：T12 验收证据索引 §2 新增"否定自传、跨书听说、遗漏正文、他人对白、旧信念都有负例防护"行
+   - 87 项 `tests/test_book_model_contracts.py` 已被映射到 6 类（用户否认 15 / 旧信念 5 / 遗漏正文 12+1 / 沉默保留 9 / 防护 wording 4 / review 不可削弱 body 5 + 35 未参数化 = 87）
+8. **T03/T04/T09 11 类人物/别名/说话者/权限/基线/隔离确定性聚合** 已索引（commit c57594d）
+   - 文件：T12 验收证据索引 §2 新增"人物/别名/说话者/权限/基线标注精度/依据召回/历史 vs 当前/跨书源隔离（确定性层）"行
+   - 17 (T03) + 18 (T04，含 4+3 参数化) + 7 (T09) = 42 项既有测试被映射到 11 类子项
 
 ## 3. 待解锁：模型预算授权
 
