@@ -1787,3 +1787,219 @@ def test_expression_revision_room_memory_probes_pin_readonly_invariants():
         f"!= call_budget={room_memory['call_budget']}; the room memory probe "
         "consumed a different number of calls than its declared budget."
     )
+
+
+def test_t17_discussion_cases_dataset_pins_six_combination_ground_truth():
+    """The t17 six-combination gold standard is a frozen dataset.
+
+    ``t17-discussion-cases-v1.json`` is the gold standard
+    dataset for the t17 six-combination matrix probe
+    (free/topic × natural/directed/all). It carries:
+
+      * ``dataset_version`` — the version string for the
+        gold standard (must remain the same identifier so
+        later diagnostics can cite the same set),
+      * ``native_call_ceiling`` — the per-probe call budget,
+      * ``manual_continues_per_turn`` — the manual continue
+        budget per turn (must not silently grow),
+      * ``reviewer_kind`` — must continue to label the
+        reviewer as the Agent doing the inspection (not a
+        human blind review claim),
+      * exactly **6 cases** with the expected
+        ``discussion_mode`` × ``mode`` coverage:
+        - free + natural,
+        - free + directed,
+        - free + all,
+        - topic + natural,
+        - topic + directed,
+        - topic + all.
+        The 6 case set is the contract that gives the matrix
+        its name; any future change must re-record the
+        diagnostic AND bump the dataset version.
+
+    Locking the dataset shape is the only way to make
+    "matrix v1 == matrix v2 == cognition-pilot v1 == ...
+    == 'this same six-combination probe'" a regression-test
+    statement instead of a hand-waving claim.
+    """
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    cases = json.loads(
+        (base / "t17-discussion-cases-v1.json").read_text(encoding="utf-8")
+    )
+
+    assert cases["dataset_version"] == "t17-six-combinations-v1", (
+        f"t17-discussion-cases-v1.json dataset_version drifted to "
+        f"{cases['dataset_version']!r}; the matrix probe cites the "
+        "dataset by this string, so renaming it silently breaks "
+        "the citation chain."
+    )
+    assert cases["native_call_ceiling"] == 32, (
+        f"t17-discussion-cases-v1.json native_call_ceiling drifted to "
+        f"{cases['native_call_ceiling']}; the matrix v1/v2 budget ceiling "
+        "is part of the gold standard."
+    )
+    assert cases["manual_continues_per_turn"] == 1, (
+        f"t17-discussion-cases-v1.json manual_continues_per_turn drifted "
+        f"to {cases['manual_continues_per_turn']}; the matrix probe's "
+        "manual-continue budget is part of the gold standard."
+    )
+    assert "Agent" in cases["reviewer_kind"] and "no claim of human blind" in cases["reviewer_kind"], (
+        f"t17-discussion-cases-v1.json reviewer_kind drifted to "
+        f"{cases['reviewer_kind']!r}; the reviewer must remain the "
+        "Agent doing the inspection (no human blind-review claim)."
+    )
+    assert len(cases["cases"]) == 6, (
+        f"t17-discussion-cases-v1.json has {len(cases['cases'])} cases, "
+        "expected exactly 6 to match the free/topic × natural/directed/all "
+        "six combinations."
+    )
+    # The 6 case combinations are the probe's ground truth; each case
+    # must declare both its discussion_mode and its mode.
+    expected_mode_combos = {
+        ("free", "natural"),
+        ("free", "directed"),
+        ("free", "all"),
+        ("topic", "natural"),
+        ("topic", "directed"),
+        ("topic", "all"),
+    }
+    actual_mode_combos = {
+        (c["discussion_mode"], c["mode"]) for c in cases["cases"]
+    }
+    assert actual_mode_combos == expected_mode_combos, (
+        f"t17-discussion-cases-v1.json mode coverage drifted: "
+        f"got {actual_mode_combos!r}, expected {expected_mode_combos!r}."
+    )
+    # Each case must carry the same questions/expected structure so
+    # the matrix runner can iterate them uniformly.
+    required_case_fields = {"case_id", "discussion_mode", "mode", "questions", "expected"}
+    for c in cases["cases"]:
+        missing = required_case_fields - set(c.keys())
+        assert not missing, (
+            f"t17-discussion-cases-v1.json case {c.get('case_id')!r} "
+            f"is missing required fields {missing!r}."
+        )
+
+
+def test_t17_review_cognition_v1_pins_instruction_sha_and_aggregate_budget():
+    """The cognition-safeguard review instruction must stay byte-frozen.
+
+    ``real-model-t17-review-cognition-v1.json`` is the diagnostic
+    that recorded the cognition-change safeguard addition to the
+    t17 review prompt. It pins:
+
+      * ``instruction_sha256: e7295bfe…`` — the byte-level SHA of
+        the experimental review addition (cognition change +
+        past-conditional + new-situation choice). Any future
+        text edit to that addition must re-record the
+        diagnostic and re-run the probe.
+      * ``source_matrix: real-model-t17-matrix-v1.json`` — the
+        diagnostic is built on top of matrix v1's six cases, so
+        it is auditable against the v1 matrix baseline.
+      * ``actual_native_calls == native_call_ceiling`` (2==2) —
+        the probe consumed its full budget.
+      * ``aggregate_t17_ceiling == 32`` and
+        ``aggregate_native_calls == 27`` — the aggregate t17
+        budget roll-up (matrix v1's 25 native calls + 2 from
+        this probe = 27/32). Any change to the matrix native
+        call count must be reflected here.
+      * ``publication == False`` — the diagnostic is a
+        diagnostic, not a publication.
+
+    Locking the SHA + aggregate budget means the
+    "cognition-safeguard is the same instruction the diagnostic
+    ran" claim survives as a regression test.
+    """
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    cog = json.loads(
+        (base / "real-model-t17-review-cognition-v1.json").read_text(encoding="utf-8")
+    )
+    assert cog["instruction_sha256"] == (
+        "e7295bfec91e06d67186527a502c282ce593ddaffc50ff10571d7ccea36f1e1f"
+    ), (
+        f"real-model-t17-review-cognition-v1.json instruction_sha256 drifted "
+        f"to {cog['instruction_sha256']!r}; the cognition-safeguard review "
+        "addition's byte-level SHA must stay frozen."
+    )
+    assert cog["source_matrix"] == "real-model-t17-matrix-v1.json", (
+        f"real-model-t17-review-cognition-v1.json source_matrix drifted to "
+        f"{cog['source_matrix']!r}; the cognition diagnostic must be built "
+        "on top of matrix v1 to remain auditable against the v1 baseline."
+    )
+    assert cog["actual_native_calls"] == cog["native_call_ceiling"], (
+        f"real-model-t17-review-cognition-v1.json actual_native_calls "
+        f"({cog['actual_native_calls']}) != native_call_ceiling "
+        f"({cog['native_call_ceiling']}); the cognition probe no longer "
+        "consumed its full budget."
+    )
+    assert cog["aggregate_t17_ceiling"] == 32, (
+        f"real-model-t17-review-cognition-v1.json aggregate_t17_ceiling "
+        f"drifted to {cog['aggregate_t17_ceiling']}; the t17 aggregate "
+        "ceiling is part of the gold standard."
+    )
+    assert cog["aggregate_native_calls"] == 27, (
+        f"real-model-t17-review-cognition-v1.json aggregate_native_calls "
+        f"drifted to {cog['aggregate_native_calls']}; the t17 aggregate "
+        "roll-up must equal matrix v1 (25) + cognition probe (2) = 27."
+    )
+    assert cog["publication"] is False, (
+        "real-model-t17-review-cognition-v1.json publication flipped to "
+        "True; the cognition diagnostic is a probe, not a publication."
+    )
+
+
+def test_discovery_probes_pin_no_publication_and_actual_budget():
+    """Discovery probes must not publish into the database.
+
+    The v8 through v14 discovery repair probes are
+    per-version read-only probes. Each reports
+    ``database_publication == False`` (or, equivalently for
+    the v12+ diagnostics, ``publication == False``) and a
+    ``terminal == True`` flag marking the probe finished.
+    This is the canonical "discovery probes don't publish
+    into the canonical archive" contract: any future change
+    that flips publication to True would mean a probe has
+    silently mutated the canonical archive state, which the
+    documented contract explicitly forbids.
+    """
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    no_publication_diagnostics = (
+        "real-model-discovery-v8-repair.json",
+        "real-model-discovery-v9-repair.json",
+        "real-model-discovery-v10-repair.json",
+        "real-model-discovery-v12-choices.json",
+        "real-model-discovery-v13-literal.json",
+        "real-model-discovery-v13-numbered.json",
+        "real-model-discovery-v14-window-repair.json",
+        "real-model-discovery-v12-binding-repairs.json",
+    )
+    for fname in no_publication_diagnostics:
+        diagnostic = json.loads((base / fname).read_text(encoding="utf-8"))
+        # Each diagnostic has either database_publication (older
+        # shape) or publication (newer shape). Both must be False.
+        pub_field = "database_publication" if "database_publication" in diagnostic else "publication"
+        assert diagnostic[pub_field] is False, (
+            f"{fname} {pub_field} flipped to True; the discovery probe "
+            "must not publish into the canonical archive."
+        )
+        assert diagnostic["terminal"] is True, (
+            f"{fname} terminal flipped to False; the probe shape changed."
+        )
+
+    # real-model-discovery-v7-contract.json additionally reports
+    # validation_pass=True (the v7 contract holds on its frozen
+    # input) — that's a different signal from "no publication"
+    # and lives on a contract diagnostic.
+    v7 = json.loads(
+        (base / "real-model-discovery-v7-contract.json").read_text(encoding="utf-8")
+    )
+    assert v7["validation_pass"] is True, (
+        "real-model-discovery-v7-contract.json validation_pass flipped to "
+        "False; the v7 contract no longer holds on its recorded input."
+    )

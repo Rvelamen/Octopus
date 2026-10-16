@@ -115,3 +115,9 @@
 
 同日追加 `test_expression_revision_room_memory_probes_pin_readonly_invariants`：把 `real-model-expression-probe.json` / `real-model-revision-probe.json` / `real-model-room-memory-probe.json` 三份单功能探针的 `canonical_archive_unchanged` / `original_build_preserved` / `base_archive_snapshot_assertion_passed` / `global_model_settings_changed` / `canonical_baseline_unchanged` / 预算硬相等锁定为各自子系统的只读契约——与 t17 矩阵/v8-v12 探针基线共同覆盖"无探针偷偷写入权威库/基线/原档案"的硬约束；79 项 model contracts 全过。
 
+同日追加 `test_t17_discussion_cases_dataset_pins_six_combination_ground_truth`：把 `t17-discussion-cases-v1.json` 的 `dataset_version=t17-six-combinations-v1` / `native_call_ceiling=32` / `manual_continues_per_turn=1` / `reviewer_kind` 仍以 Agent 审查自称、6 个 case 完整覆盖 free/topic × natural/directed/all 6 组合 + 每个 case 必含 5 个必填字段锁定为 t17 六组合金标准数据集契约——本任务全部六组合诊断的 case 来源从此可独立审查；80 项 model contracts 全过。
+
+同日追加 `test_t17_review_cognition_v1_pins_instruction_sha_and_aggregate_budget`：把 `real-model-t17-review-cognition-v1.json` 的 `instruction_sha256=e7295bfe…` / `source_matrix=real-model-t17-matrix-v1.json` / `actual_native_calls==native_call_ceiling` / `aggregate_t17_ceiling=32` / `aggregate_native_calls=27` / `publication=False` 锁定为认知防护评审增补的字节级指纹与 t17 累计预算硬约束；81 项 model contracts 全过。
+
+同日追加 `test_discovery_probes_pin_no_publication_and_actual_budget`：把 8 份发现探针的 `database_publication=False` / `publication=False` / `terminal=True` 锁定为"发现探针不写库"的硬证据；并把 v7 契约诊断的 `validation_pass=True` 锁定为 v7 契约在冻结输入下成立；82 项 model contracts 全过。
+
