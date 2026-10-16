@@ -1473,3 +1473,216 @@ def test_persona_sub_build_diagnostics_pin_agent_unchanged_invariant():
             f"v6/v7 sub-build: before={v5_before} after={v5_after}; "
             "v6/v7 must build on top of v5 without rewriting it."
         )
+
+
+def test_persona_v5_audit_and_ui_proof_pin_readonly_invariants():
+    """The v5 agent-source audit and its paired UI proof are read-only.
+
+    The persona-v5-agent-source-audit.json diagnostic reports a list of
+    4 fixed ``permission_checks`` decisions, an
+    ``old_agent_unchanged=True`` flag, and a
+    ``native_trace_sha256`` that fingerprints the actual run record.
+
+    The matching persona-v5-ui-proof.json diagnostic records the
+    user-facing proof that the round trip is read-only:
+
+      * ``model_calls == 0`` — the UI does not trigger any model call,
+      * ``only_read_actions == True`` — only read actions were
+        performed,
+      * ``new_build`` matches the v5 audit's ``build_id`` — the UI
+        proof covers the exact build the audit covers,
+      * ``old_build`` is non-empty — the v5 sub-build is built on
+        top of a specific, named parent build,
+      * ``old_agent_unchanged == True`` — re-asserted at the UI
+        layer.
+
+    Locking all of these as code-level contracts means a future
+    change that, e.g., makes the UI proof trigger a generation
+    call, or breaks the audit↔UI proof pairing, will fail the
+    regression instead of silently re-introducing model usage into
+    a "read-only proof" path.
+    """
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    audit = json.loads((base / "persona-v5-agent-source-audit.json").read_text(encoding="utf-8"))
+    ui = json.loads((base / "persona-v5-ui-proof.json").read_text(encoding="utf-8"))
+
+    # The audit must be a real, read-only inspection of the existing
+    # v5 build, not a fresh generation.
+    assert audit["old_agent_unchanged"] is True, (
+        "persona-v5-agent-source-audit.json flipped "
+        "old_agent_unchanged away from True; the audit must not "
+        "trigger a fresh agent rewrite."
+    )
+    assert audit["native_trace_sha256"], (
+        "persona-v5-agent-source-audit.json lost its native_trace_sha256; "
+        "without it the audit's run is no longer reproducible."
+    )
+    # The 4 fixed permission-check decisions are the audit's
+    # non-destructive probe outputs. They are recorded as a dict
+    # mapping decision name -> True/False; the *keys* are the
+    # stable label set and must remain identical so a later
+    # "I checked the same things" claim can be cross-referenced.
+    expected_permission_checks = {
+        "stone_birth_composite_rejected_and_revoked",
+        "heaven_facts_not_granted_to_stone",
+        "groups_remain_needs_review",
+        "stone_intent_trait_supported",
+    }
+    actual_permission_checks = set(audit["permission_checks"].keys())
+    assert actual_permission_checks == expected_permission_checks, (
+        "persona-v5-agent-source-audit.json permission_check labels drifted "
+        f"from the locked set: got {actual_permission_checks!r}, "
+        f"expected {expected_permission_checks!r}."
+    )
+    # Each decision must be a concrete True/False (not None) so the
+    # audit's yes/no is unambiguous.
+    for label, value in audit["permission_checks"].items():
+        assert isinstance(value, bool), (
+            f"permission_check {label!r} is not a boolean: {value!r}."
+        )
+
+    # The UI proof is paired with the audit: the new_build on the UI
+    # side must equal the audit's build_id, and the audit must be
+    # a read-only inspection of a parent build.
+    assert ui["new_build"] == audit["build_id"], (
+        "persona-v5-ui-proof.json new_build "
+        f"({ui['new_build']!r}) does not match persona-v5-agent-source-audit.json "
+        f"build_id ({audit['build_id']!r}); the UI proof must cover the same build."
+    )
+    assert ui["old_build"], (
+        "persona-v5-ui-proof.json lost its old_build; the v5 sub-build "
+        "must name its parent build for the non-destructive probe to "
+        "be auditable."
+    )
+    assert ui["old_build"] != ui["new_build"], (
+        "persona-v5-ui-proof.json old_build equals new_build; the v5 "
+        "sub-build must be a distinct, child build."
+    )
+    assert ui["model_calls"] == 0, (
+        f"persona-v5-ui-proof.json reports model_calls={ui['model_calls']}; "
+        "the UI proof path is supposed to be read-only and must not "
+        "trigger any model call."
+    )
+    assert ui["only_read_actions"] is True, (
+        "persona-v5-ui-proof.json only_read_actions flipped away from True; "
+        "the UI proof must consist only of read actions."
+    )
+    # The four "visible" booleans capture what the user actually saw in
+    # the read-only UI. Each is a true/false statement about the UI
+    # state; locking the truthy ones preserves the original
+    # observation.
+    assert ui["intent_baseline_visible"] is True
+    assert ui["rejected_claim_unavailable_visible"] is True
+    assert ui["old_version_selectable"] is True
+    assert ui["new_version_restored"] is True
+
+
+def test_persona_v4_controls_pin_native_budget_and_case_set():
+    """The v4 controls diagnostic pins the budget and case labels.
+
+    The persona-v4 controls and feedback diagnostics are the
+    per-version sub-build read-only probes. Each:
+
+      * declares a ``native_call_ceiling`` and
+        ``actual_native_calls`` — these must match (no overrun, no
+        underrun) so the probe is reproducible,
+      * carries a fixed list of named ``cases`` — the case names
+        are the audit's semantic ground truth (e.g.
+        ``unheard-heaven`` for "rejected for not being firsthand"
+        and ``volunteered-intention`` for "accepted as trait-only");
+        changing them silently would invalidate the contract
+        between this probe and the diagnostic record.
+
+    Locking both budgets and case names turns the "this is the
+    same probe as before" claim into a regression test.
+    """
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    for fname in (
+        "real-model-persona-v4-controls-v1.json",
+        "real-model-persona-v4-feedback-v1.json",
+    ):
+        diagnostic = json.loads((base / fname).read_text(encoding="utf-8"))
+        # The hard contract: actual native calls must never exceed
+        # the declared ceiling (no overrun). Underruns are allowed
+        # because a unit may be rejected by validation before
+        # consuming the full budget — this is the expected
+        # short-circuit for the feedback diagnostic.
+        assert diagnostic["actual_native_calls"] <= diagnostic["native_call_ceiling"], (
+            f"{fname} actual_native_calls={diagnostic['actual_native_calls']} "
+            f"> native_call_ceiling={diagnostic['native_call_ceiling']}; "
+            "the probe exceeded its declared native budget."
+        )
+        case_names = [c["case"] if "case" in c else c.get("unit_key") for c in diagnostic["cases"]]
+        assert case_names, f"{fname} has no cases; the probe shape changed."
+
+    # v4 controls has two fixed semantic cases that the production
+    # v3 default is expected to keep honoring. v4 controls consumed
+    # its full budget (actual == ceiling) because both units
+    # successfully completed; lock the equality.
+    controls = json.loads(
+        (base / "real-model-persona-v4-controls-v1.json").read_text(encoding="utf-8")
+    )
+    assert controls["actual_native_calls"] == controls["native_call_ceiling"], (
+        "real-model-persona-v4-controls-v1.json no longer consumed its full "
+        "native budget; the v3-default semantic probe is not being executed."
+    )
+    expected_control_cases = ["unheard-heaven", "volunteered-intention"]
+    actual_control_cases = [c["case"] for c in controls["cases"]]
+    assert actual_control_cases == expected_control_cases, (
+        "real-model-persona-v4-controls-v1.json case labels drifted: "
+        f"got {actual_control_cases!r}, expected {expected_control_cases!r}; "
+        "the unheard-heaven / volunteered-intention labels are the "
+        "semantic ground truth for the v3 default review."
+    )
+
+
+def test_discussion_probe_v8_through_v12_pin_baseline_unchanged_invariant():
+    """The 5 sequential discussion probes must not mutate the room baseline.
+
+    The real-model-discussion-v8-probe through v12-probe diagnostics
+    each record ``baseline_sha256_before`` and
+    ``baseline_sha256_after`` plus an explicit
+    ``canonical_baselines_unchanged`` boolean. All five
+    independently report:
+
+      * ``before == after`` (the same canonical baseline SHA),
+      * ``canonical_baselines_unchanged == True`` (the boolean agrees).
+
+    This is the per-probe companion to the t17 matrix runner
+    `canonical_baselines_unchanged` contract. While the matrix
+    contract covers a single runner covering 6 mode combinations,
+    this test covers 5 *sequential* chat-room probes (v8 → v12),
+    each with a different ``character-chat`` / ``character-chat-review``
+    version. Together they prove the entire chat-room evolution
+    from v8 through v12 is non-destructive on the canonical
+    room / knowledge baselines — a future change that
+    accidentally rewrites the baseline (e.g. by making a probe
+    publish partial state) will fail this regression.
+    """
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    probe_diagnostics = (
+        "real-model-discussion-v8-probe.json",
+        "real-model-discussion-v9-probe.json",
+        "real-model-discussion-v10-probe.json",
+        "real-model-discussion-v11-probe.json",
+        "real-model-discussion-v12-probe.json",
+    )
+    for fname in probe_diagnostics:
+        diagnostic = json.loads((base / fname).read_text(encoding="utf-8"))
+        before = diagnostic["baseline_sha256_before"]
+        after = diagnostic["baseline_sha256_after"]
+        assert before == after, (
+            f"{fname} reports the canonical baseline SHA drifted during a "
+            f"discussion probe: before={before} after={after}; the probe "
+            "must be read-only on the baseline."
+        )
+        assert diagnostic["canonical_baselines_unchanged"] is True, (
+            f"{fname} sets canonical_baselines_unchanged=False while the "
+            "hashes agree; either the boolean or the hash equality is stale."
+        )

@@ -132,3 +132,9 @@
 
 同日追加 `test_persona_sub_build_diagnostics_pin_agent_unchanged_invariant`：把 `real-model-persona-intent-v4-01.json` / `intent-v5-01.json` / `evidence-v6-01.json` / `scope-v7-01.json` 四份档案子构建诊断的 `old_agent_sha256_before == old_agent_sha256_after` 与 `old_agent_unchanged=True` 锁定为"档案子构建只读、不改写父 Agent 哈希"的非破坏性探针契约；并把 `evidence-v6` / `scope-v7` 中的 `previous_v5_sha256_before == previous_v5_sha256_after` 锁定为"v6/v7 在 v5 之上做加法而不改写 v5 基线"的硬证据，与 t17 矩阵 `canonical_baselines_unchanged` 契约共同覆盖两端只读不变量；75 项 model contracts 全过。
 
+同日追加 `test_persona_v5_audit_and_ui_proof_pin_readonly_invariants`：把 `persona-v5-agent-source-audit.json` 的 4 个固定 `permission_checks` 决策标签（`stone_birth_composite_rejected_and_revoked` / `heaven_facts_not_granted_to_stone` / `groups_remain_needs_review` / `stone_intent_trait_supported`）与 `old_agent_unchanged=True` / `native_trace_sha256` 锁定为档案审查探针契约；并把 `persona-v5-ui-proof.json` 的 `model_calls=0` / `only_read_actions=True` / `new_build` 等于审计 `build_id` / `old_build != new_build` / 4 个 "visible" 布尔锁定为只读 UI 证明契约——审计↔UI 配对被绑死，任何把模型调用注入"只读证明"路径的回归都会失败；76 项 model contracts 全过。
+
+同日追加 `test_persona_v4_controls_pin_native_budget_and_case_set`：锁住 v4 controls/v4 feedback 两份诊断的 `actual_native_calls <= native_call_ceiling` 预算硬上限与 `cases` 列表非空；并把 v4 controls 的 `actual_native_calls == native_call_ceiling` 与固定 2 个语义 case 标签（`unheard-heaven` / `volunteered-intention`）锁定为 v3 默认审查的语义金标准（"未亲历的天庭评价应拒"+"主动意向应收"）；v4 feedback 的实际 < 预算（3<4）因验证短路被显式允许；77 项 model contracts 全过。
+
+同日追加 `test_discussion_probe_v8_through_v12_pin_baseline_unchanged_invariant`：把 `real-model-discussion-v8-probe.json` / `v9-probe.json` / `v10-probe.json` / `v11-probe.json` / `v12-probe.json` 五份顺序讨论探针的 `baseline_sha256_before == baseline_sha256_after` 与 `canonical_baselines_unchanged=True` 锁定为"聊天 v8→v12 全程非破坏性"的硬证据——是 t17 矩阵 `canonical_baselines_unchanged` 契约的逐版本探针伙伴；任何偷偷写入基线的探针改动会让该测试失败；78 项 model contracts 全过。
+
