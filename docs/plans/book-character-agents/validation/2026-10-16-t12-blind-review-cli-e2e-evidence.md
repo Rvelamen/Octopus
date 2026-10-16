@@ -88,10 +88,17 @@ $ python ... resume --out /tmp/test.json <<< "q"
 ```
 $ python ... regrade boundary-knowable-stone-discovery --out /tmp/test.json
 [8pilot] case_id=boundary-knowable-stone-discovery ...
+[help text + prompt]
+--- 重审 boundary-knowable-stone-discovery (已有判定) ---
+判定 (p/f/o/u/s/c/?/q，q 跳过): f + 'fail - actual fail'
+  → 重审 fail：fail - actual fail，已写入 ...test.json
 ```
 
 - 单 case 渲染完整信息（用户问 + 角色答 + 金标准 verdict + expected）
 - 命中 1 处（case_id 唯一）；同 case_id 在多窗口出现时按 2.6 提示
+- 接受单字符判定（p/f/o/u/s/c）+ 可选评论，自动覆盖既有同 (run_id, case_id) 判定
+- 'q' 跳过（不修改）
+- 写出新 JSON 后 stats 立即反映（commit 26a6791 之前 regrade 仅显示不写入；现已支持真实重审）
 
 ### 2.6 验证完成后清理
 
