@@ -1031,3 +1031,40 @@ def test_runner_validate_dataset_enforces_reviewer_kind_match() -> None:
         f"the runner's reviewer_kind argument; comparison missing in {RUNNER}"
     )
 
+
+def test_runner_expected_count_class_list_matches_v1_protocol() -> None:
+    """The runner's ``expected_count`` dict (passed to
+    ``validate_dataset``) must list the 4 v1 boundary classes and 4 v1
+    expression classes in exactly the order the protocol freezes. Any
+    rename (e.g. ``belief`` -> ``opinion``) without bumping
+    ``dataset_version`` would silently invalidate every frozen
+    v1 dataset on disk.
+    """
+    source = RUNNER.read_text(encoding="utf-8")
+    expected_pairs = {
+        ('"knowable"', '"unknowable"', '"belief"', '"emotion"'): (
+            "boundary_classes_covered"
+        ),
+        ('"answer"', '"challenge"', '"comfort"', '"cross_book_hearsay"'): (
+            "expression_classes_covered"
+        ),
+    }
+    for class_tuple, key in expected_pairs.items():
+        # All four class strings must appear together inside the same
+        # list literal under the expected_count[key] assignment.
+        marker_open = f'"{key}": ['
+        idx = source.find(marker_open)
+        assert idx != -1, (
+            f"runner must declare expected_count['{key}'] as a list; "
+            f"marker not found in {RUNNER}"
+        )
+        # Read until the closing `]` of the list.
+        end = source.find("]", idx)
+        assert end != -1, f"expected_count['{key}'] list is not closed"
+        list_body = source[idx + len(marker_open):end]
+        for needle in class_tuple:
+            assert needle in list_body, (
+                f"expected_count['{key}'] must contain {needle}; "
+                f"got {list_body!r} (v1 protocol frozen on these 4 classes)"
+            )
+
