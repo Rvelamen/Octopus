@@ -1032,6 +1032,35 @@ def test_discovery_inline_and_grouped_prompts_match_v2_v1_diagnostics():
         )
 
 
+def test_inline_discovery_v2_module_sha_matches_diagnostic_runtime():
+    """discovery_inline.py module bytes must match the inline v2 diagnostic.
+
+    The inline v2 diagnostic recorded the bytes of discovery_inline.py after
+    the most recent v15 inline run. If the file drifts, the diagnostic's
+    runtime_sha256 no longer describes what the code actually is — and a
+    future re-run with the new code will produce results that don't
+    reproduce the v2 numbers. Lock the file at its diagnostic SHA so any
+    change is caught here first, not by silent re-validation drift.
+    """
+    import hashlib
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    module_path = (
+        Path(__file__).resolve().parents[1]
+        / "backend/services/book_world/discovery_inline.py"
+    )
+
+    data = json.loads((base / "real-model-inline-discovery-v2.json").read_text(encoding="utf-8"))
+    expected = data["runtime_sha256"]["backend/services/book_world/discovery_inline.py"]
+    actual = hashlib.sha256(module_path.read_bytes()).hexdigest()
+    assert actual == expected, (
+        "discovery_inline.py drifted from the inline v2 diagnostic; "
+        "either revert the file or re-run the inline discovery and "
+        "update the diagnostic with the new SHA before extending this test."
+    )
+
+
 def test_chat_review_v9_sha_matches_conditional_and_negative_diagnostics():
     """character-chat-review-v9 must stay byte-frozen against t17 SHA diagnostics.
 

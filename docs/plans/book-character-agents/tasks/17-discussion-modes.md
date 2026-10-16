@@ -95,3 +95,5 @@
 
 同日追加 `test_persona_version_constants_pin_aliases_and_prompts`：锁住 persona 构建管线的 4 个版本常量（`STRUCTURED_PERSONA_VERSION`、`EVIDENCE_PERSONA_VERSION`、`SCOPED_PERSONA_VERSION`、`ACQUISITION_REVIEW_VERSION`）必须指向仍存在的 prompt 键；锁住 `persona-review-v7` 是 `persona-review-v6` 的同对象别名（v7=v6 共用 prompt 体），并锁住 persona-extract v3→v7 是逐版本累加而非别名。
 
+同日追加 `test_inline_discovery_v2_module_sha_matches_diagnostic_runtime`：锁住 `backend/services/book_world/discovery_inline.py` 的字节级 SHA256 与 `real-model-inline-discovery-v2.json` 中 `runtime_sha256` 记录一致，是 INLINE_PROMPT 字节冻结之外的"模块本身"补充；70 项 model contracts 全过。
+
