@@ -4,6 +4,8 @@
 
 最后更新：2026-10-16。配套：实施计划 [implementation-plan.md](../../implementation-plan.md)、T12 任务文件 [tasks/12-mvp-acceptance.md](../../tasks/12-mvp-acceptance.md)、发布开关 [release-and-rollback.md](../../release-and-rollback.md)、全部阶段验证记录在同目录 [validation/](./) 下。
 
+Q05 "T12 实施时提供实际文件及运行入口"已落实为 [t12-quality-cases-v1.json](./t12-quality-cases-v1.json) 8-pilot 案例集 + [t12-quality-runner.py](../../t12-quality-runner.py) 实际运行入口；当前仅以 `--dry-run` 模式验证数据集/角色/策略/字节指纹 4 项硬证据，未消耗模型预算。完整 60+24 题集尚未撰写。
+
 ## 1. 实施任务完成状态
 
 | 任务 | 任务文件 | 阶段验证 | 完整项目 pytest | Mypy / Ruff / 前端 | 状态 |
@@ -79,6 +81,8 @@ T08/T09/T11/T15/T16/T18 各自的实现细节见对应任务文件；其中 T09 
 | 人物忠实度、当前交流回应和自然程度分别盲评 | 未关闭 | T17 Agent 审读 [t17-matrix-v2-agent-review.json](./t17-matrix-v2-agent-review.json) `quality_pass=False`；人工盲评未启动 |
 | 否定自传、遗漏正文断言、他人对白、旧信念和跨书听说都有负例 | 未关闭 | T17 v9 review 与 v14 generate 历史动作防护文字已冻结（85 项 model contracts 第 70–80 项），负例覆盖 v6–v8 |
 | 条件推演、引述及有据否定经历有正例 | 未关闭 | T17 cognition 1 题条件选择发布；v12/v8 取得两题有限安全发布 |
+| 60 项边界 + 24 项表达完整题集 | 未关闭 | Q05 已落实 [t12-quality-cases-v1.json](./t12-quality-cases-v1.json) 8-pilot 案例集（4 边界 + 4 表达，覆盖 knowable/unknowable/belief/emotion + answer/challenge/comfort/cross_book_hearsay）+ [t12-quality-runner.py](../../t12-quality-runner.py) 运行入口；87 项 model contracts 已锁定 8-pilot 数据集形状与 runner 字节指纹；完整 60+24 题集尚未撰写 |
+| T12 84 题实际模型运行（先跑 8 项） | 未关闭 | 8-pilot 数据集与 runner 已就位，但模型调用预算未开放；`--dry-run` 是当前唯一允许模式并已验证；8 项小预算运行待 budget 重开后执行 |
 
 ## 5. 索引如何被引用
 

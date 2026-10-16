@@ -129,3 +129,5 @@
 
 同日新增 [T12 验收证据索引](../validation/2026-10-16-t12-acceptance-index.md)，把本任务累计 62 次原生调用 + 4 次 cognition 防护精修 + t17-matrix-v2-agent-review `t17_complete=False` / `t12_complete=False` / `quality_pass=False` 明确归入"未关闭清单"对应行；不替本任务或 T12 的真实模型质量做通过判定。
 
+同日追加 Q05 "T12 实施时提供实际文件及运行入口" 落实 [t12-quality-cases-v1.json](../validation/t12-quality-cases-v1.json) 8-pilot 案例集（4 边界 + 4 表达；本任务六组合之外，专门覆盖 Q05 答/质/安/分/未表/跨书听说六分类中的 4 分类 + knowable/unknowable/belief/emotion 四边界）+ [t12-quality-runner.py](../../t12-quality-runner.py) 实际运行入口（结构与 [discussion-acceptance.py](../../discussion-acceptance.py) 同源：MAX_NATIVE_CALLS=32 上限、SHA 锁、capture 包装、dry-run 模式）；87 项 model contracts 新增 `test_t12_pilot_eight_cases_dataset_pins_layered_gold_standard` 锁住 8-pilot 数据集 tier×class 覆盖与 gold_standard 4 必填字段、`test_t12_pilot_runner_dry_run_produces_frozen_non_destructive_shape` 锁住 runner 字节级 SHA + dry-run 形状。T12 8-pilot 与本任务六组合共同作为 "质量 + 组合" 两个互不重叠的金标准数据集；本任务 6 组合覆盖 free/topic × natural/directed/all，T12 8-pilot 覆盖单聊边界 + 4 类表达。两个数据集不可互相替代。
+

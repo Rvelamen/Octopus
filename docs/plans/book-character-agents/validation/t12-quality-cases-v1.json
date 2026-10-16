@@ -1,0 +1,276 @@
+{
+  "dataset_version": "t12-pilot-eight-v1",
+  "frozen_on": "2026-10-16",
+  "scope": "First 8 of the T12 60+24+84 question set. Cover the 4 boundary layers (knowable / unknowable / belief / emotion) and 4 of the 6 expression classes (answer / challenge / comfort / cross_book_hearsay). The remaining 76 cases (full 60 boundary + 20 expression) are not yet authored; this pilot is a small-budget, evidence-anchored first slice to validate the dataset / runner / schema. Not whole-book persona, not T17 six-combination matrix, not the full 24-pair A/B expression comparison.",
+  "actors_from": "real-model-group-chat-probe.json",
+  "actor_field": "character_scopes",
+  "native_call_ceiling": 32,
+  "manual_continues_per_turn": 1,
+  "reviewer_kind": "Agent checks complete published bodies and supplied sources; no claim of human blind review",
+  "tier_breakdown": {
+    "boundary_cases": 4,
+    "expression_cases": 4,
+    "boundary_classes_covered": ["knowable", "unknowable", "belief", "emotion"],
+    "expression_classes_covered": ["answer", "challenge", "comfort", "cross_book_hearsay"],
+    "expression_classes_remaining": ["disagree", "unknown_expression"]
+  },
+  "required_case_fields": [
+    "case_id",
+    "tier",
+    "class",
+    "target_actor_indices",
+    "questions",
+    "gold_standard",
+    "expected"
+  ],
+  "gold_standard_fields": [
+    "verdict",
+    "required_claims",
+    "forbidden_claims",
+    "expected_source"
+  ],
+  "verdict_legend": {
+    "knowable": "Character must answer using only canon-grounded claims within their own scope",
+    "unknowable": "Character must decline (not guess); partial source allows partial response",
+    "belief": "Character may hold the canon belief or report a change; must not assert others' beliefs as their own",
+    "emotion": "Character may express canon-grounded emotion tied to a scene; must not invent trauma or motivation",
+    "hearsay_cross_book": "Character must treat cross-book material as room-hearsay (with speaker); must not claim as own autobiography",
+    "conditional": "Character may offer a conditional choice grounded in canon traits; must not write the conditional as a past event"
+  },
+  "cases": [
+    {
+      "case_id": "boundary-knowable-stone-discovery",
+      "tier": "boundary",
+      "class": "knowable",
+      "target_actor_indices": [0],
+      "book_ids": ["efc80c04-df9b-48e2-ace5-833de34d63fe"],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你当年找到水帘洞的那个地方，里面最初是什么样子？请只说你亲眼见过或亲耳听到的部分。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "里头无水无波",
+          "铁板桥",
+          "桥后石洞"
+        ],
+        "forbidden_claims": [
+          "任何关于洞中今日状况的现时断言",
+          "把桥后细节延伸到水帘洞之外",
+          "对其他书角色的场景混入"
+        ],
+        "expected_source": "西游记第一回 石猴发现水帘洞 桥/桥后场景"
+      },
+      "expected": [
+        "Responds with iron bridge and stone cave as canonical self-experience",
+        "Does not invent additional cave details beyond cited claims",
+        "Attributes each claim to first-person experience with the supplied evidence"
+      ]
+    },
+    {
+      "case_id": "boundary-unknowable-daiyu-private-motive",
+      "tier": "boundary",
+      "class": "unknowable",
+      "target_actor_indices": [1],
+      "book_ids": ["2740f60c-3198-4350-b664-2ed688f9e2cb"],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你此刻心里最深的私念是什么？这是旁白没有直接说出的话，请按你已公开的依据回答。"
+      ],
+      "gold_standard": {
+        "verdict": "unknowable",
+        "required_claims": [
+          "未由旁白直接断言的私念"
+        ],
+        "forbidden_claims": [
+          "任何被断言为'最深私念'的具体内容",
+          "用旁白未知动机冒充已确认",
+          "用参数知识或后世红学定论"
+        ],
+        "expected_source": "无对应源；要求按 'I do not know' 模板保留未知"
+      },
+      "expected": [
+        "Declines to invent a private motive the narrative never asserts",
+        "May reference publicly observable behavior that is canon",
+        "Does not borrow third-party commentary as self-knowledge"
+      ]
+    },
+    {
+      "case_id": "boundary-belief-daiyu-self-image",
+      "tier": "boundary",
+      "class": "belief",
+      "target_actor_indices": [1],
+      "book_ids": ["2740f60c-3198-4350-b664-2ed688f9e2cb"],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "你认为自己的身体是虚弱多病的吗？请按你自己的话回答，不要照搬旁白。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "本人自述身体弱的任何原句"
+        ],
+        "forbidden_claims": [
+          "把旁白评价改述为本人自评",
+          "为贴合今人健康观而调整原话"
+        ],
+        "expected_source": "第三回 黛玉自述 / 与宝玉相关对话中的自我陈述"
+      },
+      "expected": [
+        "May state the canon self-description of being unwell without paraphrasing narrator",
+        "Does not infer a modern medical condition",
+        "Distinguishes 'I am told I am weak' from 'I believe I am well'"
+      ]
+    },
+    {
+      "case_id": "boundary-emotion-stone-losing-comrades",
+      "tier": "boundary",
+      "class": "emotion",
+      "target_actor_indices": [0],
+      "book_ids": ["efc80c04-df9b-48e2-ace5-833de34d63fe"],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "当同伴不再一起行动的时候，你一般会有什么感觉？只说你真正流露过的那种情绪。"
+      ],
+      "gold_standard": {
+        "verdict": "emotion",
+        "required_claims": [
+          "曾被旁白或本人语气记录过的具体情绪"
+        ],
+        "forbidden_claims": [
+          "现代心理学术语或泛化抑郁/焦虑",
+          "把孤独放大为从未表达过的悲伤",
+          "把同伴离开时未出现过的反应补造"
+        ],
+        "expected_source": "西游记第X回 群猴离石猴 / 石猴独自行动时旁白"
+      },
+      "expected": [
+        "Anchors emotion in a scene the source actually describes",
+        "Does not universalize the scene into a generic feeling",
+        "Holds the line between 'recorded emotion' and 'inferred mood'"
+      ]
+    },
+    {
+      "case_id": "expression-answer-stone-retrace-route",
+      "tier": "expression",
+      "class": "answer",
+      "target_actor_indices": [0],
+      "book_ids": ["efc80c04-df9b-48e2-ace5-833de34d63fe"],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "请用你自己的话向一个还没去过水帘洞的小猴讲清楚：从花果山山腰到洞口要经过什么。用一段连贯的话讲，不要逐条列举原文。"
+      ],
+      "gold_standard": {
+        "verdict": "knowable",
+        "required_claims": [
+          "藤桥/铁板桥",
+          "瀑布/水帘"
+        ],
+        "forbidden_claims": [
+          "逐字照抄原文一段",
+          "补出未在原文出现的地名或细节",
+          "用现代登山/绳索术语"
+        ],
+        "expected_source": "西游记第一回 寻路到水帘洞 段"
+      },
+      "expected": [
+        "Re-expresses the route in own voice using supplied evidence",
+        "Does not copy the source sentence verbatim",
+        "Stays within the same scene; does not project forward or backward"
+      ]
+    },
+    {
+      "case_id": "expression-challenge-daiyu-on-bao-yu-claim",
+      "tier": "expression",
+      "class": "challenge",
+      "target_actor_indices": [1],
+      "book_ids": ["2740f60c-3198-4350-b664-2ed688f9e2cb"],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我听人说，宝玉在你眼里就是天下第一等的人。请回应这个说法，可以反驳、可以澄清，也可以说不确定。不要直接重复我刚才听到的话。"
+      ],
+      "gold_standard": {
+        "verdict": "belief",
+        "required_claims": [
+          "可由黛玉自述或对白支持的、宝玉相关的本人立场"
+        ],
+        "forbidden_claims": [
+          "把'天下第一等'当作本人断言照单全收",
+          "用后世的宝黛定论",
+          "无据贬低或无据抬升"
+        ],
+        "expected_source": "第三回 / 第五回 黛玉与宝玉的公开对白与自述"
+      },
+      "expected": [
+        "Pushes back on the speaker's framing where canon does not confirm it",
+        "Distinguishes her own stated feeling from third-party labels",
+        "Keeps the correction grounded in a specific scene or self-quote"
+      ]
+    },
+    {
+      "case_id": "expression-comfort-stone-to-failed-peer",
+      "tier": "expression",
+      "class": "comfort",
+      "target_actor_indices": [0],
+      "book_ids": ["efc80c04-df9b-48e2-ace5-833de34d63fe"],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "假设一只小猴跟你说他什么都学不会，没有你那种胆量。你会怎么回应他？用你已知的你自己的经历来说，不要空泛安慰。"
+      ],
+      "gold_standard": {
+        "verdict": "conditional",
+        "required_claims": [
+          "石猴本人在原文中表达过的具体学习/挑战场景"
+        ],
+        "forbidden_claims": [
+          "无依据地把'你一定能行'作为教条",
+          "现代教育心理学话语",
+          "把自己后来的成功倒推为天生能力"
+        ],
+        "expected_source": "西游记第一回 石猴寻师学艺 / 自立过程的旁白"
+      },
+      "expected": [
+        "Offers comfort that cites the speaker's own prior experience, not abstract reassurance",
+        "Distinguishes 'I also struggled with X' from 'I was always brave'",
+        "Does not over-promise an outcome the source does not establish"
+      ]
+    },
+    {
+      "case_id": "expression-cross-book-hearsay-stone-hears-daiyu",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "target_actor_indices": [0],
+      "book_ids": ["efc80c04-df9b-48e2-ace5-833de34d63fe", "2740f60c-3198-4350-b664-2ed688f9e2cb"],
+      "discussion_mode": "free",
+      "mode": "natural",
+      "questions": [
+        "我刚才在房间里跟大家讲了一个故事：有个叫黛玉的姑娘体弱爱哭。你之前从没有听过她的事。请只把这个当作你刚才从别人那里听到的内容来回应，不要把它当作你自己的经历。"
+      ],
+      "gold_standard": {
+        "verdict": "hearsay_cross_book",
+        "required_claims": [
+          "把'黛玉体弱爱哭'标记为房间听说而非亲历"
+        ],
+        "forbidden_claims": [
+          "把黛玉的细节补全为石猴亲历",
+          "用西游记人物评价红楼梦人物",
+          "把'我听说'改述为'我见过'或'我认识'"
+        ],
+        "expected_source": "石猴自身西游记边界（不应跨入红楼梦 canon）"
+      },
+      "expected": [
+        "Attributes the reported detail to the user as room-hearsay",
+        "Does not elaborate on Daiyu's life beyond what the user said",
+        "Holds the cross-book boundary: no西游人物评价红楼人物"
+      ]
+    }
+  ]
+}

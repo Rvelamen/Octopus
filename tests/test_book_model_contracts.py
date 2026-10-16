@@ -2222,3 +2222,297 @@ def test_anchored_and_mentions_prototypes_share_input_pair():
             f"{fname} prompt_version {diagnostic['model_config']['prompt_version']!r} "
             "lost its -prototype-v1 suffix; the prototype marker must remain."
         )
+
+
+def test_t12_pilot_eight_cases_dataset_pins_layered_gold_standard():
+    """The T12 8-pilot gold standard must stay a frozen layered dataset.
+
+    ``t12-quality-cases-v1.json`` is the gold standard for the
+    T12 first-version quality evaluation pilot. Per
+    ``chat-quality-protocol.md`` Q05 the T12 question set is
+    60 boundary + 24 expression = 84; the 8-pilot is the small
+    first slice (4 boundary + 4 expression) meant to validate
+    the dataset / runner / schema before the full 84 is
+    authored. It carries:
+
+      * ``dataset_version`` — the version string for the
+        pilot (must remain the same identifier so later
+        diagnostics can cite the same set),
+      * ``native_call_ceiling`` — the per-pilot call budget
+        (8-pilot mirrors t17 six-combination probe at 32),
+      * ``manual_continues_per_turn`` — the manual continue
+        budget per turn (must not silently grow),
+      * ``reviewer_kind`` — must continue to label the
+        reviewer as the Agent doing the inspection (not a
+        human blind review claim),
+      * exactly **8 cases** with the expected
+        ``tier`` × ``class`` coverage:
+        - boundary + knowable,
+        - boundary + unknowable,
+        - boundary + belief,
+        - boundary + emotion,
+        - expression + answer,
+        - expression + challenge,
+        - expression + comfort,
+        - expression + cross_book_hearsay.
+        The 8 case set is the contract that gives the pilot
+        its name; any future change must re-record the
+        diagnostic AND bump the dataset version.
+
+    Locking the dataset shape is the only way to make
+    "t12-pilot-eight-v1" a regression-test statement
+    instead of a hand-waving claim. The runner
+    ``t12-quality-runner.py`` is the parallel of
+    ``discussion-acceptance.py`` for this pilot and is
+    exercised by ``--dry-run`` to prove the wiring is
+    reproducible without consuming any model budget.
+    """
+    import json
+    from pathlib import Path
+
+    base = Path(__file__).resolve().parents[1] / "docs/plans/book-character-agents/validation"
+    cases = json.loads(
+        (base / "t12-quality-cases-v1.json").read_text(encoding="utf-8")
+    )
+
+    assert cases["dataset_version"] == "t12-pilot-eight-v1", (
+        f"t12-quality-cases-v1.json dataset_version drifted to "
+        f"{cases['dataset_version']!r}; the T12 pilot cites the "
+        "dataset by this string, so renaming it silently breaks "
+        "the citation chain."
+    )
+    assert cases["native_call_ceiling"] == 32, (
+        f"t12-quality-cases-v1.json native_call_ceiling drifted to "
+        f"{cases['native_call_ceiling']}; the 8-pilot budget ceiling "
+        "is part of the gold standard (mirrors t17 six-combination)."
+    )
+    assert cases["manual_continues_per_turn"] == 1, (
+        f"t12-quality-cases-v1.json manual_continues_per_turn drifted "
+        f"to {cases['manual_continues_per_turn']}; the pilot's "
+        "manual-continue budget is part of the gold standard."
+    )
+    assert "Agent" in cases["reviewer_kind"] and "no claim of human blind" in cases["reviewer_kind"], (
+        f"t12-quality-cases-v1.json reviewer_kind drifted to "
+        f"{cases['reviewer_kind']!r}; the reviewer must remain the "
+        "Agent doing the inspection (no human blind-review claim)."
+    )
+    assert len(cases["cases"]) == 8, (
+        f"t12-quality-cases-v1.json has {len(cases['cases'])} cases, "
+        "expected exactly 8 to match the 4-boundary + 4-expression "
+        "8-pilot (per chat-quality-protocol.md Q05 '先跑其中八项')."
+    )
+    # The 8 case (tier, class) pairs are the pilot's ground truth;
+    # each case must declare both its tier and its class.
+    expected_tier_class = {
+        ("boundary", "knowable"),
+        ("boundary", "unknowable"),
+        ("boundary", "belief"),
+        ("boundary", "emotion"),
+        ("expression", "answer"),
+        ("expression", "challenge"),
+        ("expression", "comfort"),
+        ("expression", "cross_book_hearsay"),
+    }
+    actual_tier_class = {
+        (c["tier"], c["class"]) for c in cases["cases"]
+    }
+    assert actual_tier_class == expected_tier_class, (
+        f"t12-quality-cases-v1.json tier/class coverage drifted: "
+        f"got {actual_tier_class!r}, expected {expected_tier_class!r}. "
+        "The 4 boundary classes (knowable / unknowable / belief / emotion) "
+        "and 4 of 6 expression classes (answer / challenge / comfort / "
+        "cross_book_hearsay) are the 8-pilot's contract."
+    )
+    # Each case must carry the same required fields so the
+    # runner can iterate them uniformly.
+    required_case_fields = {
+        "case_id",
+        "tier",
+        "class",
+        "target_actor_indices",
+        "questions",
+        "gold_standard",
+        "expected",
+    }
+    for c in cases["cases"]:
+        missing = required_case_fields - set(c.keys())
+        assert not missing, (
+            f"t12-quality-cases-v1.json case {c.get('case_id')!r} "
+            f"is missing required fields {missing!r}."
+        )
+    # Each case's gold_standard must carry the four fields that
+    # the runner validates (verdict / required_claims / forbidden_claims /
+    # expected_source). These are the Q05 '金标准' fields.
+    required_gold_fields = {
+        "verdict",
+        "required_claims",
+        "forbidden_claims",
+        "expected_source",
+    }
+    for c in cases["cases"]:
+        gold = c.get("gold_standard", {})
+        missing_gold = required_gold_fields - set(gold.keys())
+        assert not missing_gold, (
+            f"t12-quality-cases-v1.json case {c['case_id']!r} "
+            f"gold_standard is missing fields {missing_gold!r}; "
+            "the Q05 gold standard requires all four."
+        )
+    # verdict must be one of the documented values from the
+    # dataset's verdict_legend; this keeps the runner's switch
+    # logic stable against silent renames.
+    valid_verdicts = set(cases["verdict_legend"].keys())
+    for c in cases["cases"]:
+        verdict = c["gold_standard"]["verdict"]
+        assert verdict in valid_verdicts, (
+            f"t12-quality-cases-v1.json case {c['case_id']!r} "
+            f"verdict {verdict!r} is not in verdict_legend "
+            f"{valid_verdicts!r}; verdict values must stay in sync "
+            "with the dataset's documented legend."
+        )
+    # The pilot's tier_breakdown must report the same 4+4 split
+    # as the actual cases; if the cases grow to cover the
+    # remaining 2 expression classes, this check will fail and
+    # force a dataset version bump to t12-pilot-ten-v1.
+    breakdown = cases.get("tier_breakdown", {})
+    assert breakdown.get("boundary_cases") == 4, (
+        f"t12-quality-cases-v1.json tier_breakdown.boundary_cases "
+        f"is {breakdown.get('boundary_cases')!r}, expected 4."
+    )
+    assert breakdown.get("expression_cases") == 4, (
+        f"t12-quality-cases-v1.json tier_breakdown.expression_cases "
+        f"is {breakdown.get('expression_cases')!r}, expected 4."
+    )
+    # The runner must exist; this protects the t12-pilot-eight-v1
+    # dataset from being orphaned by a deleted runner.
+    runner_path = (
+        Path(__file__).resolve().parents[1]
+        / "docs/plans/book-character-agents/t12-quality-runner.py"
+    )
+    assert runner_path.exists(), (
+        "t12-quality-runner.py missing at "
+        f"{runner_path}; the 8-pilot dataset is paired with this runner."
+    )
+
+
+def test_t12_pilot_runner_dry_run_produces_frozen_non_destructive_shape():
+    """The T12 8-pilot runner's dry-run output must stay byte-shaped.
+
+    The runner's ``--dry-run`` mode is the only invocation allowed
+    under "控制模型调用预算" — it must prove the wiring is
+    reproducible without consuming any model budget. The dry-run
+    output carries a fixed structural shape:
+
+      * ``mode == "dry_run"`` — explicit signal that no model
+        call was made,
+      * ``actual_native_calls == 0`` — the no-budget-consumed
+        promise,
+      * ``publication is False`` and ``terminal is True`` — the
+        same "non-destructive probe" contract as the t17
+        six-combination matrix probe,
+      * ``runner_sha256`` — byte-level fingerprint of the runner
+        file; any character change (including whitespace) must
+        bump this and the test below will fail,
+      * ``dataset_sha256`` and ``actors_source_sha256`` — the
+        frozen-input fingerprints cited above,
+      * exactly 8 cases, all with ``status == "not_started"``,
+      * every case must carry its gold_standard so a future
+        reviewer can see the Q05 contract without re-reading
+        the dataset file.
+
+    This is the dry-run companion to ``test_t12_pilot_eight_cases_
+    dataset_pins_layered_gold_standard``: that test pins the
+    dataset; this one pins the runner's wiring.
+    """
+    import hashlib
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[1]
+    runner_path = repo / "docs/plans/book-character-agents/t12-quality-runner.py"
+    output_path = repo / "tmp" / "t12-pilot-eight-v1-dryrun-fixture.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if output_path.exists():
+        output_path.unlink()
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(runner_path),
+            "--workspace",
+            str(repo / "tmp"),
+            "--output",
+            str(output_path),
+            "--dry-run",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=str(repo),
+    )
+    assert proc.returncode == 0, (
+        "t12-quality-runner.py --dry-run failed: "
+        f"stdout={proc.stdout!r} stderr={proc.stderr!r}"
+    )
+    report = json.loads(output_path.read_text(encoding="utf-8"))
+    assert report["mode"] == "dry_run", (
+        f"dry-run report mode drifted to {report['mode']!r}; "
+        "the dry-run mode label is the explicit 'no model call "
+        "was made' signal and must remain 'dry_run'."
+    )
+    assert report["actual_native_calls"] == 0, (
+        f"dry-run report actual_native_calls={report['actual_native_calls']} "
+        "!= 0; the dry-run path must not spend any model budget."
+    )
+    assert report["publication"] is False, (
+        "dry-run report publication must remain False; a dry-run "
+        "must never write to canonical baselines or Agents."
+    )
+    assert report["terminal"] is True, (
+        "dry-run report terminal must remain True; the dry-run "
+        "is a complete, non-resumable validation record."
+    )
+    assert report["quality_pass"] is False, (
+        "dry-run report quality_pass must remain False; a "
+        "validation-only run cannot claim quality pass."
+    )
+    assert report["native_call_ceiling"] == 32
+    assert len(report["cases"]) == 8, (
+        f"dry-run report has {len(report['cases'])} cases, expected 8."
+    )
+    for case in report["cases"]:
+        assert case["status"] == "not_started", (
+            f"dry-run case {case['case_id']!r} status is "
+            f"{case['status']!r}; every dry-run case must remain "
+            "'not_started' since no model budget is consumed."
+        )
+        # The dry-run report must carry the gold standard for
+        # each case so a reviewer can audit the Q05 contract
+        # without re-reading the dataset file.
+        assert "gold_standard" in case, (
+            f"dry-run case {case['case_id']!r} missing gold_standard; "
+            "the runner must echo the Q05 gold standard into the "
+            "report so the pilot's contract is auditable from the "
+            "report alone."
+        )
+        gold = case["gold_standard"]
+        for key in ("verdict", "required_claims", "forbidden_claims", "expected_source"):
+            assert key in gold, (
+                f"dry-run case {case['case_id']!r} gold_standard "
+                f"missing {key!r}; the Q05 gold standard must be "
+                "echoed intact."
+            )
+    # The runner file's byte-level SHA must be cited in the
+    # report itself; this is the same pattern as t17-matrix-v2
+    # diagnostic's runner_sha256. Any whitespace / prompt change
+    # in the runner bumps this and forces the test below to
+    # be re-recorded with the new SHA, exactly as the t17
+    # runner_sha256 test does for discussion-acceptance.py.
+    expected_runner_sha = hashlib.sha256(runner_path.read_bytes()).hexdigest()
+    assert report["runner_sha256"] == expected_runner_sha, (
+        f"dry-run report runner_sha256={report['runner_sha256']!r} "
+        f"does not match current runner file SHA={expected_runner_sha!r}; "
+        "either the runner was edited without re-recording the "
+        "diagnostic, or someone hand-edited the SHA in the report. "
+        "Re-run the dry-run to refresh the in-report fingerprint."
+    )
