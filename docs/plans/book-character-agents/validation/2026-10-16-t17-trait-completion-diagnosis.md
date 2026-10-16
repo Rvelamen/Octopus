@@ -59,6 +59,27 @@
   "当初瀑布泉也是我头一个跳进去探的路"——把"自愿报名"当成"已经完成"
   来回溯，造成 source_strength 过强的警告。
 
+### 建议修正措辞（供下次真实构建采用）
+
+在不改动 segment、evidence_id、route 的前提下，仅重写 proposition 让其与
+quote 对齐：
+
+| 版本 | proposition | 与 quote 对齐性 |
+| --- | --- | --- |
+| 当前（过强） | 石猴勇敢果断，敢于率先跳入瀑布泉中探险。 | 完成式断言"跳入+探险"，超出 quote |
+| 建议修正 | 石猴勇敢果断，在群猴无人敢应时率先应声表示愿意进入瀑布。 | 仅断言 quote 实证的"应声+表示愿意进入"，不含完成动作 |
+
+修正要点：
+1. 删去 `跳入瀑布泉中探险`——这是 segment `a0155270` 的实际事件，由另一条
+   episode claim 覆盖，不应在这条 trait 上重复断言。
+2. 把 `率先` 的宾语改为 `应声表示愿意进入`——quote 实证的言语行为，与
+   "我进去！我进去！" 严格对齐。
+3. 保留 `勇敢果断` trait 标签与 `firsthand` route，不影响 baseline 的
+   其他消费方。
+4. 该修正**不**通过本次提交落到 canonical baseline——baseline 不可变；
+   本表仅供下次真实 persona 构建（或将来扩展 `rephrase_claim` revision 操作
+   后）采用，并由本 lint 在生成时再次校验对齐。
+
 ### 影响范围评估
 
 - 该 claim 是当前 build 的 baseline trait,canonical_baselines_unchanged=True

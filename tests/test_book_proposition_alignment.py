@@ -73,6 +73,31 @@ def test_aligned_trait_with_completed_action_in_quote_passes() -> None:
     assert flag is None, "quote literally records 跳入; no over-reach"
 
 
+def test_suggested_correction_passes_lint() -> None:
+    """The proposed corrected proposition must not be flagged.
+
+    The diagnosis doc proposes this corrected wording for the next
+    persona build:
+
+        石猴勇敢果断,在群猴无人敢应时率先应声表示愿意进入瀑布。
+
+    It keeps the 率先 marker but re-anchors the object to the
+    volunteered speech act (应声表示愿意进入) which IS what the quote
+    records. The lint must accept this wording against the original
+    32-char quote — proving the suggested correction resolves the
+    over-reach it diagnosed.
+    """
+    corrected_proposition = "石猴勇敢果断,在群猴无人敢应时率先应声表示愿意进入瀑布。"
+    flag = trait_completion_overreach(
+        corrected_proposition,
+        MATRIX_V2_STONE_MONKEY_QUOTE,
+    )
+    assert flag is None, (
+        "the suggested correction must clear the lint; if it fires, "
+        "the proposed wording still over-reaches the quote"
+    )
+
+
 def test_trait_without_shuaxian_prefix_passes() -> None:
     """Propositions that do not assert primacy are out of scope.
 
