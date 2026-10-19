@@ -121,6 +121,24 @@ af508b2 docs(state): mark 60+24 real-model run as completed in state-of-play §4
 - 门 E 的评审员姓名出现在盲评 JSON 文件名后缀；评审员不必是项目成员，0 模型调用门槛下任何 1 名评审员在 30 分钟内可完成。
 - 两门落地后，按 [2026-10-16-t12-acceptance-index.md](./2026-10-16-t12-acceptance-index.md) §6 "只增不改" 原则，T12 验收索引 §4 row 1 / row 5 / row 9 与 [implementation-plan.md §当前交付状态](../../implementation-plan.md) 第 295 行附近的"首版验收"行才改为「✅」。
 
+## 3.2 2026-10-19 文档链路完整化（增量）
+
+本节按"只增不改"原则追加，不替换 §3.1 既有记录。记录 commit 链 592eccc / 313589e / b8eabce / 4978565 后 T12 文档链路的可达性闭合，便于评审员 / 操作员从任一入口进入都能找到其余 4 份文档：
+
+| 入口 | 下游可达 |
+| --- | --- |
+| [implementation-plan.md §当前交付状态](../../implementation-plan.md) 第 297–301 行 | 5-gates doc + E2E walkthrough + bridge probe + §3.1 + operator card |
+| [2026-10-19-t12-five-remaining-gates.md](./2026-10-19-t12-five-remaining-gates.md) | walkthrough + §3.1 + operator card + bridge probe（修正后） + 实施计划 + 验收索引 |
+| [2026-10-19-t12-e2e-walkthrough.md](./2026-10-19-t12-e2e-walkthrough.md) | 实施计划 + release-and-rollback + 5-gates §4 + §3.1 |
+| [2026-10-19-t12-evidence-correction.md](./2026-10-19-t12-evidence-correction.md) | 5-gates doc + walkthrough + operator card + §3.1（§首版仍未闭合 末尾追加 5 个门的分项执行版指针） |
+| [2026-10-16-t12-acceptance-index.md](./2026-10-16-t12-acceptance-index.md) | 5-gates doc + E2E walkthrough + bridge probe + §3.1 |
+| [2026-10-16-t12-blind-review-operator-card.md](./2026-10-16-t12-blind-review-operator-card.md) | 5-gates doc + §3.1（门 E 子项） |
+| §3.1（本节所在） | 5-gates doc + 实施计划 + 验收索引 + 协议 + 报告模板（既有） |
+
+commit 4978565 把上面 3 处 `validation/ → ../../scripts/...` 错误的相对路径修正为 `validation/ → ../scripts/...`；commit b8eabce / 313589e / 592eccc 各自的"只增"段已分别完成 entry 0/1/2 的链接添加。每个入口的下游链接经 python 脚本逐条解析相对路径后核对全部指向现存文件，2 个待生成的前向占位（[2026-10-19-t12-e2e-acceptance-report.md](./2026-10-19-t12-e2e-acceptance-report.md) / [2026-10-19-t12-e2e-acceptance-failure.md](./2026-10-19-t12-e2e-acceptance-failure.md)）将在门 D 操作员跑通 6 步后落地。
+
+本节不改变 §3 / §3.1 / §4 的既有结论；门 A / 门 B-1 / 门 C 仍需模型预算，门 D 仍需操作员在浏览器中跑通 6 步，门 E 仍需评审员 30 分钟。
+
 ## 4. 超出本次范围（不会在首版中实现）
 
 | 项 | 原因 | 评估 |
