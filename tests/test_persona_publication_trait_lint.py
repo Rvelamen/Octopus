@@ -31,7 +31,6 @@ from test_book_persona import (
 from backend.services.book_world.persona import BookPersonaService, PersonaConfig
 from backend.services.book_world.storage import connect
 
-
 # The exact trait proposition / evidence pair from the T17 matrix v2
 # baseline that motivates this wiring. Reused in the over-reach and
 # aligned tests below.
@@ -192,15 +191,13 @@ async def test_publication_summary_always_includes_trait_lint_warnings_key(book_
     assert "trait_lint_warnings" in report
     assert report["trait_lint_warnings"] == []
     # The existing five keys remain untouched (additive guarantee).
-    assert set(
-        [
+    assert {
             "failed_units",
             "rejected_claims",
             "unresolved_characters",
             "published_characters",
             "baseline_conflicts",
-        ]
-    ).issubset(report.keys())
+        }.issubset(report.keys())
 
 
 @pytest.mark.asyncio

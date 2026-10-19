@@ -829,10 +829,6 @@ async def test_cross_book_user_told_hearsay_does_not_become_character_autobiogra
         member for member in room["members"]
         if member["character_id"] == stone_scope.character_id
     )
-    daiyu_member = next(
-        member for member in room["members"]
-        if member["character_id"] == daiyu_scope.character_id
-    )
     user_message = (
         "我刚从另一本书里听到一个姑娘叫黛玉，旁白说她在大观园，体弱爱哭。"
         "你（石猴）不要把她的细节当作自己的亲历，只说你听到的。"
