@@ -73,6 +73,7 @@
 - **解锁后立即可做**：
   - 创建 `tmp/accept-e2e-workspace`，按 [release-and-rollback.md](../../release-and-rollback.md) 启动 4 个环境变量全开，跑通"上传 TXT → 自动导入 build → 单聊 + 全体" → 提交一份 E2E 报告
   - 该报告可作为首版"操作验收"关闭证据
+  - 最小落地形态：按 [2026-10-19-t12-e2e-walkthrough.md](./2026-10-19-t12-e2e-walkthrough.md) 的 6 步演练逐项打勾，提交 ≤ 1 页的 E2E 报告 [2026-10-19-t12-e2e-acceptance-report.md](./2026-10-19-t12-e2e-acceptance-report.md)。任何一步未达期望先记录实际值，不放开关或绕过授权。
 - **不需模型预算**：是。本门是确定性层 + 流程性验收。
 
 ## 5. 门 E — 160 case 人工盲评
