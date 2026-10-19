@@ -1,7 +1,7 @@
 # 门 D 操作验收 — 完整应用 E2E 演练
 
-> 门 D 是 5 个未关闭 T12 条件中**不需模型预算**、**不需人工评审**的两门之一。本文档是操作员侧的逐步演练，操作员在浏览器中按 6 步走完首版用户路径（[implementation-plan.md §目标用户路径](../../implementation-plan.md)），即可关闭门 D。
-> 关联文档：[2026-10-19-t12-five-remaining-gates.md §4](./2026-10-19-t12-five-remaining-gates.md)、[2026-10-16-state-of-play.md §3.1](./2026-10-16-state-of-play.md)、[release-and-rollback.md](../../release-and-rollback.md)。
+> 门 D 是 5 个未关闭 T12 条件中**不需模型预算**、**不需人工评审**的两门之一。本文档是操作员侧的逐步演练，操作员在浏览器中按 6 步走完首版用户路径（[implementation-plan.md §目标用户路径](../implementation-plan.md)），即可关闭门 D。
+> 关联文档：[2026-10-19-t12-five-remaining-gates.md §4](./2026-10-19-t12-five-remaining-gates.md)、[2026-10-16-state-of-play.md §3.1](./2026-10-16-state-of-play.md)、[release-and-rollback.md](../release-and-rollback.md)。
 
 ## 0. 前置确认
 
@@ -10,7 +10,7 @@
 | 后端测试全部通过 | `python -m pytest tests/ -q --no-header` | 652 passed / 13 skipped |
 | 前端类型 + 构建通过 | `npm run build --prefix frontend` | exit 0 |
 | `tmp/book-corpus/西游记.txt` 存在 | `ls tmp/book-corpus/西游记.txt` | OK |
-| 主开发文档已读 | [implementation-plan.md §首版验收与回滚](../../implementation-plan.md) 第 287 行附近 | 4 条硬约束已记 |
+| 主开发文档已读 | [implementation-plan.md §首版验收与回滚](../implementation-plan.md) 第 287 行附近 | 4 条硬约束已记 |
 
 环境变量（必须全开，否则降级为只读）：
 
@@ -42,7 +42,7 @@ mkdir tmp\accept-e2e-workspace
 | 5 | 圆桌 → 创建房间 → 加石猴 + 1 个其他人物 → 自由聊天 → @石猴 → 全体提问 | 3D 圆桌同步气泡 + 右栏同 seq 出现；@石猴定向；全体触发 | T08-T09、T16 |
 | 6 | 暂停 → 等超过秒数 → 手动继续 | 暂停时圆桌 + 右栏冻结；继续后从快照恢复 | T09 |
 
-每步期望与 [implementation-plan.md](../../implementation-plan.md) §目标用户路径一一对应；任何一步未达期望，先记录实际值（截图 + SQLite 行 + 网络响应），再回到状态交接或实施计划诊断；不要中途放开关或绕过授权。
+每步期望与 [implementation-plan.md](../implementation-plan.md) §目标用户路径一一对应；任何一步未达期望，先记录实际值（截图 + SQLite 行 + 网络响应），再回到状态交接或实施计划诊断；不要中途放开关或绕过授权。
 
 ## 3. 提交报告
 

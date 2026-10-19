@@ -42,7 +42,7 @@
   - 若选 (b)：临时构建的 `build_id` 与 `c2da28c8` baseline 隔离方案（避免与既有 baseline 混算）
 - **解锁后立即可做**：
   - 选 (a)：等待门 A 落定，自然产生。
-  - 选 (b)：临时 1 窗口，1 单元（铁板桥 8 段），固定 6 调用（`/test_long_query_retains_compound_anchor_and_identifier_within_term_budget` 已能保证 supply 层有 32 词化合物锚点），验证模型能在不修改原档案下报到铁板桥。最小落地形态：[`docs/plans/book-character-agents/scripts/run-bridge-probe.py`](../../scripts/run-bridge-probe.py) 单一 case 探针（`boundary-knowable-stone-cave-iron-bridge`），1 次 native call，文档化的预期输出（最佳/期望/失败 三档）已就绪。
+  - 选 (b)：临时 1 窗口，1 单元（铁板桥 8 段），固定 6 调用（`/test_long_query_retains_compound_anchor_and_identifier_within_term_budget` 已能保证 supply 层有 32 词化合物锚点），验证模型能在不修改原档案下报到铁板桥。最小落地形态：[`docs/plans/book-character-agents/scripts/run-bridge-probe.py`](../scripts/run-bridge-probe.py) 单一 case 探针（`boundary-knowable-stone-cave-iron-bridge`），1 次 native call，文档化的预期输出（最佳/期望/失败 三档）已就绪。
 - **不能自动继续的原因**：与门 A 同 — 真实模型预算。
 
 ## 3. 门 C — 有效表达 A/B 对照（160 轮全部 `expression_enabled=false`）
