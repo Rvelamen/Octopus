@@ -49,8 +49,20 @@
 - **真实 1 调用工作区路径（已落实，2026-10-19 commit 14c0b26）**：
   - 桥探针必须在 `tmp/book-corpus-workspace`（canonical baseline 工作区）下跑：runner 用 `workspace_identity(root)=sha256(os.path.normcase(str(root.resolve())))` 推导 workspace_id；该绝对路径的哈希恰为 `1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5`，与 8-pilot 真实跑 character_scopes 完全一致。`tmp/book-corpus-workspace/knowledge/.knowledge_index.db` 内 `book_builds` 表 c2da28c8 / 58609a52、`book_characters` 表 f3335a7e / 374ddcfe 状态 `persona_published` / `partial_published` / `ready` / `sparse` 全部就位。
   - 之前 commit d3d9ead 用 `tmp/bridge-probe-workspace` 跑真实调用时抛 `BookWorldError("Canonical scope belongs to another workspace or policy")` 是因为该空工作区产生的 workspace_id 与 canonical 不匹配。`run-bridge-probe.py` 现已默认指向 `tmp/book-corpus-workspace`，并在 `_validate()` 阶段用 `SELECT 1 FROM book_builds WHERE id IN (c2da28c8, 58609a52)` 自检，不达标即 exit 2。runner 只写 room 表不动 `book_claims` / `book_builds` / `book_character_baselines`，因此直接复用 canonical baseline 工作区不会污染既有 baseline。
-  - 真实调用命令（待用户预算授权）：`python docs/plans/book-character-agents/scripts/run-bridge-probe.py --output tmp/bridge-probe-output.json`。
-- **不能自动继续的原因**：与门 A 同 — 真实模型预算。
+  - 真实调用命令（已落实 1 次）：`python docs/plans/book-character-agents/scripts/run-bridge-probe.py --output tmp/bridge-probe-output.json`。
+- **真实 1 调用（runner 内部 5 调用）已落地（2026-10-19 commit 见后）**：
+  - 跑通 `boundary-knowable-stone-cave-iron-bridge` 单 case 探针，`actual_native_calls=5`（1 generate + 1 review + 1 失败重试 + 1 generate + 1 review = 4 完整 + 1 失败；runner `native_call_ceiling=32` 容纳），`quality_pass=false`，`terminal=true`，`run_status=executed_pending_semantic_review`。
+  - 模型回执："我是跳进瀑布之后才见到那座桥的——里面无水无波，正是一座铁板桥。至于从瀑布外面看它是什么样子、桥下水流往哪儿去，我现在说不上来，因为我不是从外面看到它的。" 单 character 消息引用 1 个 `claim_id=88d3203a-9c10-4aff-9817-37e581787d9c` / `evidence_id=1c597318-eeab-4bf4-8ac0-0617e8171834` / `origin=canon` / `build_id=c2da28c8` / `character_id=f3335a7e`。
+  - 与金标准 required_claims 对账：`铁板桥` ✓，`桥下之水冲贯于石窍` ✗，`倒挂流出去遮闭桥门` ✗。expected 3 条中"延伸桥外"严格未触发，"每条 claim 归属 source-passage view"满足，"outside-view 桥下水流"未满足。
+  - `canonical_baselines_before == canonical_baselines_after = 89f5f4462806df7acc96c147605528463531ff8c4039bb1c67c9e12c3c13d5c3`，book_builds / book_claims / book_characters 数量不变，runner 仅新增 `book_round` / `book_room` 1 行（room_id=`33824470-a76d-4bef-a277-a5612276c15e`）。
+  - 真实结果证据：[2026-10-19-bridge-probe-realrun.md](./2026-10-19-bridge-probe-realrun.md)，输出 JSON 在 `tmp/bridge-probe-output.json`。
+- **关键发现（来自 1 次真实跑，0 改动业务代码）**：
+  1. 588b2be supply 层修复有效：term anchor 保留字节级确定，runner `workspace_identity()` sha 一致，无 `BookWorldError`。
+  2. 供应 ↔ 引用存在 gap：5 调用 supply 层注入 4 个 claim_id `{6742efce, 88d3203a, aed74df7, cffa02d5}` 与 6 个 evidence_id；模型最终只在 1 条 character 消息中引用 `88d3203a`（inside-view 命题）。金标准 19aa8cfc（outside-view 命题"桥下之水从石窍间倒挂流出遮闭桥门"）未在 supply 4 个 claim_id 中。
+  3. 退拒形态合规：模型选择"我没看到外面，所以不说"是约束 1 的合规落地，符合"硬约束 1 + 5"的最低要求。
+  4. 题面 ↔ baseline 设计 gap：expected 第 1 条要求"underside water flow"金标准子串，但当前 c2da28c8 5 单元联调 baseline 中对应 outside-view claim 在 supply top-N 缺位。门 A 全书构建未完成时这是天然限制。
+- **修复建议**（仅记录，不自动跑）：a) supply 在该 case 强制把 19aa8cfc 注入 top-N；b) expected 改写去掉 underside water flow 子串；c) 门 A 真实跑时把铁板桥所在段（line 33/39/231/241/245/379/387/2023）作为单独 1 单元加入下一窗口。
+- **门 B-1 状态**：未关闭但有真实结果。1 次真实跑已落定"supply 层 + 模型"闭环的实际形态，5 个金标准子串中只满足 1 个（铁板桥本身）。该结果指向"门 A 全书构建补完后 outside-view claim 自然落入 supply top-N"，而非 supply 层或模型代码 bug。
 
 ## 3. 门 C — 有效表达 A/B 对照（160 轮全部 `expression_enabled=false`）
 
