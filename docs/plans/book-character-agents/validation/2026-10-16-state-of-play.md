@@ -31,20 +31,20 @@
 最近 10 个 commit（`git log --oneline -10`）：
 
 ```
-(本批次) docs(t12): add 盲评 CLI e2e validation evidence + state-of-play link
-c103a62 test(t12): make v1ext runner-accept test idempotent (pre-clean dryrun output)
-25ca27a docs(t12): register 人工盲评 CLI (commit e0f4b3f) in state-of-play §1/§3 + acceptance index §2/§4
-e0f4b3f feat(t12-blind-review): add 人工盲评 CLI + protocol + 160-case worksheet
-c1c6dd0 docs(t12+t17): mark T17 v2 A/B reeval complete in §1 T17 row + §4 row 86 + state-of-play
-267e3c4 docs(t17): record T17 v2 A/B reeval B-path real run (20/28 calls, 0 published, baseline unchanged)
-8b1eff7 docs(state): mark 60+24 real runs complete; mark T17 v2 A/B in progress (B path launched)
-ea2738e docs(t12): record v2 60+24 completion (§4 row + evidence doc) + add 8th runner-structure invariant to §2
-52bd02f docs(t12): record v2 ext-a window 3 real-model run (8/8 executed_pending_semantic_review, baselines unchanged)
-4389f91 docs(t12): record v2 ext-a window 2 real-model run
+e96f800 docs(t12): log 2026-10-19 compound-anchor supply-layer fix in implementation plan + reconcile validation doc
+588b2be fix(knowledge): pin CJK compounds ahead of trigrams in 32-slot query budget
+3e1570d fix(t12): derive publication and reviewer identities from run records
+88e3df4 docs(t12): fix operator card §4 row count 12→11 (T15 closure) + add report template to ready list
+3ebd637 docs(t12): add 盲评完成报告模板 + 操作卡/状态交接/实施计划同步
+af508b2 docs(state): mark 60+24 real-model run as completed in state-of-play §4 (was stale '未跑')
+391aaa8 docs(t12): add blind review operator card + fix worksheet link path
+85c594a feat(t12+t17): extract published body content for A/B + cognition slots
+54f621b feat(t12+t17): extend aggregation to include T17 A/B + cognition pilot
+91616ea feat(t12): aggregate 8-pilot + v2 real-runs into one consumable evidence table
 ```
 
 分支：`feature/pdf-annotation-chat-and-clip-fix`（已推送远端，与 `main` 同步无冲突）
-完整项目 pytest：**625 通过 / 13 跳过**（13 跳过为既有 Playwright 缺失；624 → 625 = 新增 1 项 T12 runner `mode=natural→directed` coerce 契约测试）
+完整项目 pytest：**651 通过 / 13 跳过**（13 跳过为既有 Playwright 缺失；625 → 651 = T05 检索侧供给层回归修复新增 2 项 + 既有多批次补 24 项；最近 1 个失败=0）
 
 ## 2. 当前确定性已锁定的"隐形护栏"
 
@@ -90,6 +90,9 @@ ea2738e docs(t12): record v2 60+24 completion (§4 row + evidence doc) + add 8th
 13. **T12 runner 脚本结构不变量确定性聚合** 已索引（commit 7960170 / 63fd1e3 / 70443bf）
    - 文件：T12 验收证据索引 §2 新增"T12 runner 脚本结构不变量（确定性层）"行
    - 在 [tests/test_t12_question_set.py](../../../tests/test_t12_question_set.py) 末尾追加 7 项契约测试：`test_runner_max_native_calls_constant_is_32` / `_call_budget_default_matches_ceiling` / `_refuses_to_overwrite_existing_output` / `_run_status_terminal_enum_covers_all_paths` / `_validate_dataset_enforces_manual_continues_per_turn_equals_one` / `_validate_dataset_enforces_reviewer_kind_match` / `_expected_count_class_list_matches_v1_protocol`；前 31 项切片器/wiring/v2/v1/dryrun 既有测试保持不变，合计 38 项契约测试；`MAX_NATIVE_CALLS=32` / `--call-budget` 默认 32 / 拒绝覆盖现有 output / 4 个 `run_status` 终态枚举齐 / `manual_continues_per_turn` 强校验 1 / `reviewer_kind` 显式非盲评 / `expected_count` 4+4 class 列表与 v1 协议对齐 7 类不变量 100% 在确定性层独立关闭；不依赖任何 frozen dryrun 报告存在与否，dryrun 报告丢失/重新生成后仍生效
+14. **2026-10-19 检索侧供给层修复**（commit 588b2be）
+   - 文件：[2026-10-19-compound-anchor-bugfix.md](./2026-10-19-compound-anchor-bugfix.md) + 实施计划 §当前交付状态同步
+   - 在 [tests/test_book_knowledge.py](../../../tests/test_book_knowledge.py) 末尾追加 2 项契约测试：`test_long_query_retains_compound_anchor_and_identifier_within_term_budget` / `test_long_question_recalls_owned_episode_without_granting_it_to_another_person`；锁住 32 槽预算下 2 字/2-3 字 CJK 化合物（`瀑布`/`桥`/`key9`）排在 3 字 trigram 之前的次序。解决第一题可知桥梁的检索供给层失败（之前 8-pilot 真实跑 6 行 `reader_evidence` 命中但 episode 行 `approved_excerpt=''` 触发模型退拒），仅排序逻辑改动、索引与允许集未动、模型调用 0；剩余 2 层待办（按 [证据纠正 §首版仍未闭合的实际条件](./2026-10-19-t12-evidence-correction.md)）：(1) 原著档案命题完整度——铁板桥段落命题当前不含"桥下之水冲贯于石窍" / "倒挂流出去遮闭桥门"，而全文在 `tmp/book-corpus/西游记.txt:33`；(2) 模型对 `approved_excerpt=''` episode 的安全回退策略——若不打开"可凭 episode 命题作答"开关或补 quote 仍会退拒。两层均需真实模型预算授权。
 
 ## 3. 待解锁：模型预算授权
 
