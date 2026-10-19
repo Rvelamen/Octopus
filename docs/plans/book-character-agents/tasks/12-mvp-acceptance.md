@@ -1,6 +1,6 @@
 # T12 完成首版回归评测与开关发布
 
-状态：进行中；开关/保留数据回滚子交付已实现，完整书籍、真实模型与完整操作验收未通过（2026-10-14）。阶段：M4。
+状态：进行中；开关/保留数据回滚子交付已实现，5 个未关闭条件（门 A 全书 / 门 B-1 铁板桥 / 门 C 表达 A/B / 门 D 完整应用 E2E / 门 E 160 case 人工盲评）按 2026-10-19 五门分项执行版分类执行；门 D 与门 E 不需模型预算，门 A / 门 B-1 / 门 C 需真实模型预算授权。阶段：M4。
 
 ## 用户可见交付
 
@@ -157,4 +157,6 @@
 同日新增 [T12 验收证据索引](../validation/2026-10-16-t12-acceptance-index.md)，把 T01–T11/T15/T16/T18 已落实的存储/服务/协议/界面证据按 T12 验收标准逐条映射到阶段验证、测试文件和运行脚本；只把"结构权限/幂等/隔离/开关/读写矩阵/可关闭/可回滚"等确定性子项列为已勾选，60 项边界 / 24 项表达 / 84 题金标准 / 全书 / 完整应用 / 人工盲评归入"未关闭清单"并指向现有真实模型记录。本索引不替模型质量背书；4 节起列明每条未关闭项的当前证据位置与状态。85 项 model contracts 仍为完整项目前置硬证据。
 
 同日新增 Q05 "T12 实施时提供实际文件及运行入口" 落实 [t12-quality-cases-v1.json](../validation/t12-quality-cases-v1.json) 8-pilot 案例集（4 边界 + 4 表达，覆盖 knowable / unknowable / belief / emotion + answer / challenge / comfort / cross_book_hearsay，引用 Q05 verdict_legend 六分类与 4 必填金标准字段）+ [t12-quality-runner.py](../../t12-quality-runner.py) 实际运行入口（与 [discussion-acceptance.py](../../discussion-acceptance.py) 同 MAX_NATIVE_CALLS=32 上限、同 SHA 锁、同样支持 `--dry-run`/`--case-id`）；87 项 model contracts 新增 `test_t12_pilot_eight_cases_dataset_pins_layered_gold_standard` 锁定 8-pilot 数据集 tier×class 覆盖与 gold_standard 4 字段必填；新增 `test_t12_pilot_runner_dry_run_produces_frozen_non_destructive_shape` 锁定 runner 字节级 SHA 与 dry-run 输出形状（mode=dry_run / actual_native_calls=0 / publication=False / terminal=True / quality_pass=False / 每 case 必带回完整 gold_standard）。当前仅以 `--dry-run` 模式验证数据集/角色/策略/字节指纹四项硬证据，未消耗任何模型预算；完整 60+24 题集尚未撰写，8 项小预算真实运行待 budget 重开后由 `python t12-quality-runner.py --workspace <path> --output <path>` 触发。
+
+2026-10-19 五门分项执行版：把 [2026-10-19 证据纠正](../validation/2026-10-19-t12-evidence-correction.md) §首版仍未闭合 4 条扩为 5 个可执行门（门 A 全书 / 门 B-1 铁板桥档案命题 / 门 C 表达 A/B / 门 D 完整应用 E2E / 门 E 160 case 人工盲评），详见 [2026-10-19-t12-five-remaining-gates.md](../validation/2026-10-19-t12-five-remaining-gates.md)。配套：操作员 E2E 演练 6 步走 [2026-10-19-t12-e2e-walkthrough.md](../validation/2026-10-19-t12-e2e-walkthrough.md)（0 模型调用）；588b2be 长问题修复后单 case 探针 [run-bridge-probe.py](../scripts/run-bridge-probe.py)（1 native call）；盲评操作员卡 [2026-10-16-t12-blind-review-operator-card.md](../validation/2026-10-16-t12-blind-review-operator-card.md)；状态交接 [2026-10-16-state-of-play.md §3.1](../validation/2026-10-16-state-of-play.md) 列出操作员 / 评审员即可推进的两门（门 D / 门 E）。文档链路闭合：6 份 T12 文档（5-gates / walkthrough / evidence-correction / acceptance-index / operator card / state-of-play §3.1）互相可达，§3.2 记录 commit 链 592eccc / 313589e / b8eabce / 4978565 / a30c7f4 / 49751b5 的 entry 0/1/2 链接全部解析到现存文件。完整项目 652 通过 / 13 既有环境跳过（11:28 跑完，commit 49751b5 后聚合时间戳刷新至 2026-10-19T06:25:55Z）。门 A / 门 B-1 / 门 C 仍待真实模型预算授权；门 D / 门 E 不需预算。任务本身尚未关闭。
 

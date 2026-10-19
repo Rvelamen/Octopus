@@ -127,8 +127,8 @@ af508b2 docs(state): mark 60+24 real-model run as completed in state-of-play §4
 
 | 入口 | 下游可达 |
 | --- | --- |
-| [implementation-plan.md §当前交付状态](../../implementation-plan.md) 第 297–301 行 | 5-gates doc + E2E walkthrough + bridge probe + §3.1 + operator card |
-| [2026-10-19-t12-five-remaining-gates.md](./2026-10-19-t12-five-remaining-gates.md) | walkthrough + §3.1 + operator card + bridge probe（修正后） + 实施计划 + 验收索引 |
+| [implementation-plan.md §当前交付状态](../../implementation-plan.md) 第 297–301 行 | 5-gates doc + E2E walkthrough + bridge probe + §3.1 + operator card + bridge-probe dry-run 证据（[2026-10-19-bridge-probe-dryrun.md](./2026-10-19-bridge-probe-dryrun.md)） |
+| [2026-10-19-t12-five-remaining-gates.md](./2026-10-19-t12-five-remaining-gates.md) | walkthrough + §3.1 + operator card + bridge probe（修正后） + 实施计划 + 验收索引 + bridge-probe dry-run 证据（§2 末尾新增的"0 调用 supply 层 dry-run 验证"段） |
 | [2026-10-19-t12-e2e-walkthrough.md](./2026-10-19-t12-e2e-walkthrough.md) | 实施计划 + release-and-rollback + 5-gates §4 + §3.1 |
 | [2026-10-19-t12-evidence-correction.md](./2026-10-19-t12-evidence-correction.md) | 5-gates doc + walkthrough + operator card + §3.1（§首版仍未闭合 末尾追加 5 个门的分项执行版指针） |
 | [2026-10-16-t12-acceptance-index.md](./2026-10-16-t12-acceptance-index.md) | 5-gates doc + E2E walkthrough + bridge probe + §3.1 |

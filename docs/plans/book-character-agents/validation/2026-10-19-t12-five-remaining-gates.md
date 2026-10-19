@@ -43,6 +43,9 @@
 - **解锁后立即可做**：
   - 选 (a)：等待门 A 落定，自然产生。
   - 选 (b)：临时 1 窗口，1 单元（铁板桥 8 段），固定 6 调用（`/test_long_query_retains_compound_anchor_and_identifier_within_term_budget` 已能保证 supply 层有 32 词化合物锚点），验证模型能在不修改原档案下报到铁板桥。最小落地形态：[`docs/plans/book-character-agents/scripts/run-bridge-probe.py`](../scripts/run-bridge-probe.py) 单一 case 探针（`boundary-knowable-stone-cave-iron-bridge`），1 次 native call，文档化的预期输出（最佳/期望/失败 三档）已就绪。
+- **0 调用 supply 层 dry-run 验证（已落实，2026-10-19）**：
+  - 通过 [t12-quality-runner.py](../t12-quality-runner.py) `--dry-run` 模式跑 `boundary-knowable-stone-cave-iron-bridge` 单 case，输出见 [2026-10-19-bridge-probe-dryrun.json](./2026-10-19-bridge-probe-dryrun.json)（详细说明 [2026-10-19-bridge-probe-dryrun.md](./2026-10-19-bridge-probe-dryrun.md)）。`actual_native_calls=0` / `publication=False` / `terminal=True` / `quality_pass=False`，但 `dataset_sha256=2c9329a0…c4606f` / `actors_source_sha256=4361f5ae…a9e4c71` / `runner_sha256=c7d25f90…49848b` 三项字节 SHA 锁住，588b2be supply 层修复未被回退。该 dry-run 把"supply 层 32 词化合物锚点是否还在"从"推断"升级为"字节级确认"。
+  - dry-run 不解决门 B-1 的"persona archive 无铁板桥 episode 命题"问题；该问题在 `gold_standard.required_claims=['铁板桥','桥下之水冲贯于石窍','倒挂流出去遮闭桥门']` 下需要至少 1 native call 的真实模型调入生成 / 审查，1 调用是"打开门 B-1 验证窗口"而不是"关闭门 B-1"。
 - **不能自动继续的原因**：与门 A 同 — 真实模型预算。
 
 ## 3. 门 C — 有效表达 A/B 对照（160 轮全部 `expression_enabled=false`）
