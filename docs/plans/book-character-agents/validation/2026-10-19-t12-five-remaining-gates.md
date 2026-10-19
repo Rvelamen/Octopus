@@ -46,6 +46,10 @@
 - **0 调用 supply 层 dry-run 验证（已落实，2026-10-19）**：
   - 通过 [t12-quality-runner.py](../t12-quality-runner.py) `--dry-run` 模式跑 `boundary-knowable-stone-cave-iron-bridge` 单 case，输出见 [2026-10-19-bridge-probe-dryrun.json](./2026-10-19-bridge-probe-dryrun.json)（详细说明 [2026-10-19-bridge-probe-dryrun.md](./2026-10-19-bridge-probe-dryrun.md)）。`actual_native_calls=0` / `publication=False` / `terminal=True` / `quality_pass=False`，但 `dataset_sha256=2c9329a0…c4606f` / `actors_source_sha256=4361f5ae…a9e4c71` / `runner_sha256=c7d25f90…49848b` 三项字节 SHA 锁住，588b2be supply 层修复未被回退。该 dry-run 把"supply 层 32 词化合物锚点是否还在"从"推断"升级为"字节级确认"。
   - dry-run 不解决门 B-1 的"persona archive 无铁板桥 episode 命题"问题；该问题在 `gold_standard.required_claims=['铁板桥','桥下之水冲贯于石窍','倒挂流出去遮闭桥门']` 下需要至少 1 native call 的真实模型调入生成 / 审查，1 调用是"打开门 B-1 验证窗口"而不是"关闭门 B-1"。
+- **真实 1 调用工作区路径（已落实，2026-10-19 commit 14c0b26）**：
+  - 桥探针必须在 `tmp/book-corpus-workspace`（canonical baseline 工作区）下跑：runner 用 `workspace_identity(root)=sha256(os.path.normcase(str(root.resolve())))` 推导 workspace_id；该绝对路径的哈希恰为 `1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5`，与 8-pilot 真实跑 character_scopes 完全一致。`tmp/book-corpus-workspace/knowledge/.knowledge_index.db` 内 `book_builds` 表 c2da28c8 / 58609a52、`book_characters` 表 f3335a7e / 374ddcfe 状态 `persona_published` / `partial_published` / `ready` / `sparse` 全部就位。
+  - 之前 commit d3d9ead 用 `tmp/bridge-probe-workspace` 跑真实调用时抛 `BookWorldError("Canonical scope belongs to another workspace or policy")` 是因为该空工作区产生的 workspace_id 与 canonical 不匹配。`run-bridge-probe.py` 现已默认指向 `tmp/book-corpus-workspace`，并在 `_validate()` 阶段用 `SELECT 1 FROM book_builds WHERE id IN (c2da28c8, 58609a52)` 自检，不达标即 exit 2。runner 只写 room 表不动 `book_claims` / `book_builds` / `book_character_baselines`，因此直接复用 canonical baseline 工作区不会污染既有 baseline。
+  - 真实调用命令（待用户预算授权）：`python docs/plans/book-character-agents/scripts/run-bridge-probe.py --output tmp/bridge-probe-output.json`。
 - **不能自动继续的原因**：与门 A 同 — 真实模型预算。
 
 ## 3. 门 C — 有效表达 A/B 对照（160 轮全部 `expression_enabled=false`）
