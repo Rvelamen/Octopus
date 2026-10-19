@@ -994,12 +994,14 @@ class BookDiscoveryService:
         except asyncio.CancelledError:
             # A stopped process leaves its lease to expire; accepted checkpoints remain reusable.
             raise
-        except Exception:
+        except Exception as exc:
+            # Surface the real exception (truncated) so operators can see why
+            # the provider call failed instead of a generic placeholder.
             await asyncio.to_thread(
                 self._fail_build,
                 build_id,
                 owner,
                 generation,
                 "provider_failed",
-                "Model service failed; retry after checking configuration",
+                f"Model service failed: {type(exc).__name__}: {str(exc)[:480]}",
             )
