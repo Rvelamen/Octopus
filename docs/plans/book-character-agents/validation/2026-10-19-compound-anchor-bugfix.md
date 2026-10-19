@@ -11,15 +11,14 @@
 
 ## 修复
 
-- 仅排序逻辑改动。`backend/services/book_world/search_terms.py::query_terms` 在 generic 过滤后再按 `bool(re.fullmatch(r"[㐀-鿿]{3}", term))` 排序，把 2 字/2-3 字化合物放 trigram 前。索引与允许集未动。这是只影响 query selection 的纯函数。
-- 类型推断更严：`backend/services/book_world/persona_acquisition.py::validate_acquisition_review` / `apply_acquisition_veto` 改回 `cast(...)` 显式收紧返回类型，让 type checker 在外层不再宽松传播。
+- 仅排序逻辑改动。`backend/services/book_world/search_terms.py::query_terms` 在 generic 过滤后再按 `bool(re.fullmatch(r"[㐀-鿿]{3}", term))` 排序，把 2 字/2-3 字化合物放 trigram 前。索引与允许集未动。这是只影响 query selection 的纯函数。`persona_acquisition.py` 未做类型收紧（初稿尝试加 `cast(...)` 被 mypy 标 `redundant-cast`，在 amend 中已撤回）。
 
 ## 验证
 
 - `tests/test_book_knowledge.py` 末尾追加 2 项：
   - `test_long_query_retains_compound_anchor_and_identifier_within_term_budget` 验证长问题 + 记录号 `KEY9` 经 `query_terms` 后 `瀑布` 与 `key9` 都在前 32 槽；
   - `test_long_question_recalls_owned_episode_without_granting_it_to_another_person` 验证带 `铁板桥` episode 的 retrieve 在长问题下仍命中本人，不授权他人。
-- 18 项 `test_book_knowledge.py` 通过。`backend/services/book_world/{search_terms,persona_acquisition}.py` Ruff 通过。
+- 18 项 `test_book_knowledge.py` 通过。`backend/services/book_world/search_terms.py` Ruff 通过；`persona_acquisition.py` 未改动。
 
 ## 不动内容
 
