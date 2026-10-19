@@ -27,8 +27,12 @@ Usage
    budget, run::
 
        python docs/plans/book-character-agents/scripts/run-bridge-probe.py \\
-           --workspace tmp/bridge-probe-workspace \\
            --output    tmp/bridge-probe-output.json
+
+   The default workspace is ``tmp/book-corpus-workspace`` (the canonical
+   baseline workspace). Override with ``--workspace`` only if you have rebuilt
+   the baseline elsewhere; a fresh empty workspace will fail the scope check
+   before any model call is made.
 
 3. Inspect the output JSON: look at the single case's
    ``reader_evidence`` / ``approved_excerpt`` / ``published_body``.
@@ -78,6 +82,18 @@ REPO = Path(__file__).resolve().parents[4]
 # un-windowed ``t12-quality-cases-v1.json`` which is a different slicing).
 DEFAULT_DATASET = REPO / "docs/plans/book-character-agents/validation/t12-quality-cases-v1-window-0.json"
 DEFAULT_CORPUS_DIR = REPO / "tmp/book-corpus"
+# The canonical baseline (build_ids c2da28c8 / 58609a52, workspace_id
+# 1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5) lives in
+# tmp/book-corpus-workspace — the runner's ``membership.rooms.knowledge.baseline()``
+# and ``membership.create(actors, ...)`` both validate the scope against the
+# workspace's own workspace_id, which is path-derived. A fresh ``tmp/bridge-probe-workspace``
+# would produce a different workspace_id and fail with ``Canonical scope belongs to
+# another workspace or policy`` (see 2026-10-19-t12-five-remaining-gates.md §2).
+# The runner only writes to room tables (membership / rounds), not to
+# book_claims / book_builds / book_character_baselines, so using the
+# canonical baseline workspace directly is safe and is the only way to
+# satisfy the workspace_id check.
+DEFAULT_CANONICAL_WORKSPACE = REPO / "tmp/book-corpus-workspace"
 BRIDGE_CASE_ID = "boundary-knowable-stone-cave-iron-bridge"
 
 
@@ -105,10 +121,47 @@ def _validate(workspace: Path, dataset: Path) -> None:
             file=sys.stderr,
         )
         sys.exit(2)
-    workspace.mkdir(parents=True, exist_ok=True)
+    # The runner's scope validation is path-derived (workspace_id = sha256 of
+    # absolute path). The bridge probe must use the canonical baseline
+    # workspace; a fresh empty workspace will fail with ``Canonical scope
+    # belongs to another workspace or policy`` before any model call is made.
+    if not workspace.exists():
+        print(
+            f"ERROR: workspace path does not exist: {workspace}. "
+            f"Use the canonical baseline workspace: {DEFAULT_CANONICAL_WORKSPACE}",
+            file=sys.stderr,
+        )
+        sys.exit(2)
     if not workspace.is_dir():
         print(f"ERROR: workspace path is not a directory: {workspace}", file=sys.stderr)
         sys.exit(2)
+    # Verify the workspace owns the canonical baseline by checking
+    # the book_builds table for the c2da28c8 / 58609a52 builds.
+    import sqlite3
+    db_path = workspace / "knowledge" / ".knowledge_index.db"
+    if not db_path.exists():
+        print(
+            f"ERROR: workspace has no knowledge index: {db_path}. "
+            "This workspace does not own the canonical baseline.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+    with sqlite3.connect(db_path) as db:
+        row = db.execute(
+            "SELECT 1 FROM book_builds WHERE id IN (?, ?) LIMIT 1",
+            (
+                "c2da28c8-cab3-4bc2-9342-b1a60831c99a",
+                "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e",
+            ),
+        ).fetchone()
+        if row is None:
+            print(
+                f"ERROR: workspace {workspace} does not own the c2da28c8 / 58609a52 "
+                "canonical baseline. Use the canonical baseline workspace: "
+                f"{DEFAULT_CANONICAL_WORKSPACE}",
+                file=sys.stderr,
+            )
+            sys.exit(2)
 
 
 async def _run(args: argparse.Namespace) -> int:
@@ -152,8 +205,13 @@ def main() -> None:
     parser.add_argument(
         "--workspace",
         type=Path,
-        required=True,
-        help="Isolated workspace root for the probe (must not be a real book-library workspace).",
+        default=DEFAULT_CANONICAL_WORKSPACE,
+        help=(
+            "Workspace root for the probe. MUST be the canonical baseline workspace "
+            f"({DEFAULT_CANONICAL_WORKSPACE}) because the runner validates the actor's "
+            "workspace_id against the path-derived workspace identity. A fresh empty "
+            "workspace will fail with 'Canonical scope belongs to another workspace or policy'."
+        ),
     )
     parser.add_argument(
         "--dataset",

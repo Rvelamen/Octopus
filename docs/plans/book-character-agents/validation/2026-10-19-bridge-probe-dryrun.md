@@ -58,13 +58,28 @@
 
 ```bash
 python docs/plans/book-character-agents/scripts/run-bridge-probe.py \
-    --workspace tmp/bridge-probe-workspace \
     --output    tmp/bridge-probe-output.json
 ```
 
 - 期望：1 native call 1.0 通道；`approved_excerpt` 非空且属于铁板桥原文段（`西游记.txt:33` 起始）；`published_body` 含 `铁板桥` / `桥下之水冲贯于石窍` / `倒挂流出去遮闭桥门` 或忠实转写。
 - 真实档案侧期望：persona archive 把桥段命题记为石猴 `known` 类（`book_claims.claim_text` 含原文 quote），不自动给黛玉 / 其他人。
 - 1 native call 的 32 词预算下：bridge-episode 命中后留给生成端的余量约 16 词；[2026-10-19-t12-five-remaining-gates.md §2](./2026-10-19-t12-five-remaining-gates.md) 已说明供给/档案/生成 3 层不可能在 1 调用内闭环，因此 1 调用是"打开门 B-1 验证窗口"而不是"关闭门 B-1"。
+
+### 3.1 工作区路径（2026-10-19 落实）
+
+runner 的 `workspace_id` 由 `os.path.normcase(str(root.resolve()))` 哈希得到。canonical baseline `c2da28c8` / `58609a52` 与 `workspace_id 1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5` 唯一对应绝对路径 `F:/god/project/Octopus/tmp/book-corpus-workspace`：
+
+```python
+import hashlib, os
+hashlib.sha256(os.path.normcase("F:/god/project/Octopus/tmp/book-corpus-workspace").encode("utf-8")).hexdigest()
+# → '1506c968f472c610605d2bae2a27d498411fe5193e9c76ecf076eec38a36d0a5'
+```
+
+`tmp/book-corpus-workspace/knowledge/.knowledge_index.db` 直接持有 `book_builds` 表里 c2da28c8 / 58609a52 两行；`book_characters` 表里 `f3335a7e`（石猴）/ `374ddcfe`（黛玉）状态分别是 `ready` / `sparse`，与 8-pilot 真实跑 JSON 第 8 行起 character_scopes 完全一致。
+
+`run-bridge-probe.py` 默认即指向此路径；运行前 `_validate()` 会通过 SQLite 查询校验 `book_builds.id IN (c2da28c8, 58609a52)` 至少存在一行，否则拒绝运行（exit 2）。`tmp/bridge-probe-workspace` 等空目录因 `scope.workspace_id != self.workspace_id` 会在 `membership.rooms.knowledge.baseline()` 抛 `BookWorldError("Canonical scope belongs to another workspace or policy")`，无模型调用预算损失。
+
+runner 写入路径只触及 `book_round_*` / `book_room_*` 等房间表，不动 `book_claims` / `book_builds` / `book_character_baselines`，因此直接在 canonical 工作区跑不会污染 8-pilot 真实跑 baseline。
 
 ## 4. 与 5 个未关闭门的关系
 
