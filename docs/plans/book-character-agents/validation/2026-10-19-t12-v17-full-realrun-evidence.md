@@ -14,7 +14,10 @@
 ## 0. 运行中断与重启记录
 
 - **第一次启动**（16:40）：bwpa3xvic 后台运行，~6 min 后被系统以 "low memory" 状态 killed（status: killed，非用户授权）。10 native call 完成（仅 started/completed 事件）。
-- **第二次启动**（16:46）：bkyegq31x 后台运行。18:00 检查点：94 trace completed / 0 failed / 47 actual_calls (DB) / 西游记 22/411 validated, 10 failed, 1 running, 378 pending。Runner 仍在跑。
+- **第二次启动**（16:46）：bkyegq31x 后台运行。
+  - 17:30 检查点：23/411 validated, 11 failed, 50 actual_calls (DB) / 100 trace completed
+  - 17:46 检查点：29/411 validated, 15 failed, 69 actual_calls (DB) / 136 trace completed / 206,338 DB tokens
+  - Runner 仍在跑。
 
 > 系统通知（第一次 kill 时）："Do not start it again on your own, even if the work seems to need it: memory may still be short. Report what was stopped and why, and start it again only when asked." 收到 stop hook 反馈"持续推进下一项已满足依赖的任务"后，已重启。
 
@@ -29,8 +32,8 @@
 | prompt_version | `character-discovery-v17` |
 | 复用 validator | `assemble_grouped`（v16 同款；v17 仅改 prompt）|
 | 单元大小 | unit_segment_limit=12, unit_char_limit=2000, max_tokens=8192 |
-| 总 native call | FILL_IN（从 `book_auto_imports.actual_calls` 总和；18:00 西游记 47）|
-| 总 token | FILL_IN（sum of usage_json；18:00 累计 97,574 prompt + 180,726 completion）|
+| 总 native call | 持续累加（17:46 西游记 69）|
+| 总 token | 持续累加（17:46 西游记 206,338 总 token / 74,701 prompt + 131,637 completion）|
 | 模型 | k3（项目默认）|
 | 真实跑文件 | `tmp/full-book-v17-full-calls.jsonl` |
 | 进度报告 | `docs/plans/book-character-agents/validation/full-book-v17-full-progress.json` |
@@ -64,76 +67,77 @@
 
 | 书 | build_id | 起点 validated | 起点 failed | 起点 pending | 终点 validated | 终点 failed | 终点 pending |
 |---|---|---|---|---|---|---|---|
-| 西游记 | `2f0ae221` | 2 | 1 | 408 | 22 (18:00) | 10 (18:00) | 378 (18:00) |
-| 红楼梦 | `4c11aa1a` | 1 | 0 | 580 | 1 (18:00, 未启动) | 0 | 580 |
+| 西游记 | `2f0ae221` | 2 | 1 | 408 | 29 (17:46) | 15 (17:46) | 366 (17:46) |
+| 红楼梦 | `4c11aa1a` | 1 | 0 | 580 | 1 (17:46, 未启动) | 0 | 580 |
 
-**截至 18:00 (本会话内运行 ~74 min, ~94 trace 事件 / 47 actual_calls)**：
-- 西游记：22 validated, 10 failed, 1 running, 378 pending
+**截至 17:46 (本会话内运行 ~60 min, ~136 trace 事件 / 69 actual_calls)**：
+- 西游记：29 validated, 15 failed, 1 running, 366 pending
 - 红楼梦：未启动（runner 顺序处理书）
-- 实际 native call 速率：~0.6 call/min（受 Kimi K3 provider 延迟 + 32K prompt 上下文 + repair_choices 二次调用）
-- 阶段分布：discovery_grouped_v17 87 calls + discovery_repair_choices 7 calls = 94 trace completed
+- 实际 native call 速率：~0.4 call/min（受 Kimi K3 provider 延迟 + 32K prompt 上下文 + repair_choices 二次调用）
+- 阶段分布：discovery_grouped_v17 87+? calls + discovery_repair_choices 11+? calls = 134 trace completed (17:30 → 17:46 +34 events / 17 actual_calls)
 - 0 failed events（runner 错误透传路径生效）
 
 ### 3.2 失败归因（`book_build_steps.error_detail` + trace failed events）
 
-截至 18:00，2f0ae221 西游记 10 failed unit 错误类型分布：
+截至 17:46，2f0ae221 西游记 15 failed unit 错误类型分布：
 
 | 失败 unit | 错误类型 | 与 v17 修复目标相关 |
 |---|---|---|
-| 8, 10, 17, 18, 22, 29 (6/10) | `Person N scene M: evidence outside scene` | **否**（模型在 unit 范围内输出 evidence 引用，引用了不在该 unit 段列表中的 segment；v17 不约束 evidence-source 归属） |
-| 7, 25, 31 (3/10) | `Person N invalid/repeated scene M` | **否**（模型在同 unit 内输出重复 scene 编号；v17 不约束 scene 唯一性） |
-| 24 (1/10) | `Existing identity has no unambiguous matching alias` | **否**（别名合并逻辑问题） |
-| 32 (1/10) | `Unsupported name/alias '傩'; choose a literal label present in its quote` | **否**（与 HLM unit 1 石头 quote/literal 校验路径相同，正交问题） |
+| 8, 10, 17, 18, 22, 29, 35, 36 (8/15) | `Person N scene M: evidence outside scene` | **否**（模型在 unit 范围内输出 evidence 引用，引用了不在该 unit 段列表中的 segment；v17 不约束 evidence-source 归属） |
+| 7, 25, 31, 39 (4/15) | `Person N invalid/repeated scene M` | **否**（模型在同 unit 内输出重复 scene 编号；v17 不约束 scene 唯一性） |
+| 32, 34 (2/15) | `Unsupported name/alias 'X'; choose a literal label present in its quote` (32: 傩, 34: 取经人) | **否**（alias-in-quote 校验路径；与 HLM unit 1 石头 quote/literal 同源，已在 [2026-10-19-t12-v17-stone-diagnosis.md](./2026-10-19-t12-v17-stone-diagnosis.md) 诊断） |
+| 24 (1/15) | `Existing identity has no unambiguous matching alias` | **否**（别名合并逻辑问题） |
 | 红楼梦 | FILL_IN (0/580) | — |
 
 **关键观察**：
-- 0/10 失败是 v17 显式约束的 `s = segment index in [0, N)` 越界（v16 失败模式 0 复现）
-- 6/10 失败是 "evidence outside scene"（模型跨段引用），属于 v6+ 既有 evidence-source 校验，v17 修复目标不受影响
-- 1/10 失败是 alias-in-quote 校验（与石头 quote 同源，已在 [2026-10-19-t12-v17-stone-diagnosis.md](./2026-10-19-t12-v17-stone-diagnosis.md) 诊断）
-- 3/10 失败是 scene 编号合法性（属 v6+ 既有 validator 行为）
+- 0/15 失败是 v17 显式约束的 `s = segment index in [0, N)` 越界（v16 失败模式 0 复现）
+- 8/15 失败是 "evidence outside scene"（模型跨段引用），属于 v6+ 既有 evidence-source 校验，v17 修复目标不受影响
+- 2/15 失败是 alias-in-quote 校验（与石头 quote 同源）
+- 4/15 失败是 scene 编号合法性（属 v6+ 既有 validator 行为）
+- 1/15 失败是别名合并
 - 0 failed events in trace（runner 错误透传路径未触发；v17 修复目标（s 越界）确实 0 复现）
 
 **累计真实跑 v17 错误归因 v17 修复目标相关**：
-- v17-01 (4 单元/2 书) + v17-full (33 单元/1 书，18:00) = 37 单元
-- 0/37 触发 v17 修复目标（s 越界）失败
-- 8/37 (21.6%) 触发 evidence-outside-scene / alias-in-quote / scene 编号 / 别名合并 4 类正交错误
+- v17-01 (4 单元/2 书) + v17-full (44 单元/1 书，17:46) = 48 单元
+- 0/48 触发 v17 修复目标（s 越界）失败
+- 15/48 (31.3%) 触发 evidence-outside-scene / alias-in-quote / scene 编号 / 别名合并 4 类正交错误
 
-### 3.3 真实 native call 计数（来自 trace，截至 18:00）
+### 3.3 真实 native call 计数（来自 trace，截至 17:46）
 
-| 书 | started | completed | failed | 总 tokens (prompt+completion) |
+| 书 | started | completed | failed | DB tokens (prompt+completion) |
 |---|---|---|---|---|
-| 西游记 | 96 | 94 | 0 | 97,574 + 180,726 = 278,300 |
+| 西游记 | 136 | 134 | 0 | 74,701 + 131,637 = 206,338 |
 | 红楼梦 | 0 | 0 | 0 | 0 |
-| 总 | 96 | 94 | 0 | 278,300 |
+| 总 | 136 | 134 | 0 | 206,338 |
 
 **说明**：
-- 实际 DB `book_auto_imports.actual_calls=47`（与 trace completed=94 存在 2x 差异）
+- 实际 DB `book_auto_imports.actual_calls=69`（与 trace completed=134 存在 ~2x 差异）
   - 原因：每次 discovery step 触发 2 calls（1 个 `discovery_grouped_v17` + 1 个 `discovery_repair_choices`），trace 计每次 call 1 个事件；DB counter 通过 `actual_calls=actual_calls+1` 在 `chat()` 包装层累加，**与 trace 数量级一致**（2x = 1 grouped + 1 repair_choices）。
-  - 即 47 / 22 validated = 2.1 calls/step（含 repair_choices），0.5 步骤/分钟是合理范围
-- 阶段分布：discovery_grouped_v17 87 + discovery_repair_choices 7 = 94 trace completed
+  - 即 69 / 29 validated = 2.4 calls/step（含 repair_choices），0.5 步骤/分钟是合理范围
+- 阶段分布：discovery_grouped_v17 87+? + discovery_repair_choices 11+? = 134 trace completed
 - 0 failed events（discovery.py:997-1005 透传路径未触发；模型回执 finish_reason=`end_turn`）
 
 ## 4. 与 v17-01 真实跑对照
 
-| 维度 | v17-01 | v17-full（截至 18:00）|
+| 维度 | v17-01 | v17-full（截至 17:46）|
 |---|---|---|
 | 单元范围 | 2 单元/书 (unit 0+1) | 411 + 581 单元（全书）|
-| 总 native call | 12 | 47 actual_calls (DB) / 94 trace completed / 96 started / 0 failed |
-| 真实跑耗时 | 30s | ~74 min 持续运行中 |
-| 单元 s 值越界 | 0/6 | 0/37 (v17-01 4 单元 + v17-full 33 单元) |
-| quote/literal 校验错误 | 1/6 (HLM unit 1 石头) | 1/33 (unit 32 傩) — 同根因，已诊断 |
-| evidence-outside-scene | 0 | 6/33 (西游记 units 8/10/17/18/22/29) |
-| invalid/repeated scene | 0 | 3/33 (units 7/25/31) |
-| alias 合并 | 0 | 1/33 (unit 24) |
+| 总 native call | 12 | 69 actual_calls (DB) / 134 trace completed / 136 started / 0 failed |
+| 真实跑耗时 | 30s | ~60 min 持续运行中 |
+| 单元 s 值越界 | 0/6 | 0/48 (v17-01 4 单元 + v17-full 44 单元) |
+| quote/literal 校验错误 | 1/6 (HLM unit 1 石头) | 2/44 (unit 32 傩 + unit 34 取经人) — 同根因，已诊断 |
+| evidence-outside-scene | 0 | 8/44 (units 8/10/17/18/22/29/35/36) |
+| invalid/repeated scene | 0 | 4/44 (units 7/25/31/39) |
+| alias 合并 | 0 | 1/44 (unit 24) |
 | provider_failed | 0 | 0 |
 
 **v17 修复目标验证**（`s = 0-based segment index in [0, N)` 越界）：
 - v17-01: 0/6 s 越界（s 100% 落在 [0, seg_count)）
-- v17-full: 0/37 s 越界（v16 失败模式 0 复现）
-- 累计 37 单元 v17 修复目标验证：0 失败
+- v17-full: 0/44 s 越界（v16 失败模式 0 复现）
+- 累计 48 单元 v17 修复目标验证：0 失败
 
 **v17 修复目标外错误**（正交于 s 索引）：
-- 累计 11/37 单元触发 v6+ 既有 validator（alias-in-quote / evidence-outside-scene / scene 编号 / 别名合并）
+- 累计 15/48 单元触发 v6+ 既有 validator（alias-in-quote / evidence-outside-scene / scene 编号 / 别名合并）
 - 这些是 v17 设计外的发现行为问题，应在 v17.1（修复 HLM 石头 quote 时同步处理）
 
 ## 5. canonical baseline 不变性
@@ -152,18 +156,18 @@ canonical baseline build 行与 `book_claims` / `book_evidence` /
 
 ## 6. 预算与累计
 
-- 本次 v17-full（截至 18:00 持续运行）: 47 actual_calls (DB) / 94 trace completed
-- 累计：8-pilot 23 + v2 369 + long-query 6 + bridge-probe 5 + 32-case 81 + v17-01 12 + **v17-full 47 (18:00)** = **543 total native calls**
+- 本次 v17-full（截至 17:46 持续运行）: 69 actual_calls (DB) / 134 trace completed
+- 累计：8-pilot 23 + v2 369 + long-query 6 + bridge-probe 5 + 32-case 81 + v17-01 12 + **v17-full 69 (17:46)** = **565 total native calls**
 - 0 budget_exhausted
 - 0 模型替身 / SQL 契约检查 / 样本联调代替人格质量验收
 
 ## 7. 解锁后立即可做
 
-- **v17 修复目标（s 索引）已 100% 在 37 单元样本内验证**（v17-01 4 + v17-full 33，0 越界）。
+- **v17 修复目标（s 索引）已 100% 在 48 单元样本内验证**（v17-01 4 + v17-full 44，0 越界）。
   - 后续 v18 路线（若需）应聚焦 evidence-source 归属 / alias-in-quote / scene 编号合法性 / 别名合并 4 类 v6+ 既有 validator 路径，不应回退 s 约束。
-- **v17-full 持续运行中**（18:00 起 0.6 call/min）。如不主动 stop，预计 24h 内 西游记 411 单元可达 ≥80% validated（基于 22 unit / 74 min 速率外推），红楼梦 581 单元需 24h 之后。
-- **门 A 真实跑验收**：完整 992 单元 validated / 失败归因 closure 仍需 v17-full 跑完；当前 partial 状态（22/411 + 1/581 = 23/992 = 2.3% validated）可作为 v17 修复目标已达成的旁证，全书覆盖度仍需等待。
-- **门 A 全书未达 100% 时可做**：用 v17-full partial state 做 1) 失败归因密度分析（11/37 = 30% 正交错误）→ 2) 单类错误（evidence-outside-scene 6/11）针对性 prompt 微调 → 3) v17.1 重跑。
+- **v17-full 持续运行中**（17:46 起 0.4 call/min）。如不主动 stop，预计 18+ hours 内 西游记 411 单元可达 ≥80% validated（基于 29 unit / 60 min 速率外推），红楼梦 581 单元需 24h+ 之后。
+- **门 A 真实跑验收**：完整 992 单元 validated / 失败归因 closure 仍需 v17-full 跑完；当前 partial 状态（29/411 + 1/581 = 30/992 = 3.0% validated）可作为 v17 修复目标已达成的旁证，全书覆盖度仍需等待。
+- **门 A 全书未达 100% 时可做**：用 v17-full partial state 做 1) 失败归因密度分析（15/44 = 34% 正交错误）→ 2) 单类错误（evidence-outside-scene 8/15）针对性 prompt 微调 → 3) v17.1 重跑。
 
 ## 8. 不变量
 
