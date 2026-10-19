@@ -23,6 +23,22 @@ def test_long_query_retains_compound_anchor_and_identifier_within_term_budget():
     assert len(selected) <= 32
 
 
+def test_long_question_keeps_bridge_compound_in_top_32_slots():
+    """After 588b2be, the 8-pilot boundary-knowable-stone-cave-iron-bridge question
+    must keep enough CJK compounds in the first 32 slots that FTS5 can match
+    the 铁板桥 proposition row. Concrete checks: 瀑布 (anchor for the bridge
+    passage) and 桥下 (the gold-standard 'water-flow under the bridge'
+    substring) both survive alongside the latin record-id `key9`.
+    """
+    from backend.services.book_world.search_terms import query_terms
+
+    selected = query_terms(LONG_BRIDGE_QUESTION + "记录号 KEY9。", ["人物甲"])
+    assert "瀑布" in selected
+    assert "桥下" in selected
+    assert "key9" in selected
+    assert len(selected) <= 32
+
+
 @pytest.mark.asyncio
 async def test_long_question_recalls_owned_episode_without_granting_it_to_another_person(book_library):
     text = "人物甲进入瀑布，发现铁板桥。\n\n人物乙在山外歇息。"

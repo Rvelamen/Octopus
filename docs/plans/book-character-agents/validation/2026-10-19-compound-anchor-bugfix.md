@@ -15,10 +15,12 @@
 
 ## 验证
 
-- `tests/test_book_knowledge.py` 末尾追加 2 项：
+- `tests/test_book_knowledge.py` 末尾追加 3 项：
   - `test_long_query_retains_compound_anchor_and_identifier_within_term_budget` 验证长问题 + 记录号 `KEY9` 经 `query_terms` 后 `瀑布` 与 `key9` 都在前 32 槽；
+  - `test_long_question_keeps_bridge_compound_in_top_32_slots` 验证长问题 + 记录号同时保留 `瀑布`/`桥下`/`key9` 三个金标准子串；
   - `test_long_question_recalls_owned_episode_without_granting_it_to_another_person` 验证带 `铁板桥` episode 的 retrieve 在长问题下仍命中本人，不授权他人。
-- 18 项 `test_book_knowledge.py` 通过。`backend/services/book_world/search_terms.py` Ruff 通过；`persona_acquisition.py` 未改动。
+- **重要**：测试 query 用问题本身，不是把 passage 当 query——passage 自身的 37 个 2 字 bigram 会顶掉 3 字化合物 `铁板桥`；问题里的 `瀑布`/`桥下`/`key9` 才是 actor context 真正交给 FTS5 的检索子串。
+- 19 项 `test_book_knowledge.py` 通过。`backend/services/book_world/search_terms.py` Ruff 通过；`persona_acquisition.py` 未改动。
 
 ## 不动内容
 
