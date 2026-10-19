@@ -21,7 +21,7 @@ Tables produced
 2. by_window ......................... per-window call count, tokens, elapsed,
                                          status, source protocol
 3. by_class ......................... per-class case count, completed, mean tokens,
-                                         mean elapsed, published (always 0)
+                                         mean elapsed, actual published slots
 4. by_character ..................... per-character (石猴/黛玉/cross-book) breakdown
 5. by_phase ......................... generate vs review call count, tokens, elapsed
 6. by_status ......................... per-call status (completed/failed/timeout)
@@ -53,8 +53,8 @@ OUTPUT_MD = VALIDATION_DIR / "2026-10-16-t12-real-runs-aggregation.md"
 
 # Character parsed from case_id (slug) - matches the runner's case_id convention
 # used in t12-quality-cases-v1.json and t12-quality-cases-v2.json.
-STONE_RE = re.compile(r"-stone-")
-DAIYU_RE = re.compile(r"-daiyu-")
+STONE_RE = re.compile(r"-stone(?:-|$)")
+DAIYU_RE = re.compile(r"-daiyu(?:-|$)")
 # cross_book_hearsay cases have a single "speaker" character + a "hearer" character;
 # the speaker is the one whose case_id embeds -stone- or -daiyu- (which is the
 # actor the runner books via target_actor_indices).  The hearer is noted in the
@@ -63,11 +63,24 @@ DAIYU_RE = re.compile(r"-daiyu-")
 
 def parse_character(case_id: str) -> str:
     """Return ``石猴`` / ``黛玉`` / ``unknown`` from a case_id slug."""
-    if STONE_RE.search(case_id):
+    stone = STONE_RE.search(case_id)
+    daiyu = DAIYU_RE.search(case_id)
+    if stone and (not daiyu or stone.start() < daiyu.start()):
         return "石猴"
-    if DAIYU_RE.search(case_id):
+    if daiyu:
         return "黛玉"
     return "unknown"
+
+
+def case_character(case: dict[str, Any]) -> str:
+    """Use the published speaker; the first named case actor is only a fallback."""
+    for turn in case.get("turns", []):
+        for message in turn.get("messages", []):
+            if message.get("speaker_type") == "character":
+                name = message.get("identity", {}).get("name")
+                if isinstance(name, str) and name:
+                    return name
+    return parse_character(case.get("case_id", ""))
 
 
 def infer_protocol(path: Path) -> str:
@@ -78,7 +91,8 @@ def infer_protocol(path: Path) -> str:
 
 
 def load_run(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    report: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+    return report
 
 
 def discover_runs() -> list[tuple[str, Path, dict[str, Any]]]:
@@ -99,6 +113,7 @@ def safe_mean(values: list[float]) -> float:
 
 def build_totals(items: list[tuple[str, Path, dict[str, Any]]]) -> dict[str, Any]:
     calls = [c for _, _, run in items for c in run.get("calls", [])]
+    cases = [case for _, _, run in items for case in run.get("cases", [])]
     tok_in = sum(c.get("usage", {}).get("prompt_tokens", 0) for c in calls)
     tok_out = sum(c.get("usage", {}).get("completion_tokens", 0) for c in calls)
     cache_read = sum(
@@ -112,6 +127,9 @@ def build_totals(items: list[tuple[str, Path, dict[str, Any]]]) -> dict[str, Any
     failed = sum(1 for c in calls if c.get("status") not in {"completed", None})
     return {
         "window_count": len(items),
+        "case_count": len(cases),
+        "published_count": sum(count_published_slots(case) for case in cases),
+        "published_case_count": sum(count_published_slots(case) > 0 for case in cases),
         "call_count": len(calls),
         "completed_call_count": completed,
         "non_completed_call_count": failed,
@@ -146,7 +164,7 @@ def build_by_window(
             c.get("usage", {}).get("cache_creation_input_tokens", 0) for c in calls
         )
         elapsed = sum(c.get("elapsed_seconds", 0) for c in calls)
-        by_phase: dict[str, dict[str, int]] = {}
+        by_phase: dict[str, dict[str, Any]] = {}
         for c in calls:
             ph = c.get("phase", "unknown")
             slot = by_phase.setdefault(
@@ -167,6 +185,8 @@ def build_by_window(
                 "source_file": str(path.relative_to(PLAN_DIR.parent)),
                 "protocol": infer_protocol(path),
                 "case_count": len(cases),
+                "published_count": sum(count_published_slots(case) for case in cases),
+                "published_case_count": sum(count_published_slots(case) > 0 for case in cases),
                 "case_status": dict(case_status),
                 "call_count": len(calls),
                 "tok_in": tok_in,
@@ -200,6 +220,8 @@ def build_by_class(
             "completed_cases": 0,
             "pending_review_cases": 0,
             "other_status_cases": 0,
+            "published_count": 0,
+            "published_case_count": 0,
             "tok_in_attributed": 0,
             "tok_out_attributed": 0,
             "elapsed_attributed_seconds": 0.0,
@@ -217,6 +239,9 @@ def build_by_class(
             cls = case.get("class", "unknown")
             slot = by_cls[cls]
             slot["cases"] += 1
+            published = count_published_slots(case)
+            slot["published_count"] += published
+            slot["published_case_count"] += published > 0
             status = case.get("status", "unknown")
             if status == "executed_pending_semantic_review":
                 slot["completed_cases"] += 1
@@ -246,7 +271,8 @@ def build_by_class(
                 "elapsed_seconds_mean": round(
                     slot["elapsed_attributed_seconds"] / n, 2
                 ),
-                "published_count": 0,  # always 0 in 8-pilot + v2 real runs
+                "published_count": slot["published_count"],
+                "published_case_count": slot["published_case_count"],
             }
         )
     return rows
@@ -259,6 +285,7 @@ def build_by_character(
         lambda: {
             "cases": 0,
             "completed_cases": 0,
+            "published_count": 0,
             "tok_in_attributed": 0,
             "tok_out_attributed": 0,
             "elapsed_attributed_seconds": 0.0,
@@ -272,9 +299,10 @@ def build_by_character(
         tok_out = sum(c.get("usage", {}).get("completion_tokens", 0) for c in calls)
         elapsed = sum(c.get("elapsed_seconds", 0) for c in calls)
         for case in cases:
-            ch = parse_character(case.get("case_id", ""))
+            ch = case_character(case)
             slot = by_ch[ch]
             slot["cases"] += 1
+            slot["published_count"] += count_published_slots(case)
             if case.get("status") == "executed_pending_semantic_review":
                 slot["completed_cases"] += 1
             slot["tok_in_attributed"] += tok_in // n_cases
@@ -288,6 +316,7 @@ def build_by_character(
                 "character": ch,
                 "cases": slot["cases"],
                 "completed_cases": slot["completed_cases"],
+                "published_count": slot["published_count"],
                 "tok_in_mean": round(slot["tok_in_attributed"] / n, 1),
                 "tok_out_mean": round(slot["tok_out_attributed"] / n, 1),
                 "elapsed_seconds_mean": round(
@@ -395,6 +424,8 @@ def render_markdown(payload: dict[str, Any]) -> str:
     lines.append("### 1. 总体")
     lines.append("")
     lines.append(f"- 窗口数：{totals['window_count']}")
+    lines.append(f"- 样本数：{totals['case_count']}；实际发布槽位：{totals['published_count']}；有发布的样本：{totals['published_case_count']}")
+    lines.append("- 发布仅表示正文通过当次运行校验，不代表原著语义、人物质量或人工盲评通过。")
     lines.append(f"- 调用总数：{totals['call_count']}（已完成 {totals['completed_call_count']} / 未完成 {totals['non_completed_call_count']}）")
     lines.append(f"- prompt_tokens 总和：{totals['tok_in_total']:,}")
     lines.append(f"- completion_tokens 总和：{totals['tok_out_total']:,}")
@@ -406,11 +437,12 @@ def render_markdown(payload: dict[str, Any]) -> str:
     lines.append("")
     lines.append("### 2. 按窗口")
     lines.append("")
-    lines.append("| 窗口 | 协议 | case | 调用 | tok_in | tok_out | cache_read | cache_create | elapsed_s | 状态 |")
-    lines.append("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
+    lines.append("| 窗口 | 协议 | case | 发布槽位 | 调用 | tok_in | tok_out | cache_read | cache_create | elapsed_s | 状态 |")
+    lines.append("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
     for row in by_window:
         lines.append(
             f"| {row['window']} | {row['protocol']} | {row['case_count']}"
+            f" | {row['published_count']}"
             f" | {row['call_count']} | {row['tok_in']:,} | {row['tok_out']:,}"
             f" | {row['cache_read']:,} | {row['cache_creation']:,}"
             f" | {row['elapsed_seconds']} | {row['run_status']} |"
@@ -428,14 +460,14 @@ def render_markdown(payload: dict[str, Any]) -> str:
             f" | {row['published_count']} |"
         )
     lines.append("")
-    lines.append("### 4. 按角色（从 case_id slug 解析 primary actor）")
+    lines.append("### 4. 按样本首条人物发言身份（无正文时按 case_id 首个人名归因）")
     lines.append("")
-    lines.append("| 角色 | cases | 已完成 | tok_in 平均 | tok_out 平均 | elapsed 平均 |")
-    lines.append("| --- | ---: | ---: | ---: | ---: | ---: |")
+    lines.append("| 角色 | cases | 已完成 | 发布槽位 | tok_in 平均 | tok_out 平均 | elapsed 平均 |")
+    lines.append("| --- | ---: | ---: | ---: | ---: | ---: | ---: |")
     for row in by_character:
         lines.append(
             f"| {row['character']} | {row['cases']}"
-            f" | {row['completed_cases']} | {row['tok_in_mean']}"
+            f" | {row['completed_cases']} | {row['published_count']} | {row['tok_in_mean']}"
             f" | {row['tok_out_mean']} | {row['elapsed_seconds_mean']} |"
         )
     lines.append("")
@@ -569,8 +601,8 @@ def render_markdown(payload: dict[str, Any]) -> str:
         "- T12 per-class / per-character 的 token 与 elapsed 通过按窗口 case 数等分归因（窗口 totals / case_count）。"
     )
     lines.append(
-        "- T12 published 永远为 0：8-pilot + v2 真实跑全部进入 ``executed_pending_semantic_review`` 终态，"
-        "质量层不声明通过；T12 §4 row 9 的人工盲评接收这一信号。"
+        "- T12 published 来自各 turn 最终 ``round.slots[].status == 'published'``，不重复累计 execution_windows 快照。"
+        "``executed_pending_semantic_review`` 是质量复核状态，与是否已经发布正文是两件事；不能据它把发布数记成零。"
     )
     lines.append(
         "- T17 published 来自 ``round.slots[].status == 'published'``（slot-level，不是 case-level 的 status 字段）。"
@@ -586,7 +618,7 @@ def count_published_slots(case: dict[str, Any]) -> int:
     """Return total published slot count across all turns of a case.
 
     A ``round.slots[].status == "published"`` is the actual publish marker
-    in the T17 runner output (the case-level ``status`` may say
+    in T12 and T17 runner output (the case-level ``status`` may say
     ``executed_pending_semantic_review`` even when individual slots publish,
     because the runner does not auto-claim full quality pass)."""
     n = 0

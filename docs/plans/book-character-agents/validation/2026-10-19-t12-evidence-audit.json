@@ -1,0 +1,88 @@
+{
+  "date": "2026-10-19",
+  "scope": "Read-only correction of evaluation evidence; publication counts are not semantic acceptance",
+  "new_native_calls": 0,
+  "source_report_count": 20,
+  "source_report_sha256": {
+    "docs/plans/book-character-agents/validation/2026-10-16-t12-8pilot-real-run.json": "a526a0610fde61a69a9acceaef4d1dd2eec349ac750f957e8bf7f3b77c004008",
+    "docs/plans/book-character-agents/validation/_v2_runs/exta-window-0-real.json": "d3a1a1157b9ba9d92a988f88c9285ee49af4bd69c0fe24c55f184c0ec4cb0fe3",
+    "docs/plans/book-character-agents/validation/_v2_runs/exta-window-1-real.json": "7294d1f112c33f845cfe5133bbdba20a1e3a884ec534f89b1bc670879ddc56f1",
+    "docs/plans/book-character-agents/validation/_v2_runs/exta-window-2-real.json": "20c6fda80f7e929940c047e88b5964a8f2b3f8976483c59cf51f10944e16c59b",
+    "docs/plans/book-character-agents/validation/_v2_runs/exta-window-3-real.json": "cb8f0d74752d17ea7e5992095274f70d96ef81d868e2e7fae40bf04e76cc326a",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-0-real.json": "581f8aee0f5e2af560e6073fd11fd646d4d751f5c78dd44a1f456dc021f43f3e",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-1-real.json": "f96d7966b672d600972023fa694d232c8bc6c0df47603488b41bd667781b073a",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-10-real.json": "55fc4a5f34ef2533eccffcd1b1b8e613fe113887f94594ca957e32095616779b",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-11-real.json": "75bd968e1ca0e537318ed91d6f1a551139ca6a54beb83ef105f0dccb2c5949bb",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-12-real.json": "3a21f9cb710bdc21383dad1bcc9e0535398e0a4be9823773beb172f7ec2cc0c2",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-13-real.json": "6540fcd58b2ffbceaad60aab67d03d0c0e07b4f83a1a6a1e6dbda6088ba0885d",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-14-real.json": "b3bee2aea95362aea35c14337e451612ae0c3d5377faa1026cee8ae798f3f7ac",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-2-real.json": "1eefd792cb5b265774a92408f97ca58e6d46a6b260d17ad15274a6906226c3ea",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-3-real.json": "66316375e47242a4f814f0a4e9c955ce3f011139163e5e0182a8b7b0c72b0390",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-4-real.json": "e94118ecfe85443c4c135e209fc76d1caa7362a501a57cd49926df1e23c947b9",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-5-real.json": "0e64faa1606f0bbdc90628497fdfaa45cfded174dce1ef04a94f7769c40f8577",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-6-real.json": "0fb096eef4259f4c12bf43edd3f8d2bcf49db23ad533918e1e533b4ee63f698d",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-7-real.json": "c168c371c5f6190eafe6cab31cc32da2c64d5ee1f404aa609b30f35c1d32db31",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-8-real.json": "ba7020f984722f688a704a3a3786f992935fc9b2f25f9438eaa8b8b163c674ed",
+    "docs/plans/book-character-agents/validation/_v2_runs/window-9-real.json": "267a90d50a65d97a7aab35ca4031d81bdf4663bb59d0e3eb08c4966c602604d0"
+  },
+  "totals": {
+    "cases": 160,
+    "published_slots": 159,
+    "character_messages": 159,
+    "cases_with_body": 159
+  },
+  "published_bodies_by_character": {
+    "石猴": 93,
+    "黛玉": 66
+  },
+  "published_bodies_by_book_title": {
+    "西游记 · 石猴发现联调样本（非全书）": 93,
+    "红楼梦 · 黛玉读书联调样本（非全书）": 66
+  },
+  "expression_enabled_by_final_turn": {
+    "False": 160
+  },
+  "old_worksheet": {
+    "path": "docs/plans/book-character-agents/validation/blind-review-2026-10-16-worksheet.csv",
+    "sha256": "095cb0b5939d6ba1295975b94173361e1896d23254317104de2ba4fc72945941",
+    "character_counts": {
+      "石猴": 160
+    },
+    "filled_human_fields": 0
+  },
+  "new_worksheet": {
+    "path": "docs/plans/book-character-agents/validation/blind-review-2026-10-19-worksheet.csv",
+    "sha256": "c5913ff7af1c32aa50e3a26f8488c174ce4b832d4c1981f43543829fc6f423a9",
+    "character_counts": {
+      "石猴": 94,
+      "黛玉": 66
+    },
+    "filled_human_fields": 0
+  },
+  "full_source_runtime_builds": [
+    {
+      "id": "ce1089d1-e62e-436a-925c-edb1ce12b085",
+      "status": "queued",
+      "stage": "character_discovery",
+      "lifecycle_state": "active",
+      "discovery_steps": {
+        "failed": 10,
+        "pending": 383,
+        "validated": 18
+      }
+    },
+    {
+      "id": "5e0c333f-0c01-4b9f-ab28-0d4642900c52",
+      "status": "queued",
+      "stage": "character_discovery",
+      "lifecycle_state": "active",
+      "discovery_steps": {
+        "failed": 12,
+        "pending": 549,
+        "validated": 20
+      }
+    }
+  ],
+  "quality_pass": false,
+  "remaining_scope": "Full-book automatic persona construction, grounded retrieval/over-refusal diagnosis, valid expression A/B with actual material, full application acceptance and human review remain required; 160 decisions alone do not close T12."
+}

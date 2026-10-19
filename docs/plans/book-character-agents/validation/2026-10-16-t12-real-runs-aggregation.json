@@ -1,6 +1,6 @@
 {
   "meta": {
-    "aggregated_at": "2026-10-16T13:22:33Z",
+    "aggregated_at": "2026-10-19T03:13:41Z",
     "source_file_count": 20,
     "source_protocols": [
       "v1",
@@ -11,6 +11,9 @@
   },
   "totals": {
     "window_count": 20,
+    "case_count": 160,
+    "published_count": 159,
+    "published_case_count": 159,
     "call_count": 392,
     "completed_call_count": 387,
     "non_completed_call_count": 5,
@@ -29,6 +32,8 @@
       "source_file": "book-character-agents\\validation\\2026-10-16-t12-8pilot-real-run.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 7,
+      "published_case_count": 7,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -62,6 +67,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-0-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -95,6 +102,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-1-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -128,6 +137,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-10-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -161,6 +172,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-11-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -194,6 +207,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-12-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -227,6 +242,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-13-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -260,6 +277,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-14-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -293,6 +312,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-2-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -326,6 +347,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-3-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -359,6 +382,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-4-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -392,6 +417,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-5-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -425,6 +452,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-6-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -458,6 +487,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-7-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -491,6 +522,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-8-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -524,6 +557,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\window-9-real.json",
       "protocol": "v1",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -557,6 +592,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\exta-window-0-real.json",
       "protocol": "v1ext",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -590,6 +627,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\exta-window-1-real.json",
       "protocol": "v1ext",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -623,6 +662,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\exta-window-2-real.json",
       "protocol": "v1ext",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -656,6 +697,8 @@
       "source_file": "book-character-agents\\validation\\_v2_runs\\exta-window-3-real.json",
       "protocol": "v1ext",
       "case_count": 8,
+      "published_count": 8,
+      "published_case_count": 8,
       "case_status": {
         "executed_pending_semantic_review": 8
       },
@@ -695,7 +738,8 @@
       "tok_in_mean": 1699.1,
       "tok_out_mean": 678.8,
       "elapsed_seconds_mean": 27.27,
-      "published_count": 0
+      "published_count": 20,
+      "published_case_count": 20
     },
     {
       "class": "belief",
@@ -706,7 +750,8 @@
       "tok_in_mean": 1699.1,
       "tok_out_mean": 678.8,
       "elapsed_seconds_mean": 27.27,
-      "published_count": 0
+      "published_count": 20,
+      "published_case_count": 20
     },
     {
       "class": "challenge",
@@ -717,7 +762,8 @@
       "tok_in_mean": 1706.3,
       "tok_out_mean": 666.8,
       "elapsed_seconds_mean": 26.79,
-      "published_count": 0
+      "published_count": 16,
+      "published_case_count": 16
     },
     {
       "class": "comfort",
@@ -728,7 +774,8 @@
       "tok_in_mean": 1699.1,
       "tok_out_mean": 678.8,
       "elapsed_seconds_mean": 27.27,
-      "published_count": 0
+      "published_count": 19,
+      "published_case_count": 19
     },
     {
       "class": "cross_book_hearsay",
@@ -739,7 +786,8 @@
       "tok_in_mean": 1706.3,
       "tok_out_mean": 666.8,
       "elapsed_seconds_mean": 26.79,
-      "published_count": 0
+      "published_count": 16,
+      "published_case_count": 16
     },
     {
       "class": "disagree",
@@ -750,7 +798,8 @@
       "tok_in_mean": 1670.2,
       "tok_out_mean": 727.0,
       "elapsed_seconds_mean": 29.18,
-      "published_count": 0
+      "published_count": 4,
+      "published_case_count": 4
     },
     {
       "class": "emotion",
@@ -761,7 +810,8 @@
       "tok_in_mean": 1699.1,
       "tok_out_mean": 678.8,
       "elapsed_seconds_mean": 27.27,
-      "published_count": 0
+      "published_count": 20,
+      "published_case_count": 20
     },
     {
       "class": "knowable",
@@ -772,7 +822,8 @@
       "tok_in_mean": 1699.1,
       "tok_out_mean": 678.8,
       "elapsed_seconds_mean": 27.27,
-      "published_count": 0
+      "published_count": 20,
+      "published_case_count": 20
     },
     {
       "class": "unknowable",
@@ -783,7 +834,8 @@
       "tok_in_mean": 1699.1,
       "tok_out_mean": 678.8,
       "elapsed_seconds_mean": 27.27,
-      "published_count": 0
+      "published_count": 20,
+      "published_case_count": 20
     },
     {
       "class": "unknown_expression",
@@ -794,25 +846,28 @@
       "tok_in_mean": 1670.2,
       "tok_out_mean": 727.0,
       "elapsed_seconds_mean": 29.18,
-      "published_count": 0
+      "published_count": 4,
+      "published_case_count": 4
     }
   ],
   "by_character": [
     {
       "character": "石猴",
-      "cases": 91,
-      "completed_cases": 91,
-      "tok_in_mean": 1719.6,
-      "tok_out_mean": 685.3,
-      "elapsed_seconds_mean": 27.49
+      "cases": 94,
+      "completed_cases": 94,
+      "published_count": 93,
+      "tok_in_mean": 1720.6,
+      "tok_out_mean": 686.3,
+      "elapsed_seconds_mean": 27.48
     },
     {
       "character": "黛玉",
-      "cases": 69,
-      "completed_cases": 69,
-      "tok_in_mean": 1672.0,
-      "tok_out_mean": 670.3,
-      "elapsed_seconds_mean": 26.97
+      "cases": 66,
+      "completed_cases": 66,
+      "published_count": 66,
+      "tok_in_mean": 1668.5,
+      "tok_out_mean": 668.1,
+      "elapsed_seconds_mean": 26.98
     }
   ],
   "by_phase": [

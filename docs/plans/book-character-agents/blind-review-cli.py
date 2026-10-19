@@ -62,7 +62,7 @@ VERDICT_KEYS = {
 # 角色 build_id → 显示名（来自真实跑 character_scopes）
 CHARACTER_LABELS = {
     "c2da28c8-cab3-4bc2-9342-b1a60831c99a": "石猴",
-    "58609a52-4ba4-4c8e-83c0-46c8bca65c1b": "黛玉",
+    "58609a52-6cfe-41b1-9f4f-b8abe7f18e1e": "黛玉",
 }
 
 
@@ -75,7 +75,6 @@ def load_run_file(path: Path) -> list[dict[str, Any]]:
     run_id = path.stem  # e.g. window-0-real / exta-window-0-real / 2026-10-16-t12-8pilot-real-run
     run_label = _shorten_run_label(run_id)
     char_scopes = report.get("character_scopes") or []
-    char_label = _resolve_character_label(char_scopes)
 
     cases = []
     for case in report.get("cases") or []:
@@ -85,6 +84,13 @@ def load_run_file(path: Path) -> list[dict[str, Any]]:
         messages = turns[0].get("messages") or []
         user_msg = next((m for m in messages if m.get("speaker_type") == "user"), None)
         char_msg = next((m for m in messages if m.get("speaker_type") == "character"), None)
+        speaker = (char_msg or {}).get("identity", {}).get("name")
+        if not speaker:
+            match = re.search(r"-(stone|daiyu)(?:-|$)", case.get("case_id", ""))
+            speaker = {"stone": "石猴", "daiyu": "黛玉"}.get(match.group(1)) if match else None
+        actor_scopes = [scope for scope in char_scopes if CHARACTER_LABELS.get(scope.get("build_id")) == speaker]
+        if not actor_scopes and len(char_scopes) == 1:
+            actor_scopes = char_scopes
         round_summary = turns[0].get("round") or {}
         execution_windows = turns[0].get("execution_windows") or []
         cases.append(
@@ -97,8 +103,8 @@ def load_run_file(path: Path) -> list[dict[str, Any]]:
                 "mode": case.get("mode"),
                 "discussion_mode": case.get("discussion_mode"),
                 "status": case.get("status"),
-                "character_label": char_label,
-                "character_build_id": _first_build_id(char_scopes),
+                "character_label": _resolve_character_label(actor_scopes),
+                "character_build_id": _first_build_id(actor_scopes),
                 "question": (user_msg.get("content") or "").strip() if user_msg else "",
                 "character_response": (char_msg.get("content") or "").strip() if char_msg else "",
                 "has_character_response": bool(char_msg),
@@ -118,14 +124,15 @@ def load_run_file(path: Path) -> list[dict[str, Any]]:
 def _resolve_character_label(char_scopes: list[dict]) -> str:
     if not char_scopes:
         return "?"
-    build_id = char_scopes[0].get("build_id", "")
+    build_id = _first_build_id(char_scopes)
     return CHARACTER_LABELS.get(build_id, build_id[:8] or "?")
 
 
 def _first_build_id(char_scopes: list[dict]) -> str:
     if not char_scopes:
         return ""
-    return char_scopes[0].get("build_id", "")
+    build_id = char_scopes[0].get("build_id", "")
+    return build_id if isinstance(build_id, str) else ""
 
 
 def _shorten_run_label(run_id: str) -> str:
@@ -465,7 +472,7 @@ def cmd_worksheet(args: argparse.Namespace) -> int:
     no_response_count = sum(1 for c in cases if not c.get("has_character_response"))
     print(
         f"已导出 {len(cases)} case 到 {out_csv}"
-        f"（{no_response_count} 条无角色回答，建议按 over_decline 处理）"
+        f"（{no_response_count} 条无角色回答，需按轮次状态及金标准复核，不自动判为 over_decline）"
     )
     return 0
 

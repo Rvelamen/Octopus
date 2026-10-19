@@ -1,12 +1,14 @@
 # T12 + T17 真实模型运行聚合
 
-> 聚合时间：2026-10-16T13:22:33Z  |  T12 来源文件：20 份（v1, v1ext 协议）  |  T17 来源文件：3 份  |  模型调用：0
+> 聚合时间：2026-10-19T03:13:41Z  |  T12 来源文件：20 份（v1, v1ext 协议）  |  T17 来源文件：3 份  |  模型调用：0
 
 ## Part I — T12 真实模型运行（8-pilot + v2 60+24）
 
 ### 1. 总体
 
 - 窗口数：20
+- 样本数：160；实际发布槽位：159；有发布的样本：159
+- 发布仅表示正文通过当次运行校验，不代表原著语义、人物质量或人工盲评通过。
 - 调用总数：392（已完成 387 / 未完成 5）
 - prompt_tokens 总和：271,931
 - completion_tokens 总和：108,682
@@ -18,50 +20,50 @@
 
 ### 2. 按窗口
 
-| 窗口 | 协议 | case | 调用 | tok_in | tok_out | cache_read | cache_create | elapsed_s | 状态 |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| 8pilot | v1 | 8 | 23 | 17,481 | 8,114 | 29,402 | 0 | 320.1 | executed_pending_semantic_review |
-| window-0 | v1 | 8 | 21 | 15,636 | 5,840 | 31,744 | 0 | 205.4 | executed_pending_semantic_review |
-| window-1 | v1 | 8 | 20 | 13,282 | 4,234 | 30,720 | 0 | 175.6 | executed_pending_semantic_review |
-| window-10 | v1 | 8 | 17 | 11,446 | 5,341 | 24,064 | 0 | 224.9 | executed_pending_semantic_review |
-| window-11 | v1 | 8 | 21 | 13,261 | 6,697 | 29,920 | 0 | 269.9 | executed_pending_semantic_review |
-| window-12 | v1 | 8 | 18 | 12,873 | 4,445 | 25,600 | 0 | 204.1 | executed_pending_semantic_review |
-| window-13 | v1 | 8 | 19 | 13,272 | 4,507 | 28,160 | 0 | 214.7 | executed_pending_semantic_review |
-| window-14 | v1 | 8 | 22 | 15,142 | 6,026 | 32,221 | 0 | 263.6 | executed_pending_semantic_review |
-| window-2 | v1 | 8 | 19 | 13,495 | 5,461 | 28,928 | 0 | 213.2 | executed_pending_semantic_review |
-| window-3 | v1 | 8 | 20 | 14,367 | 5,602 | 30,464 | 0 | 197.6 | executed_pending_semantic_review |
-| window-4 | v1 | 8 | 17 | 11,115 | 4,175 | 26,368 | 0 | 181.8 | executed_pending_semantic_review |
-| window-5 | v1 | 8 | 18 | 13,349 | 4,583 | 26,624 | 0 | 210.2 | executed_pending_semantic_review |
-| window-6 | v1 | 8 | 22 | 15,624 | 6,445 | 32,768 | 0 | 233.1 | executed_pending_semantic_review |
-| window-7 | v1 | 8 | 20 | 14,353 | 4,957 | 29,184 | 0 | 178.7 | executed_pending_semantic_review |
-| window-8 | v1 | 8 | 19 | 13,038 | 5,581 | 27,648 | 0 | 183.8 | executed_pending_semantic_review |
-| window-9 | v1 | 8 | 16 | 10,732 | 3,397 | 22,272 | 0 | 152.9 | executed_pending_semantic_review |
-| exta-window-0 | v1ext | 8 | 19 | 13,311 | 5,355 | 28,672 | 0 | 193.2 | executed_pending_semantic_review |
-| exta-window-1 | v1ext | 8 | 19 | 11,801 | 4,586 | 29,696 | 0 | 179.1 | executed_pending_semantic_review |
-| exta-window-2 | v1ext | 8 | 21 | 13,252 | 7,719 | 30,848 | 0 | 324.1 | executed_pending_semantic_review |
-| exta-window-3 | v1ext | 8 | 21 | 15,101 | 5,617 | 32,000 | 0 | 237.3 | executed_pending_semantic_review |
+| 窗口 | 协议 | case | 发布槽位 | 调用 | tok_in | tok_out | cache_read | cache_create | elapsed_s | 状态 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 8pilot | v1 | 8 | 7 | 23 | 17,481 | 8,114 | 29,402 | 0 | 320.1 | executed_pending_semantic_review |
+| window-0 | v1 | 8 | 8 | 21 | 15,636 | 5,840 | 31,744 | 0 | 205.4 | executed_pending_semantic_review |
+| window-1 | v1 | 8 | 8 | 20 | 13,282 | 4,234 | 30,720 | 0 | 175.6 | executed_pending_semantic_review |
+| window-10 | v1 | 8 | 8 | 17 | 11,446 | 5,341 | 24,064 | 0 | 224.9 | executed_pending_semantic_review |
+| window-11 | v1 | 8 | 8 | 21 | 13,261 | 6,697 | 29,920 | 0 | 269.9 | executed_pending_semantic_review |
+| window-12 | v1 | 8 | 8 | 18 | 12,873 | 4,445 | 25,600 | 0 | 204.1 | executed_pending_semantic_review |
+| window-13 | v1 | 8 | 8 | 19 | 13,272 | 4,507 | 28,160 | 0 | 214.7 | executed_pending_semantic_review |
+| window-14 | v1 | 8 | 8 | 22 | 15,142 | 6,026 | 32,221 | 0 | 263.6 | executed_pending_semantic_review |
+| window-2 | v1 | 8 | 8 | 19 | 13,495 | 5,461 | 28,928 | 0 | 213.2 | executed_pending_semantic_review |
+| window-3 | v1 | 8 | 8 | 20 | 14,367 | 5,602 | 30,464 | 0 | 197.6 | executed_pending_semantic_review |
+| window-4 | v1 | 8 | 8 | 17 | 11,115 | 4,175 | 26,368 | 0 | 181.8 | executed_pending_semantic_review |
+| window-5 | v1 | 8 | 8 | 18 | 13,349 | 4,583 | 26,624 | 0 | 210.2 | executed_pending_semantic_review |
+| window-6 | v1 | 8 | 8 | 22 | 15,624 | 6,445 | 32,768 | 0 | 233.1 | executed_pending_semantic_review |
+| window-7 | v1 | 8 | 8 | 20 | 14,353 | 4,957 | 29,184 | 0 | 178.7 | executed_pending_semantic_review |
+| window-8 | v1 | 8 | 8 | 19 | 13,038 | 5,581 | 27,648 | 0 | 183.8 | executed_pending_semantic_review |
+| window-9 | v1 | 8 | 8 | 16 | 10,732 | 3,397 | 22,272 | 0 | 152.9 | executed_pending_semantic_review |
+| exta-window-0 | v1ext | 8 | 8 | 19 | 13,311 | 5,355 | 28,672 | 0 | 193.2 | executed_pending_semantic_review |
+| exta-window-1 | v1ext | 8 | 8 | 19 | 11,801 | 4,586 | 29,696 | 0 | 179.1 | executed_pending_semantic_review |
+| exta-window-2 | v1ext | 8 | 8 | 21 | 13,252 | 7,719 | 30,848 | 0 | 324.1 | executed_pending_semantic_review |
+| exta-window-3 | v1ext | 8 | 8 | 21 | 15,101 | 5,617 | 32,000 | 0 | 237.3 | executed_pending_semantic_review |
 
 ### 3. 按 class（按窗口 case 数等分归因 token/elapsed）
 
 | class | cases | 已完成 | 待审 | tok_in 平均 | tok_out 平均 | elapsed 平均 | published |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| answer | 20 | 20 | 0 | 1699.1 | 678.8 | 27.27 | 0 |
-| belief | 20 | 20 | 0 | 1699.1 | 678.8 | 27.27 | 0 |
-| challenge | 16 | 16 | 0 | 1706.3 | 666.8 | 26.79 | 0 |
-| comfort | 20 | 20 | 0 | 1699.1 | 678.8 | 27.27 | 0 |
-| cross_book_hearsay | 16 | 16 | 0 | 1706.3 | 666.8 | 26.79 | 0 |
-| disagree | 4 | 4 | 0 | 1670.2 | 727.0 | 29.18 | 0 |
-| emotion | 20 | 20 | 0 | 1699.1 | 678.8 | 27.27 | 0 |
-| knowable | 20 | 20 | 0 | 1699.1 | 678.8 | 27.27 | 0 |
-| unknowable | 20 | 20 | 0 | 1699.1 | 678.8 | 27.27 | 0 |
-| unknown_expression | 4 | 4 | 0 | 1670.2 | 727.0 | 29.18 | 0 |
+| answer | 20 | 20 | 0 | 1699.1 | 678.8 | 27.27 | 20 |
+| belief | 20 | 20 | 0 | 1699.1 | 678.8 | 27.27 | 20 |
+| challenge | 16 | 16 | 0 | 1706.3 | 666.8 | 26.79 | 16 |
+| comfort | 20 | 20 | 0 | 1699.1 | 678.8 | 27.27 | 19 |
+| cross_book_hearsay | 16 | 16 | 0 | 1706.3 | 666.8 | 26.79 | 16 |
+| disagree | 4 | 4 | 0 | 1670.2 | 727.0 | 29.18 | 4 |
+| emotion | 20 | 20 | 0 | 1699.1 | 678.8 | 27.27 | 20 |
+| knowable | 20 | 20 | 0 | 1699.1 | 678.8 | 27.27 | 20 |
+| unknowable | 20 | 20 | 0 | 1699.1 | 678.8 | 27.27 | 20 |
+| unknown_expression | 4 | 4 | 0 | 1670.2 | 727.0 | 29.18 | 4 |
 
-### 4. 按角色（从 case_id slug 解析 primary actor）
+### 4. 按样本首条人物发言身份（无正文时按 case_id 首个人名归因）
 
-| 角色 | cases | 已完成 | tok_in 平均 | tok_out 平均 | elapsed 平均 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| 石猴 | 91 | 91 | 1719.6 | 685.3 | 27.49 |
-| 黛玉 | 69 | 69 | 1672.0 | 670.3 | 26.97 |
+| 角色 | cases | 已完成 | 发布槽位 | tok_in 平均 | tok_out 平均 | elapsed 平均 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 石猴 | 94 | 94 | 93 | 1720.6 | 686.3 | 27.48 |
+| 黛玉 | 66 | 66 | 66 | 1668.5 | 668.1 | 26.98 |
 
 ### 5. 按 phase（generate vs review）
 
@@ -145,6 +147,6 @@
 ## Part III — 归因方法说明
 
 - T12 per-class / per-character 的 token 与 elapsed 通过按窗口 case 数等分归因（窗口 totals / case_count）。
-- T12 published 永远为 0：8-pilot + v2 真实跑全部进入 ``executed_pending_semantic_review`` 终态，质量层不声明通过；T12 §4 row 9 的人工盲评接收这一信号。
+- T12 published 来自各 turn 最终 ``round.slots[].status == 'published'``，不重复累计 execution_windows 快照。``executed_pending_semantic_review`` 是质量复核状态，与是否已经发布正文是两件事；不能据它把发布数记成零。
 - T17 published 来自 ``round.slots[].status == 'published'``（slot-level，不是 case-level 的 status 字段）。case.status = ``executed_pending_semantic_review`` 只代表流程走完，slot 仍可能 publish；T17 row 95 cognition 正例 = cognition pilot 中 1 case 取得 ≥1 published slot，T17 row 91 A/B 对照 = A 路径 6 case / B 路径 6 case 的 published-slot 数逐 case 比较（A==B 列）。
 

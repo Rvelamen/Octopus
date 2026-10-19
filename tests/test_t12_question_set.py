@@ -1365,13 +1365,22 @@ def test_aggregation_per_class_case_count_sums_to_160() -> None:
     )
 
 
-def test_aggregation_per_character_count_matches_91_69_160() -> None:
-    """Per-character primary-actor parsing must split 8-pilot + v2 cases
-    into 石猴 91 + 黛玉 69 = 160 (matches the v2 pool's 57 stone + 27
-    daiyu = 84 gold standard + 8-pilot 5 stone + 3 daiyu + ext-a 25
-    stone + 19 daiyu + ext-b 4 stone + 4 daiyu) -- the exact stone/daiyu
-    numbers are documented in the per-character evidence column; the
-    schema-level invariant is the total of 160."""
+def test_aggregation_per_character_count_matches_source_speakers() -> None:
+    """Role attribution must follow recorded speakers rather than substring order."""
+    import runpy
+
+    script = runpy.run_path(str(AGGREGATION.parent.parent / "scripts/aggregate_t12_real_runs.py"))
+    expected = Counter()
+    published = Counter()
+    for _, _, run in script["discover_runs"]():
+        for case in run["cases"]:
+            bodies = [m for t in case.get("turns", []) for m in t.get("messages", []) if m["speaker_type"] == "character"]
+            if bodies:
+                expected[bodies[0]["identity"]["name"]] += 1
+                published.update(m["identity"]["name"] for m in bodies)
+            else:
+                assert case["case_id"] == "expression-comfort-stone-to-failed-peer"
+                expected["石猴"] += 1
     payload = _load_aggregation_or_skip()
     by_character = payload["by_character"]
     char_total = sum(c["cases"] for c in by_character)
@@ -1383,23 +1392,26 @@ def test_aggregation_per_character_count_matches_91_69_160() -> None:
         f"by_character must split into 石猴/黛玉, got {set(by_ch.keys())}"
     )
     assert by_ch["石猴"] + by_ch["黛玉"] == 160
+    assert by_ch == dict(expected)
+    assert {row["character"]: row["published_count"] for row in by_character} == dict(published)
 
 
-def test_aggregation_published_count_is_zero_for_every_class() -> None:
-    """All 8-pilot + v2 real runs terminate in
-    ``executed_pending_semantic_review`` and publish zero persona bodies.
-    This is the signal that the human blind review (§4 row 9) is the only
-    gate that can advance 0 → published. Locking published_count=0 here
-    catches any future runner change that would silently publish without
-    review."""
+def test_aggregation_published_count_matches_final_slots_in_source_runs() -> None:
+    """A pending quality verdict does not undo already published room messages."""
+    import runpy
+
+    script = runpy.run_path(str(AGGREGATION.parent.parent / "scripts/aggregate_t12_real_runs.py"))
+    expected = Counter()
+    for _, _, run in script["discover_runs"]():
+        for case in run["cases"]:
+            expected[case["class"]] += sum(
+                slot["status"] == "published"
+                for turn in case.get("turns", [])
+                for slot in turn.get("round", {}).get("slots", [])
+            )
     payload = _load_aggregation_or_skip()
-    by_class = payload["by_class"]
-    for row in by_class:
-        assert row["published_count"] == 0, (
-            f"class {row['class']} published_count must be 0 (T12 protocol "
-            f"defers publish to human blind review), got {row['published_count']}"
-        )
-    # Same for the per-window run_status field
+    assert {row["class"]: row["published_count"] for row in payload["by_class"]} == dict(expected)
+    assert sum(expected.values()) > 0  # The frozen source runs contain real character replies.
     for w in payload["by_window"]:
         assert w["run_status"] == "executed_pending_semantic_review", (
             f"window {w['window']} run_status must be "
@@ -1412,6 +1424,40 @@ def test_aggregation_published_count_is_zero_for_every_class() -> None:
             f"window {w['window']} budget_exhausted must be False, got "
             f"{w['budget_exhausted']}"
         )
+
+
+def test_aggregation_counts_only_final_published_slots_not_execution_snapshots() -> None:
+    import runpy
+
+    script = runpy.run_path(str(AGGREGATION.parent.parent / "scripts/aggregate_t12_real_runs.py"))
+    case = {
+        "class": "knowable", "status": "executed_pending_semantic_review",
+        "turns": [{
+            "execution_windows": [{"slots": [{"status": "published"}]}] * 2,
+            "round": {"slots": [{"status": "published"}, {"status": "failed"}, {"status": "no_comment"}]},
+        }],
+    }
+    run = {"cases": [case], "calls": []}
+    row = script["build_by_class"]([("fixture", AGGREGATION, run)])[0]
+    assert row["published_count"] == 1
+
+
+def test_blind_review_uses_actual_character_identity_instead_of_first_room_member() -> None:
+    import runpy
+
+    cli = runpy.run_path(str(AGGREGATION.parent.parent / "blind-review-cli.py"))
+    source = AGGREGATION.parent / "_v2_runs/window-0-real.json"
+    extracted = {case["case_id"]: case for case in cli["load_run_file"](source)}
+    seen = set()
+    for original in _load(source)["cases"]:
+        body = next((m for m in original["turns"][0]["messages"] if m["speaker_type"] == "character"), None)
+        if body:
+            expected = body["identity"]["name"]
+            seen.add(expected)
+            case = extracted[original["case_id"]]
+            assert case["character_label"] == expected
+            assert cli["CHARACTER_LABELS"][case["character_build_id"]] == expected
+    assert seen == {"石猴", "黛玉"}
 
 
 def test_aggregation_self_consistency_under_regeneration() -> None:
