@@ -105,6 +105,22 @@ af508b2 docs(state): mark 60+24 real-model run as completed in state-of-play §4
 
 **不变量**：所有待跑项都不会触碰已发布 canonical baseline；trait lint 已在 24d1959 落入门禁。
 
+## 3.1 不需模型预算：操作员 / 评审员即可推进
+
+[2026-10-19 五门分项执行版](2026-10-19-t12-five-remaining-gates.md) 把 5 个未闭合条件按"不需预算 / 需真实模型预算 / 需人工"三档分类。本节承接其中不需模型预算的两门（门 D / 门 E），便于操作员/评审员在 0 模型调用下推进首版验收。
+
+| 阻塞项 | 解除条件 | 解除后立即可做 | 状态 |
+| --- | --- | --- | --- |
+| 门 D — 完整应用 E2E | 启动 1 用户 1 角色 1 房间的人工 E2E 跑通 | 创建 `tmp/accept-e2e-workspace`，按 [release-and-rollback.md](../../release-and-rollback.md) 启动 4 个环境变量全开，跑通"上传 TXT → 自动导入 build → 单聊 + 全体"；提交 1 份 E2E 报告作为首版"操作验收"关闭证据 | 未启动；当前 `tests/` 全部 665 项契约测试 + 3 个前端集成场景覆盖 T01–T11 / T15 / T16 / T17 链路与确定性层，8 项 [test_book_feature_flags.py](../../../tests/test_book_feature_flags.py) + 1 项 [release-gates-validation](./2026-10-14-release-gates-validation.md) 锁定功能开关 + 关闭流程的确定性；T16 WS 3D / 2D 切换 / 历史气泡 / 右栏同 ID/seq/正文 / 证据操作 已在 [2026-10-14-roundtable-validation](./2026-10-14-roundtable-validation.md) 落实；T09 暂停/继续/停止 + 首次工作区恢复 + 过期租约 + 有效生成占位 + 增量重连 已在 [2026-10-14-all-queue-validation](./2026-10-14-all-queue-validation.md) 落实 |
+| 门 E — 160 case 人工盲评 | 评审员姓名 + 评审方式（交互式 CLI / 离线 CSV）+ 30 分钟时间窗 | 评审员 1: 运行 `python docs/plans/book-character-agents/blind-review-cli.py start --reviewer <name>`；评审员 2 (Excel 党): `worksheet` 导出 CSV → 离线填写 → `import` 导入；完成后按 [2026-10-16-blind-review-report-template.md](./2026-10-16-blind-review-report-template.md) 写报告 [2026-10-16-blind-review-report.md](./2026-10-16-blind-review-report.md)；按 [协议 §6](./2026-10-16-blind-review-protocol.md) 把 T12 验收索引 §4 row 1 / row 5 / row 9 改写为「✅（人工盲评 160/160 判定完成）」 | 工具与数据就绪：6 子命令 start/resume/stats/worksheet/import/regrade 全部可用；[blind-review-2026-10-19-worksheet.csv](./blind-review-2026-10-19-worksheet.csv) 160 case（94 石猴 + 66 黛玉）18 列已就位；1 已知 timeout case `expression-comfort-stone-to-failed-peer` 已按 over_decline 标注；端到端 e2e 验证（[2026-10-16-t12-blind-review-cli-e2e-evidence.md](./2026-10-16-t12-blind-review-cli-e2e-evidence.md)）3 case 真实跑通 start → quit → resume → stats → regrade 链路，临时输出已清理 |
+
+补充说明：
+
+- 两门与 §3 的 4 个真实模型跑（8-pilot / 60+24 / T17 A/B / 隐式第四项）独立，可并行推进：门 D 与门 E 不消耗预算、且不依赖 §3 中任何一项。
+- 门 D 的最小落地形态是 1 份不超过 1 页的 E2E 报告，按 "上传 TXT → build → persona → 单聊 → 圆桌 → 暂停/继续" 6 步叙述；不需要再次跑全套真实模型。
+- 门 E 的评审员姓名出现在盲评 JSON 文件名后缀；评审员不必是项目成员，0 模型调用门槛下任何 1 名评审员在 30 分钟内可完成。
+- 两门落地后，按 [2026-10-16-t12-acceptance-index.md](./2026-10-16-t12-acceptance-index.md) §6 "只增不改" 原则，T12 验收索引 §4 row 1 / row 5 / row 9 与 [implementation-plan.md §当前交付状态](../../implementation-plan.md) 第 295 行附近的"首版验收"行才改为「✅」。
+
 ## 4. 超出本次范围（不会在首版中实现）
 
 | 项 | 原因 | 评估 |
