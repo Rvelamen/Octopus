@@ -152,6 +152,7 @@ def discovery_model_input(data: dict, prompt_version: str) -> dict:
         "character-discovery-v14",
         "character-discovery-v15",
         "character-discovery-v16",
+        "character-discovery-v17",
     ):
         return data
     known = []
@@ -177,6 +178,7 @@ def discovery_model_input(data: dict, prompt_version: str) -> dict:
         "character-discovery-v14",
         "character-discovery-v15",
         "character-discovery-v16",
+        "character-discovery-v17",
     ):
         packet = result.pop("repair_packet", None)
         if packet is not None:

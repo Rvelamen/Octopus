@@ -14,6 +14,7 @@ from pydantic import ValidationError
 
 from .discovery_grouped import GROUPED_PROMPT, GROUPED_VERSION, GroupedDiscovery, assemble_grouped
 from .discovery_inline import INLINE_PROMPT, INLINE_VERSION, InlineDiscovery, assemble_inline
+from .discovery_v17 import GROUPED_V17_PROMPT, GROUPED_V17_VERSION, assemble_grouped_v17
 from .discovery_models import (
     DISCOVERY_PROMPTS,
     DiscoveryConfig,
@@ -494,6 +495,7 @@ class BookDiscoveryService:
                 *NUMBERED_VERSIONS,
                 INLINE_VERSION,
                 GROUPED_VERSION,
+                GROUPED_V17_VERSION,
             ):
                 result["repair_packet"] = (
                     json.loads(step["result_json"]).get("repair_packet")
@@ -785,7 +787,7 @@ class BookDiscoveryService:
                 windowed = repair_protocol == "source-windows-v1"
                 unit_repair = repair_protocol == UNIT_PROTOCOL
                 unit_scope: dict[str, Any] = {}
-                numbered = prepare_numbered(data) if config.prompt_version in (*NUMBERED_VERSIONS, INLINE_VERSION, GROUPED_VERSION) and not data.get("repair_packet") else None
+                numbered = prepare_numbered(data) if config.prompt_version in (*NUMBERED_VERSIONS, INLINE_VERSION, GROUPED_VERSION, GROUPED_V17_VERSION) and not data.get("repair_packet") else None
                 if unit_repair:
                     if config.prompt_version not in UNIT_REPAIR_VERSIONS:
                         raise BookWorldError("repair_scope_changed", "Unit repair is unavailable for this saved strategy")
@@ -800,6 +802,9 @@ class BookDiscoveryService:
                     if config.prompt_version == GROUPED_VERSION:
                         numbered_prompt, schema = GROUPED_PROMPT, GroupedDiscovery
                         numbered["input"]["phase"] = "discovery_grouped"
+                    elif config.prompt_version == GROUPED_V17_VERSION:
+                        numbered_prompt, schema = GROUPED_V17_PROMPT, GroupedDiscovery
+                        numbered["input"]["phase"] = "discovery_grouped_v17"
                     elif config.prompt_version == INLINE_VERSION:
                         numbered_prompt, schema = INLINE_PROMPT, InlineDiscovery
                         numbered["input"]["phase"] = "discovery_inline"
@@ -818,7 +823,7 @@ class BookDiscoveryService:
                     repair_prompt = (
                         REPAIR_V10_PROMPT
                         if config.prompt_version
-                        in ("character-discovery-v10", "character-discovery-v11", "character-discovery-v12", *NUMBERED_VERSIONS, INLINE_VERSION, GROUPED_VERSION)
+                        in ("character-discovery-v10", "character-discovery-v11", "character-discovery-v12", *NUMBERED_VERSIONS, INLINE_VERSION, GROUPED_VERSION, GROUPED_V17_VERSION)
                         else REPAIR_V9_PROMPT
                         if config.prompt_version == "character-discovery-v9"
                         else REPAIR_PROMPT
@@ -862,6 +867,8 @@ class BookDiscoveryService:
                         try:
                             if config.prompt_version == GROUPED_VERSION:
                                 expanded = assemble_grouped(raw_for_repair, numbered)
+                            elif config.prompt_version == GROUPED_V17_VERSION:
+                                expanded = assemble_grouped_v17(raw_for_repair, numbered)
                             elif config.prompt_version == INLINE_VERSION:
                                 expanded = assemble_inline(raw_for_repair, numbered)
                             else:
@@ -916,6 +923,7 @@ class BookDiscoveryService:
                             *NUMBERED_VERSIONS,
                             INLINE_VERSION,
                             GROUPED_VERSION,
+                            GROUPED_V17_VERSION,
                         )
                         and raw_for_repair
                         and not data.get("repair_packet")
@@ -934,12 +942,13 @@ class BookDiscoveryService:
                                 *NUMBERED_VERSIONS,
                                 INLINE_VERSION,
                                 GROUPED_VERSION,
+                                GROUPED_V17_VERSION,
                             ),
-                            allow_binding_split=config.prompt_version in ("character-discovery-v12", *NUMBERED_VERSIONS, INLINE_VERSION, GROUPED_VERSION),
+                            allow_binding_split=config.prompt_version in ("character-discovery-v12", *NUMBERED_VERSIONS, INLINE_VERSION, GROUPED_VERSION, GROUPED_V17_VERSION),
                         )
                         if (
                             packet is not None
-                            and config.prompt_version in ("character-discovery-v12", *NUMBERED_VERSIONS, INLINE_VERSION, GROUPED_VERSION)
+                            and config.prompt_version in ("character-discovery-v12", *NUMBERED_VERSIONS, INLINE_VERSION, GROUPED_VERSION, GROUPED_V17_VERSION)
                         ):
                             selection = await asyncio.to_thread(prepare_selection, packet, data)
                             if selection is None and config.prompt_version in (NUMBERED_LATEST_VERSION, INLINE_VERSION, GROUPED_VERSION):
@@ -974,6 +983,7 @@ class BookDiscoveryService:
                             *NUMBERED_VERSIONS,
                             INLINE_VERSION,
                             GROUPED_VERSION,
+                            GROUPED_V17_VERSION,
                         ),
                     )
         except BookWorldError as error:
