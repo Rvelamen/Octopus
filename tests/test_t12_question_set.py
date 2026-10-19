@@ -81,7 +81,6 @@ def test_v2_pool_covers_both_books_and_both_characters() -> None:
                 if c["tier"] == tier and c["class"] == cls
             ]
             actors = {tuple(c["target_actor_indices"]) for c in tier_class_cases}
-            books = {tuple(c["book_ids"]) for c in tier_class_cases}
             assert (0,) in actors and (1,) in actors, (
                 f"{tier}/{cls} must cover both 石猴 (0) and 黛玉 (1); got {actors}"
             )
@@ -340,7 +339,7 @@ def test_slicer_covers_pool_across_windows() -> None:
     assert seen == {c["case_id"] for c in pool["cases"]}, (
         f"across 45 windows (15 canonical + 15 ext-a + 15 ext-b) the "
         f"slicer must cover all 84 pool cases; "
-        f"missing {set(c['case_id'] for c in pool['cases']) - seen}"
+        f"missing {set(c['case_id'] for c in pool['cases']) - seen}"  # noqa: C401 (set comprehension not valid in f-string on Python 3.12)
     )
 
 
@@ -497,7 +496,6 @@ def test_v2_pool_v1_consistency_with_corpus_anchors() -> None:
     test asserts the corpus still contains the canonical anchor so
     future re-authorings do not silently drift.
     """
-    pool = _ensure_pool_exists()
     xyj = (REPO / "tmp" / "book-corpus" / "西游记.txt").read_text(
         encoding="utf-8", errors="ignore"
     )
@@ -908,7 +906,6 @@ def test_dryrun_reports_runner_sha256_matches_runner_file() -> None:
     intentionally, regenerate the dryrun reports and update the test;
     if not, the test catches silent drift.
     """
-    import hashlib
     import pytest
     runner_bytes = RUNNER.read_bytes()
     actual_runner_sha = hashlib.sha256(runner_bytes).hexdigest()
@@ -944,7 +941,7 @@ def test_dryrun_reports_each_window_has_distinct_dataset_sha() -> None:
     shas = [s for _, s in seen]
     assert len(set(shas)) == len(shas), (
         f"dryrun reports must each carry a distinct dataset_sha256 "
-        f"(different windows = different slices); got {list(zip(*seen))[0]} "
+        f"(different windows = different slices); got {list(zip(*seen, strict=False))[0]} "
         f"-> {shas}"
     )
 
@@ -1020,8 +1017,8 @@ def test_runner_refuses_to_overwrite_existing_output() -> None:
     # The check must appear before any model call / save() that could
     # mutate the output. Confirm the raising message is descriptive.
     assert "This run already exists" in source, (
-        f"runner overwrite-guard must raise a descriptive error; "
-        f"generic RuntimeError without 'already exists' context found"
+        "runner overwrite-guard must raise a descriptive error; "
+        "generic RuntimeError without 'already exists' context found"
     )
 
 
@@ -1150,7 +1147,6 @@ def test_runner_v1ext_protocol_class_list_uses_chat_quality_protocol() -> None:
         "v1ext branch in run() can dispatch to the v1ext expected_count"
     )
     # The v1ext block must have the same boundary class set as v1.
-    boundary_marker = '"boundary_classes_covered": [\n            "knowable", "unknowable", "belief", "emotion"'
     # Tolerate whitespace variations in the literal.
     v1ext_idx = source.find('"t12-pilot-eight-v1-ext"')
     v1ext_block = source[v1ext_idx:] if v1ext_idx != -1 else ""

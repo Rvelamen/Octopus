@@ -82,7 +82,7 @@ async def test_t04_stale_revision_persona_build_fails_with_revision_conflict(
     assert current["revision"] != context["revision"], (
         "context['revision'] must advance after the first create_revision"
     )
-    new_revision = await revisions.create_revision(
+    _new_revision = await revisions.create_revision(
         item,
         base,
         current["revision"],
