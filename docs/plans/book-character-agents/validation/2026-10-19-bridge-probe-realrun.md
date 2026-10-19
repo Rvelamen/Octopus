@@ -64,7 +64,7 @@
 1. **588b2be supply 层修复有效**：本次跑 5 调用全部走 `tmp/book-corpus-workspace` canonical baseline 工作区，runner `workspace_identity()` sha 一致，没有再触发 `BookWorldError("Canonical scope belongs to another workspace or policy")`。`_validate()` 自检通过：4 个 `claim_id` 全来自 c2da28c8 build，`evidence_id` 全部带 `book_id=efc80c04`。Supply 层的 32 词化合物锚点保留是字节级确定。
 2. **供应与引用之间存在 gap**：5 调用 supply 层把 `claim_id ∈ {6742efce, 88d3203a, aed74df7, cffa02d5}` 与 `evidence_id ∈ {1c597318, 36dee9fb, 5a1c583f, 7d69a677, c07f761a, cdfc37e9}` 注入 prompt，但模型最终只在 1 条 character 消息中引用 1 个 `claim_id=88d3203a`。**金标准 19aa8cfc（含"桥下之水从石窍间倒挂流出遮闭桥门"）未出现在 supply 层输出的 4 个 claim_id 中**。换言之：588b2be 让 term anchor 命中，但 claim_id 选择仍由模型挑了 inside-view 的 88d3203a，没挑 outside-view 的 19aa8cfc。
 3. **退拒形态合规**：模型选择"我没看到外面，所以不说"是约束 1 "证据不足保持未知"的合规落地。它没有在金标准缺位时编造桥下水流或延伸桥外世界，符合"硬约束 1 + 5"在边界可知型问题上的最低要求。
-4. **expected 第 1 条本身存在题面设计取舍**：用户问"从瀑布外面看到的那座桥"暗含 Stone Monkey 看到过外面（原文第一回石猴正是在外面看到），但当前 c2da28c8 baseline 5 单元摘录联调里"外面看桥"对应 claim 未必被 supply 拉到。题面与当前 baseline 之间存在 **baseline ↔ expected 的设计 gap**，不是模型质量问题；这是门 A 全书构建未完成状态下 5 单元摘录联调的天然限制。
+4. **expected 第 1 条本身存在题面设计取舍** (精确根因见 [2026-10-19-bridge-claim-build-mapping.md](./2026-10-19-bridge-claim-build-mapping.md))：用户问"从瀑布外面看到的那座桥"暗含 Stone Monkey 看到过外面（原文第一回石猴正是在外面看到），但当前 c2da28c8 baseline 5 单元摘录联调里"外面看桥"对应 claim 未必被 supply 拉到。题面与当前 baseline 之间存在 **baseline ↔ expected 的设计 gap**，不是模型质量问题；这是门 A 全书构建未完成状态下 5 单元摘录联调的天然限制。
 
 ## 7. 验收含义
 
