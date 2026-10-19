@@ -8,6 +8,55 @@ from backend.services.book_world.persona import BookPersonaService, PersonaConfi
 from backend.services.book_world.source import BookWorldError
 from backend.services.book_world.storage import connect
 
+LONG_BRIDGE_QUESTION = (
+    "请讲一讲你第一次从瀑布外面看到的那座桥：它是用什么搭的、"
+    "桥下水流走向如何。请只说你亲眼看到的。"
+)
+
+
+def test_long_query_retains_compound_anchor_and_identifier_within_term_budget():
+    from backend.services.book_world.search_terms import query_terms
+
+    selected = query_terms(LONG_BRIDGE_QUESTION + "记录号 KEY9。", ["人物甲"])
+    assert "瀑布" in selected
+    assert "key9" in selected
+    assert len(selected) <= 32
+
+
+@pytest.mark.asyncio
+async def test_long_question_recalls_owned_episode_without_granting_it_to_another_person(book_library):
+    text = "人物甲进入瀑布，发现铁板桥。\n\n人物乙在山外歇息。"
+    item, parent = await discovered(
+        book_library, text, (("人物甲", "active"), ("人物乙", "active"))
+    )
+    service = BookPersonaService(book_library.workspace_root)
+    config = PersonaConfig(provider_id=1, model="fixture", unit_char_limit=4000)
+    build = service.request_build(item, parent, config)["build_id"]
+
+    def extract(data):
+        actor = next(person["id"] for person in data["characters"] if person["name"] == "人物甲")
+        row = next(row for row in data["segments"] if "铁板桥" in row["text"])
+        evidence = quote(row, "人物甲进入瀑布，发现铁板桥。")
+        return {"claims": [{
+            "local_key": "bridge", "kind": "episode", "owner_character_id": actor,
+            "proposition": "人物甲进入瀑布，发现铁板桥。", "evidence": [evidence],
+            "access": [{"character_id": actor, "route": "firsthand", "acquisition": evidence,
+                        "approved_excerpt": evidence["quote"]}],
+        }]}
+
+    await service.run(build, ScriptedPersonaProvider(extract, review_all), config)
+    people = {person["name"]: person["id"] for person in service.discovery.list_characters(item, build)["characters"]}
+    knowledge = CharacterKnowledgeService(book_library.workspace_root)
+    owner = knowledge.bind_character(item, build, people["人物甲"])
+    other = knowledge.bind_character(item, build, people["人物乙"])
+    brief = knowledge.retrieve(owner, "瀑布")
+    full = knowledge.retrieve(owner, LONG_BRIDGE_QUESTION)
+    assert full.status == "known"
+    assert {item.claim_id for item in full.items} == {item.claim_id for item in brief.items}
+    assert any("铁板桥" in item.proposition for item in full.items)
+    assert knowledge.retrieve(other, LONG_BRIDGE_QUESTION).status == "unknown"
+    assert knowledge.retrieve(other, "瀑布").items == ()
+
 
 async def style_character(library, *, with_excerpt=True):
     text = "人物甲说：“慢慢说，我听着。”旁白：人物乙暗藏秘密。"

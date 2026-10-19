@@ -56,4 +56,9 @@ def query_terms(query: str, aliases: list[str]) -> list[str]:
     ):
         query = query.replace(phrase, " ")
     generic = {"人物", "角色", "知道", "了解", "关于", "告诉", "事情", "看法", "觉得", "认为"}
-    return [term for term in terms(query, single_characters=False) if term not in generic][:32]
+    candidates = [term for term in terms(query, single_characters=False) if term not in generic]
+    # Budget compounds before CJK trigrams: a paraphrase may share 瀑布 but not
+    # 瀑布外/瀑布泉. Long questions previously spent all 32 slots on trigrams.
+    # This changes only query selection, never the indexed or permitted source set.
+    candidates.sort(key=lambda term: bool(re.fullmatch(r"[\u3400-\u9fff]{3}", term)))
+    return candidates[:32]
