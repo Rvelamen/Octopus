@@ -152,6 +152,43 @@ commit 4978565 把上面 3 处 `validation/ → ../../scripts/...` 错误的相�
 
 本节不改变 §3 / §3.1 / §4 的既有结论；门 A / 门 B-1 / 门 C 仍需模型预算，门 D 仍需操作员在浏览器中跑通 6 步，门 E 仍需评审员 30 分钟。
 
+## 3.3 2026-10-19 预算授权后 32-case 真实跑
+
+> 本节按"只增不改"原则追加。用户在 2026-10-19 取消预算约束，4 windows × 8 case = 32 case 已真实跑通。
+
+| 项 | 数值 | 证据 |
+| --- | --- | --- |
+| 总 windows | 4 | `tmp/t12-realrun-window-{0,1,2,3}.json` |
+| 总 cases | 32 | 8-pilot 4 boundary + 4 expression；v2 windows 1-3 各 4 boundary + 4 expression |
+| 总 native calls | 81 | 20 + 24 + 18 + 19 |
+| 总 refs | 21 | 跨 32 case character 消息 refs 之和 |
+| Canon refs | 8 | origin=canon |
+| Refusals（0-ref 退拒） | 19 | 约束 1 合规落地 |
+| canonical_baselines 不变 | True | sha 89f5f446…c13d5c3 字节级前后一致 |
+| `book_builds` / `book_claims` / `book_evidence` / `book_characters` 行数 | 不变 | runner 仅写 `book_round` / `book_room` 表 |
+| quality_pass | False（4 windows 一致）| `executed_pending_semantic_review` / `terminal=true` |
+| 聚合文档 | [2026-10-19-t12-32case-realrun-aggregation.md](./2026-10-19-t12-32case-realrun-aggregation.md) + [.json](./2026-10-19-t12-32case-realrun-aggregation.json) |
+| 5-gates doc 同步 | [2026-10-19-t12-five-remaining-gates.md §8](./2026-10-19-t12-five-remaining-gates.md) 新增 32-case 真实跑记录 |
+
+**对 5 门的影响**（与 §3 / §3.1 / §3.2 不冲突）：
+
+- 门 A chat-quality 部分：24 case 真实跑落地（window-1/2/3 各 8 case）。门 A discovery 阶段的全书人物构建（411 单元 / 581 单元）按 §1 仍属多段式进度
+- 门 B-1：bridge case 在 window-0 中复现 supply ↔ cite gap，19aa8cfc 仍未被 supply 注入；3 修复路径（A 切 baseline / B 1 单元重抽 / C 改 expected）待用户授权
+- 门 C B 路径：16 expression case 真实跑落地（`expression_enabled=false`）；A 路径（`BOOK_EXPRESSION_ENABLED=true`）仍待跑
+- 门 D / 门 E 不变，仍待操作员 / 评审员
+
+**与既有真实跑累计**（自 §3 / 8-pilot 行 + 60+24 行）：
+
+| 真实跑记录 | native calls | 状态 |
+| --- | --- | --- |
+| 8-pilot | 23 | done（2026-10-16） |
+| v2 19 windows | 369 | done（2026-10-16） |
+| T17 A/B 重评 | 20+26=46 | done（2026-10-16） |
+| long-query 修复前 | 6 | done（2026-10-19） |
+| bridge-probe 1-case | 5 | done（2026-10-19） |
+| **32-case（本节）** | **81** | **done（2026-10-19）** |
+| **累计** | **530** | |
+
 ## 4. 超出本次范围（不会在首版中实现）
 
 | 项 | 原因 | 评估 |

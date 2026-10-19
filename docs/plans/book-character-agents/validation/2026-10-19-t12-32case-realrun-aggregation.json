@@ -1,0 +1,427 @@
+{
+  "date": "2026-10-19",
+  "kind": "t12-32case-realrun-aggregation",
+  "totals": {
+    "windows": 4,
+    "cases": 32,
+    "native_calls": 81,
+    "canon_refs": 8,
+    "total_refs": 21,
+    "refusals": 19
+  },
+  "canonical_baselines": {
+    "before": "89f5f4462806df7acc96c147605528463531ff8c4039bb1c67c9e12c3c13d5c3",
+    "after": "89f5f4462806df7acc96c147605528463531ff8c4039bb1c67c9e12c3c13d5c3",
+    "unchanged": true
+  },
+  "model": {
+    "provider": null,
+    "model": "k3"
+  },
+  "window_summary": [
+    {
+      "window": 0,
+      "native_calls": 20,
+      "cases": 8,
+      "completed": 8,
+      "refusals": 4,
+      "canon_refs": 4,
+      "quality_pass": false
+    },
+    {
+      "window": 1,
+      "native_calls": 24,
+      "cases": 8,
+      "completed": 8,
+      "refusals": 4,
+      "canon_refs": 2,
+      "quality_pass": false
+    },
+    {
+      "window": 2,
+      "native_calls": 18,
+      "cases": 8,
+      "completed": 8,
+      "refusals": 5,
+      "canon_refs": 2,
+      "quality_pass": false
+    },
+    {
+      "window": 3,
+      "native_calls": 19,
+      "cases": 8,
+      "completed": 8,
+      "refusals": 6,
+      "canon_refs": 0,
+      "quality_pass": false
+    }
+  ],
+  "tier_breakdown": {
+    "boundary": 16,
+    "expression": 16
+  },
+  "class_breakdown": {
+    "knowable": 4,
+    "unknowable": 4,
+    "belief": 4,
+    "emotion": 4,
+    "answer": 4,
+    "challenge": 4,
+    "comfort": 4,
+    "cross_book_hearsay": 4
+  },
+  "cases": [
+    {
+      "window": 0,
+      "case_id": "boundary-knowable-stone-cave-iron-bridge",
+      "tier": "boundary",
+      "class": "knowable",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 2,
+      "canon_refs": 2,
+      "room_id": "b4120e1e-69d0-4f57-9391-a39e9ec95d9a"
+    },
+    {
+      "window": 0,
+      "case_id": "boundary-unknowable-stone-buddha-intent",
+      "tier": "boundary",
+      "class": "unknowable",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "03376d8b-1d47-4af3-b634-22fc67b8b76f"
+    },
+    {
+      "window": 0,
+      "case_id": "boundary-belief-stone-tianpeng-status",
+      "tier": "boundary",
+      "class": "belief",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "fcb10060-d885-43ef-964e-3be743a121d0"
+    },
+    {
+      "window": 0,
+      "case_id": "boundary-emotion-stone-bajie-flirt",
+      "tier": "boundary",
+      "class": "emotion",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "e07fcde8-0c38-4f15-b4dc-0ca138ba7229"
+    },
+    {
+      "window": 0,
+      "case_id": "expression-answer-stone-retrace-route",
+      "tier": "expression",
+      "class": "answer",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 1,
+      "canon_refs": 1,
+      "room_id": "f2ba2d01-4c95-4839-b089-97a8447d5917"
+    },
+    {
+      "window": 0,
+      "case_id": "expression-challenge-stone-samadhi",
+      "tier": "expression",
+      "class": "challenge",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 1,
+      "canon_refs": 1,
+      "room_id": "34f0930e-32c5-4df7-8477-e7d6d7089edd"
+    },
+    {
+      "window": 0,
+      "case_id": "expression-comfort-daiyu-sick-peer",
+      "tier": "expression",
+      "class": "comfort",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "c1f17f15-d5cb-4f21-9029-ef0b67b73aef"
+    },
+    {
+      "window": 0,
+      "case_id": "expression-cross-book-hearsay-daiyu-hears-pilgrimage",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 2,
+      "canon_refs": 0,
+      "room_id": "5a5fc137-261e-418a-a185-b6e0d2a6f9b2"
+    },
+    {
+      "window": 1,
+      "case_id": "boundary-knowable-stone-peach-immortals",
+      "tier": "boundary",
+      "class": "knowable",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 1,
+      "canon_refs": 1,
+      "room_id": "8a750176-81a3-44cb-a86c-9b5ed06f9465"
+    },
+    {
+      "window": 1,
+      "case_id": "boundary-unknowable-stone-bajie-future",
+      "tier": "boundary",
+      "class": "unknowable",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "dfb1e26a-a4f5-4f37-88da-f1d0d43d96a1"
+    },
+    {
+      "window": 1,
+      "case_id": "boundary-belief-stone-jade-emperor",
+      "tier": "boundary",
+      "class": "belief",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "19c487e9-528b-42c6-b236-59cadb93c53d"
+    },
+    {
+      "window": 1,
+      "case_id": "boundary-emotion-stone-mountain-after-1k",
+      "tier": "boundary",
+      "class": "emotion",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "47b5a2f7-b0db-4772-9da7-1a848eb8915c"
+    },
+    {
+      "window": 1,
+      "case_id": "expression-answer-stone-physical-restraint",
+      "tier": "expression",
+      "class": "answer",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "945bd55b-74c2-42c9-981f-62e5476cace5"
+    },
+    {
+      "window": 1,
+      "case_id": "expression-challenge-daiyu-preciousness",
+      "tier": "expression",
+      "class": "challenge",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 1,
+      "canon_refs": 0,
+      "room_id": "0141ffb6-c6f6-496f-9335-34d7d84c97e2"
+    },
+    {
+      "window": 1,
+      "case_id": "expression-comfort-daiyu-miss-mother",
+      "tier": "expression",
+      "class": "comfort",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 2,
+      "canon_refs": 1,
+      "room_id": "64b4f14c-0a6f-40f8-8979-89116b9ad04e"
+    },
+    {
+      "window": 1,
+      "case_id": "expression-cross-book-hearsay-stone-hears-daiyu",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 1,
+      "canon_refs": 0,
+      "room_id": "221c0040-8442-4096-aec3-56f32d498647"
+    },
+    {
+      "window": 2,
+      "case_id": "boundary-knowable-stone-lotus-cavern-name",
+      "tier": "boundary",
+      "class": "knowable",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "eb0ade78-9691-414d-af22-f26c1c67ca02"
+    },
+    {
+      "window": 2,
+      "case_id": "boundary-unknowable-stone-sha-monkey-true-name",
+      "tier": "boundary",
+      "class": "unknowable",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "bdc08a9f-0e0a-43ae-99d1-25008cb1a4b5"
+    },
+    {
+      "window": 2,
+      "case_id": "boundary-belief-stone-iron-fan-mood",
+      "tier": "boundary",
+      "class": "belief",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "cf3c21ac-b605-4aca-a842-398840f27b41"
+    },
+    {
+      "window": 2,
+      "case_id": "boundary-emotion-stone-baoyu-equals-friend",
+      "tier": "boundary",
+      "class": "emotion",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "69e37872-dc88-4d57-be75-156acbe3ab3c"
+    },
+    {
+      "window": 2,
+      "case_id": "expression-answer-daiyu-bamboo-feel",
+      "tier": "expression",
+      "class": "answer",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "4ed5f7e3-e044-4a07-af4b-fc6df025cd0b"
+    },
+    {
+      "window": 2,
+      "case_id": "expression-challenge-daiyu-flower-burial",
+      "tier": "expression",
+      "class": "challenge",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 1,
+      "canon_refs": 0,
+      "room_id": "5a4f1da0-e5a4-45ad-9257-f2e994e9a812"
+    },
+    {
+      "window": 2,
+      "case_id": "expression-comfort-stone-failed-peer",
+      "tier": "expression",
+      "class": "comfort",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 4,
+      "canon_refs": 2,
+      "room_id": "f3b31197-2bf9-4edf-847c-5e766fadb47e"
+    },
+    {
+      "window": 2,
+      "case_id": "expression-cross-book-hearsay-stone-hears-zichun",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 1,
+      "canon_refs": 0,
+      "room_id": "e9340e35-ed4c-4707-bf86-93166ce41cb4"
+    },
+    {
+      "window": 3,
+      "case_id": "boundary-knowable-stone-crown-decree",
+      "tier": "boundary",
+      "class": "knowable",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "8126eacb-0a53-4fbc-b2dc-6d7a2e9670ae"
+    },
+    {
+      "window": 3,
+      "case_id": "boundary-unknowable-stone-taoist-content",
+      "tier": "boundary",
+      "class": "unknowable",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "f5af7dfa-607c-48ad-b61b-17c9a4e99b24"
+    },
+    {
+      "window": 3,
+      "case_id": "boundary-belief-stone-river-fish-king",
+      "tier": "boundary",
+      "class": "belief",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "e059886f-0df5-4a74-a522-4270c6c53da5"
+    },
+    {
+      "window": 3,
+      "case_id": "boundary-emotion-stone-fivehundred-still",
+      "tier": "boundary",
+      "class": "emotion",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "0b92c4d9-4c03-49e7-a45f-73cfca52b361"
+    },
+    {
+      "window": 3,
+      "case_id": "expression-answer-daiyu-flute-sound",
+      "tier": "expression",
+      "class": "answer",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "2e2860ac-3b99-453a-a2d2-61c624307829"
+    },
+    {
+      "window": 3,
+      "case_id": "expression-challenge-stone-brave-self",
+      "tier": "expression",
+      "class": "challenge",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 0,
+      "canon_refs": 0,
+      "room_id": "75215169-2f79-4a01-ba25-3e81f7ed2942"
+    },
+    {
+      "window": 3,
+      "case_id": "expression-comfort-stone-thrown-out",
+      "tier": "expression",
+      "class": "comfort",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 2,
+      "canon_refs": 0,
+      "room_id": "291d457c-782a-4375-857c-4e4b11ca602b"
+    },
+    {
+      "window": 3,
+      "case_id": "expression-cross-book-hearsay-daiyu-hears-stone",
+      "tier": "expression",
+      "class": "cross_book_hearsay",
+      "status": "executed_pending_semantic_review",
+      "char_msgs": 1,
+      "refs": 2,
+      "canon_refs": 0,
+      "room_id": "9de3c87f-4a58-42bb-ac94-ac3e6c3c6ccf"
+    }
+  ]
+}

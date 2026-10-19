@@ -144,3 +144,62 @@
 - 盲评操作卡：[2026-10-16-t12-blind-review-operator-card.md](./2026-10-16-t12-blind-review-operator-card.md)
 - 盲评报告模板：[2026-10-16-blind-review-report-template.md](./2026-10-16-blind-review-report-template.md)
 - 发布开关：[../../release-and-rollback.md](../../release-and-rollback.md)
+
+## 8. 32-case 真实跑（2026-10-19 预算授权后落地）
+
+> 本节在 §1 / §2 / §3 之后追加，按 §0 "只增不改" 原则不删改既有记录。预算授权已开放（用户"取消预算约束"），4 windows × 8 case = 32 case 全部真实跑通，81 native calls，canonical baseline 字节级不变。
+
+### 8.1 落地状态
+
+- **命令**：
+  - `python docs/plans/book-character-agents/t12-quality-runner.py --workspace F:/god/project/Octopus/tmp/book-corpus-workspace --dataset docs/plans/book-character-agents/validation/t12-quality-cases-v1-window-{0,1,2,3}.json --output tmp/t12-realrun-window-{0,1,2,3}.json --call-budget 32`（4 次串行）
+- **工作区**：`tmp/book-corpus-workspace`（canonical baseline，workspace_id `1506c968…36d0a5`，runner 自检 `book_builds` 表 c2da28c8 / 58609a52 行存在）
+- **真实结果**（4 个 JSON 落盘）：
+  - `tmp/t12-realrun-window-0.json`：20 calls / 8 cases
+  - `tmp/t12-realrun-window-1.json`：24 calls / 8 cases
+  - `tmp/t12-realrun-window-2.json`：18 calls / 8 cases
+  - `tmp/t12-realrun-window-3.json`：19 calls / 8 cases
+  - **合计：81 native calls / 32 cases / 4 windows**
+- **canonical baseline 不变**：
+  - `canonical_baselines_before == canonical_baselines_after = 89f5f4462806df7acc96c147605528463531ff8c4039bb1c67c9e12c3c13d5c3`
+  - `book_builds` 行数 / `book_claims` 行数 / `book_evidence` 行数 / `book_characters` 行数 不变
+  - runner 仅新增 `book_round` / `book_room` 表行
+- **聚合文档**：[2026-10-19-t12-32case-realrun-aggregation.md](./2026-10-19-t12-32case-realrun-aggregation.md) + [.json](./2026-10-19-t12-32case-realrun-aggregation.json)
+- **关键数字**：
+  - 32 cases 中 19 cases 走 0-ref 退拒形态（约束 1 合规）
+  - 21 总 refs / 8 canon refs / 13 inference+room_hearsay
+  - 4 windows 全部 `executed_pending_semantic_review` / `quality_pass=false` / `terminal=true`（符合 `chat-quality-protocol.md` Q05 验收模型）
+
+### 8.2 对 5 门的影响
+
+- **门 A**（§1）：**已落地 24 case 真实跑**（window-1/2/3 boundary + expression 各 8 case）。原 §1 提到的"西游记 18 success / 10 fail / 383 pending"是 discovery 阶段的全书构建记录，与本节 24 case chat-quality 验收属于不同阶段。本节 24 case 走的是 `t12-quality-cases-v1-window-{1,2,3}.json` chat-quality 8 case/窗口，与 v9–v16 discovery 阶段不重叠。门 A chat-quality 部分 24 case 已落实；门 A discovery 阶段的全书人物构建（411 单元 / 581 单元）按 §1 仍是"全书 + 联调样本 + bridge episode + 等待全集"多段式进度。
+- **门 B-1**（§2）：**bridge case 在 32-case 真实跑中复现 supply ↔ cite gap**。window-0 第 1 case `boundary-knowable-stone-cave-iron-bridge` 真实跑结果：模型仍引 `claim_id=88d3203a`（inside-view "桥后是一处宜居的石洞"），未引金标准 `19aa8cfc`（outside-view "桥下之水从石窍间倒挂流出遮闭桥门"）。5 个金标准子串中只满足 1 个（铁板桥本身）。该结果与 1-case 探针（commit 4ec308b，5 calls）一致，确认 supply ↔ cite gap 是 build 边界过滤（19aa8cfc 在 build 0874cf4b lifecycle_state=unavailable，c2da28c8 baseline 不可见）而非 supply 层 588b2be 修复回退。3 修复路径（A 切 baseline / B 1 单元重抽 / C 改 expected）按 §2 仍待用户授权。
+- **门 C**（§3）：**16 expression case 真实跑**（4 windows × 4 expression = 16 case）。`expression_enabled=false`（与 8-pilot / v2 默认同），未做 A 路径开 vs B 路径关的对照。本节 16 case 真实跑结果为 B 路径（`expression_enabled=false`）的下限基线：A 路径仍需 `BOOK_EXPRESSION_ENABLED=true` 跑同 16 case 才能形成对照。门 C 部分落地 16 case / 2 路径 = 32 call budget 需求仍待 A 路径预算。
+- **门 D**（§4）：不变，等用户启动 1 用户 1 角色 1 房间 E2E。
+- **门 E**（§5）：不变，等评审员 30 min 盲评。
+
+### 8.3 与既有真实跑的对照
+
+| 真实跑记录 | 来源 | native calls | baseline 状态 |
+|-----------|------|-------------|--------------|
+| 8-pilot | `2026-10-16-t12-8pilot-real-run.json` | 23 | partial_published / active |
+| v2 19 windows | `real-model-t12-v2-*.json` ×19 | 369 | partial_published / active |
+| long-query 修复前 | `2026-10-19-long-query-real-run-native.json` | 6 | partial_published / active |
+| bridge-probe 1-case | `tmp/bridge-probe-output.json` | 5 | partial_published / active |
+| **32-case（本节）** | `tmp/t12-realrun-window-{0,1,2,3}.json` | **81** | partial_published / active（**未变**）|
+| **合计** | | **484** | |
+
+### 8.4 0 业务代码改动
+
+- 32-case 真实跑 0 行业务代码改动
+- 4 个 runner 调用都使用既有 `t12-quality-runner.py` + `t12-quality-cases-v1-window-{0,1,2,3}.json`
+- canonical baseline sha 前后字节级一致（§8.1）
+- 3 项 book_knowledge 契约测试 + 24d1959 trait lint 门禁未触及
+- 5-gates 文档按 §0 "只增不改" 仅追加 §8，不改 §1–§7 既有记录
+
+### 8.5 验收含义
+
+- 32-case 真实跑把"chat-quality 验收 = 0 call"状态推至"81 call / 32 case / baseline 不变"，门 A / 门 C chat-quality 部分已有真实模型结果
+- 门 B-1 supply ↔ cite gap 已被复现 2 次（bridge-probe 1-case + 32-case window-0），根因是 build 边界过滤（19aa8cfc 在 0874cf4b unavailable），不是 supply 排序；3 修复路径待用户授权
+- 门 D / 门 E 仍待外部执行（操作员 E2E + 评审员 30 min 盲评）
+- 5 门全闭合仍需：Path A/B/C 选一 + 操作员 1 次 E2E + 评审员 1 次盲评
