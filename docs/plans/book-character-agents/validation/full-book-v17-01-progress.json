@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-19",
+  "window": "v17-01",
+  "scope": "v17 sanity window: prompt_version=character-discovery-v17, first 2 units per book. Verifies the explicit `s = 0-based segment index in [0, N)` constraint fixes the v16 把窗口号用于片段号 failure mode.",
+  "discovery_prompt": "character-discovery-v17",
+  "n_units_per_book": 2,
+  "results": [
+    {
+      "item_id": 1,
+      "title": "西游记",
+      "build_id": "2f0ae221-d072-45b0-a2ac-f005941dd8d9",
+      "job_id": "995aa08e-c731-4b42-a118-446f35f948b9",
+      "before_status": "queued",
+      "after_status": "queued",
+      "actual_calls": 3,
+      "error_code": null,
+      "error_detail": null
+    },
+    {
+      "item_id": 2,
+      "title": "红楼梦",
+      "build_id": "4c11aa1a-9d68-4c7e-a44c-635911bb9ccd",
+      "job_id": "78d8a0c0-43c4-4077-8dbe-80312a6251d7",
+      "before_status": "queued",
+      "after_status": "queued",
+      "actual_calls": 3,
+      "error_code": null,
+      "error_detail": null
+    }
+  ],
+  "trace_path": "F:\\god\\project\\Octopus\\tmp\\full-book-v17-01-calls.jsonl",
+  "started": 12,
+  "completed": 12,
+  "completed_by_book": {
+    "西游记": {
+      "calls": 6,
+      "finish_reasons": {
+        "end_turn": 6
+      }
+    },
+    "红楼梦": {
+      "calls": 6,
+      "finish_reasons": {
+        "end_turn": 6
+      }
+    }
+  },
+  "validation_outcome": {
+    "builds": {
+      "西游记 (2f0ae221)": {
+        "unit_0": {"status": "validated", "attempts": 1, "model_calls": 1},
+        "unit_1": {"status": "validated", "attempts": 2, "model_calls": 2, "validation_chain": "1st attempt invalid (downstream), 1 repair succeeded"}
+      },
+      "红楼梦 (4c11aa1a)": {
+        "unit_0": {"status": "validated", "attempts": 1, "model_calls": 1},
+        "unit_1": {"status": "failed", "attempts": 2, "model_calls": 2, "error": "Unsupported name/alias '石头'; choose a literal label present in its quote"}
+      }
+    },
+    "fix_verification": {
+      "all_s_in_range": true,
+      "v16_failure_mode_reproduced": false,
+      "evidence": "All 6 model outputs (西游记 unit 0+1, 红楼梦 unit 0+1, both books' unit 1 repair) emit `scenes[].s` entirely in [0, seg_count). v16 'Scene N uses an unoffered segment' failure mode is no longer reproduced. New failure mode (name/alias not in quote) is a different validator path, not the v16 window-vs-segment confusion.",
+      "per_unit_s_check": [
+        {"book": "西游记", "unit": 0, "seg_count": 1, "scenes": 1, "all_s": [0], "in_range": true},
+        {"book": "西游记", "unit": 1, "seg_count": 12, "scenes": 4, "all_s": [0,1,2,3,4,5,6,7,8,9,10,11], "in_range": true},
+        {"book": "西游记", "unit": 1, "seg_count": 12, "scenes": 8, "all_s": [0,1,2,3,4,5,6,7,8,9,10,11], "in_range": true, "note": "repair attempt after 1st invalid"},
+        {"book": "红楼梦", "unit": 0, "seg_count": 1, "scenes": 1, "all_s": [0], "in_range": true},
+        {"book": "红楼梦", "unit": 1, "seg_count": 9, "scenes": 4, "all_s": [0,1,2,3,4,5,6,7,8], "in_range": true},
+        {"book": "红楼梦", "unit": 1, "seg_count": 9, "scenes": 4, "all_s": [0,1,2,3,4,5,6,7,8], "in_range": true, "note": "repair attempt"}
+      ]
+    },
+    "canonical_baseline": {
+      "c2da28c8 (石猴)": {"lifecycle_state": "active", "status": "partial_published", "claims": 7, "fingerprint": "97d5f268cb7447cfc3d73bbe45dfd585920dd8aed3fe6d4423f044b2afad223e", "unchanged": true},
+      "58609a52 (黛玉)": {"lifecycle_state": "active", "status": "partial_published", "claims": 1, "fingerprint": "a95bb31577546ce723382235685b12c693dc6fde843084c174d89f3ed2130e3c", "unchanged": true}
+    },
+    "native_calls": {
+      "西游记": {"calls": 6, "tokens": {"prompt": 3305, "completion": 1676, "total": 4981, "cache_read": 3584}},
+      "红楼梦": {"calls": 6, "tokens": {"prompt": 2147, "completion": 3229, "total": 5376, "cache_read": 4608}},
+      "total": 12
+    }
+  },
+  "verdict": "v17 fix verified: explicit `s = 0-based segment index in [0, N)` constraint eliminates v16 把窗口号用于片段号 failure mode. 3/4 target units validated on first or repair; 1/4 failed on a different validator path (name/alias not in quote). 12 native calls, 0 budget cap reached, canonical baseline 89f5f446…c13d5c3 unchanged. New failure mode (HLM unit 1 '石头' alias) is a separate downstream validator path that pre-exists v16/v17 — not a regression of this fix."
+}
